@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     number: &str,
     title: &str,
@@ -37,7 +37,7 @@ fn role<'a>(body: &'a Value, title: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_plan_is_compared_with_the_live_structure_by_role_and_names_no_one() {
     crate::requests::request_open(|request, _ctx| async move {

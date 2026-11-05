@@ -6,10 +6,10 @@
 //! claim, the manager and HR decide it, a stranger sees nothing — and **nobody,
 //! not even HR, decides their own claim**.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -51,7 +51,7 @@ fn sign_as(kid: &str, sub: &str) -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_expenses -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_expenses -- --ignored`"]
 async fn nobody_decides_their_own_claim() {
     let (keys, kid) = keys_and_kid();
     // Every signed-in caller passes the blanket guard; the controller decides.

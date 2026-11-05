@@ -1,5 +1,5 @@
-//! **The shared cache** (WPM-D78): Loco's cache provider (in memory by default, Redis in
-//! production so several instances share one) used for **non-personal lookups only**.
+//! **The shared cache** (WPM-D78): in memory by default, Redis in production so several instances share
+//! one, used for **non-personal lookups only**.
 //!
 //! - **What may be cached is a closed list.** [`Namespace`] names it. There is no variant for a person,
 //!   a worker, a role, a score or any report, so a cached answer can never be one that a permission
@@ -11,10 +11,12 @@
 //!   time to live.
 //! - **Values are text under a size cap**, so one entry cannot fill a shared cache.
 
-use std::sync::{Arc, OnceLock};
-use std::time::Duration;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
-use loco_rs::cache::Cache;
+use redis::aio::MultiplexedConnection;
+use serde::{Serialize, de::DeserializeOwned};
 
 /// The longest any one cache call may take before it counts as a miss.
 pub const TIMEOUT: Duration = Duration::from_millis(250);
@@ -67,6 +69,181 @@ pub fn install_tls_provider() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 
+/// The most an in-memory cache holds, in bytes of keys and values.
+pub const MEMORY_CAPACITY: usize = 32 * 1024 * 1024;
+
+/// What an in-memory cache holds.
+#[derive(Debug, Default)]
+pub struct Memory {
+    entries: HashMap<String, (String, Option<Instant>)>,
+    bytes: usize,
+}
+
+impl Memory {
+    fn get(&mut self, key: &str) -> Option<String> {
+        let (value, expires) = self.entries.get(key)?;
+        if expires.is_some_and(|at| at <= Instant::now()) {
+            self.remove(key);
+            return None;
+        }
+        Some(value.clone())
+    }
+
+    fn remove(&mut self, key: &str) {
+        if let Some((value, _)) = self.entries.remove(key) {
+            self.bytes -= key.len() + value.len();
+        }
+    }
+
+    /// Hold `value`. Over `capacity`, expired entries go first and then everything, which only makes later lookups misses.
+    fn put(&mut self, key: &str, value: String, ttl: Option<Duration>, capacity: usize) {
+        self.remove(key);
+        let size = key.len() + value.len();
+        if self.bytes + size > capacity {
+            let now = Instant::now();
+            self.entries
+                .retain(|_, (_, expires)| expires.is_none_or(|at| at > now));
+            self.bytes = self
+                .entries
+                .iter()
+                .map(|(k, (v, _))| k.len() + v.len())
+                .sum();
+        }
+        if self.bytes + size > capacity {
+            self.entries.clear();
+            self.bytes = 0;
+        }
+        if size <= capacity {
+            self.bytes += size;
+            self.entries.insert(
+                key.to_string(),
+                (value, ttl.map(|ttl| Instant::now() + ttl)),
+            );
+        }
+    }
+}
+
+/// A cache: this process's memory, or a Redis several instances share.
+#[derive(Debug)]
+pub enum Cache {
+    /// One per instance: correct, only less shared.
+    Memory {
+        /// What it holds.
+        store: Mutex<Memory>,
+        /// How much it may hold.
+        capacity: usize,
+    },
+    /// Shared by every instance.
+    Redis {
+        /// How to reach it.
+        client: Box<redis::Client>,
+        /// The connection in use, made on first need and dropped when it fails, so a Redis that comes back is used again.
+        connection: tokio::sync::Mutex<Option<MultiplexedConnection>>,
+    },
+}
+
+impl Cache {
+    /// A cache in this process's memory holding at most `capacity` bytes.
+    #[must_use]
+    pub fn memory(capacity: usize) -> Self {
+        Self::Memory {
+            store: Mutex::new(Memory::default()),
+            capacity,
+        }
+    }
+
+    /// A cache in the Redis at `uri`. Nothing is connected yet, so a Redis that is down is a miss and not a failure to start.
+    ///
+    /// # Errors
+    /// The address cannot be read.
+    pub fn redis(uri: &str) -> Result<Self, String> {
+        Ok(Self::Redis {
+            client: Box::new(redis::Client::open(uri).map_err(|cause| cause.to_string())?),
+            connection: tokio::sync::Mutex::new(None),
+        })
+    }
+
+    /// The cache `REDIS_URL` asks for, else one in memory.
+    ///
+    /// # Errors
+    /// `REDIS_URL` cannot be read.
+    pub fn from_env() -> Result<Self, String> {
+        match crate::compat::env_var("REDIS_URL").filter(|uri| !uri.is_empty()) {
+            Some(uri) => Self::redis(&uri),
+            None => Ok(Self::memory(MEMORY_CAPACITY)),
+        }
+    }
+
+    async fn connection(
+        client: &redis::Client,
+        slot: &tokio::sync::Mutex<Option<MultiplexedConnection>>,
+    ) -> Result<MultiplexedConnection, String> {
+        let mut slot = slot.lock().await;
+        if let Some(connection) = slot.as_ref() {
+            return Ok(connection.clone());
+        }
+        let connection = client
+            .get_multiplexed_async_connection()
+            .await
+            .map_err(|cause| cause.to_string())?;
+        *slot = Some(connection.clone());
+        Ok(connection)
+    }
+
+    async fn get<T: DeserializeOwned>(&self, key: &str) -> Result<Option<T>, String> {
+        let text = match self {
+            Self::Memory { store, .. } => store.lock().map_err(|cause| cause.to_string())?.get(key),
+            Self::Redis { client, connection } => {
+                let mut live = Self::connection(client, connection).await?;
+                let answer: Result<Option<String>, _> =
+                    redis::cmd("GET").arg(key).query_async(&mut live).await;
+                match answer {
+                    Ok(text) => text,
+                    Err(cause) => {
+                        *connection.lock().await = None;
+                        return Err(cause.to_string());
+                    }
+                }
+            }
+        };
+        text.map(|text| serde_json::from_str(&text).map_err(|cause| cause.to_string()))
+            .transpose()
+    }
+
+    async fn put<T: Serialize + Sync + ?Sized>(
+        &self,
+        key: &str,
+        value: &T,
+        ttl: Option<Duration>,
+    ) -> Result<(), String> {
+        let text = serde_json::to_string(value).map_err(|cause| cause.to_string())?;
+        match self {
+            Self::Memory { store, capacity } => {
+                store
+                    .lock()
+                    .map_err(|cause| cause.to_string())?
+                    .put(key, text, ttl, *capacity);
+                Ok(())
+            }
+            Self::Redis { client, connection } => {
+                let mut live = Self::connection(client, connection).await?;
+                let mut command = redis::cmd("SET");
+                command.arg(key).arg(text);
+                if let Some(ttl) = ttl {
+                    command
+                        .arg("PX")
+                        .arg(u64::try_from(ttl.as_millis()).unwrap_or(u64::MAX));
+                }
+                let answer: Result<(), _> = command.query_async(&mut live).await;
+                if answer.is_err() {
+                    *connection.lock().await = None;
+                }
+                answer.map_err(|cause| cause.to_string())
+            }
+        }
+    }
+}
+
 static PROVIDER: OnceLock<Arc<Cache>> = OnceLock::new();
 
 /// Hand over the application's cache provider at boot. Until then, and in a process that never calls
@@ -91,7 +268,7 @@ fn generation_key(namespace: Namespace) -> String {
 
 async fn bounded<T>(
     what: &'static str,
-    future: impl std::future::Future<Output = Result<T, loco_rs::cache::CacheError>>,
+    future: impl std::future::Future<Output = Result<T, String>>,
 ) -> Option<T> {
     match tokio::time::timeout(TIMEOUT, future).await {
         Ok(Ok(value)) => Some(value),
@@ -132,10 +309,10 @@ pub async fn put_in(cache: &Cache, namespace: Namespace, key: &str, value: &str)
     let generation = generation(cache, namespace).await;
     let _ = bounded(
         "put",
-        cache.insert_with_expiry(
+        cache.put(
             &make_key(namespace, generation, key),
             value,
-            namespace.ttl(),
+            Some(namespace.ttl()),
         ),
     )
     .await;
@@ -147,7 +324,7 @@ pub async fn invalidate_in(cache: &Cache, namespace: Namespace) {
     let next = generation(cache, namespace).await + 1;
     let _ = bounded(
         "invalidate",
-        cache.insert(&generation_key(namespace), &next),
+        cache.put(&generation_key(namespace), &next, None),
     )
     .await;
 }
@@ -213,6 +390,30 @@ mod tests {
         for n in Namespace::ALL {
             assert!(n.ttl() >= Duration::from_mins(1) && n.ttl() <= Duration::from_hours(24));
         }
+    }
+
+    #[tokio::test]
+    async fn memory_answers_expires_and_stays_under_its_capacity() {
+        let cache = Cache::memory(64);
+        cache.put("a", "one", None).await.unwrap();
+        assert_eq!(
+            cache.get::<String>("a").await.unwrap().as_deref(),
+            Some("one")
+        );
+        cache.put("b", "two", Some(Duration::ZERO)).await.unwrap();
+        assert_eq!(cache.get::<String>("b").await.unwrap(), None, "expired");
+        cache.put("big", &"x".repeat(100), None).await.unwrap();
+        assert_eq!(
+            cache.get::<String>("big").await.unwrap(),
+            None,
+            "over capacity"
+        );
+        cache.put("c", &"y".repeat(40), None).await.unwrap();
+        cache.put("d", &"z".repeat(40), None).await.unwrap();
+        let Cache::Memory { store, .. } = &cache else {
+            panic!("memory")
+        };
+        assert!(store.lock().unwrap().bytes <= 64);
     }
 
     #[tokio::test]

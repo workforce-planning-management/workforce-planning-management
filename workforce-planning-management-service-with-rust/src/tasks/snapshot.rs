@@ -1,4 +1,4 @@
-//! `cargo loco task snapshot_headcount [as_of:YYYY-MM-DD]` — record one
+//! `cargo run -- task snapshot_headcount [as_of:YYYY-MM-DD]` — record one
 //! aggregate headcount snapshot per organization × department.
 //!
 //! Run it on a schedule (daily or weekly): the history it accrues is what
@@ -6,8 +6,8 @@
 //! Idempotent — a (organization, department, date) already recorded is
 //! left alone, so a re-run changes nothing.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, DatabaseConnection, QueryOrder, QuerySelect, TransactionTrait};
 use uuid::Uuid;
 

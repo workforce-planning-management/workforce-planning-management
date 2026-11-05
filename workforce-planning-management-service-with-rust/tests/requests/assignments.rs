@@ -8,7 +8,7 @@ use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
 
-async fn scalar(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
+async fn scalar(ctx: &axa::AppContext, sql: String) -> i64 {
     ctx.db
         .query_one_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
@@ -23,7 +23,7 @@ async fn scalar(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_another() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -138,7 +138,7 @@ async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_anot
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_job_role_and_a_staff_group_must_agree_where_the_vocabulary_says_so() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -211,7 +211,7 @@ async fn a_job_role_and_a_staff_group_must_agree_where_the_vocabulary_says_so() 
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_breakdown_by_category_shows_nothing_under_the_floor_and_gives_no_total() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -255,7 +255,7 @@ async fn the_breakdown_by_category_shows_nothing_under_the_floor_and_gives_no_to
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_assignment_names_a_cost_centre_that_is_open_and_unmatched_position_values_are_listed() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -323,7 +323,7 @@ async fn an_assignment_names_a_cost_centre_that_is_open_and_unmatched_position_v
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_absence_categories_are_listed_by_pay_and_a_government_holiday_has_no_balance() {
     crate::requests::request_open(|request, _ctx| async move {
         let all: Value = request.get("/api/absence-categories").await.json();
@@ -408,7 +408,7 @@ async fn the_absence_categories_are_listed_by_pay_and_a_government_holiday_has_n
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_hand_added_days() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -476,7 +476,7 @@ async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_h
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
     use chrono::Duration as D;
     use workforce_planning_management::models::link_tokens::{consume, issue, purge_expired};
@@ -539,7 +539,7 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -594,7 +594,7 @@ async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_hire_and_termination_events_carry_the_person_ref_and_the_overlap_check_says_only_yes_or_no()
  {
     use workforce_planning_management::rules::bridge::HANDOFF_KEYS;

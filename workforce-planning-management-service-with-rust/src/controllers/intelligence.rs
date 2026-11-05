@@ -27,7 +27,7 @@
 //! (`is_employed_on`, starters, leavers) written once in SQL and a request test that pins the answers.
 
 use super::ratio_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, DatabaseBackend, EntityTrait, PaginatorTrait,
@@ -585,7 +585,7 @@ struct HistoryQuery {
 /// `GET /api/workforce-intelligence/headcount-history?organization=&from=&to=`
 /// — the recorded headcount snapshots (WPM-R35), oldest first. Aggregate
 /// only; scoped to the caller's organizations. An empty list means no
-/// snapshot has been taken yet (`cargo loco task snapshot_headcount`),
+/// snapshot has been taken yet (`cargo run -- task snapshot_headcount`),
 /// not that headcount was zero.
 #[debug_handler]
 async fn headcount_history(

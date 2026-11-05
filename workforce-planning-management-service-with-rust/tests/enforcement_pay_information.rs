@@ -4,10 +4,10 @@
 //! and reads only their own requests with a computed due date and one waiting at a time; that the answer is worked out
 //! only for a caller who may read salaries and recorded only by one who may write; and that the answer names no one else.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -74,7 +74,7 @@ const CATEGORIES: &str = r#"{"sex":["female","male"]}"#;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_pay_information -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_pay_information -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answer_it_can() {
     use sea_orm::ConnectionTrait;

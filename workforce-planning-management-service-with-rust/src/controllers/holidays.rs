@@ -2,8 +2,8 @@
 //! plus any day added by hand for what the rules cannot know. The shipped rule packs are **unverified examples** (see
 //! `rules::holiday`); the listing says so. Reading is open to a signed-in caller in scope; generating and adding are HR's.
 
+use axa::prelude::*;
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

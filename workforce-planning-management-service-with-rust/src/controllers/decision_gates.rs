@@ -3,7 +3,7 @@
 //! gate and asks for the consultation reference. It **advises and never blocks**: the law and the agreements decide, not this tool.
 //! HR writes; the pointer is shown to whoever makes the change. Spec: `spec/worker-unions.md`.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

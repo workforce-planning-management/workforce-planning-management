@@ -6,7 +6,7 @@
 //! competency-gap analysis measures declared proficiency against.
 
 use super::ratio_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

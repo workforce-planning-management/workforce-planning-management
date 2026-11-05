@@ -5,7 +5,7 @@ use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
-async fn rpc(request: &loco_rs::TestServer, body: Value) -> (u16, Value) {
+async fn rpc(request: &axa::TestServer, body: Value) -> (u16, Value) {
     let response = request.post("/mcp").json(&body).await;
     let status = response.status_code().as_u16();
     let text = response.text();
@@ -14,7 +14,7 @@ async fn rpc(request: &loco_rs::TestServer, body: Value) -> (u16, Value) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn tools_are_the_api_reads_and_a_call_that_cannot_be_audited_is_not_made() {
     crate::requests::request_open(|request, ctx| async move {

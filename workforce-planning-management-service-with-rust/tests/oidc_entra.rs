@@ -17,13 +17,14 @@
 //!
 //! Its own test binary: the auth `OnceLock`s are process-wide. Built only with
 //! `--no-default-features --features keycloak`; `#[ignore]`d because it needs PostgreSQL
-//! (`config/test.yaml`). It needs no container runtime.
+//! (`DATABASE_URL`). It needs no container runtime.
 //!
 //! `cargo test --no-default-features --features keycloak --test oidc_entra -- --ignored`
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use axa::testing::prelude::*;
 use axum::extract::{Form, Path, Query, State};
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Redirect};
@@ -32,7 +33,6 @@ use axum::{Json, Router};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
-use loco_rs::testing::prelude::*;
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -301,7 +301,7 @@ fn url_pairs(query: &str) -> HashMap<String, String> {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --no-default-features --features keycloak --test oidc_entra -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --no-default-features --features keycloak --test oidc_entra -- --ignored`"]
 async fn entra_sign_in_gates_and_authorises() {
     let provider = start_provider().await;
 

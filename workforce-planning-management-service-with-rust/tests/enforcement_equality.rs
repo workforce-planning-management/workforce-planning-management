@@ -5,10 +5,10 @@
 //! that once on only the worker can read their own answers, that the only output is an aggregate
 //! with small groups withheld, and that no audit entry carries a value.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -76,7 +76,7 @@ const CATEGORIES: &str =
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_equality -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_equality -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_reads_their_answers()
 {

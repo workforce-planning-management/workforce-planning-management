@@ -27,7 +27,7 @@ roles_sql() { in_db "$1" -v migrator_password="$MIGRATOR_PW" -v runtime_password
 echo "== template: roles, migrations as wpm_migrator, grants"
 admin -c "DROP DATABASE IF EXISTS $TEMPLATE WITH (FORCE)" -c "DROP DATABASE IF EXISTS $RUN_DB WITH (FORCE)" -c "CREATE DATABASE $TEMPLATE"
 roles_sql "$TEMPLATE"
-(cd "$SERVICE" && LOCO_ENV=test WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
+(cd "$SERVICE" && APP_ENV=test WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
   DATABASE_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$TEMPLATE" cargo run -q -- db migrate >/dev/null 2>&1)
 roles_sql "$TEMPLATE"
 echo "   $(in_db "$TEMPLATE" -c 'select count(*) from seaql_migrations') migrations applied"
@@ -63,7 +63,7 @@ for t in $TESTS; do
   # A few tests install a trigger that refuses audit rows (WPM-D107). That is DDL, which wpm_app must not run, so the test sends it through
   # WPM_TEST_DDL_URL, the schema owner's connection to this same clone; the service under test still runs as wpm_app. WPM_TEST_REDIS_URL, if
   # you set it, passes through on its own; it is not set to an empty string here, which the Redis test would take as a (broken) URL.
-  out="$(LOCO_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
+  out="$(APP_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
     WPM_TEST_DDL_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$RUN_DB" \
     DATABASE_URL="postgres://wpm_app:$APP_PW@$HOSTPORT/$RUN_DB" \
     cargo test --test mod -q -- --ignored --exact "$t" --test-threads=1 2>&1)" && rc=0 || rc=$?

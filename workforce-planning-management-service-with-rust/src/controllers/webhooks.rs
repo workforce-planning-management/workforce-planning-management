@@ -5,7 +5,7 @@
 //! attempts, never a body. Deliveries are queued in the transaction of the change that caused them (`streaming::emit_on`) and
 //! sent by the `webhook_deliver` task. Spec: `spec/integrations.md`.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

@@ -2,7 +2,7 @@
 //! fixed-term and contractor share, and the engagements and funding that end. Pure rules in
 //! [`crate::rules::programmes`]. Aggregate only; HR only and audited.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use serde_json::json;
 
 use crate::auth::MaybeAuthUser;

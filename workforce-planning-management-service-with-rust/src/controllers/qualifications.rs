@@ -3,8 +3,8 @@
 //! list shows how each requirement of their current role stands: met only by a verified match in date. No role recorded reads
 //! `role: null`, never an empty gap. The arithmetic is `rules::qualification`. Spec: `spec/staff-records-and-pay.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};

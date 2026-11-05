@@ -6,10 +6,10 @@
 //! lets write. Reading the readiness is open to anyone in the organization's scope and to nobody outside it,
 //! and a caller who holds only the `partner` role reads nothing here.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -80,7 +80,7 @@ fn policy_with_deciders() -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_cutover -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_cutover -- --ignored`"]
 async fn only_an_administrator_plans_a_cutover_and_only_the_organization_reads_it() {
     use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();

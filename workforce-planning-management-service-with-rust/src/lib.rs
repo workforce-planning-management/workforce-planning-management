@@ -1,4 +1,4 @@
-//! `workforce-planning-management` — a loco.rs consumer application
+//! `workforce-planning-management` — a service on Axum and `axa`
 //! for **workforce planning management** across the worker lifecycle:
 //! requisitions and the applicant-tracking pipeline, onboarding
 //! checklists, worker records with the derived org chart, time &
@@ -14,7 +14,7 @@
 //!
 //! ## Modules
 //!
-//! - [`app`] — loco `Hooks` wiring (routes, truncate, seed).
+//! - [`app`] — the wiring: configuration, the command line, routes, truncate.
 //! - [`controllers`] — Axum controllers, one per pillar.
 //! - [`rules`] — the **pure core**: lifecycle machines, leave / time
 //!   arithmetic, org-chart cycle check, payslip arithmetic, benchmark
@@ -47,6 +47,7 @@ pub mod need_to_know;
 pub mod openapi;
 pub mod request_log;
 pub mod rules;
+pub mod scheduler;
 pub mod security;
 pub mod shared_cache;
 pub mod statutory_defaults;

@@ -14,7 +14,7 @@
 use std::str::FromStr;
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;

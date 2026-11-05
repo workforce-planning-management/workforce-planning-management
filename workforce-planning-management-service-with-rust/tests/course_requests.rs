@@ -1,10 +1,10 @@
 //! Starting a course (WPM-R236, WPM-D182) on PostgreSQL under the reference policy: a recorded zero enrols at once, a fee or an unknown
 //! fee goes to a manager above the person, and only that manager decides.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -91,7 +91,7 @@ async fn worker(
 }
 
 async fn course(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     skill: &str,
     tag: &str,
@@ -115,7 +115,7 @@ async fn course(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test course_requests -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test course_requests -- --ignored`"]
 async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
     let (keys, kid) = keys_and_kid();
     let (boss, me, other) = (

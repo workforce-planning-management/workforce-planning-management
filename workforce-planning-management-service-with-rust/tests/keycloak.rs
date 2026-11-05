@@ -12,7 +12,7 @@
 //! `OnceLock`s are process-wide and must be set before the app boots.
 //! Built only with `--no-default-features --features keycloak`.
 //!
-//! `#[ignore]`d: needs PostgreSQL (`config/test.yaml`) **and** a container
+//! `#[ignore]`d: needs PostgreSQL (`DATABASE_URL`) **and** a container
 //! runtime. This workspace uses Podman, not Docker — point Testcontainers
 //! at the Podman socket and skip Ryuk (rootless Podman cannot run it):
 //!
@@ -31,7 +31,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use workforce_planning_management::app::App;
 
-use loco_rs::testing::prelude::*;
+use axa::testing::prelude::*;
 
 /// Fully qualified (Podman refuses short names).
 const KEYCLOAK_IMAGE: &str = "quay.io/keycloak/keycloak";
@@ -88,7 +88,7 @@ async fn token_for(issuer: &str, username: &str) -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml) and a container runtime (Podman)"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`) and a container runtime (Podman)"]
 async fn keycloak_tokens_gate_and_authorise() {
     let (_keycloak, issuer) = start_keycloak().await;
     let hr = token_for(&issuer, "hr-user").await;

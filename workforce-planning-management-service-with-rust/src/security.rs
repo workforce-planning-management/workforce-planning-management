@@ -17,13 +17,13 @@
 //! proxy that *overwrites* that header must do (otherwise every caller shares
 //! the proxy's address, and one bucket).
 
+use axa::prelude::*;
 use axum::{
     extract::{ConnectInfo, Request},
     http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use loco_rs::prelude::*;
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},

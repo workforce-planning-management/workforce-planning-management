@@ -8,7 +8,7 @@ use serial_test::serial;
 
 use super::{activate, an_org};
 
-async fn scalar(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
+async fn scalar(ctx: &axa::AppContext, sql: String) -> i64 {
     use sea_orm::Statement;
     ctx.db
         .query_one_raw(Statement::from_string(
@@ -27,7 +27,7 @@ fn a_programme() -> String {
 }
 
 async fn make_pool(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     name: &str,
     reservation_bp: i32,
@@ -45,7 +45,7 @@ async fn make_pool(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Pools, members, demand and commitments refuse what is malformed, refuse URNs of the wrong
 // kind, and soft-delete.
 async fn capacity_records_validate_and_soft_delete() {
@@ -291,7 +291,7 @@ async fn capacity_records_validate_and_soft_delete() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // One pool over-committed in February, one month (March) with a silent partner, a start
 // check that fails and finds the earliest fit, the work-in-progress limit, and decisions.
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
@@ -589,7 +589,7 @@ async fn capacity_view_start_check_and_decisions() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The governance load register (WPM-R64, WPM-D45): commitments of a role, never a person; the senior
 // hours a month; refusals; the register is scoped to its organization.
 async fn governance_load_totals_senior_hours_and_refuses_the_malformed() {
@@ -663,7 +663,7 @@ async fn governance_load_totals_senior_hours_and_refuses_the_malformed() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Key-person risk (WPM-R61, WPM-D47): holders, qualified backups, ready successors; the aggregate names
 // no one; the named read gives the sole holder of a single point of failure.
 async fn key_person_risk_counts_holders_backups_and_successors() {
@@ -771,7 +771,7 @@ async fn key_person_risk_counts_holders_backups_and_successors() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Oversight (WPM-R65, WPM-R66, WPM-D48, WPM-D49): the organization's own scale, a recorded position, an exit
 // criterion with a reported measure, and a sustain rule that is met only by consecutive months of evidence.
 async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
@@ -865,7 +865,7 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Derived oversight measures (WPM-R67, WPM-T114): the service computes the reading itself, shows the
 // months it used, and a month the data cannot speak for is a null that is never a pass.
 async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a_pass() {
@@ -998,7 +998,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Early warning (WPM-R68, WPM-T115): a pool over-committed and a measure in breach each open one
 // warning, dated by the first sweep that saw it, tell the HR administrators without a figure, stay one
 // warning however often they are swept, close when they stop, and the time to report is the longest
@@ -1093,7 +1093,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The monthly pack (WPM-R69, WPM-T116) freezes the position, criteria, measures and capacity view as of
 // a date: a later change to the live data does not change a stored pack, a second pack shows the
 // change, and the payload holds no worker.
@@ -1129,7 +1129,7 @@ async fn a_monthly_pack_is_frozen_and_a_later_change_shows_only_in_a_later_pack(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The scheduled freeze writes one pack for the month for each organization with a position, and a
 // second run for the same month writes none.
 async fn the_scheduled_freeze_is_idempotent_for_a_month() {
@@ -1158,7 +1158,7 @@ async fn the_scheduled_freeze_is_idempotent_for_a_month() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Cutover readiness (WPM-R70, WPM-T117): trained staff per role at the site, hypercare cover and
 // key-person risk, each ready, at risk or unknown with reasons; an unknown is never ready, and the
 // answer names no one.
@@ -1392,7 +1392,7 @@ fn walked_weighted_days(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Supply by role and by skill: overlapping and month-spanning leave, a part-month start and end, a
 // pending and a withdrawn leave, a worker who qualifies twice — equal to walking the days.
 async fn capacity_supply_equals_walking_the_days() {
@@ -1496,7 +1496,7 @@ async fn capacity_supply_equals_walking_the_days() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_what_if_says_what_a_change_does_stores_nothing_and_names_no_one() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

@@ -6,10 +6,10 @@
 //! (the reference policy lets only HR write). The service then decides *which* requests such a caller
 //! may decide: their own reports', never their own, and an appeal never by who refused.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -85,7 +85,7 @@ fn policy_with_deciders() -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_flexible -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_flexible -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
     use sea_orm::ConnectionTrait;

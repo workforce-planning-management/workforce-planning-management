@@ -8,7 +8,7 @@
 //! affected role, and no individual is named or ranked.
 
 use super::ratio_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};

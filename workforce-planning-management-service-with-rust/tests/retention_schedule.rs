@@ -6,17 +6,17 @@
 //! `recruitment` keeps its default of 180, so the same age is swept for one
 //! kind and kept for the other.
 //!
-//! `#[ignore]`d: boots the app (needs PostgreSQL via `config/test.yaml` /
+//! `#[ignore]`d: boots the app (needs PostgreSQL via
 //! `DATABASE_URL`). Run with `cargo test --test retention_schedule -- --ignored`.
 
-use loco_rs::testing::prelude::*;
+use axa::testing::prelude::*;
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::app::App;
 
 /// How many rows of `table` still exist (soft-deleted or not).
-async fn count(ctx: &loco_rs::app::AppContext, table: &str) -> i64 {
+async fn count(ctx: &axa::AppContext, table: &str) -> i64 {
     ctx.db
         .query_one_raw(sea_orm::Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
@@ -30,7 +30,7 @@ async fn count(ctx: &loco_rs::app::AppContext, table: &str) -> i64 {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test retention_schedule -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test retention_schedule -- --ignored`"]
 async fn each_kind_is_swept_at_its_own_horizon() {
     // `set_var` is `unsafe` in edition 2024; single-threaded setup before boot.
     unsafe {

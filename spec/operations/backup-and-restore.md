@@ -5,7 +5,7 @@
 
 ## The audit chain across a backup (WPM-R115)
 
-Record the audit trail's head hash with each backup (`cargo loco task verify_audit_chain` prints it) and keep
+Record the audit trail's head hash with each backup (`cargo run -- task verify_audit_chain` prints it) and keep
 it with your records, not in the database. After a restore, run the task again: the chain must be intact and
 the head must match the one you recorded for that backup. The restore drill does this on every run.
 

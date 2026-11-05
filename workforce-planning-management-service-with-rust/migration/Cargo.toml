@@ -14,7 +14,7 @@ name = "migration"
 path = "src/lib.rs"
 
 [dependencies]
-loco-rs = { workspace = true }
+axa = { workspace = true }
 
 
 [dependencies.sea-orm-migration]

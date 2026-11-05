@@ -5,10 +5,10 @@
 //! occupational-health role records a status; the worker sees their own; a manager and HR see only
 //! **cleared** or **not cleared**, never the status; no reason is held; and nothing else reads it.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -73,7 +73,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_health -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_health -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_manager_sees_cleared_or_not_and_never_the_status() {
     use sea_orm::ConnectionTrait;

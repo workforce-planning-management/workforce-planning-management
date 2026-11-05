@@ -7,7 +7,7 @@
 use std::io;
 use std::sync::{Arc, Mutex};
 
-use loco_rs::testing::prelude::*;
+use axa::testing::prelude::*;
 use serial_test::serial;
 use tracing_subscriber::fmt::MakeWriter;
 use workforce_planning_management::app::App;
@@ -34,7 +34,7 @@ impl<'a> MakeWriter<'a> for Captured {
 
 #[tokio::test(flavor = "multi_thread")]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test request_log -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test request_log -- --ignored`"]
 async fn a_request_leaves_an_id_and_a_route_and_nothing_personal() {
     // `set_var` is `unsafe` in edition 2024; set before the app boots and reads it.
     unsafe {

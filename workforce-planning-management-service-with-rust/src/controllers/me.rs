@@ -14,9 +14,9 @@
 //! HR and payroll read a worker's contact details at `GET /api/workers/{pid}/contact-details`
 //! (the worker and privileged callers only, by the need-to-know guard); that read is audited.
 
+use axa::error::ErrorDetail;
+use axa::prelude::*;
 use chrono::{Datelike, Utc};
-use loco_rs::controller::ErrorDetail;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

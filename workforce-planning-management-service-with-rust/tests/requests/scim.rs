@@ -94,7 +94,7 @@ async fn serve(stub: Shared) -> String {
 }
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     number: &str,
     manager: Option<&str>,
@@ -119,7 +119,7 @@ fn today() -> NaiveDate {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the_provider_fails() {
     crate::requests::request_open(|request, ctx| async move {

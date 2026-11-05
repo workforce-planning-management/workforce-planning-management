@@ -9,8 +9,8 @@ use super::{a_person, an_org};
 
 /// Hire `n` workers in `department`, all on band 6 and paid `salary` minor units (a currency of GBP).
 async fn staff(
-    request: &loco_rs::TestServer,
-    ctx: &loco_rs::app::AppContext,
+    request: &axa::TestServer,
+    ctx: &axa::AppContext,
     org: &str,
     department: &str,
     n: usize,
@@ -64,7 +64,7 @@ fn group<'a>(body: &'a Value, by: &str, key: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn pay_is_placed_in_its_band_with_small_groups_withheld_and_a_total_that_gives_none_away() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

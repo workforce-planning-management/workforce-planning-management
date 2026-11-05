@@ -7,10 +7,10 @@
 //! write rule (a what-if is a POST) plus the organization's scope; a caller who is only a partner
 //! reads the frozen packs and nothing else.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -121,7 +121,7 @@ fn assert_counts_only(value: &Value, at: &str) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_what_if -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_what_if -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
     use sea_orm::ConnectionTrait;

@@ -27,7 +27,7 @@
 //! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

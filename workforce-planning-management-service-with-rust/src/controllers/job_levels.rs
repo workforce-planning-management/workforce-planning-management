@@ -5,7 +5,7 @@
 //! responsibility, WPM-R110) is read from the database. Both need a signed-in
 //! caller: the imported wording does not leave the organization (WPM-R113).
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{DatabaseConnection, QueryOrder};
 use serde_json::json;
 

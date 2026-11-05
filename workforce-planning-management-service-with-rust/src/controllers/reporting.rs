@@ -7,7 +7,7 @@
 //! Scoped to the caller's organizations like the org chart: a worker outside
 //! the caller's scope is `404`, and people outside it never appear.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;

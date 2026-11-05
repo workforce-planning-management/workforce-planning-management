@@ -5,7 +5,7 @@
 //! worker's record-level ABAC pass (WPM-R15).
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

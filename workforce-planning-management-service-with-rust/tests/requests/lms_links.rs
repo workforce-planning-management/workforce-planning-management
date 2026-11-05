@@ -27,7 +27,7 @@ impl Drop for Template {
 }
 
 /// The link on the worker's first CPD entry and on their first training enrolment.
-async fn links(request: &loco_rs::TestServer, worker: &str) -> (Value, Value) {
+async fn links(request: &axa::TestServer, worker: &str) -> (Value, Value) {
     let entries: Value = request
         .get(&format!("/api/workers/{worker}/cpd-entries"))
         .await
@@ -44,7 +44,7 @@ async fn links(request: &loco_rs::TestServer, worker: &str) -> (Value, Value) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_completion_links_to_its_course_only_through_a_valid_template() {
     crate::requests::request_open(|request, _ctx| async move {
         let person = a_person();

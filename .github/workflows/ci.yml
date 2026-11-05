@@ -513,7 +513,7 @@ jobs:
       - name: start the service with its defaults (sign-in enforced)
         working-directory: workforce-planning-management-service-with-rust
         env:
-          LOCO_ENV: demo
+          APP_ENV: demo
           DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_demo
         run: |
           cargo build --locked --release --bin workforce-planning-management

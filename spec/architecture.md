@@ -7,7 +7,7 @@
  workforce-planning-management-ui-with-svelte  (SvelteKit BFF)
         │  Authorization: Bearer v4.public.…
         ▼
- workforce-planning-management-service-with-rust  (Loco: Axum + SeaORM + PostgreSQL)
+ workforce-planning-management-service-with-rust  (Axum + axa + SeaORM + PostgreSQL)
         │  EntityRef lookups (read-only, cached, stub-able)
         ▼
  person / worker / organization / course / authentication services
@@ -15,11 +15,11 @@
 
 ## Service edition
 
-Loco-idiomatic layout (the patient-flow shape — the closest sibling):
+The layout (the patient-flow shape — the closest sibling):
 
 ```
 src/
-├── app.rs                loco Hooks
+├── app.rs                configuration, command line, routes
 ├── controllers/          ~40 modules, one per area: hiring (acquisition),
 │                         hr_core, workforce, payroll, learning,
 │                         development, talent, assessments, appraisals,
@@ -47,7 +47,7 @@ src/
 ├── streaming.rs          envelope + memory/outbox transports
 ├── validation.rs         caps + tokens + URN shapes → 422
 └── openapi.rs            OpenAPI 3 doc
-├── tasks/                loco tasks: seed, snapshot_headcount,
+├── tasks/                tasks: seed, snapshot_headcount,
 │                         rota_reminders, pay_progression_reminders,
 │                         import_framework, import_esco
 migration/                sea-orm-migration (crate root, 49 sets)
@@ -58,9 +58,9 @@ config/abac-policy.reference.json   the shipped, matrix-verified
 Key decisions (numbered in [design.md](design.md)): normalized
 relational schema (constraints and lifecycles, not DTO-as-JSONB);
 every state machine and money calculation in the DB-free pure core;
-minor-unit money; ETag-conditional dashboards; family fixtures
+minor-unit money; family fixtures
 (`#![forbid(unsafe_code)]`, clippy-pedantic, OTLP, `Accepts-version`,
-Podman). **All-plural table names** (the loco `create_table`
+Podman). **All-plural table names** (the older `create_table`
 pluralization gotcha is documented family knowledge).
 
 ## Front-end edition

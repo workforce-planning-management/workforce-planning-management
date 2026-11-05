@@ -2,8 +2,8 @@
 //! confidence and the basis it rests on. Reference data: any signed-in caller reads; HR writes. Gap analysis reads them
 //! (`controllers::skill_gaps`). Spec: `spec/skills-and-training.md`.
 
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

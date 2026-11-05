@@ -9,7 +9,7 @@
 # read and write everything, with synthetic data only. The service logs a
 # warning every ten minutes while this is so, and the `production` environment
 # refuses to start this way. For anything else, set WPM_PASETO_KEYS_URL (or
-# WPM_KEYCLOAK_JWKS_URL), remove the override and use LOCO_ENV=production
+# WPM_KEYCLOAK_JWKS_URL), remove the override and use APP_ENV=production
 # (see spec/auth.md).
 #
 # This file runs the API only; the SvelteKit UI is not containerized yet
@@ -71,12 +71,10 @@ services:
       stalwart:
         condition: service_healthy
     environment:
-      LOCO_ENV: demo
+      APP_ENV: demo
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_demo
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173
-      SMTP_HOST: stalwart
-      SMTP_PORT: "25"
     ports:
       - "127.0.0.1:5150:5150"

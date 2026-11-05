@@ -1,10 +1,10 @@
 //! The PADR record under enforcement (WPM-R172, WPM-R225, WPM-R232, WPM-D176), against the shipped reference policy: who opens,
 //! reads and signs, the objectives as goals and their frozen snapshot, a correction, the due date, the roll-up and what is told.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -98,7 +98,7 @@ fn set_env(keys: &Value) {
     }
 }
 
-async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
+async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
     ctx.db
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -109,7 +109,7 @@ async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
         .unwrap();
 }
 
-async fn count(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
+async fn count(ctx: &axa::AppContext, sql: String) -> i64 {
     let row = ctx
         .db
         .query_one_raw(sea_orm::Statement::from_string(
@@ -124,7 +124,7 @@ async fn count(ctx: &loco_rs::app::AppContext, sql: String) -> i64 {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test padr -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test padr -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_padr_is_opened_written_signed_and_corrected() {
     let (keys, kid) = keys_and_kid();
@@ -460,7 +460,7 @@ async fn a_padr_is_opened_written_signed_and_corrected() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test padr -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test padr -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_waiting_goal_tells_the_other_party_and_a_change_goes_back_to_them() {
     let (keys, kid) = keys_and_kid();

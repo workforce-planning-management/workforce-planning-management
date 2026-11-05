@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_audit_trail_cannot_be_changed_and_a_tamper_is_found() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -88,7 +88,7 @@ async fn the_audit_trail_cannot_be_changed_and_a_tamper_is_found() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -145,7 +145,7 @@ async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Entries written at the same moment by different transactions still form one gapless chain.
 async fn concurrent_writers_make_one_chain() {
     use sea_orm::TransactionTrait;
@@ -213,7 +213,7 @@ async fn concurrent_writers_make_one_chain() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_change_whose_audit_row_fails_is_not_kept() {
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();

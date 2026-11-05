@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, activate, an_org};
 
 async fn create(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     number: &str,
     basis: &str,
@@ -33,7 +33,7 @@ async fn create(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Permanent refuses an end date, fixed-term and contractor need one, an intern may have one;
 // an end must be after the start; a recorded end moves only by extension; the same rules
 // apply on hire.
@@ -232,7 +232,7 @@ async fn the_end_date_follows_the_basis() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // A worker already in the table without an end date (a row from before the column) is listed
 // as missing and never given an invented date; recording one removes it from the list.
 async fn existing_engagements_without_an_end_date_are_listed_not_invented() {
@@ -294,7 +294,7 @@ async fn existing_engagements_without_an_end_date_are_listed_not_invented() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // A contractor's supplier, route and rate; an assessment; the audit carries no rate; the
 // subject-access export includes them and erasure removes them.
 async fn contractor_details_and_assessments() {
@@ -495,7 +495,7 @@ async fn contractor_details_and_assessments() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 // The daily task tells the manager and HR once about each end date, including an engagement
 // already past its end with no decision; it names no rate; a decision settles the end date it was
@@ -606,7 +606,7 @@ async fn end_of_engagement_reminders_and_decisions() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 // A conversion plan (WPM-R98): its refusals, its flags, the reminder that names its status and
 // review date but never its reason, the one-open-plan rule, the export and the erasure.
@@ -718,7 +718,7 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Post funding (WPM-R62, WPM-R98): kind and date only, compared with the contract end, an unknown
 // never a match, in the export, erased with the worker.
 async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
@@ -775,7 +775,7 @@ async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Contingent share and funding horizon (WPM-R62): shares apart, months, small months withheld.
 async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small_groups() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -837,7 +837,7 @@ async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The contingent trend (WPM-R62, WPM-T139): snapshots carry the split by basis; too little history says so.
 async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
     use workforce_planning_management::tasks::snapshot::run_snapshot;
@@ -883,7 +883,7 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The programme roll-up (WPM-R83): a programme at the floor shows by month; a smaller one is left out and counted.
 async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_small_one() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -925,7 +925,7 @@ async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_sm
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // A requisition carries programme, basis and duration (WPM-R82); the hire carries the basis and the end date.
 async fn a_requisition_carries_its_basis_and_programme_onto_the_hire() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -983,7 +983,7 @@ async fn a_requisition_carries_its_basis_and_programme_onto_the_hire() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Demand lines carry programme, FTE and basis (WPM-R82); the forecast reports them and projects each basis on its own terms.
 async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -1082,7 +1082,7 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_contractors_supplier_has_a_contact_that_is_a_person_ref_and_nothing_more() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

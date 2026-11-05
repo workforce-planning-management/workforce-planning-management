@@ -1,13 +1,13 @@
-//! `cargo loco task oversight_pack_freeze [as_of:YYYY-MM-DD]` — freeze the monthly oversight pack
+//! `cargo run -- task oversight_pack_freeze [as_of:YYYY-MM-DD]` — freeze the monthly oversight pack
 //! for each organization that has a recorded position (WPM-R69). Run it on the first days of the
 //! month. **Idempotent:** an organization that already has a pack for the month being frozen is
 //! skipped, so a re-run, or two overlapping schedules, never write a second one.
 
 use std::collections::BTreeSet;
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::{Datelike, NaiveDate};
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 
 use crate::controllers::oversight_packs::freeze;
 use crate::models::_entities::{oversight_packs, oversight_positions};

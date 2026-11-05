@@ -16,7 +16,7 @@ this edition.
 ## Stack
 
 Per [architecture](../../spec/architecture.md) and the family
-rust-loco-stack:
+rust-axum-stack:
 Rust 2024, Loco (Axum + SeaORM), PostgreSQL 18, crate-root
 `migration/`, loco-idiomatic `src/controllers/` layout, pure
 `src/rules/` core, stub-first upstream clients, offline PASETO +

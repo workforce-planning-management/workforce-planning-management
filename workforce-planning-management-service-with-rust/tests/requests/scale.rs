@@ -5,7 +5,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &loco_rs::TestServer, org: &str, number: &str) {
+async fn hire(request: &axa::TestServer, org: &str, number: &str) {
     request
         .post("/api/workers")
         .json(&json!({
@@ -37,7 +37,7 @@ impl Drop for Ceiling {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_plan_views_refuse_over_the_ceiling_and_the_paged_views_have_none() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

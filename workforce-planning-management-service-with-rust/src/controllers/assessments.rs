@@ -23,7 +23,7 @@
 //! payload names its derivation.
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use std::collections::BTreeMap;

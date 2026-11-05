@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_review_moves_through_its_lifecycle_and_shows_content_only_once_shared() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -101,7 +101,7 @@ async fn a_review_moves_through_its_lifecycle_and_shows_content_only_once_shared
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn succession_plans_are_restated_and_critical_ones_without_a_ready_now_candidate_are_gaps() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -153,7 +153,7 @@ async fn succession_plans_are_restated_and_critical_ones_without_a_ready_now_can
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiring_training_lists_certificates_that_lapse_inside_the_horizon() {
     crate::requests::request_open(|request, ctx| async move {
         use sea_orm::ConnectionTrait;

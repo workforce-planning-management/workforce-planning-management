@@ -1,4 +1,4 @@
-//! `cargo loco task verify_audit_chain` — check the audit trail's hash chain (WPM-R115).
+//! `cargo run -- task verify_audit_chain` — check the audit trail's hash chain (WPM-R115).
 //!
 //! Prints one JSON line: whether the chain holds, how many entries there are, the head hash and
 //! the first entry that does not match. **Record the head hash somewhere the database cannot
@@ -6,8 +6,8 @@
 //! not changed or removed from the middle, and only an outside record proves none were cut from
 //! the end. Exits with an error when the chain is broken, so a schedule can alert on it.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 
 use crate::models::audit_logs::Model as Audit;
 

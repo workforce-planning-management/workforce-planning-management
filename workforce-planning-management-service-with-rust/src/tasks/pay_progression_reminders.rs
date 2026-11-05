@@ -1,4 +1,4 @@
-//! `cargo loco task pay_progression_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
+//! `cargo run -- task pay_progression_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
 //! — tell each person who becomes eligible for their next pay step within
 //! `days_ahead` calendar days of `as_of` (default 30 calendar days from today).
 //!
@@ -8,9 +8,9 @@
 //! nothing else — no band, step or amount — and promises no move: eligibility is
 //! only the circular's years on the step (WPM-D41).
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 
 use crate::models::_entities::{notifications, worker_pay_positions, workers};
 use crate::models::notifications::Model as Notification;

@@ -8,8 +8,8 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
-    ctx: &loco_rs::app::AppContext,
+    request: &axa::TestServer,
+    ctx: &axa::AppContext,
     org: &str,
     kind: &str,
     n: usize,
@@ -50,7 +50,7 @@ fn figure<'a>(body: &'a Value, key: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_report_counts_withholds_and_says_what_it_cannot_know() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -123,7 +123,7 @@ async fn the_report_counts_withholds_and_says_what_it_cannot_know() {
 // salaries: ten people, of whom one is paid under the floor in the first two of ten months, so two of ten runs are `below`.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_report_counts_incidents_and_pay_periods_below_a_floor() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

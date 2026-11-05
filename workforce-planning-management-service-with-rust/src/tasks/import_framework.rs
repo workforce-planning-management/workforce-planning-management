@@ -1,4 +1,4 @@
-//! `cargo loco task import_framework dir:<path>` — import a **job-capability
+//! `cargo run -- task import_framework dir:<path>` — import a **job-capability
 //! framework** as role profiles: today the UK Government Digital and Data
 //! (GDAD) Profession Capability Framework (PCF), from a local clone of the
 //! community repository (`spec/uk-gdad-pcf/index.md`).
@@ -19,8 +19,8 @@
 //! re-derives every minimum from the source level), and never removes a
 //! requirement.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};

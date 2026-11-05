@@ -14,7 +14,7 @@ fn lines(text: &str) -> Vec<Value> {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_trail_is_exported_in_order_and_resumes_where_it_stopped() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

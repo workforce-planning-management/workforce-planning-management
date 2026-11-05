@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — from Loco to axa (WPM-D183, WPM-T465, 2026-11-05)
+
+The service runs on Axum and axa. Settings are environment variables, `APP_ENV` names the environment, and the scheduler is `workforce-planning-management scheduler`. Automatic ETags are gone, and `JWT_SECRET` and `SMTP_*` are no longer read.
+
 ### Added — starting a course from a goal (WPM-R236, WPM-D182, WPM-T464, 2026-11-05)
 
 A person enrols at once on a course whose recorded fee is zero. Anything else, including an unknown fee, goes to a manager above them to approve or decline.

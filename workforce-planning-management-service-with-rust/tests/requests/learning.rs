@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded team, the whole L&D surface
 async fn learning_round_trip() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -213,7 +213,7 @@ async fn learning_round_trip() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn capability_analysis_reports_skill_depth() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -301,7 +301,7 @@ async fn capability_analysis_reports_skill_depth() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn workforce_metrics_report_defined_numbers() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -359,7 +359,7 @@ async fn workforce_metrics_report_defined_numbers() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn directory_lists_employed_workers_without_sensitive_fields() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -471,7 +471,7 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn workforce_insights_flag_a_shrinking_headcount() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -537,7 +537,7 @@ async fn workforce_insights_flag_a_shrinking_headcount() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn headcount_snapshots_are_recorded_idempotently() {
     use workforce_planning_management::tasks::snapshot::run_snapshot;
 
@@ -600,7 +600,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn role_profiles_hold_required_skills() {
     crate::requests::request_open(|request, _ctx| async move {
         let skill: Value = request
@@ -664,7 +664,7 @@ async fn role_profiles_hold_required_skills() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn role_gap_grades_declarations_against_a_role() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -743,7 +743,7 @@ async fn role_gap_grades_declarations_against_a_role() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn cpd_ledger_tracks_progress_and_registrations() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -875,7 +875,7 @@ async fn cpd_ledger_tracks_progress_and_registrations() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -955,7 +955,7 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn lms_completions_update_enrollments_and_cpd_idempotently() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1018,7 +1018,7 @@ async fn lms_completions_update_enrollments_and_cpd_idempotently() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn change_tracker_reports_aggregate_readiness() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1108,7 +1108,7 @@ async fn change_tracker_reports_aggregate_readiness() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn workforce_plan_forecasts_gaps_and_alignment() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1275,7 +1275,7 @@ async fn workforce_plan_forecasts_gaps_and_alignment() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn workforce_plan_costs_hiring_against_a_budget() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1368,7 +1368,7 @@ async fn workforce_plan_costs_hiring_against_a_budget() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn capability_framework_import_and_progression() {
     use workforce_planning_management::rules::framework::LevelMapping;
     use workforce_planning_management::tasks::import_framework::import_pcf;
@@ -1569,7 +1569,7 @@ async fn capability_framework_import_and_progression() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn skills_can_be_edited_categorised_and_referenced() {
     crate::requests::request_open(|request, _ctx| async move {
         let make = |name: &str| {
@@ -1639,7 +1639,7 @@ async fn skills_can_be_edited_categorised_and_referenced() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn esco_import_search_and_seeding() {
     use workforce_planning_management::tasks::import_esco::import_esco;
 
@@ -1745,7 +1745,7 @@ async fn esco_import_search_and_seeding() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1837,7 +1837,7 @@ async fn skills_merge_keeps_the_stronger_statement_and_delete_refuses_use() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
     use workforce_planning_management::rules::framework::LevelMapping;
     use workforce_planning_management::tasks::import_esco::import_esco;
@@ -1947,7 +1947,7 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn career_history_and_aspirations() {
     use workforce_planning_management::rules::framework::LevelMapping;
     use workforce_planning_management::tasks::import_esco::import_esco;
@@ -2147,7 +2147,7 @@ async fn reporting_lines_stop_at_a_manager_who_has_left() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn reporting_lines_downline_aspirations_and_groups() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -2299,7 +2299,7 @@ async fn reporting_lines_downline_aspirations_and_groups() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn confederation_groups_and_transfers() {
     crate::requests::request_open(|request, _ctx| async move {
         let (parent, child_a, child_b, outsider) = (an_org(), an_org(), an_org(), an_org());
@@ -2357,7 +2357,7 @@ async fn confederation_groups_and_transfers() {
     .await;
 }
 
-async fn capability_view(request: &loco_rs::TestServer) -> Value {
+async fn capability_view(request: &axa::TestServer) -> Value {
     request
         .get("/api/workforce-intelligence/capability")
         .await
@@ -2366,7 +2366,7 @@ async fn capability_view(request: &loco_rs::TestServer) -> Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // The capability view counts, in the database, what it used to count in memory: holders at and below their
 // own target, the people with a gap and how many of them have an active plan, completed sittings per category.
 // Read as the difference from before, since the test database holds other people.

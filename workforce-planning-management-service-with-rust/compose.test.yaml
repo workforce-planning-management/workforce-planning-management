@@ -5,7 +5,7 @@
 #   cargo test -- --ignored --test-threads=1
 #   podman compose -f compose.test.yaml down
 #
-# Podman, not Docker (spec/rust-loco-stack.md).
+# Podman, not Docker (spec/rust-axum-stack.md).
 #
 # The connection details deliberately match what CI provides
 # (.github/workflows/ci.yml, job `api-db`): superuser `loco`/`loco` on 5432,

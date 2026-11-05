@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — from Loco to axa (WPM-T465)
+
+`axa` replaces `loco-rs`; see the repository changelog (WPM-D183).
+
 ### Added — starting a course from a goal (WPM-T464)
 
 A recorded fee of zero enrols at once; anything else goes to a manager (WPM-R236).

@@ -68,7 +68,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/operations/entra-sign-in.md](spec/operations/entra-sign-in.md): operations: Microsoft Entra ID sign-in
 - [spec/operations/runbook.md](spec/operations/runbook.md): operations: the runbook
 - [spec/operations/upgrade-and-migration.md](spec/operations/upgrade-and-migration.md): operations: upgrade and migration
-- [spec/rust-loco-stack.md](spec/rust-loco-stack.md): stack: the Rust Loco stack: Podman not Docker, PostgreSQL not SQLite, MUSL, MiMalloc
+- [spec/rust-axum-stack.md](spec/rust-axum-stack.md): stack: the Rust and Axum stack: Podman not Docker, PostgreSQL not SQLite, MUSL, MiMalloc
 - [spec/rust-clippy-pedantic.md](spec/rust-clippy-pedantic.md): stack: Clippy pedantic for Rust code
 - [spec/rust-async-development-rules.md](spec/rust-async-development-rules.md): stack: async Rust and concurrency rules
 - [spec/rust-tracing-stack.md](spec/rust-tracing-stack.md): stack: tracing and OpenTelemetry environment variables

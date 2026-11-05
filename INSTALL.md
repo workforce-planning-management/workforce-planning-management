@@ -50,14 +50,14 @@ cargo test --test enforcement -- --ignored --test-threads=1   # auth persona mat
 
 ### Schedule the tasks
 
-Several loco tasks do nothing unless something runs them. The job list is
-[`config/scheduler.yaml`](workforce-planning-management-service-with-rust/config/scheduler.yaml), for Loco's own scheduler;
+Several tasks do nothing unless something runs them. The job list is
+[`src/scheduler.rs`](workforce-planning-management-service-with-rust/src/scheduler.rs), for the service's own scheduler;
 start **one** next to the server:
 
 ```sh
-cargo loco scheduler --config config/scheduler.yaml --tag wpm     # webhooks, headcount snapshot, warnings, reminders, audit-chain check
-cargo loco scheduler --config config/scheduler.yaml --tag scim    # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
-cargo loco scheduler --config config/scheduler.yaml --list        # what is scheduled, and when
+cargo run -- scheduler --tag wpm     # webhooks, headcount snapshot, warnings, reminders, audit-chain check
+cargo run -- scheduler --tag scim    # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
+cargo run -- scheduler --list        # what is scheduled, and when
 ```
 
 The mandatory-learning "due soon" window is 90 calendar days; set `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366) on the service to change it.

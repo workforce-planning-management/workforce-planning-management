@@ -2,8 +2,8 @@
 //! for an organization and hand it to the pure rules in [`crate::rules::derived`], one reading per
 //! month asked for. Reads only; nothing is stored, so a derived reading is never stale.
 
+use axa::prelude::*;
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
 use sea_orm::QueryOrder;
 
 use super::capacity;

@@ -5,7 +5,7 @@
 //! detail (old/new state, override reasons, the `department` where
 //! relevant — which is what the department-scoped query filters on).
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ConnectionTrait, QueryOrder, QuerySelect};
 use uuid::Uuid;
 

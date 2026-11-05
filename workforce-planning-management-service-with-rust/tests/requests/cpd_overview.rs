@@ -9,7 +9,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     n: usize,
     title: &str,
@@ -28,7 +28,7 @@ async fn hire(
 }
 
 async fn record(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     worker: &str,
     date: &str,
     unit: &str,
@@ -44,7 +44,7 @@ async fn record(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_overview_counts_employed_workers_against_each_requirement_and_what_needs_attention() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -91,7 +91,10 @@ async fn the_overview_counts_employed_workers_against_each_requirement_and_what_
         let register = |worker: String, days: i64| {
             let body = json!({ "body": "Regulator", "expires_on": (today + chrono::Duration::days(days)).to_string() });
             let request = &request;
-            async move { request.post(&format!("/api/workers/{worker}/registrations")).json(&body).await.assert_status_ok() }
+            async move {
+                let response = request.post(&format!("/api/workers/{worker}/registrations")).json(&body).await;
+                response.assert_status_ok();
+            }
         };
         register(met_verified.clone(), -3).await; // expired
         register(met_unverified.clone(), 30).await; // expiring
@@ -118,7 +121,7 @@ async fn the_overview_counts_employed_workers_against_each_requirement_and_what_
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_entry_may_name_the_skill_it_developed_and_only_a_skill_in_the_catalogue() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

@@ -7,7 +7,7 @@ use serial_test::serial;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn every_collection_read_answers_with_a_list() {
     crate::requests::request_open(|request, _ctx| async move {
         for url in [
@@ -40,7 +40,7 @@ async fn every_collection_read_answers_with_a_list() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_liveness_and_readiness_probes_answer() {
     crate::requests::request_open(|request, _ctx| async move {
         for url in ["/_ping", "/_readiness"] {

@@ -14,7 +14,7 @@ realism without depending on a permanent external server.
 
 ## Container runtime in this workspace
 
-This workspace uses Podman, not Docker (see `rust-loco-stack.md`). Testcontainers
+This workspace uses Podman, not Docker (see `rust-axum-stack.md`). Testcontainers
 can drive Podman through its Docker-compatible socket; fully qualify the image
 name (for example `quay.io/keycloak/keycloak`) because Podman refuses short
 names.

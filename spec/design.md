@@ -15,7 +15,7 @@ from hire/termination is roadmap ([integrations.md](integrations.md)).
 
 Employment data is constraint-heavy (unique employee numbers,
 balances, pipelines, payslip totals), so the schema is normalized
-SeaORM tables — not DTO-as-JSONB. All-plural table names (the loco
+SeaORM tables — not DTO-as-JSONB. All-plural table names (the older
 `create_table` pluralization lesson).
 
 ## WPM-D3 — Every lifecycle is a pure-core state machine
@@ -86,7 +86,7 @@ deviation worth re-litigating.
 
 ## WPM-D12 — Family fixtures from day one
 
-Loco-idiomatic layout, forbid-unsafe + clippy-pedantic, OpenAPI +
+The controllers, models and rules layout, forbid-unsafe + clippy-pedantic, OpenAPI +
 Swagger, `Accepts-version`, OTLP + `/metrics.prom`, Podman, input
 caps, `404` mapping at `find_by_pid` call sites, enforcement tests
 in their own binary (the OnceLock lesson), 17-locale i18n in the

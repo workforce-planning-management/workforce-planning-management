@@ -24,7 +24,7 @@ fn licence(version: &str, checked_on: &str) -> Licence {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_import_needs_a_licence_check_records_internal_only_retires_and_links_exactly() {
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string()[..6].to_uppercase();
@@ -184,7 +184,7 @@ async fn the_import_needs_a_licence_check_records_internal_only_retires_and_link
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_levels_of_responsibility_are_a_job_level_framework_like_the_coded_one() {
     crate::requests::request_open(|request, ctx| async move {
         let levels = include_str!("../fixtures/sfia-synthetic/levels.csv");
@@ -285,7 +285,7 @@ async fn the_levels_of_responsibility_are_a_job_level_framework_like_the_coded_o
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_native_level_is_kept_mapped_shown_and_never_invented() {
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string()[..6].to_uppercase();
@@ -401,7 +401,7 @@ async fn a_native_level_is_kept_mapped_shown_and_never_invented() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothing_is_written_on_a_refusal()
  {
     crate::requests::request_open(|request, ctx| async move {

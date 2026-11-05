@@ -5,7 +5,7 @@
 //! are pure and live in [`crate::rules::org_access`], per this crate's
 //! pure-core/DB-touching-model split.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::ConnectionTrait;
 
 use super::_entities::organization_confederations;

@@ -9,7 +9,7 @@ use super::an_org;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_unit_is_counted_by_its_rules_from_the_floor_and_names_no_one() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -121,7 +121,7 @@ async fn a_unit_is_counted_by_its_rules_from_the_floor_and_names_no_one() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn agreements_are_versioned_and_apply_to_a_worker_by_their_job_facts_without_naming_a_body() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -207,7 +207,7 @@ async fn agreements_are_versioned_and_apply_to_a_worker_by_their_job_facts_witho
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracted_and_logs_the_disclosure()
  {
     crate::requests::request_open(|request, ctx| async move {
@@ -319,7 +319,7 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn facility_time_is_minutes_per_body_per_period_and_never_a_person() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -365,7 +365,7 @@ async fn facility_time_is_minutes_per_body_per_period_and_never_a_person() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_decision_gate_points_a_change_at_the_body_to_consult_and_asks_for_the_reference_without_blocking()
  {
     crate::requests::request_open(|request, _ctx| async move {

@@ -3,8 +3,8 @@
 //! the list says where each record stands today. WPM records the fact and its expiry. It never decides that an organization is covered,
 //! pays nothing and adjudicates nothing. The standing arithmetic is `rules::coverage_evidence`. Spec: `spec/statutory-pay-protections.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};

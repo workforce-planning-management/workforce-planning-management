@@ -1,4 +1,4 @@
-//! `cargo loco task import_sfia file:<path> [levels_file:<path>] version:<8|9> licence_checked_on:<YYYY-MM-DD>
+//! `cargo run -- task import_sfia file:<path> [levels_file:<path>] version:<8|9> licence_checked_on:<YYYY-MM-DD>
 //! [licence_holder:<text>] [licence_reference:<text>]` — load the deployer's
 //! **licensed** SFIA download, saved as CSV to the documented contract
 //! (`rules::sfia`), into the local catalogue (WPM-R109, WPM-R113, WPM-D69).
@@ -9,8 +9,8 @@
 //! not deleted. A catalogue skill is linked to a SFIA skill only on an exact
 //! normalised name match, never by guess.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -50,10 +50,16 @@ impl Task for ImportSfia {
             ));
         }
         let licence = Licence {
-            version: vars.cli_arg("version").unwrap_or("").to_string(),
-            checked_on: vars.cli_arg("licence_checked_on").unwrap_or("").to_string(),
-            holder: vars.cli_arg("licence_holder").ok().map(str::to_string),
-            reference: vars.cli_arg("licence_reference").ok().map(str::to_string),
+            version: vars
+                .cli_arg("version")
+                .map_or("", String::as_str)
+                .to_string(),
+            checked_on: vars
+                .cli_arg("licence_checked_on")
+                .map_or("", String::as_str)
+                .to_string(),
+            holder: vars.cli_arg("licence_holder").ok().cloned(),
+            reference: vars.cli_arg("licence_reference").ok().cloned(),
         };
         let read = |f: &str| {
             std::fs::read_to_string(Path::new(f)).map_err(|e| Error::string(&format!("{f}: {e}")))

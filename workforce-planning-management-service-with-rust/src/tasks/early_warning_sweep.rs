@@ -1,13 +1,13 @@
-//! `cargo loco task early_warning_sweep [as_of:YYYY-MM-DD]` — look at every organization with a skill
+//! `cargo run -- task early_warning_sweep [as_of:YYYY-MM-DD]` — look at every organization with a skill
 //! pool or a recorded oversight position, open a warning for each condition newly true, close those
 //! that have stopped, and tell the HR administrators (WPM-R68). Run it daily: the date a condition is
 //! first true is the date of the first sweep that saw it. Idempotent within a day.
 
 use std::collections::BTreeSet;
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 
 use crate::controllers::early_warning::sweep;
 use crate::models::_entities::{oversight_positions, skill_pools};

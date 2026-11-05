@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Two salaried workers (one with a pension enrolment and approved
 // overtime) get reconciled payslips; approve freezes the run.
 async fn payroll_run_derives_reconciled_payslips() {
@@ -160,7 +160,7 @@ async fn payroll_run_derives_reconciled_payslips() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Benchmarks: band validation, and the comparison flags workers
 // below/within/above without echoing salary amounts.
 async fn benchmark_comparison_flags() {
@@ -209,7 +209,7 @@ async fn benchmark_comparison_flags() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // A contractor is paid against an invoice, not through payroll (WPM-D58): with a rate recorded in
 // the salary field they still get no payslip, while a permanent and a fixed-term worker do.
 async fn a_contractor_gets_no_payslip() {
@@ -278,7 +278,7 @@ async fn a_contractor_gets_no_payslip() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // WPM-T383: the stub is written for one currency. A run that would pay a worker in another
 // currency is refused, names the worker and both currencies, and stays a draft with no payslip.
 async fn the_payroll_stub_refuses_a_currency_it_was_not_written_for() {
@@ -370,7 +370,7 @@ impl Drop for YenStub {
 }
 
 /// Open and calculate a July run for `org`: the run, the status code and the body.
-async fn calculate_july(request: &loco_rs::TestServer, org: &str) -> (String, u16, String) {
+async fn calculate_july(request: &axa::TestServer, org: &str) -> (String, u16, String) {
     let run: Value = request
         .post("/api/payroll-runs")
         .json(&json!({
@@ -388,7 +388,7 @@ async fn calculate_july(request: &loco_rs::TestServer, org: &str) -> (String, u1
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // WPM-T401: a deployer's stub in another currency (yen, exponent 0) calculates, the answer says it is
 // the deployer's, and a run that would pay someone in pounds under it is refused.
 async fn a_configured_yen_stub_calculates_and_refuses_pounds() {
@@ -477,7 +477,7 @@ impl Drop for SixHourDay {
 }
 
 /// Record a time entry and approve it.
-async fn approved_time(request: &loco_rs::TestServer, worker: &str, body: Value) {
+async fn approved_time(request: &axa::TestServer, worker: &str, body: Value) {
     let entry: Value = request
         .post(&format!("/api/workers/{worker}/time-entries"))
         .json(&body)
@@ -493,7 +493,7 @@ async fn approved_time(request: &loco_rs::TestServer, worker: &str, body: Value)
 }
 
 /// The derived overtime minutes per day in a worker's timesheet.
-async fn timesheet_overtime(request: &loco_rs::TestServer, worker: &str) -> Vec<(String, i64)> {
+async fn timesheet_overtime(request: &axa::TestServer, worker: &str) -> Vec<(String, i64)> {
     let listed: Value = request
         .get(&format!(
             "/api/workers/{worker}/time-entries?from=2026-07-01&to=2026-07-31"
@@ -515,7 +515,7 @@ async fn timesheet_overtime(request: &loco_rs::TestServer, worker: &str) -> Vec<
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // WPM-T405 (follows WPM-T401's "Not tested"): with WPM_CONTRACTED_DAY_MINUTES set to 360, the
 // timesheet's derived overtime and the payslip's overtime line both count from the deployer's day,
 // scaled by FTE, not from the 450-minute example.
@@ -644,7 +644,7 @@ async fn overtime_counts_from_a_configured_contracted_day() {
 // "none by law" is its own answer, nothing is refused, and the audit entry holds counts and no worker.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
     use sea_orm::{ConnectionTrait, Statement};
     crate::requests::request_open(|request, ctx| async move {
@@ -791,7 +791,7 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
 // law says so, and a place with no bands says `no_limit_configured`. Never a silent zero.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_overtime_premium_is_in_gross_and_the_check_follows_the_seat_and_the_place() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -937,7 +937,7 @@ async fn the_overtime_premium_is_in_gross_and_the_check_follows_the_seat_and_the
 // parameter pays them as ordinary days, and a place with no weekend configured never guesses a rest day.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_rest_day_and_a_holiday_are_paid_at_the_places_multipliers_and_never_guessed() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1042,7 +1042,7 @@ async fn a_rest_day_and_a_holiday_are_paid_at_the_places_multipliers_and_never_g
 // from the month before counts toward the year and not the month; a place with no cap configured shows none, never "within".
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_overtime_check_flags_a_worker_over_the_monthly_and_the_annual_cap() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -1140,7 +1140,7 @@ async fn the_overtime_check_flags_a_worker_over_the_monthly_and_the_annual_cap()
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn employer_cost_lines_follow_the_place_the_class_and_the_wage_base_and_never_touch_net() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

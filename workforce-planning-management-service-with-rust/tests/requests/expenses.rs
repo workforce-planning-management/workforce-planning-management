@@ -12,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_claim_goes_from_draft_to_reimbursed() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -315,7 +315,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -392,7 +392,7 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 /// WPM-T400: a currency the ISO 4217 table does not hold is refused wherever the API takes one, and a code whose
 /// Unicode CLDR display digits differ from its ISO minor unit (HUF: CLDR 0, ISO 2) is taken and kept in ISO minor units.
 async fn currencies_are_checked_against_the_iso_4217_table() {

@@ -9,13 +9,13 @@
 //! A denial is `403` and is logged as a warning with the audience class and no identifier.
 
 use authentication_verifier::Claims;
+use axa::prelude::*;
 use axum::{
     extract::{Request, State},
     http::{Method, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
 

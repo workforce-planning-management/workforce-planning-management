@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -140,7 +140,7 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_priority() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

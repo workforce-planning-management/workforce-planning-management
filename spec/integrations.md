@@ -103,7 +103,7 @@ and `employeeNumber` are the employee number (WPM holds no login), `externalId` 
 `department` and `active`. **No `costCenter`** (WPM holds no cost centre) and **no `name` parts, emails, phone numbers or addresses**.
 `active` follows the headcount definition: not before the first day, and not on or after the termination date. A deleted
 record is deactivated if it was ever sent. Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN`,
-`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `config/scheduler.yaml` (every 15 minutes, tag `scim`, WPM-T300). **Run against an independent SCIM server** (`scripts/check-scim-flow.py`, WPM-T302): managers first, an unchanged worker skipped, one `PUT` for a change, a `409` resolved by `externalId`, a `503` and a rejected token recorded and not leaked, and the first retry one minute after the first failure. **Not built:** a deprovision on the handover's last day (WPM uses
+`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `src/scheduler.rs` (every 15 minutes, tag `scim`, WPM-T300). **Run against an independent SCIM server** (`scripts/check-scim-flow.py`, WPM-T302): managers first, an unchanged worker skipped, one `PUT` for a change, a `409` resolved by `externalId`, a `503` and a rejected token recorded and not leaked, and the first retry one minute after the first failure. **Not built:** a deprovision on the handover's last day (WPM uses
 the termination date, by the headcount definition, so a leaver is deactivated from that date, which may be a day before the last
 day worked); `PATCH`; groups; the token held by reference (it is read from the environment); a test against Keycloak (it has no SCIM
 endpoint in its core as far as this round found) or any real identity provider: **only a stub server was used**.
@@ -131,7 +131,7 @@ failure, `408`, `429` and `5xx` are retried with a back-off of one minute doubli
 refusal and is not repeated. The log keeps the HTTP status and a short reason; **there is no column for a body**. *(Since WPM-T372,
 WPM-D145: a hire or an ending keeps its handoff `data` in the delivery row, which the schema allows for those three kinds
 only and the log does not list.)* Erasure deletes the
-deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `config/scheduler.yaml` (every minute, WPM-T300). **Run against an independent receiver** (`scripts/check-webhook-flow.py`, WPM-T301): a signed, fresh delivery whose body holds exactly the four fields, a 5xx retried after the back-off and a 4xx not repeated. **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
+deliveries that name the worker. Settings: the secret variables only. **A schedule** is in `src/scheduler.rs` (every minute, WPM-T300). **Run against an independent receiver** (`scripts/check-webhook-flow.py`, WPM-T301): a signed, fresh delivery whose body holds exactly the four fields, a 5xx retried after the back-off and a 4xx not repeated. **Not built:** the other events in the spec's list ("movement": WPM emits no movement event on the
 transport); DNS-rebinding protection (a host name that later resolves to an internal address is not caught, only address literals
 are); the secret rotated without a gap; a screen; a replay of a failed delivery.
 

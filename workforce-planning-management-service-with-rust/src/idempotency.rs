@@ -9,6 +9,7 @@
 //! replay another caller's response. A request with no key is untouched. The rules are pure, in
 //! [`crate::rules::idempotency`].
 
+use axa::AppContext;
 use axum::{
     body::{Body, to_bytes},
     extract::{Request, State},
@@ -16,7 +17,6 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use loco_rs::app::AppContext;
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, Value};
 
 use crate::auth::MaybeAuthUser;

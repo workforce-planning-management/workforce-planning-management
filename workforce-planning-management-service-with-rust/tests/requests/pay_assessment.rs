@@ -36,8 +36,8 @@ impl Drop for MonitoringOn {
 }
 
 async fn hire(
-    request: &loco_rs::TestServer,
-    ctx: &loco_rs::app::AppContext,
+    request: &axa::TestServer,
+    ctx: &axa::AppContext,
     org: &str,
     title: &str,
     sex: &str,
@@ -77,7 +77,7 @@ fn category<'a>(body: &'a Value, name: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
     crate::requests::request_open(|request, ctx| async move {
@@ -199,7 +199,7 @@ async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_gap_that_is_hidden_is_unknown_and_a_missing_setup_says_so() {
     crate::requests::request_open(|request, ctx| async move {
         let off = request.get(&format!("/api/pay-transparency/joint-assessment?organization={}", an_org())).await;
@@ -224,7 +224,7 @@ async fn a_gap_that_is_hidden_is_unknown_and_a_missing_setup_says_so() {
 /// No audit, no write (WPM-D107): when the audit row cannot be written the change is refused and nothing of it is kept.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn when_the_audit_row_cannot_be_written_the_write_is_refused_and_not_kept() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

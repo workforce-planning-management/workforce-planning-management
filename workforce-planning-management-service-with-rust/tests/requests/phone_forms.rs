@@ -34,7 +34,7 @@ async fn backfill(db: &impl ConnectionTrait) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -121,7 +121,7 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn hr_finds_workers_by_digits_and_the_answer_names_no_number() {
     crate::requests::request_open(|request, ctx| async move {
         let (org, other) = (an_org(), an_org());

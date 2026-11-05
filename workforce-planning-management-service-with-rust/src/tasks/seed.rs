@@ -1,10 +1,10 @@
-//! `cargo loco task seed` — create a synthetic demo organization so
+//! `cargo run -- task seed` — create a synthetic demo organization so
 //! the HR views demo instantly. **Synthetic data only** (spec
 //! `regulatory.md`): person/worker URNs are random UUIDs, names are
 //! obviously fictional.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::ActiveValue;
 use uuid::Uuid;
 

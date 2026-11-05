@@ -12,7 +12,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -119,7 +119,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

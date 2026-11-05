@@ -13,7 +13,6 @@ adds contacts and escalation paths for their own organization.
 | `WPM_REQUIRE_AUTH is off in the production environment…` | Someone set it to `0` | Remove the override. Production does not run with sign-in off |
 | `no token key source is configured in the production environment…` | No keys | Set `WPM_PASETO_KEYS_URL`/`WPM_PASETO_KEYS` or `WPM_KEYCLOAK_JWKS_URL` |
 | `environment variable `WPM_CORS_ORIGIN` not found` | CORS allow-list not set | Set it to the UI's origin |
-| `environment variable `JWT_SECRET` not found` | Required by the framework's config | Set any strong value; WPM does not use it for sign-in |
 | Database connection errors | Wrong `DATABASE_URL`, or the database is down | Check the database first; the service does not start without it |
 
 ## Everyone gets `401`

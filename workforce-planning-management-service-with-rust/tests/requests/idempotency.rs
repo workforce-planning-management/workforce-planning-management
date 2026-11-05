@@ -9,7 +9,7 @@ use super::an_org;
 
 const KEY: &str = "0123456789abcdef-test-key";
 
-async fn count(request: &loco_rs::TestServer, org: &str, title: &str) -> usize {
+async fn count(request: &axa::TestServer, org: &str, title: &str) -> usize {
     let feed: Value = request
         .get(&format!("/api/announcements?organization={org}"))
         .await
@@ -27,7 +27,7 @@ fn sql(text: &str) -> sea_orm::Statement {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() {
     use sea_orm::ConnectionTrait;

@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -112,7 +112,7 @@ async fn emergency_contacts_are_validated_ranked_capped_and_exported() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn backups_cover_in_rank_order_and_skip_the_unavailable() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

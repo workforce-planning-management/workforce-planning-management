@@ -1,4 +1,4 @@
-# Workforce Planning Management — Loco JSON API
+# Workforce Planning Management — JSON API
 
 A back-end **JSON API** for workforce planning management across the full
 worker lifecycle: requisitions and applicant tracking, onboarding,
@@ -19,7 +19,7 @@ the **on-call rota** (swaps, swap requests, reminders), **announcements**, the
 data behind a **CEO dashboard**, workforce **metrics and insights**, **skills gap
 analysis** with **training time recommendations**, and **joiners and leavers**
 with a last-day handover.
-Implemented in Rust on [Loco](https://loco.rs) (Axum + SeaORM +
+Implemented in Rust on Axum and [axa](https://crates.io/crates/axa) (SeaORM +
 PostgreSQL). No built-in UI — the
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 provides the HR, manager, and worker self-service client.
@@ -107,7 +107,7 @@ backups** · **on-call rotas + swaps + swap requests** · **announcements** ·
 **skill gaps + training plans + skill catalogue** · **joiner / leaver records +
 handover** · OpenAPI + Swagger · `/metrics.prom`.
 
-Loco tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
+Tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
 `pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`.
 
 Sign-in enforcement is **on by default** (`WPM_REQUIRE_AUTH`; only an explicit
@@ -146,7 +146,7 @@ the default and is unaffected either way.
 ## Quick start
 
 ```bash
-# Postgres 18 with a loco user, then:
+# Postgres 18 with a `loco` database user, then:
 export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_development
 cargo run -- db migrate       # create the schema
 cargo run -- task seed        # synthetic demo org (40 workers)

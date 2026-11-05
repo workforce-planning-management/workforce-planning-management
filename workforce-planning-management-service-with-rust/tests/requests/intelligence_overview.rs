@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     n: usize,
     department: &str,
@@ -34,7 +34,7 @@ fn number(v: &Value, key: &str) -> i64 {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_overview_counts_employed_workers_by_group_with_managers_named_only_if_employed() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -162,7 +162,7 @@ async fn the_overview_counts_employed_workers_by_group_with_managers_named_only_
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn period_metrics_count_opening_closing_starters_and_leavers_from_the_dates() {
     crate::requests::request_open(|request, ctx| async move {
         use sea_orm::ConnectionTrait;

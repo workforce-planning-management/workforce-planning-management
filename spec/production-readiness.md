@@ -190,7 +190,7 @@ sign-in enforcement explicitly off** (see its header).
   action. The proxy checks the key's shape only; it keeps no state, because deduplication belongs next to the data it
   protects. Deduplication sits behind the sign-in and need-to-know checks, so a stored response is only ever returned to the
   caller it was made for, and it holds a success only, so a correctable failure can be retried.
-- **WPM-D78 The shared cache holds non-personal lookups only, and fails open.** Loco's cache provider is Redis in
+- **WPM-D78 The shared cache holds non-personal lookups only, and fails open.** The service's cache is Redis in
   production and the demo (so several instances share one) and in memory in development and tests. What may be cached is
   a closed list in `src/shared_cache.rs` (`Namespace`): the names of organizations and courses from the services that
   own them, and searches of the public ESCO catalogue. There is no variant for a person, a worker, a score or any
@@ -239,7 +239,7 @@ this repository.
 - **One log line per request, and what is in it.** `request_id`, `method`, a `route`, then on completion `status` and `latency_ms`. The route is
   the path with every segment that is not a plain lowercase word replaced by `{}` (`/api/workers/{}/status`), so no identifier, reference or
   name in a path reaches the log. **Not in it:** the query string, any header (so no token, address or user agent), the body, the caller.
-  Loco's own request logger writes the whole URI and is switched off in every profile. A test captures the real log output for a request
+  The framework's request tracing holds the whole URI, so `tower_http` is held at warnings in every profile. A test captures the real log output for a request
   carrying a name in the query, an identifier in the path and a token, and fails if any appears.
 - **The audit trail for a security monitoring system.** `GET /api/audits/export?after=<chain_seq>&limit=<n>` returns JSON Lines, oldest
   first, at most 1000 (default 500). Each line has `chain_seq`, `at`, `entity`, `entity_pid`, `action`, `actor`, `prev_hash` and

@@ -2,10 +2,10 @@
 //! see it, what a masked reader is told, train or hire, a stated benefit, and spend against a budget. Its own test binary,
 //! because the auth flag and policy are cached in process-wide `OnceLock`s.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -72,7 +72,7 @@ fn bearer(token: String) -> String {
     format!("Bearer {token}")
 }
 
-async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
+async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
     ctx.db
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -85,7 +85,7 @@ async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
 
 /// Create an active worker with a place of work.
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -121,7 +121,7 @@ async fn worker(
 }
 
 /// One dated row of a jurisdiction profile, through the API so the registry's checks apply.
-async fn parameter(request: &loco_rs::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
+async fn parameter(request: &axa::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
     request
         .post("/api/jurisdiction-parameters")
         .add_header("authorization", svc.to_string())
@@ -131,7 +131,7 @@ async fn parameter(request: &loco_rs::TestServer, svc: &str, org: &str, key: &st
         .assert_status_ok();
 }
 
-async fn a_skill(request: &loco_rs::TestServer, svc: &str) -> String {
+async fn a_skill(request: &axa::TestServer, svc: &str) -> String {
     let skill: Value = request
         .post("/api/skills")
         .add_header("authorization", svc.to_string())
@@ -145,7 +145,7 @@ async fn a_skill(request: &loco_rs::TestServer, svc: &str) -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
     let kid = enforce();
@@ -363,7 +363,7 @@ async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
     let kid = enforce();
@@ -474,7 +474,7 @@ struct Count {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn spend_is_recorded_fees_against_a_budget_per_currency() {
     let kid = enforce();

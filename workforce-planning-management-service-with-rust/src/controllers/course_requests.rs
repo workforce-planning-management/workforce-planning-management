@@ -1,9 +1,9 @@
 //! **Starting a course** (WPM-R236, WPM-D182): a person enrols at once on a course whose recorded fee is zero, and asks a manager above
 //! them for any other. Every route resolves the person from the token. A request names a course and a decision, and holds no reason.
 
+use axa::error::ErrorDetail;
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::controller::ErrorDetail;
-use loco_rs::prelude::*;
 use sea_orm::sea_query::Expr;
 use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, SqlErr, TransactionTrait};
 use serde::Deserialize;

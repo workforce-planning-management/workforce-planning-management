@@ -1,4 +1,4 @@
-//! `cargo loco task qualification_expiry_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell a person, and their manager, that one of
+//! `cargo run -- task qualification_expiry_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell a person, and their manager, that one of
 //! the person's qualifications is about to expire or has just expired (WPM-R171, WPM-T435, WPM-D167).
 //!
 //! Run it daily. The window defaults to 60 calendar days. **Idempotent:** each qualification, expiry date and kind of reminder is
@@ -8,9 +8,9 @@
 //! The person is told "Your <title> expires on <date>"; the manager is told the person's name, the title and the date. HR is not told:
 //! it can read the queue and the roll-up. Nothing else is in the notification: no level, no awarding body, no evidence reference.
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 

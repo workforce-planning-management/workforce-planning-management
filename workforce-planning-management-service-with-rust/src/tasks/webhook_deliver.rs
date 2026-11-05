@@ -1,13 +1,13 @@
-//! `cargo loco task webhook_deliver` — send the queued webhook deliveries (WPM-R151, WPM-D106).
+//! `cargo run -- task webhook_deliver` — send the queued webhook deliveries (WPM-R151, WPM-D106).
 //!
 //! Each due delivery is turned into its payload (an id, a kind, a URN and a time, and for a hire or an ending the handoff `data`,
 //! see [`crate::rules::webhook`]), signed with
 //! the secret named by its subscription, and posted without following redirects. The answer decides what happens next:
 //! delivered, retried after a back-off, or given up on. The log keeps the status code and a short reason, never a body.
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::{DateTime, Duration, Utc};
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect};
 use serde::Serialize;
 use serde_json::json;

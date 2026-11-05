@@ -2,7 +2,7 @@
 //! slice, the **department-scoped query** (spec `audit.md`), and the
 //! recent event stream.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use serde::Deserialize;
 
 use crate::models::audit_logs::Model as Audit;

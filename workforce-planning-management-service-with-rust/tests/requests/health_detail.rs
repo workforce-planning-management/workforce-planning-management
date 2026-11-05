@@ -8,7 +8,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn sick_leave_takes_no_reason_and_other_kinds_keep_theirs() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

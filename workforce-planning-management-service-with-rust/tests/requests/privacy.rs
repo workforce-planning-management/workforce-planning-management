@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded life, the whole rights surface
 async fn subject_rights_round_trip() {
     crate::requests::request_open(|request, ctx| async move {
@@ -204,7 +204,7 @@ async fn subject_rights_round_trip() {
 /// (WPM-R142): each has an index on `deleted_at` that holds only the deleted rows, so neither scans the table.
 #[tokio::test]
 #[serial_test::serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn every_soft_deleting_table_has_a_deleted_at_index() {
     use sea_orm::ConnectionTrait;
     crate::requests::request_open(|_request, ctx| async move {
@@ -235,7 +235,7 @@ async fn every_soft_deleting_table_has_a_deleted_at_index() {
 /// notes, assessments and results, and no one else's), and the retention sweep takes an appraisal's invitations and answers with it.
 #[tokio::test]
 #[serial_test::serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_invitations() {
     use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {

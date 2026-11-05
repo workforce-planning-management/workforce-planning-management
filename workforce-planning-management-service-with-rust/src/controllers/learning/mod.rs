@@ -6,7 +6,7 @@
 //! progress derivation counts only real course completions.
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;

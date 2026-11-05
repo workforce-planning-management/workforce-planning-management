@@ -2,8 +2,8 @@
 //! of the AI Act. Any signed-in caller reads it (it is a notice of how people are scored); HR and administrators write it.
 //! It records; it does not classify a system, certify conformity or count as evidence of compliance. Spec: `spec/regulatory.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

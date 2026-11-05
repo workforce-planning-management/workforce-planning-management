@@ -6,7 +6,7 @@
 //! boundary (WPM-D9). Worker reads run the record-level ABAC pass
 //! and honour the `mask` obligation (salary redaction, WPM-R15).
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

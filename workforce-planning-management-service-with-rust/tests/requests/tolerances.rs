@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire_salaried(request: &loco_rs::TestServer, org: &str, n: usize) {
+async fn hire_salaried(request: &axa::TestServer, org: &str, n: usize) {
     for i in 0..n {
         request
             .post("/api/workers")
@@ -33,7 +33,7 @@ fn status<'a>(view: &'a Value, dimension: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_plan_shows_red_amber_green_and_an_unknown_is_never_green() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

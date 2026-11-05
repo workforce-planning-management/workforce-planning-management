@@ -179,14 +179,14 @@ pub async fn emit_on<C: ConnectionTrait>(
     name: &str,
     actor: Option<&str>,
     data: Option<serde_json::Value>,
-) -> loco_rs::Result<()> {
+) -> axa::Result<()> {
     let env = envelope(entity, kind, pid, name, actor, data);
     if transport().is_outbox() {
         OutboxInsert::from_envelope(&env, chrono::Utc::now().into())
-            .map_err(loco_rs::Error::Model)?
+            .map_err(axa::Error::Model)?
             .insert_on(conn)
             .await
-            .map_err(loco_rs::Error::Model)?;
+            .map_err(axa::Error::Model)?;
     } else {
         let mut events = publisher()
             .events
@@ -205,7 +205,7 @@ pub async fn emit_on<C: ConnectionTrait>(
 /// transaction), so a change that rolls back tells nobody and a change that commits is never missed. Only the event id, the
 /// kind and the URN of the record are written, and for a hire or an ending the handoff references and date the event carried
 /// (`rules::webhook::delivery_data`): no body and no name (WPM-D106, proposed WPM-D145).
-async fn enqueue_webhooks<C: ConnectionTrait>(conn: &C, env: &Envelope) -> loco_rs::Result<()> {
+async fn enqueue_webhooks<C: ConnectionTrait>(conn: &C, env: &Envelope) -> axa::Result<()> {
     if !crate::rules::webhook::offered(&env.entity, &env.kind) {
         return Ok(());
     }
@@ -225,7 +225,7 @@ async fn enqueue_webhooks<C: ConnectionTrait>(conn: &C, env: &Envelope) -> loco_
         ],
     ))
     .await
-    .map_err(|e| loco_rs::Error::Model(e.into()))?;
+    .map_err(|e| axa::Error::Model(e.into()))?;
     Ok(())
 }
 

@@ -8,7 +8,7 @@
 //! the result is a draft for a human to edit. Essential skills draft
 //! importance `important`, optional ones `useful`.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use std::collections::BTreeMap;

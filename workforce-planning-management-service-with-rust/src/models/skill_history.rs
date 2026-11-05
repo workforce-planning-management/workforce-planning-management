@@ -4,7 +4,7 @@
 //! place that declares or clears a skill, so the history cannot drift from
 //! the declarations.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
 

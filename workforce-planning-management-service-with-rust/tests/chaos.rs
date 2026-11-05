@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
-use loco_rs::testing::prelude::*;
+use axa::testing::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -154,7 +154,7 @@ fn worker_body(org: &str, number: &str) -> Value {
 
 #[tokio::test(flavor = "multi_thread")]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test chaos -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test chaos -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one story: baseline, three faults, recovery, then the monkey
 async fn the_service_fails_cleanly_and_heals() {
     let (chaos, port) = start_proxy(upstream_address()).await;
@@ -298,7 +298,7 @@ async fn the_service_fails_cleanly_and_heals() {
 }
 
 /// The service must answer `200` again within a few seconds of the database returning.
-async fn heal(request: &loco_rs::TestServer, db: &sea_orm::DatabaseConnection) {
+async fn heal(request: &axa::TestServer, db: &sea_orm::DatabaseConnection) {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let response = request.get("/api/workers").await;

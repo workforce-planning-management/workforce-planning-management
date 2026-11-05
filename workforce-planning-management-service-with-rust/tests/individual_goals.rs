@@ -1,10 +1,10 @@
 //! Individual goals under enforcement (WPM-R224 to WPM-R226), against the shipped reference policy: who proposes and agrees, who
 //! reads, what is audited, a measure and a check-in, the review tie-in and its frozen snapshot, and the roll-up's floor.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -103,7 +103,7 @@ fn a_goal() -> Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test individual_goals -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test individual_goals -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
     let (keys, kid) = keys_and_kid();
@@ -359,7 +359,7 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test individual_goals -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test individual_goals -- --ignored`"]
 async fn the_rollup_counts_by_department_with_a_floor() {
     let (keys, kid) = keys_and_kid();
     unsafe {
@@ -422,7 +422,7 @@ async fn the_rollup_counts_by_department_with_a_floor() {
 // that does not send it, and refuses a target with no skill. Evidence never moves the goal (WPM-D180).
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_skill_goal_shows_the_declared_level_beside_its_target() {
     let (keys, kid) = keys_and_kid();
     let me = uuid::Uuid::new_v4();

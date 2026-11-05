@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | How | `podman compose up --build` at the repository root | Build the image or the binary yourself; run behind a TLS-terminating proxy |
 | Sign-in | **Off**, explicitly, so the demo needs no identity service | **On** (the default). Token keys required |
-| `LOCO_ENV` | `demo` | `production` (refuses to start with sign-in off or no key source) |
+| `APP_ENV` | `demo` | `production` (refuses to start with sign-in off or no key source) |
 | Data | Synthetic | Whatever the deployer's own impact assessment permits |
 | Exposure | Bound to `127.0.0.1` only | Never expose the demo |
 
@@ -46,26 +46,24 @@ not a statement that your deployment is under that regime.
 | `WPM_MCP_ALLOWED_ORIGINS` | no | none | Comma-separated `Origin` values that may call `POST /mcp` from a browser. An agent sends no `Origin` and is unaffected; any other `Origin` is refused (DNS-rebinding protection) |
 | `WPM_MCP_RESOURCE` | for MCP clients that discover OAuth | none | The URL of the MCP endpoint as clients reach it (`https`, or `http` to this machine), for example `https://wpm.example/mcp`. Set, `/mcp` also refuses any token whose audience is not this URL, so set `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same value. With `WPM_MCP_AUTHORIZATION_SERVERS` it turns on the OAuth protected-resource metadata (RFC 9728) at `/.well-known/oauth-protected-resource` and `.../mcp`, and the `401` from `/mcp` points at it. Unset, the metadata answers 404 |
 | `WPM_MCP_AUTHORIZATION_SERVERS` | with `WPM_MCP_RESOURCE` | none | Comma-separated issuer URLs (`https`) of the authorization servers whose tokens the deployment accepts. WPM is not an authorization server: this states what the deployer configured |
-| `WPM_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo loco task scim_push` on a schedule |
+| `WPM_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo run -- task scim_push` on a schedule |
 | `WPM_CREDENTIAL_ISSUER` | for credentials | none | The issuer's public URL (`https`, or `http` to this machine), the id in each credential and the base of the revocation list's address |
 | `WPM_CREDENTIAL_SIGNING_KEY` | for credentials | none | The Ed25519 signing key: 32 bytes, base64url. Held outside the database; never logged or returned. Without it issuing answers 422 |
 | `WPM_CREDENTIAL_ISSUER_NAME` | no | the issuer URL | The issuer's name as a verifier shows it |
 | `WPM_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
 | `WPM_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
-| `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo loco task webhook_deliver` on a schedule |
+| `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo run -- task webhook_deliver` on a schedule |
 | `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
 | `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
 | `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
 | `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | A request running longer is answered `408` |
 | `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
-| `JWT_SECRET` | yes | none | Required by the framework's config; unused by WPM's own sign-in |
 | `WPM_PASETO_KEYS_URL` or `WPM_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WPM_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |
 | `WPM_TOKEN_ISSUER`, `WPM_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
 | `WPM_KEYCLOAK_ISSUER`, `WPM_KEYCLOAK_AUDIENCE` | with the OIDC backend | none | Expected `iss` and `aud` |
 | `WPM_ABAC_POLICY_FILE` or `WPM_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
 | `PORT`, `HOST` | no | `5150`, `http://localhost` | Listen port; the host used in links |
 | `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `500`, `500` | Pool sizes and timeouts |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | no | `localhost`, `587`, empty | Mail (the service sends in-app notifications; mail is the framework's) |
 
 ## Behaviour switches
 
@@ -166,8 +164,8 @@ limited as a sensitive route; poll every minute or so, not every second.
 
 ## Scheduled tasks
 
-Nothing runs these by itself. [`config/scheduler.yaml`](../../workforce-planning-management-service-with-rust/config/scheduler.yaml) lists every
-recurring task for Loco's scheduler (`cargo loco scheduler --config config/scheduler.yaml --tag wpm`; `--tag scim` where SCIM is set up;
+Nothing runs these by itself. [`src/scheduler.rs`](../../workforce-planning-management-service-with-rust/src/scheduler.rs) lists every
+recurring task for the service's scheduler (`cargo run -- scheduler --tag wpm`; `--tag scim` where SCIM is set up;
 `--list` shows the jobs). Run **one** scheduler per deployment; every task is idempotent, so a second one is untidy, not harmful. A
 test fails if a task is neither scheduled there nor named as run by hand. Or schedule each with cron, a timer or a Kubernetes CronJob.
 

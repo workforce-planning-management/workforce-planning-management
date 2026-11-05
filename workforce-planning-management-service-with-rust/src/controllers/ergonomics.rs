@@ -5,7 +5,7 @@
 //! body: no symptom field exists anywhere on this surface.
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use uuid::Uuid;

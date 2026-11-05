@@ -3,8 +3,8 @@
 //! do on that day". The worker row stays the record of the primary assignment and is written through when the primary changes.
 //! Spec: `spec/staff-records-and-pay.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

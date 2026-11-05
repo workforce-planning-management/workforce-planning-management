@@ -15,7 +15,7 @@ fn feature<'a>(body: &'a Value, id: &str) -> &'a Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_register_records_what_is_said_and_shows_unknown_for_the_rest() {
     crate::requests::request_open(|request, ctx| async move {

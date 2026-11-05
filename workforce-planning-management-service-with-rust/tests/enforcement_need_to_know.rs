@@ -9,10 +9,10 @@
 //! Before this guard, a signed-in caller with no attributes could read a colleague's sick-leave
 //! request with its reason, their time-entry notes and every applicant's e-mail address.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -80,7 +80,7 @@ use sea_orm::ConnectionTrait;
 /// One boot, every persona against every class.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_need_to_know -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_need_to_know -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one matrix read top to bottom
 async fn reads_are_need_to_know() {
     let (keys, kid) = keys_and_kid();

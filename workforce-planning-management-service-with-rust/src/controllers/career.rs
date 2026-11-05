@@ -14,8 +14,8 @@
 //! Past entries and aspirations are statements, not assessments.
 
 use super::writable_worker;
+use axa::prelude::*;
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use std::collections::BTreeMap;

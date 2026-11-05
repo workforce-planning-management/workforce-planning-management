@@ -8,8 +8,8 @@
 //! *worker's* record, so a person manages their own, and HR can do it on
 //! their behalf (recorded as such).
 
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect};
 use serde::Deserialize;
 use std::collections::BTreeMap;

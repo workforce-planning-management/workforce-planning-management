@@ -1,4 +1,4 @@
-//! loco CLI tasks.
+//! Command-line tasks.
 
 pub mod coverage_expiry_reminders;
 pub mod early_warning_sweep;

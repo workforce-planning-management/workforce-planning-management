@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     number: &str,
     name: &str,
@@ -35,7 +35,7 @@ fn names(rows: &Value) -> Vec<&str> {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn pages_are_in_name_order_ignoring_case_and_add_up_to_the_total() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -73,7 +73,7 @@ async fn pages_are_in_name_order_ignoring_case_and_add_up_to_the_total() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_search_term_is_text_not_a_pattern_and_a_managers_name_is_searchable() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

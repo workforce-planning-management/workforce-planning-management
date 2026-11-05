@@ -8,9 +8,9 @@
 //! allows `svc`). Configure your scraper with `metrics_path: /metrics.prom`
 //! and `authorization` credentials.
 
+use axa::prelude::*;
 use axum::http::{HeaderValue, StatusCode, header::CONTENT_TYPE};
 use axum::response::{IntoResponse, Response};
-use loco_rs::prelude::*;
 
 use crate::metrics::{self, Metrics};
 

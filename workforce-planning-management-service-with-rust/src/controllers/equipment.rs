@@ -2,8 +2,8 @@
 //! position, cost or reading is held. Equipment still out keeps a leaver's record from being completed (`controllers::movements`).
 //! HR writes; a worker reads their own. Spec: `spec/joiners-and-leavers.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

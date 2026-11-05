@@ -11,7 +11,7 @@
 //! Intended caller: the LMS's service account (the `svc` ABAC attribute);
 //! the blanket write guard applies like any other mutation.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use std::str::FromStr;

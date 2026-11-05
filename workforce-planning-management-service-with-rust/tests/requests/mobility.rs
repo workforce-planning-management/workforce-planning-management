@@ -10,7 +10,7 @@ use super::{an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn opportunities_are_open_requisitions_elsewhere_in_the_organization_with_unknown_fit_left_null()
  {
     crate::requests::request_open(|request, _ctx| async move {
@@ -69,7 +69,7 @@ async fn opportunities_are_open_requisitions_elsewhere_in_the_organization_with_
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_openapi_document_and_swagger_page_are_served_and_name_this_service() {
     crate::requests::request_open(|request, _ctx| async move {
         let spec: Value = request.get("/api-docs/openapi.json").await.json();

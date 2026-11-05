@@ -1,4 +1,4 @@
-//! `cargo loco task import_esco dir:<path> [lang:en] [version:v1.2.1]` —
+//! `cargo run -- task import_esco dir:<path> [lang:en] [version:v1.2.1]` —
 //! load a pinned **ESCO** CSV download into local reference tables
 //! (`spec/esco/index.md`), then link catalogue skills to ESCO skills by an
 //! **exact** (normalised) label match.
@@ -16,8 +16,8 @@
 //! reference yet. Anything else is left for a planner (`POST
 //! /api/skills/{pid}/refs`).
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -51,12 +51,16 @@ impl Task for ImportEsco {
         let dir = vars
             .cli_arg("dir")
             .map_err(|_| Error::string("dir:<path to the ESCO CSV files> is required"))?;
-        let lang = vars.cli_arg("lang").unwrap_or("en");
-        let version = vars.cli_arg("version").unwrap_or("unspecified");
+        let lang = vars.cli_arg("lang").map_or("en", String::as_str);
+        let version = vars
+            .cli_arg("version")
+            .map_or("unspecified", String::as_str);
         let report = import_esco(&ctx.db, Path::new(dir), lang, version).await?;
         // The catalogue changed, so searches cached from the old one are orphaned. With the Redis
         // provider this reaches every instance; with the in-memory one they expire within the hour.
-        crate::shared_cache::install(ctx.cache.clone());
+        let cache =
+            crate::shared_cache::Cache::from_env().map_err(|cause| axa::Error::string(&cause))?;
+        crate::shared_cache::install(std::sync::Arc::new(cache));
         crate::shared_cache::invalidate(crate::shared_cache::Namespace::EscoOccupations).await;
         tracing::info!(?report, "ESCO import finished");
         println!("{report:#?}");

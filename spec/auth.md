@@ -198,7 +198,7 @@ what it enforces *with*, not flipping a flag:
    `WPM_REQUIRE_AUTH` is read once at boot (restart to change). Do not set it
    to `0` outside local development: the service logs a warning every ten
    minutes while it is off, `GET /_posture` reports `auth_enforced: false`, and
-   `LOCO_ENV=production` refuses to start.
+   `APP_ENV=production` refuses to start.
 4. **Verify.** `cargo test --test enforcement -- --ignored` runs the
    persona matrix against the reference policy shape: public paths
    open; 401 without a token; masked vs self vs payroll reads;

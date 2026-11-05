@@ -5,10 +5,10 @@
 //! payroll caller who holds no seat in the run's organization is told the run does not exist. (The run's own routes are not
 //! scoped by membership: an HR or payroll attribute in a token is deployment-wide, as the personas test in `enforcement.rs` has it.) the answer for one who may read names no age.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -73,7 +73,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_payroll_checks -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_payroll_checks -- --ignored`"]
 async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() {
     use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();

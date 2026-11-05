@@ -1,4 +1,4 @@
-//! `cargo loco task policy_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
+//! `cargo run -- task policy_reminders [days_ahead:N] [as_of:YYYY-MM-DD]`
 //! — tell each worker who has not acknowledged the newest version in force of a policy aimed at them, once the day due is within
 //! `days_ahead` calendar days of `as_of` (default 3) or has passed.
 //!
@@ -6,9 +6,9 @@
 //! employed on `as_of` and not erased are told. The message names the policy and the day due; it holds no policy text and tells
 //! no one else. A reminder never forces anything: an overdue acknowledgement is flagged, not required (WPM-D105).
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::QueryOrder;
 use std::collections::BTreeSet;
 use uuid::Uuid;

@@ -10,7 +10,7 @@ use workforce_planning_management::controllers::privacy::{ReplayReport, replay_e
 
 use super::{activate, an_org, seed_worker};
 
-async fn scalar(ctx: &loco_rs::app::AppContext, sql: &str) -> i64 {
+async fn scalar(ctx: &axa::AppContext, sql: &str) -> i64 {
     ctx.db
         .query_one_raw(sea_orm::Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
@@ -24,7 +24,7 @@ async fn scalar(ctx: &loco_rs::app::AppContext, sql: &str) -> i64 {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_restore_does_not_undo_an_erasure() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

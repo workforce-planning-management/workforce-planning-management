@@ -6,7 +6,7 @@ through WPM-T396.)
 
 ## What this project is
 
-A **back-end JSON API**, written in Rust on [Loco](https://loco.rs)
+A **back-end JSON API**, written in Rust on Axum and [axa](https://crates.io/crates/axa)
 (Axum + SeaORM + PostgreSQL), for workforce planning management across
 the whole employment lifecycle:
 
@@ -58,11 +58,11 @@ URNs (`person:<uuid>`), never duplicated demographics
    change is **requirement (`WPM-R*`) + design decision (`WPM-D*`) + task
    (`WPM-T*`) + code + tests**; the task entry records what was verified and
    what was *not*. The live queue is [`../spec/tasks.md`](../spec/tasks.md).
-2. **Family conventions.** Loco layout (`src/controllers/`),
+2. **Family conventions.** Layout (`src/controllers/`),
    `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`, tracing + OTLP,
    OpenAPI/Swagger (`src/openapi.rs` — add every new route), header API
    versioning, **Podman not Docker**, **PostgreSQL not SQLite**, in-memory
-   cache. See rust-loco-stack.
+   cache. See rust-axum-stack.
 3. **Pure core first.** Rules live in DB-free, clock-free `src/rules/<area>.rs`
    with exhaustive unit tests (dates and "today" are always supplied);
    controllers only load data, call the rule and write. Write and test the rule
@@ -100,7 +100,7 @@ URNs (`person:<uuid>`), never duplicated demographics
    `memberships::scope_organization_refs` (`None` = auth off = unrestricted) and
    `memberships::has_role_in` for editor roles. A thing outside the caller's
    organizations is a **404**, not a 403.
-10. **Known gotchas.** loco `create_table` pluralizes names (use plural names /
+10. **Known gotchas.** The older `create_table` pluralizes names (use plural names /
     explicit SQL; migrations here are explicit SQL, `m<date>_<seq>_<name>.rs`);
     `ModelError::EntityNotFound` is not mapped to 404 (return `Error::NotFound`);
     enforcement tests need their own binary (OnceLock); `active → terminated`
@@ -124,8 +124,8 @@ cargo test --no-default-features --features keycloak \
 cargo clippy --all-targets          # pedantic; keep new files clean
 ```
 
-Loco tasks (`cargo run -- task <name>`), sixteen as of 2026-10-30: `seed`; the scheduled ones in
-`config/scheduler.yaml` (`webhook_deliver` every minute, `snapshot_headcount`, `rota_reminders`,
+Tasks (`cargo run -- task <name>`), sixteen as of 2026-10-30: `seed`; the scheduled ones in
+`src/scheduler.rs` (`webhook_deliver` every minute, `snapshot_headcount`, `rota_reminders`,
 `pay_progression_reminders`, `policy_reminders`, `engagement_end_reminders`, `early_warning_sweep`,
 `oversight_pack_freeze`, `verify_audit_chain`, and `scim_push` where SCIM is configured); `replay_erasures`
 after a restore; and the imports `import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`. See

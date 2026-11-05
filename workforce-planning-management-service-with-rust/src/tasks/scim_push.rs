@@ -1,4 +1,4 @@
-//! `cargo loco task scim_push` — provision workers to an identity provider over SCIM 2.0 (WPM-R150, WPM-D102).
+//! `cargo run -- task scim_push` — provision workers to an identity provider over SCIM 2.0 (WPM-R150, WPM-D102).
 //!
 //! It **reconciles** rather than replaying events: for each worker it works out the SCIM `User` that should exist today
 //! ([`crate::rules::scim`]), compares its fingerprint with what was last sent, and creates or replaces the user only when it
@@ -11,9 +11,9 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::{DateTime, Duration, NaiveDate, Utc};
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::ActiveValue;
 use serde::Serialize;
 use serde_json::{Value, json};

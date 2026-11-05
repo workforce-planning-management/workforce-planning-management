@@ -10,7 +10,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::IN_BATCH;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::QueryTrait;
 use serde_json::json;
 use uuid::Uuid;

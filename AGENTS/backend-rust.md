@@ -1,4 +1,4 @@
-# Backend (Rust, Loco)
+# Backend (Rust, Axum and axa)
 
 `workforce-planning-management-service-with-rust` — Axum + SeaORM + PostgreSQL,
 `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`. Stack-level agreements:
@@ -54,7 +54,7 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 - **Do not read through `ctx.db` while a transaction is open.** The test pool is
   small; the read waits for the connection the transaction holds and surfaces as
   a 500. Read first, then `begin()`.
-- loco `create_table` pluralizes names — this repo uses explicit SQL.
+- This repo writes migrations in explicit SQL.
 - `ModelError::EntityNotFound` is not a 404; return `Error::NotFound`.
 - `active → terminated` routes via `offboarding`.
 - Enforcement/Keycloak tests need their own binaries (process-wide `OnceLock`s).

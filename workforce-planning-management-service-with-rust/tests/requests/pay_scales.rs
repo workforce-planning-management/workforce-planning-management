@@ -7,7 +7,7 @@ use serial_test::serial;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_national_scale_is_served_and_salaries_are_placed_on_it() {
     crate::requests::request_open(|request, _ctx| async move {
         // The list names the scale, its source and its bands.

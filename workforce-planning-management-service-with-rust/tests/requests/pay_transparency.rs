@@ -39,8 +39,8 @@ const BASIS: &str = "Same skills, effort, responsibility and working conditions.
 
 /// Hire `n` workers with a title, a sex answer and a salary; returns their pids.
 async fn hire(
-    request: &loco_rs::TestServer,
-    ctx: &loco_rs::app::AppContext,
+    request: &axa::TestServer,
+    ctx: &axa::AppContext,
     org: &str,
     title: &str,
     sex: Option<&str>,
@@ -74,7 +74,7 @@ async fn hire(
     pids
 }
 
-async fn category(request: &loco_rs::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
+async fn category(request: &axa::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
     request
         .post("/api/pay-categories")
         .json(
@@ -86,7 +86,7 @@ async fn category(request: &loco_rs::TestServer, org: &str, name: &str, titles: 
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_category_states_its_basis_and_a_title_is_in_one_category() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -163,7 +163,7 @@ async fn a_category_states_its_basis_and_a_title_is_in_one_category() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_report_does_not_exist_until_equality_monitoring_is_on_and_refuses_bad_input() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -221,7 +221,7 @@ async fn the_report_does_not_exist_until_equality_monitoring_is_on_and_refuses_b
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell() {
     crate::requests::request_open(|request, ctx| async move {
@@ -330,7 +330,7 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // WPM-T402: the deployer's reporting tiers and sex category feed the gap report, and the report says whose its tiers are.
 async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
     crate::requests::request_open(|request, ctx| async move {

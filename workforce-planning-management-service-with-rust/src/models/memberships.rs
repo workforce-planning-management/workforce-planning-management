@@ -9,7 +9,7 @@
 //! own.
 
 use authentication_verifier::Claims;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ConnectionTrait, QueryOrder};
 
 use super::_entities::organization_memberships;

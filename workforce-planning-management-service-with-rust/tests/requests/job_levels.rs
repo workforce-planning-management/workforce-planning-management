@@ -6,7 +6,7 @@ use serial_test::serial;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn google_levels_are_served_with_unknowns_left_null() {
     crate::requests::request_open(|request, _ctx| async move {
         let list: Value = request.get("/api/job-levels").await.json();

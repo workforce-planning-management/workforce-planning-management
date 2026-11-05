@@ -81,5 +81,5 @@ if [ "$skip" = "1" ]; then
 fi
 args=()
 [ -n "$ledger" ] && args+=("file:$ledger")
-DATABASE_URL="$target" LOCO_ENV="${LOCO_ENV:-demo}" "$WPM_BIN" task replay_erasures ${args[@]+"${args[@]}"}
+DATABASE_URL="$target" APP_ENV="${APP_ENV:-demo}" "$WPM_BIN" task replay_erasures ${args[@]+"${args[@]}"}
 echo "erasures replayed" >&2

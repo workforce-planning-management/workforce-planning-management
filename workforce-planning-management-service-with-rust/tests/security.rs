@@ -6,10 +6,10 @@
 //! default (**on**) here, which also proves the default: an unauthenticated
 //! read is a `401`, not a `200`.
 //!
-//! `#[ignore]`d: boots the app (needs PostgreSQL via `config/test.yaml` /
+//! `#[ignore]`d: boots the app (needs PostgreSQL via
 //! `DATABASE_URL`). Run with `cargo test --test security -- --ignored`.
 
-use loco_rs::testing::prelude::*;
+use axa::testing::prelude::*;
 use serial_test::serial;
 use workforce_planning_management::app::App;
 
@@ -24,7 +24,7 @@ const BASELINE: [&str; 6] = [
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test security -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test security -- --ignored`"]
 async fn headers_everywhere_and_the_limiter_trips() {
     // Read on first use: a small ordinary limit, a sensitive limit of one.
     // `set_var` is `unsafe` in edition 2024; single-threaded setup.

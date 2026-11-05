@@ -5,10 +5,10 @@
 //! payroll and the service the report; that the report names no one and carries no head count; and that no audit
 //! entry holds a figure.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -75,7 +75,7 @@ const CATEGORIES: &str = r#"{"sex":["female","male"]}"#;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_pay_gap -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_pay_gap -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
     use sea_orm::ConnectionTrait;

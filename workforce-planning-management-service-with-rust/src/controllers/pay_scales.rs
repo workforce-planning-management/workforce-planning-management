@@ -8,7 +8,7 @@
 //! asks about a *worker's* salary has already read it through the audited,
 //! maskable `GET /api/workers/{pid}`.)
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
 

@@ -11,7 +11,7 @@
 //! a worker's own record.
 
 use super::writable_worker;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
 use std::collections::BTreeMap;

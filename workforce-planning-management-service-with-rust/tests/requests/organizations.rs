@@ -44,7 +44,7 @@ fn claims_for(person_ref: &str) -> Claims {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn organization_membership_round_trip() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -222,7 +222,7 @@ async fn organization_membership_round_trip() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn organization_confederation_round_trip() {
     crate::requests::request_open(|request, ctx| async move {
         let parent = an_org();

@@ -1,11 +1,14 @@
-### Technology stack for Rust Loco
+### Technology stack for Rust and Axum
+
+- **WPM-D183 The service runs on Axum and axa, with the schedule and the cache in its own code.** `axa` gives the routes, the middleware, the configuration from the environment, the command line and tasks. It has no scheduler and no cache, so `src/scheduler.rs` keeps the schedule (`workforce-planning-management scheduler --tag wpm`) and `src/shared_cache.rs` talks to memory or Redis directly, reading what the old provider wrote. Settings are environment variables; `config/` holds only the reference policy. `APP_ENV` names the environment and the old `LOCO_ENV` still works. **Changed on purpose:** no automatic `ETag` or `304`; `JWT_SECRET` and `SMTP_*` are no longer read; the request timeout rounds up to whole seconds; CORS mirrors the request's headers where it listed four. The owner asked for this on 2026-11-05. SeaORM stays until a separate change.
+
 
 | Component            | Technology                                        | Purpose                                     |
 | -------------------- | ------------------------------------------------- | ------------------------------------------- |
 | **Language**         | Rust 1.95+ 2024 Edition                           | Systems programming, performance, safety    |
 | **Async Runtime**    | Tokio                                             | Asynchronous I/O and concurrency            |
 | **HTTP**             | tower-http                                        | HTTP layer, CORS, compression               |
-| **Web Framework**    | Axum, Loco                                        | HTTP server and routing (backend-only)      |
+| **Web Framework**    | Axum, axa                                         | HTTP server and routing (backend-only)      |
 | **Database**         | PostgreSQL 18+                                    | Data persistence                            |
 | **ORM**              | SeaORM                                            | Async database object-relational mapper     |
 | **Search Engine**    | Tantivy                                           | Full-text search indexing                   |

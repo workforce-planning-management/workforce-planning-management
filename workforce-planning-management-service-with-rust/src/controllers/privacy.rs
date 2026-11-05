@@ -5,7 +5,7 @@
 //! store only: what the upstream identity services hold is the
 //! deployment's coordination duty, stated in the payloads.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
 

@@ -66,7 +66,7 @@ checksums() {
 }
 
 start_service() { # url
-  DATABASE_URL="$1" LOCO_ENV=demo WPM_REQUIRE_AUTH=0 PORT="$port" \
+  DATABASE_URL="$1" APP_ENV=demo WPM_REQUIRE_AUTH=0 PORT="$port" \
     WPM_RATE_LIMIT_PER_MINUTE=0 WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=0 \
     "$WPM_BIN" start > "$work/service.log" 2>&1 &
   pid=$!
@@ -82,7 +82,7 @@ api() { curl -fsS -H 'content-type: application/json' "$@"; }
 
 step "1. migrate and seed the source database ($src)"
 psql "$ADMIN_DATABASE_URL" -qc "CREATE DATABASE $src"
-export LOCO_ENV=demo
+export APP_ENV=demo
 DATABASE_URL="$SRC_URL" "$WPM_BIN" db migrate >/dev/null
 DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
 src_workers="$(psql "$SRC_URL" -Atc 'select count(*) from workers where deleted_at is null')"

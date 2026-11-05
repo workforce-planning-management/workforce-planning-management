@@ -4,8 +4,8 @@
 //! nothing. HR, the service and an administrator read it, never a line manager or payroll, and each read is audited with no content.
 //! The rules are `rules::injury_record`. Spec: `spec/injury-and-separation-duties.md`.
 
+use axa::prelude::*;
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};

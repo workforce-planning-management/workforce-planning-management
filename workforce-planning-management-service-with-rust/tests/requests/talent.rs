@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded team, the whole talent surface
 async fn development_plans_track_claimed_and_verified_progress() {
     crate::requests::request_open(|request, _ctx| async move {
@@ -145,7 +145,7 @@ async fn development_plans_track_claimed_and_verified_progress() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // pipelines + early careers + intelligence in one flow
 async fn pipelines_apprenticeships_and_intelligence() {
     crate::requests::request_open(|request, _ctx| async move {

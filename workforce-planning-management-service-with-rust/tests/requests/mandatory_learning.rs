@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
 
-async fn make_nurse(request: &loco_rs::TestServer, worker: &str) {
+async fn make_nurse(request: &axa::TestServer, worker: &str) {
     let list: Value = request
         .get(&format!("/api/workers/{worker}/assignments"))
         .await
@@ -22,7 +22,7 @@ async fn make_nurse(request: &loco_rs::TestServer, worker: &str) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_requirement_is_checked_against_recorded_completions_and_unknown_is_never_compliant() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -141,7 +141,7 @@ async fn a_requirement_is_checked_against_recorded_completions_and_unknown_is_ne
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_manager_sees_their_team_by_name_with_unknown_kept_unknown() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -199,7 +199,7 @@ async fn a_manager_sees_their_team_by_name_with_unknown_kept_unknown() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_roll_up_by_staff_group_applies_the_floor_to_each_group_on_its_own() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -276,7 +276,7 @@ async fn the_roll_up_by_staff_group_applies_the_floor_to_each_group_on_its_own()
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_requirement_may_carry_its_own_due_soon_window() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -331,7 +331,7 @@ async fn a_requirement_may_carry_its_own_due_soon_window() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_position_audience_matches_the_number_of_the_seat_held_and_otherwise_says_unknown() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

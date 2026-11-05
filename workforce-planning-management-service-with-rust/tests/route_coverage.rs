@@ -1,6 +1,6 @@
 //! Every route the service serves is called, with its method, by at least one test.
 //!
-//! DB-free: the route list comes from `app::app_routes()` and the calls from reading the
+//! DB-free: the route list comes from `app::route_groups()` and the calls from reading the
 //! test sources. A call is `.get(`, `.post(`, `.put(`, `.patch(` or `.delete(` (or the bare
 //! helper form the enforcement suites use) with a string literal in its first argument.
 //! A literal matches a route when its trailing path segments match the route's, where a
@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use workforce_planning_management::app::app_routes;
+use workforce_planning_management::app::route_groups;
 
 /// Routes called by a test that builds the URL in a variable, so the literal scan cannot see
 /// them: `(METHOD, route, the test that calls it)`.
@@ -237,9 +237,17 @@ fn every_route_is_called_with_its_method_by_some_test() {
     }
 
     let mut routes = BTreeSet::new();
-    for route in app_routes().collect() {
-        for action in &route.actions {
-            routes.insert((action.as_str().to_ascii_lowercase(), route.uri.clone()));
+    for group in route_groups() {
+        let prefix = group.prefix.clone().unwrap_or_default();
+        for handler in &group.handlers {
+            // A `MethodRouter` says which verbs it serves only through its debug text.
+            let text = format!("{:?}", handler.method);
+            for verb in ["get", "post", "put", "patch", "delete"] {
+                if !text.contains(&format!("{verb}: None")) {
+                    let uri = format!("{prefix}/{}", handler.uri.trim_start_matches('/'));
+                    routes.insert((verb.to_string(), uri.trim_end_matches('/').to_string()));
+                }
+            }
         }
     }
     assert!(

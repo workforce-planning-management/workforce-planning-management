@@ -9,7 +9,7 @@ use super::{an_org, seed_worker};
 
 /// Record `code` (with `layer` and `parent`) in `org`, and append one `example` row of `key` at it.
 async fn profile_row(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     (code, layer, parent): (&str, &str, Option<&str>),
     key: &str,
@@ -29,7 +29,7 @@ async fn profile_row(
 }
 
 /// Set `org`'s home jurisdiction (`null` clears it).
-async fn set_home(request: &loco_rs::TestServer, org: &str, code: Value) {
+async fn set_home(request: &axa::TestServer, org: &str, code: Value) {
     request
         .put("/api/home-jurisdiction")
         .json(&json!({ "organization_ref": org, "home_jurisdiction": code }))
@@ -39,7 +39,7 @@ async fn set_home(request: &loco_rs::TestServer, org: &str, code: Value) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn each_default_names_its_regime_and_a_setting_replaces_it() {
     crate::requests::request_open(|request, _ctx| async move {
         let read = || async {
@@ -145,7 +145,7 @@ async fn each_default_names_its_regime_and_a_setting_replaces_it() {
 /// worker's chain first, then `WPM_FLEXIBLE_REFUSAL_REASONS`, then the defaults; never from the organization's home.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one journey, read top to bottom
 async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_default() {
     crate::requests::request_open(|request, ctx| async move {
@@ -251,7 +251,7 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
 /// retention schedule say where theirs came from.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_organization_reader_takes_the_home_profile_then_the_setting_then_the_default() {
     crate::requests::request_open(|request, _ctx| async move {
         let open_without_a_range = |org: String| {

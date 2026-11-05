@@ -3,8 +3,8 @@
 //! representative or what was said. The timeline reads the pure rules in `rules::consultation` (a suggestion with its evidence, the deployer's
 //! to confirm) and says whether consultation began in time. HR writes and reads; audited without text. Spec: `spec/worker-unions.md`.
 
+use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

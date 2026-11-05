@@ -1,4 +1,4 @@
-//! `cargo loco task engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell each
+//! `cargo run -- task engagement_end_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell each
 //! manager, and HR, about a fixed-term or contractor engagement that is about to end, or has ended
 //! with no decision (WPM-R81).
 //!
@@ -10,9 +10,9 @@
 //! The notification names the worker and the date. **It carries no rate**, no supplier and no reason.
 //! HR is the workers who hold an `hr_admin` membership in the worker's organization.
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 

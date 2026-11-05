@@ -11,7 +11,7 @@
 
 use super::ratio_json;
 use crate::rules::display;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;

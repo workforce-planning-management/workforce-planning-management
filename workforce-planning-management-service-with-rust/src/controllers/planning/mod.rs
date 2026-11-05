@@ -9,7 +9,7 @@
 //! aggregate and levers are suggestions (WPM-D28).
 
 use super::{ensure_org_in_scope, ratio_json};
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};

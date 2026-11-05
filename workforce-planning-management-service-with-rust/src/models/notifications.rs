@@ -3,7 +3,7 @@
 //! body, and pids/names — callers must never pass scores, comments,
 //! or any masked-tier value into `body`/`data`.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 

@@ -5,10 +5,10 @@
 //! capacity view, not the workers, and nothing that writes. Everyone reads the same payload, and it
 //! holds no worker, no worker number and no name.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -79,7 +79,7 @@ fn policy_with_deciders() -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_oversight_pack -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_oversight_pack -- --ignored`"]
 async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
     use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();

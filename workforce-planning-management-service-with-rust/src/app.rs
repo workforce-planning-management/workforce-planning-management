@@ -1,28 +1,24 @@
-//! loco.rs application wiring: the [`App`] `Hooks` implementation that
-//! registers routes, the blanket auth guard, the API-version
-//! middleware, and the truncate lifecycle for
+//! Application wiring: [`App`] reads the environment, connects, registers routes, the blanket auth
+//! guard and the API-version middleware, runs the command line, and holds the truncate lifecycle for
 //! `workforce-planning-management`.
 
-use async_trait::async_trait;
+use axa::{
+    AppContext, Environment, Error, Result,
+    boot::{BootResult, TestApp},
+    cli::{Cli, Command, DbCommand, parse_vars},
+    config::{Config, Defaults, Logger, MB},
+    db::truncate_table,
+    routes::{AppRoutes, Routes},
+    server,
+    task::Tasks,
+};
 use axum::{
     Router as AxumRouter,
     extract::Request,
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use loco_rs::{
-    Result,
-    app::{AppContext, Hooks, Initializer},
-    bgworker::Queue,
-    boot::{BootResult, StartMode, create_app},
-    config::Config,
-    controller::AppRoutes,
-    db::truncate_table,
-    environment::Environment,
-    task::Tasks,
-};
-use migration::Migrator;
-use std::path::Path;
+use migration::{Migrator, MigratorTrait};
 
 use crate::{auth, controllers, models::_entities::prelude::*, rules, tasks};
 
@@ -95,118 +91,168 @@ fn warn_auth_off() {
     );
 }
 
-/// The loco.rs application hooks for `workforce-planning-management`.
+/// The `workforce-planning-management` application.
 pub struct App;
-/// Every route the service serves. Needs no database, so a test can read the list
-/// (`tests/route_coverage.rs`).
+/// Every route group the service serves. Needs no database, so a test can read the list (`tests/route_coverage.rs`).
 #[must_use]
-pub fn app_routes() -> AppRoutes {
-    AppRoutes::with_default_routes()
-        .add_route(controllers::hr_core::routes())
-        .add_route(controllers::acquisition::routes())
-        .add_route(controllers::assessments::routes())
-        .add_route(controllers::workforce::routes())
-        .add_route(controllers::development::routes())
-        .add_route(controllers::learning::routes())
-        .add_route(controllers::roles::routes())
-        .add_route(controllers::cpd::routes())
-        .add_route(controllers::mobility::routes())
-        .add_route(controllers::lms::routes())
-        .add_route(controllers::change::routes())
-        .add_route(controllers::planning::routes())
-        .add_route(controllers::capacity::routes())
-        .add_route(controllers::conversion_plans::routes())
-        .add_route(controllers::funding::routes())
-        .add_route(controllers::governance::routes())
-        .add_route(controllers::key_person::routes())
-        .add_route(controllers::oversight::routes())
-        .add_route(controllers::early_warning::routes())
-        .add_route(controllers::oversight_packs::routes())
-        .add_route(controllers::cutover::routes())
-        .add_route(controllers::programmes::routes())
-        .add_route(controllers::engagements::routes())
-        .add_route(controllers::me::routes())
-        .add_route(controllers::resignations::routes())
-        .add_route(controllers::flexible_working::routes())
-        .add_route(controllers::equality_monitoring::routes())
-        .add_route(controllers::pay_transparency::routes())
-        .add_route(controllers::pay_information::routes())
-        .add_route(controllers::my_payslips::routes())
-        .add_route(controllers::training_economics::routes())
-        .add_route(controllers::individual_goals::routes())
-        .add_route(controllers::padr::routes())
-        .add_route(controllers::separation::routes())
-        .add_route(controllers::injury_records::routes())
-        .add_route(controllers::pay_assessment::routes())
-        .add_route(controllers::human_capital::routes())
-        .add_route(controllers::pay_range::routes())
-        .add_route(controllers::bargaining::routes())
-        .add_route(controllers::consultations::routes())
-        .add_route(controllers::decision_gates::routes())
-        .add_route(controllers::equipment::routes())
-        .add_route(controllers::absence_categories::routes())
-        .add_route(controllers::assignments::routes())
-        .add_route(controllers::mandatory_learning::routes())
-        .add_route(controllers::coverage_evidence::routes())
-        .add_route(controllers::qualifications::routes())
-        .add_route(controllers::bridges::routes())
-        .add_route(controllers::category_vocabulary::routes())
-        .add_route(controllers::cost_centres::routes())
-        .add_route(controllers::holidays::routes())
-        .add_route(controllers::policies::routes())
-        .add_route(controllers::credentials::routes())
-        .add_route(controllers::skill_mappings::routes())
-        .add_route(controllers::ai_register::routes())
-        .add_route(controllers::webhooks::routes())
-        .add_route(controllers::positions::routes())
-        .add_route(controllers::health_requirements::routes())
-        .add_route(controllers::esco::routes())
-        .add_route(controllers::sfia::routes())
-        .add_route(controllers::framework_roles::routes())
-        .add_route(controllers::career::routes())
-        .add_route(controllers::reporting::routes())
-        .add_route(controllers::groups::routes())
-        .add_route(controllers::announcements::routes())
-        .add_route(controllers::contacts::routes())
-        .add_route(controllers::directory::routes())
-        .add_route(controllers::duplicates::routes())
-        .add_route(controllers::pay_scales::routes())
-        .add_route(controllers::job_levels::routes())
-        .add_route(controllers::grades::routes())
-        .add_route(controllers::pay_positions::routes())
-        .add_route(controllers::expenses::routes())
-        .add_route(controllers::rotas::routes())
-        .add_route(controllers::handover::routes())
-        .add_route(controllers::movements::routes())
-        .add_route(controllers::skill_gaps::routes())
-        .add_route(controllers::training_plan::routes())
-        .add_route(controllers::rota_swaps::routes())
-        .add_route(controllers::transfers::routes())
-        .add_route(controllers::talent::routes())
-        .add_route(controllers::intelligence::routes())
-        .add_route(controllers::payroll::routes())
-        .add_route(controllers::wellbeing::routes())
-        .add_route(controllers::appraisals::routes())
-        .add_route(controllers::privacy::routes())
-        .add_route(controllers::statutory_defaults::routes())
-        .add_route(controllers::jurisdictions::routes())
-        .add_route(controllers::notifications::routes())
-        .add_route(controllers::ergonomics::routes())
-        .add_route(controllers::adjustments::routes())
-        .add_route(controllers::organizations::routes())
-        .add_route(controllers::audits::routes())
-        .add_route(controllers::docs::routes())
-        .add_route(controllers::metrics::routes())
-        .add_route(crate::security::routes())
+pub fn route_groups() -> Vec<Routes> {
+    vec![
+        axa::health::routes(),
+        controllers::hr_core::routes(),
+        controllers::acquisition::routes(),
+        controllers::assessments::routes(),
+        controllers::workforce::routes(),
+        controllers::development::routes(),
+        controllers::learning::routes(),
+        controllers::roles::routes(),
+        controllers::cpd::routes(),
+        controllers::mobility::routes(),
+        controllers::lms::routes(),
+        controllers::change::routes(),
+        controllers::planning::routes(),
+        controllers::capacity::routes(),
+        controllers::conversion_plans::routes(),
+        controllers::funding::routes(),
+        controllers::governance::routes(),
+        controllers::key_person::routes(),
+        controllers::oversight::routes(),
+        controllers::early_warning::routes(),
+        controllers::oversight_packs::routes(),
+        controllers::cutover::routes(),
+        controllers::programmes::routes(),
+        controllers::engagements::routes(),
+        controllers::me::routes(),
+        controllers::resignations::routes(),
+        controllers::flexible_working::routes(),
+        controllers::equality_monitoring::routes(),
+        controllers::pay_transparency::routes(),
+        controllers::pay_information::routes(),
+        controllers::my_payslips::routes(),
+        controllers::training_economics::routes(),
+        controllers::individual_goals::routes(),
+        controllers::padr::routes(),
+        controllers::separation::routes(),
+        controllers::injury_records::routes(),
+        controllers::pay_assessment::routes(),
+        controllers::human_capital::routes(),
+        controllers::pay_range::routes(),
+        controllers::bargaining::routes(),
+        controllers::consultations::routes(),
+        controllers::decision_gates::routes(),
+        controllers::equipment::routes(),
+        controllers::absence_categories::routes(),
+        controllers::assignments::routes(),
+        controllers::mandatory_learning::routes(),
+        controllers::coverage_evidence::routes(),
+        controllers::qualifications::routes(),
+        controllers::bridges::routes(),
+        controllers::category_vocabulary::routes(),
+        controllers::cost_centres::routes(),
+        controllers::holidays::routes(),
+        controllers::policies::routes(),
+        controllers::credentials::routes(),
+        controllers::skill_mappings::routes(),
+        controllers::ai_register::routes(),
+        controllers::webhooks::routes(),
+        controllers::positions::routes(),
+        controllers::health_requirements::routes(),
+        controllers::esco::routes(),
+        controllers::sfia::routes(),
+        controllers::framework_roles::routes(),
+        controllers::career::routes(),
+        controllers::reporting::routes(),
+        controllers::groups::routes(),
+        controllers::announcements::routes(),
+        controllers::contacts::routes(),
+        controllers::directory::routes(),
+        controllers::duplicates::routes(),
+        controllers::pay_scales::routes(),
+        controllers::job_levels::routes(),
+        controllers::grades::routes(),
+        controllers::pay_positions::routes(),
+        controllers::expenses::routes(),
+        controllers::rotas::routes(),
+        controllers::handover::routes(),
+        controllers::movements::routes(),
+        controllers::skill_gaps::routes(),
+        controllers::training_plan::routes(),
+        controllers::rota_swaps::routes(),
+        controllers::transfers::routes(),
+        controllers::talent::routes(),
+        controllers::intelligence::routes(),
+        controllers::payroll::routes(),
+        controllers::wellbeing::routes(),
+        controllers::appraisals::routes(),
+        controllers::privacy::routes(),
+        controllers::statutory_defaults::routes(),
+        controllers::jurisdictions::routes(),
+        controllers::notifications::routes(),
+        controllers::ergonomics::routes(),
+        controllers::adjustments::routes(),
+        controllers::organizations::routes(),
+        controllers::audits::routes(),
+        controllers::docs::routes(),
+        controllers::metrics::routes(),
+        crate::security::routes(),
+    ]
 }
 
-#[async_trait]
-impl Hooks for App {
-    fn app_name() -> &'static str {
-        env!("CARGO_CRATE_NAME")
-    }
+/// The routes, as `axa` serves them.
+#[must_use]
+pub fn app_routes() -> AppRoutes {
+    route_groups()
+        .into_iter()
+        .fold(AppRoutes::empty(), AppRoutes::add_route)
+}
 
-    fn app_version() -> String {
+/// What the service falls back to when the environment does not say.
+fn defaults() -> Defaults {
+    Defaults {
+        database: "workforce_planning_management",
+        port: 5150,
+        production_port: Some(5150),
+        body_limit: 2 * MB,
+        max_connections: 20,
+    }
+}
+
+/// The modules logged. `tower_http` stays at warnings: its request spans hold the whole URI with its query string, which WPM never
+/// logs (WPM-R122); `src/request_log.rs` writes the request line instead.
+fn log_filter(level: axa::logger::LogLevel) -> String {
+    format!(
+        "{}={level},axa={level},sea_orm_migration={level},tower_http=warn",
+        env!("CARGO_CRATE_NAME")
+    )
+}
+
+/// A request that runs longer than this is answered `408` (WPM-R116), so a slow caller cannot hold a worker and a connection. Whole
+/// seconds, rounded up.
+fn request_timeout_seconds(milliseconds: Option<&str>) -> Result<u64> {
+    let milliseconds = milliseconds.unwrap_or("30000");
+    milliseconds
+        .parse::<u64>()
+        .map(|ms| ms.div_ceil(1000))
+        .map_err(|_| Error::string("WPM_REQUEST_TIMEOUT_MS must be a whole number of milliseconds"))
+}
+
+/// The one browser origin that may call the API directly. Production requires it and never takes `*`, so a forgotten setting stops
+/// the service and does not open it to every origin.
+fn cors_origins(origin: Option<&str>, required: bool) -> Result<Vec<String>> {
+    match origin.map(str::trim).filter(|o| !o.is_empty()) {
+        Some("*") => Err(Error::string("WPM_CORS_ORIGIN is one origin, never `*`")),
+        Some(origin) => Ok(vec![origin.to_string()]),
+        None if required => Err(Error::string(
+            "environment variable `WPM_CORS_ORIGIN` not found",
+        )),
+        None => Ok(Vec::new()),
+    }
+}
+
+/// The application.
+impl App {
+    /// The service's version, with the build it came from.
+    #[must_use]
+    pub fn version() -> String {
         format!(
             "{} ({})",
             env!("CARGO_PKG_VERSION"),
@@ -216,44 +262,157 @@ impl Hooks for App {
         )
     }
 
-    async fn boot(
-        mode: StartMode,
-        environment: &Environment,
-        config: Config,
-    ) -> Result<BootResult> {
-        // Before Loco opens the cache connection, which may be `rediss://`.
+    /// The configuration for `environment`: `axa`'s from the environment, with what WPM decides for itself.
+    ///
+    /// # Errors
+    /// A setting is missing or does not parse.
+    pub fn config(environment: &Environment) -> Result<Config> {
+        let mut config = Config::from_env(environment, &defaults())?;
+        if *environment == Environment::Production {
+            config.http.timeout_seconds = request_timeout_seconds(
+                crate::compat::env_var("WPM_REQUEST_TIMEOUT_MS").as_deref(),
+            )?;
+            config.http.compression = true;
+            config.http.cors_origins =
+                cors_origins(crate::compat::env_var("WPM_CORS_ORIGIN").as_deref(), true)?;
+        } else {
+            // Only production lets a browser call the API directly: the UI calls it through its own server.
+            config.http.cors_origins = Vec::new();
+        }
+        if environment.to_string() == "demo" {
+            // `axa` reads any other name as production-like. The container demo runs in the clear, on a database it migrates itself.
+            config.http.timeout_seconds = 0;
+            config.http.compression = false;
+            config.http.hsts = false;
+            config.database.auto_migrate = crate::compat::env_var("DB_AUTO_MIGRATE")
+                .is_none_or(|value| crate::auth::parse_bool(&value));
+        }
+        if config.logger.override_filter.is_none() {
+            config.logger.override_filter = Some(log_filter(config.logger.level));
+        }
+        Ok(config)
+    }
+
+    /// How the service logs, for a process that serves nothing.
+    ///
+    /// # Panics
+    /// Never in practice: the development defaults need no settings.
+    #[must_use]
+    pub fn logging() -> Logger {
+        let environment = Environment::from_env();
+        Self::config(&environment).map_or_else(
+            |_| {
+                let mut logger = Config::from_env(&Environment::Development, &defaults())
+                    .map(|config| config.logger)
+                    .expect("the development defaults need no settings");
+                logger.override_filter = Some(log_filter(logger.level));
+                logger
+            },
+            |config| config.logger,
+        )
+    }
+
+    /// Connect, and build the context handlers receive.
+    ///
+    /// # Errors
+    /// The database cannot be reached.
+    pub async fn context(environment: Environment, config: Config) -> Result<AppContext> {
+        // Before anything opens a connection that may be `rediss://`.
         crate::shared_cache::install_tls_provider();
-        create_app::<Self, Migrator>(mode, environment, config).await
+        let db = axa::db::connect(&config.database).await?;
+        Ok(AppContext::new(environment, db, config))
     }
 
-    async fn initializers(_ctx: &AppContext) -> Result<Vec<Box<dyn Initializer>>> {
-        Ok(vec![])
+    /// The full router: `axa`'s standard middleware inside WPM's own layers.
+    ///
+    /// # Errors
+    /// A boot check refuses to start.
+    pub async fn router(ctx: &AppContext) -> Result<AxumRouter> {
+        let router = app_routes().into_app(ctx.clone())?;
+        Self::after_routes(router, ctx).await
     }
 
-    fn routes(_ctx: &AppContext) -> AppRoutes {
-        app_routes()
+    async fn db(ctx: &AppContext, command: DbCommand) -> Result<()> {
+        match command {
+            DbCommand::Migrate => Migrator::up(&ctx.db, None).await?,
+            DbCommand::Down { steps } => Migrator::down(&ctx.db, Some(steps)).await?,
+            DbCommand::Reset => Migrator::fresh(&ctx.db).await?,
+            DbCommand::Status => Migrator::status(&ctx.db).await?,
+            DbCommand::Truncate => Self::truncate(ctx).await?,
+        }
+        Ok(())
+    }
+
+    /// Run the command line.
+    ///
+    /// # Errors
+    /// The command failed.
+    pub async fn run(cli: Cli) -> Result<()> {
+        let environment = cli
+            .environment
+            .as_deref()
+            .map_or_else(Environment::from_env, Environment::parse);
+        let mut config = Self::config(&environment)?;
+        if let Command::Start { binding, port, .. } = &cli.command {
+            if let Some(binding) = binding {
+                config.server.binding.clone_from(binding);
+            }
+            if let Some(port) = port {
+                config.server.port = *port;
+            }
+        }
+        let ctx = Self::context(environment, config).await?;
+        axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
+        if ctx.config.database.auto_migrate && !matches!(cli.command, Command::Db { .. }) {
+            Migrator::up(&ctx.db, None).await?;
+        }
+        match cli.command {
+            Command::Start { .. } => {
+                let router = Self::router(&ctx).await?;
+                server::serve(router, &ctx.config.server).await
+            }
+            Command::Db { command } => Self::db(&ctx, command).await,
+            Command::Task { name, params } => {
+                let mut tasks = Tasks::default();
+                Self::register_tasks(&mut tasks);
+                let Some(name) = name else {
+                    for task in tasks.list() {
+                        println!("{}\t{}", task.name, task.detail);
+                    }
+                    return Ok(());
+                };
+                tasks.run(&name, &ctx, &parse_vars(&params)?).await
+            }
+        }
     }
 
     #[allow(clippy::too_many_lines)] // boot checks first, then the layers
-    async fn after_routes(router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
+    /// The boot checks, then WPM's layers around the router.
+    ///
+    /// # Errors
+    /// A boot check refuses to start.
+    pub async fn after_routes(router: AxumRouter, ctx: &AppContext) -> Result<AxumRouter> {
         // Seed the active backend's verifier (boot-time key/JWKS fetch;
         // env fallback — the service always boots), then keep keys +
         // policy fresh.
         let production = ctx.environment == Environment::Production;
-        // The shared cache: Loco's provider (Redis in production), non-personal lookups only (WPM-D78).
-        crate::shared_cache::install(ctx.cache.clone());
-        if production && !matches!(ctx.config.cache, loco_rs::config::CacheConfig::Redis(_)) {
+        // The shared cache: Redis in production, non-personal lookups only (WPM-D78).
+        let cache =
+            crate::shared_cache::Cache::from_env().map_err(|cause| Error::string(&cause))?;
+        crate::shared_cache::install(std::sync::Arc::new(cache));
+        let redis = crate::compat::env_var("REDIS_URL").filter(|uri| !uri.is_empty());
+        if production && redis.is_none() {
             tracing::warn!(
                 "REDIS_URL is not set, so each instance keeps its own in-memory cache; set it to share one"
             );
         }
-        if let loco_rs::config::CacheConfig::Redis(redis) = &ctx.config.cache {
+        if let Some(uri) = &redis {
             let allow = crate::compat::env_var("WPM_ALLOW_PLAINTEXT_REDIS")
                 .is_some_and(|v| auth::parse_bool(&v));
-            match crate::hardening::redis_check(production, &redis.uri, allow) {
+            match crate::hardening::redis_check(production, uri, allow) {
                 Ok(Some(warning)) => tracing::warn!("{warning}"),
                 Ok(None) => {}
-                Err(message) => return Err(loco_rs::Error::string(&message)),
+                Err(message) => return Err(Error::string(&message)),
             }
         }
         auth::startup_check(
@@ -261,7 +420,7 @@ impl Hooks for App {
             production,
             auth::key_source_configured(),
         )
-        .map_err(|message| loco_rs::Error::string(&message))?;
+        .map_err(|message| Error::string(&message))?;
         if auth::require_auth() {
             if !auth::key_source_configured() {
                 tracing::warn!(
@@ -287,7 +446,7 @@ impl Hooks for App {
         ) {
             Ok(Some(warning)) => tracing::warn!("{warning}"),
             Ok(None) => {}
-            Err(message) => return Err(loco_rs::Error::string(&message)),
+            Err(message) => return Err(Error::string(&message)),
         }
         // Equality monitoring is special-category data and off unless a lawful basis is recorded
         // (WPM-R125, WPM-D74). A half-configured deployment does not start.
@@ -304,7 +463,7 @@ impl Hooks for App {
                 );
             }
             Ok(crate::rules::equality_monitoring::Gate::Off) => {}
-            Err(message) => return Err(loco_rs::Error::string(&message)),
+            Err(message) => return Err(Error::string(&message)),
         }
         // Workplace health requirements hold health data and are off unless the deployer records a
         // lawful basis (WPM-R128, WPM-D75).
@@ -359,11 +518,8 @@ impl Hooks for App {
             )))
     }
 
-    async fn connect_workers(_ctx: &AppContext, _queue: &Queue) -> Result<()> {
-        Ok(())
-    }
-
-    fn register_tasks(tasks: &mut Tasks) {
+    /// Every task, for `task <name>` and the schedule.
+    pub fn register_tasks(tasks: &mut Tasks) {
         tasks.register(tasks::seed::Seed);
         tasks.register(tasks::scim_push::ScimPush);
         tasks.register(tasks::webhook_deliver::WebhookDeliver);
@@ -385,7 +541,11 @@ impl Hooks for App {
         // tasks-inject (do not remove)
     }
 
-    async fn truncate(ctx: &AppContext) -> Result<()> {
+    /// Empty the tables tests depend on.
+    ///
+    /// # Errors
+    /// Propagates a database failure.
+    pub async fn truncate(ctx: &AppContext) -> Result<()> {
         truncate_table(&ctx.db, IdempotencyKeys).await?;
         truncate_table(&ctx.db, EventOutbox).await?;
         truncate_table(&ctx.db, PostFundings).await?;
@@ -453,8 +613,55 @@ impl Hooks for App {
         truncate_table(&ctx.db, Workers).await?;
         Ok(())
     }
+}
 
-    async fn seed(_ctx: &AppContext, _base: &Path) -> Result<()> {
-        Ok(())
+impl TestApp for App {
+    /// Boot under `test`: a fresh schema unless `WPM_TEST_FRESH_SCHEMA=false`, then emptied unless `WPM_TEST_TRUNCATE=false`.
+    async fn boot_test() -> Result<BootResult> {
+        let flag = |name: &str| crate::compat::env_var(name).is_none_or(|v| v != "false");
+        let environment = Environment::Test;
+        let config = Self::config(&environment)?;
+        let app_context = Self::context(environment, config).await?;
+        if flag("WPM_TEST_FRESH_SCHEMA") {
+            Migrator::fresh(&app_context.db).await?;
+        } else {
+            Migrator::up(&app_context.db, None).await?;
+        }
+        if flag("WPM_TEST_TRUNCATE") {
+            Self::truncate(&app_context).await?;
+        }
+        let router = Self::router(&app_context).await?;
+        Ok(BootResult {
+            app_context,
+            router: Some(router),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_request_timeout_rounds_up_to_whole_seconds() {
+        assert_eq!(request_timeout_seconds(None).unwrap(), 30);
+        assert_eq!(request_timeout_seconds(Some("1500")).unwrap(), 2);
+        assert!(request_timeout_seconds(Some("soon")).is_err());
+    }
+
+    #[test]
+    fn production_needs_one_origin_and_never_every_origin() {
+        assert!(cors_origins(None, true).is_err());
+        assert!(cors_origins(Some(" "), true).is_err());
+        assert!(cors_origins(Some("*"), true).is_err());
+        assert_eq!(
+            cors_origins(Some("https://hr.example"), true).unwrap(),
+            ["https://hr.example"]
+        );
+    }
+
+    #[test]
+    fn the_request_tracing_never_logs_a_uri() {
+        assert!(log_filter(axa::logger::LogLevel::Debug).ends_with("tower_http=warn"));
     }
 }

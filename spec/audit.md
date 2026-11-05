@@ -141,7 +141,7 @@ The audit trail is protected by the database, not by convention. Two triggers on
   snapshot and time (UTC), each text field length-prefixed. One SQL function, `audit_entry_hash`, defines it;
   the trigger, the back-fill of rows that pre-date it, and the verifier all call it.
 
-`GET /api/audits/verify` (privileged callers) and `cargo loco task verify_audit_chain` re-compute the chain and
+`GET /api/audits/verify` (privileged callers) and `cargo run -- task verify_audit_chain` re-compute the chain and
 report `ok`, the number of `entries`, the `head_hash` and the `first_break`. A rewritten row breaks at that row;
 a removed row breaks at the row after it; the task exits with an error when the chain is broken.
 

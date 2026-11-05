@@ -10,7 +10,7 @@ use workforce_planning_management::tasks::policy_reminders::send_reminders;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     org: &str,
     department: &str,
     manager: Option<&str>,
@@ -34,7 +34,7 @@ async fn hire(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_named_for_hr() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -133,7 +133,7 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_reminded_once() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -222,7 +222,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
     .await;
 }
 
-async fn listed_version(request: &loco_rs::TestServer, org: &str, policy: &str) -> String {
+async fn listed_version(request: &axa::TestServer, org: &str, policy: &str) -> String {
     let listed: Value = request
         .get(&format!("/api/policies?organization={org}"))
         .await

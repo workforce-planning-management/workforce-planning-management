@@ -2,7 +2,7 @@
 //! balance, and whether a reason may be given. Reference data from the pure core, open to a signed-in caller. There is no category
 //! for a condition or for stress.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
 

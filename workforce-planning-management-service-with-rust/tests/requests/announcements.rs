@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -144,7 +144,7 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn announcements_can_target_a_department_carry_links_and_count_reads() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

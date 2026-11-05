@@ -8,7 +8,7 @@ use super::an_org;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_consultation_is_registered_read_against_the_rules_begun_and_closed() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

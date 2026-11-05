@@ -153,7 +153,7 @@ WPM-R34), so every role-based feature — gap against a role, matching,
 mobility, plans, change tracking — works on the framework's roles.
 
 ```sh
-cargo loco task import_framework dir:/path/to/uk-gdad/uk-gdad \
+cargo run -- task import_framework dir:/path/to/uk-gdad/uk-gdad \
     [scale:identity|linear] [overwrite_levels:true]
 ```
 

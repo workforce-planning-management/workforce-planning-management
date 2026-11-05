@@ -120,7 +120,7 @@ request time), because seeding and search need the occupation–skill relations
 queryable.
 
 ```sh
-cargo loco task import_esco dir:/path/to/esco-csv [lang:en] [version:v1.2.1]
+cargo run -- task import_esco dir:/path/to/esco-csv [lang:en] [version:v1.2.1]
 ```
 
 - **Input:** the ESCO classification download in CSV — `skills_<lang>.csv`,

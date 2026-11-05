@@ -8,7 +8,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_mapping_lets_a_declared_skill_stand_in_for_a_need_only_when_it_is_exact_or_close() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -91,7 +91,7 @@ async fn a_mapping_lets_a_declared_skill_stand_in_for_a_need_only_when_it_is_exa
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_workforce_roll_up_grades_through_the_crosswalk_as_one_person_does() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

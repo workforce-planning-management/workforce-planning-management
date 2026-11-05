@@ -8,7 +8,7 @@ use serial_test::serial;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_initiative_is_read_back_by_name_and_its_impacts_and_shifts_can_be_removed() {
     crate::requests::request_open(|request, _ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -77,7 +77,7 @@ async fn an_initiative_is_read_back_by_name_and_its_impacts_and_shifts_can_be_re
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_department_audit_and_recent_event_views_answer_and_need_their_parameters() {
     crate::requests::request_open(|request, _ctx| async move {
         let since = (chrono::Utc::now() - chrono::Duration::days(1)).to_rfc3339();

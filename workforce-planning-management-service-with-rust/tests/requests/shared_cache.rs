@@ -8,7 +8,7 @@ use workforce_planning_management::shared_cache::{self as cache, Namespace};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // A repeated ESCO search is answered from the cache (proved by changing the table underneath it),
 // and invalidating the namespace, as the import does, makes the next search read the table again.
 async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
@@ -62,7 +62,7 @@ async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Namespaces do not see each other, and invalidating one leaves the others alone.
 async fn namespaces_are_separate_and_invalidated_one_at_a_time() {
     crate::requests::request_open(|_request, _ctx| async move {
@@ -97,14 +97,9 @@ fn redis_url() -> Option<String> {
     std::env::var("WPM_TEST_REDIS_URL").ok()
 }
 
-async fn redis_cache(uri: &str) -> loco_rs::cache::Cache {
+async fn redis_cache(uri: &str) -> cache::Cache {
     cache::install_tls_provider();
-    loco_rs::cache::drivers::redis::new(&loco_rs::config::RedisCacheConfig {
-        uri: uri.to_string(),
-        max_size: 4,
-    })
-    .await
-    .expect("connect to Redis")
+    cache::Cache::redis(uri).expect("a Redis address")
 }
 
 #[tokio::test]
@@ -135,11 +130,7 @@ async fn redis_is_shared_between_instances_and_fails_open() {
     );
 
     // Nothing listens on this port: every call is a miss, quickly.
-    let down = loco_rs::cache::drivers::redis::new(&loco_rs::config::RedisCacheConfig {
-        uri: "redis://127.0.0.1:1".to_string(),
-        max_size: 1,
-    })
-    .await;
+    let down = cache::Cache::redis("redis://127.0.0.1:1");
     if let Ok(down) = down {
         let started = std::time::Instant::now();
         cache::put_in(&down, Namespace::CourseName, "k", "v").await;
@@ -186,11 +177,7 @@ async fn redis_with_a_password_works_and_a_wrong_one_fails_open() {
     for (name, uri) in [("wrong password", wrong), ("no password", none)] {
         let started = std::time::Instant::now();
         cache::install_tls_provider();
-        let cache = loco_rs::cache::drivers::redis::new(&loco_rs::config::RedisCacheConfig {
-            uri,
-            max_size: 1,
-        })
-        .await;
+        let cache = cache::Cache::redis(&uri);
         if let Ok(cache) = cache {
             cache::put_in(&cache, Namespace::CourseName, "k", "v").await;
             assert_eq!(
@@ -226,11 +213,7 @@ async fn rediss_connects_over_tls_and_checks_the_certificate() {
     std::fs::write(&empty, "").unwrap();
     unsafe { std::env::set_var("SSL_CERT_FILE", &empty) };
     cache::install_tls_provider();
-    let refused = loco_rs::cache::drivers::redis::new(&loco_rs::config::RedisCacheConfig {
-        uri: uri.clone(),
-        max_size: 1,
-    })
-    .await;
+    let refused = cache::Cache::redis(&uri);
     if let Ok(untrusting) = refused {
         cache::put_in(&untrusting, Namespace::CourseName, "k", "v").await;
         assert_eq!(

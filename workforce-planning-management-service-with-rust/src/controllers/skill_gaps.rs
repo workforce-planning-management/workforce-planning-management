@@ -12,8 +12,8 @@
 //!
 //! It compares **declarations**: an undeclared skill is unknown, never zero.
 
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::prelude::*;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;

@@ -35,8 +35,8 @@ impl Drop for MonitoringOn {
 }
 
 async fn hire(
-    request: &loco_rs::TestServer,
-    ctx: &loco_rs::app::AppContext,
+    request: &axa::TestServer,
+    ctx: &axa::AppContext,
     org: &str,
     title: &str,
     sex: Option<&str>,
@@ -70,7 +70,7 @@ async fn hire(
     pids
 }
 
-async fn ask(ctx: &loco_rs::app::AppContext, worker: &str, asked: &str, due: &str) -> String {
+async fn ask(ctx: &axa::AppContext, worker: &str, asked: &str, due: &str) -> String {
     let pid = uuid::Uuid::new_v4().to_string();
     ctx.db
         .execute_unprepared(&format!(
@@ -83,7 +83,7 @@ async fn ask(ctx: &loco_rs::app::AppContext, worker: &str, asked: &str, due: &st
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn hr_answers_with_the_workers_pay_and_their_categorys_average_and_the_figures_are_not_stored()
  {
@@ -186,7 +186,7 @@ async fn hr_answers_with_the_workers_pay_and_their_categorys_average_and_the_fig
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn without_equality_monitoring_the_worker_still_gets_their_own_pay_and_the_averages_say_why_not()
  {
     crate::requests::request_open(|request, ctx| async move {
@@ -207,7 +207,7 @@ async fn without_equality_monitoring_the_worker_still_gets_their_own_pay_and_the
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_vacancy_states_its_pay_range_before_it_is_opened() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -255,7 +255,7 @@ async fn a_vacancy_states_its_pay_range_before_it_is_opened() {
 /// candidate data has a column that could hold a pay history.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn no_candidate_table_has_a_pay_history_column() {
     crate::requests::request_open(|_request, ctx| async move {
         let rows = ctx

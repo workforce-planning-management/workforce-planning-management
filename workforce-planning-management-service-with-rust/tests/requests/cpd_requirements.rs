@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &loco_rs::TestServer) -> String {
+async fn hire(request: &axa::TestServer) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -21,7 +21,7 @@ async fn hire(request: &loco_rs::TestServer) -> String {
 }
 
 /// The worker's first requirement in their progress.
-async fn progress(request: &loco_rs::TestServer, worker: &str) -> Value {
+async fn progress(request: &axa::TestServer, worker: &str) -> Value {
     let p: Value = request
         .get(&format!("/api/workers/{worker}/cpd-progress"))
         .await
@@ -31,7 +31,7 @@ async fn progress(request: &loco_rs::TestServer, worker: &str) -> Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_requirement_is_corrected_and_withdrawn_and_entries_stay() {
     crate::requests::request_open(|request, _ctx| async move {
         let worker = hire(&request).await;

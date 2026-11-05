@@ -2,7 +2,7 @@
 //! group and occupation code, with the national standard each comes from. Configuration, imported by the deployer; none is shipped.
 //! Reading is open to a signed-in caller; adding is HR's. Spec: `spec/staff-records-and-pay.md`.
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

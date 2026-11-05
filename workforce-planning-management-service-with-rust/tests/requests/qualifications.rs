@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
     use workforce_planning_management::rules::framework::LevelMapping;
     use workforce_planning_management::tasks::import_framework::import_pcf;
@@ -115,7 +115,7 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_manager_reads_their_reports_qualifications_by_name() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -176,7 +176,7 @@ async fn a_manager_reads_their_reports_qualifications_by_name() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn hrs_queue_lists_declared_qualifications_until_they_are_verified() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -228,7 +228,7 @@ async fn hrs_queue_lists_declared_qualifications_until_they_are_verified() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_gap_roll_up_hides_a_small_group_and_counts_a_large_one() {
     use workforce_planning_management::rules::framework::LevelMapping;
     use workforce_planning_management::tasks::import_framework::import_pcf;
@@ -339,7 +339,7 @@ async fn the_gap_roll_up_hides_a_small_group_and_counts_a_large_one() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiry_reminders_tell_the_person_and_their_manager_once() {
     use sea_orm::ConnectionTrait;
     use workforce_planning_management::tasks::qualification_expiry_reminders::send_reminders;

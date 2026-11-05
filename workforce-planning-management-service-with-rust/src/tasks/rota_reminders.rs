@@ -1,4 +1,4 @@
-//! `cargo loco task rota_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell
+//! `cargo run -- task rota_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell
 //! each person whose on-call turn starts `days_ahead` days from `as_of`
 //! (default 1 day from today) that it is about to.
 //!
@@ -8,8 +8,8 @@
 //! *not* already on call the day before, so someone carrying on is not
 //! reminded again.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 
 use crate::controllers::rotas::turns_starting_on;
 use crate::models::_entities::notifications;

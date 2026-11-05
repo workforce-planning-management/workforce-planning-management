@@ -5,10 +5,10 @@
 //! escalation's own rule: anyone who may write to the plan can say a breach needs a decision, but only an
 //! administrator of the plan's organization decides it, and a caller outside the organization cannot see the plan.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -79,7 +79,7 @@ fn policy_with_deciders() -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_escalations -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_escalations -- --ignored`"]
 async fn anyone_who_writes_may_raise_but_only_an_administrator_decides() {
     use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();

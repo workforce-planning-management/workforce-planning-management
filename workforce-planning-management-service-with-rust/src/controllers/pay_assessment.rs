@@ -2,8 +2,8 @@
 //! representatives due for a category of workers, and the record a person keeps of what was justified, remedied and
 //! assessed. It reports; a person decides and records. Spec: `spec/pay-transparency.md`.
 
+use axa::prelude::*;
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;

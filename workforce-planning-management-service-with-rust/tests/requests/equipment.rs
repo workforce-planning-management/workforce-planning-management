@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_leaver_open() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -107,7 +107,7 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floor() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

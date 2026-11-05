@@ -6,7 +6,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &loco_rs::TestServer, org: &str, number: &str, name: &str) -> String {
+async fn hire(request: &axa::TestServer, org: &str, number: &str, name: &str) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -21,7 +21,7 @@ async fn hire(request: &loco_rs::TestServer, org: &str, number: &str, name: &str
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_name_alone_is_review_and_a_shared_number_is_a_match() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -54,7 +54,7 @@ async fn a_name_alone_is_review_and_a_shared_number_is_a_match() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn it_changes_nothing_and_ignores_another_organization() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

@@ -9,7 +9,7 @@ use super::{a_person, activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_backup_a_pool_member_a_demand_line_and_a_tolerance_can_each_be_removed_once() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -97,7 +97,7 @@ async fn a_backup_a_pool_member_a_demand_line_and_a_tolerance_can_each_be_remove
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_group_and_a_wellbeing_rule_can_be_restated() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -157,7 +157,7 @@ async fn a_group_and_a_wellbeing_rule_can_be_restated() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_workers_appraisals_movements_and_onboarding_and_an_applications_reads_answer() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

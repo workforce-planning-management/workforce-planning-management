@@ -17,12 +17,7 @@ categories = ["development-tools", "rust-patterns"]
 include = ["src/**/*", "config/**/*", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-# `auth` is deliberately absent from this feature list. It is loco's JWT
-# support (`dep:jsonwebtoken`, and therefore `rsa` / RUSTSEC-2023-0071),
-# and this family issues PASETO v4.public rather than JWT — see
-# agents/share/jwt.md. Dropping it removes the vulnerable crate from the
-# dependency graph rather than suppressing the advisory.
-loco-rs = { version = "1.2.0", default-features = false, features = ["cli", "with-db", "cache_inmem", "cache_redis", "worker"] }
+axa = { version = "0.1", features = ["sea-orm"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -44,11 +39,18 @@ sha2 = { version = "0.11" }
 # Credential signing (WPM-R157): EdDSA over a JWS, and base64url for its parts. Both were already in the build (dev and via PASETO).
 ed25519-dalek = { version = "3.0.0" }
 base64 = { version = "0.23" }
-loco-rs = { workspace = true }
+axa = { workspace = true }
+# The schedule's cron expressions (`src/scheduler.rs`).
+cron = { version = "0.15" }
+clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
 tokio = { version = "1.54", default-features = false, features = [
+  "macros",
+  "process",
   "rt-multi-thread",
+  "sync",
+  "time",
 ] }
 async-trait = { version = "0.1" }
 axum = { version = "0.8" }
@@ -73,8 +75,7 @@ reqwest = { version = "0.13", default-features = false, features = [
   "json",
 ] }
 
-# Loco's Redis cache (`cache_redis`) pulls in `redis` with no TLS. Turning TLS on here, by
-# feature unification, is what makes a `rediss://` REDIS_URL work (WPM-D78).
+# The shared cache's Redis client (`src/shared_cache.rs`). `tokio-rustls-comp` is what makes a `rediss://` REDIS_URL work (WPM-D78).
 # Two rustls crypto providers are in the build (`ring` and `aws-lc-rs`), so rustls cannot choose one
 # and a TLS connection would panic; `shared_cache::install_tls_provider` chooses `ring` at boot.
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
@@ -112,9 +113,9 @@ path = "src/bin/main.rs"
 required-features = []
 
 [dev-dependencies]
-loco-rs = { workspace = true, features = ["testing"] }
+axa = { workspace = true, features = ["testing"] }
 # Name the `TestServer` type in shared request-test helpers (same
-# version loco's testing feature uses internally).
+# version axa's testing feature uses).
 axum-test = { version = "21.1.0" }
 tokio = { version = "1.54", default-features = false, features = [
   "rt-multi-thread",

@@ -16,7 +16,7 @@ ignore = [
 
 [licenses]
 version = 2
-# Permissive licenses used across the Rust / Loco stack. A dependency
+# Permissive licenses used across the Rust stack. A dependency
 # whose license is not listed FAILS the check — a deliberate signal to
 # review a new license, not to silently accept it.
 allow = [
@@ -43,7 +43,7 @@ confidence-threshold = 0.8
 private = { ignore = true }
 
 [bans]
-# Duplicate versions are a warning (the loco/sea-orm stack pulls a few);
+# Duplicate versions are a warning (the sea-orm stack pulls a few);
 # not a hard failure, so the gate stays green while still surfacing bloat.
 multiple-versions = "warn"
 wildcards = "warn"

@@ -11,8 +11,8 @@
 
 use std::collections::HashMap;
 
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
@@ -37,7 +37,7 @@ pub(crate) fn subject(caller: &MaybeAuthUser) -> Result<&str> {
         .map(|c| c.sub.as_str())
         .ok_or(Error::CustomError(
             axum::http::StatusCode::UNAUTHORIZED,
-            loco_rs::controller::ErrorDetail::new("unauthorized", "sign in to use /api/me"),
+            axa::error::ErrorDetail::new("unauthorized", "sign in to use /api/me"),
         ))
 }
 

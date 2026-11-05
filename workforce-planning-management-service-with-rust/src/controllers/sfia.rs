@@ -5,7 +5,7 @@
 //! `import_sfia` filled, and only for a signed-in caller, so it does not leave
 //! the organization (WPM-R113).
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};

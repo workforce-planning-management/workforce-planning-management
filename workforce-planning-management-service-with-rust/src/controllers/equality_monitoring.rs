@@ -15,8 +15,8 @@
 //! - **Never an input to any score, ranking or decision about a person**: a test fails if any other
 //!   code names the table.
 
+use axa::prelude::*;
 use chrono::Utc;
-use loco_rs::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;

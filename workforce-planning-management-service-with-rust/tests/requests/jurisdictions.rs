@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker, working_time_profile};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -98,7 +98,7 @@ async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
 /// never flagged and never passed.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn working_time_follows_each_workers_profile() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -172,7 +172,7 @@ async fn working_time_follows_each_workers_profile() {
 /// weekend day (moved to the Sunday) under a Friday and Saturday one.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn holiday_substitutes_follow_the_profiles_weekend() {
     crate::requests::request_open(|request, _ctx| async move {
         let generate = |org: String, region: &'static str| {
@@ -235,7 +235,7 @@ async fn holiday_substitutes_follow_the_profiles_weekend() {
 /// malformed code or a chain that cannot be built; the profile shows it and the audit names the code, no person.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_home_jurisdiction_is_set_cleared_and_audited() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();

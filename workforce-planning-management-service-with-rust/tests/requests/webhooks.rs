@@ -38,7 +38,7 @@ async fn serve(stub: Arc<Stub>) -> String {
     url
 }
 
-async fn worker(request: &loco_rs::TestServer, number: &str) -> String {
+async fn worker(request: &axa::TestServer, number: &str) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -51,7 +51,7 @@ async fn worker(request: &loco_rs::TestServer, number: &str) -> String {
     created["pid"].as_str().unwrap().to_string()
 }
 
-async fn status(request: &loco_rs::TestServer, pid: &str, to: &str) {
+async fn status(request: &axa::TestServer, pid: &str, to: &str) {
     request
         .post(&format!("/api/workers/{pid}/status"))
         .json(&json!({ "to": to }))
@@ -61,7 +61,7 @@ async fn status(request: &loco_rs::TestServer, pid: &str, to: &str) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body() {
     unsafe { std::env::set_var("WPM_WEBHOOK_SECRET_TEST", "whsec-test-1") };

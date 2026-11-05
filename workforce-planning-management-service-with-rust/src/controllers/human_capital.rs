@@ -3,8 +3,8 @@
 //! beside ISO 30414 and ESRS S1 by name. Aggregates only; small groups withheld; what WPM cannot give is `unknown`.
 //! Nothing is stored. Spec: `spec/human-capital-reporting.md`.
 
+use axa::prelude::*;
 use chrono::{Months, NaiveDate, Utc};
-use loco_rs::prelude::*;
 use sea_orm::{ColumnTrait, QueryFilter};
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement};
 use serde::Deserialize;

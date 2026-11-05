@@ -9,7 +9,7 @@ use super::an_org;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded department, both views
 async fn plan_views_count_every_kind_of_person_once() {
     crate::requests::request_open(|request, ctx| async move {

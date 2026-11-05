@@ -6,7 +6,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn plan_with_breaches(request: &loco_rs::TestServer, org: &str) -> String {
+async fn plan_with_breaches(request: &axa::TestServer, org: &str) -> String {
     for i in 0..6 {
         request
             .post("/api/workers")
@@ -46,7 +46,7 @@ async fn plan_with_breaches(request: &loco_rs::TestServer, org: &str) -> String 
     pid
 }
 
-async fn view(request: &loco_rs::TestServer, pid: &str) -> Value {
+async fn view(request: &axa::TestServer, pid: &str) -> Value {
     request
         .get(&format!("/api/workforce-plans/{pid}/tolerances"))
         .await
@@ -55,7 +55,7 @@ async fn view(request: &loco_rs::TestServer, pid: &str) -> Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_breach_is_escalated_up_three_levels_and_decided_with_the_measure_kept() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

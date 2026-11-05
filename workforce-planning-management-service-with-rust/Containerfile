@@ -8,8 +8,8 @@
 # workflow checks that it, the tag and the label agree):
 #   podman build -f Containerfile --build-arg VERSION=0.1.0 --build-arg REVISION=$(git rev-parse HEAD) .
 #
-# The image runs as a non-root user and carries the binary and `config/`.
-# Pick the configuration with LOCO_ENV: `production` (the default here)
+# The image runs as a non-root user and carries the binary and `config/` (the reference policy).
+# Pick the configuration with APP_ENV: `production` (the default here)
 # refuses to start without sign-in enforcement and a token key source; `demo`
 # is the container demo used by ../compose.yaml.
 
@@ -39,7 +39,7 @@ LABEL org.opencontainers.image.title="workforce-planning-management" \
 WORKDIR /app
 COPY --from=build /src/target/release/workforce-planning-management /app/
 COPY config /app/config
-ENV LOCO_ENV=production \
+ENV APP_ENV=production \
     PORT=5150
 USER wpm
 EXPOSE 5150

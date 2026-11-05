@@ -9,7 +9,7 @@ use super::an_org;
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn coverage_is_recorded_checked_stood_and_retired() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -66,7 +66,7 @@ async fn coverage_is_recorded_checked_stood_and_retired() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
     use sea_orm::ConnectionTrait;
     use workforce_planning_management::tasks::coverage_expiry_reminders::send_reminders;

@@ -1,4 +1,4 @@
-//! `cargo loco task import_sfiaplus file:<path> version:<n> licence_checked_on:<YYYY-MM-DD>
+//! `cargo run -- task import_sfiaplus file:<path> version:<n> licence_checked_on:<YYYY-MM-DD>
 //! [licence_holder:<text>] [licence_reference:<text>]` — load the deployer's **licensed** `SFIAplus` detail, saved as CSV to the
 //! documented (provisional) contract in `rules::sfia`, as development **pointers** on SFIA skills at levels (WPM-R112).
 //!
@@ -6,8 +6,8 @@
 //! resource for a SFIA skill or level that is not in the imported catalogue (nothing is written then), records the framework
 //! as `internal_only`, and is idempotent: a resource a newer file drops is marked retired, not deleted.
 
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -41,10 +41,16 @@ impl Task for ImportSfiaplus {
             .cli_arg("file")
             .map_err(|_| Error::string("file:<path to the SFIAplus CSV> is required"))?;
         let licence = Licence {
-            version: vars.cli_arg("version").unwrap_or("").to_string(),
-            checked_on: vars.cli_arg("licence_checked_on").unwrap_or("").to_string(),
-            holder: vars.cli_arg("licence_holder").ok().map(str::to_string),
-            reference: vars.cli_arg("licence_reference").ok().map(str::to_string),
+            version: vars
+                .cli_arg("version")
+                .map_or("", String::as_str)
+                .to_string(),
+            checked_on: vars
+                .cli_arg("licence_checked_on")
+                .map_or("", String::as_str)
+                .to_string(),
+            holder: vars.cli_arg("licence_holder").ok().cloned(),
+            reference: vars.cli_arg("licence_reference").ok().cloned(),
         };
         let text = std::fs::read_to_string(Path::new(file))
             .map_err(|e| Error::string(&format!("{file}: {e}")))?;

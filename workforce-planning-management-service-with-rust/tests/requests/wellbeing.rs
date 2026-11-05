@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded cohort, the whole wellbeing surface
 async fn wellbeing_round_trip() {
     crate::requests::request_open(|request, ctx| async move {
@@ -242,7 +242,7 @@ async fn wellbeing_round_trip() {
 /// gate holds, and `?kind=` filters.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn benefits_awareness_round_trip() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -428,7 +428,7 @@ async fn benefits_awareness_round_trip() {
 /// and the k = 5 floor suppresses small cells — count withheld.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn pulse_round_trip() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

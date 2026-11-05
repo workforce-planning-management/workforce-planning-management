@@ -1,8 +1,8 @@
 //! One log line per request, with a request id and nothing personal (WPM-R122, WPM-T197).
 //!
-//! Loco's own request logger records the whole URI, query string included, so a directory search for
-//! a person's name or a filter on a department would be written to every log it reaches. It is switched
-//! off in every profile and this replaces it. What a line holds:
+//! A framework request logger records the whole URI, query string included, so a directory search for
+//! a person's name or a filter on a department would be written to every log it reaches. `tower_http` is
+//! held at warnings in every profile (`app::log_filter`) and this replaces it. What a line holds:
 //!
 //! * `request_id`: the caller's `X-Request-Id` when it is plain (letters, digits, `-`, `_`, `@`, at most
 //!   128 of them), else a new UUID; also set on the response, so a report can be matched to a line;

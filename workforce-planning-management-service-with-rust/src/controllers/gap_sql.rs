@@ -8,7 +8,7 @@
 
 use std::fmt::Write;
 
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{DbBackend, Statement, Value};
 use uuid::Uuid;
 

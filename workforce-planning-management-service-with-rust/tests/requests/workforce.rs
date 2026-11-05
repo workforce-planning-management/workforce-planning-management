@@ -8,7 +8,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Time: >24h/day refused; overtime derives beyond the FTE-scaled
 // contracted day; approval flips status.
 async fn time_caps_and_overtime() {
@@ -50,7 +50,7 @@ async fn time_caps_and_overtime() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Leave: annual over-balance 422; sick goes negative flagged;
 // approval decrements the balance in-tx; the second approver loses;
 // cancelling an approved request restores the balance.
@@ -138,7 +138,7 @@ async fn leave_balance_journey() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Shifts: double-booking refused; assignment over approved leave
 // refused; back-to-back shifts are fine.
 async fn shift_conflicts() {
@@ -243,7 +243,7 @@ async fn shift_conflicts() {
 /// scoped by the department filter.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn working_time_guardrails() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -378,7 +378,7 @@ async fn working_time_guardrails() {
 }
 
 /// The flagged row for `who` in the working-time view as of 2026-07-10, if any.
-async fn flagged_as_of(request: &loco_rs::TestServer, who: &str) -> Option<Value> {
+async fn flagged_as_of(request: &axa::TestServer, who: &str) -> Option<Value> {
     let signals: Value = request
         .get("/api/workforce/working-time?as_of=2026-07-10")
         .await
@@ -396,7 +396,7 @@ async fn flagged_as_of(request: &loco_rs::TestServer, who: &str) -> Option<Value
 /// after `as_of` changes nothing; a minute on `as_of` (included) flags; deleting an entry unflags.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn working_time_window_edges_and_rollup_follow_the_entries() {
     use sea_orm::{ConnectionTrait, Statement};
     crate::requests::request_open(|request, ctx| async move {
@@ -471,7 +471,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
 
 #[tokio::test]
 #[serial_test::serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_unassigned_shift_seat_and_an_ended_benefit_enrolment_leave_their_lists() {
     use serde_json::{Value, json};
 

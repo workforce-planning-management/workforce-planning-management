@@ -22,7 +22,7 @@ macro_rules! header {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn worker_list_paginates_and_clamps() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -69,7 +69,7 @@ async fn worker_list_paginates_and_clamps() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn benefit_plan_list_paginates() {
     crate::requests::request_open(|request, _ctx| async move {
         for i in 0..3 {
@@ -110,7 +110,7 @@ async fn benefit_plan_list_paginates() {
 /// a plain array, the headers say how many there are, and a deep offset is a `400`.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn org_lists_carry_paging_headers_and_refuse_a_deep_offset() {
     crate::requests::request_open(|request, _ctx| async move {
         for path in [

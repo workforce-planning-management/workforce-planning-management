@@ -47,7 +47,7 @@ WPM_KEYCLOAK_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0
 WPM_KEYCLOAK_AUDIENCE=<application (client) id>
 WPM_OIDC_SUBJECT_CLAIM=oid
 WPM_ABAC_POLICY_FILE=/etc/wpm/abac-policy.json   # start from config/abac-policy.reference.json
-LOCO_ENV=production
+APP_ENV=production
 ```
 
 You can read the first two from the tenant's discovery document:

@@ -6,10 +6,10 @@
 //! because those routes are on the explicit self-service list, and only those: every other write
 //! stays refused, and nobody can touch another person's record through `/api/me`.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -75,7 +75,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot, the worker, a neighbour, a stranger with no record, and HR.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_worker_manages_only_their_own_details() {
     let (keys, kid) = keys_and_kid();
@@ -362,7 +362,7 @@ async fn a_worker_manages_only_their_own_details() {
 /// person into a leaver record, never ending employment by itself.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
     use sea_orm::ConnectionTrait;
@@ -519,7 +519,7 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
 /// no amount.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
     let (keys, kid) = keys_and_kid();

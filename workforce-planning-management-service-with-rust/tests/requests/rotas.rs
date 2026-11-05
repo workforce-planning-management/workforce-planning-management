@@ -10,7 +10,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
@@ -185,7 +185,7 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -242,7 +242,7 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn swap_requests_move_only_the_requesters_days_when_accepted() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();

@@ -1,4 +1,4 @@
-//! `cargo loco task replay_erasures [since:YYYY-MM-DD] [file:PATH]` — after
+//! `cargo run -- task replay_erasures [since:YYYY-MM-DD] [file:PATH]` — after
 //! restoring a database from a backup, erase again everyone who was erased after
 //! the backup was taken (WPM-R89, WPM-D63).
 //!
@@ -14,9 +14,9 @@
 //! entries on or after a date; omit it to replay everything, which is idempotent.
 //! A malformed line in the file stops the task: a skipped erasure would be silent.
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::{DateTime, NaiveDate};
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 

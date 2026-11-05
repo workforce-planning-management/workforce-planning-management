@@ -6,7 +6,7 @@
 //! required, and the schema has nowhere to put one.
 
 use super::row_json;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 

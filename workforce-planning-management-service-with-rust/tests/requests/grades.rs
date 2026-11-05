@@ -9,7 +9,7 @@ use super::{activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -104,7 +104,7 @@ async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_role_links_a_level_to_a_pay_band_by_the_editors_say_so() {
     crate::requests::request_open(|request, _ctx| async move {
         let profile: Value = request

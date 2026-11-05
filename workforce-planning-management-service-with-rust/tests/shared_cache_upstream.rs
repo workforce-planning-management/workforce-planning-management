@@ -42,9 +42,7 @@ async fn organization_names_are_shared_and_person_names_are_not() {
         std::env::set_var("WPM_PERSON_SERVICE_URL", &base);
         std::env::set_var("WPM_COURSE_SERVICE_URL", "http://127.0.0.1:1");
     }
-    let provider = loco_rs::cache::drivers::inmem::new(&loco_rs::config::InMemCacheConfig {
-        max_capacity: 1024 * 1024,
-    });
+    let provider = cache::Cache::memory(1024 * 1024);
     cache::install(Arc::new(provider));
 
     // An organization: fetched once, and its name is now in the shared cache.

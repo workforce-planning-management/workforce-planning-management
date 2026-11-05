@@ -8,7 +8,7 @@ use super::{a_person, a_worker, activate, an_org, seed_worker};
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Requisition → candidate → application → interview → offer → hired
 // (creates the worker in-tx) → onboarding gate blocks activation →
 // complete/waive → activate → requisition fills.
@@ -179,7 +179,7 @@ async fn hire_journey_end_to_end() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // Unknown-pid reads are honest 404s (family lesson: loco 0.16 does not
 // map ModelError::EntityNotFound); malformed pids too. The org-chart
 // cycle check refuses a managerial loop, and the worker-number
@@ -274,7 +274,7 @@ async fn contracts_404_cycle_and_uniqueness() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 // WPM-T388: `?fields=` returns only the fields asked for, refuses an unknown name, and the list audits a salary read whenever it carries
 // a salary, as the single read does, and not when it does not.
 async fn worker_list_returns_the_fields_asked_for_and_audits_salary_it_carries() {

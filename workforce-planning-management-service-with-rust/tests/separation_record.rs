@@ -1,10 +1,10 @@
 //! The separation record under enforcement (WPM-R222), against the shipped reference policy: built from the leaver record, HR only,
 //! audited with no content, and an export with a row for every leaver in the period.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -61,7 +61,7 @@ fn bearer(token: String) -> String {
     format!("Bearer {token}")
 }
 
-async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
+async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
     ctx.db
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -73,7 +73,7 @@ async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str) {
 }
 
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -101,7 +101,7 @@ async fn worker(
     pid
 }
 
-async fn leaver(request: &loco_rs::TestServer, token: &str, worker: &str, day: &str) -> String {
+async fn leaver(request: &axa::TestServer, token: &str, worker: &str, day: &str) -> String {
     let opened: Value = request
         .post(&format!("/api/workers/{worker}/movements"))
         .add_header("authorization", token.to_string())
@@ -117,7 +117,7 @@ async fn leaver(request: &loco_rs::TestServer, token: &str, worker: &str, day: &
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test separation_record -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test separation_record -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
     let (keys, kid) = keys_and_kid();

@@ -5,10 +5,10 @@
 //! verified: the rate is masked like salary. Payroll and the worker themself see it; HR, who may
 //! record it, and every other signed-in caller see that a rate exists and not what it is.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -74,7 +74,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot, every persona.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement_engagements -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_engagements -- --ignored`"]
 async fn a_contractors_rate_is_masked_like_salary() {
     let (keys, kid) = keys_and_kid();
     unsafe {

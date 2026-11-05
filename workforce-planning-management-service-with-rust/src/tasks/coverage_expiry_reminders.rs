@@ -1,4 +1,4 @@
-//! `cargo loco task coverage_expiry_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell an organization's HR that a workers' compensation
+//! `cargo run -- task coverage_expiry_reminders [days_ahead:N] [as_of:YYYY-MM-DD]` — tell an organization's HR that a workers' compensation
 //! or employer's liability record is about to end or has just ended (WPM-R220, WPM-T420).
 //!
 //! Run it daily. The window defaults to 60 calendar days. **Idempotent:** each record, end date and kind of reminder is recorded, so a
@@ -7,9 +7,9 @@
 //! says so. A retired record is not reminded. The notification names the jurisdiction, the kind and the date, and nothing else: no
 //! insurer, policy reference or certificate. It goes to the organization's `hr_admin` members.
 
+use axa::prelude::*;
+use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use loco_rs::prelude::*;
-use loco_rs::task::{TaskInfo, Vars};
 use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 

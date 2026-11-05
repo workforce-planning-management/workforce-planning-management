@@ -7,13 +7,13 @@
 //! matching key set in-process (no auth service needed).
 //!
 //! `#[ignore]`d: boots the app (needs PostgreSQL via
-//! `config/test.yaml` / `DATABASE_URL`). Run with
+//! `DATABASE_URL`). Run with
 //! `cargo test --test enforcement -- --ignored`.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -83,7 +83,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// payslip amounts.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test enforcement -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn enforcement_personas_gate_and_mask() {
     let (keys, kid) = keys_and_kid();
     // The auth OnceLocks read these on first use — set before boot.

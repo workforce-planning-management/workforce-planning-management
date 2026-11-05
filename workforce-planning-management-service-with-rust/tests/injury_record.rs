@@ -1,10 +1,10 @@
 //! The injury record under enforcement (WPM-R221, WPM-D179), against the shipped reference policy: HR only, no description in any
 //! field, each report a row of its own, audited with no content, and erasure that keeps the proof and drops the person.
 
+use axa::testing::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
-use loco_rs::testing::prelude::*;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
@@ -61,7 +61,7 @@ fn bearer(token: String) -> String {
     format!("Bearer {token}")
 }
 
-async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str, role: &str) {
+async fn seat(ctx: &axa::AppContext, person: &str, org: &str, role: &str) {
     ctx.db
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -73,7 +73,7 @@ async fn seat(ctx: &loco_rs::app::AppContext, person: &str, org: &str, role: &st
 }
 
 async fn worker(
-    request: &loco_rs::TestServer,
+    request: &axa::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -103,7 +103,7 @@ async fn worker(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test --test injury_record -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test injury_record -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn an_injury_record_proves_a_report_and_holds_no_description() {
     let (keys, kid) = keys_and_kid();

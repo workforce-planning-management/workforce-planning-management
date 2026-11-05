@@ -11,7 +11,7 @@ use uuid::Uuid;
 use super::_entities::link_tokens;
 use super::audit_logs::Model as Audit;
 use crate::rules::link_token as rules;
-use loco_rs::prelude::*;
+use axa::prelude::*;
 
 /// What a successful consume gives back.
 #[derive(Debug, Clone, PartialEq, Eq)]
