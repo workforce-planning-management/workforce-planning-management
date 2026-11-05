@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — incidents and legal pay floors in the human capital report (WPM-R147, WPM-T425, 2026-11-05)
+
+The report counts work-related incidents by class, with small groups withheld, and gives the share of pay periods with a payslip below a legal minimum, which is indicative. An organization that has never recorded an incident shows unknown, not zero.
+
 ### Added — the website in Arabic and Hindi (WPM-R231, WPM-T461, 2026-11-05)
 
 Landing pages, the demo tutorial and the site's own words in Arabic and Hindi, written by AI and not reviewed by native speakers. The comparison pages and repository documents stay English.

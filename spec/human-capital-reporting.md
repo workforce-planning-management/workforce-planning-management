@@ -54,7 +54,9 @@ workforce) (WPM-R147, WPM-D100). Proposed in [plan.md](plan.md) section N; the s
   | Workforce cost (payroll cost, where visible) | Costs | gap (not an ESRS S1 datapoint) |
   | Pay gap indicators ([pay-transparency.md](pay-transparency.md)) | Diversity | Remuneration metrics |
   | Succession coverage (critical roles with a ready successor) | Succession planning | gap |
-  | Health and safety, work-life balance, adequate wages, social protection, disability, discrimination incidents | | **gap**: WPM holds no such record, or is built not to. Proposed: counts of work-related injuries (WPM-R221) and a minimum-wage check (WPM-R218), see [statutory-pay-protections.md](statutory-pay-protections.md) |
+  | Work-related incidents by class ([injury-and-separation-duties.md](injury-and-separation-duties.md), WPM-R221) | Health, safety and well-being | Health and safety |
+  | Pay periods with pay below a legal minimum ([statutory-pay-protections.md](statutory-pay-protections.md), WPM-R218) | Compliance and ethics | gap: a legal floor is not the adequate wage ESRS S1 asks about |
+  | Health and safety rates, work-life balance, adequate wages, social protection, disability, discrimination incidents | | **gap**: WPM holds no such record, or is built not to |
 
 - **A gap is shown as a gap.** The report lists the named metrics WPM does not cover, so an omission is visible rather than silent.
 - **Aggregates only.** Every figure is a count or a rate over a group at or above the floor (WPM-D32); no table in the report
@@ -66,6 +68,8 @@ workforce) (WPM-R147, WPM-D100). Proposed in [plan.md](plan.md) section N; the s
   (criticality 4 or 5, a successor ready now, plans whose incumbent is employed in the organization). **Unknown with a reason:**
   training hours (no source), collective agreement coverage (no record yet), and workforce cost and the pay gap (behind a stricter
   read; the pay gap has `/api/pay-transparency/gap-report`).
+
+- **Built figures** (WPM-T425): `injuries_total` and `injuries_<class>`, incidents that happened in the period, through `rules::suppression`, so a hidden class cannot be worked out from the total. An organization that has never recorded an incident shows `unknown`, because a zero would claim that nothing happened; once it has recorded one, a zero is shown. `pay_periods_below_minimum_wage`, the share in basis points of approved and paid runs ending in the period with at least one payslip the check placed `below`. A run with an unanswered payslip and none below cannot be called clear, and a run where no floor applies has nothing to compare, so neither is counted and the exclusions say how many. It is withheld under the floor of runs, or when the largest run has fewer payslips than the floor, since twelve runs of three people still describe three people. It is indicative, like the check, and says so.
 
 ## Design decisions
 

@@ -11,6 +11,8 @@
 use chrono::NaiveDate;
 use serde::Serialize;
 
+use super::injury_record;
+
 /// What a figure is measured in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -23,6 +25,8 @@ pub enum Unit {
     BasisPoints,
     /// Whole calendar days.
     CalendarDays,
+    /// Incidents, which are not people: one incident can affect several or nobody.
+    Incidents,
 }
 
 /// Why WPM cannot give a figure.
@@ -130,6 +134,20 @@ const SUCCESSION: Mapping = Mapping {
     esrs_2026: None,
 };
 
+const SAFETY: Mapping = Mapping {
+    iso_area: "Health, safety and well-being",
+    esrs_topic: Some("Health and safety"),
+    esrs_2023: Some("S1-14"),
+    esrs_2026: Some("S1-13"),
+};
+/// A legal floor is a compliance measure: it is not the adequate wage ESRS S1 asks about, so no ESRS topic is claimed.
+const WAGE_FLOOR: Mapping = Mapping {
+    iso_area: "Compliance and ethics",
+    esrs_topic: None,
+    esrs_2023: None,
+    esrs_2026: None,
+};
+
 /// One figure with everything needed to read it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Figure {
@@ -164,8 +182,8 @@ pub struct Gap {
 /// The named metrics WPM does not cover. An omission is shown, not silent.
 pub const GAPS: &[Gap] = &[
     Gap {
-        name: "Health and safety",
-        why: "WPM holds no incident or injury record; health data is kept to what is needed for adjustments.",
+        name: "Health and safety rates",
+        why: "The report counts incidents by class. WPM gives no rate per hours worked and no coverage by a safety management system.",
     },
     Gap {
         name: "Work-life balance",
@@ -173,7 +191,7 @@ pub const GAPS: &[Gap] = &[
     },
     Gap {
         name: "Adequate wages",
-        why: "WPM holds no benchmark of an adequate wage to compare pay with.",
+        why: "The report shows pay periods below a legal minimum. WPM holds no benchmark of an adequate wage, which is a different thing.",
     },
     Gap {
         name: "Social protection",
@@ -209,6 +227,28 @@ pub struct Plan {
     pub covered_now: bool,
 }
 
+/// One approved or paid payroll run's minimum-wage outcomes, as counts of payslips.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct WageRun {
+    /// Under the floor.
+    pub below: usize,
+    /// At or over it, inside the margin.
+    pub near: usize,
+    /// Over it.
+    pub ok: usize,
+    /// In a jurisdiction recorded as setting no statutory floor.
+    pub none_by_law: usize,
+    /// The check could not answer.
+    pub unknown: usize,
+}
+
+impl WageRun {
+    /// Every payslip of the run.
+    const fn payslips(self) -> usize {
+        self.below + self.near + self.ok + self.none_by_law + self.unknown
+    }
+}
+
 /// What the controller read.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Inputs {
@@ -236,6 +276,12 @@ pub struct Inputs {
     pub plans: Vec<Plan>,
     /// Succession plans that name no incumbent in the organization, so cannot be placed in it.
     pub plans_unplaced: usize,
+    /// The class of each incident that happened in the period.
+    pub injury_classes: Vec<String>,
+    /// Incidents this organization has ever recorded. None at all says the record is not in use, not that nothing happened.
+    pub injuries_ever: usize,
+    /// The approved and paid runs whose period ended in the report's period.
+    pub wage_runs: Vec<WageRun>,
 }
 
 /// The whole report.
@@ -540,6 +586,92 @@ fn elsewhere_figures(on: Period) -> Vec<Figure> {
     ]
 }
 
+/// Incidents by class and in total, through the one suppression rule (WPM-D35). An organization that has never recorded one shows
+/// `unknown`: a zero would claim nothing happened.
+fn safety_figures(i: &Inputs, floor: usize, over: Period) -> Vec<Figure> {
+    let counts = injury_record::rollup(&i.injury_classes, floor);
+    let value = |n: Option<usize>| {
+        if i.injuries_ever == 0 {
+            return unknown(Reason::NoRecord);
+        }
+        n.map_or(Value::Withheld, |n| Value::Shown {
+            value: i64::try_from(n).unwrap_or(i64::MAX),
+            unit: Unit::Incidents,
+        })
+    };
+    let left_out = || {
+        vec![
+            "Anything not entered as an incident in WPM: the statutory record is held elsewhere."
+                .to_string(),
+            "People affected are not added up, because one incident can affect several."
+                .to_string(),
+        ]
+    };
+    let mut out = vec![figure(
+        "injuries_total",
+        "Work-related incidents",
+        "Incidents recorded as happening in the period, of every class, including those where nobody was hurt.",
+        "injury_records.occurred_at, class",
+        over,
+        left_out(),
+        SAFETY,
+        value(counts.total),
+    )];
+    out.extend(counts.cells.iter().map(|(class, n)| {
+        figure(
+            &format!("injuries_{class}"),
+            &format!("Work-related incidents, {}", class.replace('_', " ")),
+            "Incidents of this class recorded as happening in the period.",
+            "injury_records.occurred_at, class",
+            over,
+            left_out(),
+            SAFETY,
+            value(*n),
+        )
+    }));
+    out
+}
+
+/// The share of pay periods with a payslip under a legal floor. A run with an unanswered payslip and no `below` cannot be called clear,
+/// and a run where no floor applies has nothing to compare, so neither is counted; both are said. Indicative, like the check.
+fn wage_floor_figure(i: &Inputs, floor: usize, over: Period) -> Figure {
+    let counted: Vec<&WageRun> = i
+        .wage_runs
+        .iter()
+        .filter(|r| r.below > 0 || (r.unknown == 0 && r.near + r.ok > 0))
+        .collect();
+    let unanswered = i
+        .wage_runs
+        .iter()
+        .filter(|r| r.below == 0 && r.unknown > 0)
+        .count();
+    let no_floor = i.wage_runs.len() - counted.len() - unanswered;
+    let largest = counted.iter().map(|r| r.payslips()).max().unwrap_or(0);
+    let value = match counted.len() {
+        0 => unknown(Reason::NothingToDivide),
+        n if n < floor || largest < floor => Value::Withheld,
+        n => bp_value(basis_points(
+            counted.iter().filter(|r| r.below > 0).count(),
+            n,
+        )),
+    };
+    figure(
+        "pay_periods_below_minimum_wage",
+        "Pay periods with pay below a legal minimum",
+        "Of the approved and paid payroll runs ending in the period, the share with at least one payslip the indicative minimum-wage check placed below the floor.",
+        "the minimum-wage check over payroll_runs and payslips",
+        over,
+        vec![
+            format!("{unanswered} run(s) with a payslip the check could not answer and none below."),
+            format!("{no_floor} run(s) where no floor applied or that held no payslip."),
+            "Indicative: accommodation, tips, piece work, apprentices and which pay the law counts are not modelled, so a low share does not show that an employer complies.".to_string(),
+            "Withheld when under the floor of runs, or when the largest run has fewer payslips than the floor.".to_string(),
+        ],
+        WAGE_FLOOR,
+        value,
+    )
+}
+
 /// Build the report. `floor` is the smallest group shown.
 #[must_use]
 pub fn report(i: &Inputs, floor: usize) -> Report {
@@ -554,6 +686,8 @@ pub fn report(i: &Inputs, floor: usize) -> Report {
     let mut figures = workforce_figures(i, floor, on);
     figures.extend(movement_figures(i, floor, over));
     figures.extend(practice_figures(i, floor, on, over));
+    figures.extend(safety_figures(i, floor, over));
+    figures.push(wage_floor_figure(i, floor, over));
     figures.extend(elsewhere_figures(on));
     Report {
         as_of: i.as_of,
@@ -596,7 +730,147 @@ mod tests {
             completed: 15,
             plans: vec![],
             plans_unplaced: 0,
+            injury_classes: vec![],
+            injuries_ever: 0,
+            wage_runs: vec![],
         }
+    }
+
+    fn value_of(r: &Report, key: &str) -> Value {
+        r.figures
+            .iter()
+            .find(|f| f.key == key)
+            .unwrap()
+            .value
+            .clone()
+    }
+
+    fn incidents(n: i64) -> Value {
+        Value::Shown {
+            value: n,
+            unit: Unit::Incidents,
+        }
+    }
+
+    fn classes(pairs: &[(&str, usize)]) -> Vec<String> {
+        pairs
+            .iter()
+            .flat_map(|(c, n)| std::iter::repeat_n((*c).to_string(), *n))
+            .collect()
+    }
+
+    #[test]
+    fn no_incident_ever_recorded_is_unknown_not_zero() {
+        let r = report(&inputs(), 5);
+        assert_eq!(value_of(&r, "injuries_total"), unknown(Reason::NoRecord));
+        assert_eq!(value_of(&r, "injuries_fatal"), unknown(Reason::NoRecord));
+    }
+
+    #[test]
+    fn a_record_in_use_with_a_quiet_year_is_a_true_zero() {
+        let i = Inputs {
+            injuries_ever: 3,
+            ..inputs()
+        };
+        let r = report(&i, 5);
+        assert_eq!(value_of(&r, "injuries_total"), incidents(0));
+        assert_eq!(value_of(&r, "injuries_absence"), incidents(0));
+    }
+
+    #[test]
+    fn incidents_go_through_the_one_suppression_rule() {
+        let i = Inputs {
+            injury_classes: classes(&[("no_absence", 9), ("absence", 7), ("fatal", 1)]),
+            injuries_ever: 17,
+            ..inputs()
+        };
+        let r = report(&i, 5);
+        assert_eq!(value_of(&r, "injuries_fatal"), Value::Withheld);
+        assert_eq!(value_of(&r, "injuries_no_absence"), incidents(9));
+        // One cell hidden would be given back by the total, so the next smallest goes too.
+        assert_eq!(value_of(&r, "injuries_absence"), Value::Withheld);
+        assert_eq!(value_of(&r, "injuries_total"), incidents(17));
+    }
+
+    fn run(below: usize, ok: usize, none_by_law: usize, unknown: usize) -> WageRun {
+        WageRun {
+            below,
+            near: 0,
+            ok,
+            none_by_law,
+            unknown,
+        }
+    }
+
+    fn wage(i: &Inputs) -> Figure {
+        report(i, 5)
+            .figures
+            .into_iter()
+            .find(|f| f.key == "pay_periods_below_minimum_wage")
+            .unwrap()
+    }
+
+    #[test]
+    fn the_wage_share_counts_only_runs_it_can_answer_for() {
+        let mut wage_runs = vec![run(0, 10, 0, 0); 7];
+        wage_runs.push(run(1, 9, 0, 0));
+        // A run with a `below` counts even with an unanswered payslip; one with no `below` and an unanswered payslip does not.
+        wage_runs.push(run(1, 8, 0, 1));
+        wage_runs.push(run(0, 9, 0, 1));
+        wage_runs.push(run(0, 0, 10, 0));
+        let f = wage(&Inputs {
+            wage_runs,
+            ..inputs()
+        });
+        assert_eq!(
+            f.value,
+            Value::Shown {
+                value: 2_222,
+                unit: Unit::BasisPoints
+            }
+        );
+        assert!(
+            f.exclusions[0].starts_with("1 run(s)"),
+            "{:?}",
+            f.exclusions
+        );
+        assert!(
+            f.exclusions[1].starts_with("1 run(s)"),
+            "{:?}",
+            f.exclusions
+        );
+        assert!(
+            f.exclusions
+                .iter()
+                .any(|e| e.contains("does not show that an employer complies"))
+        );
+    }
+
+    #[test]
+    fn the_wage_share_is_unknown_with_nothing_to_compare_and_withheld_when_small() {
+        let nothing = wage(&Inputs {
+            wage_runs: vec![run(0, 0, 10, 0), run(0, 9, 0, 1)],
+            ..inputs()
+        });
+        assert_eq!(
+            nothing.value,
+            unknown(Reason::NothingToDivide),
+            "never a zero"
+        );
+        let few = wage(&Inputs {
+            wage_runs: vec![run(0, 10, 0, 0); 4],
+            ..inputs()
+        });
+        assert_eq!(few.value, Value::Withheld);
+        let small_org = wage(&Inputs {
+            wage_runs: vec![run(1, 2, 0, 0); 12],
+            ..inputs()
+        });
+        assert_eq!(
+            small_org.value,
+            Value::Withheld,
+            "twelve runs of three people still describe three people"
+        );
     }
 
     fn find<'a>(r: &'a Report, key: &str) -> &'a Figure {

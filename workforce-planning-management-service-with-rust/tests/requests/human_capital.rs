@@ -118,3 +118,98 @@ async fn the_report_counts_withholds_and_says_what_it_cannot_know() {
     })
     .await;
 }
+
+// WPM-T425: the report counts incidents by class and the pay periods with a payslip under a legal floor. Monthly floors keep the setup to
+// salaries: ten people, of whom one is paid under the floor in the first two of ten months, so two of ten runs are `below`.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn the_report_counts_incidents_and_pay_periods_below_a_floor() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        hire(&request, &ctx, &org, "permanent", 10, None).await;
+        let url = format!("/api/reports/human-capital?organization={org}&as_of=2026-10-24");
+
+        // Nothing recorded yet: unknown, never zero.
+        let before: Value = request.get(&url).await.json();
+        assert_eq!(figure(&before, "injuries_total")["reason"], "no_record");
+        assert_eq!(figure(&before, "pay_periods_below_minimum_wage")["reason"], "nothing_to_divide");
+
+        let incident = |class: &str, day: &str| {
+            json!({ "organization": org, "jurisdiction": "XA", "kind": "accident", "occurred_at": format!("{day}T09:00:00Z"), "class": class })
+        };
+        for (class, day, n) in [
+            ("no_absence", "2026-03-04", 12),
+            ("absence", "2026-04-04", 11),
+            ("serious", "2026-05-04", 1),
+            ("fatal", "2020-05-04", 7),
+        ] {
+            for _ in 0..n {
+                request.post("/api/injury-records").json(&incident(class, day)).await.assert_status_ok();
+            }
+        }
+
+        ctx.db
+            .execute_unprepared(&format!(
+                "UPDATE workers SET status = 'active', fte_percent = 100, salary_minor = 3600000, salary_currency = 'GBP', work_jurisdiction = 'XA' WHERE organization_ref = '{org}'"
+            ))
+            .await
+            .unwrap();
+        request
+            .post("/api/jurisdictions")
+            .json(&json!({ "organization_ref": org, "code": "XA", "layer": "national" }))
+            .await
+            .assert_status_ok();
+        for (key, value) in [
+            ("minimum_wage.currency", json!(["GBP"])),
+            ("minimum_wage.monthly_minor.adult", json!(200_000)),
+        ] {
+            request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": "XA", "key": key, "value": value,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await
+                .assert_status_ok();
+        }
+        let low = |salary: i64| {
+            format!("UPDATE workers SET salary_minor = {salary} WHERE pid = (SELECT pid FROM workers WHERE organization_ref = '{org}' ORDER BY id LIMIT 1)")
+        };
+        ctx.db.execute_unprepared(&low(1_200_000)).await.unwrap();
+        // Eleven runs, December to October; the period's first month is November, so all fall inside it.
+        for (i, (year, month)) in (0..11).map(|i| if i == 0 { (2025, 12) } else { (2026, i) }).enumerate() {
+            if i == 2 {
+                ctx.db.execute_unprepared(&low(3_600_000)).await.unwrap();
+            }
+            let run: Value = request
+                .post("/api/payroll-runs")
+                .json(&json!({ "organization_ref": org, "period_start": format!("{year}-{month:02}-01"), "period_end": format!("{year}-{month:02}-20") }))
+                .await
+                .json();
+            let pid = run["pid"].as_str().unwrap();
+            request.post(&format!("/api/payroll-runs/{pid}/calculate")).await.assert_status_ok();
+            // The last run stays calculated: it has not been approved, so it does not count.
+            if i < 10 {
+                request.post(&format!("/api/payroll-runs/{pid}/approve")).await.assert_status_ok();
+            }
+        }
+
+        let body: Value = request.get(&url).await.json();
+        assert_eq!(figure(&body, "injuries_no_absence")["value"], 12);
+        assert_eq!(figure(&body, "injuries_no_absence")["unit"], "incidents");
+        assert_eq!(figure(&body, "injuries_serious")["status"], "withheld", "one is under the floor");
+        assert_eq!(figure(&body, "injuries_absence")["status"], "withheld", "or the total would give the one back");
+        assert_eq!(figure(&body, "injuries_total")["value"], 24, "outside the period is left out");
+        assert_eq!(figure(&body, "injuries_fatal")["value"], 0, "the record is in use, so this zero is true");
+        assert_eq!(figure(&body, "injuries_total")["mapping"]["esrs_2026"], "S1-13");
+
+        let share = figure(&body, "pay_periods_below_minimum_wage");
+        assert_eq!(share["value"], 2_000, "two of ten; the unapproved run is left out");
+        assert_eq!(share["unit"], "basis_points");
+        assert!(share["mapping"]["esrs_topic"].is_null(), "a legal floor is not the adequate wage");
+        assert!(share["exclusions"].to_string().contains("does not show that an employer complies"));
+        assert_eq!(body["report"]["gaps"].as_array().unwrap().len(), 6);
+        let text = body.to_string();
+        assert!(!text.contains("Human Capital") && !text.contains("birth"), "{text}");
+    })
+    .await;
+}

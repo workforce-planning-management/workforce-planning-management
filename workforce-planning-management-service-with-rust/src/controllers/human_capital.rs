@@ -5,17 +5,21 @@
 
 use chrono::{Months, NaiveDate, Utc};
 use loco_rs::prelude::*;
+use sea_orm::{ColumnTrait, QueryFilter};
 use sea_orm::{DatabaseBackend, FromQueryResult, Statement};
 use serde::Deserialize;
 use serde_json::json;
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::pay_transparency::organization_problems;
+use super::payroll::check_minimum_wage;
 use super::{ensure_org_in_scope, ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::models::_entities::payroll_runs;
 use crate::models::audit_logs::Model as Audit;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
-use crate::rules::human_capital::{self as rules, Inputs, Plan, TypeCount};
+use crate::rules::human_capital::{self as rules, Inputs, Plan, TypeCount, WageRun};
 use crate::rules::metrics::time_to_fill_days;
 
 #[derive(Debug, Deserialize)]
@@ -54,6 +58,12 @@ struct PlanRow {
 #[derive(Debug, FromQueryResult)]
 struct Unplaced {
     unplaced: i64,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct InjuryRow {
+    class: String,
+    in_period: bool,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -136,6 +146,8 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
     .one(&ctx.db)
     .await?
     .ok_or_else(|| super::internal("the succession query returned no row"))?;
+    let (injury_classes, injuries_ever) = injuries(ctx, organization, from, as_of).await?;
+    let wage_runs = wage_runs(ctx, organization, from, as_of).await?;
     Ok(Inputs {
         as_of,
         from,
@@ -162,7 +174,67 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
             })
             .collect(),
         plans_unplaced: n(unplaced.unplaced),
+        injury_classes,
+        injuries_ever,
+        wage_runs,
     })
+}
+
+/// The class of each incident in the period, and how many this organization has ever recorded.
+async fn injuries(
+    ctx: &AppContext,
+    organization: &str,
+    from: NaiveDate,
+    as_of: NaiveDate,
+) -> Result<(Vec<String>, usize)> {
+    let rows = InjuryRow::find_by_statement(stmt(
+        "SELECT class, (occurred_at AT TIME ZONE 'UTC')::date BETWEEN $2 AND $3 AS in_period
+           FROM injury_records WHERE organization_ref = $1",
+        vec![organization.into(), from.into(), as_of.into()],
+    ))
+    .all(&ctx.db)
+    .await?;
+    let ever = rows.len();
+    let classes = rows
+        .into_iter()
+        .filter(|i| i.in_period)
+        .map(|i| i.class)
+        .collect();
+    Ok((classes, ever))
+}
+
+/// The minimum-wage outcomes of each approved or paid run ending in the period, as counts. Each person's birth date is read at most
+/// once here, only where a profile has age bands, and goes no further than the band (WPM-D114, WPM-D156).
+async fn wage_runs(
+    ctx: &AppContext,
+    organization: &str,
+    from: NaiveDate,
+    as_of: NaiveDate,
+) -> Result<Vec<WageRun>> {
+    let runs = payroll_runs::Entity::find()
+        .filter(payroll_runs::Column::OrganizationRef.eq(organization))
+        .filter(payroll_runs::Column::DeletedAt.is_null())
+        .filter(payroll_runs::Column::Status.is_in(["approved", "paid"]))
+        .filter(payroll_runs::Column::PeriodEnd.gte(from))
+        .filter(payroll_runs::Column::PeriodEnd.lte(as_of))
+        .all(&ctx.db)
+        .await?;
+    let mut known_births = BTreeMap::new();
+    let mut out = Vec::with_capacity(runs.len());
+    for run in &runs {
+        let check = check_minimum_wage(ctx, run, &mut known_births).await?;
+        let of = |outcome: &str| {
+            usize::try_from(check.counts.get(outcome).copied().unwrap_or(0)).unwrap_or(usize::MAX)
+        };
+        out.push(WageRun {
+            below: of("below"),
+            near: of("near"),
+            ok: of("ok"),
+            none_by_law: of("none_by_law"),
+            unknown: of("unknown"),
+        });
+    }
+    Ok(out)
 }
 
 /// `GET /api/reports/human-capital?organization=&as_of=` — the report. HR only; audited.

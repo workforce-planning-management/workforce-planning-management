@@ -193,8 +193,7 @@ Keep the evidence the law asks for: the check's inputs and result are kept for *
 - **Injury and illness notification (R221).** Only **after the gaps in what authorities require are researched** (WPM-T412: RIDDOR, OSHA
   recording, state first-report deadlines): the worker reference, the date, a severity class (for example "lost time" or not), whether it was reported
   to an authority and a reference to that report. **No narrative and no medical detail** (health is special category data). Link to the absence record
-  (section Q) by reference, copy nothing. Reports see counts at or above the floor (WPM-D32), which also closes the "health and safety" gap
-  row in the human capital report.
+  (section Q) by reference, copy nothing. Reports see counts at or above the floor (WPM-D32), which also fills the "health and safety" row in the human capital report (WPM-T425); rates per hours worked stay a named gap.
 - **Not WPM's job:** benefit amounts, claims, adjudication, the insurer's experience rating. Leave those to the insurer.
 
 ### Unemployment insurance: last, and thin (WPM-R222, WPM-R223, WPM-D159)

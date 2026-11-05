@@ -752,26 +752,33 @@ const MINIMUM_WAGE_NOTE: &str = "Indicative only. Each payslip's gross is compar
      where the worker's place of work is recorded and a floor is configured. Accommodation, tips, piece work, apprentices and which pay \
      the law counts are not modelled. An ok is not a statement that an employer complies, and nothing here blocks the run.";
 
-/// `GET /api/payroll-runs/{pid}/minimum-wage-check` — an advisory comparison of each payslip's gross with the minimum wage for the
-/// worker's age band, as of the period's last day (WPM-R218, WPM-D156, WPM-D160). HR and payroll only, and only for organizations the
-/// caller holds. The floors are jurisdiction parameters resolved from each worker's place of work; with none configured the answer is
-/// `unknown`, never `ok`, and a jurisdiction recorded as setting no statutory floor answers `none_by_law`. The date of birth is used
-/// only to pick a band and no age is returned or stored. The audit entry holds counts, never names.
-#[debug_handler]
+/// One run's minimum-wage comparison: what the check route answers and the human capital report counts.
+pub(crate) struct WageCheck {
+    /// Payslips compared.
+    pub payslips: usize,
+    /// Payslips by outcome, every outcome present.
+    pub counts: std::collections::BTreeMap<&'static str, u64>,
+    /// Why payslips were `unknown`.
+    pub reasons: std::collections::BTreeMap<&'static str, u64>,
+    /// A row per payslip: worker, outcome, reason, band.
+    pub rows: Vec<serde_json::Value>,
+}
+
+/// Compare each payslip of a run with the minimum wage for the worker's age band, as of the period's last day. `known_births` holds the
+/// birth dates already read in this request, so a report over several runs asks the person service once for each person; it is dropped
+/// with the request and nothing is stored. Authorizing and auditing are the caller's.
 #[allow(clippy::too_many_lines)] // payslips → workers → hours → floors → outcome, linearly
-async fn minimum_wage_check(
-    State(ctx): State<AppContext>,
-    caller: MaybeAuthUser,
-    Path(pid): Path<String>,
-) -> Result<Response> {
+pub(crate) async fn check_minimum_wage(
+    ctx: &AppContext,
+    run: &payroll_runs::Model,
+    known_births: &mut std::collections::BTreeMap<String, Option<chrono::NaiveDate>>,
+) -> Result<WageCheck> {
     use crate::rules::jurisdiction::Resolution;
     use crate::rules::minimum_wage as mw;
     use serde_json::json;
     use std::collections::BTreeMap;
     use std::str::FromStr;
 
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
-    super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
     let slips = payslips::Entity::find()
         .filter(payslips::Column::RunPid.eq(run.pid))
         .filter(payslips::Column::DeletedAt.is_null())
@@ -856,12 +863,19 @@ async fn minimum_wage_check(
             // at the period's end, and stored nowhere (WPM-D114, WPM-D156). None where it is not known.
             let adult_from = int(mw::ADULT_FROM_AGE_KEY);
             let age = if adult_from.is_some_and(|years| years > 0) {
-                match entity_ref::EntityRef::from_str(&worker.person_ref) {
-                    Ok(person) => crate::clients::birth_date(&person)
-                        .await
-                        .map(|born| mw::completed_years(born, as_of)),
-                    Err(_) => None,
-                }
+                let known = if let Some(known) = known_births.get(&worker.person_ref) {
+                    *known
+                } else {
+                    let read =
+                        if let Ok(person) = entity_ref::EntityRef::from_str(&worker.person_ref) {
+                            crate::clients::birth_date(&person).await
+                        } else {
+                            None
+                        };
+                    known_births.insert(worker.person_ref.clone(), read);
+                    read
+                };
+                known.map(|born| mw::completed_years(born, as_of))
             } else {
                 None
             };
@@ -899,13 +913,37 @@ async fn minimum_wage_check(
             "band": band_name,
         }));
     }
+    Ok(WageCheck {
+        payslips: slips.len(),
+        counts,
+        reasons,
+        rows,
+    })
+}
+
+/// `GET /api/payroll-runs/{pid}/minimum-wage-check` — an advisory comparison of each payslip's gross with the minimum wage for the
+/// worker's age band, as of the period's last day (WPM-R218, WPM-D156, WPM-D160). HR and payroll only, and only for organizations the
+/// caller holds. The floors are jurisdiction parameters resolved from each worker's place of work; with none configured the answer is
+/// `unknown`, never `ok`, and a jurisdiction recorded as setting no statutory floor answers `none_by_law`. The date of birth is used
+/// only to pick a band and no age is returned or stored. The audit entry holds counts, never names.
+#[debug_handler]
+async fn minimum_wage_check(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+) -> Result<Response> {
+    use serde_json::json;
+
+    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
+    let check = check_minimum_wage(&ctx, &run, &mut std::collections::BTreeMap::new()).await?;
     Audit::record(
         &ctx.db,
         "payroll_run",
         run.pid,
         "minimum_wage_checked",
         caller.actor(),
-        Some(json!({ "payslips": slips.len(), "counts": counts, "unknown_reasons": reasons })),
+        Some(json!({ "payslips": check.payslips, "counts": check.counts, "unknown_reasons": check.reasons })),
     )
     .await?;
     format::json(json!({
@@ -914,10 +952,10 @@ async fn minimum_wage_check(
         "period_end": run.period_end,
         "indicative": true,
         "note": MINIMUM_WAGE_NOTE,
-        "payslips": slips.len(),
-        "counts": counts,
-        "unknown_reasons": reasons,
-        "workers": rows,
+        "payslips": check.payslips,
+        "counts": check.counts,
+        "unknown_reasons": check.reasons,
+        "workers": check.rows,
     }))
 }
 
