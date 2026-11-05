@@ -80,6 +80,9 @@ test("hovering a picker button does not move it (the tooltip is out of flow), so
     "search",
   ]) {
     const button = page.locator(`nav.top .${name}-picker-button`);
+    // Measured once styled: an early read catches the button at its unstyled size, and that
+    // change is the stylesheet arriving, not the hover this test is about.
+    await expect(button, name).toHaveCSS("height", "40px");
     const before = await button.boundingBox();
     await button.hover();
     await expect(page.locator(`nav.top .${name}-picker-tooltip`)).toBeVisible();
