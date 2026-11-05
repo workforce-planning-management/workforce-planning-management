@@ -11,6 +11,7 @@ yanked = "warn"
 # advisories NOT on this list fail the build.
 ignore = [
     "RUSTSEC-2024-0449", # unsafe-libyaml (unmaintained), transitive (loco tree: serde_yaml); no fixed release to move to
+    "RUSTSEC-2026-0440", # astral-tokio-tar (unmaintained since 2026-11-03), test-only (dev-dependency testcontainers), never in the service binary; remove when testcontainers moves off it
 ]
 
 [licenses]
