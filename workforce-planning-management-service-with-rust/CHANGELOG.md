@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — why someone left is HR's (WPM-D178, WPM-T460)
+
+`GET /api/movements`, `GET /api/workers/{pid}/movements` and every movement write's response no longer carry `reason` or `notes`. `GET /api/movements/{pid}` carries them only for a caller who may write the worker's record, audited as `movement_why_read`. Erasure now clears the reason as well as the notes.
+
 ### Added — the separation record (WPM-R222, WPM-T422)
 
 `rules::separation`; `separation_records` (migration `m20261105_000130`); `GET`+`PUT /api/movements/{pid}/separation-record`; `GET /api/separation-records/export`; `tests/separation_record.rs`.

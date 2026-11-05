@@ -531,9 +531,11 @@ export interface Movement {
   job_title: string;
   organization_ref: string;
   effective_on: string;
-  reason: string | null;
+  /** Sent only to HR, on the single record (WPM-D178). */
+  reason?: string | null;
   status: "open" | "completed" | "cancelled";
-  notes: string | null;
+  /** Sent only to HR, on the single record (WPM-D178). */
+  notes?: string | null;
   completed_at: string | null;
   progress: { closed: number; total: number; overdue: number };
 }

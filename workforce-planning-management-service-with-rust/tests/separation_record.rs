@@ -152,6 +152,25 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             assert_eq!(read.status_code(), want);
         }
 
+        // The movement itself says why only to HR, on the one audited read (WPM-D178).
+        let detail = format!("/api/movements/{movement}");
+        for who in [&as_boss, &payroll, &hr] {
+            for url in [
+                detail.clone(),
+                "/api/movements".to_string(),
+                format!("/api/workers/{mine}/movements"),
+            ] {
+                let read = request.get(&url).add_header("authorization", who.clone()).await;
+                read.assert_status_ok();
+                let text = read.text();
+                let told = who == &hr && url == detail;
+                assert_eq!(text.contains("redundancy"), told, "{url}: {text}");
+                assert_eq!(text.contains("\"notes\""), told, "{url}: {text}");
+            }
+        }
+        let shown: Value = request.get(&detail).add_header("authorization", as_boss.clone()).await.json();
+        assert_eq!(shown["effective_on"], "2027-03-31", "the dates stay for the people who work from them");
+
         // What the leaver record says comes through, and each gap is named.
         let view: Value = request.get(&path).add_header("authorization", hr.clone()).await.json();
         assert_eq!(view["last_day"], "2027-03-31");
@@ -229,12 +248,57 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .try_get_by_index::<i64>(0)
             .unwrap();
         assert!(audited > 0);
+        let why_read = ctx
+            .db
+            .query_one_raw(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!(
+                    "SELECT count(*) FROM audit_logs WHERE entity_pid = '{movement}' AND action = 'movement_why_read' \
+                     AND snapshot IS NULL"
+                ),
+            ))
+            .await
+            .unwrap()
+            .unwrap()
+            .try_get_by_index::<i64>(0)
+            .unwrap();
+        assert_eq!(why_read, 1, "HR's one detail read, and nobody else's");
         let export: Value = request
             .get(&format!("/api/workers/{mine}/subject-access"))
             .add_header("authorization", svc.clone())
             .await
             .json();
         assert!(export.to_string().contains("payroll:run-42"), "{export}");
+
+        // Erasure takes the record and why they left; the dates stay, as for any leaver.
+        for to in ["offboarding", "terminated"] {
+            request
+                .post(&format!("/api/workers/{mine}/status"))
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "to": to }))
+                .await
+                .assert_status_ok();
+        }
+        request
+            .post(&format!("/api/workers/{mine}/erase"))
+            .add_header("authorization", svc.clone())
+            .await
+            .assert_status_ok();
+        let left = ctx
+            .db
+            .query_one_raw(sea_orm::Statement::from_string(
+                sea_orm::DatabaseBackend::Postgres,
+                format!(
+                    "SELECT (SELECT count(*) FROM movements WHERE pid = '{movement}' AND reason IS NULL AND notes IS NULL) \
+                     + 10 * (SELECT count(*) FROM separation_records WHERE movement_pid = '{movement}')"
+                ),
+            ))
+            .await
+            .unwrap()
+            .unwrap()
+            .try_get_by_index::<i64>(0)
+            .unwrap();
+        assert_eq!(left, 1, "the reason cleared and the separation record gone");
     })
     .await;
 }

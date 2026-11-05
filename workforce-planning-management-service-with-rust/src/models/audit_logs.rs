@@ -216,6 +216,7 @@ mod tests {
         ("controllers/development.rs", "review_content_read"),
         ("controllers/padr.rs", "padr_read"),
         ("controllers/separation.rs", "separation_read"),
+        ("controllers/movements.rs", "movement_why_read"),
         ("controllers/separation.rs", "separation_exported"),
         ("controllers/development.rs", "succession_read"),
         ("controllers/conversion_plans.rs", "conversion_plans_read"),

@@ -98,3 +98,6 @@ joiner or a leaver.
 - **Not built:** the asset owner role as its own permission (HR and administrators write; the owner role is a label); the equipment as items on the leaver checklist itself and in the handover trail (only the gate
   and the per-worker list exist); a bulk import; retiring an asset.
 
+## Why someone left (WPM-D178)
+
+**WPM-D178 Why someone left is HR's.** A line manager and a colleague with a seat work from a leaver's dates and checklist; they do not need the reason, and it can affect the person's unemployment benefit (WPM-R222). So no list and no write's response carries a movement's `reason` or `notes`. They appear on the single record for a caller who may write the worker's record, which under the reference policy is HR, the service or an administrator, and that read is audited with the pid and no content. The notes follow the reason because they are free text and may say the same thing. The person gets theirs in the subject-access export; the checklist page does not show it to them. Erasure clears the reason with the notes. (Chosen in the build, 2026-11-05, on the owner's "continue".)

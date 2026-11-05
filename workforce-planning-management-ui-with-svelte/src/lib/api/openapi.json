@@ -7784,7 +7784,7 @@
             "description": "Movement"
           }
         },
-        "summary": "A movement with its dated checklist (done / skipped / overdue / due today / upcoming)",
+        "summary": "A movement with its dated checklist (done / skipped / overdue / due today / upcoming); the reason and notes only for HR, audited",
         "tags": [
           "hr-core"
         ]

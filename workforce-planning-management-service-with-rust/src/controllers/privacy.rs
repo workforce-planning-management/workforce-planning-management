@@ -359,7 +359,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
             "DELETE FROM rota_swap_requests WHERE requester_pid = '{epid}' OR taker_pid = '{epid}'"
         ),
         format!("DELETE FROM announcement_reads WHERE worker_pid = '{epid}'"),
-        format!("UPDATE movements SET notes = NULL WHERE worker_pid = '{epid}'"),
+        format!("UPDATE movements SET notes = NULL, reason = NULL WHERE worker_pid = '{epid}'"),
         format!("UPDATE movement_items SET assignee_pid = NULL WHERE assignee_pid = '{epid}'"),
         format!(
             "UPDATE handover_actions SET note = NULL WHERE from_worker = '{epid}' OR to_worker = '{epid}'"

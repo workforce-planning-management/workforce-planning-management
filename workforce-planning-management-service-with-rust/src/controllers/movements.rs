@@ -10,6 +10,11 @@
 //! Who may open a record: whoever may write the worker's record (the person,
 //! or HR). Reading and ticking items is limited to organizations the caller
 //! can read.
+//!
+//! **Why someone left is not for everyone on the record** (WPM-D178). A manager
+//! and a colleague with a seat see the dates and the checklist they work from.
+//! The reason and the notes appear on one read only, for a caller who may write
+//! the worker's record, and that read is audited with the pid and no content.
 
 use super::ensure_org_in_scope;
 use super::writable_worker;
@@ -106,9 +111,7 @@ fn movement_json(
         "job_title": w.job_title,
         "organization_ref": w.organization_ref,
         "effective_on": m.effective_on,
-        "reason": m.reason,
         "status": m.status,
-        "notes": m.notes,
         "completed_at": m.completed_at,
         "progress": progress,
     })
@@ -281,7 +284,18 @@ async fn list_movements(
     super::paged_vec(out, window)
 }
 
-/// `GET /api/movements/{pid}` — a movement with its checklist.
+/// Whether the caller may read why someone left: HR, the service and an administrator under the
+/// reference policy. Never a line manager or payroll (WPM-R222, WPM-D178).
+fn may_read_why(caller: &MaybeAuthUser, worker: &workers::Model) -> bool {
+    auth::authorize_record(
+        caller,
+        authentication_verifier::Action::Write,
+        &auth::worker_resource_attrs(worker),
+    )
+    .is_ok()
+}
+
+/// `GET /api/movements/{pid}` — a movement with its checklist, and for HR its reason and notes.
 #[debug_handler]
 async fn get_movement(
     State(ctx): State<AppContext>,
@@ -296,6 +310,21 @@ async fn get_movement(
     let mut json = movement_json(&movement, &worker, rules::progress(&states));
     json["items"] =
         serde_json::Value::Array(items.iter().map(|i| item_json(i, today, &names)).collect());
+    if may_read_why(&caller, &worker) {
+        json["reason"] = serde_json::json!(movement.reason);
+        json["notes"] = serde_json::json!(movement.notes);
+        if movement.reason.is_some() || movement.notes.is_some() {
+            Audit::record(
+                &ctx.db,
+                "movement",
+                movement.pid,
+                "movement_why_read",
+                caller.actor(),
+                None,
+            )
+            .await?;
+        }
+    }
     format::json(json)
 }
 

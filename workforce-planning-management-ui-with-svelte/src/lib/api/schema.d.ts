@@ -9385,7 +9385,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** A movement with its dated checklist (done / skipped / overdue / due today / upcoming) */
+        /** A movement with its dated checklist (done / skipped / overdue / due today / upcoming); the reason and notes only for HR, audited */
         get: {
             parameters: {
                 query?: never;
