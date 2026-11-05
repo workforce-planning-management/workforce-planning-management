@@ -616,7 +616,8 @@ impl App {
 }
 
 impl TestApp for App {
-    /// Boot under `test`: a fresh schema unless `WPM_TEST_FRESH_SCHEMA=false`, then emptied unless `WPM_TEST_TRUNCATE=false`.
+    /// Boot under `test`: a fresh schema unless `WPM_TEST_FRESH_SCHEMA=false`, then emptied unless `WPM_TEST_TRUNCATE=false`. With
+    /// `false` nothing touches the schema, because the role drill runs as a role that may not (`scripts/verify-db-roles.sh`).
     async fn boot_test() -> Result<BootResult> {
         let flag = |name: &str| crate::compat::env_var(name).is_none_or(|v| v != "false");
         let environment = Environment::Test;
@@ -624,8 +625,6 @@ impl TestApp for App {
         let app_context = Self::context(environment, config).await?;
         if flag("WPM_TEST_FRESH_SCHEMA") {
             Migrator::fresh(&app_context.db).await?;
-        } else {
-            Migrator::up(&app_context.db, None).await?;
         }
         if flag("WPM_TEST_TRUNCATE") {
             Self::truncate(&app_context).await?;
