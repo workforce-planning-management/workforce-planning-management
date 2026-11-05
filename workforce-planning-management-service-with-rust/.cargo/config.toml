@@ -1,0 +1,4 @@
+# `sqlx::query!` checks each query against `.sqlx/`, so a build needs no database. `cargo sqlx prepare` overrides this and
+# regenerates the cache from a migrated database; CI fails if the cache and the schema have drifted (WPM-D184).
+[env]
+SQLX_OFFLINE = "true"

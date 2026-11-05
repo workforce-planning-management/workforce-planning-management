@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO course_requests (pid, worker_pid, course_ref) VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9ffb8a58fe38c9fff44e7b9fecfdaf11a6adff814cc00d844b53ea1c461a5ead"
+}

@@ -14,10 +14,10 @@ repository = "https://github.com/workforce-planning-management/workforce-plannin
 license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
 keywords = ["wpm", "hr", "payroll", "ats", "workforce"]
 categories = ["development-tools", "rust-patterns"]
-include = ["src/**/*", "config/**/*", "README.md", "CHANGELOG.md"]
+include = ["src/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.1", features = ["sea-orm"] }
+axa = { version = "0.1", features = ["sea-orm", "queue"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -63,6 +63,17 @@ sea-orm = { version = "2.0", features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
+] }
+# Plain SQL, checked at build time (WPM-D184). The same `sqlx` as SeaORM's, so both use one pool while SeaORM is retired.
+sqlx = { version = "0.9", default-features = false, features = [
+  "chrono",
+  "json",
+  "macros",
+  "postgres",
+  "runtime-tokio",
+  "sqlx-toml",
+  "tls-rustls-ring-webpki",
+  "uuid",
 ] }
 chrono = { version = "0.4" }
 uuid = { version = "1.29", features = ["v4", "serde"] }
