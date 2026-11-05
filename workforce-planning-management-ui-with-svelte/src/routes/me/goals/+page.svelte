@@ -7,6 +7,7 @@
   import { page } from "$app/state";
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
+  import CourseRequests from "#lib/components/CourseRequests.svelte";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import GoalCard from "#lib/components/GoalCard.svelte";
   import GoalForm from "#lib/components/GoalForm.svelte";
@@ -93,6 +94,8 @@
     <h2>{t("goals.propose")}</h2>
     <GoalForm workerPid={me} submitLabel={t("goals.proposeButton")} submit={propose} />
   </section>
+
+  <CourseRequests />
 
   {#if team.length > 0}
     <h2>{t("goals.team")}</h2>

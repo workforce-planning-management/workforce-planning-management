@@ -23,6 +23,7 @@ absent. A region's section is a record of what was read, never a claim of compli
 ## Newer data classes (WPM-T74–T89)
 
 - **The injury record** (WPM-R221, WPM-D158, WPM-D179) is health-related personal data, kept as thin as the duty allows: it holds a class and counts, never a description, an injury or a disease, and the statutory record stays outside WPM. In the subject-access export. Erasure takes the worker reference and keeps the row, because it proves a duty was met and names no one without it; that choice has had no legal review.
+- **Course requests** (WPM-R236) are personal data: in the subject-access export, erased with the worker. A decision keeps no reason.
 - **The separation record** (WPM-R222) is high-sensitivity personal data: in the subject-access export, erased with the worker. It holds a reference to the pay summary and no amount, and WPM submits nothing to any authority.
 - **The PADR** (WPM-R172) is high-sensitivity personal data: in the subject-access export, erased with the worker, and read only by the person, the reviewer and managers in the chain. Whether a wellbeing conversation was offered is a yes or no; there is no column for what was said.
 - **Individual goals** (WPM-R224 to WPM-R226) are high-sensitivity personal data: in the subject-access export, erased with the worker, on the `performance` schedule. No pay, progression or employment decision is made from a goal, and nothing scores one.

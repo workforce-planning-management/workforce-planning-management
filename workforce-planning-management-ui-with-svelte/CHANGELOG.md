@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — starting a course from a goal (WPM-T464)
+
+A recorded fee of zero enrols at once; anything else goes to a manager (WPM-R236).
+
 ### Added — the injury record (WPM-T421)
 
 `/injury-records` for HR, with `tests/e2e/injury-records.spec.ts`; 57 strings in 13 locales (AI-written, unreviewed).

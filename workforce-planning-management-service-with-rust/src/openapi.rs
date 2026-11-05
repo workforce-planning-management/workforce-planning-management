@@ -600,6 +600,22 @@ fn add_governance_paths(document: &mut Value) {
         "/api/me/padrs/{pid}/versions": {
             "post": { "tags": ["development"], "summary": "A correction: a new unsigned version copied from a signed one, which is kept. The due date does not move." }
         },
+        "/api/me/course-requests": {
+            "get": { "tags": ["development"], "summary": "Your own course requests, newest first." },
+            "post": { "tags": ["development"], "summary": "Start a catalogue course: enrolled at once on a recorded fee of zero, otherwise asked of a manager above you. An unknown fee is not zero." }
+        },
+        "/api/me/course-requests/{pid}/approve": {
+            "post": { "tags": ["development"], "summary": "Approve a course request from someone below you, which enrols them." }
+        },
+        "/api/me/course-requests/{pid}/decline": {
+            "post": { "tags": ["development"], "summary": "Decline a course request from someone below you. No reason is kept." }
+        },
+        "/api/me/course-requests/{pid}/withdraw": {
+            "post": { "tags": ["development"], "summary": "Take back your own course request." }
+        },
+        "/api/me/team-course-requests": {
+            "get": { "tags": ["development"], "summary": "Course requests waiting for your decision, from everyone below you, with the catalogue's fee as it stands." }
+        },
         "/api/me/goals": {
             "post": { "tags": ["development"], "summary": "Propose a goal of your own, with any measures." }
         },

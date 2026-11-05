@@ -116,6 +116,8 @@
     "markRead": "Marcar como lida",
     "waitingForYou": "Aguarda por si",
     "goalWaiting": "Uma meta aguarda a sua concordância.",
+    "courseRequested": "Um pedido de curso aguarda a sua decisão.",
+    "courseDecided": "Foi tomada uma decisão sobre o seu pedido de curso.",
     "padrOpened": "Foi aberta consigo uma avaliação de desenvolvimento pessoal.",
     "padrToSign": "Uma avaliação de desenvolvimento pessoal aguarda a sua assinatura."
   },
@@ -3236,7 +3238,15 @@
     "evidenceDiffers": "Marcado como alcançado, e o nível declarado continua abaixo do alvo.",
     "targetLevel": "Nível-alvo",
     "coursesNone": "Ainda não há nenhum curso no catálogo que desenvolva esta competência.",
-    "coursesHint": "Estas são sugestões. Nada aqui inscreve ninguém."
+    "enrol": "Inscrever-me",
+    "askToEnrol": "Pedir inscrição",
+    "coursesHintOwn": "Um curso com uma taxa registada de zero começa de imediato. Qualquer outro curso segue para aprovação do seu gestor.",
+    "coursesHint": "Estas são sugestões. A pessoa inscreve-se ou faz o pedido a partir do seu próprio objetivo.",
+    "withdrawRequest": "Retirar pedido",
+    "noManagerToApprove": "Não tem gestor registado, por isso ninguém pode aprovar um pedido por enquanto.",
+    "courseRequests": "Pedidos de cursos",
+    "approve": "Aprovar",
+    "decline": "Recusar"
   },
   "padr": {
     "link": "As minhas avaliações de desenvolvimento",

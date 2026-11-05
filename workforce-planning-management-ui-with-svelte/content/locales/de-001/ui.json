@@ -116,6 +116,8 @@
     "markRead": "Als gelesen markieren",
     "waitingForYou": "Wartet auf Sie",
     "goalWaiting": "Ein Ziel wartet auf Ihre Zustimmung.",
+    "courseRequested": "Eine Kursanfrage wartet auf Ihre Entscheidung.",
+    "courseDecided": "Über Ihre Kursanfrage wurde entschieden.",
     "padrOpened": "Ein Entwicklungsgespräch wurde mit Ihnen eröffnet.",
     "padrToSign": "Ein Entwicklungsgespräch wartet auf Ihre Unterschrift."
   },
@@ -3227,7 +3229,15 @@
     "evidenceDiffers": "Als erreicht markiert, und die angegebene Stufe liegt noch unter dem Ziel.",
     "targetLevel": "Zielniveau",
     "coursesNone": "Im Katalog gibt es noch keinen Kurs für diese Kompetenz.",
-    "coursesHint": "Dies sind Vorschläge. Hier wird niemand angemeldet."
+    "enrol": "Anmelden",
+    "askToEnrol": "Anmeldung anfragen",
+    "coursesHintOwn": "Ein Kurs mit einer erfassten Gebühr von null beginnt sofort. Jeder andere Kurs geht zur Genehmigung an Ihre Führungskraft.",
+    "coursesHint": "Dies sind Vorschläge. Die Person meldet sich über ihr eigenes Ziel an oder fragt dort an.",
+    "withdrawRequest": "Anfrage zurückziehen",
+    "noManagerToApprove": "Für Sie ist keine Führungskraft erfasst, daher kann noch niemand eine Anfrage genehmigen.",
+    "courseRequests": "Kursanfragen",
+    "approve": "Genehmigen",
+    "decline": "Ablehnen"
   },
   "padr": {
     "link": "Meine Entwicklungsgespräche",

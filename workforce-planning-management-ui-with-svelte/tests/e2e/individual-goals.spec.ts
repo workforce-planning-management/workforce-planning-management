@@ -62,6 +62,12 @@ async function stub(
   await page.route("**/api/proxy/me/team-goals", (route) =>
     route.fulfill({ json: { team } }),
   );
+  await page.route("**/api/proxy/me/team-course-requests", (route) =>
+    route.fulfill({ json: { waiting: [] } }),
+  );
+  await page.route("**/api/proxy/me/course-requests", (route) =>
+    route.fulfill({ json: { has_manager: true, requests: [] } }),
+  );
   await page.route("**/api/proxy/skills", (route) =>
     route.fulfill({
       json: [
@@ -444,8 +450,6 @@ test.describe("A goal's target and courses", () => {
     await page.route(
       `**/api/proxy/workers/${ME}/training-enrollments`,
       (route) => {
-        if (route.request().method() !== "GET")
-          throw new Error("nothing here enrols anyone");
         return route.fulfill({
           json: [
             {
@@ -550,9 +554,6 @@ test.describe("A goal's target and courses", () => {
     await expect(rows.nth(3).getByTestId("goal-course-standing")).toHaveText(
       "completed",
     );
-    await expect(
-      page.getByTestId("goal-courses").getByRole("button"),
-    ).toHaveCount(0);
   });
 
   test("a reader who may not see the person's training still sees the catalogue, with no status claimed", async ({
@@ -571,6 +572,171 @@ test.describe("A goal's target and courses", () => {
     await page.getByTestId("goal-courses").locator("summary").click();
     await expect(page.getByTestId("goal-course")).toHaveCount(1);
     await expect(page.getByTestId("goal-course-standing")).toHaveCount(0);
+  });
+
+  test("a free course enrols at once, any other asks, and a waiting one can be taken back", async ({
+    page,
+  }) => {
+    await withCourses(
+      page,
+      [skillGoal("agreed")],
+      [
+        course("free", "Free course", 0),
+        course("paid", "Priced course", 12500),
+        course("none", "Unpriced course", null),
+      ],
+    );
+    const requests: Array<{
+      pid: string;
+      course_ref: string;
+      status: string;
+      decided_on: null;
+    }> = [];
+    const started: string[] = [];
+    await page.route("**/api/proxy/me/course-requests", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({ json: { has_manager: true, requests } });
+      }
+      const ref = route.request().postDataJSON().course_ref as string;
+      started.push(ref);
+      requests.unshift({
+        pid: `r${started.length}`,
+        course_ref: ref,
+        status: "requested",
+        decided_on: null,
+      });
+      return route.fulfill({
+        json: {
+          has_manager: true,
+          started: { outcome: "requested", pid: "r1" },
+        },
+      });
+    });
+    const withdrawn: string[] = [];
+    await page.route("**/api/proxy/me/course-requests/*/withdraw", (route) => {
+      withdrawn.push(route.request().url());
+      requests[0]!.status = "withdrawn";
+      return route.fulfill({ json: {} });
+    });
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-courses").locator("summary").click();
+    const rows = page.getByTestId("goal-course");
+    await expect(rows.nth(0).getByTestId("goal-course-enrol")).toHaveText(
+      "Enrol",
+    );
+    await expect(rows.nth(1).getByTestId("goal-course-ask")).toHaveText(
+      "Ask to enrol",
+    );
+    await expect(rows.nth(2).getByTestId("goal-course-ask")).toBeVisible();
+    await rows.nth(1).getByTestId("goal-course-ask").click();
+    await expect(rows.nth(1).getByTestId("goal-course-request")).toHaveText(
+      "requested",
+    );
+    await expect(rows.nth(1).getByTestId("goal-course-ask")).toHaveCount(0);
+    expect(started).toEqual(["course:paid"]);
+    await rows.nth(1).getByTestId("goal-course-withdraw").click();
+    await expect(rows.nth(1).getByTestId("goal-course-ask")).toBeVisible();
+    expect(withdrawn).toHaveLength(1);
+  });
+
+  test("someone with no manager is told nobody can approve yet", async ({
+    page,
+  }) => {
+    await withCourses(
+      page,
+      [skillGoal("agreed")],
+      [course("paid", "Priced course", 12500)],
+    );
+    await page.route("**/api/proxy/me/course-requests", (route) =>
+      route.fulfill({ json: { has_manager: false, requests: [] } }),
+    );
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-courses").locator("summary").click();
+    await expect(page.getByTestId("goal-courses-no-manager")).toBeVisible();
+  });
+
+  test("a manager reads a report's goal courses with nothing to press, and decides a request with its fee", async ({
+    page,
+  }) => {
+    await stub(
+      page,
+      [],
+      [
+        {
+          worker_pid: "w2",
+          display_name: "Test Worker 002",
+          goals: [skillGoal("agreed")],
+        },
+      ],
+    );
+    await page.route("**/api/proxy/skills/s1/courses", (route) =>
+      route.fulfill({
+        json: {
+          skill_pid: "s1",
+          hours_per_level: null,
+          default_hours_per_level: 30,
+          courses: [course("free", "Free course", 0)],
+        },
+      }),
+    );
+    await page.route(
+      `**/api/proxy/workers/${ME}/training-enrollments`,
+      (route) => route.fulfill({ json: [] }),
+    );
+    const waiting = [
+      {
+        pid: "r1",
+        worker_pid: "w2",
+        display_name: "Test Worker 002",
+        course_ref: "course:paid",
+        title: "Priced course",
+        hours: 8,
+        fee_minor: 12500,
+        fee_currency: "GBP",
+      },
+      {
+        pid: "r2",
+        worker_pid: "w2",
+        display_name: "Test Worker 002",
+        course_ref: "course:none",
+        title: null,
+        hours: null,
+        fee_minor: null,
+        fee_currency: null,
+      },
+    ];
+    await page.route("**/api/proxy/me/team-course-requests", (route) =>
+      route.fulfill({ json: { waiting } }),
+    );
+    const decided: string[] = [];
+    await page.route("**/api/proxy/me/course-requests/*/*", (route) => {
+      decided.push(
+        new URL(route.request().url()).pathname.split("/").slice(-2).join("/"),
+      );
+      waiting.shift();
+      return route.fulfill({ json: {} });
+    });
+    await page.goto("/me/goals");
+    const person = page.getByTestId("team-person");
+    await person.getByTestId("goal-courses").locator("summary").click();
+    await expect(person.getByTestId("goal-course")).toHaveCount(1);
+    await expect(
+      person.getByTestId("goal-course").getByRole("button"),
+    ).toHaveCount(0);
+
+    const rows = page.getByTestId("course-request");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).getByTestId("course-request-fee")).toContainText(
+      "125",
+    );
+    await expect(rows.nth(1).getByTestId("course-request-fee")).toHaveText(
+      "no fee recorded",
+    );
+    await rows.nth(0).getByTestId("course-approve").click();
+    await expect(rows).toHaveCount(1);
+    await rows.nth(0).getByTestId("course-decline").click();
+    await expect(page.getByTestId("course-requests")).toHaveCount(0);
+    expect(decided).toEqual(["r1/approve", "r2/decline"]);
   });
 
   test("a skill with no course says so, and a closed goal lists none", async ({

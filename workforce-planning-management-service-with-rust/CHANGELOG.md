@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — starting a course from a goal (WPM-T464)
+
+A recorded fee of zero enrols at once; anything else goes to a manager (WPM-R236).
+
 ### Added — the injury record (WPM-R221, WPM-D179, WPM-T421)
 
 `rules::injury_record`; `injury_records` and `injury_reports` (migration `m20261105_000131`); `/api/injury-records`, its reports and roll-up, and `/api/injury-reports/{pid}`; `tests/injury_record.rs`. A row proves a report and points to the statutory record. It takes no description.

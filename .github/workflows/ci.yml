@@ -184,6 +184,7 @@ jobs:
       - run: cargo test --locked --test individual_goals -- --ignored --test-threads=1
       - run: cargo test --locked --test padr -- --ignored --test-threads=1
       - run: cargo test --locked --test separation_record -- --ignored --test-threads=1
+      - run: cargo test --locked --test course_requests -- --ignored --test-threads=1
       - run: cargo test --locked --test injury_record -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1

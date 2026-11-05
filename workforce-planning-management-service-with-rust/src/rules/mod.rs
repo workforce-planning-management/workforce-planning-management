@@ -28,6 +28,7 @@ pub mod consultation_register;
 pub mod contact_details;
 pub mod conversion;
 pub mod cost;
+pub mod course_request;
 pub mod cover;
 pub mod coverage_evidence;
 pub mod cpd;

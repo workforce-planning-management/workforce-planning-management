@@ -116,6 +116,8 @@
     "markRead": "Marcio fel darllenwyd",
     "waitingForYou": "Yn aros amdanoch",
     "goalWaiting": "Mae nod yn aros am eich cytundeb.",
+    "courseRequested": "Mae cais am gwrs yn aros am eich penderfyniad.",
+    "courseDecided": "Mae penderfyniad wedi'i wneud ar eich cais am gwrs.",
     "padrOpened": "Mae adolygiad datblygu personol wedi'i agor gyda chi.",
     "padrToSign": "Mae adolygiad datblygu personol yn aros am eich llofnod."
   },
@@ -3263,7 +3265,15 @@
     "evidenceDiffers": "Wedi'i farcio'n gyflawn, ac mae'r lefel a ddatganwyd yn dal o dan y targed.",
     "targetLevel": "Lefel darged",
     "coursesNone": "Nid oes cwrs yn y catalog sy'n datblygu'r sgil hon eto.",
-    "coursesHint": "Awgrymiadau yw'r rhain. Nid oes dim yma yn cofrestru neb."
+    "enrol": "Cofrestru",
+    "askToEnrol": "Gofyn am gael cofrestru",
+    "coursesHintOwn": "Mae cwrs sydd â ffi gofnodedig o sero yn dechrau ar unwaith. Mae unrhyw gwrs arall yn mynd at eich rheolwr i'w gymeradwyo.",
+    "coursesHint": "Awgrymiadau yw'r rhain. Mae'r person yn cofrestru neu'n gofyn o'i nod ei hun.",
+    "withdrawRequest": "Tynnu'r cais yn ôl",
+    "noManagerToApprove": "Nid oes rheolwr gennych ar gofnod, felly ni all neb gymeradwyo cais eto.",
+    "courseRequests": "Ceisiadau am gyrsiau",
+    "approve": "Cymeradwyo",
+    "decline": "Gwrthod"
   },
   "padr": {
     "link": "Fy adolygiadau datblygu",

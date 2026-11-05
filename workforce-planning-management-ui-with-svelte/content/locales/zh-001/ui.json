@@ -116,6 +116,8 @@
     "markRead": "标为已读",
     "waitingForYou": "等待您处理",
     "goalWaiting": "有一个目标正等待您确认。",
+    "courseRequested": "有一项课程申请等待您决定。",
+    "courseDecided": "您的课程申请已有决定。",
     "padrOpened": "已与您开启一次个人发展评估。",
     "padrToSign": "一次个人发展评估正等待您签字。"
   },
@@ -3218,7 +3220,15 @@
     "evidenceDiffers": "已标记为达成，但已声明等级仍低于目标。",
     "targetLevel": "目标级别",
     "coursesNone": "目录中还没有培养这项技能的课程。",
-    "coursesHint": "这些只是建议。此处不会为任何人报名。"
+    "enrol": "报名",
+    "askToEnrol": "申请报名",
+    "coursesHintOwn": "记录费用为零的课程会立即开始。其他课程都会交给您的经理审批。",
+    "coursesHint": "这些是建议。本人从自己的目标中报名或提出申请。",
+    "withdrawRequest": "撤回申请",
+    "noManagerToApprove": "您没有记录在案的经理，因此暂时没有人能批准申请。",
+    "courseRequests": "课程申请",
+    "approve": "批准",
+    "decline": "拒绝"
   },
   "padr": {
     "link": "我的发展评估",

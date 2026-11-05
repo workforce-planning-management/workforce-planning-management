@@ -29,6 +29,7 @@ impl ActiveModelBehavior for super::_entities::learning_budgets::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::worker_goals::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::padr_versions::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::separation_records::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::course_requests::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::injury_records::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::injury_reports::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::goal_measures::ActiveModel {}

@@ -24,6 +24,8 @@
 
   const shown: Record<string, { text: () => string; href: (row: Notification) => string }> = {
     goal_waiting: { text: () => t("notif.goalWaiting"), href: () => "/me/goals" },
+    course_requested: { text: () => t("notif.courseRequested"), href: () => "/me/goals" },
+    course_decided: { text: () => t("notif.courseDecided"), href: () => "/me/goals" },
     padr_opened: { text: () => t("notif.padrOpened"), href: padrLink },
     padr_to_sign: { text: () => t("notif.padrToSign"), href: padrLink },
   };

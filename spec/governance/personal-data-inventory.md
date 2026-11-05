@@ -25,6 +25,7 @@ Applicants have their own export, `GET /api/candidates/{pid}/subject-access`; er
 | `benefit_enrollments` | `worker_pid` | yes | no | pay |  |
 | `candidates` | `person_ref` | yes | yes | recruitment |  |
 | `conversion_plans` | `worker_pid` | yes | yes | none |  |
+| `course_requests` | `worker_pid` | yes | yes | learning |  |
 | `cpd_entries` | `worker_pid` | yes | yes | learning |  |
 | `credential_issuances` | `worker_pid` | yes | yes | none |  |
 | `development_plan_benefits` | `worker_pid` | yes | yes | performance |  |

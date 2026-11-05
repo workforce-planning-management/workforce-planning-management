@@ -4865,6 +4865,66 @@ export interface GoalBody {
   }>;
 }
 
+/** A person's request to take a course whose recorded fee is not zero (WPM-R236). */
+export interface CourseRequest {
+  pid: string;
+  course_ref: string;
+  status: string;
+  decided_on: string | null;
+}
+
+/** A course request waiting for a manager, with the catalogue's fee as it stands. Null is unknown, never free. */
+export interface TeamCourseRequest {
+  pid: string;
+  worker_pid: string;
+  display_name: string;
+  course_ref: string;
+  title: string | null;
+  hours: number | null;
+  fee_minor: number | null;
+  fee_currency: string | null;
+}
+
+/** Start a course. The service enrols you on a recorded fee of zero, and otherwise asks a manager above you. */
+export function startCourse(courseRef: string): Promise<{
+  has_manager: boolean;
+  started: { outcome: "enrolled" | "requested"; pid: string };
+}> {
+  return api("/me/course-requests", {
+    method: "POST",
+    body: { course_ref: courseRef },
+  });
+}
+
+/** Your own course requests, newest first. */
+export function myCourseRequests(
+  init?: FetchLike,
+): Promise<{ has_manager: boolean; requests: CourseRequest[] }> {
+  return api("/me/course-requests", init);
+}
+
+/** Course requests waiting for your decision. */
+export function teamCourseRequests(
+  init?: FetchLike,
+): Promise<{ waiting: TeamCourseRequest[] }> {
+  return api("/me/team-course-requests", init);
+}
+
+/** Approve a request from someone below you, which enrols them. */
+export function approveCourseRequest(pid: string): Promise<unknown> {
+  return api(`/me/course-requests/${pid}/approve`, { method: "POST" });
+}
+
+/** Decline a request from someone below you. No reason is kept. */
+export function declineCourseRequest(pid: string): Promise<unknown> {
+  return api(`/me/course-requests/${pid}/decline`, { method: "POST" });
+}
+
+/** Take back your own course request. */
+export function withdrawCourseRequest(pid: string): Promise<unknown> {
+  return api(`/me/course-requests/${pid}/withdraw`, { method: "POST" });
+}
+
 /** Propose a goal of your own. */
 export function proposeMyGoal(goal: GoalBody): Promise<{ pid: string }> {
   return api("/me/goals", { method: "POST", body: goal });

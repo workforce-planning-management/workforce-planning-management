@@ -178,6 +178,8 @@ collections:
               - { name: "markRead", label: "Mark Read", widget: string, required: false, i18n: true }
               - { name: "waitingForYou", label: "Waiting For You", widget: string, required: false, i18n: true }
               - { name: "goalWaiting", label: "Goal Waiting", widget: string, required: false, i18n: true }
+              - { name: "courseRequested", label: "Course Requested", widget: string, required: false, i18n: true }
+              - { name: "courseDecided", label: "Course Decided", widget: string, required: false, i18n: true }
               - { name: "padrOpened", label: "Padr Opened", widget: string, required: false, i18n: true }
               - { name: "padrToSign", label: "Padr To Sign", widget: string, required: false, i18n: true }
           - name: "erg"
@@ -4325,7 +4327,15 @@ collections:
               - { name: "evidenceDiffers", label: "Evidence Differs", widget: string, required: false, i18n: true }
               - { name: "targetLevel", label: "Target Level", widget: string, required: false, i18n: true }
               - { name: "coursesNone", label: "Courses None", widget: string, required: false, i18n: true }
+              - { name: "enrol", label: "Enrol", widget: string, required: false, i18n: true }
+              - { name: "askToEnrol", label: "Ask To Enrol", widget: string, required: false, i18n: true }
+              - { name: "coursesHintOwn", label: "Courses Hint Own", widget: text, required: false, i18n: true }
               - { name: "coursesHint", label: "Courses Hint", widget: string, required: false, i18n: true }
+              - { name: "withdrawRequest", label: "Withdraw Request", widget: string, required: false, i18n: true }
+              - { name: "noManagerToApprove", label: "No Manager To Approve", widget: string, required: false, i18n: true }
+              - { name: "courseRequests", label: "Course Requests", widget: string, required: false, i18n: true }
+              - { name: "approve", label: "Approve", widget: string, required: false, i18n: true }
+              - { name: "decline", label: "Decline", widget: string, required: false, i18n: true }
           - name: "padr"
             label: "Padr"
             widget: object

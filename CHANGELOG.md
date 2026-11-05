@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — starting a course from a goal (WPM-R236, WPM-D182, WPM-T464, 2026-11-05)
+
+A person enrols at once on a course whose recorded fee is zero. Anything else, including an unknown fee, goes to a manager above them to approve or decline.
+
 ### Added — a goal's target and courses (WPM-R233, WPM-R235, WPM-T463, 2026-11-05)
 
 The goal form sets a target level, a live goal lists the courses for its skill with their fees, and a manager can make a report's skill gap a proposal. Nothing enrols anyone.

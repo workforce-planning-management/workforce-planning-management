@@ -15,9 +15,9 @@ use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     adjustment_requests, announcement_reads, applications, appraisal_nominations,
     appraisal_responses, appraisals, assessment_results, assessments, asset_issues, assignments,
-    benefit_enrollments, candidates, conversion_plans, cpd_entries, credential_issuances,
-    development_plan_benefits, development_plans, dotted_line_reports, emergency_contacts,
-    engagement_decisions, engagement_extensions, engagement_reminders,
+    benefit_enrollments, candidates, conversion_plans, course_requests, cpd_entries,
+    credential_issuances, development_plan_benefits, development_plans, dotted_line_reports,
+    emergency_contacts, engagement_decisions, engagement_extensions, engagement_reminders,
     engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
     ergonomic_assessments, expense_claims, expense_items, flexible_working_requests,
     goal_check_ins, goal_measures, group_members, handover_actions, injury_records, interviews,
@@ -192,6 +192,7 @@ async fn subject_access(
         "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
         "joiner_leaver_records": rows_for!(db, movements, WorkerPid, epid),
         "separation_records": rows_for!(db, separation_records, WorkerPid, epid),
+        "course_requests": rows_for!(db, course_requests, WorkerPid, epid),
         "injury_records": rows_for!(db, injury_records, WorkerPid, epid),
         "handover_actions_from": rows_for!(db, handover_actions, FromWorker, epid),
         "handover_actions_to": rows_for!(db, handover_actions, ToWorker, epid),
@@ -423,6 +424,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM worker_goals WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM padr_versions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM separation_records WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM course_requests WHERE worker_pid = '{epid}'"),
         // The row proves a duty was met and names no one without this column (WPM-D179).
         format!("UPDATE injury_records SET worker_pid = NULL WHERE worker_pid = '{epid}'"),
     ]

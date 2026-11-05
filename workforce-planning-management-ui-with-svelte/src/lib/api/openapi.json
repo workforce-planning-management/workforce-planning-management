@@ -6540,6 +6540,96 @@
         ]
       }
     },
+    "/api/me/course-requests": {
+      "get": {
+        "summary": "Your own course requests, newest first.",
+        "tags": [
+          "development"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Start a catalogue course: enrolled at once on a recorded fee of zero, otherwise asked of a manager above you. An unknown fee is not zero.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/course-requests/{pid}/approve": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Approve a course request from someone below you, which enrols them.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/course-requests/{pid}/decline": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Decline a course request from someone below you. No reason is kept.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/course-requests/{pid}/withdraw": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Take back your own course request.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/me/credentials": {
       "get": {
         "responses": {
@@ -7585,6 +7675,14 @@
           }
         },
         "summary": "Record your own outcome for a goal in a review: the reviewer's and the reviewee's are kept apart. Refused once the review is shared.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/team-course-requests": {
+      "get": {
+        "summary": "Course requests waiting for your decision, from everyone below you, with the catalogue's fee as it stands.",
         "tags": [
           "development"
         ]

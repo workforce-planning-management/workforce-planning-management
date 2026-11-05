@@ -833,8 +833,7 @@ async fn my_health_requirements(
 
 /// The `/api/me` routes.
 pub fn routes() -> Routes {
-    Routes::new()
-        .prefix("/api")
+    course_routes(Routes::new().prefix("/api"))
         .add("/me/contact-details", get(get_my_details))
         .add("/me/contact-details", put(set_my_details))
         .add("/me/contact-details", delete(clear_my_details))
@@ -923,4 +922,27 @@ pub fn routes() -> Routes {
         .add("/me/leave-requests/{pid}/cancel", post(cancel_my_leave))
         .add("/workers/{pid}/contact-details", get(get_worker_details))
         .add("/contact-details/search", get(search_by_phone))
+}
+
+/// Starting a course (WPM-R236). Here and not in its controller, below `routes`, because the route guards scan what follows its prefix.
+fn course_routes(routes: Routes) -> Routes {
+    routes
+        .add("/me/course-requests", get(super::course_requests::mine))
+        .add("/me/course-requests", post(super::course_requests::start))
+        .add(
+            "/me/course-requests/{pid}/approve",
+            post(super::course_requests::approve),
+        )
+        .add(
+            "/me/course-requests/{pid}/decline",
+            post(super::course_requests::decline),
+        )
+        .add(
+            "/me/course-requests/{pid}/withdraw",
+            post(super::course_requests::withdraw),
+        )
+        .add(
+            "/me/team-course-requests",
+            get(super::course_requests::team),
+        )
 }

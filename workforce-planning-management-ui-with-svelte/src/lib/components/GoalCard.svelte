@@ -97,7 +97,7 @@
   {#if goal.skill_pid && live}
     <details bind:open={browsing} data-testid="goal-courses">
       <summary>{t("training.courses")}</summary>
-      {#if browsing}<GoalCourses skillPid={goal.skill_pid} workerPid={goal.worker_pid} />{/if}
+      {#if browsing}<GoalCourses skillPid={goal.skill_pid} workerPid={goal.worker_pid} own={party === "worker"} />{/if}
     </details>
   {/if}
   {#if view.plan_step}<p class="muted" data-testid="goal-plan-step">{t("goals.planStep")}: {view.plan_step}</p>{/if}

@@ -30,6 +30,8 @@ pub const KINDS: &[&str] = &[
     "goal_waiting",
     "padr_opened",
     "padr_to_sign",
+    "course_requested",
+    "course_decided",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -116,7 +118,9 @@ mod tests {
                 "policy_due",
                 "goal_waiting",
                 "padr_opened",
-                "padr_to_sign"
+                "padr_to_sign",
+                "course_requested",
+                "course_decided"
             ]
         );
     }

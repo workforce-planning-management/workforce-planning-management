@@ -116,6 +116,8 @@
     "markRead": "Tandai dibaca",
     "waitingForYou": "Menunggu Anda",
     "goalWaiting": "Sebuah sasaran menunggu persetujuan Anda.",
+    "courseRequested": "Permintaan kursus menunggu keputusan Anda.",
+    "courseDecided": "Permintaan kursus Anda telah diputuskan.",
     "padrOpened": "Penilaian pengembangan pribadi telah dibuka bersama Anda.",
     "padrToSign": "Penilaian pengembangan pribadi menunggu tanda tangan Anda."
   },
@@ -3218,7 +3220,15 @@
     "evidenceDiffers": "Ditandai tercapai, dan level yang dinyatakan masih di bawah sasaran.",
     "targetLevel": "Tingkat sasaran",
     "coursesNone": "Belum ada kursus di katalog yang membangun keterampilan ini.",
-    "coursesHint": "Ini hanya saran. Tidak ada seorang pun yang didaftarkan di sini."
+    "enrol": "Daftar",
+    "askToEnrol": "Minta pendaftaran",
+    "coursesHintOwn": "Kursus dengan biaya tercatat nol langsung dimulai. Kursus lainnya diteruskan ke manajer Anda untuk disetujui.",
+    "coursesHint": "Ini adalah saran. Orang tersebut mendaftar atau meminta dari sasarannya sendiri.",
+    "withdrawRequest": "Tarik permintaan",
+    "noManagerToApprove": "Anda tidak memiliki manajer yang tercatat, jadi belum ada yang dapat menyetujui permintaan.",
+    "courseRequests": "Permintaan kursus",
+    "approve": "Setujui",
+    "decline": "Tolak"
   },
   "padr": {
     "link": "Penilaian pengembangan saya",

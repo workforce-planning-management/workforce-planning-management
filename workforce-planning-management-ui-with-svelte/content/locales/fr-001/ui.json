@@ -116,6 +116,8 @@
     "markRead": "Marquer comme lue",
     "waitingForYou": "En attente de votre action",
     "goalWaiting": "Un objectif attend votre accord.",
+    "courseRequested": "Une demande de cours attend votre décision.",
+    "courseDecided": "Une décision a été prise sur votre demande de cours.",
     "padrOpened": "Un entretien de développement personnel a été ouvert avec vous.",
     "padrToSign": "Un entretien de développement personnel attend votre signature."
   },
@@ -3236,7 +3238,15 @@
     "evidenceDiffers": "Marqué comme atteint, et le niveau déclaré reste sous la cible.",
     "targetLevel": "Niveau cible",
     "coursesNone": "Aucun cours du catalogue ne développe encore cette compétence.",
-    "coursesHint": "Ce sont des suggestions. Rien ici n'inscrit qui que ce soit."
+    "enrol": "S'inscrire",
+    "askToEnrol": "Demander l'inscription",
+    "coursesHintOwn": "Un cours dont le tarif enregistré est de zéro commence immédiatement. Tout autre cours est soumis à l'approbation de votre responsable.",
+    "coursesHint": "Ce sont des suggestions. La personne s'inscrit ou fait sa demande depuis son propre objectif.",
+    "withdrawRequest": "Retirer la demande",
+    "noManagerToApprove": "Aucun responsable n'est enregistré pour vous, donc personne ne peut encore approuver une demande.",
+    "courseRequests": "Demandes de cours",
+    "approve": "Approuver",
+    "decline": "Refuser"
   },
   "padr": {
     "link": "Mes entretiens de développement",

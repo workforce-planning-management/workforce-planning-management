@@ -139,6 +139,7 @@ pub fn kind_of(table: &str) -> Option<RecordKind> {
         | "talent_pipelines" => Performance,
         "assessment_instruments"
         | "assessments"
+        | "course_requests"
         | "cpd_entries"
         | "cpd_requirements"
         | "learning_paths"

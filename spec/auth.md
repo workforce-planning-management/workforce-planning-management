@@ -64,6 +64,7 @@ applied to HR.
 | the person-centric record (WPM-R167) | high — the person sees all; a privileged caller sees rows in organizations they can read and, for others, only the service total and that another employment exists (WPM-D113) |
 | date of birth (WPM-R169) | high — the person, HR and payroll; never a manager; never read by scoring (WPM-D114) |
 | statutory and mandatory learning, qualifications (WPM-R170–R171) | medium — the person, their managers by name, HR; roll-ups with the floor |
+| a course request (WPM-R236) | the person and a manager above them; a manager decides, and nobody decides their own |
 | a separation record (WPM-R222) | high — HR, the service and an administrator of the organization; **never a line manager or payroll**, because the reason affects eligibility; each read audited with the pid |
 | an injury or illness record (WPM-R221, WPM-D179) | high — HR, the service and an administrator of the organization; **never a line manager or payroll**; holds no description, no injury and no disease; each list read audited with a count; counts by class at or above the floor to HR and payroll |
 | why someone left: a movement's reason and notes (WPM-D178) | high — HR, the service and an administrator, on `GET /api/movements/{pid}` only, audited as `movement_why_read`; **no list carries them**; a manager or a colleague with a seat sees the dates and the checklist; a person reads their own in the subject-access export |

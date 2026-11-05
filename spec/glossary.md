@@ -65,6 +65,7 @@
 | **Subjective code** | The ledger's expense category for an assignment's pay, derived by configured rules; none matching is uncoded, never a default |
 | **Annual service** | The union of a person's employment periods across every role and organization, with continuous service by a configured break tolerance |
 | **PADR** | Personal development review: the annual review of objectives, development needs and values, complete when both people have signed |
+| **Course request** | A person's request to take a course whose recorded fee is not zero, decided by a manager above them. A recorded zero needs none |
 | **Separation record** | What an authority asks of an employer when someone leaves, built from the leaver record: last day, reason, final pay date and a reference to the pay summary. WPM submits nothing |
 | **Statutory and mandatory learning** | Training required by law or a regulator (statutory, the source named) or by the organization (mandatory), with a refresher period |
 | **Review point** | A configured absence threshold over a rolling window that makes a supportive conversation due; it never acts ([absence-and-line-managers.md](absence-and-line-managers.md)) |

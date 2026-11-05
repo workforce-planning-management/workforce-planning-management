@@ -116,6 +116,8 @@
     "markRead": "Mark read",
     "waitingForYou": "Waiting for you",
     "goalWaiting": "A goal is waiting for your agreement.",
+    "courseRequested": "A course request is waiting for your decision.",
+    "courseDecided": "Your course request has been decided.",
     "padrOpened": "A personal development review has been opened with you.",
     "padrToSign": "A personal development review is waiting for your signature."
   },
@@ -3227,7 +3229,15 @@
     "evidenceDiffers": "Marked achieved, and the declared level is still under the target.",
     "targetLevel": "Target level",
     "coursesNone": "No course in the catalogue builds this skill yet.",
-    "coursesHint": "These are suggestions. Nothing here enrols anyone."
+    "enrol": "Enrol",
+    "askToEnrol": "Ask to enrol",
+    "coursesHintOwn": "A course with a recorded fee of zero starts straight away. Any other course goes to your manager to approve.",
+    "coursesHint": "These are suggestions. The person enrols or asks from their own goal.",
+    "withdrawRequest": "Withdraw request",
+    "noManagerToApprove": "You have no manager on record, so nobody can approve a request yet.",
+    "courseRequests": "Course requests",
+    "approve": "Approve",
+    "decline": "Decline"
   },
   "padr": {
     "link": "My development reviews",

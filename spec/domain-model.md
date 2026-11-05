@@ -299,6 +299,7 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
   WPM-T52–T55.
 - **WorkerGoal** (`worker_goals`, WPM-R224) with **GoalMeasure** (`goal_measures`) and **GoalCheckIn** (`goal_check_ins`) — one person's goal for a period, never a score. **ReviewGoalOutcome** (`review_goal_outcomes`, WPM-R225) — a goal in a review: the reviewer's and the reviewee's outcomes and the snapshot frozen on sharing. Not the older `goals`, which are lines inside one review (WPM-R10).
 - **InjuryRecord** (`injury_records`, WPM-R221) — an incident: jurisdiction, kind, class, times, counts, an optional worker and a pointer to the statutory record. No description. **InjuryReport** (`injury_reports`) — one report of it to one recipient, owed until it says when and how it went.
+- **CourseRequest** (`course_requests`, WPM-R236) — a person's request to take a course whose recorded fee is not zero, and a manager's decision. No fee and no reason are kept on it.
 - **SeparationRecord** (`separation_records`, WPM-R222) — one per leaver record: the final pay date and a pay summary reference. The last day and the reason stay on the movement.
 - **DevelopmentPlanBenefit** (`development_plan_benefits`, WPM-R230) — a stated yearly benefit of a development plan: year, amount, currency, a named source, who stated it. An estimate, never derived. One a year per plan; soft-deleted; in the subject-access export and erased.
 - **LearningBudget** (`learning_budgets`, WPM-R227) — one department's budget for a year and currency. Names nobody.
