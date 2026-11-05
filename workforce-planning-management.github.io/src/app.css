@@ -106,6 +106,9 @@ footer p a {
   color: var(--muted);
 }
 .doc code {
+  /* A code span reads left to right on a right-to-left page too, and a leading `/` stays with its word. */
+  direction: ltr;
+  unicode-bidi: isolate;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9em;
   background: var(--panel);

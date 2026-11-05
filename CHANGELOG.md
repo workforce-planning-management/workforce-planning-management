@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the website in Arabic and Hindi (WPM-R231, WPM-T461, 2026-11-05)
+
+Landing pages, the demo tutorial and the site's own words in Arabic and Hindi, written by AI and not reviewed by native speakers. The comparison pages and repository documents stay English.
+
 ### Added — the injury record and the research behind it (WPM-R221, WPM-T412, WPM-T421, 2026-11-05)
 
 What an employer must report and hand over in the eleven jurisdictions, with sources, in `spec/injury-and-separation-duties.md`. An injury record that proves a report and points to the statutory record, with no description.

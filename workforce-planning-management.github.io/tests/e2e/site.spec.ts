@@ -240,20 +240,31 @@ const noShareSheet = () => {
   Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
 };
 
+/** Each picker's English label, as its key in a catalogue. */
+const KEYS: Record<string, keyof ReturnType<typeof ui>["pickers"]> = {
+  Pages: "pages",
+  "Search this site": "search",
+  Theme: "theme",
+  Language: "language",
+  "Text size": "textSize",
+  Share: "share",
+};
+
 for (const [name, width] of [["desktop", 1280], ["phone", 390], ["small phone", 320]] as const)
-  for (const route of ["/readme/", encodeURI(briefRoute(brief("ar-001", "chief-executive-officer")))])
+  for (const [locale, route] of [["en-001", "/readme/"], ["ar-001", encodeURI(briefRoute(brief("ar-001", "chief-executive-officer")))]] as const)
     test(`every picker opens in full, inside the screen, without moving the page: ${route} (${name})`, async ({ page }) => {
       await page.addInitScript(noShareSheet);
       await page.setViewportSize({ width, height: 800 });
       await open(page, route, "light");
       const tops = [];
-      for (const { button } of PICKERS) {
+      const inLanguage = PICKERS.map((p) => ({ ...p, button: ui(locale).pickers[KEYS[p.button]!] }));
+      for (const { button } of inLanguage) {
         const box = await page.getByRole("button", { name: button, exact: true }).boundingBox();
         tops.push(box);
         expect(box?.width, button).toBeGreaterThanOrEqual(24);
       }
       if (width > 390) expect(new Set(tops.map((b) => b?.y)).size).toBe(1);
-      for (const { button, popup } of PICKERS) {
+      for (const { button, popup } of inLanguage) {
         const scroll = await page.evaluate(() => [scrollX, scrollY]);
         await page.getByRole("button", { name: button, exact: true }).click();
         const list = page.locator(popup);
@@ -385,6 +396,7 @@ test("every catalogue has every key of the English source, and no empty string",
 });
 
 for (const [locale, headline] of [
+  ["ar-001", "إدارة تخطيط القوى العاملة"],
   ["en-001", "Workforce Planning Management"],
   ["en-us", "Workforce Planning Management"],
   ["en-gb", "Workforce Planning Management"],
@@ -393,6 +405,8 @@ for (const [locale, headline] of [
   ["cy-001", "Rheoli Cynllunio'r Gweithlu"],
   ["zh-cn", "劳动力规划管理"],
   ["zh-001", "劳动力规划管理"],
+  ["hi-in", "वर्कफ़ोर्स प्लानिंग मैनेजमेंट"],
+  ["hi-001", "वर्कफ़ोर्स प्लानिंग मैनेजमेंट"],
 ] as const)
   test(`/${locale}/ is the locale's home: hero, wordmark, chrome and Translations line in its language`, async ({ page }) => {
     const s = ui(locale);
@@ -414,8 +428,36 @@ for (const [locale, headline] of [
     await expect(page.getByRole("button", { name: s.pickers.textSize, exact: true })).toBeVisible();
     const line = page.getByTestId("translations");
     await expect(line).toContainText(s.translations);
-    for (const name of ["English", "Cymraeg", "中文"]) await expect(line).toContainText(name);
+    for (const name of ["العربية", "English", "Cymraeg", "हिन्दी", "中文"]) await expect(line).toContainText(name);
     await expect(page.locator("footer")).toContainText(s.footer.notice);
+  });
+
+test("an Arabic page is right to left in its chrome and left to right in its code", async ({ page }) => {
+  await open(page, "/ar-001/start/", "light");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("footer")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("main pre").first()).toHaveCSS("direction", "ltr");
+  await expect(page.locator("main p code").first()).toHaveCSS("direction", "ltr");
+  await expect(page.locator("main p code").first()).toHaveCSS("unicode-bidi", "isolate");
+  await expect(page.locator(".source")).toHaveAttribute("dir", "rtl");
+  await expect(page.locator("footer")).toContainText("\u2066workforce-planning-management.github.io/\u2069");
+  await page.goto("/404.html");
+  await expect(page.locator('section[lang="ar-001"]')).toHaveAttribute("dir", "rtl");
+});
+
+test("the footer ends its sentence in the language's own punctuation", async ({ page }) => {
+  await page.goto("/hi-in/");
+  await expect(page.locator("footer")).toContainText(`${ui("hi-in").footer.countsEnd} ${ui("hi-in").footer.notice}`);
+  expect(ui("hi-in").footer.countsEnd).toBe("।");
+});
+
+for (const route of ["/ar-001/", "/ar-001/start/", "/hi-in/", "/hi-001/start/"])
+  test(`${route} fits a phone and passes axe`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await open(page, route, "light");
+    expect(await axe(page)).toEqual([]);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 
 for (const slug of COMPARE_SLUGS)
@@ -460,7 +502,7 @@ test("the root home has the hero and Translations line, and the language picker 
   await expect(page.locator("main h1")).toHaveText("Workforce Planning Management");
   await expect(page.getByRole("heading", { name: "Comparison", exact: true })).toBeVisible();
   await expect(page.locator("main table")).toContainText("Suitable for production use");
-  await expect(page.getByTestId("translations")).toContainText("Translations: Cymraeg, English, 中文");
+  await expect(page.getByTestId("translations")).toContainText("Translations: العربية, Cymraeg, English, हिन्दी, 中文");
   await page.getByTestId("translations").getByRole("link", { name: "中文" }).click();
   await expect(page).toHaveURL(/\/zh-001\/$/);
   await expect(page.locator(".brand")).toHaveText("劳动力规划管理");

@@ -22,8 +22,8 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 | Route | Document |
 | --- | --- |
 | `/` | the landing page, [`locales/en-001/index.md`](../locales/en-001/index.md) |
-| `/<locale>/` | a locale's landing page, `locales/<locale>/index.md` (8 locales) |
-| `/<locale>/start/` | the guided tutorial, `locales/<locale>/start/index.md` (8 locales) |
+| `/<locale>/` | a locale's landing page, `locales/<locale>/index.md` (11 locales) |
+| `/<locale>/start/` | the guided tutorial, `locales/<locale>/start/index.md` (11 locales) |
 | `/compare/`, `/compare/<slug>/` | [`docs/compare/`](../docs/compare/index.md) (11 products, English) |
 | `/docs/` | [`index.md`](../index.md) |
 | `/readme/` | [`README.md`](../README.md) |
@@ -44,7 +44,7 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
   text size (all 7) and share. Choosing a language opens the same page in that
   locale, matched by its `.locale-peer-id`; a page with no translation of itself opens
   the locale's landing page, or its list of briefs.
-- The site's own words are in `src/content/locales/` (`en-001`, `cy-001`, `zh-001`) and
+- The site's own words are in `src/content/locales/` (`en-001`, `cy-001`, `zh-001`, `ar-001`, `hi-001`) and
   read through `ui(locale)` in `src/lib/i18n.ts`; a test checks that every catalogue has
   every key. Other locales read English. The translations were written by an AI
   assistant and have not been reviewed by a native speaker.

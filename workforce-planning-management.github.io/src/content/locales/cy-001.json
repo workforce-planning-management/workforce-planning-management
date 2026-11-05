@@ -48,6 +48,7 @@
     "builtFrom": "Wedi'i adeiladu o'r dogfennau yn",
     "repository": "ystorfa Rheoli Cynllunio'r Gweithlu",
     "counts": "Dogfennau: {documents}; dogfennau rôl: {briefs}; locales: {locales}",
+    "countsEnd": ".",
     "notice": "Meddalwedd arddangos gyda data synthetig yn unig; ysgrifennwyd y cyfieithiadau gan gynorthwyydd deallusrwydd artiffisial ac nid yw siaradwr brodorol wedi'u hadolygu.",
     "export": "Y wefan hon yw cyfeiriadur {directory} yr ystorfa, wedi'i allforio gyda {tool}."
   },

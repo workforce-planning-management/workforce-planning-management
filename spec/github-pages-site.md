@@ -56,7 +56,7 @@ Acceptance criteria:
   other repository link goes to the file on GitHub, so nothing on the site is a
   dead end. Raw HTML in the Markdown is shown as text, never passed through.
 - **The site's own words are in catalogues.** Superseded in part by WPM-D175: English,
-  Welsh and Mandarin have a catalogue; every other locale's pages keep English
+  Welsh, Mandarin, Arabic and Hindi have a catalogue; every other locale's pages keep English
   chrome around their documents.
 - **All of Lily's themes.** Superseded by WPM-D175: the picker bar offers all 57, and
   the tests audit each one.
@@ -86,11 +86,11 @@ Acceptance criteria:
    when to choose the other product, that WPM is a demo, what it rests on, and that WPM
    is not affiliated with the product's owner.
 4. Those pages exist for `en-001`, `en-us`, `en-gb`, `en-gb-oxendict`, `cy-gb` (copied to
-   `cy-001`) and `zh-cn` (copied to `zh-001`), as `locales/<code>/index.md` and
+   `cy-001`), `zh-cn` (copied to `zh-001`), `ar-001` and `hi-in` (copied to `hi-001`), as `locales/<code>/index.md` and
    `start/index.md`, each with a `README.md` symlink and a `.locale-peer-id`; `/compare/`
    is English.
-5. On `cy-*` and `zh-*` pages the site's own words and wordmark are in that language, and
-   `/<locale>/search/` keeps the reader in it.
+5. On `cy-*`, `zh-*`, `ar-*` and `hi-*` pages the site's own words and wordmark are in that language, and
+   `/<locale>/search/` keeps the reader in it. On an Arabic page the header, footer, source line and not-found message read right to left; code reads left to right in every locale.
 6. `/sitemap.xml` lists the site and `/<locale>/sitemap.xml` a locale's pages.
 7. `/404.html` is the site's own not-found page, in each catalogue's language, because the address does not say which locale the reader wants.
 
@@ -114,7 +114,7 @@ Acceptance criteria:
 
 ## Not done
 
-Machine translations (Welsh, Mandarin) have had no native-speaker review. The other 13
+Machine translations (Welsh, Mandarin, Arabic, Hindi) have had no native-speaker review. The other 10
 locales have no landing page or tutorial, and English chrome around their briefs; README,
 Install, the specification and `/compare/` are English. Theme names are English.
 

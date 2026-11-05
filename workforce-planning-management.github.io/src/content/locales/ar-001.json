@@ -1,0 +1,70 @@
+{
+  "locale": "ar-001",
+  "brand": "إدارة تخطيط القوى العاملة",
+  "skip": "انتقل إلى المحتوى",
+  "siteNav": "الموقع",
+  "nav": {
+    "home": "الرئيسية",
+    "readme": "README",
+    "install": "التثبيت",
+    "familyBridges": "جسور العائلة",
+    "spec": "المواصفات",
+    "worldwide": "حول العالم",
+    "briefs": "وثائق الأدوار",
+    "start": "الدليل التعليمي",
+    "docs": "التوثيق",
+    "compare": "المقارنة"
+  },
+  "pickers": {
+    "pages": "الصفحات",
+    "search": "البحث في هذا الموقع",
+    "searchInput": "الكلمات المطلوبة",
+    "searchSubmit": "بحث",
+    "theme": "السمة",
+    "language": "اللغة",
+    "textSize": "حجم النص",
+    "share": "مشاركة"
+  },
+  "textSizes": {
+    "largest": "الأكبر",
+    "larger": "أكبر كثيرًا",
+    "large": "كبير",
+    "normal": "عادي",
+    "small": "صغير",
+    "smaller": "أصغر كثيرًا",
+    "smallest": "الأصغر"
+  },
+  "share": {
+    "copy": "نسخ الرابط",
+    "copied": "تم نسخ الرابط",
+    "copyFailed": "تعذّر نسخ الرابط",
+    "email": "إرسال الرابط بالبريد الإلكتروني",
+    "linkedin": "المشاركة على LinkedIn",
+    "reddit": "المشاركة على Reddit",
+    "bluesky": "المشاركة على Bluesky",
+    "mastodon": "المشاركة على Mastodon"
+  },
+  "footer": {
+    "builtFrom": "بُني من المستندات الموجودة في",
+    "repository": "مستودع Workforce Planning Management",
+    "counts": "المستندات: {documents}، ووثائق الأدوار: {briefs}، واللغات المحلية: {locales}",
+    "countsEnd": ".",
+    "notice": "برنامج تجريبي ببيانات اصطناعية فقط؛ كتب الترجماتِ مساعد ذكاء اصطناعي ولم يراجعها ناطق أصلي.",
+    "export": "هذا الموقع هو المجلد {directory} من المستودع، مُصدَّرًا باستخدام {tool}."
+  },
+  "translations": "الترجمات:",
+  "source": "المصدر:",
+  "search": {
+    "title": "بحث",
+    "label": "الكلمات المطلوبة",
+    "submit": "بحث",
+    "noscript": "يتطلب البحث في هذا الموقع JavaScript.",
+    "failed": "تعذّر تحميل فهرس البحث، فلم يُنفَّذ هذا البحث.",
+    "count": "الصفحات التي تحتوي على كل كلمات «{query}»: {count}"
+  },
+  "notFound": {
+    "title": "الصفحة غير موجودة",
+    "body": "هذا العنوان غير موجود في الموقع.",
+    "home": "الانتقال إلى الصفحة الرئيسية"
+  }
+}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import { REPO_URL } from "#lib/site.js";
+  import { REPO_URL, isRtl } from "#lib/site.js";
   import { ui } from "#lib/i18n.js";
 
   // A landing page passes its `hero` and the rest as `html`, and the `Translations` line as children, between the two.
@@ -39,8 +39,8 @@
   {@html html}
 </article>
 {#if !landing}
-  <p class="source" lang={s.locale} dir="ltr">
-    {s.source} <a href={sourceUrl}><code>{path}</code></a>
+  <p class="source" lang={s.locale} dir={isRtl(s.locale) ? "rtl" : "ltr"}>
+    {s.source} <a href={sourceUrl}><code dir="ltr">{path}</code></a>
   </p>
 {/if}
 

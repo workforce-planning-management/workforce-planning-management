@@ -48,6 +48,7 @@
     "builtFrom": "根据以下位置的文档构建：",
     "repository": "劳动力规划管理代码仓库",
     "counts": "{documents} 份文档和 {briefs} 份角色文档，共 {locales} 个语言区域",
+    "countsEnd": "。",
     "notice": "演示软件，只使用合成数据；译文由人工智能助手撰写，未经母语人士审校。",
     "export": "本站是该仓库的 {directory} 目录，通过 {tool} 导出。"
   },

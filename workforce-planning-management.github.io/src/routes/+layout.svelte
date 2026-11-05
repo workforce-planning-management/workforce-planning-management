@@ -118,6 +118,9 @@
   ]);
   const pageTitle = $derived(page.data.title ?? s.brand);
 
+  // Isolated, because in a right-to-left sentence the closing slash would otherwise jump to the far end of the name.
+  const SITE_DIRECTORY = `${String.fromCodePoint(0x2066)}workforce-planning-management.github.io/${String.fromCodePoint(0x2069)}`;
+
   const themesUrl = $derived(`${href("/")}assets/themes/`.replace(/\/{2,}assets/, "/assets"));
 </script>
 
@@ -171,7 +174,7 @@
 
 <main id="main" tabindex="-1">{@render children()}</main>
 
-<footer class="site-footer" lang={s.locale} dir="ltr">
+<footer class="site-footer" lang={s.locale} dir={isRtl(s.locale) ? "rtl" : "ltr"}>
   <p>
     {s.footer.builtFrom} <a href={REPO_URL}>{s.footer.repository}</a>:
     <span data-testid="site-counts"
@@ -180,8 +183,9 @@
         briefs: formatInteger(data.counts.briefs, s.locale),
         locales: formatInteger(data.counts.locales, s.locale),
       })}</span
-    >. {s.footer.notice}
-    {fill(s.footer.export, { directory: "workforce-planning-management.github.io/", tool: "git subtree" })}
+    >{s.footer.countsEnd}
+    {s.footer.notice}
+    {fill(s.footer.export, { directory: SITE_DIRECTORY, tool: "git subtree" })}
   </p>
 </footer>
 

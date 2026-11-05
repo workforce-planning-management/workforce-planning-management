@@ -1,0 +1,70 @@
+{
+  "locale": "hi-001",
+  "brand": "वर्कफ़ोर्स प्लानिंग मैनेजमेंट",
+  "skip": "सामग्री पर जाएँ",
+  "siteNav": "साइट",
+  "nav": {
+    "home": "मुखपृष्ठ",
+    "readme": "README",
+    "install": "इंस्टॉल",
+    "familyBridges": "परिवार सेतु",
+    "spec": "विनिर्देश",
+    "worldwide": "विश्वव्यापी",
+    "briefs": "भूमिका दस्तावेज़",
+    "start": "ट्यूटोरियल",
+    "docs": "दस्तावेज़ीकरण",
+    "compare": "तुलना"
+  },
+  "pickers": {
+    "pages": "पृष्ठ",
+    "search": "इस साइट में खोजें",
+    "searchInput": "खोजने के शब्द",
+    "searchSubmit": "खोजें",
+    "theme": "थीम",
+    "language": "भाषा",
+    "textSize": "टेक्स्ट का आकार",
+    "share": "साझा करें"
+  },
+  "textSizes": {
+    "largest": "सबसे बड़ा",
+    "larger": "काफ़ी बड़ा",
+    "large": "बड़ा",
+    "normal": "सामान्य",
+    "small": "छोटा",
+    "smaller": "काफ़ी छोटा",
+    "smallest": "सबसे छोटा"
+  },
+  "share": {
+    "copy": "लिंक कॉपी करें",
+    "copied": "लिंक कॉपी हो गया",
+    "copyFailed": "लिंक कॉपी नहीं हो सका",
+    "email": "लिंक ईमेल करें",
+    "linkedin": "LinkedIn पर साझा करें",
+    "reddit": "Reddit पर साझा करें",
+    "bluesky": "Bluesky पर साझा करें",
+    "mastodon": "Mastodon पर साझा करें"
+  },
+  "footer": {
+    "builtFrom": "दस्तावेज़ों का स्रोत",
+    "repository": "Workforce Planning Management रिपॉज़िटरी",
+    "counts": "{documents} दस्तावेज़ और {locales} लोकेल में {briefs} भूमिका दस्तावेज़",
+    "countsEnd": "।",
+    "notice": "यह केवल कृत्रिम डेटा वाला डेमो सॉफ़्टवेयर है; अनुवाद एक AI सहायक ने लिखे हैं और किसी मूल वक्ता ने उनकी समीक्षा नहीं की है।",
+    "export": "यह साइट रिपॉज़िटरी की {directory} डायरेक्टरी है, जिसे {tool} से निर्यात किया गया है।"
+  },
+  "translations": "अनुवाद:",
+  "source": "स्रोत:",
+  "search": {
+    "title": "खोजें",
+    "label": "खोजने के शब्द",
+    "submit": "खोजें",
+    "noscript": "इस साइट में खोजने के लिए JavaScript चाहिए।",
+    "failed": "खोज अनुक्रमणिका लोड नहीं हो सकी, इसलिए यह खोज नहीं चली।",
+    "count": "“{query}” के हर शब्द वाले पृष्ठ: {count}"
+  },
+  "notFound": {
+    "title": "पृष्ठ नहीं मिला",
+    "body": "यह पता साइट पर मौजूद नहीं है।",
+    "home": "मुखपृष्ठ पर जाएँ"
+  }
+}

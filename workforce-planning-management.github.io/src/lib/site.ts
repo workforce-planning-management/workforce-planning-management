@@ -45,17 +45,20 @@ export const BRIEF_LOCALES = [
 export type BriefLocale = (typeof BRIEF_LOCALES)[number];
 
 /**
- * The locales with a translated home (`locales/<locale>/index.md`), at `/<locale>/`, in the rule's order of languages:
- * English, then Welsh and Mandarin, each regional file copied to its `-001`. `#lib/server/content.ts` fails the build
- * if `src/content/docs.json` holds another set.
+ * The locales with a translated home (`locales/<locale>/index.md`), at `/<locale>/`, sorted by code like the briefs:
+ * the first languages of the locale rule, with `cy-gb`, `zh-cn` and `hi-in` each copied to its `-001`.
+ * `#lib/server/content.ts` fails the build if `src/content/docs.json` holds another set.
  */
 export const HOME_LOCALES = [
+  "ar-001",
   "cy-001",
   "cy-gb",
   "en-001",
   "en-gb",
   "en-gb-oxendict",
   "en-us",
+  "hi-001",
+  "hi-in",
   "zh-001",
   "zh-cn",
 ] as const satisfies readonly BriefLocale[];

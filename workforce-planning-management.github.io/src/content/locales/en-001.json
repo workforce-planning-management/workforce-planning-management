@@ -48,6 +48,7 @@
     "builtFrom": "Built from the documents in",
     "repository": "the Workforce Planning Management repository",
     "counts": "{documents} documents and {briefs} role briefs in {locales} locales",
+    "countsEnd": ".",
     "notice": "Demonstration software with synthetic data only; the translations were written by an AI assistant and have not been reviewed by a native speaker.",
     "export": "This site is the repository's {directory} directory, exported with {tool}."
   },
