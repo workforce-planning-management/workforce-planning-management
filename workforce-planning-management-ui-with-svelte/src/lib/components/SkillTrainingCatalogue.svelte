@@ -12,6 +12,7 @@
   import {
     addSkillCourse,
     listSkills,
+    money,
     removeSkillCourse,
     setSkillTrainingHours,
     skillCourses,
@@ -29,6 +30,8 @@
   let title = $state("");
   let hours = $state<number | null>(null);
   let levels = $state(1);
+  let fee = $state<number | null>(null);
+  let feeCurrency = $state("");
 
   const message = (cause: unknown) => (errorText(cause));
 
@@ -98,6 +101,9 @@
         <li>
           <strong>{c.title}</strong>
           <span class="muted">· {c.course_ref} · {c.hours} {t("training.hours")} · +{c.levels}</span>
+          <span class="muted" data-testid="course-fee">
+            · {c.fee_minor === null ? t("training.noFee") : money(c.fee_minor, c.fee_currency)}
+          </span>
           <button type="button" onclick={() => void run(() => removeSkillCourse(c.pid))}>{t("training.removeCourse")}</button>
         </li>
       {:else}
@@ -114,9 +120,12 @@
             title: title.trim(),
             hours: hours ?? 0,
             levels,
+            ...(fee !== null && feeCurrency.trim()
+              ? { fee_minor: fee, fee_currency: feeCurrency.trim().toUpperCase() }
+              : {}),
           });
-          ref = title = "";
-          hours = null;
+          ref = title = feeCurrency = "";
+          hours = fee = null;
           levels = 1;
         });
       }}
@@ -125,6 +134,8 @@
       <label>{t("training.courseTitle")} <input bind:value={title} required maxlength="200" data-testid="course-title" /></label>
       <label>{t("training.courseHours")} <input type="number" min="1" max="1000" bind:value={hours} required data-testid="course-hours" /></label>
       <label>{t("training.courseLevels")} <input type="number" min="1" max="4" bind:value={levels} /></label>
+      <label>{t("training.fee")} <input type="number" min="0" bind:value={fee} required={feeCurrency.trim() !== ""} data-testid="course-fee-minor" /></label>
+      <label>{t("training.feeCurrency")} <input bind:value={feeCurrency} required={fee !== null} maxlength="3" data-testid="course-fee-currency" /></label>
       <button type="submit" data-testid="course-add">{t("training.addCourse")}</button>
     </form>
   {/if}

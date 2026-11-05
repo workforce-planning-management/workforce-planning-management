@@ -297,7 +297,9 @@ pid. Task ids are in [tasks.md](tasks.md); behaviour in the topic files named.
 - **CpdRequirement**, **CpdEntry**, **ProfessionalRegistration**,
   **MobilityInterest**, **ChangeInitiative** (+ role impacts, skill shifts) —
   WPM-T52–T55.
-- **SkillCourse** (`skill_courses`) and `skills.hours_per_level` — the training
+- **DevelopmentPlanBenefit** (`development_plan_benefits`, WPM-R230) — a stated yearly benefit of a development plan: year, amount, currency, a named source, who stated it. An estimate, never derived. One a year per plan; soft-deleted; in the subject-access export and erased.
+- **LearningBudget** (`learning_budgets`, WPM-R227) — one department's budget for a year and currency. Names nobody.
+- **SkillCourse** (`skill_courses`; `fee_minor` and `fee_currency`, both or neither, WPM-R227: no fee is unknown, never free) and `skills.hours_per_level` — the training
   catalogue behind WPM-R44.
 
 **Planning and metrics**

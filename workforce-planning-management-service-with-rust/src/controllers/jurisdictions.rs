@@ -298,6 +298,10 @@ fn reader_check(key: &str, value: &rules::Value) -> Result<(), String> {
                 .map(|_| ())
                 .map_err(|why| format!("{key}: {why}"))
         }
+        "recruitment.currency" => match value.as_names().as_deref() {
+            Some([one]) if crate::rules::currency::is_known(one) => Ok(()),
+            _ => Err(format!("{key}: one ISO-4217 code, e.g. GBP")),
+        },
         "employer_contribution.class" => match value.as_names().as_deref() {
             Some([one]) if crate::rules::employer_contribution::is_token(one) => Ok(()),
             _ => Err(format!(

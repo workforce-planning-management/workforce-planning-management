@@ -961,6 +961,10 @@ key outside it is refused.
 | `flexible_working.refusal_reasons` | a set of lowercase tokens (WPM-T384; a worker's chain) | `most_specific` |
 | `flexible_working.requests_per_year` | a whole number, 0 to 100, 0 for no limit (WPM-T384; a worker's chain) | `most_specific` |
 | `holidays.weekend_days` | a set of ISO weekdays, at most six; empty means no weekly rest day | `most_specific` |
+| `learning.discount_rate_bp` | basis points per year, 0 to 10000; the rate for a learning plan's net present value, echoed; none configured means no figure (WPM-R230) | `most_specific` |
+| `learning.full_time_annual_hours` | hours, 1 to 8784; the full-time year an hourly cost divides by; none configured leaves the cost of hours unresolved (WPM-R228) | `most_specific` |
+| `learning.on_cost_bp` | basis points of pay, 0 to 20000; the employer's on-cost on an hour of learning; none configured leaves the cost of hours unresolved, and 0 is a stated value (WPM-R228) | `most_specific` |
+| `learning.ramp_up_days` | calendar days, 0 to 730; an internal candidate's ramp-up for train or hire (WPM-R229) | `most_specific` |
 | `minimum_wage.adult_from_age` | whole years, 0 to 100; 0 or none means every worker is adult and no date of birth is read (WPM-T413; a worker's chain) | `most_specific` |
 | `minimum_wage.currency` | a set of names, one ISO 4217 code in use; a floor is compared only with pay in that currency (WPM-T413) | `most_specific` |
 | `minimum_wage.hourly_minor.adult` | minor units an hour, 0 to 1,000,000,000: the adult band's statutory minimum (WPM-T413; a worker's chain) | `strictest_min` (the highest) |
@@ -987,6 +991,9 @@ key outside it is refused.
 | `pay_transparency.pay_range_required` | a flag, `true` or `false` (WPM-T384; the organization's chain) | `strictest_min` (on anywhere is on) |
 | `pay_transparency.reporting_tiers` | a set of `from_workers:every_years:first_report_on` names, or the one name `none` (WPM-T384; the organization's chain) | `most_specific` |
 | `payroll.tax_year_start` | month and day as `MMDD`, 101 to 1231 (`406` is 6 April; 29 February is refused), the first day of the tax year for a person's year to date; none configured means no year to date is shown (WPM-R178) | `most_specific` |
+| `recruitment.cost_minor` | minor units of `recruitment.currency`, 0 to 100,000,000,000; the cost of one external hire, for train or hire (WPM-R229) | `most_specific` |
+| `recruitment.currency` | a set of names, one ISO 4217 code in use; the currency of `recruitment.cost_minor`, which is never converted (WPM-R229) | `most_specific` |
+| `recruitment.ramp_up_days` | calendar days, 0 to 730; an external hire's ramp-up for train or hire (WPM-R229) | `most_specific` |
 | `resignation.notice_calendar_days` | whole calendar days, 0 to 366 (WPM-T384; a worker's chain) | `strictest_max` (the shortest) |
 | `retention.employment.days` | `{"min": n?, "max": n?}` in calendar days, 0 to 36,500 (WPM-T384; the organization's chain) | `bounded` |
 | `retention.learning.days` | as above | `bounded` |

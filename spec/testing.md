@@ -63,6 +63,7 @@ State as of 2026-10-07 (WPM-T97).
   that gives a line manager the power to write): the request limit and the decide-by date, who may decide (the
   line manager up the chain or HR, never the requester, never a manager outside the chain), refusal reasons from a
   deployer's list, an appeal decided by someone else, a counter-proposal, overdue, and that no contract changes.
+- **Learning economics binary** (`tests/learning_economics.rs`, own process, three scenarios): a plan's fees beside its hours, who may read them, what a masked reader gets, a stated benefit, train or hire with every input, and spend against a budget.
 - **`/api/me` binary** (`tests/enforcement_me.rs`, own process): a plain worker changes their own contact details and
   emergency contacts past a policy that lets only HR write; every other write stays refused; a neighbour, a person
   with no worker record and an unsigned request get nothing of another person's; the time-off view, in fixed

@@ -3,6 +3,7 @@
 | Term                | Meaning                                                                                          |
 | ------------------- | ------------------------------------------------------------------------------------------------ |
 | **360° / multi-rater** | Feedback on one subject from manager, peers, reports, and self; reported as group aggregates only |
+| **Stated benefit** | A yearly benefit of a development plan that someone estimates and sources (WPM-R230); never worked out from a skill level, a completion or a score |
 | **ATS**             | Applicant Tracking System — the requisition/application pipeline                                 |
 | **Adjustment (reasonable)** | A barrier-based change request (barrier / impact / change); no diagnosis required or storable |
 | **Content locale** | A language-and-region the UI is written for, named `<language>-<region>` (`en-001`, `cy-001`, `en-gb`); its strings are content in `content/locales/<locale>/ui.json` ([locales](locales-for-global-sharing-with-svelte/index.md)) |

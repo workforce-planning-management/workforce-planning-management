@@ -2135,7 +2135,14 @@ export function skillCourses(
 /** Add a catalogue course for a skill. */
 export function addSkillCourse(
   skillPid: string,
-  course: { course_ref: string; title: string; hours: number; levels?: number },
+  course: {
+    course_ref: string;
+    title: string;
+    hours: number;
+    levels?: number;
+    fee_minor?: number;
+    fee_currency?: string;
+  },
 ): Promise<SkillCourse> {
   return api(`/skills/${skillPid}/courses`, { method: "POST", body: course });
 }
@@ -4775,6 +4782,175 @@ export function listDevelopmentPlans(
   init?: FetchLike,
 ): Promise<DevelopmentPlans> {
   return api(`/workers/${workerPid}/development-plans`, init);
+}
+
+/** Why a learning figure could not be worked out, or the figure (WPM-D172). */
+export type HoursCostView =
+  | {
+      status: "resolved";
+      currency: string;
+      hours: number;
+      hourly_minor: number;
+      minor: number;
+      on_cost_bp: number;
+      full_time_annual_hours: number;
+    }
+  | { status: "unresolved"; missing: string[] };
+
+/** A plan's recorded fees, and the cost of its hours beside them (WPM-R227, WPM-R228). */
+export interface PlanCostView {
+  plan_pid: string;
+  cost: {
+    fees: Record<string, number>;
+    courses_with_fee: number;
+    courses_without_fee: number;
+    hours: number;
+    estimated_hours: number;
+  };
+  hours_cost: HoursCostView;
+  derivation: string;
+}
+
+export function developmentPlanCost(
+  pid: string,
+  init?: FetchLike,
+): Promise<PlanCostView> {
+  return api(`/development-plans/${pid}/cost`, init);
+}
+
+/** One way of assessing a plan. */
+export interface PlanFigures {
+  rate_bp: number;
+  npv_minor: number | null;
+  investment_minor: number;
+  benefit_minor: number;
+  payback: { periods: number; fraction_bp: number } | null;
+  discounted_payback: { periods: number; fraction_bp: number } | null;
+  verdict: "viable" | "break_even" | "not_viable" | "unmeasured";
+  absent: string | null;
+}
+
+/** A stated yearly benefit with its source (WPM-D173). */
+export interface PlanBenefit {
+  pid: string;
+  year: number;
+  amount_minor: number;
+  currency: string;
+  source: string;
+  stated_by: string | null;
+  stated_on: string;
+}
+
+/** A plan's viability on the fees and with the hours (WPM-R230). */
+export interface PlanViabilityView {
+  plan_pid: string;
+  viability: {
+    currency: string | null;
+    rate_bp: number | null;
+    on_fees: PlanFigures | null;
+    with_hours: PlanFigures | null;
+    missing: string[];
+  };
+  benefits: PlanBenefit[];
+  derivation: string;
+}
+
+export function developmentPlanViability(
+  pid: string,
+  init?: FetchLike,
+): Promise<PlanViabilityView> {
+  return api(`/development-plans/${pid}/viability`, init);
+}
+
+/** State a benefit on your own plan. */
+export function stateMyPlanBenefit(
+  planPid: string,
+  benefit: {
+    year: number;
+    amount_minor: number;
+    currency: string;
+    source: string;
+  },
+): Promise<PlanBenefit> {
+  return api(`/me/development-plans/${planPid}/benefits`, {
+    method: "POST",
+    body: benefit,
+  });
+}
+
+/** Remove a benefit from your own plan. */
+export function removeMyPlanBenefit(pid: string): Promise<{ pid: string }> {
+  return api(`/me/development-plan-benefits/${pid}`, { method: "DELETE" });
+}
+
+/** Train or hire (WPM-R229). `train` and `hire` are absent when the candidate has no pay on record. */
+export interface TrainOrHireView {
+  position_pid: string;
+  candidate_pid: string;
+  currency?: string;
+  answer: "train" | "hire" | "similar" | "unknown";
+  missing: string[];
+  salary_visible?: boolean;
+  train?: {
+    total_minor: number | null;
+    fees_minor: number | null;
+    hours_cost_minor: number | null;
+    ramp_up_minor: number | null;
+  };
+  hire?: {
+    total_minor: number | null;
+    recruitment_minor: number | null;
+    vacancy_minor: number | null;
+    ramp_up_minor: number | null;
+    pay_difference_minor: number | null;
+  };
+}
+
+export function trainOrHire(
+  positionPid: string,
+  candidatePid: string,
+  init?: FetchLike,
+): Promise<TrainOrHireView> {
+  return api(
+    `/positions/${positionPid}/train-or-hire?candidate=${candidatePid}`,
+    init,
+  );
+}
+
+/** Recorded fees against each department's budget (WPM-R227). */
+export interface LearningBudgetView {
+  organization: string;
+  year: number;
+  departments: Array<{
+    department: string;
+    lines: Array<{
+      currency: string;
+      budget_minor: number | null;
+      spent_minor: number;
+      remaining_minor: number | null;
+    }>;
+    completions_without_fee: number;
+  }>;
+  derivation: string;
+}
+
+export function learningBudget(
+  organization: string,
+  year: number,
+  init?: FetchLike,
+): Promise<LearningBudgetView> {
+  const params = new URLSearchParams({ organization, year: String(year) });
+  return api(`/learning-budgets?${params}`, init);
+}
+
+export function setLearningBudget(budget: {
+  organization_ref: string;
+  department: string;
+  year: number;
+  amount_minor: number;
+  currency: string;
+}): Promise<{ pid: string }> {
+  return api("/learning-budgets", { method: "PUT", body: budget });
 }
 
 /** Move one step to another status. Claiming `achieved` does not change the declared proficiency. */

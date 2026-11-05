@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — what learning costs and returns (WPM-T453)
+
+`/me/development`, `PlanEconomics`, `TrainOrHire` on `/positions`, `LearningBudget` on `/learning`, and the fee on the training catalogue; 79 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — my payslips (WPM-R178, WPM-T324)
 
 `/me/payslips` with the year to date, a query form and a print stylesheet; a link on `/me`; `PayslipQueries` on `/payroll`; 23 strings in 13 locales (AI-written, unreviewed).

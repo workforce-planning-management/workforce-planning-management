@@ -4308,6 +4308,27 @@
         ]
       }
     },
+    "/api/development-plan-benefits/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Remove a stated benefit. HR.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/development-plan-items/{pid}": {
       "put": {
         "parameters": [
@@ -4344,6 +4365,35 @@
         ]
       }
     },
+    "/api/development-plans/{pid}/benefits": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "State a yearly benefit with its source: an estimate, never derived from a skill level or a score. One a year per plan. HR.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/development-plans/{pid}/cost": {
+      "get": {
+        "summary": "A plan's recorded fees per currency and, beside them and never added, the cost of its hours at the worker's loaded rate. A course with no fee is counted, not priced at zero. The worker and HR only; a masked reader gets pay_withheld. An unmasked read of someone else's plan is audited.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/development-plans/{pid}/status": {
       "post": {
         "parameters": [
@@ -4370,6 +4420,14 @@
         "summary": "draft→active→completed (completing needs every item resolved)",
         "tags": [
           "talent"
+        ]
+      }
+    },
+    "/api/development-plans/{pid}/viability": {
+      "get": {
+        "summary": "Net present value and payback at the organization's discount rate, echoed, on the fees alone and with the hours. No stated benefit is unmeasured, never not viable. The worker and HR only.",
+        "tags": [
+          "development"
         ]
       }
     },
@@ -5879,6 +5937,33 @@
         ]
       }
     },
+    "/api/learning-budgets": {
+      "get": {
+        "summary": "Recorded fees against each department's learning budget, per currency (?organization=&year=). Completions with no single fee are counted, not priced.",
+        "tags": [
+          "development"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Set a department's learning budget for a year and currency.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/learning-paths": {
       "get": {
         "responses": {
@@ -6373,6 +6458,48 @@
         "summary": "The worker withdraws one of their own credentials; the revocation list changes at once",
         "tags": [
           "credentials"
+        ]
+      }
+    },
+    "/api/me/development-plan-benefits/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Remove a stated benefit from your own plan.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/development-plans/{pid}/benefits": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "State a yearly benefit on your own plan, with its source.",
+        "tags": [
+          "development"
         ]
       }
     },
@@ -9081,6 +9208,14 @@
         ]
       }
     },
+    "/api/positions/{pid}/train-or-hire": {
+      "get": {
+        "summary": "Training an internal candidate (?candidate=) for a seat against an external hire: train, hire, similar or unknown, with both totals and every input. A side with a missing input answers unknown. Advisory; an estimate. A masked reader gets no totals. An unmasked read is audited.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/program-placements/{pid}/hours": {
       "post": {
         "parameters": [
@@ -10774,6 +10909,27 @@
           }
         },
         "summary": "Take a course off a skill",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/skill-courses/{pid}/fee": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record, change or clear a course's fee: both fee_minor and fee_currency, or neither. No fee is unknown, never free.",
         "tags": [
           "development"
         ]

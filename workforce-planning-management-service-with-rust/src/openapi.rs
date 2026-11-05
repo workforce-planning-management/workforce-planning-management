@@ -483,6 +483,7 @@ pub fn spec() -> Value {
 
 /// The governance-load paths (WPM-R64), added here because the literal above is at the macro's
 /// recursion limit.
+#[allow(clippy::too_many_lines)] // one literal of paths; splitting it would only move the lines
 fn add_governance_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
@@ -555,6 +556,34 @@ fn add_governance_paths(document: &mut Value) {
         },
         "/api/pay-information-requests/{pid}/answered": {
             "post": { "tags": ["pay-transparency"], "summary": "Record that the answer was given, and when; the figures are not recorded", "responses": ok("The request") }
+        },
+        "/api/development-plans/{pid}/cost": {
+            "get": { "tags": ["development"], "summary": "A plan's recorded fees per currency and, beside them and never added, the cost of its hours at the worker's loaded rate. A course with no fee is counted, not priced at zero. The worker and HR only; a masked reader gets pay_withheld. An unmasked read of someone else's plan is audited." }
+        },
+        "/api/development-plans/{pid}/viability": {
+            "get": { "tags": ["development"], "summary": "Net present value and payback at the organization's discount rate, echoed, on the fees alone and with the hours. No stated benefit is unmeasured, never not viable. The worker and HR only." }
+        },
+        "/api/development-plans/{pid}/benefits": {
+            "post": { "tags": ["development"], "summary": "State a yearly benefit with its source: an estimate, never derived from a skill level or a score. One a year per plan. HR." }
+        },
+        "/api/development-plan-benefits/{pid}": {
+            "delete": { "tags": ["development"], "summary": "Remove a stated benefit. HR." }
+        },
+        "/api/me/development-plans/{pid}/benefits": {
+            "post": { "tags": ["development"], "summary": "State a yearly benefit on your own plan, with its source." }
+        },
+        "/api/me/development-plan-benefits/{pid}": {
+            "delete": { "tags": ["development"], "summary": "Remove a stated benefit from your own plan." }
+        },
+        "/api/positions/{pid}/train-or-hire": {
+            "get": { "tags": ["development"], "summary": "Training an internal candidate (?candidate=) for a seat against an external hire: train, hire, similar or unknown, with both totals and every input. A side with a missing input answers unknown. Advisory; an estimate. A masked reader gets no totals. An unmasked read is audited." }
+        },
+        "/api/learning-budgets": {
+            "get": { "tags": ["development"], "summary": "Recorded fees against each department's learning budget, per currency (?organization=&year=). Completions with no single fee are counted, not priced." },
+            "put": { "tags": ["development"], "summary": "Set a department's learning budget for a year and currency." }
+        },
+        "/api/skill-courses/{pid}/fee": {
+            "put": { "tags": ["development"], "summary": "Record, change or clear a course's fee: both fee_minor and fee_currency, or neither. No fee is unknown, never free." }
         },
         "/api/me/payslips": {
             "get": { "tags": ["payroll"], "summary": "The caller's payslips from approved and paid runs, newest first, with the year to date per tax year and currency; year_to_date is null where no tax year start is configured. Audited." }

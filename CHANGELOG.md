@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — what learning costs and returns (WPM-R227 to WPM-R230, 2026-11-05)
+
+A course can carry a fee, a plan shows its fees beside the cost of its hours, a seat compares training a candidate with hiring, a stated benefit gives payback and net present value, and a department sees recorded fees against a budget. Unknown stays unknown and says what is missing. Decisions WPM-D172 to WPM-D174 confirmed by the owner; the bridge to the project portfolio (WPM-T452) is still open.
+
 ### Added — my payslips (WPM-R178, WPM-T324, 2026-11-04)
 
 A person's own payslips from approved and paid runs at `/me/payslips`, with the year to date per tax year and currency, a printable payslip, and a query that payroll sees and closes and that changes no amount. The tax year start is the parameter `payroll.tax_year_start`, with no default: with none configured no year to date is shown. Details in the service and UI changelogs.

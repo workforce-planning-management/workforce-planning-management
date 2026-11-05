@@ -273,6 +273,40 @@ pub const REGISTRY: &[Parameter] = &[
         meaning: "the weekly rest days a holiday's weekend policy and business days follow",
     },
     Parameter {
+        key: "learning.discount_rate_bp",
+        shape: Shape::Integer {
+            min: 0,
+            max: 10_000,
+        },
+        unit: "basis points per year",
+        combine: Combine::MostSpecific,
+        meaning: "the discount rate for a learning plan's net present value, echoed in the answer; with none configured no figure is worked",
+    },
+    Parameter {
+        key: "learning.full_time_annual_hours",
+        shape: Shape::Integer { min: 1, max: 8_784 },
+        unit: "hours",
+        combine: Combine::MostSpecific,
+        meaning: "the hours of a full-time year, which an hourly cost divides by; with none configured the cost of learning hours is unresolved",
+    },
+    Parameter {
+        key: "learning.on_cost_bp",
+        shape: Shape::Integer {
+            min: 0,
+            max: 20_000,
+        },
+        unit: "basis points of pay",
+        combine: Combine::MostSpecific,
+        meaning: "the employer's on-cost added to pay for an hour of learning; with none configured the cost of learning hours is unresolved",
+    },
+    Parameter {
+        key: "learning.ramp_up_days",
+        shape: Shape::Integer { min: 0, max: 730 },
+        unit: "calendar_days",
+        combine: Combine::MostSpecific,
+        meaning: "days an internal candidate takes to reach full effect in a seat, for train or hire",
+    },
+    Parameter {
         key: "minimum_wage.adult_from_age",
         shape: Shape::Integer { min: 0, max: 100 },
         unit: "years",
@@ -489,6 +523,30 @@ pub const REGISTRY: &[Parameter] = &[
         unit: "month and day as MMDD",
         combine: Combine::MostSpecific,
         meaning: "the first day of the tax year, for a person's year to date; with none configured no year to date is shown",
+    },
+    Parameter {
+        key: "recruitment.cost_minor",
+        shape: Shape::Integer {
+            min: 0,
+            max: 100_000_000_000,
+        },
+        unit: "minor units of recruitment.currency",
+        combine: Combine::MostSpecific,
+        meaning: "the cost of one external hire, for train or hire",
+    },
+    Parameter {
+        key: "recruitment.currency",
+        shape: Shape::Names,
+        unit: "ISO 4217",
+        combine: Combine::MostSpecific,
+        meaning: "the currency of recruitment.cost_minor, as one name",
+    },
+    Parameter {
+        key: "recruitment.ramp_up_days",
+        shape: Shape::Integer { min: 0, max: 730 },
+        unit: "calendar_days",
+        combine: Combine::MostSpecific,
+        meaning: "days an external hire takes to reach full effect in a seat, for train or hire",
     },
     Parameter {
         key: "resignation.notice_calendar_days",

@@ -123,6 +123,7 @@ pub mod time_off;
 pub mod tokens;
 pub mod tolerance;
 pub mod training;
+pub mod training_economics;
 pub mod webhook;
 pub mod wellbeing;
 pub mod worker_fields;

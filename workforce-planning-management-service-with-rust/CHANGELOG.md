@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — what learning costs and returns (WPM-R227 to WPM-R230, WPM-T446 to WPM-T451)
+
+`rules::training_economics`; a fee on `skill_courses`, `development_plan_benefits`, `learning_budgets`; `GET /api/development-plans/{pid}/cost` and `/viability`; `GET /api/positions/{pid}/train-or-hire`; benefits by HR and through `/api/me`; `GET` and `PUT /api/learning-budgets`; `PUT /api/skill-courses/{pid}/fee`; seven jurisdiction parameters with no default. Figures from pay follow the salary mask.
+
 ### Added — my payslips (WPM-R178, WPM-T324)
 
 `GET /api/me/payslips`, `POST /api/me/payslips/{pid}/query`, `GET /api/payslip-queries` and `POST /api/payslip-queries/{pid}/close`; `rules::my_payslips`; the parameter `payroll.tax_year_start`; migration `m20261104_000126_payslip_queries`. Payroll may close a query through `ATTRIBUTE_WRITES`.

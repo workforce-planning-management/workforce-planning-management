@@ -970,6 +970,9 @@ collections:
               - { name: "removeCourse", label: "Remove Course", widget: string, required: false, i18n: true }
               - { name: "noCourses", label: "No Courses", widget: string, required: false, i18n: true }
               - { name: "saveHours", label: "Save Hours", widget: string, required: false, i18n: true }
+              - { name: "fee", label: "Fee", widget: string, required: false, i18n: true }
+              - { name: "feeCurrency", label: "Fee Currency", widget: string, required: false, i18n: true }
+              - { name: "noFee", label: "No Fee", widget: string, required: false, i18n: true }
           - name: "movements"
             label: "Movements"
             widget: object
@@ -2301,6 +2304,7 @@ collections:
               - { name: "decisionGates", label: "Decision Gates", widget: string, required: false, i18n: true }
               - { name: "statutoryDefaults", label: "Statutory Defaults", widget: string, required: false, i18n: true }
               - { name: "myPayslips", label: "My Payslips", widget: string, required: false, i18n: true }
+              - { name: "myDevelopment", label: "My Development", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -4077,3 +4081,106 @@ collections:
               - { name: "queueComment", label: "Queue Comment", widget: string, required: false, i18n: true }
               - { name: "queueRaised", label: "Queue Raised", widget: string, required: false, i18n: true }
               - { name: "close", label: "Close", widget: string, required: false, i18n: true }
+          - name: "economics"
+            label: "Economics"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "fees", label: "Fees", widget: string, required: false, i18n: true }
+              - { name: "noFees", label: "No Fees", widget: string, required: false, i18n: true }
+              - { name: "withoutFee", label: "Without Fee", widget: string, required: false, i18n: true }
+              - { name: "hours", label: "Hours", widget: string, required: false, i18n: true }
+              - { name: "estimated", label: "Estimated", widget: string, required: false, i18n: true }
+              - { name: "hoursCost", label: "Hours Cost", widget: string, required: false, i18n: true }
+              - { name: "hourly", label: "Hourly", widget: string, required: false, i18n: true }
+              - { name: "beside", label: "Beside", widget: string, required: false, i18n: true }
+              - { name: "missing", label: "Missing", widget: string, required: false, i18n: true }
+              - { name: "viability", label: "Viability", widget: string, required: false, i18n: true }
+              - { name: "rate", label: "Rate", widget: string, required: false, i18n: true }
+              - { name: "onFees", label: "On Fees", widget: string, required: false, i18n: true }
+              - { name: "withHours", label: "With Hours", widget: string, required: false, i18n: true }
+              - { name: "verdictLabel", label: "Verdict Label", widget: string, required: false, i18n: true }
+              - { name: "npv", label: "Npv", widget: string, required: false, i18n: true }
+              - { name: "payback", label: "Payback", widget: string, required: false, i18n: true }
+              - { name: "paybackYears", label: "Payback Years", widget: string, required: false, i18n: true }
+              - { name: "never", label: "Never", widget: string, required: false, i18n: true }
+              - name: "verdict"
+                label: "Verdict"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "viable", label: "Viable", widget: string, required: false, i18n: true }
+                  - { name: "break_even", label: "Break_even", widget: string, required: false, i18n: true }
+                  - { name: "not_viable", label: "Not_viable", widget: string, required: false, i18n: true }
+                  - { name: "unmeasured", label: "Unmeasured", widget: string, required: false, i18n: true }
+              - { name: "benefits", label: "Benefits", widget: string, required: false, i18n: true }
+              - { name: "benefitNote", label: "Benefit Note", widget: text, required: false, i18n: true }
+              - { name: "year", label: "Year", widget: string, required: false, i18n: true }
+              - { name: "amount", label: "Amount", widget: string, required: false, i18n: true }
+              - { name: "currency", label: "Currency", widget: string, required: false, i18n: true }
+              - { name: "source", label: "Source", widget: string, required: false, i18n: true }
+              - { name: "add", label: "Add", widget: string, required: false, i18n: true }
+              - { name: "remove", label: "Remove", widget: string, required: false, i18n: true }
+              - name: "input"
+                label: "Input"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "benefit", label: "Benefit", widget: string, required: false, i18n: true }
+                  - { name: "fee", label: "Fee", widget: string, required: false, i18n: true }
+                  - { name: "discount_rate", label: "Discount_rate", widget: string, required: false, i18n: true }
+                  - { name: "one_currency", label: "One_currency", widget: string, required: false, i18n: true }
+                  - { name: "pay", label: "Pay", widget: string, required: false, i18n: true }
+                  - { name: "pay_withheld", label: "Pay_withheld", widget: string, required: false, i18n: true }
+                  - { name: "on_cost", label: "On_cost", widget: string, required: false, i18n: true }
+                  - { name: "full_time_annual_hours", label: "Full_time_annual_hours", widget: string, required: false, i18n: true }
+                  - { name: "candidate_pay", label: "Candidate_pay", widget: string, required: false, i18n: true }
+                  - { name: "hours_cost", label: "Hours_cost", widget: string, required: false, i18n: true }
+                  - { name: "learning_ramp_up_days", label: "Learning_ramp_up_days", widget: string, required: false, i18n: true }
+                  - { name: "recruitment_cost", label: "Recruitment_cost", widget: string, required: false, i18n: true }
+                  - { name: "vacancy_days", label: "Vacancy_days", widget: string, required: false, i18n: true }
+                  - { name: "recruitment_ramp_up_days", label: "Recruitment_ramp_up_days", widget: string, required: false, i18n: true }
+                  - { name: "seat_cost", label: "Seat_cost", widget: string, required: false, i18n: true }
+                  - { name: "seat_skills", label: "Seat_skills", widget: string, required: false, i18n: true }
+                  - { name: "declared_skills", label: "Declared_skills", widget: string, required: false, i18n: true }
+              - { name: "trainOrHire", label: "Train Or Hire", widget: string, required: false, i18n: true }
+              - { name: "trainOrHireHint", label: "Train Or Hire Hint", widget: string, required: false, i18n: true }
+              - { name: "seat", label: "Seat", widget: string, required: false, i18n: true }
+              - { name: "candidate", label: "Candidate", widget: string, required: false, i18n: true }
+              - { name: "compare", label: "Compare", widget: string, required: false, i18n: true }
+              - { name: "train", label: "Train", widget: string, required: false, i18n: true }
+              - { name: "hire", label: "Hire", widget: string, required: false, i18n: true }
+              - { name: "total", label: "Total", widget: string, required: false, i18n: true }
+              - { name: "rampUp", label: "Ramp Up", widget: string, required: false, i18n: true }
+              - { name: "recruitment", label: "Recruitment", widget: string, required: false, i18n: true }
+              - { name: "vacancy", label: "Vacancy", widget: string, required: false, i18n: true }
+              - { name: "payDifference", label: "Pay Difference", widget: string, required: false, i18n: true }
+              - name: "answer"
+                label: "Answer"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "train", label: "Train", widget: string, required: false, i18n: true }
+                  - { name: "hire", label: "Hire", widget: string, required: false, i18n: true }
+                  - { name: "similar", label: "Similar", widget: string, required: false, i18n: true }
+                  - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+              - { name: "budgetTitle", label: "Budget Title", widget: string, required: false, i18n: true }
+              - { name: "department", label: "Department", widget: string, required: false, i18n: true }
+              - { name: "budget", label: "Budget", widget: string, required: false, i18n: true }
+              - { name: "spent", label: "Spent", widget: string, required: false, i18n: true }
+              - { name: "remaining", label: "Remaining", widget: string, required: false, i18n: true }
+              - { name: "budgetNone", label: "Budget None", widget: string, required: false, i18n: true }
+              - { name: "setBudget", label: "Set Budget", widget: string, required: false, i18n: true }
+              - { name: "completionsWithoutFee", label: "Completions Without Fee", widget: string, required: false, i18n: true }

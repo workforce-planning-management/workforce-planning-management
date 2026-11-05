@@ -277,6 +277,8 @@ benefit; or ship any default figure marked `read` that a person has not read in 
 
 ## Questions for the product owner
 
+**Answered 2026-11-05.** The product owner answered yes to question 3 (the injury record, WPM-T421) and question 4 (the separation record, WPM-T422). WPM-T421 still follows the research in WPM-T412.
+
 1. **Which jurisdictions?** **Answered 2026-11-01 by the product owner: the United States, the United Kingdom, Germany, Spain, France, Sweden, Denmark, Japan, South Korea, China and India.**
    **The order was answered the same day: by population size**, as the product owner chose: India, China, the United States, Japan, Germany, the United Kingdom, France, South Korea, Spain, Sweden, Denmark
    (the populations are from general knowledge, and the UK and France, and South Korea and Spain, are close). The arithmetic is built once and is generic, so the order decides which example profile is written and verified first. **Cost to know:** the

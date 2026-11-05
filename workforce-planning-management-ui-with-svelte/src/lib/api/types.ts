@@ -438,6 +438,9 @@ export interface SkillCourse {
   title: string;
   hours: number;
   levels: number;
+  /** The fee in minor units. Null is unknown, never free. */
+  fee_minor: number | null;
+  fee_currency: string | null;
 }
 
 /** The training that would close one gap, and what it rests on. */

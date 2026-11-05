@@ -1,4 +1,4 @@
-//! `SeaORM` Entity — `skill_courses`. A catalogue course that builds a skill: its hours, and how many levels it typically adds.
+//! `SeaORM` Entity — `skill_courses`. A catalogue course that builds a skill: its hours, how many levels it typically adds, and a fee if one is recorded.
 
 #![allow(missing_docs)]
 
@@ -20,6 +20,9 @@ pub struct Model {
     pub hours: i32,
     pub levels: i32,
     pub deleted_at: Option<DateTimeWithTimeZone>,
+    /// The fee in minor units; absent is unknown, never free (WPM-R227).
+    pub fee_minor: Option<i64>,
+    pub fee_currency: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

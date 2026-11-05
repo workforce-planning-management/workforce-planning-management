@@ -52,6 +52,8 @@ an entry names no pay figure and no personal field in its snapshot.
 
 ## Audited by the Phase 24 proposals (spec round WPM-T309)
 
+Built for learning economics (WPM-R227 to WPM-R230): `salary_read` from a plan's cost, its viability or train or hire, with the department and no figure; `stated` and `removed` on a benefit, with the year and no amount; `fee_set` on a course and `set` on a learning budget.
+
 Built: `my_payslips_read` (a person reads their own payslips), `payslip_query_raised`, `payslip_query_closed` and `payslip_queries_read` (a count, with no worker). None holds a query's comment.
 
 Once built, each writes an audit row without values: an **assignment** started, changed or ended; a **cost centre**, **coding

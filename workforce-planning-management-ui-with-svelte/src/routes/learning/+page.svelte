@@ -20,6 +20,7 @@
   import { percentOf, percentWithWorkings } from "#lib/format.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
+  import LearningBudget from "#lib/components/LearningBudget.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   type Matrix = Awaited<ReturnType<typeof skillsMatrix>>;
@@ -277,6 +278,8 @@
     />
   {/if}
 {/if}
+
+<LearningBudget />
 
 <style>
   :global(td.cx-warn) { color: #b45309; font-weight: 600; }

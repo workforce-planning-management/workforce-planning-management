@@ -29,6 +29,7 @@ use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::skill_gap::{self as gap_rules, Gap, Status};
 use crate::rules::training::{self as rules, Course, DEFAULT_HOURS_PER_LEVEL, Recommendation};
+use crate::rules::training_economics::valid_fee;
 
 // ─── The course catalogue ───────────────────────────────────────────────────
 
@@ -49,6 +50,8 @@ fn course_json(c: &skill_courses::Model) -> serde_json::Value {
         "title": c.title,
         "hours": c.hours,
         "levels": c.levels,
+        "fee_minor": c.fee_minor,
+        "fee_currency": c.fee_currency,
     })
 }
 
@@ -80,6 +83,11 @@ struct CoursePayload {
     /// Levels it typically adds (default 1).
     #[serde(default)]
     levels: Option<i32>,
+    /// The fee in minor units. Absent is unknown, never free; 0 is a recorded free course.
+    #[serde(default)]
+    fee_minor: Option<i64>,
+    #[serde(default)]
+    fee_currency: Option<String>,
 }
 
 /// `POST /api/skills/{pid}/courses` — add a catalogue course for a skill.
@@ -106,6 +114,7 @@ async fn add_course(
     if !(1..=4).contains(&levels) {
         return Err(unprocessable("levels must be between 1 and 4"));
     }
+    valid_fee(payload.fee_minor, payload.fee_currency.as_deref()).map_err(|e| unprocessable(&e))?;
     let taken = skill_courses::Entity::find()
         .filter(skill_courses::Column::SkillPid.eq(skill.pid))
         .filter(skill_courses::Column::CourseRef.eq(payload.course_ref.trim()))
@@ -126,6 +135,8 @@ async fn add_course(
         title: ActiveValue::set(payload.title.trim().to_string()),
         hours: ActiveValue::set(payload.hours),
         levels: ActiveValue::set(levels),
+        fee_minor: ActiveValue::set(payload.fee_minor),
+        fee_currency: ActiveValue::set(payload.fee_currency.clone()),
         deleted_at: ActiveValue::set(None),
         ..Default::default()
     }
@@ -142,6 +153,51 @@ async fn add_course(
     .await?;
     txn.commit().await?;
     format::json(course_json(&row))
+}
+
+/// `PUT /api/skill-courses/{pid}/fee` body. Both absent clears the fee back to unknown.
+#[derive(Debug, Deserialize)]
+struct FeePayload {
+    #[serde(default)]
+    fee_minor: Option<i64>,
+    #[serde(default)]
+    fee_currency: Option<String>,
+}
+
+/// `PUT /api/skill-courses/{pid}/fee` — record, change or clear a course's fee (WPM-R227). Both parts or neither.
+#[debug_handler]
+async fn set_fee(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<String>,
+    Json(payload): Json<FeePayload>,
+) -> Result<Response> {
+    valid_fee(payload.fee_minor, payload.fee_currency.as_deref()).map_err(|e| unprocessable(&e))?;
+    let row = skill_courses::Entity::find()
+        .filter(skill_courses::Column::Pid.eq(records::parse_pid(&pid)?))
+        .filter(skill_courses::Column::DeletedAt.is_null())
+        .one(&ctx.db)
+        .await?
+        .ok_or(Error::NotFound)?;
+    let mut active: skill_courses::ActiveModel = row.into();
+    active.fee_minor = ActiveValue::set(payload.fee_minor);
+    active.fee_currency = ActiveValue::set(payload.fee_currency.clone());
+    let txn = ctx.db.begin().await?;
+    let updated = active.update(&txn).await?;
+    Audit::record(
+        &txn,
+        "skill_course",
+        updated.pid,
+        "fee_set",
+        caller.actor(),
+        Some(serde_json::json!({
+            "fee_minor": updated.fee_minor,
+            "fee_currency": updated.fee_currency,
+        })),
+    )
+    .await?;
+    txn.commit().await?;
+    format::json(course_json(&updated))
 }
 
 /// `DELETE /api/skill-courses/{pid}` — take a course off a skill (soft-delete).
@@ -220,14 +276,14 @@ async fn set_hours(
 // ─── Recommendations ────────────────────────────────────────────────────────
 
 /// What recommendations need beyond the gaps themselves.
-struct Catalogue {
+pub(crate) struct Catalogue {
     courses: HashMap<Uuid, Vec<Course>>,
     hours_per_level: HashMap<Uuid, u32>,
     names: HashMap<Uuid, String>,
     completed: HashMap<Uuid, HashSet<String>>,
 }
 
-async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalogue> {
+pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalogue> {
     let mut courses: HashMap<Uuid, Vec<Course>> = HashMap::new();
     for c in skill_courses::Entity::find()
         .filter(skill_courses::Column::DeletedAt.is_null())
@@ -275,7 +331,7 @@ async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalo
 
 impl Catalogue {
     /// The training that would close `gap` for `worker`.
-    fn recommend(&self, worker: Uuid, gap: &Gap) -> Recommendation {
+    pub(crate) fn recommend(&self, worker: Uuid, gap: &Gap) -> Recommendation {
         let empty = HashSet::new();
         rules::recommend(
             u32::try_from(gap.shortfall.unwrap_or(0)).unwrap_or(0),
@@ -501,6 +557,7 @@ pub fn routes() -> Routes {
         .add("/skills/{pid}/courses", get(list_courses))
         .add("/skills/{pid}/courses", post(add_course))
         .add("/skill-courses/{pid}", delete(remove_course))
+        .add("/skill-courses/{pid}/fee", put(set_fee))
         .add("/skills/{pid}/training-hours", put(set_hours))
         .add("/workers/{pid}/training-plan", get(worker_plan))
         .add(

@@ -66,6 +66,7 @@ applied to HR.
 | statutory and mandatory learning, qualifications (WPM-R170–R171) | medium — the person, their managers by name, HR; roll-ups with the floor |
 | PADR content (WPM-R172) | high — as review content |
 | a formal-process flag (WPM-R173) | high — HR only; yes or no and a date, never what (WPM-D120) |
+| a plan's cost of hours and viability, and train or hire (WPM-R228 to WPM-R230) | high — worked from pay, so they follow the salary mask: the plan's worker, HR masked, an unmasked privileged reader; never a line manager; an unmasked read of someone else's records `salary_read` |
 | payroll details, deductions, pension membership, student loan plans, payslip queries (WPM-R174–R178) | highest — payroll, HR and the person; no bank details or NI number exist (WPM-D115) |
 | certificates, return-to-work, review points, keeping in touch, phased return (WPM-R179–R182) | high — the person, their managers up the chain, HR; never a reason |
 | occupational health referrals (WPM-R183) | high — the person, the manager who referred, HR; the OH steps need the `occupational_health` attribute; advice is not stored |

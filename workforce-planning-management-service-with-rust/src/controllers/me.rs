@@ -860,6 +860,14 @@ pub fn routes() -> Routes {
         .add("/me/pay-information-requests", post(ask_pay_information))
         .add("/me/payslips", get(super::my_payslips::my_payslips))
         .add(
+            "/me/development-plans/{pid}/benefits",
+            post(super::training_economics::add_my_benefit),
+        )
+        .add(
+            "/me/development-plan-benefits/{pid}",
+            delete(super::training_economics::delete_my_benefit),
+        )
+        .add(
             "/me/payslips/{pid}/query",
             post(super::my_payslips::raise_query),
         )

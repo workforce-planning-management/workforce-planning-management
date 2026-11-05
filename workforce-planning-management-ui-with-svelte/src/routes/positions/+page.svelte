@@ -24,6 +24,7 @@
   import { page } from "$app/state";
   import { t } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
+  import TrainOrHire from "#lib/components/TrainOrHire.svelte";
   import type { DataGridColumn, DataGridRow } from "@lilydesignsystem/svelte-data-grid";
 
   const organizations = $derived((page.data.scope ?? []) as string[]);
@@ -214,4 +215,5 @@
     <p class="muted">{t("pages.positions.overtime_note")}</p>
     <button type="submit">{t("pages.positions.plan")}</button>
   </form>
+  {#if positions.length > 0}<TrainOrHire {positions} {organization} />{/if}
 {/if}

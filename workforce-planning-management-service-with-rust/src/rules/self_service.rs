@@ -27,6 +27,8 @@ pub const WRITES: &[(&str, &str)] = &[
     ("POST", "me/flexible-working/{}/appeal"),
     ("POST", "me/pay-information-requests"),
     ("POST", "me/payslips/{}/query"),
+    ("POST", "me/development-plans/{}/benefits"),
+    ("DELETE", "me/development-plan-benefits/{}"),
     ("POST", "me/policy-acknowledgements"),
     ("POST", "me/credentials"),
     ("POST", "me/credentials/{}/revoke"),

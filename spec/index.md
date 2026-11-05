@@ -169,4 +169,4 @@ announcement read receipts are counts, never names (WPM-D35).
   authorization-attributes,
   security
 - **Local-first CI/CD (proposed):** [local-ci-cd.md](local-ci-cd.md).
-- **Learning, upskilling and economic viability (proposed):** [learning-economics.md](learning-economics.md).
+- **Learning, upskilling and economic viability:** [learning-economics.md](learning-economics.md).
