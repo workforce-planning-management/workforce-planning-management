@@ -4323,7 +4323,7 @@
             "$ref": "#/components/responses/IdempotencyRefused"
           }
         },
-        "summary": "Remove a stated benefit. HR.",
+        "summary": "Remove a stated benefit. An administrator: the reference policy gives HR no delete, so HR corrects one by asking the person or an administrator.",
         "tags": [
           "development"
         ]
@@ -7095,6 +7095,104 @@
         ]
       }
     },
+    "/api/me/padrs": {
+      "get": {
+        "summary": "Your personal development reviews and when the next is due, and the same for everyone below you, by name. No content.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/padrs/{pid}": {
+      "get": {
+        "summary": "One PADR with every version and its objectives: the person, the reviewer and managers in the chain, not HR. Audited.",
+        "tags": [
+          "development"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Change the latest version until someone signs it: the reviewer or the person.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/padrs/{pid}/comment": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "The person's comment on the latest version, open after signing because it is not content.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/padrs/{pid}/sign": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Sign the latest version, dated today. The first signature freezes its content and objectives, and both signatures complete it.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/padrs/{pid}/versions": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "A correction: a new unsigned version copied from a signed one, which is kept. The due date does not move.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/me/pay-information-requests": {
       "get": {
         "responses": {
@@ -7222,6 +7320,27 @@
           }
         },
         "summary": "Propose a goal for someone in your reporting line.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/reports/{pid}/padrs": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Open a PADR with someone in your reporting line, for a period. You become its reviewer, and a person has one open at a time.",
         "tags": [
           "development"
         ]
@@ -8484,6 +8603,14 @@
         "summary": "The organization's own scale, recorded positions and, for the criteria of the level it is at, whether each sustain rule is met as of the last complete month (?organization=). Evidence, never a verdict: the service does not change a level",
         "tags": [
           "capacity"
+        ]
+      }
+    },
+    "/api/padrs/rollup": {
+      "get": {
+        "summary": "People whose PADR is current, overdue or unknown, by department (?organization=), with the floor. Counts only.",
+        "tags": [
+          "development"
         ]
       }
     },

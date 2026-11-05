@@ -99,6 +99,101 @@ pub fn kind_problems(kind: &str) -> Vec<String> {
     }
 }
 
+/// The longest text a PADR holds in one field.
+pub const MAX_TEXT_CHARS: usize = 2_000;
+/// The longest a development need may be.
+pub const MAX_NEED_CHARS: usize = 500;
+/// The most development needs one version holds.
+pub const MAX_NEEDS: usize = 20;
+/// The longest configured lead time before a first PADR, in months.
+pub const MAX_FIRST_AFTER_MONTHS: u32 = 60;
+
+/// A PADR's period for the year ahead must run forwards.
+///
+/// # Errors
+/// A sentence saying what is wrong.
+pub fn valid_period(start: NaiveDate, end: NaiveDate) -> Result<(), String> {
+    if end < start {
+        return Err("the period ends before it starts".to_string());
+    }
+    Ok(())
+}
+
+/// Tidy one optional text: trimmed, blank is none, and not too long.
+///
+/// # Errors
+/// A sentence saying the text is too long.
+pub fn clean_text(text: Option<&str>) -> Result<Option<String>, String> {
+    let text = text.map(str::trim).filter(|t| !t.is_empty());
+    if text.is_some_and(|t| t.chars().count() > MAX_TEXT_CHARS) {
+        return Err(format!(
+            "this text is longer than {MAX_TEXT_CHARS} characters"
+        ));
+    }
+    Ok(text.map(String::from))
+}
+
+/// Check a version's development needs, which are each a sentence.
+///
+/// # Errors
+/// A sentence saying what is wrong.
+pub fn valid_needs<'a>(needs: impl ExactSizeIterator<Item = &'a str>) -> Result<(), String> {
+    if needs.len() > MAX_NEEDS {
+        return Err(format!(
+            "a PADR holds at most {MAX_NEEDS} development needs"
+        ));
+    }
+    for need in needs {
+        let length = need.trim().chars().count();
+        if length == 0 || length > MAX_NEED_CHARS {
+            return Err(format!(
+                "a development need has 1 to {MAX_NEED_CHARS} characters"
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Whether a version may be signed. The wellbeing question is a yes or no, and signing past it would leave an unknown looking like
+/// a no.
+///
+/// # Errors
+/// A sentence saying what is missing.
+pub const fn ready_to_sign(wellbeing_offered: Option<bool>) -> Result<(), &'static str> {
+    match wellbeing_offered {
+        Some(_) => Ok(()),
+        None => Err("say whether a wellbeing conversation was offered before signing"),
+    }
+}
+
+/// Whether a correction may be started: only once the latest version is signed, because until then it can simply be edited.
+///
+/// # Errors
+/// A sentence saying why not.
+pub fn may_correct(latest: SignOffs) -> Result<(), &'static str> {
+    if latest.frozen() {
+        Ok(())
+    } else {
+        Err("this version is not signed yet, so change it directly")
+    }
+}
+
+/// The day a PADR was completed: when its **first** completed version was, given its versions in order. A correction signed later
+/// never moves the due date, or a correction could postpone the next PADR (WPM-D176).
+#[must_use]
+pub fn completed_on(versions: &[SignOffs]) -> Option<NaiveDate> {
+    versions.iter().find_map(SignOffs::completed_on)
+}
+
+/// The configured months before a first PADR. Anything that is not a whole number from 1 to [`MAX_FIRST_AFTER_MONTHS`] is no
+/// configuration: no default is shipped, so the due date stays unknown rather than invented.
+#[must_use]
+pub fn first_after_months(configured: Option<&str>) -> Option<u32> {
+    configured
+        .and_then(|v| v.trim().parse::<u32>().ok())
+        .filter(|m| (1..=MAX_FIRST_AFTER_MONTHS).contains(m))
+}
+
 /// Where a person stands against the cycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Standing {
@@ -123,6 +218,27 @@ pub fn due_on(
         None => primary_start
             .zip(first_after_months)
             .and_then(|(s, m)| s.checked_add_months(Months::new(m))),
+    }
+}
+
+impl Standing {
+    /// The word a reader sees.
+    #[must_use]
+    pub const fn word(self) -> &'static str {
+        match self {
+            Self::Unknown => "unknown",
+            Self::Current(_) => "current",
+            Self::Overdue(_) => "overdue",
+        }
+    }
+
+    /// The due date, when there is one.
+    #[must_use]
+    pub const fn due_on(self) -> Option<NaiveDate> {
+        match self {
+            Self::Unknown => None,
+            Self::Current(day) | Self::Overdue(day) => Some(day),
+        }
     }
 }
 
@@ -192,6 +308,86 @@ mod tests {
         assert!(check_editable(SignOffs::default()).is_ok());
         let one = sign(SignOffs::default(), Signer::Reviewee, d(2026, 10, 1), NOW()).unwrap();
         assert!(check_editable(one).unwrap_err().contains("new version"));
+    }
+
+    #[test]
+    fn a_correction_never_moves_the_clock() {
+        let first = SignOffs {
+            reviewer: Some(d(2026, 2, 1)),
+            reviewee: Some(d(2026, 2, 3)),
+        };
+        let correction = SignOffs {
+            reviewer: Some(d(2026, 9, 1)),
+            reviewee: Some(d(2026, 9, 2)),
+        };
+        assert_eq!(completed_on(&[first, correction]), Some(d(2026, 2, 3)));
+        assert_eq!(
+            completed_on(&[SignOffs::default(), correction]),
+            Some(d(2026, 9, 2))
+        );
+        assert_eq!(completed_on(&[SignOffs::default()]), None);
+        assert_eq!(completed_on(&[]), None);
+    }
+
+    #[test]
+    fn signing_needs_the_wellbeing_answer_and_either_answer_will_do() {
+        assert!(ready_to_sign(None).is_err());
+        assert!(ready_to_sign(Some(false)).is_ok());
+        assert!(ready_to_sign(Some(true)).is_ok());
+    }
+
+    #[test]
+    fn only_a_signed_version_is_corrected() {
+        assert!(may_correct(SignOffs::default()).is_err());
+        let one = sign(SignOffs::default(), Signer::Reviewee, d(2026, 10, 1), NOW()).unwrap();
+        assert!(may_correct(one).is_ok());
+    }
+
+    #[test]
+    fn a_period_runs_forwards() {
+        assert!(valid_period(d(2026, 1, 1), d(2026, 1, 1)).is_ok());
+        assert!(valid_period(d(2026, 1, 2), d(2026, 1, 1)).is_err());
+    }
+
+    #[test]
+    fn text_is_trimmed_blank_is_none_and_long_is_refused() {
+        assert_eq!(clean_text(Some("  a  ")).unwrap().as_deref(), Some("a"));
+        assert_eq!(clean_text(Some("   ")).unwrap(), None);
+        assert_eq!(clean_text(None).unwrap(), None);
+        assert!(clean_text(Some(&"x".repeat(MAX_TEXT_CHARS))).is_ok());
+        assert!(clean_text(Some(&"x".repeat(MAX_TEXT_CHARS + 1))).is_err());
+    }
+
+    #[test]
+    fn needs_are_bounded() {
+        assert!(valid_needs(["Coaching"].into_iter()).is_ok());
+        assert!(valid_needs(["  "].into_iter()).is_err());
+        let long = "x".repeat(MAX_NEED_CHARS + 1);
+        assert!(valid_needs([long.as_str()].into_iter()).is_err());
+        assert!(valid_needs(vec!["a"; MAX_NEEDS].into_iter()).is_ok());
+        assert!(valid_needs(vec!["a"; MAX_NEEDS + 1].into_iter()).is_err());
+    }
+
+    #[test]
+    fn the_first_after_setting_has_no_default() {
+        assert_eq!(first_after_months(Some("6")), Some(6));
+        assert_eq!(first_after_months(Some(" 60 ")), Some(60));
+        assert_eq!(first_after_months(None), None);
+        assert_eq!(first_after_months(Some("0")), None);
+        assert_eq!(first_after_months(Some("61")), None);
+        assert_eq!(first_after_months(Some("soon")), None);
+    }
+
+    #[test]
+    fn standing_says_its_word_and_its_date() {
+        assert_eq!(Standing::Unknown.word(), "unknown");
+        assert_eq!(Standing::Unknown.due_on(), None);
+        assert_eq!(Standing::Current(d(2026, 1, 1)).word(), "current");
+        assert_eq!(Standing::Overdue(d(2026, 1, 1)).word(), "overdue");
+        assert_eq!(
+            Standing::Overdue(d(2026, 1, 1)).due_on(),
+            Some(d(2026, 1, 1))
+        );
     }
 
     #[test]

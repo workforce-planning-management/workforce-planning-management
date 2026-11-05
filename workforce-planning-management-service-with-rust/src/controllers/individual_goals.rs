@@ -20,17 +20,18 @@ use uuid::Uuid;
 use super::{ensure_org_in_scope, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    goal_check_ins, goal_measures, review_cycles, review_goal_outcomes, reviews, worker_goals,
-    workers,
+    development_plan_items, development_plans, goal_check_ins, goal_measures, review_cycles,
+    review_goal_outcomes, reviews, skills, worker_goals, workers,
 };
 use crate::models::audit_logs::Model as Audit;
+use crate::models::notifications::Model as Notification;
 use crate::models::records;
 use crate::need_to_know::is_line_manager;
 use crate::rules::career::is_self;
 use crate::rules::individual_goals::{self as rules, MeasureShape, Party};
 
 /// The caller's token subject.
-fn subject(caller: &MaybeAuthUser) -> Result<&str> {
+pub(crate) fn subject(caller: &MaybeAuthUser) -> Result<&str> {
     caller
         .claims()
         .map(|c| c.sub.as_str())
@@ -85,7 +86,7 @@ async fn ensure_reader(
 
 /// Whether the caller is this review's reviewer. `reviewer_ref` is a `worker:` reference, to a worker's pid or to the upstream
 /// reference that worker carries.
-async fn is_reviewer(
+pub(crate) async fn is_reviewer(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     review: &reviews::Model,
@@ -124,7 +125,7 @@ async fn goal_and_worker(
 }
 
 /// Each read leaves one entry per goal, with the pid and no content (WPM-D164).
-async fn audit_reads(
+pub(crate) async fn audit_reads(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     goals: &[worker_goals::Model],
@@ -144,7 +145,10 @@ async fn audit_reads(
 }
 
 /// Goals with their measures and check-ins, as a reader sees them.
-async fn views(ctx: &AppContext, goals: &[worker_goals::Model]) -> Result<Vec<serde_json::Value>> {
+pub(crate) async fn views(
+    ctx: &AppContext,
+    goals: &[worker_goals::Model],
+) -> Result<Vec<serde_json::Value>> {
     let pids: Vec<Uuid> = goals.iter().map(|g| g.pid).collect();
     let mut measures: HashMap<Uuid, Vec<goal_measures::Model>> = HashMap::new();
     for row in super::find_in(
@@ -168,6 +172,7 @@ async fn views(ctx: &AppContext, goals: &[worker_goals::Model]) -> Result<Vec<se
     {
         check_ins.entry(row.goal_pid).or_default().push(row);
     }
+    let (skill_names, plan_steps) = link_names(ctx, goals).await?;
     Ok(goals
         .iter()
         .map(|goal| {
@@ -175,9 +180,130 @@ async fn views(ctx: &AppContext, goals: &[worker_goals::Model]) -> Result<Vec<se
                 "goal": goal,
                 "measures": measures.get(&goal.pid).cloned().unwrap_or_default(),
                 "check_ins": check_ins.get(&goal.pid).cloned().unwrap_or_default(),
+                "skill_name": goal.skill_pid.and_then(|pid| skill_names.get(&pid)),
+                "plan_step": goal.plan_item_pid.and_then(|pid| plan_steps.get(&pid)),
             })
         })
         .collect())
+}
+
+/// The names a goal's links show: a skill's, and a plan step's, which is the skill it builds. A link whose target has gone shows
+/// nothing rather than a pid.
+async fn link_names(
+    ctx: &AppContext,
+    goals: &[worker_goals::Model],
+) -> Result<(HashMap<Uuid, String>, HashMap<Uuid, String>)> {
+    let item_pids: Vec<Uuid> = goals.iter().filter_map(|g| g.plan_item_pid).collect();
+    let items = super::find_in(
+        ctx,
+        development_plan_items::Entity::find(),
+        development_plan_items::Column::Pid,
+        &item_pids,
+    )
+    .await?;
+    let skill_pids: Vec<Uuid> = goals
+        .iter()
+        .filter_map(|g| g.skill_pid)
+        .chain(items.iter().map(|item| item.skill_pid))
+        .collect();
+    let names: HashMap<Uuid, String> = super::find_in(
+        ctx,
+        skills::Entity::find().filter(skills::Column::DeletedAt.is_null()),
+        skills::Column::Pid,
+        &skill_pids,
+    )
+    .await?
+    .into_iter()
+    .map(|skill| (skill.pid, skill.name))
+    .collect();
+    let steps = items
+        .iter()
+        .filter_map(|item| Some((item.pid, names.get(&item.skill_pid)?.clone())))
+        .collect();
+    Ok((names, steps))
+}
+
+/// What a goal links to must exist, and a plan item must be on one of this person's own plans.
+pub(crate) async fn check_plan_item(
+    ctx: &AppContext,
+    worker: &workers::Model,
+    item: Uuid,
+) -> Result<()> {
+    let plan = match development_plan_items::Entity::find()
+        .filter(development_plan_items::Column::Pid.eq(item))
+        .one(&ctx.db)
+        .await?
+    {
+        Some(row) => {
+            development_plans::Entity::find()
+                .filter(development_plans::Column::Pid.eq(row.plan_pid))
+                .filter(development_plans::Column::WorkerPid.eq(worker.pid))
+                .filter(development_plans::Column::DeletedAt.is_null())
+                .one(&ctx.db)
+                .await?
+        }
+        None => None,
+    };
+    plan.map(|_| ())
+        .ok_or_else(|| unprocessable("that plan item is not on this person's plans"))
+}
+
+/// Check a goal's skill and plan item.
+async fn check_links(
+    ctx: &AppContext,
+    worker: &workers::Model,
+    payload: &GoalPayload,
+) -> Result<()> {
+    if let Some(skill) = payload.skill_pid {
+        skills::Entity::find()
+            .filter(skills::Column::Pid.eq(skill))
+            .filter(skills::Column::DeletedAt.is_null())
+            .one(&ctx.db)
+            .await?
+            .ok_or_else(|| unprocessable("that skill is not in the catalogue"))?;
+    }
+    if let Some(item) = payload.plan_item_pid {
+        check_plan_item(ctx, worker, item).await?;
+    }
+    Ok(())
+}
+
+/// Tell whoever a proposal now waits for. The notification says that and nothing else (WPM-R232, WPM-D23).
+async fn tell_waiting<C: ConnectionTrait>(
+    db: &C,
+    goal: &worker_goals::Model,
+    worker: &workers::Model,
+    by: Party,
+) -> Result<()> {
+    if let Some(recipient) = rules::waiting_on(by, worker.pid, worker.manager_pid) {
+        Notification::push(
+            db,
+            recipient,
+            "goal_waiting",
+            "A goal is waiting for your agreement.",
+            serde_json::json!({ "goal_pid": goal.pid }),
+        )
+        .await?;
+    }
+    Ok(())
+}
+
+/// Everyone below the subject in the reporting line, still employed.
+pub(crate) async fn reports_of(ctx: &AppContext, sub: &str) -> Result<Vec<workers::Model>> {
+    let staff = workers::Entity::find()
+        .filter(workers::Column::DeletedAt.is_null())
+        .filter(workers::Column::TerminatedOn.is_null())
+        .filter(workers::Column::ManagerPid.is_not_null())
+        .order_by_asc(workers::Column::DisplayName)
+        .all(&ctx.db)
+        .await?;
+    let mut reports = Vec::new();
+    for worker in staff {
+        if is_line_manager(ctx, &worker, sub).await? {
+            reports.push(worker);
+        }
+    }
+    Ok(reports)
 }
 
 /// A worker's live goals, newest period first.
@@ -204,32 +330,22 @@ async fn worker_goals_view(
     audit_reads(&ctx, &caller, &goals).await?;
     format::json(serde_json::json!({
         "worker_pid": worker.pid,
+        "has_manager": worker.manager_pid.is_some(),
         "goals": views(&ctx, &goals).await?,
     }))
 }
 
-/// `GET /api/me/team-goals` — the goals of everyone below the caller in the reporting line, by name. Audited.
+/// `GET /api/me/team-goals` — everyone below the caller in the reporting line, by name, with their goals. Someone with none is
+/// listed too, so a first goal has somewhere to go. Audited.
 #[debug_handler]
 pub(crate) async fn team_goals(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
 ) -> Result<Response> {
     let sub = subject(&caller)?.to_string();
-    let staff = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .filter(workers::Column::ManagerPid.is_not_null())
-        .all(&ctx.db)
-        .await?;
     let mut team = Vec::new();
-    for worker in staff {
-        if !is_line_manager(&ctx, &worker, &sub).await? {
-            continue;
-        }
+    for worker in reports_of(&ctx, &sub).await? {
         let goals = goals_of(&ctx, worker.pid).await?;
-        if goals.is_empty() {
-            continue;
-        }
         audit_reads(&ctx, &caller, &goals).await?;
         team.push(serde_json::json!({
             "worker_pid": worker.pid,
@@ -331,6 +447,7 @@ async fn propose(
     payload: &GoalPayload,
 ) -> Result<Response> {
     let description = checked(payload)?;
+    check_links(ctx, worker, payload).await?;
     let txn = ctx.db.begin().await?;
     let goal = worker_goals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
@@ -353,6 +470,7 @@ async fn propose(
     .await?;
     write_measures(&txn, &goal, &payload.measures).await?;
     Audit::record(&txn, "goal", goal.pid, "proposed", caller.actor(), None).await?;
+    tell_waiting(&txn, &goal, worker, by).await?;
     txn.commit().await?;
     format::json(serde_json::json!({ "pid": goal.pid }))
 }
@@ -383,7 +501,8 @@ pub(crate) async fn propose_for_report(
     propose(&ctx, &caller, &worker, Party::Manager, &payload).await
 }
 
-/// `PUT /api/me/goals/{pid}` — change a goal until it is agreed; after that it is what both agreed to.
+/// `PUT /api/me/goals/{pid}` — change a goal until it is agreed; after that it is what both agreed to. A change by the party who did
+/// not propose it makes them the proposer, so the other must agree the new words (WPM-D177).
 #[debug_handler]
 pub(crate) async fn edit(
     State(ctx): State<AppContext>,
@@ -392,14 +511,17 @@ pub(crate) async fn edit(
     Json(payload): Json<GoalPayload>,
 ) -> Result<Response> {
     let (goal, worker) = goal_and_worker(&ctx, &pid).await?;
-    require_party(&ctx, &caller, &worker).await?;
+    let who = require_party(&ctx, &caller, &worker).await?;
     if !rules::is_editable(&goal.status) {
         return Err(unprocessable(
             "an agreed goal cannot be edited; withdraw it and propose another",
         ));
     }
     let description = checked(&payload)?;
+    check_links(&ctx, &worker, &payload).await?;
+    let counter_proposal = goal.proposed_by != who.as_str();
     let mut active: worker_goals::ActiveModel = goal.into();
+    active.proposed_by = ActiveValue::set(who.as_str().to_string());
     active.title = ActiveValue::set(payload.title.trim().to_string());
     active.description = ActiveValue::set(description);
     active.period_start = ActiveValue::set(payload.period_start);
@@ -411,6 +533,9 @@ pub(crate) async fn edit(
     let goal = active.update(&txn).await?;
     write_measures(&txn, &goal, &payload.measures).await?;
     Audit::record(&txn, "goal", goal.pid, "edited", caller.actor(), None).await?;
+    if counter_proposal {
+        tell_waiting(&txn, &goal, &worker, who).await?;
+    }
     txn.commit().await?;
     format::json(serde_json::json!({ "pid": goal.pid }))
 }
@@ -613,7 +738,7 @@ async fn review_and_period(
 ) -> Result<(reviews::Model, review_cycles::Model)> {
     let review = records::find_review(&ctx.db, records::parse_pid(pid)?).await?;
     let cycle = review_cycles::Entity::find()
-        .filter(review_cycles::Column::Pid.eq(review.cycle_pid))
+        .filter(review_cycles::Column::Pid.eq(review.cycle_pid.ok_or(Error::NotFound)?))
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
@@ -773,14 +898,54 @@ pub(crate) async fn record_outcome(
     format::json(serde_json::json!({ "review_pid": review.pid, "goal_pid": goal.pid }))
 }
 
+/// What a signed review keeps of a goal (WPM-R225).
+pub(crate) async fn goal_snapshot<C: ConnectionTrait>(
+    db: &C,
+    goal: &worker_goals::Model,
+) -> Result<serde_json::Value> {
+    let measures = goal_measures::Entity::find()
+        .filter(goal_measures::Column::GoalPid.eq(goal.pid))
+        .order_by_asc(goal_measures::Column::Id)
+        .all(db)
+        .await?;
+    Ok(serde_json::json!({
+        "pid": goal.pid,
+        "title": goal.title,
+        "status": goal.status,
+        "period_start": goal.period_start,
+        "period_end": goal.period_end,
+        "measures": measures,
+    }))
+}
+
+/// A PADR's objectives (WPM-R225): the person's live goals in its period, withdrawn ones left out.
+pub(crate) async fn objectives_of<C: ConnectionTrait>(
+    db: &C,
+    worker: Uuid,
+    period: (chrono::NaiveDate, chrono::NaiveDate),
+) -> Result<Vec<worker_goals::Model>> {
+    Ok(worker_goals::Entity::find()
+        .filter(worker_goals::Column::WorkerPid.eq(worker))
+        .filter(worker_goals::Column::DeletedAt.is_null())
+        .order_by_asc(worker_goals::Column::Id)
+        .all(db)
+        .await?
+        .into_iter()
+        .filter(|g| rules::is_objective(&g.status, (g.period_start, g.period_end), period))
+        .collect())
+}
+
 /// Freeze the goals of a review as it is shared (WPM-D165): each goal in the period gets a snapshot beside its outcomes, in the
 /// transaction that shares it. A later edit to the goal never reaches a shared review.
 pub(crate) async fn freeze_review_goals<C: ConnectionTrait>(
     db: &C,
     review: &reviews::Model,
 ) -> Result<()> {
+    let Some(cycle_pid) = review.cycle_pid else {
+        return Ok(());
+    };
     let Some(cycle) = review_cycles::Entity::find()
-        .filter(review_cycles::Column::Pid.eq(review.cycle_pid))
+        .filter(review_cycles::Column::Pid.eq(cycle_pid))
         .one(db)
         .await?
     else {
@@ -792,19 +957,7 @@ pub(crate) async fn freeze_review_goals<C: ConnectionTrait>(
         .all(db)
         .await?;
     for goal in in_period(goals, &cycle) {
-        let measures = goal_measures::Entity::find()
-            .filter(goal_measures::Column::GoalPid.eq(goal.pid))
-            .order_by_asc(goal_measures::Column::Id)
-            .all(db)
-            .await?;
-        let snapshot = serde_json::json!({
-            "pid": goal.pid,
-            "title": goal.title,
-            "status": goal.status,
-            "period_start": goal.period_start,
-            "period_end": goal.period_end,
-            "measures": measures,
-        });
+        let snapshot = goal_snapshot(db, &goal).await?;
         let existing = review_goal_outcomes::Entity::find()
             .filter(review_goal_outcomes::Column::ReviewPid.eq(review.pid))
             .filter(review_goal_outcomes::Column::GoalPid.eq(goal.pid))

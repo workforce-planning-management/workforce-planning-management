@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the PADR and the goals screens (WPM-T317, WPM-T458, WPM-T459)
+
+`/me/padr`, `/me/padr/[pid]`, `PadrVersionView`, `PadrRollup` on `/development`; `GoalForm`, shared by a person, a manager, a PADR's objective and a change to a proposal, with a skill, a plan step and an alignment reference; `WaitingForYou` on `/me`; a count of what waits on `/me/goals`; 59 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — individual goals (WPM-T432, WPM-T433)
 
 `/me/goals`, `GoalCard`, `ReviewGoals` on the worker page, `GoalsRollup` on `/development`; 48 strings in 13 locales (AI-written, unreviewed).

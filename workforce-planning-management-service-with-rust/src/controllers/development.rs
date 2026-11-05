@@ -227,7 +227,8 @@ async fn create_review(
     let txn = ctx.db.begin().await?;
     let row = reviews::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
-        cycle_pid: ActiveValue::set(cycle.pid),
+        cycle_pid: ActiveValue::set(Some(cycle.pid)),
+        kind: ActiveValue::set("performance".to_string()),
         worker_pid: ActiveValue::set(worker.pid),
         reviewer_ref: ActiveValue::set(payload.reviewer_ref.clone()),
         status: ActiveValue::set("draft".to_string()),
@@ -257,6 +258,7 @@ async fn list_reviews(
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let rows = reviews::Entity::find()
         .filter(reviews::Column::WorkerPid.eq(worker.pid))
+        .filter(reviews::Column::Kind.eq("performance"))
         .filter(reviews::Column::DeletedAt.is_null())
         .order_by_asc(reviews::Column::Id)
         .all(&ctx.db)

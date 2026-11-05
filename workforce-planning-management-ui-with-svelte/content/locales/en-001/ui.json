@@ -112,7 +112,11 @@
     "requests": "My 360 requests"
   },
   "notif": {
-    "markRead": "Mark read"
+    "markRead": "Mark read",
+    "waitingForYou": "Waiting for you",
+    "goalWaiting": "A goal is waiting for your agreement.",
+    "padrOpened": "A personal development review has been opened with you.",
+    "padrToSign": "A personal development review is waiting for your signature."
   },
   "erg": {
     "title": "Ergonomic assessments",
@@ -1545,7 +1549,9 @@
     "statutoryDefaults": "Statutory defaults — WPM",
     "myPayslips": "My payslips — WPM",
     "myDevelopment": "My development plans — WPM",
-    "myGoals": "My goals — WPM"
+    "myGoals": "My goals — WPM",
+    "myPadrs": "My development reviews — WPM",
+    "padr": "Development review — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -3144,6 +3150,61 @@
     "record": "Record",
     "rollupTitle": "Goals by department",
     "withheld": "Withheld: too few people",
-    "rollupNone": "No goals yet."
+    "rollupNone": "No goals yet.",
+    "waitingCount": "Waiting for your agreement: {count}",
+    "noManager": "You have no manager on record, so nobody can agree this yet. Ask HR to add one.",
+    "noneForPerson": "No goals yet.",
+    "proposeFor": "Propose a goal for this person",
+    "change": "Change this proposal",
+    "changeHint": "If you change it, the other person will need to agree your version.",
+    "saveChange": "Save the change",
+    "links": "Links (optional)",
+    "buildsSkill": "Skill it builds",
+    "planStep": "Step on the development plan",
+    "alignsTo": "Aligns to",
+    "alignsHint": "A reference to an objective held elsewhere, such as objective:Q3-reliability. It is shown as written and never opened."
+  },
+  "padr": {
+    "link": "My development reviews",
+    "title": "Personal development review",
+    "hint": "A yearly conversation with your manager about the year ahead. It is complete when both of you have signed.",
+    "mine": "My reviews",
+    "nextDue": "Next one due",
+    "current": "Up to date",
+    "overdue": "Overdue",
+    "unknown": "No date on record",
+    "none": "You have no reviews on record yet.",
+    "complete": "Complete",
+    "open": "Open a review",
+    "periodStart": "Year ahead starts",
+    "periodEnd": "Year ahead ends",
+    "back": "Back to my reviews",
+    "version": "Version {version}",
+    "completedOn": "Completed on",
+    "values": "Values and behaviours conversation",
+    "wellbeing": "Was a wellbeing conversation offered?",
+    "wellbeingHint": "Yes or no only. Do not write down what was said.",
+    "yes": "Yes",
+    "no": "No",
+    "needs": "Development needs",
+    "need": "Need",
+    "addNeed": "Add a need",
+    "objectives": "Objectives for the year ahead",
+    "objectivesHint": "These are the goals in this review's period. Signing freezes the list.",
+    "noObjectives": "No objectives in this period.",
+    "addObjective": "Add an objective",
+    "frozen": "These are the objectives as they stood at the first signature.",
+    "signatures": "Signatures",
+    "reviewer": "Reviewer",
+    "reviewee": "Person reviewed",
+    "notSigned": "Not signed",
+    "signHint": "Signing freezes this version. A later correction is a new version.",
+    "sign": "Sign this version",
+    "comment": "Your comment",
+    "correct": "Start a correction",
+    "correctHint": "This makes a new version to sign. The signed version is kept, and the date the next review is due does not move.",
+    "earlier": "Earlier versions",
+    "rollupTitle": "Development reviews by department",
+    "rollupNone": "No people on record."
   }
 }

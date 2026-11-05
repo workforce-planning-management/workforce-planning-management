@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the PADR record (WPM-R172, WPM-R225, WPM-D176, WPM-T317, WPM-T431)
+
+`reviews.kind`, a nullable `cycle_pid` and `padr_versions` (migration `m20261105_000129`); `controllers/padr.rs`: `GET /api/me/padrs`, `POST /api/me/reports/{pid}/padrs`, `GET`+`PUT /api/me/padrs/{pid}`, `.../sign`, `.../comment`, `.../versions`, `GET /api/padrs/rollup`; `WPM_PADR_FIRST_AFTER_MONTHS` (no default); `tests/padr.rs`.
+
+### Changed — goals (WPM-R232, WPM-D177, WPM-T458, WPM-T459)
+
+`goal_waiting`, `padr_opened` and `padr_to_sign` notifications. A goal's skill and plan item are now checked, and a goal shows their names. `/api/me/team-goals` lists everyone below the reader, with or without a goal. `GET /api/workers/{pid}/goals` says `has_manager`. A change by the party who did not propose a goal makes them the proposer. `find_review` and a worker's review list now leave out PADRs.
+
 ### Added — individual goals (WPM-R224 to WPM-R226, WPM-T428 to WPM-T433)
 
 `rules::individual_goals`; `worker_goals`, `goal_measures`, `goal_check_ins`, `review_goal_outcomes`; `GET /api/workers/{pid}/goals`, `/api/me/team-goals`, `/api/goals/rollup` and `/api/reviews/{pid}/individual-goals`; writes under `/api/me`; sharing a review freezes a snapshot.

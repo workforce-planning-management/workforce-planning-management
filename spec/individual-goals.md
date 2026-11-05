@@ -1,6 +1,6 @@
 # Individual goals tied to reviews
 
-Status: **built, except the PADR link.** The product owner confirmed WPM-R224 to WPM-R226 and WPM-D163 to WPM-D166 on 2026-11-05. Tasks WPM-T428 to WPM-T433 in [tasks.md](tasks.md) Phase 27; WPM-T431 is part done, because the PADR record does not exist yet. Plan: section U of
+Status: **built.** The product owner confirmed WPM-R224 to WPM-R226 and WPM-D163 to WPM-D166 on 2026-11-05, and asked for the PADR link and the goals screens the same day. Tasks WPM-T428 to WPM-T433, WPM-T458 and WPM-T459 in [tasks.md](tasks.md) Phase 27. Plan: section U of
 [plan.md](plan.md).
 
 ## Why
@@ -28,6 +28,8 @@ the reviews they feed.
   department with the floor; a rate with nothing to divide by is `null`, and a goal with no measure is never counted as met or missed by a number.
   In the subject-access export; erased with the person.
 
+- **WPM-R232 The other person is told.** When a goal waits for someone's agreement, that person gets an in-app notification: the person, for a manager's proposal; their direct manager, for theirs. The same applies to a PADR: the person is told when one is opened with them, and each signer when the other has signed. The notification says what is waiting and carries pids and nothing else: no title, no text, no measure (WPM-D23). A person with no manager on record tells nobody, and that stays visible on the goal.
+
 ## Decisions (confirmed 2026-11-05)
 
 - **WPM-D163 A goal is a record of intent and evidence, not a score.** There is no attainment percentage, no ranking and no rating derived from
@@ -40,6 +42,8 @@ the reviews they feed.
 - **WPM-D166 Team and company OKRs are referenced, never held.** Cascading objectives live in the portfolio app or the deployer's own tool. A goal
   here may carry an optional `aligns_to` reference (an EntityRef URN) that WPM never resolves or fetches, so WPM works with no sibling (the
   independence rule). WPM holds no company-wide OKR tree.
+
+- **WPM-D177 Changing a proposal makes it yours to propose.** Either party may change a goal until it is agreed. A change by the party who did not propose it makes them the proposer, so the other must agree the new words. Otherwise a manager could rewrite a person's goal and agree it alone, and the person would be held to something they never saw. (Chosen in the build, 2026-11-05.)
 
 ## Questions for the product owner
 
@@ -54,7 +58,7 @@ the reviews they feed.
 
 ## What is built and what is not
 
-Built on 2026-11-05: `rules::individual_goals`, the tables `worker_goals`, `goal_measures`, `goal_check_ins` and `review_goal_outcomes`, the API, `/me/goals`, the goals of a review on the worker page, and the roll-up on `/development`.
+Built on 2026-11-05: `rules::individual_goals`, the tables `worker_goals`, `goal_measures`, `goal_check_ins` and `review_goal_outcomes`, the API, `/me/goals` (with a form for each person below the reader, the links below, and a count of what waits for them), the goals of a review on the worker page, the roll-up on `/development`, the notifications of WPM-R232, and a PADR's objectives ([staff-records-and-pay.md](staff-records-and-pay.md), WPM-R172).
 
 The requirements left these open; the choices are recorded so a reader can disagree.
 
@@ -66,4 +70,8 @@ The requirements left these open; the choices are recorded so a reader can disag
 - **A check-in says** `on_track`, `at_risk` or `off_track`, and a note, and may set one measure's current value. Only an agreed or in-progress goal takes one.
 - **The roll-up's floor is five people**, counted as people and not goals, with the next smallest department withheld when exactly one is.
 
-Not built: the PADR's objectives as goals (WPM-R172 has a pure core only, so there is no PADR record to tie to); the link from a goal to a skill or plan item is stored but no screen sets it; `aligns_to` is checked for shape only and no screen sets it; no notification tells the other party a goal is waiting; a manager's proposal has an API route and no form; closing a period does nothing automatically.
+- **A PADR's objectives are the person's live goals whose period overlaps the PADR's**, leaving out withdrawn ones. The first signature freezes them on that version; a goal added later is not an objective of a signed version, and a correction takes the list afresh when it is signed.
+- **The links are checked.** A skill must be in the catalogue and a plan item must be on one of this person's own plans. `aligns_to` is checked for shape and never resolved (WPM-D166). A goal shows the skill's name and the plan step's skill.
+- **A manager's list holds every person below them**, with or without a goal, so that a first goal has somewhere to go.
+
+Not built: a form with more than one measure (the API takes several, and a change keeps the ones it does not show); closing a period does nothing automatically.

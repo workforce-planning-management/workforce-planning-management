@@ -27,6 +27,9 @@ pub const KINDS: &[&str] = &[
     "engagement_ended_undecided",
     "early_warning",
     "policy_due",
+    "goal_waiting",
+    "padr_opened",
+    "padr_to_sign",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -110,7 +113,10 @@ mod tests {
                 "engagement_ending",
                 "engagement_ended_undecided",
                 "early_warning",
-                "policy_due"
+                "policy_due",
+                "goal_waiting",
+                "padr_opened",
+                "padr_to_sign"
             ]
         );
     }

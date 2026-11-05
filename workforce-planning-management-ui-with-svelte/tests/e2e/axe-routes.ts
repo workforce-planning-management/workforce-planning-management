@@ -31,6 +31,8 @@ export const ROUTES: Record<string, string> = {
   "/me/details": "/me/details",
   "/me/development": "/me/development",
   "/me/goals": "/me/goals",
+  "/me/padr": "/me/padr",
+  "/me/padr/[pid]": `/me/padr/${PID}`,
   "/me/payslips": "/me/payslips",
   "/mentorship": "/mentorship",
   "/metrics": "/metrics",

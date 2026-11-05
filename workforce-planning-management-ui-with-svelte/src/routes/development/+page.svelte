@@ -7,6 +7,7 @@
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
   import GoalsRollup from "#lib/components/GoalsRollup.svelte";
+  import PadrRollup from "#lib/components/PadrRollup.svelte";
   import type {
     DataGridColumn,
     DataGridRow,
@@ -98,3 +99,4 @@
 {/if}
 
 <GoalsRollup />
+<PadrRollup />

@@ -339,7 +339,8 @@ async fn add_benefit(
     state_benefit(&ctx, &caller, &plan, &payload).await
 }
 
-/// `DELETE /api/development-plan-benefits/{pid}` — HR removes a benefit.
+/// `DELETE /api/development-plan-benefits/{pid}` — an administrator removes a benefit. The reference policy gives HR no delete, so
+/// this route is not HR's; the person removes their own under `/api/me`.
 #[debug_handler]
 async fn delete_benefit(
     State(ctx): State<AppContext>,

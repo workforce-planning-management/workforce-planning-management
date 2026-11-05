@@ -47,7 +47,8 @@
       "Person",
       "Plan",
       "Rotation",
-      "Status"
+      "Status",
+      "Version {version}"
     ],
     "es-001": [
       "Agenda",
@@ -99,10 +100,12 @@
       "Relation",
       "Rotation",
       "Score",
+      "Signatures",
       "Site",
       "Source",
       "Table",
       "Total",
+      "Version {version}",
       "Viable",
       "aptitude",
       "direct",

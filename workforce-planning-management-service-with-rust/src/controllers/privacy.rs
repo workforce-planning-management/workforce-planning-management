@@ -22,14 +22,15 @@ use crate::models::_entities::{
     ergonomic_assessments, expense_claims, expense_items, flexible_working_requests,
     goal_check_ins, goal_measures, group_members, handover_actions, interviews,
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
-    movements, notifications, onboarding_items, organization_memberships, path_enrollments,
-    pay_information_requests, payslip_queries, payslips, pipeline_members, policy_acknowledgements,
-    positions, post_fundings, professional_registrations, program_placements,
-    qualification_reminders, qualifications, resignations, review_goal_outcomes, reviews,
-    rota_members, rota_overrides, rota_swap_requests, scim_pushes, shift_assignments, time_entries,
-    training_enrollments, worker_aspirations, worker_backups, worker_contact_details,
-    worker_contractor_details, worker_framework_roles, worker_goals, worker_health_records,
-    worker_job_levels, worker_pay_positions, worker_skill_history, worker_skills, workers,
+    movements, notifications, onboarding_items, organization_memberships, padr_versions,
+    path_enrollments, pay_information_requests, payslip_queries, payslips, pipeline_members,
+    policy_acknowledgements, positions, post_fundings, professional_registrations,
+    program_placements, qualification_reminders, qualifications, resignations,
+    review_goal_outcomes, reviews, rota_members, rota_overrides, rota_swap_requests, scim_pushes,
+    shift_assignments, time_entries, training_enrollments, worker_aspirations, worker_backups,
+    worker_contact_details, worker_contractor_details, worker_framework_roles, worker_goals,
+    worker_health_records, worker_job_levels, worker_pay_positions, worker_skill_history,
+    worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -137,6 +138,7 @@ async fn subject_access(
         "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
         "development_plan_benefits": rows_for!(db, development_plan_benefits, WorkerPid, epid),
         "worker_goals": rows_for!(db, worker_goals, WorkerPid, epid),
+        "padr_versions": rows_for!(db, padr_versions, WorkerPid, epid),
         "goal_measures": rows_for!(db, goal_measures, WorkerPid, epid),
         "goal_check_ins": rows_for!(db, goal_check_ins, WorkerPid, epid),
         "review_goal_outcomes": rows_for!(db, review_goal_outcomes, WorkerPid, epid),
@@ -417,6 +419,7 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM goal_check_ins WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM goal_measures WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_goals WHERE worker_pid = '{epid}'"),
+        format!("DELETE FROM padr_versions WHERE worker_pid = '{epid}'"),
     ]
 }
 

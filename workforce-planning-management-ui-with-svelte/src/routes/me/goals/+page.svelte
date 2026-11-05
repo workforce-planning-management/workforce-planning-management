@@ -9,31 +9,36 @@
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import GoalCard from "#lib/components/GoalCard.svelte";
-  import { myTeamGoals, proposeMyGoal, workerGoals, type GoalView, type TeamGoals } from "#lib/api/wpm.js";
+  import GoalForm from "#lib/components/GoalForm.svelte";
+  import { myTeamGoals, proposeGoalFor, proposeMyGoal, workerGoals, type GoalBody, type GoalView, type TeamGoals } from "#lib/api/wpm.js";
   import type { MyOrganization } from "#lib/api/types.js";
-  import { t, tv } from "#lib/i18n.svelte.js";
+  import { t, tf } from "#lib/i18n.svelte.js";
 
   const me = $derived(
     ((page.data.organizations ?? []) as MyOrganization[]).find((m) => m.worker_pid !== null)?.worker_pid ?? null,
   );
 
   let mine = $state<GoalView[] | null>(null);
+  let hasManager = $state(true);
   let team = $state<TeamGoals["team"]>([]);
   let error = $state<string | null>(null);
-  let title = $state("");
-  let description = $state("");
-  let periodStart = $state("");
-  let periodEnd = $state("");
-  let measureName = $state("");
-  let measureKind = $state<"number" | "milestone">("number");
-  let unit = $state("");
-  let startValue = $state<number | null>(null);
-  let targetValue = $state<number | null>(null);
+  // The form for one person below the reader, which mounts only when opened.
+  let openFor = $state<string | null>(null);
+
+  // What is waiting on the reader: a manager's proposals to them, and their reports' proposals to them.
+  const waiting = $derived(
+    (mine ?? []).filter((v) => v.goal.status === "proposed" && v.goal.proposed_by === "manager").length +
+      team.flatMap((p) => p.goals).filter((v) => v.goal.status === "proposed" && v.goal.proposed_by === "worker").length,
+  );
+  const withNobody = $derived(
+    !hasManager && (mine ?? []).some((v) => v.goal.status === "proposed" && v.goal.proposed_by === "worker"),
+  );
 
   const load = guardedLoad(
     () => Promise.all([workerGoals(me ?? ""), myTeamGoals()]),
     ([own, reports]) => {
       mine = own.goals;
+      hasManager = own.has_manager;
       team = reports.team;
     },
     (cause) => {
@@ -45,34 +50,15 @@
     if (me) void load();
   });
 
-  async function propose(event: SubmitEvent) {
-    event.preventDefault();
-    error = null;
-    const number = measureKind === "number";
-    try {
-      await proposeMyGoal({
-        title: title.trim(),
-        ...(description.trim() ? { description: description.trim() } : {}),
-        period_start: periodStart,
-        period_end: periodEnd,
-        measures: measureName.trim()
-          ? [
-              {
-                name: measureName.trim(),
-                kind: measureKind,
-                ...(number && unit.trim() ? { unit: unit.trim() } : {}),
-                ...(number && startValue !== null ? { start_value: startValue } : {}),
-                ...(number && targetValue !== null ? { target_value: targetValue } : {}),
-              },
-            ]
-          : [],
-      });
-      title = description = measureName = unit = "";
-      startValue = targetValue = null;
-      await load();
-    } catch (cause) {
-      error = errorText(cause);
-    }
+  async function propose(body: GoalBody) {
+    await proposeMyGoal(body);
+    await load();
+  }
+
+  async function proposeFor(worker: string, body: GoalBody) {
+    await proposeGoalFor(worker, body);
+    openFor = null;
+    await load();
   }
 </script>
 
@@ -88,6 +74,11 @@
 {:else if mine === null}
   <p>{t("common.loading")}</p>
 {:else}
+  {#if waiting > 0}
+    <p class="panel" data-testid="goals-waiting-count"><strong>{tf("goals.waitingCount", { count: waiting })}</strong></p>
+  {/if}
+  {#if withNobody}<p class="muted" data-testid="goals-no-manager">{t("goals.noManager")}</p>{/if}
+
   <h2>{t("goals.mine")}</h2>
   {#each mine as view (view.goal.pid)}
     <GoalCard {view} party="worker" onchange={load} />
@@ -97,26 +88,7 @@
 
   <section class="panel">
     <h2>{t("goals.propose")}</h2>
-    <form onsubmit={propose}>
-      <label>{t("goals.goalTitle")} <input bind:value={title} required maxlength="200" data-testid="goal-title" /></label>
-      <label>{t("goals.description")} <input bind:value={description} maxlength="2000" /></label>
-      <label>{t("goals.periodStart")} <input type="date" bind:value={periodStart} required data-testid="goal-start" /></label>
-      <label>{t("goals.periodEnd")} <input type="date" bind:value={periodEnd} required data-testid="goal-end" /></label>
-      <label>{t("goals.measureName")} <input bind:value={measureName} maxlength="200" data-testid="measure-name" /></label>
-      <label>
-        {t("goals.measureKind")}
-        <select bind:value={measureKind} data-testid="measure-kind">
-          <option value="number">{tv("number")}</option>
-          <option value="milestone">{tv("milestone")}</option>
-        </select>
-      </label>
-      {#if measureKind === "number"}
-        <label>{t("goals.unit")} <input bind:value={unit} maxlength="200" /></label>
-        <label>{t("goals.start")} <input type="number" bind:value={startValue} /></label>
-        <label>{t("goals.target")} <input type="number" bind:value={targetValue} data-testid="measure-target" /></label>
-      {/if}
-      <button type="submit" data-testid="goal-propose">{t("goals.proposeButton")}</button>
-    </form>
+    <GoalForm workerPid={me} submitLabel={t("goals.proposeButton")} submit={propose} />
   </section>
 
   {#if team.length > 0}
@@ -126,7 +98,27 @@
         <h3>{person.display_name}</h3>
         {#each person.goals as view (view.goal.pid)}
           <GoalCard {view} party="manager" onchange={load} />
+        {:else}
+          <p class="muted">{t("goals.noneForPerson")}</p>
         {/each}
+        <details
+          data-testid="report-propose"
+          open={openFor === person.worker_pid}
+          ontoggle={(event) => {
+            const opened = (event.currentTarget as HTMLDetailsElement).open;
+            if (opened) openFor = person.worker_pid;
+            else if (openFor === person.worker_pid) openFor = null;
+          }}
+        >
+          <summary>{t("goals.proposeFor")}</summary>
+          {#if openFor === person.worker_pid}
+            <GoalForm
+              workerPid={person.worker_pid}
+              submitLabel={t("goals.proposeButton")}
+              submit={(body) => proposeFor(person.worker_pid, body)}
+            />
+          {/if}
+        </details>
       </section>
     {/each}
   {/if}

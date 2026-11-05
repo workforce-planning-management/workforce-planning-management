@@ -859,6 +859,13 @@ pub fn routes() -> Routes {
         )
         .add("/me/pay-information-requests", post(ask_pay_information))
         .add("/me/payslips", get(super::my_payslips::my_payslips))
+        .add("/me/padrs", get(super::padr::mine_and_team))
+        .add("/me/reports/{pid}/padrs", post(super::padr::open))
+        .add("/me/padrs/{pid}", get(super::padr::detail))
+        .add("/me/padrs/{pid}", put(super::padr::edit))
+        .add("/me/padrs/{pid}/sign", post(super::padr::sign))
+        .add("/me/padrs/{pid}/comment", post(super::padr::comment))
+        .add("/me/padrs/{pid}/versions", post(super::padr::correct))
         .add("/me/goals", post(super::individual_goals::propose_mine))
         .add("/me/team-goals", get(super::individual_goals::team_goals))
         .add(

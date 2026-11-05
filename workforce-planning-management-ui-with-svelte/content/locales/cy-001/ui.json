@@ -112,7 +112,11 @@
     "requests": "Fy ngheisiadau 360"
   },
   "notif": {
-    "markRead": "Marcio fel darllenwyd"
+    "markRead": "Marcio fel darllenwyd",
+    "waitingForYou": "Yn aros amdanoch",
+    "goalWaiting": "Mae nod yn aros am eich cytundeb.",
+    "padrOpened": "Mae adolygiad datblygu personol wedi'i agor gyda chi.",
+    "padrToSign": "Mae adolygiad datblygu personol yn aros am eich llofnod."
   },
   "erg": {
     "title": "Asesiadau ergonomig",
@@ -1573,7 +1577,9 @@
     "statutoryDefaults": "Rhagosodiadau statudol — WPM",
     "myPayslips": "Fy slipiau cyflog — WPM",
     "myDevelopment": "Fy nghynlluniau datblygu — WPM",
-    "myGoals": "Fy nodau — WPM"
+    "myGoals": "Fy nodau — WPM",
+    "myPadrs": "Fy adolygiadau datblygu — WPM",
+    "padr": "Adolygiad datblygu — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -3180,6 +3186,61 @@
     "record": "Cofnodi",
     "rollupTitle": "Nodau fesul adran",
     "withheld": "Wedi'i atal: rhy ychydig o bobl",
-    "rollupNone": "Dim nodau eto."
+    "rollupNone": "Dim nodau eto.",
+    "waitingCount": "Yn aros am eich cytundeb: {count}",
+    "noManager": "Does dim rheolwr wedi'i gofnodi i chi, felly ni all neb gytuno i hyn eto. Gofynnwch i AD ychwanegu un.",
+    "noneForPerson": "Dim nodau eto.",
+    "proposeFor": "Cynnig nod ar gyfer y person hwn",
+    "change": "Newid y cynnig hwn",
+    "changeHint": "Os byddwch yn ei newid, bydd angen i'r person arall gytuno i'ch fersiwn chi.",
+    "saveChange": "Cadw'r newid",
+    "links": "Dolenni (dewisol)",
+    "buildsSkill": "Y sgil y mae'n ei meithrin",
+    "planStep": "Cam yn y cynllun datblygu",
+    "alignsTo": "Yn cyd-fynd â",
+    "alignsHint": "Cyfeiriad at amcan a gedwir mewn man arall, fel objective:Q3-reliability. Caiff ei ddangos fel y'i hysgrifennwyd ac nid yw byth yn cael ei agor."
+  },
+  "padr": {
+    "link": "Fy adolygiadau datblygu",
+    "title": "Adolygiad datblygu personol",
+    "hint": "Sgwrs flynyddol gyda'ch rheolwr am y flwyddyn i ddod. Mae'n gyflawn pan fydd y ddau ohonoch wedi llofnodi.",
+    "mine": "Fy adolygiadau",
+    "nextDue": "Y nesaf i'w gwblhau erbyn",
+    "current": "Cyfredol",
+    "overdue": "Wedi mynd heibio'r dyddiad",
+    "unknown": "Dim dyddiad wedi'i gofnodi",
+    "none": "Does gennych chi ddim adolygiadau wedi'u cofnodi eto.",
+    "complete": "Cyflawn",
+    "open": "Agor adolygiad",
+    "periodStart": "Y flwyddyn i ddod yn dechrau",
+    "periodEnd": "Y flwyddyn i ddod yn gorffen",
+    "back": "Yn ôl i fy adolygiadau",
+    "version": "Fersiwn {version}",
+    "completedOn": "Cwblhawyd ar",
+    "values": "Sgwrs am werthoedd ac ymddygiadau",
+    "wellbeing": "A gynigiwyd sgwrs am les?",
+    "wellbeingHint": "Ie neu na yn unig. Peidiwch ag ysgrifennu'r hyn a ddywedwyd.",
+    "yes": "Ie",
+    "no": "Na",
+    "needs": "Anghenion datblygu",
+    "need": "Angen",
+    "addNeed": "Ychwanegu angen",
+    "objectives": "Amcanion ar gyfer y flwyddyn i ddod",
+    "objectivesHint": "Dyma'r nodau yng nghyfnod yr adolygiad hwn. Mae llofnodi yn rhewi'r rhestr.",
+    "noObjectives": "Dim amcanion yn y cyfnod hwn.",
+    "addObjective": "Ychwanegu amcan",
+    "frozen": "Dyma'r amcanion fel yr oeddent adeg y llofnod cyntaf.",
+    "signatures": "Llofnodion",
+    "reviewer": "Adolygydd",
+    "reviewee": "Person a adolygwyd",
+    "notSigned": "Heb lofnodi",
+    "signHint": "Mae llofnodi yn rhewi'r fersiwn hon. Fersiwn newydd yw cywiriad diweddarach.",
+    "sign": "Llofnodi'r fersiwn hon",
+    "comment": "Eich sylw",
+    "correct": "Dechrau cywiriad",
+    "correctHint": "Mae hyn yn creu fersiwn newydd i'w llofnodi. Cedwir y fersiwn a lofnodwyd, ac nid yw dyddiad yr adolygiad nesaf yn symud.",
+    "earlier": "Fersiynau cynharach",
+    "rollupTitle": "Adolygiadau datblygu yn ôl adran",
+    "rollupNone": "Dim pobl wedi'u cofnodi."
   }
 }

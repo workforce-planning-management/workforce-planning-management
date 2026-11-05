@@ -170,7 +170,8 @@ adds what is missing and says how the pieces assemble.
 
 ### WPM-R172 — Annual reviews and the personal development review (PADR)
 
-- **A review has a kind**: `performance` (the existing review) or `padr`. A PADR records objectives for the year ahead,
+- **A review has a kind**: `performance` (the existing review) or `padr`. A PADR records objectives for the year ahead, which
+  are the person's goals in the PADR's period (WPM-R225),
   development needs (each may link to a development plan item), a summary of the values and behaviours conversation, whether a
   wellbeing conversation was **offered** (yes or no; never what was said, WPM-D73 spirit), and two sign-offs.
 - **Complete means both signed.** The reviewer and the reviewee each sign with a date; the reviewee may add a comment. Signed
@@ -180,6 +181,14 @@ adds what is missing and says how the pieces assemble.
 - **Views.** The person and their managers up the chain see the PADR (review content stays high sensitivity, ABAC-scoped and
   audited on read, as today). Managers see their team's due and overdue by name; HR's roll-up is counts by department with the
   floor.
+- **WPM-D176 A PADR stands on its own (chosen in the build, 2026-11-05).** A PADR belongs to no review cycle, because it falls
+  due twelve months after the person's last one and not on a calendar HR sets; each version carries its own period for the year
+  ahead. A manager in the person's chain opens it and becomes its reviewer, and a person has one open at a time. It is written
+  under `/api/me` by the reviewer and the reviewee. Managers up the chain read it; **HR reads counts and not content**, which is
+  what this requirement's views say, and narrower than a performance review. Signing needs the wellbeing question answered, yes
+  or no. A signature is dated by the server. The reviewee's comment is not content, so it stays open after signing. A
+  correction copies the latest version into a new unsigned one and **never moves the due date**: the clock runs from the day the
+  first version was completed, or a correction could postpone the next PADR.
 
 ### WPM-R173 — Readiness for the next pay step
 

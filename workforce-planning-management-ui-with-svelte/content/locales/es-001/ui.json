@@ -112,7 +112,11 @@
     "requests": "Mis solicitudes 360"
   },
   "notif": {
-    "markRead": "Marcar leída"
+    "markRead": "Marcar leída",
+    "waitingForYou": "Pendiente de usted",
+    "goalWaiting": "Un objetivo espera su aprobación.",
+    "padrOpened": "Se ha abierto con usted una evaluación de desarrollo personal.",
+    "padrToSign": "Una evaluación de desarrollo personal espera su firma."
   },
   "erg": {
     "title": "Evaluaciones ergonómicas",
@@ -1552,7 +1556,9 @@
     "statutoryDefaults": "Valores legales por defecto — WPM",
     "myPayslips": "Mis nóminas — WPM",
     "myDevelopment": "Mis planes de desarrollo — WPM",
-    "myGoals": "Mis objetivos — WPM"
+    "myGoals": "Mis objetivos — WPM",
+    "myPadrs": "Mis evaluaciones de desarrollo — WPM",
+    "padr": "Evaluación de desarrollo — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -3153,6 +3159,61 @@
     "record": "Registrar",
     "rollupTitle": "Objetivos por departamento",
     "withheld": "Retenido: muy pocas personas",
-    "rollupNone": "Aún no hay objetivos."
+    "rollupNone": "Aún no hay objetivos.",
+    "waitingCount": "Esperando su aprobación: {count}",
+    "noManager": "No tiene un responsable registrado, así que nadie puede aprobar esto todavía. Pida a RR. HH. que añada uno.",
+    "noneForPerson": "Aún no hay objetivos.",
+    "proposeFor": "Proponer un objetivo para esta persona",
+    "change": "Modificar esta propuesta",
+    "changeHint": "Si la modifica, la otra persona tendrá que aprobar su versión.",
+    "saveChange": "Guardar el cambio",
+    "links": "Enlaces (opcional)",
+    "buildsSkill": "Habilidad que desarrolla",
+    "planStep": "Paso del plan de desarrollo",
+    "alignsTo": "Se alinea con",
+    "alignsHint": "Una referencia a un objetivo que se gestiona en otro lugar, como objective:Q3-reliability. Se muestra tal como está escrita y nunca se abre."
+  },
+  "padr": {
+    "link": "Mis evaluaciones de desarrollo",
+    "title": "Evaluación de desarrollo personal",
+    "hint": "Una conversación anual con su responsable sobre el año que viene. Queda completa cuando ambos han firmado.",
+    "mine": "Mis evaluaciones",
+    "nextDue": "Próxima prevista",
+    "current": "Al día",
+    "overdue": "Atrasada",
+    "unknown": "Sin fecha registrada",
+    "none": "Aún no tiene evaluaciones registradas.",
+    "complete": "Completa",
+    "open": "Abrir una evaluación",
+    "periodStart": "El próximo año empieza",
+    "periodEnd": "El próximo año termina",
+    "back": "Volver a mis evaluaciones",
+    "version": "Versión {version}",
+    "completedOn": "Completada el",
+    "values": "Conversación sobre valores y comportamientos",
+    "wellbeing": "¿Se ofreció una conversación sobre bienestar?",
+    "wellbeingHint": "Solo sí o no. No anote lo que se dijo.",
+    "yes": "Sí",
+    "no": "No",
+    "needs": "Necesidades de desarrollo",
+    "need": "Necesidad",
+    "addNeed": "Añadir una necesidad",
+    "objectives": "Objetivos para el próximo año",
+    "objectivesHint": "Son los objetivos del periodo de esta evaluación. La firma congela la lista.",
+    "noObjectives": "No hay objetivos en este periodo.",
+    "addObjective": "Añadir un objetivo",
+    "frozen": "Estos son los objetivos tal como estaban en la primera firma.",
+    "signatures": "Firmas",
+    "reviewer": "Evaluador",
+    "reviewee": "Persona evaluada",
+    "notSigned": "Sin firmar",
+    "signHint": "La firma congela esta versión. Una corrección posterior es una versión nueva.",
+    "sign": "Firmar esta versión",
+    "comment": "Su comentario",
+    "correct": "Iniciar una corrección",
+    "correctHint": "Esto crea una versión nueva para firmar. La versión firmada se conserva y la fecha de la próxima evaluación no cambia.",
+    "earlier": "Versiones anteriores",
+    "rollupTitle": "Evaluaciones de desarrollo por departamento",
+    "rollupNone": "No hay personas registradas."
   }
 }

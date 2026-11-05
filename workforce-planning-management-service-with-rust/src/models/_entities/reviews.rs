@@ -14,7 +14,10 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub pid: Uuid,
-    pub cycle_pid: Uuid,
+    /// `None` for a PADR, which belongs to no cycle (WPM-D176).
+    pub cycle_pid: Option<Uuid>,
+    /// `performance` or `padr` (WPM-R172).
+    pub kind: String,
     pub worker_pid: Uuid,
     pub reviewer_ref: String,
     pub status: String,

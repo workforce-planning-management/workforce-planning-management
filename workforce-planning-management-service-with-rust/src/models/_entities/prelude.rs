@@ -92,6 +92,7 @@ pub use super::oversight_pack_withdrawals::Entity as OversightPackWithdrawals;
 pub use super::oversight_packs::Entity as OversightPacks;
 pub use super::oversight_positions::Entity as OversightPositions;
 pub use super::oversight_readings::Entity as OversightReadings;
+pub use super::padr_versions::Entity as PadrVersions;
 pub use super::partner_commitments::Entity as PartnerCommitments;
 pub use super::pay_assessment_records::Entity as PayAssessmentRecords;
 pub use super::pay_categories::Entity as PayCategories;

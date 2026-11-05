@@ -27,6 +27,7 @@ impl ActiveModelBehavior for super::_entities::payslip_queries::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::development_plan_benefits::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::learning_budgets::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::worker_goals::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::padr_versions::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::goal_measures::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::goal_check_ins::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::review_goal_outcomes::ActiveModel {}
@@ -108,7 +109,24 @@ find_active_by_pid!(find_shift_assignment, shift_assignments);
 find_active_by_pid!(find_benefit_plan, benefit_plans);
 find_active_by_pid!(find_benefit_enrollment, benefit_enrollments);
 find_active_by_pid!(find_review_cycle, review_cycles);
-find_active_by_pid!(find_review, reviews);
+
+/// Find a live performance review by public id. A PADR is a review too, and it answers only on its own routes
+/// ([`crate::controllers::padr`]): none of the performance lifecycle applies to it (WPM-D176).
+///
+/// # Errors
+///
+/// [`Error::NotFound`] when absent, soft-deleted or a PADR; any query error otherwise.
+pub async fn find_review<C: ConnectionTrait>(db: &C, pid: Uuid) -> Result<reviews::Model> {
+    reviews::Entity::find()
+        .filter(reviews::Column::Pid.eq(pid))
+        .filter(reviews::Column::Kind.eq("performance"))
+        .filter(reviews::Column::DeletedAt.is_null())
+        .one(db)
+        .await
+        .map_err(|e| Error::Model(ModelError::from(e)))?
+        .ok_or(Error::NotFound)
+}
+
 find_active_by_pid!(find_training_enrollment, training_enrollments);
 find_active_by_pid!(find_succession_plan, succession_plans);
 find_active_by_pid!(find_payroll_run, payroll_runs);

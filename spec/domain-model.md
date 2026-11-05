@@ -402,7 +402,7 @@ section 4)
 - `workers.date_of_birth` (WPM-R169, WPM-D114). **LearningRequirement** (subject, basis `statutory | mandatory`, source, refresher
   months, courses, audience) and **LearningCompletion** (worker, requirement, date, source organization) (WPM-R170). **Qualification**
   (worker, kind, title, awarding body, framework level, awarded, expires, `declared | verified`, verifier, evidence reference; no
-  certificate) (WPM-R171). Reviews gain a `kind` (`performance | padr`) and two sign-offs, with **PadrVersion** (WPM-R172).
+  certificate) (WPM-R171). Reviews gain a `kind` (`performance | padr`), and a PADR has no cycle (WPM-D176). **PadrVersion** (`padr_versions`, WPM-R172) holds each version's content, two sign-offs and, once signed, the objectives as they stood.
   **FormalProcessFlag** (worker, live, date; no detail) (WPM-R173, WPM-D120).
 - **PayrollDetails** (`payroll_details`: payroll number, frequency, tax code, NI category, starter declaration, provider reference; **no
   bank details, no national insurance number**, WPM-D115), **DeductionInstruction**, **PensionScheme** + **PensionTier** +

@@ -112,7 +112,11 @@
     "requests": "Meine 360-Anfragen"
   },
   "notif": {
-    "markRead": "Als gelesen markieren"
+    "markRead": "Als gelesen markieren",
+    "waitingForYou": "Wartet auf Sie",
+    "goalWaiting": "Ein Ziel wartet auf Ihre Zustimmung.",
+    "padrOpened": "Ein Entwicklungsgespräch wurde mit Ihnen eröffnet.",
+    "padrToSign": "Ein Entwicklungsgespräch wartet auf Ihre Unterschrift."
   },
   "erg": {
     "title": "Ergonomie-Bewertungen",
@@ -1545,7 +1549,9 @@
     "statutoryDefaults": "Gesetzliche Voreinstellungen — WPM",
     "myPayslips": "Meine Gehaltsabrechnungen — WPM",
     "myDevelopment": "Meine Entwicklungspläne — WPM",
-    "myGoals": "Meine Ziele — WPM"
+    "myGoals": "Meine Ziele — WPM",
+    "myPadrs": "Meine Entwicklungsgespräche — WPM",
+    "padr": "Entwicklungsgespräch — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -3144,6 +3150,61 @@
     "record": "Erfassen",
     "rollupTitle": "Ziele nach Abteilung",
     "withheld": "Zurückgehalten: zu wenige Personen",
-    "rollupNone": "Noch keine Ziele."
+    "rollupNone": "Noch keine Ziele.",
+    "waitingCount": "Wartet auf Ihre Zustimmung: {count}",
+    "noManager": "Sie haben keine Führungskraft hinterlegt, daher kann niemand dies zustimmen. Bitten Sie die Personalabteilung, eine einzutragen.",
+    "noneForPerson": "Noch keine Ziele.",
+    "proposeFor": "Ein Ziel für diese Person vorschlagen",
+    "change": "Diesen Vorschlag ändern",
+    "changeHint": "Wenn Sie ihn ändern, muss die andere Person Ihrer Fassung zustimmen.",
+    "saveChange": "Änderung speichern",
+    "links": "Verknüpfungen (optional)",
+    "buildsSkill": "Fähigkeit, die dadurch aufgebaut wird",
+    "planStep": "Schritt im Entwicklungsplan",
+    "alignsTo": "Bezieht sich auf",
+    "alignsHint": "Ein Verweis auf ein Ziel, das an anderer Stelle geführt wird, zum Beispiel objective:Q3-reliability. Er wird so angezeigt, wie er geschrieben wurde, und nie geöffnet."
+  },
+  "padr": {
+    "link": "Meine Entwicklungsgespräche",
+    "title": "Jährliches Entwicklungsgespräch",
+    "hint": "Ein jährliches Gespräch mit Ihrer Führungskraft über das kommende Jahr. Es ist abgeschlossen, wenn Sie beide unterschrieben haben.",
+    "mine": "Meine Gespräche",
+    "nextDue": "Nächstes fällig",
+    "current": "Auf dem aktuellen Stand",
+    "overdue": "Überfällig",
+    "unknown": "Kein Datum hinterlegt",
+    "none": "Es sind noch keine Gespräche für Sie hinterlegt.",
+    "complete": "Abgeschlossen",
+    "open": "Gespräch eröffnen",
+    "periodStart": "Das kommende Jahr beginnt",
+    "periodEnd": "Das kommende Jahr endet",
+    "back": "Zurück zu meinen Gesprächen",
+    "version": "Version {version}",
+    "completedOn": "Abgeschlossen am",
+    "values": "Gespräch über Werte und Verhalten",
+    "wellbeing": "Wurde ein Gespräch zum Wohlbefinden angeboten?",
+    "wellbeingHint": "Nur Ja oder Nein. Notieren Sie nicht, was gesagt wurde.",
+    "yes": "Ja",
+    "no": "Nein",
+    "needs": "Entwicklungsbedarf",
+    "need": "Bedarf",
+    "addNeed": "Bedarf hinzufügen",
+    "objectives": "Ziele für das kommende Jahr",
+    "objectivesHint": "Dies sind die Ziele im Zeitraum dieses Gesprächs. Mit der Unterschrift wird die Liste eingefroren.",
+    "noObjectives": "Keine Ziele in diesem Zeitraum.",
+    "addObjective": "Ziel hinzufügen",
+    "frozen": "Dies sind die Ziele, wie sie bei der ersten Unterschrift waren.",
+    "signatures": "Unterschriften",
+    "reviewer": "Gesprächsführende Person",
+    "reviewee": "Beurteilte Person",
+    "notSigned": "Nicht unterschrieben",
+    "signHint": "Mit der Unterschrift wird diese Version eingefroren. Eine spätere Korrektur ist eine neue Version.",
+    "sign": "Diese Version unterschreiben",
+    "comment": "Ihr Kommentar",
+    "correct": "Korrektur beginnen",
+    "correctHint": "Dadurch entsteht eine neue Version zum Unterschreiben. Die unterschriebene Version bleibt erhalten, und das Fälligkeitsdatum des nächsten Gesprächs verschiebt sich nicht.",
+    "earlier": "Frühere Versionen",
+    "rollupTitle": "Entwicklungsgespräche nach Abteilung",
+    "rollupNone": "Keine Personen hinterlegt."
   }
 }

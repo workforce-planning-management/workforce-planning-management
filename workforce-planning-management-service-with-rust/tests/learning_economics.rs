@@ -332,6 +332,31 @@ async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
             .add_header("authorization", me.clone())
             .await
             .assert_status_ok();
+        // HR states one and cannot delete it: the policy gives HR no delete. An administrator can, once.
+        let another: Value = request
+            .post(&format!("/api/development-plans/{plan}/benefits"))
+            .add_header("authorization", hr.clone())
+            .json(&json!({ "year": 2, "amount_minor": 100_000, "currency": "GBP", "source": "A second estimate" }))
+            .await
+            .json();
+        let another = another["pid"].as_str().unwrap();
+        let not_hr = request
+            .delete(&format!("/api/development-plan-benefits/{another}"))
+            .add_header("authorization", hr.clone())
+            .await;
+        assert_eq!(not_hr.status_code(), 403);
+        seat(&ctx, "admin-econ", &org).await;
+        let admin = bearer(sign_as(&kid, "admin-econ", &[("access", &["admin"])]));
+        request
+            .delete(&format!("/api/development-plan-benefits/{another}"))
+            .add_header("authorization", admin.clone())
+            .await
+            .assert_status_ok();
+        let gone = request
+            .delete(&format!("/api/development-plan-benefits/{another}"))
+            .add_header("authorization", admin.clone())
+            .await;
+        assert_eq!(gone.status_code(), 404);
     })
     .await;
 }

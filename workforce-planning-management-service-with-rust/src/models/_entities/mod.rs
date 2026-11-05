@@ -102,6 +102,7 @@ pub mod oversight_pack_withdrawals;
 pub mod oversight_packs;
 pub mod oversight_positions;
 pub mod oversight_readings;
+pub mod padr_versions;
 pub mod partner_commitments;
 pub mod path_enrollments;
 pub mod pay_assessment_records;

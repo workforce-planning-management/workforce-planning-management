@@ -112,7 +112,11 @@
     "requests": "我的360请求"
   },
   "notif": {
-    "markRead": "标为已读"
+    "markRead": "标为已读",
+    "waitingForYou": "等待您处理",
+    "goalWaiting": "有一个目标正等待您确认。",
+    "padrOpened": "已与您开启一次个人发展评估。",
+    "padrToSign": "一次个人发展评估正等待您签字。"
   },
   "erg": {
     "title": "工效学评估",
@@ -1538,7 +1542,9 @@
     "statutoryDefaults": "法定默认值 — WPM",
     "myPayslips": "我的工资单 — WPM",
     "myDevelopment": "我的发展计划 — WPM",
-    "myGoals": "我的目标 — WPM"
+    "myGoals": "我的目标 — WPM",
+    "myPadrs": "我的发展评估 — WPM",
+    "padr": "发展评估 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -3135,6 +3141,61 @@
     "record": "记录",
     "rollupTitle": "各部门目标",
     "withheld": "已隐藏:人数过少",
-    "rollupNone": "还没有目标。"
+    "rollupNone": "还没有目标。",
+    "waitingCount": "等待您确认:{count}",
+    "noManager": "您没有登记的主管,因此目前无人可以确认此目标。请联系人力资源部门添加主管。",
+    "noneForPerson": "还没有目标。",
+    "proposeFor": "为此人提出一个目标",
+    "change": "修改此提议",
+    "changeHint": "如果您修改,对方需要确认您的版本。",
+    "saveChange": "保存修改",
+    "links": "链接(可选)",
+    "buildsSkill": "由此培养的技能",
+    "planStep": "发展计划中的步骤",
+    "alignsTo": "对齐到",
+    "alignsHint": "指向其他地方所维护目标的引用,例如 objective:Q3-reliability。它按原样显示,且不会被打开。"
+  },
+  "padr": {
+    "link": "我的发展评估",
+    "title": "个人发展评估",
+    "hint": "与您的主管就来年进行的年度谈话。双方都签字后即告完成。",
+    "mine": "我的评估",
+    "nextDue": "下次到期",
+    "current": "已是最新",
+    "overdue": "已逾期",
+    "unknown": "没有登记日期",
+    "none": "您还没有登记在册的评估。",
+    "complete": "已完成",
+    "open": "开启评估",
+    "periodStart": "来年开始于",
+    "periodEnd": "来年结束于",
+    "back": "返回我的评估",
+    "version": "版本 {version}",
+    "completedOn": "完成于",
+    "values": "价值观与行为谈话",
+    "wellbeing": "是否提供了关于身心健康的谈话?",
+    "wellbeingHint": "只填是或否。请勿记录谈话内容。",
+    "yes": "是",
+    "no": "否",
+    "needs": "发展需求",
+    "need": "需求",
+    "addNeed": "添加需求",
+    "objectives": "来年的目标",
+    "objectivesHint": "这些是本次评估期内的目标。签字后列表将被冻结。",
+    "noObjectives": "此期间没有目标。",
+    "addObjective": "添加目标",
+    "frozen": "这些是首次签字时的目标。",
+    "signatures": "签字",
+    "reviewer": "评估人",
+    "reviewee": "被评估人",
+    "notSigned": "未签字",
+    "signHint": "签字会冻结此版本。之后的更正将生成新版本。",
+    "sign": "签署此版本",
+    "comment": "您的评论",
+    "correct": "开始更正",
+    "correctHint": "这会生成一个待签字的新版本。已签字的版本会保留,下次评估的到期日期不会改变。",
+    "earlier": "早期版本",
+    "rollupTitle": "按部门划分的发展评估",
+    "rollupNone": "没有登记在册的人员。"
   }
 }

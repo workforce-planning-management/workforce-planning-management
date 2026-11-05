@@ -193,6 +193,26 @@ pub struct RollupRow {
     pub status: String,
 }
 
+/// Whether a goal is an objective of a PADR with this period (WPM-R225): it overlaps, and it has not been withdrawn.
+#[must_use]
+pub fn is_objective(
+    status: &str,
+    goal: (NaiveDate, NaiveDate),
+    padr: (NaiveDate, NaiveDate),
+) -> bool {
+    status != "withdrawn" && overlaps(goal, padr)
+}
+
+/// Who a proposal waits for (WPM-R232): the person, for a manager's proposal; their direct manager, for theirs. A person with no
+/// manager on record has nobody to tell, so the answer is `None`, never a guess.
+#[must_use]
+pub const fn waiting_on(by: Party, worker: Uuid, manager: Option<Uuid>) -> Option<Uuid> {
+    match by {
+        Party::Worker => manager,
+        Party::Manager => Some(worker),
+    }
+}
+
 /// One department's counts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct RollupLine {
@@ -249,6 +269,39 @@ mod tests {
             has_number: number,
             has_done: done,
         }
+    }
+
+    #[test]
+    fn a_withdrawn_goal_is_not_an_objective_and_neither_is_one_outside_the_period() {
+        let padr = (day(1, 1), day(12, 31));
+        assert!(is_objective("agreed", (day(3, 1), day(4, 1)), padr));
+        assert!(is_objective("proposed", (day(12, 31), day(12, 31)), padr));
+        assert!(!is_objective("withdrawn", (day(3, 1), day(4, 1)), padr));
+        let before = (
+            NaiveDate::from_ymd_opt(2025, 1, 1).expect("a date"),
+            NaiveDate::from_ymd_opt(2025, 12, 31).expect("a date"),
+        );
+        assert!(!is_objective("agreed", before, padr));
+    }
+
+    #[test]
+    fn a_proposal_waits_for_the_other_party() {
+        let worker = Uuid::from_u128(1);
+        let manager = Uuid::from_u128(2);
+        assert_eq!(
+            waiting_on(Party::Worker, worker, Some(manager)),
+            Some(manager)
+        );
+        assert_eq!(
+            waiting_on(Party::Manager, worker, Some(manager)),
+            Some(worker)
+        );
+        assert_eq!(
+            waiting_on(Party::Worker, worker, None),
+            None,
+            "nobody to tell, and no guess"
+        );
+        assert_eq!(waiting_on(Party::Manager, worker, None), Some(worker));
     }
 
     fn rows(department: &str, people: u128) -> Vec<RollupRow> {

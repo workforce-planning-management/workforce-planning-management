@@ -4796,8 +4796,14 @@ export interface GoalView {
     status: string;
     proposed_by: "worker" | "manager";
     agreed_on: string | null;
+    skill_pid: string | null;
+    plan_item_pid: string | null;
     aligns_to: string | null;
   };
+  /** The linked skill's name; a link whose target has gone shows nothing. */
+  skill_name: string | null;
+  /** The skill the linked plan step builds. */
+  plan_step: string | null;
   measures: Array<{
     pid: string;
     name: string;
@@ -4819,7 +4825,7 @@ export interface GoalView {
 export function workerGoals(
   workerPid: string,
   init?: FetchLike,
-): Promise<{ worker_pid: string; goals: GoalView[] }> {
+): Promise<{ worker_pid: string; has_manager: boolean; goals: GoalView[] }> {
   return api(`/workers/${workerPid}/goals`, init);
 }
 
@@ -4832,12 +4838,15 @@ export function myTeamGoals(init?: FetchLike): Promise<TeamGoals> {
   return api("/me/team-goals", init);
 }
 
-/** Propose a goal of your own. */
-export function proposeMyGoal(goal: {
+/** A goal as proposed or changed (WPM-R224). `aligns_to` is a reference that is never opened (WPM-D166). */
+export interface GoalBody {
   title: string;
   description?: string;
   period_start: string;
   period_end: string;
+  skill_pid?: string;
+  plan_item_pid?: string;
+  aligns_to?: string;
   measures: Array<{
     name: string;
     kind: "number" | "milestone";
@@ -4845,8 +4854,27 @@ export function proposeMyGoal(goal: {
     start_value?: number;
     target_value?: number;
   }>;
-}): Promise<{ pid: string }> {
+}
+
+/** Propose a goal of your own. */
+export function proposeMyGoal(goal: GoalBody): Promise<{ pid: string }> {
   return api("/me/goals", { method: "POST", body: goal });
+}
+
+/** Propose a goal for someone in your reporting line. */
+export function proposeGoalFor(
+  workerPid: string,
+  goal: GoalBody,
+): Promise<{ pid: string }> {
+  return api(`/me/reports/${workerPid}/goals`, { method: "POST", body: goal });
+}
+
+/** Change a goal until it is agreed. A change to the other person's proposal comes back to them to agree (WPM-D177). */
+export function editGoal(
+  pid: string,
+  goal: GoalBody,
+): Promise<{ pid: string }> {
+  return api(`/me/goals/${pid}`, { method: "PUT", body: goal });
 }
 
 /** Agree a goal the other party proposed. */
@@ -4907,6 +4935,154 @@ export function recordGoalOutcome(
     method: "PUT",
     body: { outcome },
   });
+}
+
+// ─── The personal development review (WPM-R172) ─────────────────────
+
+/** Where someone stands against the twelve-month cycle. `unknown` has no date, and none is invented. */
+export interface PadrDue {
+  standing: "current" | "overdue" | "unknown";
+  due_on: string | null;
+}
+
+/** One PADR in a list: where it has got to, and no content. */
+export interface PadrLine {
+  pid: string;
+  status: string;
+  completed_on: string | null;
+  version: number | null;
+  period_start: string | null;
+  period_end: string | null;
+}
+
+export interface MyPadrs {
+  worker_pid: string;
+  due: PadrDue;
+  padrs: PadrLine[];
+  team: Array<{
+    worker_pid: string;
+    display_name: string;
+    due: PadrDue;
+    padrs: PadrLine[];
+  }>;
+}
+
+export function myPadrs(init?: FetchLike): Promise<MyPadrs> {
+  return api("/me/padrs", init);
+}
+
+/** Open a PADR with someone in your reporting line. You become its reviewer. */
+export function openPadr(
+  workerPid: string,
+  period: { period_start: string; period_end: string },
+): Promise<{ pid: string }> {
+  return api(`/me/reports/${workerPid}/padrs`, {
+    method: "POST",
+    body: period,
+  });
+}
+
+export interface PadrNeed {
+  need: string;
+  plan_item_pid?: string | null;
+}
+
+/** A goal as a signed version keeps it. */
+export interface FrozenObjective {
+  pid: string;
+  title: string;
+  status: string;
+  period_start: string;
+  period_end: string;
+  measures: GoalView["measures"];
+}
+
+export interface PadrVersion {
+  frozen: boolean;
+  complete: boolean;
+  version: {
+    pid: string;
+    version: number;
+    period_start: string;
+    period_end: string;
+    values_summary: string | null;
+    wellbeing_offered: boolean | null;
+    development_needs: PadrNeed[];
+    reviewer_signed_on: string | null;
+    reviewee_signed_on: string | null;
+    reviewee_comment: string | null;
+    objectives: FrozenObjective[] | null;
+  };
+}
+
+export interface PadrView {
+  pid: string;
+  worker_pid: string;
+  display_name: string;
+  role: "reviewee" | "reviewer" | "manager";
+  status: string;
+  completed_on: string | null;
+  versions: PadrVersion[];
+  /** The live goals of an unsigned version's period; a signed version holds its own. */
+  objectives: GoalView[];
+}
+
+export function getPadr(pid: string, init?: FetchLike): Promise<PadrView> {
+  return api(`/me/padrs/${pid}`, init);
+}
+
+export function editPadr(
+  pid: string,
+  body: {
+    period_start: string;
+    period_end: string;
+    values_summary?: string;
+    wellbeing_offered: boolean | null;
+    development_needs: PadrNeed[];
+  },
+): Promise<{ pid: string }> {
+  return api(`/me/padrs/${pid}`, { method: "PUT", body });
+}
+
+export function signPadr(
+  pid: string,
+): Promise<{ pid: string; complete: boolean }> {
+  return api(`/me/padrs/${pid}/sign`, { method: "POST" });
+}
+
+export function commentOnPadr(
+  pid: string,
+  comment: string,
+): Promise<{ pid: string }> {
+  return api(`/me/padrs/${pid}/comment`, { method: "POST", body: { comment } });
+}
+
+/** A correction: a new unsigned version, with the signed one kept. */
+export function correctPadr(
+  pid: string,
+): Promise<{ pid: string; version: number }> {
+  return api(`/me/padrs/${pid}/versions`, { method: "POST" });
+}
+
+/** People by where they stand, by department, with the floor. Counts only. */
+export interface PadrRollupView {
+  organization: string;
+  departments: Array<{
+    department: string;
+    by_status: Record<string, number> | null;
+  }>;
+  floor: number;
+  derivation: string;
+}
+
+export function padrRollup(
+  organization: string,
+  init?: FetchLike,
+): Promise<PadrRollupView> {
+  return api(
+    `/padrs/rollup?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
 }
 
 /** Goals by status and department, with the floor. Counts only. */

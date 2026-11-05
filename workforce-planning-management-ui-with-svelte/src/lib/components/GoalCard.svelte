@@ -6,7 +6,8 @@
   import { formatDate, formatDateRange } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { agreeGoal, checkInGoal, moveGoal, type GoalView } from "#lib/api/wpm.js";
+  import GoalForm from "#lib/components/GoalForm.svelte";
+  import { agreeGoal, checkInGoal, editGoal, moveGoal, type GoalBody, type GoalView } from "#lib/api/wpm.js";
   import { t, tv } from "#lib/i18n.svelte.js";
 
   let {
@@ -32,6 +33,7 @@
   let note = $state("");
   let measure = $state("");
   let current = $state<number | null>(null);
+  let changing = $state(false);
 
   const shown = (value: number | null) => value ?? "—";
 
@@ -43,6 +45,12 @@
     } catch (cause) {
       error = errorText(cause);
     }
+  }
+
+  async function change(body: GoalBody) {
+    await editGoal(goal.pid, body);
+    changing = false;
+    await onchange();
   }
 
   function checkIn(event: SubmitEvent) {
@@ -66,6 +74,9 @@
     · {formatDateRange(goal.period_start, goal.period_end)}
   </p>
   {#if goal.description}<p>{goal.description}</p>{/if}
+  {#if view.skill_name}<p class="muted" data-testid="goal-skill">{t("goals.buildsSkill")}: {view.skill_name}</p>{/if}
+  {#if view.plan_step}<p class="muted" data-testid="goal-plan-step">{t("goals.planStep")}: {view.plan_step}</p>{/if}
+  {#if goal.aligns_to}<p class="muted" data-testid="goal-aligns">{t("goals.alignsTo")}: {goal.aligns_to}</p>{/if}
   {#if error}<ErrorNote testid="goal-error" message={error} />{/if}
 
   {#if view.measures.length > 0}
@@ -94,6 +105,16 @@
     </button>
   {:else if goal.status === "proposed"}
     <p class="muted" data-testid="goal-waiting">{t("goals.waiting")}</p>
+  {/if}
+
+  {#if goal.status === "proposed"}
+    <details bind:open={changing} data-testid="goal-change">
+      <summary>{t("goals.change")}</summary>
+      {#if canAgree}<p class="muted">{t("goals.changeHint")}</p>{/if}
+      {#if changing}
+        <GoalForm workerPid={goal.worker_pid} initial={view} submitLabel={t("goals.saveChange")} submit={change} />
+      {/if}
+    </details>
   {/if}
 
   {#if moves.length > 0}

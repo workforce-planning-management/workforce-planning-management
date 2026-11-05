@@ -64,7 +64,7 @@ applied to HR.
 | the person-centric record (WPM-R167) | high — the person sees all; a privileged caller sees rows in organizations they can read and, for others, only the service total and that another employment exists (WPM-D113) |
 | date of birth (WPM-R169) | high — the person, HR and payroll; never a manager; never read by scoring (WPM-D114) |
 | statutory and mandatory learning, qualifications (WPM-R170–R171) | medium — the person, their managers by name, HR; roll-ups with the floor |
-| PADR content (WPM-R172) | high — as review content |
+| PADR content (WPM-R172) | high — the person, the reviewer and managers in the chain; **HR reads the roll-up's counts and no content**, payroll nothing; each read audited with the pid (WPM-D176) |
 | a formal-process flag (WPM-R173) | high — HR only; yes or no and a date, never what (WPM-D120) |
 | individual goals, measures, check-ins and their review outcomes (WPM-R224 to WPM-R226) | high — the person, a manager in their chain and HR with a seat; not payroll; each read audited with the goal's pid and no content; HR reads and does not agree |
 | a plan's cost of hours and viability, and train or hire (WPM-R228 to WPM-R230) | high — worked from pay, so they follow the salary mask: the plan's worker, HR masked, an unmasked privileged reader; never a line manager; an unmasked read of someone else's records `salary_read` |

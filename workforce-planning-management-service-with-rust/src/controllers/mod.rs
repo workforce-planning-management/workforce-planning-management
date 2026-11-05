@@ -71,6 +71,7 @@ pub mod organizations;
 pub mod oversight;
 mod oversight_derived;
 pub mod oversight_packs;
+pub mod padr;
 pub mod pay_assessment;
 pub mod pay_information;
 pub mod pay_positions;

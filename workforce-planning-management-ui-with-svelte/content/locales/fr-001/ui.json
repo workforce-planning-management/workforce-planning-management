@@ -112,7 +112,11 @@
     "requests": "Mes demandes 360"
   },
   "notif": {
-    "markRead": "Marquer comme lue"
+    "markRead": "Marquer comme lue",
+    "waitingForYou": "En attente de votre action",
+    "goalWaiting": "Un objectif attend votre accord.",
+    "padrOpened": "Un entretien de développement personnel a été ouvert avec vous.",
+    "padrToSign": "Un entretien de développement personnel attend votre signature."
   },
   "erg": {
     "title": "Évaluations ergonomiques",
@@ -1552,7 +1556,9 @@
     "statutoryDefaults": "Valeurs légales par défaut — WPM",
     "myPayslips": "Mes bulletins de paie — WPM",
     "myDevelopment": "Mes plans de développement — WPM",
-    "myGoals": "Mes objectifs — WPM"
+    "myGoals": "Mes objectifs — WPM",
+    "myPadrs": "Mes entretiens de développement — WPM",
+    "padr": "Entretien de développement — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -3153,6 +3159,61 @@
     "record": "Enregistrer",
     "rollupTitle": "Objectifs par service",
     "withheld": "Masqué : trop peu de personnes",
-    "rollupNone": "Pas encore d'objectifs."
+    "rollupNone": "Pas encore d'objectifs.",
+    "waitingCount": "En attente de votre accord : {count}",
+    "noManager": "Aucun responsable n’est enregistré pour vous, personne ne peut donc valider cet objectif pour l’instant. Demandez aux RH d’en ajouter un.",
+    "noneForPerson": "Aucun objectif pour le moment.",
+    "proposeFor": "Proposer un objectif pour cette personne",
+    "change": "Modifier cette proposition",
+    "changeHint": "Si vous la modifiez, l’autre personne devra donner son accord sur votre version.",
+    "saveChange": "Enregistrer la modification",
+    "links": "Liens (facultatif)",
+    "buildsSkill": "Compétence développée",
+    "planStep": "Étape du plan de développement",
+    "alignsTo": "Lié à",
+    "alignsHint": "Une référence à un objectif géré ailleurs, par exemple objective:Q3-reliability. Elle est affichée telle qu’elle est écrite et n’est jamais ouverte."
+  },
+  "padr": {
+    "link": "Mes entretiens de développement",
+    "title": "Entretien de développement personnel",
+    "hint": "Un échange annuel avec votre responsable sur l’année à venir. Il est terminé lorsque vous avez tous deux signé.",
+    "mine": "Mes entretiens",
+    "nextDue": "Prochain à prévoir",
+    "current": "À jour",
+    "overdue": "En retard",
+    "unknown": "Aucune date enregistrée",
+    "none": "Vous n’avez encore aucun entretien enregistré.",
+    "complete": "Terminé",
+    "open": "Ouvrir un entretien",
+    "periodStart": "L’année à venir commence le",
+    "periodEnd": "L’année à venir se termine le",
+    "back": "Retour à mes entretiens",
+    "version": "Version {version}",
+    "completedOn": "Terminé le",
+    "values": "Échange sur les valeurs et les comportements",
+    "wellbeing": "Un échange sur le bien-être a-t-il été proposé ?",
+    "wellbeingHint": "Oui ou non uniquement. Ne notez pas ce qui a été dit.",
+    "yes": "Oui",
+    "no": "Non",
+    "needs": "Besoins de développement",
+    "need": "Besoin",
+    "addNeed": "Ajouter un besoin",
+    "objectives": "Objectifs pour l’année à venir",
+    "objectivesHint": "Ce sont les objectifs de la période de cet entretien. La signature fige la liste.",
+    "noObjectives": "Aucun objectif sur cette période.",
+    "addObjective": "Ajouter un objectif",
+    "frozen": "Ce sont les objectifs tels qu’ils étaient à la première signature.",
+    "signatures": "Signatures",
+    "reviewer": "Évaluateur",
+    "reviewee": "Personne évaluée",
+    "notSigned": "Non signé",
+    "signHint": "La signature fige cette version. Une correction ultérieure crée une nouvelle version.",
+    "sign": "Signer cette version",
+    "comment": "Votre commentaire",
+    "correct": "Démarrer une correction",
+    "correctHint": "Cela crée une nouvelle version à signer. La version signée est conservée et la date du prochain entretien ne change pas.",
+    "earlier": "Versions précédentes",
+    "rollupTitle": "Entretiens de développement par service",
+    "rollupNone": "Aucune personne enregistrée."
   }
 }

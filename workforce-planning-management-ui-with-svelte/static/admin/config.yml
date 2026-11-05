@@ -175,6 +175,10 @@ collections:
             i18n: true
             fields:
               - { name: "markRead", label: "Mark Read", widget: string, required: false, i18n: true }
+              - { name: "waitingForYou", label: "Waiting For You", widget: string, required: false, i18n: true }
+              - { name: "goalWaiting", label: "Goal Waiting", widget: string, required: false, i18n: true }
+              - { name: "padrOpened", label: "Padr Opened", widget: string, required: false, i18n: true }
+              - { name: "padrToSign", label: "Padr To Sign", widget: string, required: false, i18n: true }
           - name: "erg"
             label: "Erg"
             widget: object
@@ -2306,6 +2310,8 @@ collections:
               - { name: "myPayslips", label: "My Payslips", widget: string, required: false, i18n: true }
               - { name: "myDevelopment", label: "My Development", widget: string, required: false, i18n: true }
               - { name: "myGoals", label: "My Goals", widget: string, required: false, i18n: true }
+              - { name: "myPadrs", label: "My Padrs", widget: string, required: false, i18n: true }
+              - { name: "padr", label: "Padr", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -4237,4 +4243,64 @@ collections:
               - { name: "record", label: "Record", widget: string, required: false, i18n: true }
               - { name: "rollupTitle", label: "Rollup Title", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
+              - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }
+              - { name: "waitingCount", label: "Waiting Count", widget: string, required: false, i18n: true }
+              - { name: "noManager", label: "No Manager", widget: string, required: false, i18n: true }
+              - { name: "noneForPerson", label: "None For Person", widget: string, required: false, i18n: true }
+              - { name: "proposeFor", label: "Propose For", widget: string, required: false, i18n: true }
+              - { name: "change", label: "Change", widget: string, required: false, i18n: true }
+              - { name: "changeHint", label: "Change Hint", widget: string, required: false, i18n: true }
+              - { name: "saveChange", label: "Save Change", widget: string, required: false, i18n: true }
+              - { name: "links", label: "Links", widget: string, required: false, i18n: true }
+              - { name: "buildsSkill", label: "Builds Skill", widget: string, required: false, i18n: true }
+              - { name: "planStep", label: "Plan Step", widget: string, required: false, i18n: true }
+              - { name: "alignsTo", label: "Aligns To", widget: string, required: false, i18n: true }
+              - { name: "alignsHint", label: "Aligns Hint", widget: text, required: false, i18n: true }
+          - name: "padr"
+            label: "Padr"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "mine", label: "Mine", widget: string, required: false, i18n: true }
+              - { name: "nextDue", label: "Next Due", widget: string, required: false, i18n: true }
+              - { name: "current", label: "Current", widget: string, required: false, i18n: true }
+              - { name: "overdue", label: "Overdue", widget: string, required: false, i18n: true }
+              - { name: "unknown", label: "Unknown", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "complete", label: "Complete", widget: string, required: false, i18n: true }
+              - { name: "open", label: "Open", widget: string, required: false, i18n: true }
+              - { name: "periodStart", label: "Period Start", widget: string, required: false, i18n: true }
+              - { name: "periodEnd", label: "Period End", widget: string, required: false, i18n: true }
+              - { name: "back", label: "Back", widget: string, required: false, i18n: true }
+              - { name: "version", label: "Version", widget: string, required: false, i18n: true }
+              - { name: "completedOn", label: "Completed On", widget: string, required: false, i18n: true }
+              - { name: "values", label: "Values", widget: string, required: false, i18n: true }
+              - { name: "wellbeing", label: "Wellbeing", widget: string, required: false, i18n: true }
+              - { name: "wellbeingHint", label: "Wellbeing Hint", widget: string, required: false, i18n: true }
+              - { name: "yes", label: "Yes", widget: string, required: false, i18n: true }
+              - { name: "no", label: "No", widget: string, required: false, i18n: true }
+              - { name: "needs", label: "Needs", widget: string, required: false, i18n: true }
+              - { name: "need", label: "Need", widget: string, required: false, i18n: true }
+              - { name: "addNeed", label: "Add Need", widget: string, required: false, i18n: true }
+              - { name: "objectives", label: "Objectives", widget: string, required: false, i18n: true }
+              - { name: "objectivesHint", label: "Objectives Hint", widget: string, required: false, i18n: true }
+              - { name: "noObjectives", label: "No Objectives", widget: string, required: false, i18n: true }
+              - { name: "addObjective", label: "Add Objective", widget: string, required: false, i18n: true }
+              - { name: "frozen", label: "Frozen", widget: string, required: false, i18n: true }
+              - { name: "signatures", label: "Signatures", widget: string, required: false, i18n: true }
+              - { name: "reviewer", label: "Reviewer", widget: string, required: false, i18n: true }
+              - { name: "reviewee", label: "Reviewee", widget: string, required: false, i18n: true }
+              - { name: "notSigned", label: "Not Signed", widget: string, required: false, i18n: true }
+              - { name: "signHint", label: "Sign Hint", widget: string, required: false, i18n: true }
+              - { name: "sign", label: "Sign", widget: string, required: false, i18n: true }
+              - { name: "comment", label: "Comment", widget: string, required: false, i18n: true }
+              - { name: "correct", label: "Correct", widget: string, required: false, i18n: true }
+              - { name: "correctHint", label: "Correct Hint", widget: text, required: false, i18n: true }
+              - { name: "earlier", label: "Earlier", widget: string, required: false, i18n: true }
+              - { name: "rollupTitle", label: "Rollup Title", widget: string, required: false, i18n: true }
               - { name: "rollupNone", label: "Rollup None", widget: string, required: false, i18n: true }

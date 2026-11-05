@@ -566,6 +566,28 @@ fn add_governance_paths(document: &mut Value) {
         "/api/reviews/{pid}/individual-goals": {
             "get": { "tags": ["development"], "summary": "The goals of a review's period with the reviewer's and the reviewee's outcomes. A shared review answers from the snapshot it froze." }
         },
+        "/api/me/padrs": {
+            "get": { "tags": ["development"], "summary": "Your personal development reviews and when the next is due, and the same for everyone below you, by name. No content." }
+        },
+        "/api/padrs/rollup": {
+            "get": { "tags": ["development"], "summary": "People whose PADR is current, overdue or unknown, by department (?organization=), with the floor. Counts only." }
+        },
+        "/api/me/reports/{pid}/padrs": {
+            "post": { "tags": ["development"], "summary": "Open a PADR with someone in your reporting line, for a period. You become its reviewer, and a person has one open at a time." }
+        },
+        "/api/me/padrs/{pid}": {
+            "get": { "tags": ["development"], "summary": "One PADR with every version and its objectives: the person, the reviewer and managers in the chain, not HR. Audited." },
+            "put": { "tags": ["development"], "summary": "Change the latest version until someone signs it: the reviewer or the person." }
+        },
+        "/api/me/padrs/{pid}/sign": {
+            "post": { "tags": ["development"], "summary": "Sign the latest version, dated today. The first signature freezes its content and objectives, and both signatures complete it." }
+        },
+        "/api/me/padrs/{pid}/comment": {
+            "post": { "tags": ["development"], "summary": "The person's comment on the latest version, open after signing because it is not content." }
+        },
+        "/api/me/padrs/{pid}/versions": {
+            "post": { "tags": ["development"], "summary": "A correction: a new unsigned version copied from a signed one, which is kept. The due date does not move." }
+        },
         "/api/me/goals": {
             "post": { "tags": ["development"], "summary": "Propose a goal of your own, with any measures." }
         },
@@ -600,7 +622,7 @@ fn add_governance_paths(document: &mut Value) {
             "post": { "tags": ["development"], "summary": "State a yearly benefit with its source: an estimate, never derived from a skill level or a score. One a year per plan. HR." }
         },
         "/api/development-plan-benefits/{pid}": {
-            "delete": { "tags": ["development"], "summary": "Remove a stated benefit. HR." }
+            "delete": { "tags": ["development"], "summary": "Remove a stated benefit. An administrator: the reference policy gives HR no delete, so HR corrects one by asking the person or an administrator." }
         },
         "/api/me/development-plans/{pid}/benefits": {
             "post": { "tags": ["development"], "summary": "State a yearly benefit on your own plan, with its source." }

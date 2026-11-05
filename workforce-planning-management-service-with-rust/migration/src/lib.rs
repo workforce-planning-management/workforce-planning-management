@@ -141,6 +141,7 @@ pub mod m20261103_000125_payslip_employer_costs;
 pub mod m20261104_000126_payslip_queries;
 pub mod m20261105_000127_learning_economics;
 pub mod m20261105_000128_individual_goals;
+pub mod m20261105_000129_padr_record;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -282,6 +283,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261104_000126_payslip_queries::Migration),
             Box::new(m20261105_000127_learning_economics::Migration),
             Box::new(m20261105_000128_individual_goals::Migration),
+            Box::new(m20261105_000129_padr_record::Migration),
             // inject-above (do not remove this comment)
         ]
     }

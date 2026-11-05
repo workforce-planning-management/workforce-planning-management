@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the PADR record and the goals screens (WPM-R172, WPM-R232, 2026-11-05)
+
+A manager opens a personal development review with someone below them, both write it, and both sign. Its objectives are the person's goals in its period, frozen at the first signature; a correction is a new version and never moves the due date. HR reads counts and no content. A manager can now propose a goal from a screen, a goal can link a skill, a plan step and an outside objective, and the other person is told when something waits for them.
+
 ### Added — individual goals (WPM-R224 to WPM-R226, 2026-11-05)
 
 A person and a manager agree a goal and follow it through the year with measures and check-ins, a review lists the goals of its period with both outcomes and freezes a snapshot when shared, and HR sees counts with a floor. Nothing scores a goal. The PADR link waits for the PADR record.

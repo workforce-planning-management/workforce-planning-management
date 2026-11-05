@@ -112,7 +112,11 @@
     "requests": "Permintaan 360 saya"
   },
   "notif": {
-    "markRead": "Tandai dibaca"
+    "markRead": "Tandai dibaca",
+    "waitingForYou": "Menunggu Anda",
+    "goalWaiting": "Sebuah sasaran menunggu persetujuan Anda.",
+    "padrOpened": "Penilaian pengembangan pribadi telah dibuka bersama Anda.",
+    "padrToSign": "Penilaian pengembangan pribadi menunggu tanda tangan Anda."
   },
   "erg": {
     "title": "Penilaian ergonomis",
@@ -1538,7 +1542,9 @@
     "statutoryDefaults": "Bawaan menurut undang-undang — WPM",
     "myPayslips": "Slip gaji saya — WPM",
     "myDevelopment": "Rencana pengembangan saya — WPM",
-    "myGoals": "Tujuan saya — WPM"
+    "myGoals": "Tujuan saya — WPM",
+    "myPadrs": "Penilaian pengembangan saya — WPM",
+    "padr": "Penilaian pengembangan — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -3135,6 +3141,61 @@
     "record": "Catat",
     "rollupTitle": "Tujuan per departemen",
     "withheld": "Disembunyikan: terlalu sedikit orang",
-    "rollupNone": "Belum ada tujuan."
+    "rollupNone": "Belum ada tujuan.",
+    "waitingCount": "Menunggu persetujuan Anda: {count}",
+    "noManager": "Anda belum memiliki atasan yang tercatat, jadi belum ada yang dapat menyetujui ini. Minta HR untuk menambahkannya.",
+    "noneForPerson": "Belum ada sasaran.",
+    "proposeFor": "Usulkan sasaran untuk orang ini",
+    "change": "Ubah usulan ini",
+    "changeHint": "Jika Anda mengubahnya, orang lain perlu menyetujui versi Anda.",
+    "saveChange": "Simpan perubahan",
+    "links": "Tautan (opsional)",
+    "buildsSkill": "Keterampilan yang dibangun",
+    "planStep": "Langkah dalam rencana pengembangan",
+    "alignsTo": "Selaras dengan",
+    "alignsHint": "Rujukan ke sasaran yang disimpan di tempat lain, misalnya objective:Q3-reliability. Rujukan ditampilkan apa adanya dan tidak pernah dibuka."
+  },
+  "padr": {
+    "link": "Penilaian pengembangan saya",
+    "title": "Penilaian pengembangan pribadi",
+    "hint": "Percakapan tahunan dengan atasan Anda tentang tahun mendatang. Penilaian selesai setelah Anda berdua menandatangani.",
+    "mine": "Penilaian saya",
+    "nextDue": "Berikutnya jatuh tempo",
+    "current": "Terbaru",
+    "overdue": "Terlambat",
+    "unknown": "Tidak ada tanggal tercatat",
+    "none": "Anda belum memiliki penilaian yang tercatat.",
+    "complete": "Selesai",
+    "open": "Buka penilaian",
+    "periodStart": "Tahun mendatang dimulai",
+    "periodEnd": "Tahun mendatang berakhir",
+    "back": "Kembali ke penilaian saya",
+    "version": "Versi {version}",
+    "completedOn": "Selesai pada",
+    "values": "Percakapan tentang nilai dan perilaku",
+    "wellbeing": "Apakah percakapan tentang kesejahteraan sudah ditawarkan?",
+    "wellbeingHint": "Hanya ya atau tidak. Jangan tuliskan apa yang dibicarakan.",
+    "yes": "Ya",
+    "no": "Tidak",
+    "needs": "Kebutuhan pengembangan",
+    "need": "Kebutuhan",
+    "addNeed": "Tambah kebutuhan",
+    "objectives": "Sasaran untuk tahun mendatang",
+    "objectivesHint": "Ini adalah sasaran dalam periode penilaian ini. Penandatanganan membekukan daftar.",
+    "noObjectives": "Tidak ada sasaran dalam periode ini.",
+    "addObjective": "Tambah sasaran",
+    "frozen": "Ini adalah sasaran seperti pada tanda tangan pertama.",
+    "signatures": "Tanda tangan",
+    "reviewer": "Penilai",
+    "reviewee": "Orang yang dinilai",
+    "notSigned": "Belum ditandatangani",
+    "signHint": "Penandatanganan membekukan versi ini. Koreksi berikutnya menjadi versi baru.",
+    "sign": "Tandatangani versi ini",
+    "comment": "Komentar Anda",
+    "correct": "Mulai koreksi",
+    "correctHint": "Ini membuat versi baru untuk ditandatangani. Versi yang sudah ditandatangani tetap disimpan, dan tanggal jatuh tempo penilaian berikutnya tidak berubah.",
+    "earlier": "Versi sebelumnya",
+    "rollupTitle": "Penilaian pengembangan menurut departemen",
+    "rollupNone": "Tidak ada orang yang tercatat."
   }
 }

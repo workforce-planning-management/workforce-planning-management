@@ -214,6 +214,7 @@ mod tests {
         ("controllers/my_payslips.rs", "my_payslips_read"),
         ("controllers/my_payslips.rs", "payslip_queries_read"),
         ("controllers/development.rs", "review_content_read"),
+        ("controllers/padr.rs", "padr_read"),
         ("controllers/development.rs", "succession_read"),
         ("controllers/conversion_plans.rs", "conversion_plans_read"),
         ("controllers/conversion_plans.rs", "conversion_plans_listed"),

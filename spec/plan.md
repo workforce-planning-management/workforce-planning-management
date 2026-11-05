@@ -1012,7 +1012,7 @@ on positions needs assignments (R161); deputies need the action list (R186); act
 
 ## U. Individual goals tied to reviews (proposed 2026-11-02)
 
-Full text: [individual-goals.md](individual-goals.md). **Proposed, not built.** A worker's goals, with measures and check-ins, feed the PADR
+Full text: [individual-goals.md](individual-goals.md). **Built.** A worker's goals, with measures and check-ins, feed the PADR
 (WPM-R172) and the performance review; a signed review keeps a snapshot (WPM-D165). Goals are review-confidential (WPM-D164), never scored or
 ranked across people (WPM-D163), and team or company OKRs are referenced by an optional alignment reference, never held (WPM-D166), so WPM works
 alone. Requirements WPM-R224 to WPM-R226; tasks WPM-T428 to WPM-T433 (Phase 27).
