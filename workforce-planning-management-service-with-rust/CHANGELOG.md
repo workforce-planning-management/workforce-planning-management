@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the injury record (WPM-R221, WPM-D179, WPM-T421)
+
+`rules::injury_record`; `injury_records` and `injury_reports` (migration `m20261105_000131`); `/api/injury-records`, its reports and roll-up, and `/api/injury-reports/{pid}`; `tests/injury_record.rs`. A row proves a report and points to the statutory record. It takes no description.
+
 ### Changed — why someone left is HR's (WPM-D178, WPM-T460)
 
 `GET /api/movements`, `GET /api/workers/{pid}/movements` and every movement write's response no longer carry `reason` or `notes`. `GET /api/movements/{pid}` carries them only for a caller who may write the worker's record, audited as `movement_why_read`. Erasure now clears the reason as well as the notes.

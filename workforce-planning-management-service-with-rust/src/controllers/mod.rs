@@ -53,6 +53,7 @@ pub mod holidays;
 pub mod hr_core;
 pub mod human_capital;
 pub mod individual_goals;
+pub mod injury_records;
 pub mod intelligence;
 pub mod job_levels;
 pub mod jurisdictions;

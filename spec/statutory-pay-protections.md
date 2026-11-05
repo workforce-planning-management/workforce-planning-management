@@ -354,5 +354,5 @@ and 2026 rates; the OpenAPI path and the UI's types; a request test. The answers
 - **No result is kept** beyond the audit entry's counts, so the retention a profile might set (UK: six years) is not met by WPM. That is the rest of WPM-T415.
 - **No screen yet** (WPM-T416). The figures in the `GB` example are `example`, and none has been read in its source (WPM-T411).
 
-**Not built:** WPM-R219 to WPM-R221 and WPM-R223 (statutory overtime, coverage evidence, the injury record, employer cost lines), WPM-T417 to WPM-T426, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
+**Built since (2026-11-05):** the injury record (WPM-R221, WPM-T421) and the research of WPM-T412. **Not built, as first written:** WPM-R219, WPM-R220 and WPM-R223 (statutory overtime, coverage evidence, employer cost lines), WPM-T417 to WPM-T426, and the research tasks WPM-T411 and WPM-T412. WPM-R221 and WPM-R222 also wait for
 questions 3 and 4.

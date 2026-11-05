@@ -143,6 +143,7 @@ pub mod m20261105_000127_learning_economics;
 pub mod m20261105_000128_individual_goals;
 pub mod m20261105_000129_padr_record;
 pub mod m20261105_000130_separation_records;
+pub mod m20261105_000131_injury_records;
 
 /// The crate's migrator: drives the ordered migration set for the loco
 /// CLI / boot-time migration.
@@ -286,6 +287,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261105_000128_individual_goals::Migration),
             Box::new(m20261105_000129_padr_record::Migration),
             Box::new(m20261105_000130_separation_records::Migration),
+            Box::new(m20261105_000131_injury_records::Migration),
             // inject-above (do not remove this comment)
         ]
     }

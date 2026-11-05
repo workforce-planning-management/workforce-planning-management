@@ -65,6 +65,7 @@ applied to HR.
 | date of birth (WPM-R169) | high — the person, HR and payroll; never a manager; never read by scoring (WPM-D114) |
 | statutory and mandatory learning, qualifications (WPM-R170–R171) | medium — the person, their managers by name, HR; roll-ups with the floor |
 | a separation record (WPM-R222) | high — HR, the service and an administrator of the organization; **never a line manager or payroll**, because the reason affects eligibility; each read audited with the pid |
+| an injury or illness record (WPM-R221, WPM-D179) | high — HR, the service and an administrator of the organization; **never a line manager or payroll**; holds no description, no injury and no disease; each list read audited with a count; counts by class at or above the floor to HR and payroll |
 | why someone left: a movement's reason and notes (WPM-D178) | high — HR, the service and an administrator, on `GET /api/movements/{pid}` only, audited as `movement_why_read`; **no list carries them**; a manager or a colleague with a seat sees the dates and the checklist; a person reads their own in the subject-access export |
 | PADR content (WPM-R172) | high — the person, the reviewer and managers in the chain; **HR reads the roll-up's counts and no content**, payroll nothing; each read audited with the pid (WPM-D176) |
 | a formal-process flag (WPM-R173) | high — HR only; yes or no and a date, never what (WPM-D120) |

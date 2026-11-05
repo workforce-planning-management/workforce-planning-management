@@ -58,6 +58,7 @@
 | **Joint pay assessment** | The review of an unexplained pay gap of at least 5% in a category, done with workers' representatives, that the Directive requires when it is not justified or remedied in six months; WPM reports it is due and a person records the outcome |
 | **Human capital report** | The dated, read-only report of WPM's workforce measures set against ISO 30414 and ESRS S1 names; a mapping, not a disclosure ([human-capital-reporting.md](human-capital-reporting.md)) |
 | **Deployer register** | The record of who oversees each scoring feature, when workers were informed and how long its logs are kept, for an employer that deploys a high-risk AI system; it records, it does not certify ([regulatory.md](regulatory.md)) |
+| **Injury record** | WPM's row proving that a work injury, illness or dangerous occurrence was reported, and pointing to the statutory record. It is never that record and holds no description (WPM-D179). |
 | **Position** | A budgeted seat with FTE, cost centre and funding that exists whether or not someone holds it ([positions.md](positions.md)) |
 | **Establishment** | The approved number of positions; vacancy is budget minus FTE held, over-establishment is FTE held beyond budget |
 | **Assignment** | One job a worker holds in their organization, with its categories, cost centre and FTE; a worker may hold several, one primary ([staff-records-and-pay.md](staff-records-and-pay.md)) |

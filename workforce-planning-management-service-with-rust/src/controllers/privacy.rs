@@ -20,7 +20,7 @@ use crate::models::_entities::{
     engagement_decisions, engagement_extensions, engagement_reminders,
     engagement_status_assessments, entitlement_acknowledgements, equality_declarations,
     ergonomic_assessments, expense_claims, expense_items, flexible_working_requests,
-    goal_check_ins, goal_measures, group_members, handover_actions, interviews,
+    goal_check_ins, goal_measures, group_members, handover_actions, injury_records, interviews,
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
     movements, notifications, onboarding_items, organization_memberships, padr_versions,
     path_enrollments, pay_information_requests, payslip_queries, payslips, pipeline_members,
@@ -192,6 +192,7 @@ async fn subject_access(
         "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
         "joiner_leaver_records": rows_for!(db, movements, WorkerPid, epid),
         "separation_records": rows_for!(db, separation_records, WorkerPid, epid),
+        "injury_records": rows_for!(db, injury_records, WorkerPid, epid),
         "handover_actions_from": rows_for!(db, handover_actions, FromWorker, epid),
         "handover_actions_to": rows_for!(db, handover_actions, ToWorker, epid),
         "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, RequesterPid, epid),
@@ -422,6 +423,8 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM worker_goals WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM padr_versions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM separation_records WHERE worker_pid = '{epid}'"),
+        // The row proves a duty was met and names no one without this column (WPM-D179).
+        format!("UPDATE injury_records SET worker_pid = NULL WHERE worker_pid = '{epid}'"),
     ]
 }
 

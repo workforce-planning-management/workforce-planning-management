@@ -157,6 +157,8 @@ pub const READS: &[(&str, Audience)] = &[
     ("movements/{}/handover", ControllerDecides),
     ("movements/{}/separation-record", ControllerDecides),
     ("separation-records/export", ControllerDecides),
+    ("injury-records", ControllerDecides),
+    ("injury-records/rollup", ControllerDecides),
     ("movements/{}/handover/actions", ControllerDecides),
     ("org-chart", Open),
     ("org-chart/size", Open),

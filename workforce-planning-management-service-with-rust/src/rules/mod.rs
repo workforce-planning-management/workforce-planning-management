@@ -64,6 +64,7 @@ pub mod holiday;
 pub mod human_capital;
 pub mod idempotency;
 pub mod individual_goals;
+pub mod injury_record;
 pub mod insights;
 pub mod job_levels;
 pub mod joint_assessment;

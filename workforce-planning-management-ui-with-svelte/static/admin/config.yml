@@ -88,6 +88,7 @@ collections:
               - { name: "mandatoryLearning", label: "Mandatory Learning", widget: string, required: false, i18n: true }
               - { name: "coverageEvidence", label: "Coverage Evidence", widget: string, required: false, i18n: true }
               - { name: "qualifications", label: "Qualifications", widget: string, required: false, i18n: true }
+              - { name: "injuryRecords", label: "Injury Records", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -4062,6 +4063,64 @@ collections:
               - { name: "ending_soon", label: "Ending_soon", widget: string, required: false, i18n: true }
               - { name: "expired", label: "Expired", widget: string, required: false, i18n: true }
               - { name: "no_end_date", label: "No_end_date", widget: string, required: false, i18n: true }
+          - name: "injuryRecords"
+            label: "Injury Records"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "organization", label: "Organization", widget: string, required: false, i18n: true }
+              - { name: "jurisdiction", label: "Jurisdiction", widget: string, required: false, i18n: true }
+              - { name: "kind", label: "Kind", widget: string, required: false, i18n: true }
+              - { name: "class", label: "Class", widget: string, required: false, i18n: true }
+              - { name: "worker", label: "Worker", widget: string, required: false, i18n: true }
+              - { name: "occurredAt", label: "Occurred At", widget: string, required: false, i18n: true }
+              - { name: "learnedAt", label: "Learned At", widget: string, required: false, i18n: true }
+              - { name: "absenceDays", label: "Absence Days", widget: string, required: false, i18n: true }
+              - { name: "people", label: "People", widget: string, required: false, i18n: true }
+              - { name: "recordRef", label: "Record Ref", widget: string, required: false, i18n: true }
+              - { name: "noRecordRef", label: "No Record Ref", widget: string, required: false, i18n: true }
+              - { name: "keepUntil", label: "Keep Until", widget: string, required: false, i18n: true }
+              - { name: "keepUnknown", label: "Keep Unknown", widget: string, required: false, i18n: true }
+              - { name: "reports", label: "Reports", widget: string, required: false, i18n: true }
+              - { name: "noReports", label: "No Reports", widget: string, required: false, i18n: true }
+              - { name: "none", label: "None", widget: string, required: false, i18n: true }
+              - { name: "recipient", label: "Recipient", widget: string, required: false, i18n: true }
+              - { name: "dueAt", label: "Due At", widget: string, required: false, i18n: true }
+              - { name: "sentAt", label: "Sent At", widget: string, required: false, i18n: true }
+              - { name: "method", label: "Method", widget: string, required: false, i18n: true }
+              - { name: "reference", label: "Reference", widget: string, required: false, i18n: true }
+              - { name: "markSent", label: "Mark Sent", widget: string, required: false, i18n: true }
+              - { name: "addReport", label: "Add Report", widget: string, required: false, i18n: true }
+              - { name: "addTitle", label: "Add Title", widget: string, required: false, i18n: true }
+              - { name: "addHint", label: "Add Hint", widget: text, required: false, i18n: true }
+              - { name: "save", label: "Save", widget: string, required: false, i18n: true }
+              - { name: "saved", label: "Saved", widget: string, required: false, i18n: true }
+              - { name: "accident", label: "Accident", widget: string, required: false, i18n: true }
+              - { name: "illness", label: "Illness", widget: string, required: false, i18n: true }
+              - { name: "dangerous_occurrence", label: "Dangerous_occurrence", widget: string, required: false, i18n: true }
+              - { name: "no_injury", label: "No_injury", widget: string, required: false, i18n: true }
+              - { name: "no_absence", label: "No_absence", widget: string, required: false, i18n: true }
+              - { name: "absence", label: "Absence", widget: string, required: false, i18n: true }
+              - { name: "serious", label: "Serious", widget: string, required: false, i18n: true }
+              - { name: "fatal", label: "Fatal", widget: string, required: false, i18n: true }
+              - { name: "safety_authority", label: "Safety_authority", widget: string, required: false, i18n: true }
+              - { name: "labour_inspectorate", label: "Labour_inspectorate", widget: string, required: false, i18n: true }
+              - { name: "insurer", label: "Insurer", widget: string, required: false, i18n: true }
+              - { name: "social_insurance", label: "Social_insurance", widget: string, required: false, i18n: true }
+              - { name: "health_authority", label: "Health_authority", widget: string, required: false, i18n: true }
+              - { name: "online", label: "Online", widget: string, required: false, i18n: true }
+              - { name: "phone", label: "Phone", widget: string, required: false, i18n: true }
+              - { name: "form", label: "Form", widget: string, required: false, i18n: true }
+              - { name: "sent_by_due", label: "Sent_by_due", widget: string, required: false, i18n: true }
+              - { name: "sent_after_due", label: "Sent_after_due", widget: string, required: false, i18n: true }
+              - { name: "sent_no_due", label: "Sent_no_due", widget: string, required: false, i18n: true }
+              - { name: "waiting", label: "Waiting", widget: string, required: false, i18n: true }
+              - { name: "past_due", label: "Past_due", widget: string, required: false, i18n: true }
+              - { name: "no_due", label: "No_due", widget: string, required: false, i18n: true }
           - name: "payslips"
             label: "Payslips"
             widget: object

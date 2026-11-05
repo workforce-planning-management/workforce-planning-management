@@ -931,6 +931,46 @@ export interface QualificationRollupRow {
 }
 
 /** A record of an organization's cover for a jurisdiction (WPM-T420), with its standing today. HR only. */
+/** One report an incident owes. `standing` compares the times HR entered and judges nothing. */
+export interface InjuryReport {
+  pid: string;
+  recipient:
+    | "safety_authority"
+    | "labour_inspectorate"
+    | "insurer"
+    | "social_insurance"
+    | "health_authority";
+  due_at: string | null;
+  sent_at: string | null;
+  method: "online" | "phone" | "form" | null;
+  reference: string | null;
+  standing:
+    | "sent_by_due"
+    | "sent_after_due"
+    | "sent_no_due"
+    | "waiting"
+    | "past_due"
+    | "no_due";
+}
+
+/** An incident: proof of its reports and a pointer to the statutory record. It holds no description and no injury. */
+export interface InjuryRecord {
+  pid: string;
+  organization_ref: string;
+  jurisdiction: string;
+  kind: "accident" | "illness" | "dangerous_occurrence";
+  worker_pid: string | null;
+  worker_name: string | null;
+  occurred_at: string;
+  learned_at: string | null;
+  class: "no_injury" | "no_absence" | "absence" | "serious" | "fatal";
+  absence_days: number | null;
+  people_affected: number;
+  statutory_record_ref: string | null;
+  keep_until: string | null;
+  reports: InjuryReport[];
+}
+
 export interface CoverageRecord {
   pid: string;
   organization_ref: string;

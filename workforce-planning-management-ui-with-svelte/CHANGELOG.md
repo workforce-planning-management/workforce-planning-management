@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the injury record (WPM-T421)
+
+`/injury-records` for HR, with `tests/e2e/injury-records.spec.ts`; 57 strings in 13 locales (AI-written, unreviewed).
+
+### Changed — why someone left (WPM-T460)
+
+A movement's `reason` and `notes` are optional in the types: only HR receives them.
+
 ### Added — the separation record (WPM-T422)
 
 `SeparationPanel` on a leaver's movement page, `SeparationExport` on `/movements`; 14 strings in 13 locales (AI-written, unreviewed).

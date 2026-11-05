@@ -60,6 +60,7 @@ import type {
   LearningRollupRow,
   MinimumWageCheck,
   OvertimeCheck,
+  InjuryRecord,
   CoverageRecord,
   MyLearningRow,
   QualificationList,
@@ -6780,6 +6781,50 @@ export function addCoverageEvidence(body: {
 /** HR retires a record from today. */
 export function retireCoverageEvidence(pid: string): Promise<{ pid: string }> {
   return api(`/coverage-evidence/${pid}/retire`, { method: "POST" });
+}
+
+/** HR: the organization's incidents, latest first, each with its reports. Audited. */
+export function listInjuryRecords(
+  organization: string,
+  init?: FetchLike,
+): Promise<InjuryRecord[]> {
+  return api(
+    `/injury-records?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** HR records an incident. There is no description field, and any unknown field is refused. */
+export function addInjuryRecord(body: {
+  organization: string;
+  jurisdiction: string;
+  kind: string;
+  class: string;
+  worker_pid?: string;
+  occurred_at: string;
+  learned_at?: string;
+  absence_days?: number;
+  people_affected?: number;
+  statutory_record_ref?: string;
+  keep_until?: string;
+}): Promise<{ pid: string }> {
+  return api("/injury-records", { method: "POST", body });
+}
+
+/** HR adds a report an incident owes. */
+export function addInjuryReport(
+  pid: string,
+  body: { recipient: string; due_at?: string },
+): Promise<{ pid: string }> {
+  return api(`/injury-records/${pid}/reports`, { method: "POST", body });
+}
+
+/** HR says when and how a report went. */
+export function markInjuryReportSent(
+  pid: string,
+  body: { sent_at: string; method: string; reference?: string },
+): Promise<{ pid: string }> {
+  return api(`/injury-reports/${pid}`, { method: "PUT", body });
 }
 
 /** A deduction line on a payslip. */

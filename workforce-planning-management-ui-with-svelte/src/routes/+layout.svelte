@@ -43,6 +43,7 @@
     ["/statutory-defaults", "nav.statutoryDefaults"],
     ["/mandatory-learning", "nav.mandatoryLearning"],
     ["/coverage-evidence", "nav.coverageEvidence"],
+    ["/injury-records", "nav.injuryRecords"],
     ["/qualifications", "nav.qualifications"],
     ["/bargaining", "nav.bargaining"],
     ["/consultations", "nav.consultations"],

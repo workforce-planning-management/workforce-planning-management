@@ -44,6 +44,7 @@
       "Minimum",
       "Name",
       "Onboarding",
+      "Online",
       "Person",
       "Plan",
       "Rotation",
@@ -64,6 +65,8 @@
       "web"
     ],
     "fr-001": [
+      "Absence",
+      "Accident",
       "Actions",
       "Aspiration",
       "Attention",
@@ -126,6 +129,7 @@
       "Doses",
       "Mentor",
       "Menu",
+      "Online",
       "Status",
       "Total",
       "Tour",
@@ -139,6 +143,7 @@
       "Agenda",
       "Demo",
       "Email",
+      "Fatal",
       "Info",
       "Level",
       "Mentee",

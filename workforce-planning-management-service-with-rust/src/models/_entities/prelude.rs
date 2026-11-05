@@ -73,6 +73,8 @@ pub use super::holidays::Entity as Holidays;
 pub use super::idempotency_keys::Entity as IdempotencyKeys;
 pub use super::initiative_role_impacts::Entity as InitiativeRoleImpacts;
 pub use super::initiative_skill_shifts::Entity as InitiativeSkillShifts;
+pub use super::injury_records::Entity as InjuryRecords;
+pub use super::injury_reports::Entity as InjuryReports;
 pub use super::interviews::Entity as Interviews;
 pub use super::job_level_frameworks::Entity as JobLevelFrameworks;
 pub use super::job_level_levels::Entity as JobLevelLevels;

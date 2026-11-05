@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the injury record and the research behind it (WPM-R221, WPM-T412, WPM-T421, 2026-11-05)
+
+What an employer must report and hand over in the eleven jurisdictions, with sources, in `spec/injury-and-separation-duties.md`. An injury record that proves a report and points to the statutory record, with no description.
+
+### Changed — why someone left is HR's (WPM-D178, 2026-11-05)
+
 ### Added — the separation record (WPM-R222, 2026-11-05)
 
 HR adds the final pay date and a pay summary reference to a leaver record and exports a period's leavers as a CSV, with every gap named, for a payroll service to submit. WPM submits nothing.

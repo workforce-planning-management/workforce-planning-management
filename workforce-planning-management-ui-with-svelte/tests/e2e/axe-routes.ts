@@ -49,6 +49,7 @@ export const ROUTES: Record<string, string> = {
   "/payroll/[pid]": `/payroll/${PID}`,
   "/mandatory-learning": "/mandatory-learning",
   "/coverage-evidence": "/coverage-evidence",
+  "/injury-records": "/injury-records",
   "/qualifications": "/qualifications",
   "/planning": "/planning",
   "/policies": "/policies",

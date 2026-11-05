@@ -75,6 +75,8 @@ pub mod holidays;
 pub mod idempotency_keys;
 pub mod initiative_role_impacts;
 pub mod initiative_skill_shifts;
+pub mod injury_records;
+pub mod injury_reports;
 pub mod interviews;
 pub mod job_level_frameworks;
 pub mod job_level_levels;

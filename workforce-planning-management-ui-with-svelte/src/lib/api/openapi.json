@@ -5806,6 +5806,146 @@
         ]
       }
     },
+    "/api/injury-records": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "InjuryRecords"
+          }
+        },
+        "summary": "An organization's incidents, latest first, each with its reports and where they stand (HR only; audited with no content)",
+        "tags": [
+          "payroll"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record an incident: no description, no injury and no disease; any other field is refused",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/injury-records/rollup": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "InjuryRollup"
+          }
+        },
+        "summary": "Incidents in a calendar year by class, with the floor (?organization=&year=)",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/injury-records/{pid}": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Bring an incident up to date: class, days of absence, people affected, the pointer to the statutory record",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/injury-records/{pid}/reports": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Add a report the incident owes, sent or not",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
+    "/api/injury-reports/{pid}": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Say when and how a report went, with its reference",
+        "tags": [
+          "payroll"
+        ]
+      }
+    },
     "/api/interviews/{pid}": {
       "put": {
         "parameters": [

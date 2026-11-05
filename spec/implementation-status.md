@@ -9,20 +9,20 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 
 | Measure | Count |
 | --- | ---: |
-| Tasks done in `spec/tasks.md` | 373 |
-| Tasks not done (open or proposed) | 84 |
+| Tasks done in `spec/tasks.md` | 374 |
+| Tasks not done (open or proposed) | 83 |
 | Highest task number marked done | WPM-T460 |
-| Database migrations | 130 |
-| Controllers | 94 |
-| Pure rule modules | 126 |
-| OpenAPI paths | 503 |
-| Rust unit tests (`#[test]` in `src/`) | 1254 |
+| Database migrations | 131 |
+| Controllers | 95 |
+| Pure rule modules | 127 |
+| OpenAPI paths | 508 |
+| Rust unit tests (`#[test]` in `src/`) | 1260 |
 | Rust request tests (`tests/requests/`) | 216 |
-| Rust test binaries beside the request suite | 31 |
+| Rust test binaries beside the request suite | 32 |
 | Front-end unit test files | 41 |
 | Front-end unit tests (`it(` / `test(`) | 283 |
-| Playwright tests (`test(`) | 291 |
-| Front-end pages (`+page.svelte`) | 65 |
+| Playwright tests (`test(`) | 295 |
+| Front-end pages (`+page.svelte`) | 66 |
 | Content locales | 17 |
 | Topic files in `spec/` (not counting this one) | 63 |
 | Assessment checklist answers: met | 16 |
