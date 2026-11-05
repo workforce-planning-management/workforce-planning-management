@@ -10,16 +10,18 @@
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
+  import { proposeMyGoal, workerGoals, workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
   import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
-  import { t, tf } from "#lib/i18n.svelte.js";
+  import { l, t, tf } from "#lib/i18n.svelte.js";
+  import { todayIso } from "#lib/reader-calendar.js";
   import DataTable from "#lib/components/DataTable.svelte";
   import type {
     DataGridColumn,
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  let { workerPid }: { workerPid: string } = $props();
+  // `own` is the person looking at their own gaps, who may make one a proposed goal (WPM-R233).
+  let { workerPid, own = false }: { workerPid: string; own?: boolean } = $props();
 
   let gaps = $state<SkillGap[] | null>(null);
   let error = $state<string | null>(null);
@@ -41,6 +43,52 @@
     void workerPid;
     void loadGaps();
   });
+
+  // The skills with an open goal, so a gap never gets a second one. Null until read: nothing is offered on a guess.
+  const OPEN = ["proposed", "agreed", "in_progress"];
+  let goalled = $state<Set<string> | null>(null);
+  let making = $state<string | null>(null);
+
+  async function loadGoalled() {
+    const found = await workerGoals(workerPid);
+    goalled = new Set(
+      found.goals.flatMap((v) => (v.goal.skill_pid && OPEN.includes(v.goal.status) ? [v.goal.skill_pid] : [])),
+    );
+  }
+  $effect(() => {
+    if (!own) return;
+    void workerPid;
+    loadGoalled().catch(() => {
+      goalled = null;
+    });
+  });
+
+  /** A year from today: the end of a goal for a skill the training plan gives no date for. */
+  function yearAhead(today: string): string {
+    return `${Number(today.slice(0, 4)) + 1}${today.slice(4)}`.replace("-02-29", "-02-28");
+  }
+
+  async function makeGoal(g: SkillGap) {
+    making = g.skill_pid;
+    error = null;
+    try {
+      const today = todayIso();
+      const ends = plan?.plan.find((i) => i.skill_pid === g.skill_pid)?.ends_on;
+      await proposeMyGoal({
+        title: tf("skillgaps.goalTitle", { skill: g.skill ?? g.skill_pid, level: g.required }),
+        period_start: today,
+        period_end: ends && ends >= today ? ends : yearAhead(today),
+        skill_pid: g.skill_pid,
+        skill_target_level: g.required,
+        measures: [],
+      });
+      await loadGoalled();
+    } catch (cause) {
+      error = errorText(cause);
+    } finally {
+      making = null;
+    }
+  }
 
   // The plan reloads when the pace changes; a late answer for an older pace is dropped.
   $effect(() => {
@@ -173,6 +221,22 @@
   {@const g = row as unknown as SkillGap}
   <strong>{g.skill ?? g.skill_pid}</strong>
   <span class="muted">· {importance(g.importance)}</span>
+  {#if own}{@render goalAction(g)}{/if}
+{/snippet}
+
+<!-- Under the skill's name, not in a column of its own: at phone width a last column is out of sight behind the table's scroll. -->
+{#snippet goalAction(g: SkillGap)}
+  {#if g.status === "below" && goalled}
+    <div>
+      {#if goalled.has(g.skill_pid)}
+        <a href={l("/me/goals")} data-testid="gap-goal-open">{t("skillgaps.goalOpen")}</a>
+      {:else}
+        <button type="button" data-testid="gap-make-goal" disabled={making !== null} onclick={() => makeGoal(g)}>
+          {t("skillgaps.makeGoal")}
+        </button>
+      {/if}
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet shortCell({ row }: { row: DataGridRow })}

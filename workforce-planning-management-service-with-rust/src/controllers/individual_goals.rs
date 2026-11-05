@@ -21,7 +21,7 @@ use super::{ensure_org_in_scope, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
     development_plan_items, development_plans, goal_check_ins, goal_measures, review_cycles,
-    review_goal_outcomes, reviews, skills, worker_goals, workers,
+    review_goal_outcomes, reviews, skills, worker_goals, worker_skills, workers,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::notifications::Model as Notification;
@@ -173,6 +173,17 @@ pub(crate) async fn views(
         check_ins.entry(row.goal_pid).or_default().push(row);
     }
     let (skill_names, plan_steps) = link_names(ctx, goals).await?;
+    let worker_pids: Vec<Uuid> = goals.iter().map(|g| g.worker_pid).collect();
+    let declared: HashMap<(Uuid, Uuid), i32> = super::find_in(
+        ctx,
+        worker_skills::Entity::find().filter(worker_skills::Column::DeletedAt.is_null()),
+        worker_skills::Column::WorkerPid,
+        &worker_pids,
+    )
+    .await?
+    .into_iter()
+    .map(|row| ((row.worker_pid, row.skill_pid), row.proficiency))
+    .collect();
     Ok(goals
         .iter()
         .map(|goal| {
@@ -182,6 +193,14 @@ pub(crate) async fn views(
                 "check_ins": check_ins.get(&goal.pid).cloned().unwrap_or_default(),
                 "skill_name": goal.skill_pid.and_then(|pid| skill_names.get(&pid)),
                 "plan_step": goal.plan_item_pid.and_then(|pid| plan_steps.get(&pid)),
+                "skill_evidence": goal.skill_pid.zip(goal.skill_target_level).map(|(skill, target)| {
+                    let level = declared.get(&(goal.worker_pid, skill)).copied();
+                    serde_json::json!({
+                        "target": target,
+                        "declared": level,
+                        "state": rules::skill_evidence(level, target),
+                    })
+                }),
             })
         })
         .collect())
@@ -379,6 +398,9 @@ pub(crate) struct GoalPayload {
     period_end: chrono::NaiveDate,
     #[serde(default)]
     skill_pid: Option<Uuid>,
+    /// The level the goal aims at in that skill.
+    #[serde(default)]
+    skill_target_level: Option<i32>,
     #[serde(default)]
     plan_item_pid: Option<Uuid>,
     /// An opaque reference to an objective held elsewhere; never resolved (WPM-D166).
@@ -392,6 +414,8 @@ pub(crate) struct GoalPayload {
 fn checked(payload: &GoalPayload) -> Result<Option<String>> {
     let reject = |e: String| unprocessable(&e);
     rules::valid_goal(&payload.title, payload.period_start, payload.period_end).map_err(reject)?;
+    rules::valid_skill_target(payload.skill_pid.is_some(), payload.skill_target_level)
+        .map_err(reject)?;
     if let Some(reference) = &payload.aligns_to {
         rules::valid_alignment(reference).map_err(reject)?;
     }
@@ -461,6 +485,7 @@ async fn propose(
         proposed_by: ActiveValue::set(by.as_str().to_string()),
         agreed_on: ActiveValue::set(None),
         skill_pid: ActiveValue::set(payload.skill_pid),
+        skill_target_level: ActiveValue::set(payload.skill_target_level),
         plan_item_pid: ActiveValue::set(payload.plan_item_pid),
         aligns_to: ActiveValue::set(payload.aligns_to.clone()),
         deleted_at: ActiveValue::set(None),
@@ -520,6 +545,15 @@ pub(crate) async fn edit(
     let description = checked(&payload)?;
     check_links(&ctx, &worker, &payload).await?;
     let counter_proposal = goal.proposed_by != who.as_str();
+    // A form that does not show the target keeps it, as with measures; a different skill drops it.
+    let skill_target_level =
+        payload
+            .skill_target_level
+            .or(if payload.skill_pid == goal.skill_pid {
+                goal.skill_target_level
+            } else {
+                None
+            });
     let mut active: worker_goals::ActiveModel = goal.into();
     active.proposed_by = ActiveValue::set(who.as_str().to_string());
     active.title = ActiveValue::set(payload.title.trim().to_string());
@@ -527,6 +561,7 @@ pub(crate) async fn edit(
     active.period_start = ActiveValue::set(payload.period_start);
     active.period_end = ActiveValue::set(payload.period_end);
     active.skill_pid = ActiveValue::set(payload.skill_pid);
+    active.skill_target_level = ActiveValue::set(skill_target_level);
     active.plan_item_pid = ActiveValue::set(payload.plan_item_pid);
     active.aligns_to = ActiveValue::set(payload.aligns_to.clone());
     let txn = ctx.db.begin().await?;

@@ -63,6 +63,43 @@ impl Party {
     }
 }
 
+/// Check a goal's skill target (WPM-R234): a level from 1 to 5, on a goal that names a skill.
+///
+/// # Errors
+///
+/// A reason when the level is out of range or names no skill to reach it in.
+pub fn valid_skill_target(has_skill: bool, level: Option<i32>) -> Result<(), String> {
+    match level {
+        None => Ok(()),
+        Some(_) if !has_skill => Err("a skill target needs a skill".to_string()),
+        Some(level) if (1..=5).contains(&level) => Ok(()),
+        Some(_) => Err("a skill target is a level from 1 to 5".to_string()),
+    }
+}
+
+/// How a person's declared level stands against a goal's target (WPM-R234). One person's own record, never a score: nothing is worked out
+/// across people. `Undeclared` is unknown, not short (WPM-D32).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SkillEvidence {
+    /// The declared level has reached the target.
+    Reached,
+    /// The declared level is under the target.
+    Short,
+    /// No level is declared, so nothing is known.
+    Undeclared,
+}
+
+/// Compare a declared level with a goal's target.
+#[must_use]
+pub const fn skill_evidence(declared: Option<i32>, target: i32) -> SkillEvidence {
+    match declared {
+        None => SkillEvidence::Undeclared,
+        Some(level) if level >= target => SkillEvidence::Reached,
+        Some(_) => SkillEvidence::Short,
+    }
+}
+
 /// Check a goal's title and period.
 ///
 /// # Errors
@@ -431,5 +468,24 @@ mod tests {
         all.extend(rows("legal", 1));
         let lines = rollup(&all);
         assert_eq!(lines[0].by_status, None);
+    }
+
+    #[test]
+    fn a_skill_target_needs_a_skill_and_a_level_on_the_scale() {
+        assert!(valid_skill_target(false, None).is_ok());
+        assert!(valid_skill_target(true, None).is_ok());
+        assert!(valid_skill_target(true, Some(1)).is_ok());
+        assert!(valid_skill_target(true, Some(5)).is_ok());
+        assert!(valid_skill_target(true, Some(0)).is_err());
+        assert!(valid_skill_target(true, Some(6)).is_err());
+        assert!(valid_skill_target(false, Some(3)).is_err());
+    }
+
+    #[test]
+    fn evidence_says_reached_short_or_unknown_and_unknown_is_not_short() {
+        assert_eq!(skill_evidence(Some(3), 3), SkillEvidence::Reached);
+        assert_eq!(skill_evidence(Some(4), 3), SkillEvidence::Reached);
+        assert_eq!(skill_evidence(Some(2), 3), SkillEvidence::Short);
+        assert_eq!(skill_evidence(None, 3), SkillEvidence::Undeclared);
     }
 }

@@ -8,7 +8,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import GoalForm from "#lib/components/GoalForm.svelte";
   import { agreeGoal, checkInGoal, editGoal, moveGoal, type GoalBody, type GoalView } from "#lib/api/wpm.js";
-  import { t, tv } from "#lib/i18n.svelte.js";
+  import { t, tf, tv } from "#lib/i18n.svelte.js";
 
   let {
     view,
@@ -23,6 +23,7 @@
   };
 
   const goal = $derived(view.goal);
+  const evidence = $derived(view.skill_evidence ?? null);
   const moves = $derived(NEXT[goal.status] ?? []);
   const open = $derived(goal.status === "agreed" || goal.status === "in_progress");
   const canAgree = $derived(goal.status === "proposed" && goal.proposed_by !== party);
@@ -75,6 +76,21 @@
   </p>
   {#if goal.description}<p>{goal.description}</p>{/if}
   {#if view.skill_name}<p class="muted" data-testid="goal-skill">{t("goals.buildsSkill")}: {view.skill_name}</p>{/if}
+  {#if evidence}
+    <p class="muted" data-testid="goal-evidence" data-state={evidence.state}>
+      {#if evidence.state === "undeclared"}
+        {tf("goals.evidenceUndeclared", { target: evidence.target })}
+      {:else}
+        {tf(evidence.state === "reached" ? "goals.evidenceReached" : "goals.evidenceShort", {
+          declared: evidence.declared ?? "—",
+          target: evidence.target,
+        })}
+      {/if}
+    </p>
+    {#if goal.status === "achieved" && evidence.state === "short"}
+      <p class="muted" data-testid="goal-evidence-differs">{t("goals.evidenceDiffers")}</p>
+    {/if}
+  {/if}
   {#if view.plan_step}<p class="muted" data-testid="goal-plan-step">{t("goals.planStep")}: {view.plan_step}</p>{/if}
   {#if goal.aligns_to}<p class="muted" data-testid="goal-aligns">{t("goals.alignsTo")}: {goal.aligns_to}</p>{/if}
   {#if error}<ErrorNote testid="goal-error" message={error} />{/if}

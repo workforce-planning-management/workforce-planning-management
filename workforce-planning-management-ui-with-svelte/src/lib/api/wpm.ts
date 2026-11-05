@@ -4798,6 +4798,7 @@ export interface GoalView {
     proposed_by: "worker" | "manager";
     agreed_on: string | null;
     skill_pid: string | null;
+    skill_target_level: number | null;
     plan_item_pid: string | null;
     aligns_to: string | null;
   };
@@ -4805,6 +4806,12 @@ export interface GoalView {
   skill_name: string | null;
   /** The skill the linked plan step builds. */
   plan_step: string | null;
+  /** The person's declared level beside the goal's target; absent with no target (WPM-R234). */
+  skill_evidence?: {
+    target: number;
+    declared: number | null;
+    state: "reached" | "short" | "undeclared";
+  } | null;
   measures: Array<{
     pid: string;
     name: string;
@@ -4846,6 +4853,7 @@ export interface GoalBody {
   period_start: string;
   period_end: string;
   skill_pid?: string;
+  skill_target_level?: number;
   plan_item_pid?: string;
   aligns_to?: string;
   measures: Array<{

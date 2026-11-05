@@ -932,6 +932,9 @@ collections:
               - { name: "impCritical", label: "Imp Critical", widget: string, required: false, i18n: true }
               - { name: "impImportant", label: "Imp Important", widget: string, required: false, i18n: true }
               - { name: "impUseful", label: "Imp Useful", widget: string, required: false, i18n: true }
+              - { name: "makeGoal", label: "Make Goal", widget: string, required: false, i18n: true }
+              - { name: "goalOpen", label: "Goal Open", widget: string, required: false, i18n: true }
+              - { name: "goalTitle", label: "Goal Title", widget: string, required: false, i18n: true }
           - name: "training"
             label: "Training"
             widget: object
@@ -4315,6 +4318,10 @@ collections:
               - { name: "planStep", label: "Plan Step", widget: string, required: false, i18n: true }
               - { name: "alignsTo", label: "Aligns To", widget: string, required: false, i18n: true }
               - { name: "alignsHint", label: "Aligns Hint", widget: text, required: false, i18n: true }
+              - { name: "evidenceReached", label: "Evidence Reached", widget: string, required: false, i18n: true }
+              - { name: "evidenceShort", label: "Evidence Short", widget: string, required: false, i18n: true }
+              - { name: "evidenceUndeclared", label: "Evidence Undeclared", widget: string, required: false, i18n: true }
+              - { name: "evidenceDiffers", label: "Evidence Differs", widget: string, required: false, i18n: true }
           - name: "padr"
             label: "Padr"
             widget: object

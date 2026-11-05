@@ -313,3 +313,111 @@ test.describe("Individual goals", () => {
     );
   });
 });
+
+test.describe("from a gap to a goal, and evidence beside the claim (WPM-R233, WPM-R234)", () => {
+  const evidence = (
+    state: string,
+    declared: number | null,
+    status = "agreed",
+  ) => ({
+    ...goal(status),
+    skill_name: "Facilitation",
+    skill_evidence: { target: 3, declared, state },
+  });
+
+  test("a goal shows the declared level beside its target, and unknown is not short", async ({
+    page,
+  }) => {
+    await stub(page, [
+      evidence("short", 2),
+      {
+        ...evidence("undeclared", null),
+        goal: { ...goal("agreed").goal, pid: "g2" },
+      },
+    ]);
+    await page.goto("/me/goals");
+    const lines = page.getByTestId("goal-evidence");
+    await expect(lines.first()).toHaveAttribute("data-state", "short");
+    await expect(lines.first()).toContainText("Declared level 2 of 3");
+    await expect(lines.nth(1)).toContainText("not known");
+    await expect(page.getByTestId("goal-evidence-differs")).toHaveCount(0);
+  });
+
+  test("achieved with the level short says both, and neither overrides the other", async ({
+    page,
+  }) => {
+    await stub(page, [evidence("short", 2, "achieved")]);
+    await page.goto("/me/goals");
+    await expect(page.getByTestId("goal-evidence-differs")).toBeVisible();
+    await expect(page.getByTestId("goal").first()).toContainText(
+      "Declared level 2 of 3",
+    );
+  });
+
+  const gap = (
+    skill_pid: string,
+    skill: string,
+    status: string,
+    declared: number | null,
+  ) => ({
+    skill_pid,
+    skill,
+    category: "technical",
+    required: 4,
+    importance: "critical",
+    sources: ["role"],
+    declared,
+    status,
+    shortfall: declared === null ? null : 4 - declared,
+    priority: 6,
+  });
+
+  async function onMe(page: Page, goals: unknown[]) {
+    await stub(page, goals);
+    await page.route(`**/api/proxy/workers/${ME}/skill-gaps`, (route) =>
+      route.fulfill({
+        json: {
+          worker_pid: ME,
+          includes_aspirations: true,
+          counts: { met: 0, below: 2, undeclared: 1 },
+          gaps: [
+            gap("s1", "Data modelling", "below", 2),
+            gap("s2", "Facilitation", "below", 3),
+            gap("s3", "Negotiation", "undeclared", null),
+          ],
+        },
+      }),
+    );
+    await page.route(`**/api/proxy/workers/${ME}/training-plan**`, (route) =>
+      route.fulfill({ status: 404, json: { error: "not stubbed" } }),
+    );
+  }
+
+  test("a gap becomes a proposed goal, an open goal is not offered twice, and an unknown gets no offer", async ({
+    page,
+  }) => {
+    await onMe(page, [
+      { ...goal("agreed"), goal: { ...goal("agreed").goal, skill_pid: "s2" } },
+    ]);
+    const sent: Record<string, unknown>[] = [];
+    await page.route("**/api/proxy/me/goals", async (route) => {
+      sent.push(route.request().postDataJSON());
+      await route.fulfill({ json: { pid: "g9" } });
+    });
+    await page.goto("/me");
+    const table = page.getByTestId("skill-gaps-table");
+    await expect(table.getByTestId("gap-goal-open")).toHaveCount(1);
+    await expect(table.getByTestId("gap-make-goal")).toHaveCount(1);
+    await table.getByTestId("gap-make-goal").click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]).toMatchObject({
+      title: "Reach level 4 in Data modelling",
+      skill_pid: "s1",
+      skill_target_level: 4,
+      measures: [],
+    });
+    expect(String(sent[0]!.period_end) > String(sent[0]!.period_start)).toBe(
+      true,
+    );
+  });
+});

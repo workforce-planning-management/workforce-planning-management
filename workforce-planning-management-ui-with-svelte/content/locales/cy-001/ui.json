@@ -559,7 +559,10 @@
     "hint": "Cyfrif yn unig — ni enwir neb. Wedi'u trefnu yn ôl pwysigrwydd × lefelau'n brin.",
     "impCritical": "Critigol",
     "impImportant": "Pwysig",
-    "impUseful": "Defnyddiol"
+    "impUseful": "Defnyddiol",
+    "makeGoal": "Gwneud hwn yn nod",
+    "goalOpen": "Nod ar agor",
+    "goalTitle": "Cyrraedd lefel {level} yn {skill}"
   },
   "training": {
     "pointers": "Awgrymiadau o ddeunydd trwyddedig",
@@ -3252,7 +3255,11 @@
     "buildsSkill": "Y sgil y mae'n ei meithrin",
     "planStep": "Cam yn y cynllun datblygu",
     "alignsTo": "Yn cyd-fynd â",
-    "alignsHint": "Cyfeiriad at amcan a gedwir mewn man arall, fel objective:Q3-reliability. Caiff ei ddangos fel y'i hysgrifennwyd ac nid yw byth yn cael ei agor."
+    "alignsHint": "Cyfeiriad at amcan a gedwir mewn man arall, fel objective:Q3-reliability. Caiff ei ddangos fel y'i hysgrifennwyd ac nid yw byth yn cael ei agor.",
+    "evidenceReached": "Lefel a ddatganwyd {declared} o {target}: wedi'i chyrraedd",
+    "evidenceShort": "Lefel a ddatganwyd {declared} o {target}",
+    "evidenceUndeclared": "Lefel darged {target}. Ni ddatganwyd lefel, felly nid yw hyn yn hysbys.",
+    "evidenceDiffers": "Wedi'i farcio'n gyflawn, ac mae'r lefel a ddatganwyd yn dal o dan y targed."
   },
   "padr": {
     "link": "Fy adolygiadau datblygu",

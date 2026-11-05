@@ -559,7 +559,10 @@
     "hint": "Apenas contagens — ninguém é nomeado. Ordenado por importância × níveis em falta.",
     "impCritical": "Crítica",
     "impImportant": "Importante",
-    "impUseful": "Útil"
+    "impUseful": "Útil",
+    "makeGoal": "Tornar um objetivo",
+    "goalOpen": "Objetivo aberto",
+    "goalTitle": "Atingir o nível {level} em {skill}"
   },
   "training": {
     "pointers": "Indicações de material licenciado",
@@ -3225,7 +3228,11 @@
     "buildsSkill": "Competência que desenvolve",
     "planStep": "Passo do plano de desenvolvimento",
     "alignsTo": "Alinha com",
-    "alignsHint": "Uma referência a um objetivo mantido noutro local, como objective:Q3-reliability. É mostrada como foi escrita e nunca é aberta."
+    "alignsHint": "Uma referência a um objetivo mantido noutro local, como objective:Q3-reliability. É mostrada como foi escrita e nunca é aberta.",
+    "evidenceReached": "Nível declarado {declared} de {target}: atingido",
+    "evidenceShort": "Nível declarado {declared} de {target}",
+    "evidenceUndeclared": "Nível-alvo {target}. Nenhum nível foi declarado, por isso não se sabe.",
+    "evidenceDiffers": "Marcado como alcançado, e o nível declarado continua abaixo do alvo."
   },
   "padr": {
     "link": "As minhas avaliações de desenvolvimento",

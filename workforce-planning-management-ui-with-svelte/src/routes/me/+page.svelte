@@ -88,7 +88,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
-  <SkillGaps {workerPid} />
+  <SkillGaps {workerPid} own />
   <DeclaredSkills {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />

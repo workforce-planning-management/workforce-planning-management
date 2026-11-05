@@ -559,7 +559,10 @@
     "hint": "Counts only — nobody is named. Ranked by importance × levels short.",
     "impCritical": "Critical",
     "impImportant": "Important",
-    "impUseful": "Useful"
+    "impUseful": "Useful",
+    "makeGoal": "Make this a goal",
+    "goalOpen": "Goal open",
+    "goalTitle": "Reach level {level} in {skill}"
   },
   "training": {
     "pointers": "Pointers from licensed material",
@@ -3216,7 +3219,11 @@
     "buildsSkill": "Skill it builds",
     "planStep": "Step on the development plan",
     "alignsTo": "Aligns to",
-    "alignsHint": "A reference to an objective held elsewhere, such as objective:Q3-reliability. It is shown as written and never opened."
+    "alignsHint": "A reference to an objective held elsewhere, such as objective:Q3-reliability. It is shown as written and never opened.",
+    "evidenceReached": "Declared level {declared} of {target}: reached",
+    "evidenceShort": "Declared level {declared} of {target}",
+    "evidenceUndeclared": "Target level {target}. No level is declared, so this is not known.",
+    "evidenceDiffers": "Marked achieved, and the declared level is still under the target."
   },
   "padr": {
     "link": "My development reviews",

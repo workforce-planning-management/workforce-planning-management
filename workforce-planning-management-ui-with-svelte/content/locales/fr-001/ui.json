@@ -559,7 +559,10 @@
     "hint": "Effectifs uniquement — personne n'est nommé. Classé par importance × niveaux manquants.",
     "impCritical": "Critique",
     "impImportant": "Importante",
-    "impUseful": "Utile"
+    "impUseful": "Utile",
+    "makeGoal": "En faire un objectif",
+    "goalOpen": "Objectif ouvert",
+    "goalTitle": "Atteindre le niveau {level} en {skill}"
   },
   "training": {
     "pointers": "Pistes issues de contenu sous licence",
@@ -3225,7 +3228,11 @@
     "buildsSkill": "Compétence développée",
     "planStep": "Étape du plan de développement",
     "alignsTo": "Lié à",
-    "alignsHint": "Une référence à un objectif géré ailleurs, par exemple objective:Q3-reliability. Elle est affichée telle qu’elle est écrite et n’est jamais ouverte."
+    "alignsHint": "Une référence à un objectif géré ailleurs, par exemple objective:Q3-reliability. Elle est affichée telle qu’elle est écrite et n’est jamais ouverte.",
+    "evidenceReached": "Niveau déclaré {declared} sur {target} : atteint",
+    "evidenceShort": "Niveau déclaré {declared} sur {target}",
+    "evidenceUndeclared": "Niveau cible {target}. Aucun niveau n'est déclaré, ce n'est donc pas connu.",
+    "evidenceDiffers": "Marqué comme atteint, et le niveau déclaré reste sous la cible."
   },
   "padr": {
     "link": "Mes entretiens de développement",

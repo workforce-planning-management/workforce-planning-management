@@ -24,6 +24,7 @@ pub struct Model {
     pub proposed_by: String,
     pub agreed_on: Option<Date>,
     pub skill_pid: Option<Uuid>,
+    pub skill_target_level: Option<i32>,
     pub plan_item_pid: Option<Uuid>,
     pub aligns_to: Option<String>,
     pub deleted_at: Option<DateTimeWithTimeZone>,

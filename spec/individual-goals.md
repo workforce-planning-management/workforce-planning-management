@@ -30,6 +30,9 @@ the reviews they feed.
 
 - **WPM-R232 The other person is told.** When a goal waits for someone's agreement, that person gets an in-app notification: the person, for a manager's proposal; their direct manager, for theirs. The same applies to a PADR: the person is told when one is opened with them, and each signer when the other has signed. The notification says what is waiting and carries pids and nothing else: no title, no text, no measure (WPM-D23). A person with no manager on record tells nobody, and that stays visible on the goal.
 
+- **WPM-R233 From a gap to a goal.** A person looking at their own skill gaps can make a gap a proposed goal in one step: it names the skill, aims at the level the gap needs and ends when the training plan says the skill would be reached. It goes through the same proposal and agreement as any goal. A gap with an open goal for that skill says so and offers no second one. A skill the person has not declared gets no such offer, because an unknown needs assessing first (WPM-R44).
+- **WPM-R234 Evidence beside the claim.** A goal may carry a target level for its skill. It then shows the person's declared level against that target: reached, short, or not declared, which is unknown and not short. A goal marked achieved while the declared level is short says both, and neither overrides the other, as a development plan shows declared and verified progress side by side. This compares one person with their own target; it is no score and is never added up across people (WPM-D163).
+
 ## Decisions (confirmed 2026-11-05)
 
 - **WPM-D163 A goal is a record of intent and evidence, not a score.** There is no attainment percentage, no ranking and no rating derived from
@@ -44,6 +47,8 @@ the reviews they feed.
   independence rule). WPM holds no company-wide OKR tree.
 
 - **WPM-D177 Changing a proposal makes it yours to propose.** Either party may change a goal until it is agreed. A change by the party who did not propose it makes them the proposer, so the other must agree the new words. Otherwise a manager could rewrite a person's goal and agree it alone, and the person would be held to something they never saw. (Chosen in the build, 2026-11-05.)
+
+- **WPM-D180 Evidence does not move a goal.** Reaching the level does not achieve a goal and falling short does not fail one, because the two people agreed the goal and only they close it. Declared level is the person's own statement, so the evidence is as good as that and no better. (Chosen in the build, 2026-11-05, not yet confirmed by the owner.)
 
 ## Questions for the product owner
 
@@ -73,5 +78,7 @@ The requirements left these open; the choices are recorded so a reader can disag
 - **A PADR's objectives are the person's live goals whose period overlaps the PADR's**, leaving out withdrawn ones. The first signature freezes them on that version; a goal added later is not an objective of a signed version, and a correction takes the list afresh when it is signed.
 - **The links are checked.** A skill must be in the catalogue and a plan item must be on one of this person's own plans. `aligns_to` is checked for shape and never resolved (WPM-D166). A goal shows the skill's name and the plan step's skill.
 - **A manager's list holds every person below them**, with or without a goal, so that a first goal has somewhere to go.
+
+Built later on 2026-11-05 (WPM-T462): `worker_goals.skill_target_level`, `rules::individual_goals::skill_evidence`, the `skill_evidence` a goal carries, "Make this a goal" on the person's own skill gaps on `/me`, and the evidence line on a goal. The form has no field for a target, so only a goal made from a gap or through the API has one, and an edit from the form keeps it. A manager viewing someone's gaps on the worker page gets no such action.
 
 Not built: a form with more than one measure (the API takes several, and a change keeps the ones it does not show); closing a period does nothing automatically.

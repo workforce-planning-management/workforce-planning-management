@@ -559,7 +559,10 @@
     "hint": "أعداد فقط — لا يُذكر أحد. مرتّبة حسب الأهمية × المستويات الناقصة.",
     "impCritical": "حرجة",
     "impImportant": "مهمة",
-    "impUseful": "مفيدة"
+    "impUseful": "مفيدة",
+    "makeGoal": "اجعل هذا هدفًا",
+    "goalOpen": "يوجد هدف مفتوح",
+    "goalTitle": "بلوغ المستوى {level} في {skill}"
   },
   "training": {
     "pointers": "مؤشرات من مواد مرخّصة",
@@ -3252,7 +3255,11 @@
     "buildsSkill": "المهارة التي يبنيها",
     "planStep": "خطوة في خطة التطوير",
     "alignsTo": "يتوافق مع",
-    "alignsHint": "مرجع إلى هدف محفوظ في مكان آخر، مثل objective:Q3-reliability. يُعرض كما كُتب ولا يُفتح أبدًا."
+    "alignsHint": "مرجع إلى هدف محفوظ في مكان آخر، مثل objective:Q3-reliability. يُعرض كما كُتب ولا يُفتح أبدًا.",
+    "evidenceReached": "المستوى المعلن {declared} من {target}: تم بلوغه",
+    "evidenceShort": "المستوى المعلن {declared} من {target}",
+    "evidenceUndeclared": "المستوى المستهدف {target}. لم يُعلن أي مستوى، لذا هذا غير معروف.",
+    "evidenceDiffers": "سُجّل على أنه محقق، والمستوى المعلن لا يزال دون المستهدف."
   },
   "padr": {
     "link": "تقييمات التطوير الخاصة بي",

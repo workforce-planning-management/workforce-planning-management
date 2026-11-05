@@ -417,3 +417,95 @@ async fn the_rollup_counts_by_department_with_a_floor() {
     })
     .await;
 }
+
+// WPM-R233, WPM-R234: a goal names a skill and a target level, shows the declared level beside the target, keeps the target through an edit
+// that does not send it, and refuses a target with no skill. Evidence never moves the goal (WPM-D180).
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (config/test.yaml); run with `cargo test -- --ignored`"]
+async fn a_skill_goal_shows_the_declared_level_beside_its_target() {
+    let (keys, kid) = keys_and_kid();
+    let me = uuid::Uuid::new_v4();
+    let as_me = bearer(sign_as(&kid, &me.to_string(), &[]));
+    let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
+    unsafe {
+        std::env::set_var("WPM_REQUIRE_AUTH", "1");
+        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
+        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+    }
+    {
+        request::<App, _, _>(|request, _ctx| async move {
+            let org = format!("organization:{}", uuid::Uuid::new_v4());
+            let mine = worker(&request, &svc, &org, &me.to_string(), "GS-1", None).await;
+            let skill: Value = request
+                .post("/api/skills")
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "name": format!("GS {}", uuid::Uuid::new_v4()), "category": "technical" }))
+                .await
+                .json();
+            let skill = skill["pid"].as_str().unwrap().to_string();
+            let body = |level: Value| {
+                json!({ "title": "Reach it", "period_start": "2026-01-01", "period_end": "2026-12-31",
+                        "skill_pid": skill, "skill_target_level": level })
+            };
+            let post = |payload: Value| {
+                let (request, as_me) = (&request, as_me.clone());
+                async move {
+                    request.post("/api/me/goals").add_header("authorization", as_me).json(&payload).await
+                }
+            };
+            assert_eq!(post(body(json!(6))).await.status_code(), 422, "the scale stops at five");
+            let no_skill = json!({ "title": "x", "period_start": "2026-01-01", "period_end": "2026-02-01", "skill_target_level": 3 });
+            assert_eq!(post(no_skill).await.status_code(), 422, "a target needs a skill");
+
+            let goal: Value = post(body(json!(3))).await.json();
+            let pid = goal["pid"].as_str().unwrap().to_string();
+            let evidence = || {
+                let (request, as_me, mine) = (&request, as_me.clone(), mine.clone());
+                async move {
+                    let read: Value = request
+                        .get(&format!("/api/workers/{mine}/goals"))
+                        .add_header("authorization", as_me)
+                        .await
+                        .json();
+                    read["goals"][0]["skill_evidence"].clone()
+                }
+            };
+            let before = evidence().await;
+            assert_eq!(before["state"], "undeclared", "unknown is not short");
+            assert!(before["declared"].is_null());
+
+            request
+                .put(&format!("/api/workers/{mine}/skills"))
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "skill_pid": skill, "proficiency": 2 }))
+                .await
+                .assert_status_ok();
+            assert_eq!(evidence().await, json!({ "target": 3, "declared": 2, "state": "short" }));
+
+            // An edit from a form that does not show the target keeps it.
+            request
+                .put(&format!("/api/me/goals/{pid}"))
+                .add_header("authorization", as_me.clone())
+                .json(&json!({ "title": "Reach it soon", "period_start": "2026-01-01", "period_end": "2026-12-31", "skill_pid": skill }))
+                .await
+                .assert_status_ok();
+            assert_eq!(evidence().await["target"], 3);
+
+            request
+                .put(&format!("/api/workers/{mine}/skills"))
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "skill_pid": skill, "proficiency": 3 }))
+                .await
+                .assert_status_ok();
+            assert_eq!(evidence().await["state"], "reached");
+            let read: Value = request
+                .get(&format!("/api/workers/{mine}/goals"))
+                .add_header("authorization", as_me.clone())
+                .await
+                .json();
+            assert_eq!(read["goals"][0]["goal"]["status"], "proposed", "evidence does not move a goal");
+        })
+        .await;
+    }
+}

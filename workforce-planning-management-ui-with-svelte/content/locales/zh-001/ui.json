@@ -559,7 +559,10 @@
     "hint": "仅统计数量，不点名。按重要性 × 差距级数排序。",
     "impCritical": "关键",
     "impImportant": "重要",
-    "impUseful": "有用"
+    "impUseful": "有用",
+    "makeGoal": "设为目标",
+    "goalOpen": "目标进行中",
+    "goalTitle": "在{skill}方面达到 {level} 级"
   },
   "training": {
     "pointers": "来自授权材料的提示",
@@ -3207,7 +3210,11 @@
     "buildsSkill": "由此培养的技能",
     "planStep": "发展计划中的步骤",
     "alignsTo": "对齐到",
-    "alignsHint": "指向其他地方所维护目标的引用,例如 objective:Q3-reliability。它按原样显示,且不会被打开。"
+    "alignsHint": "指向其他地方所维护目标的引用,例如 objective:Q3-reliability。它按原样显示,且不会被打开。",
+    "evidenceReached": "已声明等级 {declared}，目标 {target}：已达到",
+    "evidenceShort": "已声明等级 {declared}，目标 {target}",
+    "evidenceUndeclared": "目标等级 {target}。尚未声明等级，因此未知。",
+    "evidenceDiffers": "已标记为达成，但已声明等级仍低于目标。"
   },
   "padr": {
     "link": "我的发展评估",

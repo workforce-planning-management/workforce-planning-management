@@ -559,7 +559,10 @@
     "hint": "Hanya jumlah — tidak ada yang disebut namanya. Diurutkan menurut kepentingan × level kurang.",
     "impCritical": "Kritis",
     "impImportant": "Penting",
-    "impUseful": "Berguna"
+    "impUseful": "Berguna",
+    "makeGoal": "Jadikan tujuan",
+    "goalOpen": "Tujuan terbuka",
+    "goalTitle": "Mencapai level {level} dalam {skill}"
   },
   "training": {
     "pointers": "Petunjuk dari materi berlisensi",
@@ -3207,7 +3210,11 @@
     "buildsSkill": "Keterampilan yang dibangun",
     "planStep": "Langkah dalam rencana pengembangan",
     "alignsTo": "Selaras dengan",
-    "alignsHint": "Rujukan ke sasaran yang disimpan di tempat lain, misalnya objective:Q3-reliability. Rujukan ditampilkan apa adanya dan tidak pernah dibuka."
+    "alignsHint": "Rujukan ke sasaran yang disimpan di tempat lain, misalnya objective:Q3-reliability. Rujukan ditampilkan apa adanya dan tidak pernah dibuka.",
+    "evidenceReached": "Level yang dinyatakan {declared} dari {target}: tercapai",
+    "evidenceShort": "Level yang dinyatakan {declared} dari {target}",
+    "evidenceUndeclared": "Level sasaran {target}. Tidak ada level yang dinyatakan, jadi ini tidak diketahui.",
+    "evidenceDiffers": "Ditandai tercapai, dan level yang dinyatakan masih di bawah sasaran."
   },
   "padr": {
     "link": "Penilaian pengembangan saya",

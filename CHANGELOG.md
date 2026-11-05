@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — from a skill gap to a goal, with evidence beside the claim (WPM-R233, WPM-R234, WPM-T462, 2026-11-05)
+
+A person can make a skill gap a proposed goal, and a goal with a target level shows their declared level beside it. Evidence never moves a goal.
+
 ### Added — incidents and legal pay floors in the human capital report (WPM-R147, WPM-T425, 2026-11-05)
 
 The report counts work-related incidents by class, with small groups withheld, and gives the share of pay periods with a payslip below a legal minimum, which is indicative. An organization that has never recorded an incident shows unknown, not zero.

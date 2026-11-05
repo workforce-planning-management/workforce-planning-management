@@ -559,7 +559,10 @@
     "hint": "Nur Zahlen – niemand wird genannt. Sortiert nach Wichtigkeit × fehlenden Stufen.",
     "impCritical": "Kritisch",
     "impImportant": "Wichtig",
-    "impUseful": "Nützlich"
+    "impUseful": "Nützlich",
+    "makeGoal": "Daraus ein Ziel machen",
+    "goalOpen": "Ziel offen",
+    "goalTitle": "Stufe {level} in {skill} erreichen"
   },
   "training": {
     "pointers": "Hinweise aus lizenziertem Material",
@@ -3216,7 +3219,11 @@
     "buildsSkill": "Fähigkeit, die dadurch aufgebaut wird",
     "planStep": "Schritt im Entwicklungsplan",
     "alignsTo": "Bezieht sich auf",
-    "alignsHint": "Ein Verweis auf ein Ziel, das an anderer Stelle geführt wird, zum Beispiel objective:Q3-reliability. Er wird so angezeigt, wie er geschrieben wurde, und nie geöffnet."
+    "alignsHint": "Ein Verweis auf ein Ziel, das an anderer Stelle geführt wird, zum Beispiel objective:Q3-reliability. Er wird so angezeigt, wie er geschrieben wurde, und nie geöffnet.",
+    "evidenceReached": "Angegebene Stufe {declared} von {target}: erreicht",
+    "evidenceShort": "Angegebene Stufe {declared} von {target}",
+    "evidenceUndeclared": "Zielstufe {target}. Es ist keine Stufe angegeben, daher ist das nicht bekannt.",
+    "evidenceDiffers": "Als erreicht markiert, und die angegebene Stufe liegt noch unter dem Ziel."
   },
   "padr": {
     "link": "Meine Entwicklungsgespräche",
