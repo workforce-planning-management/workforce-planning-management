@@ -562,7 +562,8 @@
     "impUseful": "مفيدة",
     "makeGoal": "اجعل هذا هدفًا",
     "goalOpen": "يوجد هدف مفتوح",
-    "goalTitle": "بلوغ المستوى {level} في {skill}"
+    "goalTitle": "بلوغ المستوى {level} في {skill}",
+    "titleOther": "فجوات المهارات"
   },
   "training": {
     "pointers": "مؤشرات من مواد مرخّصة",
@@ -3259,7 +3260,10 @@
     "evidenceReached": "المستوى المعلن {declared} من {target}: تم بلوغه",
     "evidenceShort": "المستوى المعلن {declared} من {target}",
     "evidenceUndeclared": "المستوى المستهدف {target}. لم يُعلن أي مستوى، لذا هذا غير معروف.",
-    "evidenceDiffers": "سُجّل على أنه محقق، والمستوى المعلن لا يزال دون المستهدف."
+    "evidenceDiffers": "سُجّل على أنه محقق، والمستوى المعلن لا يزال دون المستهدف.",
+    "targetLevel": "المستوى المستهدف",
+    "coursesNone": "لا توجد في الكتالوج بعد دورة تبني هذه المهارة.",
+    "coursesHint": "هذه اقتراحات فقط، ولا يؤدي أي شيء هنا إلى تسجيل أحد."
   },
   "padr": {
     "link": "تقييمات التطوير الخاصة بي",

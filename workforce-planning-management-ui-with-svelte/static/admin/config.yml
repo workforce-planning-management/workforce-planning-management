@@ -935,6 +935,7 @@ collections:
               - { name: "makeGoal", label: "Make Goal", widget: string, required: false, i18n: true }
               - { name: "goalOpen", label: "Goal Open", widget: string, required: false, i18n: true }
               - { name: "goalTitle", label: "Goal Title", widget: string, required: false, i18n: true }
+              - { name: "titleOther", label: "Title Other", widget: string, required: false, i18n: true }
           - name: "training"
             label: "Training"
             widget: object
@@ -4322,6 +4323,9 @@ collections:
               - { name: "evidenceShort", label: "Evidence Short", widget: string, required: false, i18n: true }
               - { name: "evidenceUndeclared", label: "Evidence Undeclared", widget: string, required: false, i18n: true }
               - { name: "evidenceDiffers", label: "Evidence Differs", widget: string, required: false, i18n: true }
+              - { name: "targetLevel", label: "Target Level", widget: string, required: false, i18n: true }
+              - { name: "coursesNone", label: "Courses None", widget: string, required: false, i18n: true }
+              - { name: "coursesHint", label: "Courses Hint", widget: string, required: false, i18n: true }
           - name: "padr"
             label: "Padr"
             widget: object

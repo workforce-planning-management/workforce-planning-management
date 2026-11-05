@@ -562,7 +562,8 @@
     "impUseful": "Berguna",
     "makeGoal": "Jadikan tujuan",
     "goalOpen": "Tujuan terbuka",
-    "goalTitle": "Mencapai level {level} dalam {skill}"
+    "goalTitle": "Mencapai level {level} dalam {skill}",
+    "titleOther": "Kesenjangan keterampilan"
   },
   "training": {
     "pointers": "Petunjuk dari materi berlisensi",
@@ -3214,7 +3215,10 @@
     "evidenceReached": "Level yang dinyatakan {declared} dari {target}: tercapai",
     "evidenceShort": "Level yang dinyatakan {declared} dari {target}",
     "evidenceUndeclared": "Level sasaran {target}. Tidak ada level yang dinyatakan, jadi ini tidak diketahui.",
-    "evidenceDiffers": "Ditandai tercapai, dan level yang dinyatakan masih di bawah sasaran."
+    "evidenceDiffers": "Ditandai tercapai, dan level yang dinyatakan masih di bawah sasaran.",
+    "targetLevel": "Tingkat sasaran",
+    "coursesNone": "Belum ada kursus di katalog yang membangun keterampilan ini.",
+    "coursesHint": "Ini hanya saran. Tidak ada seorang pun yang didaftarkan di sini."
   },
   "padr": {
     "link": "Penilaian pengembangan saya",

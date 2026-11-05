@@ -562,7 +562,8 @@
     "impUseful": "Useful",
     "makeGoal": "Make this a goal",
     "goalOpen": "Goal open",
-    "goalTitle": "Reach level {level} in {skill}"
+    "goalTitle": "Reach level {level} in {skill}",
+    "titleOther": "Skill gaps"
   },
   "training": {
     "pointers": "Pointers from licensed material",
@@ -3223,7 +3224,10 @@
     "evidenceReached": "Declared level {declared} of {target}: reached",
     "evidenceShort": "Declared level {declared} of {target}",
     "evidenceUndeclared": "Target level {target}. No level is declared, so this is not known.",
-    "evidenceDiffers": "Marked achieved, and the declared level is still under the target."
+    "evidenceDiffers": "Marked achieved, and the declared level is still under the target.",
+    "targetLevel": "Target level",
+    "coursesNone": "No course in the catalogue builds this skill yet.",
+    "coursesHint": "These are suggestions. Nothing here enrols anyone."
   },
   "padr": {
     "link": "My development reviews",

@@ -421,3 +421,230 @@ test.describe("from a gap to a goal, and evidence beside the claim (WPM-R233, WP
     );
   });
 });
+
+test.describe("A goal's target and courses", () => {
+  const skillGoal = (status: string, target: number | null = 3) => ({
+    ...goal(status),
+    goal: { ...goal(status).goal, skill_pid: "s1", skill_target_level: target },
+    skill_name: "Facilitation",
+  });
+
+  async function withCourses(page: Page, goals: unknown[], courses: unknown[]) {
+    await stub(page, goals);
+    await page.route("**/api/proxy/skills/s1/courses", (route) =>
+      route.fulfill({
+        json: {
+          skill_pid: "s1",
+          hours_per_level: null,
+          default_hours_per_level: 30,
+          courses,
+        },
+      }),
+    );
+    await page.route(
+      `**/api/proxy/workers/${ME}/training-enrollments`,
+      (route) => {
+        if (route.request().method() !== "GET")
+          throw new Error("nothing here enrols anyone");
+        return route.fulfill({
+          json: [
+            {
+              pid: "e1",
+              worker_pid: ME,
+              course_ref: "course:done",
+              status: "completed",
+              completed_on: "2026-02-01",
+              certificate_expires_on: null,
+            },
+          ],
+        });
+      },
+    );
+  }
+
+  const course = (pid: string, title: string, fee_minor: number | null) => ({
+    pid,
+    course_ref: `course:${pid}`,
+    title,
+    hours: 12,
+    levels: 1,
+    fee_minor,
+    fee_currency: fee_minor === null ? null : "GBP",
+  });
+
+  test("the form sends a target only with a skill, and changing the skill clears it", async ({
+    page,
+  }) => {
+    await stub(page, []);
+    const sent: Record<string, unknown>[] = [];
+    await page.route("**/api/proxy/me/goals", async (route) => {
+      sent.push(route.request().postDataJSON());
+      await route.fulfill({ json: { pid: "g9" } });
+    });
+    await page.goto("/me/goals");
+    const form = page.getByTestId("goal-form");
+    await form.locator("summary").click();
+    await expect(form.getByTestId("goal-target-level")).toHaveCount(0);
+    await expect(
+      form.getByTestId("goal-skill-pick").locator("option"),
+    ).toHaveCount(2);
+    await form.getByTestId("goal-skill-pick").selectOption("s1");
+    await form.getByTestId("goal-target-level").selectOption("4");
+    await form.getByTestId("goal-title").fill("Reach it");
+    await form.getByTestId("goal-start").fill("2026-01-01");
+    await form.getByTestId("goal-end").fill("2026-12-31");
+    await form.getByTestId("goal-propose").click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]).toMatchObject({ skill_pid: "s1", skill_target_level: 4 });
+
+    // The form empties after a proposal, which closes its links.
+    await form.locator("summary").click();
+    await form.getByTestId("goal-skill-pick").selectOption("s1");
+    await form.getByTestId("goal-target-level").selectOption("2");
+    await form.getByTestId("goal-skill-pick").selectOption("");
+    await form.locator("summary").click();
+    await form.getByTestId("goal-skill-pick").selectOption("s1");
+    await expect(form.getByTestId("goal-target-level")).toHaveValue("");
+  });
+
+  test("a stored target can change but is not offered as blank", async ({
+    page,
+  }) => {
+    await stub(page, [skillGoal("proposed", 3)]);
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-change").locator("summary").click();
+    const level = page.getByTestId("goal").getByTestId("goal-target-level");
+    await expect(level.locator("option")).toHaveText(["1", "2", "3", "4", "5"]);
+    await expect(level).toHaveValue("3");
+  });
+
+  test("a goal lists its skill's courses with the fee, and unknown is not free", async ({
+    page,
+  }) => {
+    await withCourses(
+      page,
+      [skillGoal("agreed")],
+      [
+        course("paid", "Priced course", 12500),
+        course("free", "Free course", 0),
+        course("none", "Unpriced course", null),
+        course("done", "Finished course", 5000),
+      ],
+    );
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-courses").locator("summary").click();
+    const rows = page.getByTestId("goal-course");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(0).getByTestId("goal-course-fee")).toContainText(
+      "125",
+    );
+    await expect(rows.nth(2).getByTestId("goal-course-fee")).toHaveText(
+      "no fee recorded",
+    );
+    await expect(rows.nth(2).getByTestId("goal-course-fee")).not.toHaveText(
+      /0/,
+    );
+    await expect(rows.nth(0).getByTestId("goal-course-standing")).toHaveCount(
+      0,
+    );
+    await expect(rows.nth(3).getByTestId("goal-course-standing")).toHaveText(
+      "completed",
+    );
+    await expect(
+      page.getByTestId("goal-courses").getByRole("button"),
+    ).toHaveCount(0);
+  });
+
+  test("a reader who may not see the person's training still sees the catalogue, with no status claimed", async ({
+    page,
+  }) => {
+    await withCourses(
+      page,
+      [skillGoal("agreed")],
+      [course("done", "Finished course", 5000)],
+    );
+    await page.route(
+      `**/api/proxy/workers/${ME}/training-enrollments`,
+      (route) => route.fulfill({ status: 403, json: { error: "no" } }),
+    );
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-courses").locator("summary").click();
+    await expect(page.getByTestId("goal-course")).toHaveCount(1);
+    await expect(page.getByTestId("goal-course-standing")).toHaveCount(0);
+  });
+
+  test("a skill with no course says so, and a closed goal lists none", async ({
+    page,
+  }) => {
+    await withCourses(page, [skillGoal("in_progress")], []);
+    await page.goto("/me/goals");
+    await page.getByTestId("goal-courses").locator("summary").click();
+    await expect(page.getByTestId("goal-courses-none")).toBeVisible();
+
+    await withCourses(page, [skillGoal("achieved")], []);
+    await page.goto("/me/goals");
+    await expect(page.getByTestId("goal")).toBeVisible();
+    await expect(page.getByTestId("goal-courses")).toHaveCount(0);
+  });
+
+  test("a manager makes a report's gap a proposal that person must agree", async ({
+    page,
+  }) => {
+    await stub(
+      page,
+      [],
+      [{ worker_pid: "w2", display_name: "Test Worker 002", goals: [] }],
+    );
+    let gapsRead = 0;
+    await page.route("**/api/proxy/workers/w2/skill-gaps", (route) => {
+      gapsRead += 1;
+      return route.fulfill({
+        json: {
+          worker_pid: "w2",
+          includes_aspirations: false,
+          counts: { met: 0, below: 1, undeclared: 0 },
+          gaps: [
+            {
+              skill_pid: "s1",
+              skill: "Facilitation",
+              required: 4,
+              declared: 2,
+              status: "below",
+              shortfall: 2,
+              importance: "important",
+              priority: 6,
+              sources: ["role"],
+            },
+          ],
+        },
+      });
+    });
+    await page.route("**/api/proxy/workers/w2/goals", (route) =>
+      route.fulfill({
+        json: { worker_pid: "w2", has_manager: true, goals: [] },
+      }),
+    );
+    await page.route("**/api/proxy/workers/w2/training-plan**", (route) =>
+      route.fulfill({ status: 404, json: { error: "not stubbed" } }),
+    );
+    const sent: Record<string, unknown>[] = [];
+    await page.route("**/api/proxy/me/reports/w2/goals", async (route) => {
+      sent.push(route.request().postDataJSON());
+      await route.fulfill({ json: { pid: "g9" } });
+    });
+    await page.goto("/me/goals");
+    const gaps = page.getByTestId("report-gaps");
+    expect(gapsRead).toBe(0);
+    await gaps.locator("summary").click();
+    await expect(
+      gaps.getByRole("heading", { name: "Skill gaps", exact: true }),
+    ).toBeVisible();
+    await gaps.getByTestId("gap-make-goal").click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]).toMatchObject({
+      skill_pid: "s1",
+      skill_target_level: 4,
+      measures: [],
+    });
+  });
+});

@@ -10,7 +10,7 @@
   import { guardedLoad } from "#lib/loader.svelte.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
-  import { proposeMyGoal, workerGoals, workerSkillGaps, workerTrainingPlan } from "#lib/api/wpm.js";
+  import { workerGoals, workerSkillGaps, workerTrainingPlan, type GoalBody } from "#lib/api/wpm.js";
   import type { SkillGap, TrainingPlan } from "#lib/api/types.js";
   import { l, t, tf } from "#lib/i18n.svelte.js";
   import { todayIso } from "#lib/reader-calendar.js";
@@ -20,8 +20,15 @@
     DataGridRow,
   } from "@lilydesignsystem/svelte-data-grid";
 
-  // `own` is the person looking at their own gaps, who may make one a proposed goal (WPM-R233).
-  let { workerPid, own = false }: { workerPid: string; own?: boolean } = $props();
+  // `propose` is how the reader proposes a goal for this person, given only to the person or a manager above them (WPM-R233).
+  // `mine` is the person reading their own, which is the only time the heading may say so.
+  let {
+    workerPid,
+    mine = false,
+    propose,
+  }: { workerPid: string; mine?: boolean; propose?: (goal: GoalBody) => Promise<unknown> } = $props();
+
+  const heading = $derived(mine ? t("skillgaps.title") : t("skillgaps.titleOther"));
 
   let gaps = $state<SkillGap[] | null>(null);
   let error = $state<string | null>(null);
@@ -56,7 +63,7 @@
     );
   }
   $effect(() => {
-    if (!own) return;
+    if (!propose) return;
     void workerPid;
     loadGoalled().catch(() => {
       goalled = null;
@@ -74,7 +81,7 @@
     try {
       const today = todayIso();
       const ends = plan?.plan.find((i) => i.skill_pid === g.skill_pid)?.ends_on;
-      await proposeMyGoal({
+      await propose?.({
         title: tf("skillgaps.goalTitle", { skill: g.skill ?? g.skill_pid, level: g.required }),
         period_start: today,
         period_end: ends && ends >= today ? ends : yearAhead(today),
@@ -221,7 +228,7 @@
   {@const g = row as unknown as SkillGap}
   <strong>{g.skill ?? g.skill_pid}</strong>
   <span class="muted">· {importance(g.importance)}</span>
-  {#if own}{@render goalAction(g)}{/if}
+  {#if propose}{@render goalAction(g)}{/if}
 {/snippet}
 
 <!-- Under the skill's name, not in a column of its own: at phone width a last column is out of sight behind the table's scroll. -->
@@ -245,7 +252,7 @@
 {/snippet}
 
 <section class="panel" data-testid="skill-gaps">
-  <h2>{t("skillgaps.title")}</h2>
+  <h2>{heading}</h2>
   {#if error}
     <ErrorNote testid="error" message={error} />
   {:else if gaps === null}
@@ -255,7 +262,7 @@
   {:else}
     <DataTable
       testid="skill-gaps-table"
-      label={t("skillgaps.title")}
+      label={heading}
       columns={gapColumns}
       rows={gaps as unknown as DataGridRow[]}
       rowId={(row) => String(row.skill_pid)}

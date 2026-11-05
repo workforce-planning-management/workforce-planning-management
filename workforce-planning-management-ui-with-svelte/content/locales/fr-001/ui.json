@@ -562,7 +562,8 @@
     "impUseful": "Utile",
     "makeGoal": "En faire un objectif",
     "goalOpen": "Objectif ouvert",
-    "goalTitle": "Atteindre le niveau {level} en {skill}"
+    "goalTitle": "Atteindre le niveau {level} en {skill}",
+    "titleOther": "Écarts de compétences"
   },
   "training": {
     "pointers": "Pistes issues de contenu sous licence",
@@ -3232,7 +3233,10 @@
     "evidenceReached": "Niveau déclaré {declared} sur {target} : atteint",
     "evidenceShort": "Niveau déclaré {declared} sur {target}",
     "evidenceUndeclared": "Niveau cible {target}. Aucun niveau n'est déclaré, ce n'est donc pas connu.",
-    "evidenceDiffers": "Marqué comme atteint, et le niveau déclaré reste sous la cible."
+    "evidenceDiffers": "Marqué comme atteint, et le niveau déclaré reste sous la cible.",
+    "targetLevel": "Niveau cible",
+    "coursesNone": "Aucun cours du catalogue ne développe encore cette compétence.",
+    "coursesHint": "Ce sont des suggestions. Rien ici n'inscrit qui que ce soit."
   },
   "padr": {
     "link": "Mes entretiens de développement",

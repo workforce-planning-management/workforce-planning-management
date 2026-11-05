@@ -562,7 +562,8 @@
     "impUseful": "Útil",
     "makeGoal": "Convertir en objetivo",
     "goalOpen": "Objetivo abierto",
-    "goalTitle": "Alcanzar el nivel {level} en {skill}"
+    "goalTitle": "Alcanzar el nivel {level} en {skill}",
+    "titleOther": "Carencias de competencias"
   },
   "training": {
     "pointers": "Referencias de material con licencia",
@@ -3232,7 +3233,10 @@
     "evidenceReached": "Nivel declarado {declared} de {target}: alcanzado",
     "evidenceShort": "Nivel declarado {declared} de {target}",
     "evidenceUndeclared": "Nivel objetivo {target}. No hay nivel declarado, así que no se sabe.",
-    "evidenceDiffers": "Marcado como logrado, y el nivel declarado sigue por debajo del objetivo."
+    "evidenceDiffers": "Marcado como logrado, y el nivel declarado sigue por debajo del objetivo.",
+    "targetLevel": "Nivel objetivo",
+    "coursesNone": "Todavía no hay ningún curso en el catálogo que desarrolle esta competencia.",
+    "coursesHint": "Son sugerencias. Aquí no se inscribe a nadie."
   },
   "padr": {
     "link": "Mis evaluaciones de desarrollo",

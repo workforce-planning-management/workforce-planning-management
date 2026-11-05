@@ -562,7 +562,8 @@
     "impUseful": "Nützlich",
     "makeGoal": "Daraus ein Ziel machen",
     "goalOpen": "Ziel offen",
-    "goalTitle": "Stufe {level} in {skill} erreichen"
+    "goalTitle": "Stufe {level} in {skill} erreichen",
+    "titleOther": "Kompetenzlücken"
   },
   "training": {
     "pointers": "Hinweise aus lizenziertem Material",
@@ -3223,7 +3224,10 @@
     "evidenceReached": "Angegebene Stufe {declared} von {target}: erreicht",
     "evidenceShort": "Angegebene Stufe {declared} von {target}",
     "evidenceUndeclared": "Zielstufe {target}. Es ist keine Stufe angegeben, daher ist das nicht bekannt.",
-    "evidenceDiffers": "Als erreicht markiert, und die angegebene Stufe liegt noch unter dem Ziel."
+    "evidenceDiffers": "Als erreicht markiert, und die angegebene Stufe liegt noch unter dem Ziel.",
+    "targetLevel": "Zielniveau",
+    "coursesNone": "Im Katalog gibt es noch keinen Kurs für diese Kompetenz.",
+    "coursesHint": "Dies sind Vorschläge. Hier wird niemand angemeldet."
   },
   "padr": {
     "link": "Meine Entwicklungsgespräche",

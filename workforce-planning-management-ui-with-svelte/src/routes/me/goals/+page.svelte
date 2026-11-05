@@ -10,6 +10,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import GoalCard from "#lib/components/GoalCard.svelte";
   import GoalForm from "#lib/components/GoalForm.svelte";
+  import SkillGaps from "#lib/components/SkillGaps.svelte";
   import { myTeamGoals, proposeGoalFor, proposeMyGoal, workerGoals, type GoalBody, type GoalView, type TeamGoals } from "#lib/api/wpm.js";
   import type { MyOrganization } from "#lib/api/types.js";
   import { t, tf } from "#lib/i18n.svelte.js";
@@ -24,6 +25,8 @@
   let error = $state<string | null>(null);
   // The form for one person below the reader, which mounts only when opened.
   let openFor = $state<string | null>(null);
+  // The skill gaps of one person below the reader, which load only when opened.
+  let gapsFor = $state<string | null>(null);
 
   // What is waiting on the reader: a manager's proposals to them, and their reports' proposals to them.
   const waiting = $derived(
@@ -101,6 +104,20 @@
         {:else}
           <p class="muted">{t("goals.noneForPerson")}</p>
         {/each}
+        <details
+          data-testid="report-gaps"
+          open={gapsFor === person.worker_pid}
+          ontoggle={(event) => {
+            const opened = (event.currentTarget as HTMLDetailsElement).open;
+            if (opened) gapsFor = person.worker_pid;
+            else if (gapsFor === person.worker_pid) gapsFor = null;
+          }}
+        >
+          <summary>{t("skillgaps.titleOther")}</summary>
+          {#if gapsFor === person.worker_pid}
+            <SkillGaps workerPid={person.worker_pid} propose={(body) => proposeFor(person.worker_pid, body)} />
+          {/if}
+        </details>
         <details
           data-testid="report-propose"
           open={openFor === person.worker_pid}

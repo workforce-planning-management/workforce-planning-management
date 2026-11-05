@@ -562,7 +562,8 @@
     "impUseful": "有用",
     "makeGoal": "设为目标",
     "goalOpen": "目标进行中",
-    "goalTitle": "在{skill}方面达到 {level} 级"
+    "goalTitle": "在{skill}方面达到 {level} 级",
+    "titleOther": "技能差距"
   },
   "training": {
     "pointers": "来自授权材料的提示",
@@ -3214,7 +3215,10 @@
     "evidenceReached": "已声明等级 {declared}，目标 {target}：已达到",
     "evidenceShort": "已声明等级 {declared}，目标 {target}",
     "evidenceUndeclared": "目标等级 {target}。尚未声明等级，因此未知。",
-    "evidenceDiffers": "已标记为达成，但已声明等级仍低于目标。"
+    "evidenceDiffers": "已标记为达成，但已声明等级仍低于目标。",
+    "targetLevel": "目标级别",
+    "coursesNone": "目录中还没有培养这项技能的课程。",
+    "coursesHint": "这些只是建议。此处不会为任何人报名。"
   },
   "padr": {
     "link": "我的发展评估",

@@ -562,7 +562,8 @@
     "impUseful": "Defnyddiol",
     "makeGoal": "Gwneud hwn yn nod",
     "goalOpen": "Nod ar agor",
-    "goalTitle": "Cyrraedd lefel {level} yn {skill}"
+    "goalTitle": "Cyrraedd lefel {level} yn {skill}",
+    "titleOther": "Bylchau sgiliau"
   },
   "training": {
     "pointers": "Awgrymiadau o ddeunydd trwyddedig",
@@ -3259,7 +3260,10 @@
     "evidenceReached": "Lefel a ddatganwyd {declared} o {target}: wedi'i chyrraedd",
     "evidenceShort": "Lefel a ddatganwyd {declared} o {target}",
     "evidenceUndeclared": "Lefel darged {target}. Ni ddatganwyd lefel, felly nid yw hyn yn hysbys.",
-    "evidenceDiffers": "Wedi'i farcio'n gyflawn, ac mae'r lefel a ddatganwyd yn dal o dan y targed."
+    "evidenceDiffers": "Wedi'i farcio'n gyflawn, ac mae'r lefel a ddatganwyd yn dal o dan y targed.",
+    "targetLevel": "Lefel darged",
+    "coursesNone": "Nid oes cwrs yn y catalog sy'n datblygu'r sgil hon eto.",
+    "coursesHint": "Awgrymiadau yw'r rhain. Nid oes dim yma yn cofrestru neb."
   },
   "padr": {
     "link": "Fy adolygiadau datblygu",

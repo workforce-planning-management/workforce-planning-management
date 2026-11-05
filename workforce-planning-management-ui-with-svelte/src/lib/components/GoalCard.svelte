@@ -6,6 +6,7 @@
   import { formatDate, formatDateRange } from "#lib/locale-format.js";
   import { errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import GoalCourses from "#lib/components/GoalCourses.svelte";
   import GoalForm from "#lib/components/GoalForm.svelte";
   import { agreeGoal, checkInGoal, editGoal, moveGoal, type GoalBody, type GoalView } from "#lib/api/wpm.js";
   import { t, tf, tv } from "#lib/i18n.svelte.js";
@@ -26,6 +27,7 @@
   const evidence = $derived(view.skill_evidence ?? null);
   const moves = $derived(NEXT[goal.status] ?? []);
   const open = $derived(goal.status === "agreed" || goal.status === "in_progress");
+  const live = $derived(goal.status === "proposed" || open);
   const canAgree = $derived(goal.status === "proposed" && goal.proposed_by !== party);
 
   let error = $state<string | null>(null);
@@ -35,6 +37,7 @@
   let measure = $state("");
   let current = $state<number | null>(null);
   let changing = $state(false);
+  let browsing = $state(false);
 
   const shown = (value: number | null) => value ?? "—";
 
@@ -90,6 +93,12 @@
     {#if goal.status === "achieved" && evidence.state === "short"}
       <p class="muted" data-testid="goal-evidence-differs">{t("goals.evidenceDiffers")}</p>
     {/if}
+  {/if}
+  {#if goal.skill_pid && live}
+    <details bind:open={browsing} data-testid="goal-courses">
+      <summary>{t("training.courses")}</summary>
+      {#if browsing}<GoalCourses skillPid={goal.skill_pid} workerPid={goal.worker_pid} />{/if}
+    </details>
   {/if}
   {#if view.plan_step}<p class="muted" data-testid="goal-plan-step">{t("goals.planStep")}: {view.plan_step}</p>{/if}
   {#if goal.aligns_to}<p class="muted" data-testid="goal-aligns">{t("goals.alignsTo")}: {goal.aligns_to}</p>{/if}

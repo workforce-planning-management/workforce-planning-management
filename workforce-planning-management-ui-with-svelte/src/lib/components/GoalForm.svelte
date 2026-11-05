@@ -29,6 +29,7 @@
   } = $props();
 
   type Option = { pid: string; label: string };
+  const LEVELS = [1, 2, 3, 4, 5];
 
   // The form starts from these once; its fields are then the reader's, and a caller whose starting values change re-keys the form.
   const seed = untrack(() => ({ goal: initial?.goal ?? null, measures: initial?.measures ?? [], startsOn, endsOn }));
@@ -48,8 +49,12 @@
   let startValue = $state<number | null>(first?.start_value ?? null);
   let targetValue = $state<number | null>(first?.target_value ?? null);
   let skillPid = $state(seed.goal?.skill_pid ?? "");
+  let skillTarget = $state<number | null>(seed.goal?.skill_target_level ?? null);
   let planItemPid = $state(seed.goal?.plan_item_pid ?? "");
   let alignsTo = $state(seed.goal?.aligns_to ?? "");
+
+  // The service keeps a target a change leaves out, so a stored one can be changed but not blanked while its skill stays.
+  const targetKept = $derived(Boolean(seed.goal?.skill_target_level) && skillPid === seed.goal?.skill_pid);
 
   const load = guardedLoad(
     () => Promise.all([listSkills(), listDevelopmentPlans(workerPid)]),
@@ -85,6 +90,7 @@
       period_start: periodStart,
       period_end: periodEnd,
       ...(skillPid ? { skill_pid: skillPid } : {}),
+      ...(skillPid && skillTarget !== null ? { skill_target_level: skillTarget } : {}),
       ...(planItemPid ? { plan_item_pid: planItemPid } : {}),
       ...(alignsTo.trim() ? { aligns_to: alignsTo.trim() } : {}),
       measures: [
@@ -112,7 +118,7 @@
       await submit(body);
       if (!seed.goal) {
         title = description = measureName = unit = skillPid = planItemPid = alignsTo = "";
-        startValue = targetValue = null;
+        startValue = targetValue = skillTarget = null;
       }
     } catch (cause) {
       error = errorText(cause);
@@ -143,11 +149,20 @@
     <summary>{t("goals.links")}</summary>
     <label>
       {t("goals.buildsSkill")}
-      <select bind:value={skillPid} data-testid="goal-skill-pick">
+      <select bind:value={skillPid} onchange={() => (skillTarget = null)} data-testid="goal-skill-pick">
         <option value=""></option>
         {#each skills as row (row.pid)}<option value={row.pid}>{row.label}</option>{/each}
       </select>
     </label>
+    {#if skillPid}
+      <label>
+        {t("goals.targetLevel")}
+        <select bind:value={skillTarget} data-testid="goal-target-level">
+          {#if !targetKept}<option value={null}></option>{/if}
+          {#each LEVELS as level (level)}<option value={level}>{level}</option>{/each}
+        </select>
+      </label>
+    {/if}
     <label>
       {t("goals.planStep")}
       <select bind:value={planItemPid} data-testid="goal-plan-pick">

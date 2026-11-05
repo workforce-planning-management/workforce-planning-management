@@ -8,7 +8,7 @@
   import ErrorNote from "#lib/components/ErrorNote.svelte";
   import WaitingForYou from "#lib/components/WaitingForYou.svelte";
   import { page } from "$app/state";
-  import { listSelectableFrameworks } from "#lib/api/wpm.js";
+  import { listSelectableFrameworks, proposeMyGoal } from "#lib/api/wpm.js";
   import Backups from "#lib/components/Backups.svelte";
   import OnCall from "#lib/components/OnCall.svelte";
   import SkillGaps from "#lib/components/SkillGaps.svelte";
@@ -88,7 +88,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
   {/if}
   <CareerHistory {workerPid} />
   <Aspirations {workerPid} />
-  <SkillGaps {workerPid} own />
+  <SkillGaps {workerPid} mine propose={proposeMyGoal} />
   <DeclaredSkills {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />

@@ -33,6 +33,8 @@ the reviews they feed.
 - **WPM-R233 From a gap to a goal.** A person looking at their own skill gaps can make a gap a proposed goal in one step: it names the skill, aims at the level the gap needs and ends when the training plan says the skill would be reached. It goes through the same proposal and agreement as any goal. A gap with an open goal for that skill says so and offers no second one. A skill the person has not declared gets no such offer, because an unknown needs assessing first (WPM-R44).
 - **WPM-R234 Evidence beside the claim.** A goal may carry a target level for its skill. It then shows the person's declared level against that target: reached, short, or not declared, which is unknown and not short. A goal marked achieved while the declared level is short says both, and neither overrides the other, as a development plan shows declared and verified progress side by side. This compares one person with their own target; it is no score and is never added up across people (WPM-D163).
 
+- **WPM-R235 A goal names its courses.** A goal that is proposed, agreed or in progress and builds a skill lists the catalogue courses for that skill, each with its hours, its fee or "no fee recorded", and the person's standing on it where the reader may see that. The list opens on request and enrols no one (WPM-D181). A manager can reach a report's skill gaps from their goals and make one a proposal, which the person must agree (WPM-R233, WPM-D177).
+
 ## Decisions (confirmed 2026-11-05)
 
 - **WPM-D163 A goal is a record of intent and evidence, not a score.** There is no attainment percentage, no ranking and no rating derived from
@@ -50,7 +52,11 @@ the reviews they feed.
 
 - **WPM-D180 Evidence does not move a goal.** Reaching the level does not achieve a goal and falling short does not fail one, because the two people agreed the goal and only they close it. Declared level is the person's own statement, so the evidence is as good as that and no better. (Chosen in the build, 2026-11-05, not yet confirmed by the owner.)
 
+- **WPM-D181 A suggestion enrols no one.** A goal shows courses and their cost so the two people can talk about them. Starting one is a separate step and is the owner's to decide, because a course can cost money. Today enrolment is a write that only HR, an administrator or a service may make under the reference policy, through the API, and no screen calls it. (Chosen in the build, 2026-11-05, not yet confirmed by the owner.)
+
 ## Questions for the product owner
+
+**Open, 2026-11-05: starting a course from a goal.** May a person enrol themselves, or does it need a manager's approval? A recorded fee of zero is free; a course with no fee recorded is unknown and must not be treated as free (WPM-R227). A completed enrolment counts against the learning budget at the catalogue fee (WPM-T451), so an enrolment with no approval is spend with no approval.
 
 **Taken as proposed, 2026-11-05.** The owner said yes to building this without answering the three questions one by one, so the build follows each proposal below. Any of them can still be changed.
 

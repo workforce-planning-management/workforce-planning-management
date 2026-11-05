@@ -562,7 +562,8 @@
     "impUseful": "مفید",
     "makeGoal": "اسے ہدف بنائیں",
     "goalOpen": "ہدف کھلا ہے",
-    "goalTitle": "{skill} میں سطح {level} تک پہنچیں"
+    "goalTitle": "{skill} میں سطح {level} تک پہنچیں",
+    "titleOther": "مہارت کے خلا"
   },
   "training": {
     "pointers": "لائسنس یافتہ مواد سے اشارے",
@@ -3223,7 +3224,10 @@
     "evidenceReached": "اعلان کردہ سطح {declared}، ہدف {target}: حاصل",
     "evidenceShort": "اعلان کردہ سطح {declared}، ہدف {target}",
     "evidenceUndeclared": "ہدف کی سطح {target}۔ کوئی سطح اعلان نہیں کی گئی، اس لیے یہ معلوم نہیں۔",
-    "evidenceDiffers": "حاصل شدہ کے طور پر نشان زد، اور اعلان کردہ سطح ابھی ہدف سے نیچے ہے۔"
+    "evidenceDiffers": "حاصل شدہ کے طور پر نشان زد، اور اعلان کردہ سطح ابھی ہدف سے نیچے ہے۔",
+    "targetLevel": "ہدفی سطح",
+    "coursesNone": "کیٹلاگ میں ابھی اس مہارت کو بڑھانے والا کوئی کورس نہیں ہے۔",
+    "coursesHint": "یہ صرف تجاویز ہیں۔ یہاں سے کسی کا اندراج نہیں ہوتا۔"
   },
   "padr": {
     "link": "میرے ترقیاتی جائزے",
