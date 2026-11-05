@@ -6,6 +6,7 @@
   import { createLoader } from "#lib/loader.svelte.js";
   import CalendarPanel from "#lib/components/CalendarPanel.svelte";
   import DataTable from "#lib/components/DataTable.svelte";
+  import GoalsRollup from "#lib/components/GoalsRollup.svelte";
   import type {
     DataGridColumn,
     DataGridRow,
@@ -95,3 +96,5 @@
     )}
   />
 {/if}
+
+<GoalsRollup />

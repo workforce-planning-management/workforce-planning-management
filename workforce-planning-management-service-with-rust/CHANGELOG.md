@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — individual goals (WPM-R224 to WPM-R226, WPM-T428 to WPM-T433)
+
+`rules::individual_goals`; `worker_goals`, `goal_measures`, `goal_check_ins`, `review_goal_outcomes`; `GET /api/workers/{pid}/goals`, `/api/me/team-goals`, `/api/goals/rollup` and `/api/reviews/{pid}/individual-goals`; writes under `/api/me`; sharing a review freezes a snapshot.
+
 ### Added — what learning costs and returns (WPM-R227 to WPM-R230, WPM-T446 to WPM-T451)
 
 `rules::training_economics`; a fee on `skill_courses`, `development_plan_benefits`, `learning_budgets`; `GET /api/development-plans/{pid}/cost` and `/viability`; `GET /api/positions/{pid}/train-or-hire`; benefits by HR and through `/api/me`; `GET` and `PUT /api/learning-budgets`; `PUT /api/skill-courses/{pid}/fee`; seven jurisdiction parameters with no default. Figures from pay follow the salary mask.

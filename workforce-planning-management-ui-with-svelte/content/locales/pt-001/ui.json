@@ -1551,7 +1551,8 @@
     "decisionGates": "Pontos de decisão — WPM",
     "statutoryDefaults": "Valores legais por omissão — WPM",
     "myPayslips": "Os meus recibos de vencimento — WPM",
-    "myDevelopment": "Os meus planos de desenvolvimento — WPM"
+    "myDevelopment": "Os meus planos de desenvolvimento — WPM",
+    "myGoals": "Os meus objetivos — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1933,7 +1934,12 @@
     "academic": "acadêmica",
     "professional": "profissional",
     "vocational": "vocacional",
-    "licence": "licença"
+    "licence": "licença",
+    "partly_achieved": "Parcialmente alcançado",
+    "not_achieved": "Não alcançado",
+    "off_track": "Fora do previsto",
+    "number": "Um número",
+    "milestone": "Um marco de sim ou não"
   },
   "engagement": {
     "title": "Vínculo",
@@ -3105,5 +3111,48 @@
     "budgetNone": "Sem orçamento nem gastos registados este ano.",
     "setBudget": "Definir orçamento",
     "completionsWithoutFee": "Conclusões sem taxa registada: {count}"
+  },
+  "goals": {
+    "link": "Os meus objetivos",
+    "title": "Os meus objetivos",
+    "hint": "O que acordou com a sua chefia e como está a correr. Um objetivo não é uma pontuação: nada é classificado e nenhuma decisão salarial ou de emprego é tomada a partir dele.",
+    "none": "Ainda não tem objetivos.",
+    "mine": "Os meus objetivos",
+    "team": "A minha equipa",
+    "propose": "Propor um objetivo",
+    "goalTitle": "Título",
+    "description": "Descrição",
+    "periodStart": "Início",
+    "periodEnd": "Fim",
+    "measureName": "Medida (opcional)",
+    "measureKind": "Tipo de medida",
+    "unit": "Unidade",
+    "start": "Valor inicial",
+    "target": "Meta",
+    "current": "Atual",
+    "proposeButton": "Propor",
+    "measures": "Medidas",
+    "done": "Feito",
+    "notDone": "Por fazer",
+    "agree": "Acordar este objetivo",
+    "waiting": "A aguardar o acordo da outra pessoa.",
+    "moveTo": "Mover para",
+    "move": "Mover",
+    "checkIn": "Como está a correr?",
+    "checkIns": "Pontos de situação",
+    "addCheckIn": "Adicionar ponto de situação",
+    "note": "Nota",
+    "reviewGoals": "Objetivos numa avaliação",
+    "pickReview": "Escolha uma avaliação",
+    "reviewStatus": "Avaliação",
+    "frozen": "Esta avaliação está partilhada, por isso estes são os objetivos como estavam.",
+    "reviewNone": "Sem objetivos no período desta avaliação.",
+    "reviewerOutcome": "Avaliador",
+    "revieweeOutcome": "Pessoa avaliada",
+    "myOutcome": "O meu resultado",
+    "record": "Registar",
+    "rollupTitle": "Objetivos por departamento",
+    "withheld": "Retido: muito poucas pessoas",
+    "rollupNone": "Ainda não há objetivos."
   }
 }

@@ -4784,6 +4784,149 @@ export function listDevelopmentPlans(
   return api(`/workers/${workerPid}/development-plans`, init);
 }
 
+/** One goal with its measures and check-ins (WPM-R224). Nothing here is a score. */
+export interface GoalView {
+  goal: {
+    pid: string;
+    worker_pid: string;
+    title: string;
+    description: string | null;
+    period_start: string;
+    period_end: string;
+    status: string;
+    proposed_by: "worker" | "manager";
+    agreed_on: string | null;
+    aligns_to: string | null;
+  };
+  measures: Array<{
+    pid: string;
+    name: string;
+    kind: "number" | "milestone";
+    unit: string | null;
+    start_value: number | null;
+    target_value: number | null;
+    current_value: number | null;
+    done: boolean | null;
+  }>;
+  check_ins: Array<{
+    pid: string;
+    checked_on: string;
+    status: string;
+    note: string | null;
+  }>;
+}
+
+export function workerGoals(
+  workerPid: string,
+  init?: FetchLike,
+): Promise<{ worker_pid: string; goals: GoalView[] }> {
+  return api(`/workers/${workerPid}/goals`, init);
+}
+
+/** The goals of everyone below you in the reporting line, by name. */
+export interface TeamGoals {
+  team: Array<{ worker_pid: string; display_name: string; goals: GoalView[] }>;
+}
+
+export function myTeamGoals(init?: FetchLike): Promise<TeamGoals> {
+  return api("/me/team-goals", init);
+}
+
+/** Propose a goal of your own. */
+export function proposeMyGoal(goal: {
+  title: string;
+  description?: string;
+  period_start: string;
+  period_end: string;
+  measures: Array<{
+    name: string;
+    kind: "number" | "milestone";
+    unit?: string;
+    start_value?: number;
+    target_value?: number;
+  }>;
+}): Promise<{ pid: string }> {
+  return api("/me/goals", { method: "POST", body: goal });
+}
+
+/** Agree a goal the other party proposed. */
+export function agreeGoal(
+  pid: string,
+): Promise<{ pid: string; status: string }> {
+  return api(`/me/goals/${pid}/agree`, { method: "POST" });
+}
+
+/** Move a goal on. */
+export function moveGoal(
+  pid: string,
+  to: string,
+): Promise<{ pid: string; status: string }> {
+  return api(`/me/goals/${pid}/status`, { method: "POST", body: { to } });
+}
+
+/** A dated entry on an open goal, optionally updating one measure. */
+export function checkInGoal(
+  pid: string,
+  checkIn: {
+    status: string;
+    note?: string;
+    measure_pid?: string;
+    current_value?: number;
+  },
+): Promise<{ pid: string }> {
+  return api(`/me/goals/${pid}/check-ins`, { method: "POST", body: checkIn });
+}
+
+/** The goals of a review's period; a shared review answers from its snapshot (WPM-D165). */
+export interface ReviewGoalsView {
+  review_pid: string;
+  frozen: boolean;
+  goals: Array<{
+    goal_pid: string;
+    view?: GoalView;
+    snapshot?: { title: string; status: string } | null;
+    reviewer_outcome: string | null;
+    reviewee_outcome: string | null;
+  }>;
+}
+
+export function reviewGoals(
+  reviewPid: string,
+  init?: FetchLike,
+): Promise<ReviewGoalsView> {
+  return api(`/reviews/${reviewPid}/individual-goals`, init);
+}
+
+/** Record your own outcome for a goal in a review. */
+export function recordGoalOutcome(
+  reviewPid: string,
+  goalPid: string,
+  outcome: string,
+): Promise<{ review_pid: string; goal_pid: string }> {
+  return api(`/me/reviews/${reviewPid}/goals/${goalPid}/outcome`, {
+    method: "PUT",
+    body: { outcome },
+  });
+}
+
+/** Goals by status and department, with the floor. Counts only. */
+export interface GoalsRollupView {
+  organization: string;
+  departments: Array<{
+    department: string;
+    by_status: Record<string, number> | null;
+  }>;
+  floor: number;
+  derivation: string;
+}
+
+export function goalsRollup(
+  organization: string,
+  init?: FetchLike,
+): Promise<GoalsRollupView> {
+  return api(`/goals/rollup?${new URLSearchParams({ organization })}`, init);
+}
+
 /** Why a learning figure could not be worked out, or the figure (WPM-D172). */
 export type HoursCostView =
   | {

@@ -22,6 +22,7 @@ absent. A region's section is a record of what was read, never a claim of compli
 
 ## Newer data classes (WPM-T74–T89)
 
+- **Individual goals** (WPM-R224 to WPM-R226) are high-sensitivity personal data: in the subject-access export, erased with the worker, on the `performance` schedule. No pay, progression or employment decision is made from a goal, and nothing scores one.
 - **Stated benefits of a development plan** (WPM-R230) are personal data about the plan's worker: in the subject-access export, erased with the worker, kept on the `performance` schedule with the plan. The cost of a plan's hours and train or hire are worked from pay and not stored.
 - **Emergency contacts** are other people's personal data: readable only by the
   person and HR, audited without detail, in the subject-access export, deleted

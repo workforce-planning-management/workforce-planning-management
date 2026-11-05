@@ -1537,7 +1537,8 @@
     "decisionGates": "决策关口 — WPM",
     "statutoryDefaults": "法定默认值 — WPM",
     "myPayslips": "我的工资单 — WPM",
-    "myDevelopment": "我的发展计划 — WPM"
+    "myDevelopment": "我的发展计划 — WPM",
+    "myGoals": "我的目标 — WPM"
   },
   "values": {
     "abandoned": "已放弃",
@@ -1919,7 +1920,12 @@
     "academic": "学历",
     "professional": "职业资格",
     "vocational": "职业技能",
-    "licence": "执照"
+    "licence": "执照",
+    "partly_achieved": "部分实现",
+    "not_achieved": "未实现",
+    "off_track": "偏离计划",
+    "number": "数值",
+    "milestone": "是或否的里程碑"
   },
   "engagement": {
     "title": "用工关系",
@@ -3087,5 +3093,48 @@
     "budgetNone": "本年度没有预算或已记录支出。",
     "setBudget": "设置预算",
     "completionsWithoutFee": "未记录费用的完成项:{count}"
+  },
+  "goals": {
+    "link": "我的目标",
+    "title": "我的目标",
+    "hint": "您与经理商定的内容及进展。目标不是评分:不做排名,也不据此作出薪酬或雇佣决定。",
+    "none": "您还没有目标。",
+    "mine": "我的目标",
+    "team": "我的团队",
+    "propose": "提议目标",
+    "goalTitle": "标题",
+    "description": "描述",
+    "periodStart": "开始",
+    "periodEnd": "结束",
+    "measureName": "衡量项(可选)",
+    "measureKind": "衡量类型",
+    "unit": "单位",
+    "start": "起始值",
+    "target": "目标值",
+    "current": "当前值",
+    "proposeButton": "提议",
+    "measures": "衡量项",
+    "done": "已完成",
+    "notDone": "未完成",
+    "agree": "同意此目标",
+    "waiting": "等待对方同意。",
+    "moveTo": "移至",
+    "move": "移动",
+    "checkIn": "进展如何?",
+    "checkIns": "进展记录",
+    "addCheckIn": "添加进展记录",
+    "note": "备注",
+    "reviewGoals": "评审中的目标",
+    "pickReview": "选择评审",
+    "reviewStatus": "评审",
+    "frozen": "此评审已共享,以下是当时的目标。",
+    "reviewNone": "此评审期间没有目标。",
+    "reviewerOutcome": "评审人",
+    "revieweeOutcome": "被评审人",
+    "myOutcome": "我的结果",
+    "record": "记录",
+    "rollupTitle": "各部门目标",
+    "withheld": "已隐藏:人数过少",
+    "rollupNone": "还没有目标。"
   }
 }

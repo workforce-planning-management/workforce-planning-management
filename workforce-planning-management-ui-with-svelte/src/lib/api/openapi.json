@@ -5222,6 +5222,14 @@
         ]
       }
     },
+    "/api/goals/rollup": {
+      "get": {
+        "summary": "Goals by status and department (?organization=), with the floor. Counts only: no rate, nobody named.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/goals/{pid}": {
       "put": {
         "parameters": [
@@ -6871,6 +6879,111 @@
         ]
       }
     },
+    "/api/me/goals": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Propose a goal of your own, with any measures.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/goals/{pid}": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Change a goal until it is agreed.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/goals/{pid}/agree": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Agree a goal the other party proposed. HR is neither party.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/goals/{pid}/check-ins": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "A dated entry on an open goal, optionally updating one measure.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/goals/{pid}/status": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Move a goal on: in progress, an outcome, or withdrawn.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/me/health-requirements": {
       "get": {
         "responses": {
@@ -7093,6 +7206,27 @@
         ]
       }
     },
+    "/api/me/reports/{pid}/goals": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Propose a goal for someone in your reporting line.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
     "/api/me/resignation": {
       "get": {
         "responses": {
@@ -7173,6 +7307,35 @@
         "summary": "Take the resignation back while it awaits acceptance; once accepted only HR can record it as rescinded",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/me/reviews/{pid}/goals/{goal}/outcome": {
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          }
+        },
+        "summary": "Record your own outcome for a goal in a review: the reviewer's and the reviewee's are kept apart. Refused once the review is shared.",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/me/team-goals": {
+      "get": {
+        "summary": "The goals of everyone below you in the reporting line, by name. Audited.",
+        "tags": [
+          "development"
         ]
       }
     },
@@ -10085,6 +10248,14 @@
           }
         },
         "summary": "Add a weighted goal",
+        "tags": [
+          "development"
+        ]
+      }
+    },
+    "/api/reviews/{pid}/individual-goals": {
+      "get": {
+        "summary": "The goals of a review's period with the reviewer's and the reviewee's outcomes. A shared review answers from the snapshot it froze.",
         "tags": [
           "development"
         ]
@@ -13362,6 +13533,14 @@
         "summary": "Set the funding (kind core, time_limited, external or programme; time_limited and external need ends_on; optional programme_ref thing: URN)",
         "tags": [
           "engagements"
+        ]
+      }
+    },
+    "/api/workers/{pid}/goals": {
+      "get": {
+        "summary": "A person's goals with their measures and check-ins: the person, a manager in their chain, or HR of the organization. Each read is audited with the goal's pid and no content. No score, rank or attainment percentage exists.",
+        "tags": [
+          "development"
         ]
       }
     },

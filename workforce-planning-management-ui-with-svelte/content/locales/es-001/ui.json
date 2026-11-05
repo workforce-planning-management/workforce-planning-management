@@ -1551,7 +1551,8 @@
     "decisionGates": "Puertas de decisión — WPM",
     "statutoryDefaults": "Valores legales por defecto — WPM",
     "myPayslips": "Mis nóminas — WPM",
-    "myDevelopment": "Mis planes de desarrollo — WPM"
+    "myDevelopment": "Mis planes de desarrollo — WPM",
+    "myGoals": "Mis objetivos — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -1933,7 +1934,12 @@
     "academic": "académica",
     "professional": "profesional",
     "vocational": "formación profesional",
-    "licence": "licencia"
+    "licence": "licencia",
+    "partly_achieved": "Logrado en parte",
+    "not_achieved": "No logrado",
+    "off_track": "Fuera de lo previsto",
+    "number": "Un número",
+    "milestone": "Un hito de sí o no"
   },
   "engagement": {
     "title": "Contratación",
@@ -3105,5 +3111,48 @@
     "budgetNone": "No hay presupuesto ni gasto registrado este año.",
     "setBudget": "Fijar presupuesto",
     "completionsWithoutFee": "Cursos completados sin tarifa registrada: {count}"
+  },
+  "goals": {
+    "link": "Mis objetivos",
+    "title": "Mis objetivos",
+    "hint": "Lo que usted y su responsable acordaron y cómo va. Un objetivo no es una puntuación: nada se clasifica y no se toma ninguna decisión salarial o laboral a partir de él.",
+    "none": "Aún no tiene objetivos.",
+    "mine": "Mis objetivos",
+    "team": "Mi equipo",
+    "propose": "Proponer un objetivo",
+    "goalTitle": "Título",
+    "description": "Descripción",
+    "periodStart": "Inicio",
+    "periodEnd": "Fin",
+    "measureName": "Medida (opcional)",
+    "measureKind": "Tipo de medida",
+    "unit": "Unidad",
+    "start": "Valor inicial",
+    "target": "Meta",
+    "current": "Actual",
+    "proposeButton": "Proponer",
+    "measures": "Medidas",
+    "done": "Hecho",
+    "notDone": "Sin hacer",
+    "agree": "Acordar este objetivo",
+    "waiting": "A la espera de que la otra persona lo acuerde.",
+    "moveTo": "Mover a",
+    "move": "Mover",
+    "checkIn": "¿Cómo va?",
+    "checkIns": "Seguimientos",
+    "addCheckIn": "Añadir seguimiento",
+    "note": "Nota",
+    "reviewGoals": "Objetivos en una evaluación",
+    "pickReview": "Elija una evaluación",
+    "reviewStatus": "Evaluación",
+    "frozen": "Esta evaluación está compartida, así que estos son los objetivos tal como estaban.",
+    "reviewNone": "No hay objetivos en el periodo de esta evaluación.",
+    "reviewerOutcome": "Evaluador",
+    "revieweeOutcome": "Persona evaluada",
+    "myOutcome": "Mi resultado",
+    "record": "Registrar",
+    "rollupTitle": "Objetivos por departamento",
+    "withheld": "Retenido: muy pocas personas",
+    "rollupNone": "Aún no hay objetivos."
   }
 }

@@ -52,6 +52,8 @@ an entry names no pay figure and no personal field in its snapshot.
 
 ## Audited by the Phase 24 proposals (spec round WPM-T309)
 
+Built for goals (WPM-R224 to WPM-R226): `goals_read`, one entry per goal with no content; `proposed`, `edited`, `agreed`, `status_changed`, `checked_in` and `outcome_recorded` on a goal, with no title, note or value.
+
 Built for learning economics (WPM-R227 to WPM-R230): `salary_read` from a plan's cost, its viability or train or hire, with the department and no figure; `stated` and `removed` on a benefit, with the year and no amount; `fee_set` on a course and `set` on a learning budget.
 
 Built: `my_payslips_read` (a person reads their own payslips), `payslip_query_raised`, `payslip_query_closed` and `payslip_queries_read` (a count, with no worker). None holds a query's comment.

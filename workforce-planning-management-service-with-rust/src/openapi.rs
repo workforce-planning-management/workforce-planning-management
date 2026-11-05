@@ -557,6 +557,39 @@ fn add_governance_paths(document: &mut Value) {
         "/api/pay-information-requests/{pid}/answered": {
             "post": { "tags": ["pay-transparency"], "summary": "Record that the answer was given, and when; the figures are not recorded", "responses": ok("The request") }
         },
+        "/api/workers/{pid}/goals": {
+            "get": { "tags": ["development"], "summary": "A person's goals with their measures and check-ins: the person, a manager in their chain, or HR of the organization. Each read is audited with the goal's pid and no content. No score, rank or attainment percentage exists." }
+        },
+        "/api/goals/rollup": {
+            "get": { "tags": ["development"], "summary": "Goals by status and department (?organization=), with the floor. Counts only: no rate, nobody named." }
+        },
+        "/api/reviews/{pid}/individual-goals": {
+            "get": { "tags": ["development"], "summary": "The goals of a review's period with the reviewer's and the reviewee's outcomes. A shared review answers from the snapshot it froze." }
+        },
+        "/api/me/goals": {
+            "post": { "tags": ["development"], "summary": "Propose a goal of your own, with any measures." }
+        },
+        "/api/me/team-goals": {
+            "get": { "tags": ["development"], "summary": "The goals of everyone below you in the reporting line, by name. Audited." }
+        },
+        "/api/me/reports/{pid}/goals": {
+            "post": { "tags": ["development"], "summary": "Propose a goal for someone in your reporting line." }
+        },
+        "/api/me/goals/{pid}": {
+            "put": { "tags": ["development"], "summary": "Change a goal until it is agreed." }
+        },
+        "/api/me/goals/{pid}/agree": {
+            "post": { "tags": ["development"], "summary": "Agree a goal the other party proposed. HR is neither party." }
+        },
+        "/api/me/goals/{pid}/status": {
+            "post": { "tags": ["development"], "summary": "Move a goal on: in progress, an outcome, or withdrawn." }
+        },
+        "/api/me/goals/{pid}/check-ins": {
+            "post": { "tags": ["development"], "summary": "A dated entry on an open goal, optionally updating one measure." }
+        },
+        "/api/me/reviews/{pid}/goals/{goal}/outcome": {
+            "put": { "tags": ["development"], "summary": "Record your own outcome for a goal in a review: the reviewer's and the reviewee's are kept apart. Refused once the review is shared." }
+        },
         "/api/development-plans/{pid}/cost": {
             "get": { "tags": ["development"], "summary": "A plan's recorded fees per currency and, beside them and never added, the cost of its hours at the worker's loaded rate. A course with no fee is counted, not priced at zero. The worker and HR only; a masked reader gets pay_withheld. An unmasked read of someone else's plan is audited." }
         },

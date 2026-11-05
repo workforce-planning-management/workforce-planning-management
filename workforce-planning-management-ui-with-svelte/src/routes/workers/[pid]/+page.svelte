@@ -57,6 +57,7 @@
   import { latestOnly, messageOf, settleEach, type Settled } from "#lib/loader.svelte.js";
   import { i18n, t, tf, tv } from "#lib/i18n.svelte.js";
   import DataTable from "#lib/components/DataTable.svelte";
+  import ReviewGoals from "#lib/components/ReviewGoals.svelte";
   import type {
     DataGridColumn,
     DataGridRow,
@@ -425,6 +426,7 @@
     rows={reviews as unknown as DataGridRow[]}
     rowId={(row) => String(row.pid)}
   />
+  <ReviewGoals {reviews} />
 
   <h2>{t("emp.training")}</h2>
   {@render panelError("training")}

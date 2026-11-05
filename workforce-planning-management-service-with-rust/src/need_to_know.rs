@@ -88,7 +88,7 @@ fn person_id(person_ref: &str) -> &str {
 }
 
 /// Whether `caller_sub` is a line manager of `worker`, directly or higher up.
-async fn is_line_manager(
+pub(crate) async fn is_line_manager(
     ctx: &AppContext,
     worker: &workers::Model,
     caller_sub: &str,

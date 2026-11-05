@@ -3,6 +3,7 @@
 | Term                | Meaning                                                                                          |
 | ------------------- | ------------------------------------------------------------------------------------------------ |
 | **360° / multi-rater** | Feedback on one subject from manager, peers, reports, and self; reported as group aggregates only |
+| **Individual goal** | One person's goal for a period, agreed by them and a manager, with optional measures and check-ins (WPM-R224); a record of intent and evidence, never a score |
 | **Stated benefit** | A yearly benefit of a development plan that someone estimates and sources (WPM-R230); never worked out from a skill level, a completion or a score |
 | **ATS**             | Applicant Tracking System — the requisition/application pipeline                                 |
 | **Adjustment (reasonable)** | A barrier-based change request (barrier / impact / change); no diagnosis required or storable |

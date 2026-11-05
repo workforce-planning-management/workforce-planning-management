@@ -345,6 +345,9 @@ async fn review_status(
     let mut active: reviews::ActiveModel = review.into();
     active.status = ActiveValue::set(payload.to.clone());
     let row = active.update(&txn).await?;
+    if row.status == "shared" {
+        super::individual_goals::freeze_review_goals(&txn, &row).await?;
+    }
     let kind = match payload.to.as_str() {
         "submitted" => "review_submitted",
         "shared" => "review_shared",

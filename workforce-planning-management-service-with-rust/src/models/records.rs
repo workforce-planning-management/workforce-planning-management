@@ -26,6 +26,10 @@ impl ActiveModelBehavior for workers::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::payslip_queries::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::development_plan_benefits::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::learning_budgets::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::worker_goals::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::goal_measures::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::goal_check_ins::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::review_goal_outcomes::ActiveModel {}
 impl ActiveModelBehavior for requisitions::ActiveModel {}
 impl ActiveModelBehavior for assessment_instruments::ActiveModel {}
 impl ActiveModelBehavior for assessments::ActiveModel {}

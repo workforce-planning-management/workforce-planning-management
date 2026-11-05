@@ -14,15 +14,15 @@
     "api": "Rust, Loco (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 1228,
+      "service_unit_declared": 1239,
       "service_request_declared": 216,
       "ui_unit_declared": 283,
-      "ui_e2e_declared": 269,
+      "ui_e2e_declared": 275,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
-    "migrations": 127,
-    "controllers": 91,
-    "pages": 62
+    "migrations": 128,
+    "controllers": 92,
+    "pages": 63
   },
   "sections": {
     "specification": [
@@ -419,7 +419,7 @@
       {
         "title": "spec/learning-economics.md",
         "path": "spec/learning-economics.md",
-        "description": "WPM-R227–R230, WPM-D172–D174 and WPM-T446–T453 (proposed): what learning costs and returns: a course fee, the cost of the hours, train or hire, a stated benefit with payback and net present value; unknown is never zero"
+        "description": "WPM-R227–R230, WPM-D172–D174 and WPM-T446–T453: what learning costs and returns: a course fee, the cost of the hours, train or hire, a stated benefit with payback and net present value; unknown is never zero"
       },
       {
         "title": "spec/local-ci-cd.md",
@@ -429,7 +429,7 @@
       {
         "title": "spec/individual-goals.md",
         "path": "spec/individual-goals.md",
-        "description": "WPM-R224–R226 and WPM-D163–D166 (proposed): individual goals with measures and check-ins, tied to the PADR and performance reviews; a signed review keeps a snapshot; no score; team and company OKRs referenced, never held"
+        "description": "WPM-R224–R226 and WPM-D163–D166: individual goals with measures and check-ins, tied to the PADR and performance reviews; a signed review keeps a snapshot; no score; team and company OKRs referenced, never held"
       },
       {
         "title": "spec/human-capital-reporting.md",

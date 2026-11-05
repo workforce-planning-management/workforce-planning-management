@@ -133,6 +133,7 @@ pub fn app_routes() -> AppRoutes {
         .add_route(controllers::pay_information::routes())
         .add_route(controllers::my_payslips::routes())
         .add_route(controllers::training_economics::routes())
+        .add_route(controllers::individual_goals::routes())
         .add_route(controllers::pay_assessment::routes())
         .add_route(controllers::human_capital::routes())
         .add_route(controllers::pay_range::routes())

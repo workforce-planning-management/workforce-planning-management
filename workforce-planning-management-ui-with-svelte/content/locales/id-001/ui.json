@@ -1537,7 +1537,8 @@
     "decisionGates": "Gerbang keputusan — WPM",
     "statutoryDefaults": "Bawaan menurut undang-undang — WPM",
     "myPayslips": "Slip gaji saya — WPM",
-    "myDevelopment": "Rencana pengembangan saya — WPM"
+    "myDevelopment": "Rencana pengembangan saya — WPM",
+    "myGoals": "Tujuan saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -1919,7 +1920,12 @@
     "academic": "akademik",
     "professional": "profesional",
     "vocational": "vokasional",
-    "licence": "lisensi"
+    "licence": "lisensi",
+    "partly_achieved": "Tercapai sebagian",
+    "not_achieved": "Tidak tercapai",
+    "off_track": "Melenceng",
+    "number": "Angka",
+    "milestone": "Tonggak ya atau tidak"
   },
   "engagement": {
     "title": "Keterlibatan",
@@ -3087,5 +3093,48 @@
     "budgetNone": "Tidak ada anggaran atau pengeluaran tercatat tahun ini.",
     "setBudget": "Tetapkan anggaran",
     "completionsWithoutFee": "Penyelesaian tanpa biaya tercatat: {count}"
+  },
+  "goals": {
+    "link": "Tujuan saya",
+    "title": "Tujuan saya",
+    "hint": "Hal yang Anda sepakati dengan atasan dan perkembangannya. Tujuan bukan skor: tidak ada peringkat, dan tidak ada keputusan gaji atau kepegawaian yang dibuat darinya.",
+    "none": "Anda belum memiliki tujuan.",
+    "mine": "Tujuan saya",
+    "team": "Tim saya",
+    "propose": "Usulkan tujuan",
+    "goalTitle": "Judul",
+    "description": "Deskripsi",
+    "periodStart": "Mulai",
+    "periodEnd": "Selesai",
+    "measureName": "Ukuran (opsional)",
+    "measureKind": "Jenis ukuran",
+    "unit": "Satuan",
+    "start": "Nilai awal",
+    "target": "Target",
+    "current": "Saat ini",
+    "proposeButton": "Usulkan",
+    "measures": "Ukuran",
+    "done": "Selesai dikerjakan",
+    "notDone": "Belum selesai",
+    "agree": "Setujui tujuan ini",
+    "waiting": "Menunggu persetujuan pihak lain.",
+    "moveTo": "Pindah ke",
+    "move": "Pindahkan",
+    "checkIn": "Bagaimana perkembangannya?",
+    "checkIns": "Catatan perkembangan",
+    "addCheckIn": "Tambah catatan perkembangan",
+    "note": "Catatan",
+    "reviewGoals": "Tujuan dalam tinjauan",
+    "pickReview": "Pilih tinjauan",
+    "reviewStatus": "Tinjauan",
+    "frozen": "Tinjauan ini telah dibagikan, jadi inilah tujuan seperti saat itu.",
+    "reviewNone": "Tidak ada tujuan dalam periode tinjauan ini.",
+    "reviewerOutcome": "Peninjau",
+    "revieweeOutcome": "Yang ditinjau",
+    "myOutcome": "Hasil saya",
+    "record": "Catat",
+    "rollupTitle": "Tujuan per departemen",
+    "withheld": "Disembunyikan: terlalu sedikit orang",
+    "rollupNone": "Belum ada tujuan."
   }
 }

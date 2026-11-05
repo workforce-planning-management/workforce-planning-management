@@ -1544,7 +1544,8 @@
     "decisionGates": "فیصلہ دروازے — WPM",
     "statutoryDefaults": "قانونی طے شدہ اقدار — WPM",
     "myPayslips": "میری تنخواہ پرچیاں — WPM",
-    "myDevelopment": "میرے ترقیاتی منصوبے — WPM"
+    "myDevelopment": "میرے ترقیاتی منصوبے — WPM",
+    "myGoals": "میرے اہداف — WPM"
   },
   "values": {
     "abandoned": "ترک شدہ",
@@ -1926,7 +1927,12 @@
     "academic": "تعلیمی",
     "professional": "پیشہ ورانہ",
     "vocational": "فنی",
-    "licence": "لائسنس"
+    "licence": "لائسنس",
+    "partly_achieved": "جزوی طور پر حاصل",
+    "not_achieved": "حاصل نہیں",
+    "off_track": "سمت سے ہٹا ہوا",
+    "number": "ایک عدد",
+    "milestone": "ہاں یا نہیں کا سنگِ میل"
   },
   "engagement": {
     "title": "تقرری",
@@ -3096,5 +3102,48 @@
     "budgetNone": "اس سال کا کوئی بجٹ یا درج خرچ نہیں۔",
     "setBudget": "بجٹ مقرر کریں",
     "completionsWithoutFee": "بغیر درج فیس والی تکمیلات: {count}"
+  },
+  "goals": {
+    "link": "میرے اہداف",
+    "title": "میرے اہداف",
+    "hint": "آپ اور آپ کے مینیجر نے کیا طے کیا اور کام کیسا چل رہا ہے۔ ہدف کوئی اسکور نہیں: کوئی درجہ بندی نہیں ہوتی، اور اس سے تنخواہ یا ملازمت کا کوئی فیصلہ نہیں ہوتا۔",
+    "none": "آپ کے ابھی کوئی اہداف نہیں۔",
+    "mine": "میرے اہداف",
+    "team": "میری ٹیم",
+    "propose": "ہدف تجویز کریں",
+    "goalTitle": "عنوان",
+    "description": "تفصیل",
+    "periodStart": "آغاز",
+    "periodEnd": "اختتام",
+    "measureName": "پیمانہ (اختیاری)",
+    "measureKind": "پیمانے کی قسم",
+    "unit": "اکائی",
+    "start": "ابتدائی قدر",
+    "target": "مطلوبہ قدر",
+    "current": "موجودہ",
+    "proposeButton": "تجویز کریں",
+    "measures": "پیمانے",
+    "done": "مکمل",
+    "notDone": "نامکمل",
+    "agree": "اس ہدف پر اتفاق کریں",
+    "waiting": "دوسرے فرد کے اتفاق کا انتظار ہے۔",
+    "moveTo": "اس میں لے جائیں",
+    "move": "لے جائیں",
+    "checkIn": "کام کیسا چل رہا ہے؟",
+    "checkIns": "پیش رفت نوٹ",
+    "addCheckIn": "پیش رفت نوٹ شامل کریں",
+    "note": "نوٹ",
+    "reviewGoals": "جائزے کے اہداف",
+    "pickReview": "جائزہ منتخب کریں",
+    "reviewStatus": "جائزہ",
+    "frozen": "یہ جائزہ شیئر ہو چکا ہے، اس لیے اہداف اسی وقت کی حالت میں ہیں۔",
+    "reviewNone": "اس جائزے کی مدت میں کوئی ہدف نہیں۔",
+    "reviewerOutcome": "جائزہ لینے والا",
+    "revieweeOutcome": "جس کا جائزہ لیا گیا",
+    "myOutcome": "میرا نتیجہ",
+    "record": "درج کریں",
+    "rollupTitle": "شعبہ وار اہداف",
+    "withheld": "روکا گیا: بہت کم افراد",
+    "rollupNone": "ابھی کوئی ہدف نہیں۔"
   }
 }

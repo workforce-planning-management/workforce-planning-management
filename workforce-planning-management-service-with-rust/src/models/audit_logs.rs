@@ -223,6 +223,7 @@ mod tests {
         ("controllers/funding.rs", "contingent_workforce_read"),
         ("controllers/key_person.rs", "key_person_read"),
         ("controllers/hr_core.rs", "salary_read"),
+        ("controllers/individual_goals.rs", "goals_read"),
         ("controllers/training_economics.rs", "salary_read"),
         ("controllers/health_requirements.rs", "health_record_read"),
         ("controllers/privacy.rs", "subject_access_exported"),

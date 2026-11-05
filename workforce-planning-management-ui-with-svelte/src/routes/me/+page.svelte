@@ -54,6 +54,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
 
 <h1>{t("nav.me")}</h1>
 <p><a href={l("/me/payslips")} data-testid="my-payslips-link">{t("payslips.link")}</a></p>
+<p><a href={l("/me/goals")} data-testid="my-goals-link">{t("goals.link")}</a></p>
 <p><a href={l("/me/development")} data-testid="my-development-link">{t("economics.link")}</a></p>
 <p><a href={l("/me/details")} data-testid="my-details-link">{t("details.link")}</a></p>
 {#if error}<ErrorNote testid="error" message={error} />{/if}

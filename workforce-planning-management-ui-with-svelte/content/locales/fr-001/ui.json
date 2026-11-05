@@ -1551,7 +1551,8 @@
     "decisionGates": "Points de décision — WPM",
     "statutoryDefaults": "Valeurs légales par défaut — WPM",
     "myPayslips": "Mes bulletins de paie — WPM",
-    "myDevelopment": "Mes plans de développement — WPM"
+    "myDevelopment": "Mes plans de développement — WPM",
+    "myGoals": "Mes objectifs — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -1933,7 +1934,12 @@
     "academic": "universitaire",
     "professional": "professionnelle",
     "vocational": "vocationnelle",
-    "licence": "licence d'exercice"
+    "licence": "licence d'exercice",
+    "partly_achieved": "Partiellement atteint",
+    "not_achieved": "Non atteint",
+    "off_track": "Hors trajectoire",
+    "number": "Un nombre",
+    "milestone": "Un jalon oui ou non"
   },
   "engagement": {
     "title": "Engagement",
@@ -3105,5 +3111,48 @@
     "budgetNone": "Aucun budget ni dépense enregistrée pour cette année.",
     "setBudget": "Fixer le budget",
     "completionsWithoutFee": "Cours terminés sans frais enregistrés : {count}"
+  },
+  "goals": {
+    "link": "Mes objectifs",
+    "title": "Mes objectifs",
+    "hint": "Ce que vous et votre responsable avez convenu, et où vous en êtes. Un objectif n'est pas une note : rien n'est classé, et aucune décision de rémunération ou d'emploi n'en découle.",
+    "none": "Vous n'avez pas encore d'objectifs.",
+    "mine": "Mes objectifs",
+    "team": "Mon équipe",
+    "propose": "Proposer un objectif",
+    "goalTitle": "Titre",
+    "description": "Description",
+    "periodStart": "Début",
+    "periodEnd": "Fin",
+    "measureName": "Mesure (facultatif)",
+    "measureKind": "Type de mesure",
+    "unit": "Unité",
+    "start": "Valeur de départ",
+    "target": "Cible",
+    "current": "Actuel",
+    "proposeButton": "Proposer",
+    "measures": "Mesures",
+    "done": "Fait",
+    "notDone": "Non fait",
+    "agree": "Accepter cet objectif",
+    "waiting": "En attente de l'accord de l'autre personne.",
+    "moveTo": "Passer à",
+    "move": "Déplacer",
+    "checkIn": "Où en êtes-vous ?",
+    "checkIns": "Points d'étape",
+    "addCheckIn": "Ajouter un point d'étape",
+    "note": "Note",
+    "reviewGoals": "Objectifs d'un entretien",
+    "pickReview": "Choisir un entretien",
+    "reviewStatus": "Entretien",
+    "frozen": "Cet entretien est partagé : voici les objectifs tels qu'ils étaient.",
+    "reviewNone": "Aucun objectif sur la période de cet entretien.",
+    "reviewerOutcome": "Évaluateur",
+    "revieweeOutcome": "Personne évaluée",
+    "myOutcome": "Mon résultat",
+    "record": "Enregistrer",
+    "rollupTitle": "Objectifs par service",
+    "withheld": "Masqué : trop peu de personnes",
+    "rollupNone": "Pas encore d'objectifs."
   }
 }

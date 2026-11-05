@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — individual goals (WPM-R224 to WPM-R226, 2026-11-05)
+
+A person and a manager agree a goal and follow it through the year with measures and check-ins, a review lists the goals of its period with both outcomes and freezes a snapshot when shared, and HR sees counts with a floor. Nothing scores a goal. The PADR link waits for the PADR record.
+
 ### Added — what learning costs and returns (WPM-R227 to WPM-R230, 2026-11-05)
 
 A course can carry a fee, a plan shows its fees beside the cost of its hours, a seat compares training a candidate with hiring, a stated benefit gives payback and net present value, and a department sees recorded fees against a budget. Unknown stays unknown and says what is missing. Decisions WPM-D172 to WPM-D174 confirmed by the owner; the bridge to the project portfolio (WPM-T452) is still open.

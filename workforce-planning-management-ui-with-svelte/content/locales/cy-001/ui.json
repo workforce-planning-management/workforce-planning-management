@@ -1572,7 +1572,8 @@
     "decisionGates": "Pyrth penderfynu — WPM",
     "statutoryDefaults": "Rhagosodiadau statudol — WPM",
     "myPayslips": "Fy slipiau cyflog — WPM",
-    "myDevelopment": "Fy nghynlluniau datblygu — WPM"
+    "myDevelopment": "Fy nghynlluniau datblygu — WPM",
+    "myGoals": "Fy nodau — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -1954,7 +1955,12 @@
     "academic": "academaidd",
     "professional": "proffesiynol",
     "vocational": "galwedigaethol",
-    "licence": "trwydded"
+    "licence": "trwydded",
+    "partly_achieved": "Wedi'i gyflawni'n rhannol",
+    "not_achieved": "Heb ei gyflawni",
+    "off_track": "Oddi ar y trywydd",
+    "number": "Rhif",
+    "milestone": "Carreg filltir ie neu na"
   },
   "engagement": {
     "title": "Ymgysylltiad",
@@ -3132,5 +3138,48 @@
     "budgetNone": "Dim cyllideb na gwariant wedi'i gofnodi ar gyfer eleni.",
     "setBudget": "Gosod cyllideb",
     "completionsWithoutFee": "Cwblhadau heb ffi wedi'i chofnodi: {count}"
+  },
+  "goals": {
+    "link": "Fy nodau",
+    "title": "Fy nodau",
+    "hint": "Yr hyn y cytunoch chi a'ch rheolwr arno, a sut mae'n mynd. Nid sgôr yw nod: ni chaiff dim ei restru, ac ni wneir penderfyniad cyflog na chyflogaeth ohono.",
+    "none": "Nid oes gennych nodau eto.",
+    "mine": "Fy nodau",
+    "team": "Fy nhîm",
+    "propose": "Cynnig nod",
+    "goalTitle": "Teitl",
+    "description": "Disgrifiad",
+    "periodStart": "Dechrau",
+    "periodEnd": "Diwedd",
+    "measureName": "Mesur (dewisol)",
+    "measureKind": "Math o fesur",
+    "unit": "Uned",
+    "start": "Gwerth dechrau",
+    "target": "Targed",
+    "current": "Presennol",
+    "proposeButton": "Cynnig",
+    "measures": "Mesurau",
+    "done": "Wedi'i wneud",
+    "notDone": "Heb ei wneud",
+    "agree": "Cytuno ar y nod hwn",
+    "waiting": "Yn aros i'r person arall gytuno.",
+    "moveTo": "Symud i",
+    "move": "Symud",
+    "checkIn": "Sut mae'n mynd?",
+    "checkIns": "Diweddariadau",
+    "addCheckIn": "Ychwanegu diweddariad",
+    "note": "Nodyn",
+    "reviewGoals": "Nodau mewn adolygiad",
+    "pickReview": "Dewis adolygiad",
+    "reviewStatus": "Adolygiad",
+    "frozen": "Mae'r adolygiad hwn wedi'i rannu, felly dyma'r nodau fel yr oeddent.",
+    "reviewNone": "Dim nodau yng nghyfnod yr adolygiad hwn.",
+    "reviewerOutcome": "Adolygydd",
+    "revieweeOutcome": "Y sawl a adolygir",
+    "myOutcome": "Fy nghanlyniad",
+    "record": "Cofnodi",
+    "rollupTitle": "Nodau fesul adran",
+    "withheld": "Wedi'i atal: rhy ychydig o bobl",
+    "rollupNone": "Dim nodau eto."
   }
 }

@@ -1,7 +1,6 @@
 # Individual goals tied to reviews
 
-Status: **proposed, not built** (drafted 2026-11-02 by the AI assistant at the product owner's request; decisions WPM-D163 to WPM-D166 are
-proposals until confirmed). Requirements WPM-R224 to WPM-R226; tasks WPM-T428 to WPM-T433 in [tasks.md](tasks.md) Phase 27. Plan: section U of
+Status: **built, except the PADR link.** The product owner confirmed WPM-R224 to WPM-R226 and WPM-D163 to WPM-D166 on 2026-11-05. Tasks WPM-T428 to WPM-T433 in [tasks.md](tasks.md) Phase 27; WPM-T431 is part done, because the PADR record does not exist yet. Plan: section U of
 [plan.md](plan.md).
 
 ## Why
@@ -12,7 +11,7 @@ look back at it. There is no objectives-and-key-results (OKR) or key-performance
 mentions are the CEO dashboard's tiles. This topic adds **individual goals**, owned by the person and agreed with their manager, and ties them to
 the reviews they feed.
 
-## Requirements (proposed)
+## Requirements
 
 - **WPM-R224 A goal.** A worker's goal has a title, an optional description, a period (start and end dates), a status (`proposed`, `agreed`,
   `in_progress`, `achieved`, `partly_achieved`, `not_achieved`, `withdrawn`), and zero or more **measures** (a key result: a name, a unit, a
@@ -29,7 +28,7 @@ the reviews they feed.
   department with the floor; a rate with nothing to divide by is `null`, and a goal with no measure is never counted as met or missed by a number.
   In the subject-access export; erased with the person.
 
-## Decisions (proposed)
+## Decisions (confirmed 2026-11-05)
 
 - **WPM-D163 A goal is a record of intent and evidence, not a score.** There is no attainment percentage, no ranking and no rating derived from
   goals (the scoring guard test applies). A person's measure shows its own start, current and target values and nothing computed against other
@@ -44,6 +43,8 @@ the reviews they feed.
 
 ## Questions for the product owner
 
+**Taken as proposed, 2026-11-05.** The owner said yes to building this without answering the three questions one by one, so the build follows each proposal below. Any of them can still be changed.
+
 1. **Team goals.** Should one goal be shared by several people (a team goal each member sees), or is every goal one person's, with the
    alignment reference as the only link? The proposal is the second, which keeps one owner and one audience per goal.
 2. **Who sets a goal.** The proposal is that the person or their manager may propose and the other agrees (`proposed` to `agreed`), with HR
@@ -53,4 +54,16 @@ the reviews they feed.
 
 ## What is built and what is not
 
-Nothing is built. This file, the plan section and the tasks are the whole of it.
+Built on 2026-11-05: `rules::individual_goals`, the tables `worker_goals`, `goal_measures`, `goal_check_ins` and `review_goal_outcomes`, the API, `/me/goals`, the goals of a review on the worker page, and the roll-up on `/development`.
+
+The requirements left these open; the choices are recorded so a reader can disagree.
+
+- **`worker_goals`, not `goals`.** A table called `goals` already holds weighted lines inside one review (WPM-R10). Those are left as they are, so two things are called goals for now, and whether the older ones should move is a question for later.
+- **"Signed" means `shared`.** A review has no signature; its last status is `shared` (`draft`, `submitted`, `calibrated`, `shared`). The snapshot is taken in the transaction that shares it, and the reviewer's and reviewee's outcomes stop changing then.
+- **Every write is under `/api/me`**, because the reference policy lets only HR write and neither party is HR. HR has no write route at all, so HR cannot agree a goal. A person with no manager on record cannot get their own goal agreed, and it stays `proposed`.
+- **A read is the person, a manager in their chain or HR with a seat**, not payroll, which is narrower than the need-to-know guard's privileged callers. The reviewer named on a review may read that review's goals.
+- **Measures are whole numbers**, with the unit chosen to suit, or a yes-or-no milestone. A goal is editable until it is agreed; after that it can be moved on, checked in or withdrawn. An agreed goal cannot be edited, so a change is a withdrawal and a new proposal.
+- **A check-in says** `on_track`, `at_risk` or `off_track`, and a note, and may set one measure's current value. Only an agreed or in-progress goal takes one.
+- **The roll-up's floor is five people**, counted as people and not goals, with the next smallest department withheld when exactly one is.
+
+Not built: the PADR's objectives as goals (WPM-R172 has a pure core only, so there is no PADR record to tie to); the link from a goal to a skill or plan item is stored but no screen sets it; `aligns_to` is checked for shape only and no screen sets it; no notification tells the other party a goal is waiting; a manager's proposal has an API route and no form; closing a period does nothing automatically.

@@ -1544,7 +1544,8 @@
     "decisionGates": "Entscheidungsschranken — WPM",
     "statutoryDefaults": "Gesetzliche Voreinstellungen — WPM",
     "myPayslips": "Meine Gehaltsabrechnungen — WPM",
-    "myDevelopment": "Meine Entwicklungspläne — WPM"
+    "myDevelopment": "Meine Entwicklungspläne — WPM",
+    "myGoals": "Meine Ziele — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -1926,7 +1927,12 @@
     "academic": "akademisch",
     "professional": "beruflich",
     "vocational": "berufspraktisch",
-    "licence": "Lizenz"
+    "licence": "Lizenz",
+    "partly_achieved": "Teilweise erreicht",
+    "not_achieved": "Nicht erreicht",
+    "off_track": "Nicht im Plan",
+    "number": "Eine Zahl",
+    "milestone": "Ein Ja-oder-Nein-Meilenstein"
   },
   "engagement": {
     "title": "Beschäftigungsverhältnis",
@@ -3096,5 +3102,48 @@
     "budgetNone": "Für dieses Jahr gibt es kein Budget und keine erfassten Ausgaben.",
     "setBudget": "Budget festlegen",
     "completionsWithoutFee": "Abschlüsse ohne erfasste Gebühr: {count}"
+  },
+  "goals": {
+    "link": "Meine Ziele",
+    "title": "Meine Ziele",
+    "hint": "Was Sie und Ihre Führungskraft vereinbart haben und wie es läuft. Ein Ziel ist keine Bewertung: Nichts wird gereiht, und es wird keine Vergütungs- oder Beschäftigungsentscheidung daraus getroffen.",
+    "none": "Sie haben noch keine Ziele.",
+    "mine": "Meine Ziele",
+    "team": "Mein Team",
+    "propose": "Ziel vorschlagen",
+    "goalTitle": "Titel",
+    "description": "Beschreibung",
+    "periodStart": "Beginn",
+    "periodEnd": "Ende",
+    "measureName": "Messgröße (optional)",
+    "measureKind": "Art der Messgröße",
+    "unit": "Einheit",
+    "start": "Startwert",
+    "target": "Zielwert",
+    "current": "Aktuell",
+    "proposeButton": "Vorschlagen",
+    "measures": "Messgrößen",
+    "done": "Erledigt",
+    "notDone": "Nicht erledigt",
+    "agree": "Diesem Ziel zustimmen",
+    "waiting": "Wartet auf die Zustimmung der anderen Person.",
+    "moveTo": "Verschieben nach",
+    "move": "Verschieben",
+    "checkIn": "Wie läuft es?",
+    "checkIns": "Zwischenstände",
+    "addCheckIn": "Zwischenstand hinzufügen",
+    "note": "Notiz",
+    "reviewGoals": "Ziele in einer Beurteilung",
+    "pickReview": "Beurteilung wählen",
+    "reviewStatus": "Beurteilung",
+    "frozen": "Diese Beurteilung ist geteilt; dies sind die Ziele, wie sie damals standen.",
+    "reviewNone": "Keine Ziele im Zeitraum dieser Beurteilung.",
+    "reviewerOutcome": "Beurteilende Person",
+    "revieweeOutcome": "Beurteilte Person",
+    "myOutcome": "Mein Ergebnis",
+    "record": "Erfassen",
+    "rollupTitle": "Ziele nach Abteilung",
+    "withheld": "Zurückgehalten: zu wenige Personen",
+    "rollupNone": "Noch keine Ziele."
   }
 }

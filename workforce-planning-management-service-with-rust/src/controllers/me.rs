@@ -859,6 +859,29 @@ pub fn routes() -> Routes {
         )
         .add("/me/pay-information-requests", post(ask_pay_information))
         .add("/me/payslips", get(super::my_payslips::my_payslips))
+        .add("/me/goals", post(super::individual_goals::propose_mine))
+        .add("/me/team-goals", get(super::individual_goals::team_goals))
+        .add(
+            "/me/reports/{pid}/goals",
+            post(super::individual_goals::propose_for_report),
+        )
+        .add("/me/goals/{pid}", put(super::individual_goals::edit))
+        .add(
+            "/me/goals/{pid}/agree",
+            post(super::individual_goals::agree),
+        )
+        .add(
+            "/me/goals/{pid}/status",
+            post(super::individual_goals::move_status),
+        )
+        .add(
+            "/me/goals/{pid}/check-ins",
+            post(super::individual_goals::check_in),
+        )
+        .add(
+            "/me/reviews/{pid}/goals/{goal}/outcome",
+            put(super::individual_goals::record_outcome),
+        )
         .add(
             "/me/development-plans/{pid}/benefits",
             post(super::training_economics::add_my_benefit),

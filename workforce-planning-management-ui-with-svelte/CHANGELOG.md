@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — individual goals (WPM-T432, WPM-T433)
+
+`/me/goals`, `GoalCard`, `ReviewGoals` on the worker page, `GoalsRollup` on `/development`; 48 strings in 13 locales (AI-written, unreviewed).
+
 ### Added — what learning costs and returns (WPM-T453)
 
 `/me/development`, `PlanEconomics`, `TrainOrHire` on `/positions`, `LearningBudget` on `/learning`, and the fee on the training catalogue; 79 strings in 13 locales (AI-written, unreviewed).
