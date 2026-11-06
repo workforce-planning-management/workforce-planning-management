@@ -84,12 +84,13 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
     }
 }
 
-/// Refuse `db down`, `db reset` and `db truncate` outside development and test (WPM-R237, WPM-D185). `process` is the environment the
-/// process runs in, whatever `--environment` says, so the flag cannot lift this: both must allow it.
+/// Refuse `db down`, `db reset` and `db truncate` outside development and test, and anywhere without `confirmed` (WPM-R237, WPM-D185).
+/// `process` is the environment the process runs in, whatever `--environment` says, so the flag cannot lift this: both must allow it.
 fn refuse_destruction(
     command: &Command,
     process: &Environment,
     chosen: &Environment,
+    confirmed: Option<&str>,
 ) -> Result<()> {
     let destroys = matches!(
         command,
@@ -97,9 +98,9 @@ fn refuse_destruction(
             command: DbCommand::Down { .. } | DbCommand::Reset | DbCommand::Truncate
         }
     );
-    if destroys && (process.is_production_like() || chosen.is_production_like()) {
+    if destroys && !(process.may_destroy_data(confirmed) && chosen.may_destroy_data(confirmed)) {
         return Err(Error::string(
-            "refused: `db down`, `db reset` and `db truncate` run only in development or test",
+            "refused: `db down`, `db reset` and `db truncate` run only in development or test, with AXA_DESTROY_DATA=true",
         ));
     }
     Ok(())
@@ -234,6 +235,7 @@ fn defaults() -> Defaults {
         production_port: Some(5150),
         body_limit: 2 * MB,
         max_connections: 20,
+        ..Defaults::default()
     }
 }
 
@@ -373,16 +375,21 @@ impl App {
             .environment
             .as_deref()
             .map_or_else(Environment::from_env, Environment::parse);
-        refuse_destruction(&cli.command, &Environment::from_env(), &environment)?;
+        refuse_destruction(
+            &cli.command,
+            &Environment::from_env(),
+            &environment,
+            std::env::var("AXA_DESTROY_DATA").ok().as_deref(),
+        )?;
         let mut config = Self::config(&environment)?;
-        if let Command::Start { binding, port, .. } = &cli.command {
-            if let Some(binding) = binding {
-                config.server.binding.clone_from(binding);
+        if matches!(cli.command, Command::Check) {
+            // WPM's own config, not `axa::cli::check`, which re-reads the environment and so reports `axa`'s timeout and CORS, not these.
+            for (name, value) in config.settings() {
+                println!("{name}={value}");
             }
-            if let Some(port) = port {
-                config.server.port = *port;
-            }
+            return Ok(());
         }
+        config.apply_cli(&cli);
         let ctx = Self::context(environment, config).await?;
         axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
         if ctx.config.database.auto_migrate && !matches!(cli.command, Command::Db { .. }) {
@@ -405,6 +412,7 @@ impl App {
                 };
                 tasks.run(&name, &ctx, &parse_vars(&params)?).await
             }
+            Command::Check => Ok(()), // answered above
         }
     }
 
@@ -677,20 +685,29 @@ mod tests {
             || DbCommand::Truncate,
             || DbCommand::Down { steps: 1 },
         ] {
+            let yes = Some("true");
             for environment in &unsafe_ {
-                assert!(refuse_destruction(&db(destroying()), environment, environment).is_err());
+                assert!(
+                    refuse_destruction(&db(destroying()), environment, environment, yes).is_err()
+                );
                 // The flag cannot lift the refusal, in either direction.
-                assert!(refuse_destruction(&db(destroying()), environment, &safe[1]).is_err());
-                assert!(refuse_destruction(&db(destroying()), &safe[0], environment).is_err());
+                assert!(refuse_destruction(&db(destroying()), environment, &safe[1], yes).is_err());
+                assert!(refuse_destruction(&db(destroying()), &safe[0], environment, yes).is_err());
             }
             for environment in &safe {
-                assert!(refuse_destruction(&db(destroying()), environment, environment).is_ok());
+                assert!(
+                    refuse_destruction(&db(destroying()), environment, environment, yes).is_ok()
+                );
+                assert!(
+                    refuse_destruction(&db(destroying()), environment, environment, None).is_err()
+                );
             }
         }
         // What a deployment needs still runs.
         for environment in &unsafe_ {
-            assert!(refuse_destruction(&db(DbCommand::Migrate), environment, environment).is_ok());
-            assert!(refuse_destruction(&db(DbCommand::Status), environment, environment).is_ok());
+            for command in [DbCommand::Migrate, DbCommand::Status] {
+                assert!(refuse_destruction(&db(command), environment, environment, None).is_ok());
+            }
         }
     }
 

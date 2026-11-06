@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.4 (WPM-T468)
+
+`axa` 0.1 to 0.4.0. **A deployment should run `check` first.** Production now refuses a `DATABASE_URL` with no `sslmode` on a remote host, so a
+plaintext path needs `DB_ALLOW_INSECURE=true` as well as `WPM_ALLOW_PLAINTEXT_DATABASE=1`, and refuses a setting that does not parse.
+`DB_CONNECT_TIMEOUT` is 5 seconds and `DB_IDLE_TIMEOUT` 10 minutes by default, up from 500 ms each. Shutdown stops waiting after 25 seconds
+(`SHUTDOWN_TIMEOUT_SECONDS`). The default local database user is `postgres`. `db down`, `db reset` and `db truncate` need `AXA_DESTROY_DATA=true`.
+
 ### Changed — from Loco to axa (WPM-T465)
 
 `axa` replaces `loco-rs`; see the repository changelog (WPM-D183).

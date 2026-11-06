@@ -146,8 +146,8 @@ the default and is unaffected either way.
 ## Quick start
 
 ```bash
-# Postgres 18 with a `loco` database user, then:
-export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_development
+# Postgres 18, then:
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/workforce_planning_management_development
 cargo run -- db migrate       # create the schema
 cargo run -- task seed        # synthetic demo org (40 workers)
 cargo run -- start            # serve on :5150

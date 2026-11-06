@@ -9,8 +9,6 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-use axa::cli::Cli;
-use clap::Parser;
 use workforce_planning_management::{app::App, scheduler};
 
 #[tokio::main]
@@ -20,5 +18,10 @@ async fn main() -> axa::Result<()> {
         axa::logger::init(env!("CARGO_CRATE_NAME"), &App::logging());
         return scheduler::run(&arguments[1..]).await;
     }
-    App::run(Cli::parse()).await
+    App::run(axa::cli::parse(
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_DESCRIPTION"),
+    ))
+    .await
 }
