@@ -190,7 +190,7 @@ jobs:
       - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
       - run: cargo test --locked --test shared_cache_upstream
       # The query cache a build reads must match the migrated schema and the queries (WPM-D184).
-      - run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features postgres,rustls
+      - run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features postgres,rustls,sqlx-toml
       - run: cargo run --locked -- db migrate
         env:
           APP_ENV: test
