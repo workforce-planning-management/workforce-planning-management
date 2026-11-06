@@ -247,7 +247,7 @@ mod tests {
     ];
 
     /// The connection arguments that are, or are handed, a transaction.
-    const IN_TRANSACTION: &[&str] = &["&txn", "txn", "db"];
+    const IN_TRANSACTION: &[&str] = &["&txn", "txn", "db", "&mut tx", "connection"];
 
     /// The top-level arguments of the call that opens at `open` (the index after its `(`).
     fn arguments(source: &str, open: usize) -> Vec<String> {
@@ -313,17 +313,20 @@ mod tests {
                 continue;
             }
             let source = std::fs::read_to_string(&path).unwrap();
-            for (at, _) in source.match_indices("Audit::record(") {
-                let args = arguments(&source, at + "Audit::record(".len());
-                let action = args.get(3).map_or("", |a| a.trim_matches('"')).to_string();
-                if IN_TRANSACTION.contains(&args[0].as_str()) {
-                    continue;
-                }
-                if READ_AUDITS.contains(&(file.as_str(), action.as_str())) {
-                    seen_reads.push((file.clone(), action));
-                } else {
-                    let line = source[..at].lines().count();
-                    outside.push(format!("{file}:{line} {} {action}", args[0]));
+            // Both writers, while SeaORM is retired (WPM-D184).
+            for writer in ["Audit::record(", "db::audit("] {
+                for (at, _) in source.match_indices(writer) {
+                    let args = arguments(&source, at + writer.len());
+                    let action = args.get(3).map_or("", |a| a.trim_matches('"')).to_string();
+                    if IN_TRANSACTION.contains(&args[0].as_str()) {
+                        continue;
+                    }
+                    if READ_AUDITS.contains(&(file.as_str(), action.as_str())) {
+                        seen_reads.push((file.clone(), action));
+                    } else {
+                        let line = source[..at].lines().count();
+                        outside.push(format!("{file}:{line} {} {action}", args[0]));
+                    }
                 }
             }
         }

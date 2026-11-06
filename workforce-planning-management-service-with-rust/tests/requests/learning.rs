@@ -2301,7 +2301,7 @@ async fn reporting_lines_downline_aspirations_and_groups() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn confederation_groups_and_transfers() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let (parent, child_a, child_b, outsider) = (an_org(), an_org(), an_org(), an_org());
         for child in [&child_a, &child_b] {
             request.post("/api/organization-confederations")
@@ -2340,6 +2340,15 @@ async fn confederation_groups_and_transfers() {
         let t: Value = request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": child_b })).await.json();
         assert_eq!(t["to"], child_b.as_str());
         assert_eq!(t["ended_group_memberships"], json!(["A-only club"]));
+        let ended: i64 = sqlx::query_scalar(
+            "SELECT (snapshot->>'group_memberships_ended')::bigint FROM audit_logs
+             WHERE entity_pid = $1::text::uuid AND action = 'transferred'",
+        )
+        .bind(&in_a)
+        .fetch_one(ctx.db.get_postgres_connection_pool())
+        .await
+        .unwrap();
+        assert_eq!(ended, 1, "the audit entry keeps what the move ended");
         let now: Value = request.get(&format!("/api/workers/{in_a}/groups")).await.json();
         let current: Vec<&str> = now["groups"].as_array().unwrap().iter().map(|g| g["name"].as_str().unwrap()).collect();
         assert_eq!(current, ["Federation guild"]);

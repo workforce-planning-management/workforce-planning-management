@@ -88,7 +88,15 @@ async fn enrol(
     )
     .execute(&mut *connection)
     .await?;
-    db::audit(connection, "training_enrollment", pid, "created", actor).await?;
+    db::audit(
+        connection,
+        "training_enrollment",
+        pid,
+        "created",
+        actor,
+        None,
+    )
+    .await?;
     Ok(pid)
 }
 
@@ -130,7 +138,15 @@ pub(crate) async fn start(
                 cause.into()
             }
         })?;
-        db::audit(&mut tx, "course_request", pid, "created", caller.actor()).await?;
+        db::audit(
+            &mut tx,
+            "course_request",
+            pid,
+            "created",
+            caller.actor(),
+            None,
+        )
+        .await?;
         if let Some(manager) = worker.manager_pid {
             db::notify(
                 &mut tx,
@@ -298,6 +314,7 @@ pub(crate) async fn approve(
         row.pid,
         "approved",
         caller.actor(),
+        None,
     )
     .await?;
     tell_person(&mut tx, &row, worker.pid).await?;
@@ -322,6 +339,7 @@ pub(crate) async fn decline(
         row.pid,
         "declined",
         caller.actor(),
+        None,
     )
     .await?;
     tell_person(&mut tx, &row, worker.pid).await?;
@@ -349,6 +367,7 @@ pub(crate) async fn withdraw(
         row.pid,
         "withdrawn",
         caller.actor(),
+        None,
     )
     .await?;
     tx.commit().await?;

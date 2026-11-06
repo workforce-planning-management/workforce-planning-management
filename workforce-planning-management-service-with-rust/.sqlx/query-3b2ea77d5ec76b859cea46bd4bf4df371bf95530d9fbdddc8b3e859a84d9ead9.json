@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE group_members SET left_at = $1 WHERE pid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3b2ea77d5ec76b859cea46bd4bf4df371bf95530d9fbdddc8b3e859a84d9ead9"
+}

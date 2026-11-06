@@ -28,7 +28,7 @@ use crate::rules::pay_scale as scale_rules;
 
 /// A level number on a framework, as the API shows it.
 async fn level_view(ctx: &AppContext, framework: &str, number: i32) -> Result<serde_json::Value> {
-    let found = super::job_levels::find_framework(&ctx.db, framework)
+    let found = super::job_levels::find_framework(crate::db::pool(ctx), framework)
         .await?
         .and_then(|f| {
             let level = f
@@ -50,7 +50,7 @@ async fn level_view(ctx: &AppContext, framework: &str, number: i32) -> Result<se
 
 /// A level named by a client, resolved against the coded and stored ladders: the canonical framework id and the number.
 async fn resolve_level(ctx: &AppContext, framework: &str, level: &str) -> Result<(String, u8)> {
-    let found = super::job_levels::find_framework(&ctx.db, framework.trim())
+    let found = super::job_levels::find_framework(crate::db::pool(ctx), framework.trim())
         .await?
         .ok_or_else(|| {
             unprocessable(&format!(

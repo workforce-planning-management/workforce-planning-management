@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::TransactionTrait;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -13,8 +12,7 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::workers;
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::rules::bridge as rules;
 use crate::rules::metrics::is_employed_on;
 
@@ -41,20 +39,22 @@ async fn overlap(
         return Err(forbidden("the overlap check is for HR"));
     }
     let today = Utc::now().date_naive();
-    let employed: BTreeSet<String> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&p.organization_ref))
-        .filter(workers::Column::PersonRef.is_in(p.person_refs.clone()))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .map(|w| w.person_ref)
-        .collect();
+    let employed: BTreeSet<String> = sqlx::query!(
+        "SELECT person_ref, hired_on, terminated_on FROM workers
+         WHERE organization_ref = $1 AND person_ref = ANY($2) AND deleted_at IS NULL",
+        p.organization_ref,
+        p.person_refs.as_slice(),
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .map(|w| w.person_ref)
+    .collect();
     let results = rules::overlap(&employed, &p.person_refs);
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    db::audit(
+        &mut tx,
         "bridge",
         Uuid::new_v4(),
         "bridge_overlap_checked",
@@ -62,7 +62,7 @@ async fn overlap(
         Some(json!({ "asked": results.len(), "workers": results.iter().filter(|(_, w)| *w).count() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     let results: Vec<_> = results
         .into_iter()
         .map(|(person_ref, worker)| json!({ "person_ref": person_ref, "worker": worker }))

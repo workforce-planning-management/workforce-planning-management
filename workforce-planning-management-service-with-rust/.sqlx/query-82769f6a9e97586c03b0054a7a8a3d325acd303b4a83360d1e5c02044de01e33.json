@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, programme_ref, ends_on FROM post_fundings WHERE programme_ref IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "82769f6a9e97586c03b0054a7a8a3d325acd303b4a83360d1e5c02044de01e33"
+}

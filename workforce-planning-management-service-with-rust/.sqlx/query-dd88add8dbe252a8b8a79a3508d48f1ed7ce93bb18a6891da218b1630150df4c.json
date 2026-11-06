@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE workers SET organization_ref = $1 WHERE pid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dd88add8dbe252a8b8a79a3508d48f1ed7ce93bb18a6891da218b1630150df4c"
+}

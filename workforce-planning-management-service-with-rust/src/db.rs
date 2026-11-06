@@ -12,6 +12,12 @@ pub fn pool(ctx: &AppContext) -> &PgPool {
     ctx.db.get_postgres_connection_pool()
 }
 
+/// A page bound for `LIMIT` or `OFFSET`, which `PostgreSQL` takes as a signed integer.
+#[must_use]
+pub fn bound(value: u64) -> i64 {
+    i64::try_from(value).unwrap_or(i64::MAX)
+}
+
 /// Whether `cause` is a unique constraint refusing a row.
 #[must_use]
 pub fn is_unique_violation(cause: &sqlx::Error) -> bool {
@@ -30,13 +36,15 @@ pub async fn audit(
     entity_pid: Uuid,
     action: &str,
     actor: Option<&str>,
+    snapshot: Option<serde_json::Value>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
-        "INSERT INTO audit_logs (entity, entity_pid, action, actor) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO audit_logs (entity, entity_pid, action, actor, snapshot) VALUES ($1, $2, $3, $4, $5)",
         entity,
         entity_pid,
         action,
         actor,
+        snapshot,
     )
     .execute(connection)
     .await?;
