@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT feature_id, annex_category, overseer_role, representatives_informed_on, workers_informed_on,\n                log_retention_months, retention_note\n         FROM ai_register_entries",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "feature_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "feature_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "annex_category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "annex_category"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "overseer_role",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "overseer_role"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "representatives_informed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "representatives_informed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "workers_informed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "workers_informed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "log_retention_months",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "log_retention_months"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "retention_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ai_register_entries",
+            "name": "retention_note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "b8faac7e177c82a9ba36081a39978d84d76801b1eb59eb8f7e0813c492709eef"
+}

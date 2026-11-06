@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT first_true_on, acknowledged_on FROM early_warnings WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first_true_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "first_true_on"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "acknowledged_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "acknowledged_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "a131579f314e58c4a777eedb86d7653fdaf369d348cca9dae169e266e322229f"
+}

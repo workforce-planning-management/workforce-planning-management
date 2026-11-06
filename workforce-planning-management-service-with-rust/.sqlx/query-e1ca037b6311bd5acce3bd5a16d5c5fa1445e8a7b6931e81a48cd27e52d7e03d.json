@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM worker_pay_positions WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e1ca037b6311bd5acce3bd5a16d5c5fa1445e8a7b6931e81a48cd27e52d7e03d"
+}

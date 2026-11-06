@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM governance_commitments WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "16e3a0021fc412134f8e9a4c4c7c43aa9ee97c2cbb56ad748c70c5e358afec9a"
+}

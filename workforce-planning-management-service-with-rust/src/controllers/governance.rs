@@ -7,14 +7,13 @@
 
 use super::ensure_org_in_scope;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::governance_commitments as table;
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::display;
 use crate::rules::governance as rules;
@@ -82,11 +81,16 @@ fn check_payload(payload: &Payload) -> Result<()> {
 }
 
 async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<table::Model> {
-    let row = table::Entity::find()
-        .filter(table::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        table::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, role, senior,
+                  kind, frequency, minutes, holders, recorded_by
+           FROM governance_commitments WHERE pid = $1"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -111,24 +115,29 @@ async fn create(
     ensure_valid(&problems.into_vec())?;
     check_payload(&payload)?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let txn = ctx.db.begin().await?;
-    let row = table::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(org),
-        name: ActiveValue::set(payload.name),
-        role: ActiveValue::set(payload.role),
-        senior: ActiveValue::set(payload.senior),
-        kind: ActiveValue::set(payload.kind),
-        frequency: ActiveValue::set(payload.frequency),
-        minutes: ActiveValue::set(payload.minutes),
-        holders: ActiveValue::set(payload.holders),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        table::Model,
+        r#"INSERT INTO governance_commitments
+               (pid, organization_ref, name, role, senior, kind, frequency, minutes, holders, recorded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, role, senior,
+                  kind, frequency, minutes, holders, recorded_by"#,
+        Uuid::new_v4(),
+        org,
+        payload.name,
+        payload.role,
+        payload.senior,
+        payload.kind,
+        payload.frequency,
+        payload.minutes,
+        payload.holders,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "governance_commitment",
         row.pid,
         "created",
@@ -136,7 +145,7 @@ async fn create(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&row))
 }
 
@@ -150,19 +159,28 @@ async fn change(
 ) -> Result<Response> {
     let row = find(&ctx, &caller, &pid).await?;
     check_payload(&payload)?;
-    let mut active: table::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name);
-    active.role = ActiveValue::set(payload.role);
-    active.senior = ActiveValue::set(payload.senior);
-    active.kind = ActiveValue::set(payload.kind);
-    active.frequency = ActiveValue::set(payload.frequency);
-    active.minutes = ActiveValue::set(payload.minutes);
-    active.holders = ActiveValue::set(payload.holders);
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let txn = ctx.db.begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        table::Model,
+        r#"UPDATE governance_commitments
+           SET name = $2, role = $3, senior = $4, kind = $5, frequency = $6, minutes = $7, holders = $8, recorded_by = $9
+           WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, role, senior,
+                  kind, frequency, minutes, holders, recorded_by"#,
+        row.id,
+        payload.name,
+        payload.role,
+        payload.senior,
+        payload.kind,
+        payload.frequency,
+        payload.minutes,
+        payload.holders,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "governance_commitment",
         saved.pid,
         "changed",
@@ -170,7 +188,7 @@ async fn change(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&saved))
 }
 
@@ -182,10 +200,12 @@ async fn remove(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find(&ctx, &caller, &pid).await?;
-    let txn = ctx.db.begin().await?;
-    table::Entity::delete_by_id(row.id).exec(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM governance_commitments WHERE id = $1", row.id)
+        .execute(&mut *tx)
+        .await?;
+    db::audit(
+        &mut tx,
         "governance_commitment",
         row.pid,
         "removed",
@@ -193,7 +213,7 @@ async fn remove(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "removed": row.pid }))
 }
 
@@ -213,12 +233,15 @@ async fn rows_of(
         .clone()
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(ctx, caller, &org).await?;
-    let rows = table::Entity::find()
-        .filter(table::Column::OrganizationRef.eq(&org))
-        .order_by_asc(table::Column::Role)
-        .order_by_asc(table::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        table::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, role, senior,
+                  kind, frequency, minutes, holders, recorded_by
+           FROM governance_commitments WHERE organization_ref = $1 ORDER BY role, name"#,
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     Ok((org, rows))
 }
 
@@ -263,10 +286,15 @@ async fn load(
 /// The governance load of one organization for the monthly pack: the totals only. No role and no
 /// commitment appears, since a free-text role could carry a name.
 pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json::Value> {
-    let rows = table::Entity::find()
-        .filter(table::Column::OrganizationRef.eq(org))
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        table::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, role, senior,
+                  kind, frequency, minutes, holders, recorded_by
+           FROM governance_commitments WHERE organization_ref = $1"#,
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let commitments: Vec<_> = rows.iter().map(commitment).collect();
     let total = rules::load(&commitments);
     Ok(json!({

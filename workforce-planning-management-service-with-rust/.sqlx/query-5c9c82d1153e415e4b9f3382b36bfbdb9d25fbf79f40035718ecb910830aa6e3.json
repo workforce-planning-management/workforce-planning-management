@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT subscription_pid, status FROM webhook_deliveries",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "subscription_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "subscription_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "webhook_deliveries",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "5c9c82d1153e415e4b9f3382b36bfbdb9d25fbf79f40035718ecb910830aa6e3"
+}

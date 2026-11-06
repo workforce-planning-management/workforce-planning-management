@@ -1,0 +1,55 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, source, observed_on FROM holidays\n             WHERE organization_ref = $1 AND region = $2 AND natural_on = $3 AND name = $4 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "holidays",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "holidays",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "observed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "holidays",
+            "name": "observed_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Date",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "31118b04412a7a23fee1778f5e9553aacec376f86958ac46ccc14678bce4a33d"
+}

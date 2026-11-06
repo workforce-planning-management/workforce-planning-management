@@ -9,14 +9,13 @@ use std::collections::{BTreeMap, HashMap};
 
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait, TryIntoModel};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_org_in_scope, internal, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{movements, separation_records, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::{separation_records, workers};
 use crate::models::records;
 use crate::rules::separation as rules;
 
@@ -35,27 +34,42 @@ async fn ensure_hr(
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await
 }
 
+/// What a separation record reads from the leaver record.
+struct Leaver {
+    pid: Uuid,
+    worker_pid: Uuid,
+    effective_on: NaiveDate,
+    reason: Option<String>,
+}
+
 /// A leaver record that still stands, and its worker. Anything else has no separation record.
-async fn leaver(ctx: &AppContext, pid: &str) -> Result<(movements::Model, workers::Model)> {
-    let movement = movements::Entity::find()
-        .filter(movements::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(movements::Column::Kind.eq("leaver"))
-        .filter(movements::Column::Status.ne("cancelled"))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+async fn leaver(ctx: &AppContext, pid: &str) -> Result<(Leaver, workers::Model)> {
+    let movement = sqlx::query_as!(
+        Leaver,
+        "SELECT pid, worker_pid, effective_on, reason FROM movements
+         WHERE pid = $1 AND kind = 'leaver' AND status <> 'cancelled'",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let worker = records::find_worker(&ctx.db, movement.worker_pid).await?;
     Ok((movement, worker))
 }
 
 async fn stored(ctx: &AppContext, movement: Uuid) -> Result<Option<separation_records::Model>> {
-    Ok(separation_records::Entity::find()
-        .filter(separation_records::Column::MovementPid.eq(movement))
-        .one(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        separation_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, worker_pid, final_pay_on,
+                  pay_summary_ref, recorded_by
+           FROM separation_records WHERE movement_pid = $1"#,
+        movement,
+    )
+    .fetch_optional(pool(ctx))
+    .await?)
 }
 
-fn view(movement: &movements::Model, row: Option<&separation_records::Model>) -> serde_json::Value {
+fn view(movement: &Leaver, row: Option<&separation_records::Model>) -> serde_json::Value {
     let final_pay_on = row.and_then(|r| r.final_pay_on);
     let reference = row.and_then(|r| r.pay_summary_ref.as_deref());
     serde_json::json!({
@@ -79,8 +93,8 @@ async fn show(
     let (movement, worker) = leaver(&ctx, &pid).await?;
     ensure_hr(&ctx, &caller, &worker).await?;
     let row = stored(&ctx, movement.pid).await?;
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "separation_record",
         movement.pid,
         "separation_read",
@@ -113,22 +127,39 @@ async fn record(
     let reference =
         rules::clean_ref(payload.pay_summary_ref.as_deref()).map_err(|e| unprocessable(&e))?;
     let existing = stored(&ctx, movement.pid).await?;
-    let txn = ctx.db.begin().await?;
-    let mut active = existing.map_or_else(
-        || separation_records::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            movement_pid: ActiveValue::set(movement.pid),
-            worker_pid: ActiveValue::set(worker.pid),
-            ..Default::default()
-        },
-        Into::into,
-    );
-    active.final_pay_on = ActiveValue::set(payload.final_pay_on);
-    active.pay_summary_ref = ActiveValue::set(reference);
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let row = active.save(&txn).await?.try_into_model()?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let row = if let Some(row) = existing {
+        sqlx::query_as!(
+            separation_records::Model,
+            r#"UPDATE separation_records SET final_pay_on = $2, pay_summary_ref = $3, recorded_by = $4 WHERE id = $1
+               RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, worker_pid,
+                         final_pay_on, pay_summary_ref, recorded_by"#,
+            row.id,
+            payload.final_pay_on,
+            reference,
+            caller.actor(),
+        )
+        .fetch_one(&mut *tx)
+        .await?
+    } else {
+        sqlx::query_as!(
+            separation_records::Model,
+            r#"INSERT INTO separation_records (pid, movement_pid, worker_pid, final_pay_on, pay_summary_ref, recorded_by)
+               VALUES ($1, $2, $3, $4, $5, $6)
+               RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, worker_pid,
+                         final_pay_on, pay_summary_ref, recorded_by"#,
+            Uuid::new_v4(),
+            movement.pid,
+            worker.pid,
+            payload.final_pay_on,
+            reference,
+            caller.actor(),
+        )
+        .fetch_one(&mut *tx)
+        .await?
+    };
+    db::audit(
+        &mut tx,
         "separation_record",
         movement.pid,
         "separation_recorded",
@@ -136,7 +167,7 @@ async fn record(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&movement, Some(&row)))
 }
 
@@ -167,29 +198,31 @@ async fn export(
     )
     .map_err(record_rejection)?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let staff: HashMap<Uuid, workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect();
-    let leavers = movements::Entity::find()
-        .filter(movements::Column::Kind.eq("leaver"))
-        .filter(movements::Column::Status.ne("cancelled"))
-        .filter(movements::Column::EffectiveOn.gte(query.from))
-        .filter(movements::Column::EffectiveOn.lte(query.to))
-        .order_by_asc(movements::Column::EffectiveOn)
-        .order_by_asc(movements::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let staff: HashMap<Uuid, _> = sqlx::query!(
+        "SELECT pid, worker_number, display_name FROM workers WHERE organization_ref = $1",
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect();
+    let leavers = sqlx::query_as!(
+        Leaver,
+        "SELECT pid, worker_pid, effective_on, reason FROM movements
+         WHERE kind = 'leaver' AND status <> 'cancelled' AND effective_on >= $1 AND effective_on <= $2
+         ORDER BY effective_on, id",
+        query.from,
+        query.to,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let pids: Vec<Uuid> = leavers.iter().map(|m| m.pid).collect();
-    let added: HashMap<Uuid, separation_records::Model> = super::find_in(
-        &ctx,
-        separation_records::Entity::find(),
-        separation_records::Column::MovementPid,
+    let added: HashMap<Uuid, _> = sqlx::query!(
+        "SELECT movement_pid, final_pay_on, pay_summary_ref FROM separation_records WHERE movement_pid = ANY($1)",
         &pids,
     )
+    .fetch_all(pool(&ctx))
     .await?
     .into_iter()
     .map(|r| (r.movement_pid, r))
@@ -209,8 +242,8 @@ async fn export(
             })
         })
         .collect();
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "separation_export",
         Uuid::new_v4(),
         "separation_exported",

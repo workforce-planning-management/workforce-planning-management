@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM category_vocabulary WHERE organization_ref = $1 AND kind = $2 AND code = $3\n           ) AS \"clash!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "clash!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "48e2c07923da52855d3093062704209262ff0d5353b26596845236dc4f583041"
+}

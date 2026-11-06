@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT unit_pid, title, version, effective_from, effective_to, consultation_days FROM collective_agreements\n         WHERE unit_pid IN (SELECT pid FROM bargaining_units WHERE body_pid = $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "unit_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "unit_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "effective_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "effective_from"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "effective_to",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "effective_to"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "consultation_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "consultation_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "0a8c19ef9d246c4a0b20889f9dd575a95f103cf095d5c7f42a654802f195d845"
+}

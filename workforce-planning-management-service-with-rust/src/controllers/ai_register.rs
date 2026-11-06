@@ -4,27 +4,14 @@
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::ai_register_entries;
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::rules::ai_register::{self as rules, Entry};
-
-fn entry_of(m: &ai_register_entries::Model) -> Entry {
-    Entry {
-        annex_category: m.annex_category.clone(),
-        overseer_role: m.overseer_role.clone(),
-        representatives_informed_on: m.representatives_informed_on,
-        workers_informed_on: m.workers_informed_on,
-        log_retention_months: m.log_retention_months,
-        retention_note: m.retention_note.clone(),
-    }
-}
 
 /// The date the Annex III duties apply: `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), else the default.
 pub(crate) fn applies_from() -> NaiveDate {
@@ -36,11 +23,24 @@ pub(crate) fn applies_from() -> NaiveDate {
 /// `GET /api/ai-register` — every scoring feature with what is recorded for it; what is not recorded is `unknown`.
 #[debug_handler]
 async fn register(State(ctx): State<AppContext>) -> Result<Response> {
-    let held = ai_register_entries::Entity::find().all(&ctx.db).await?;
+    let held = sqlx::query!(
+        "SELECT feature_id, annex_category, overseer_role, representatives_informed_on, workers_informed_on,
+                log_retention_months, retention_note
+         FROM ai_register_entries"
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let rows: Vec<rules::Row> = rules::FEATURES
         .iter()
         .map(|f| {
-            let entry = held.iter().find(|m| m.feature_id == f.id).map(entry_of);
+            let entry = held.iter().find(|m| m.feature_id == f.id).map(|m| Entry {
+                annex_category: m.annex_category.clone(),
+                overseer_role: m.overseer_role.clone(),
+                representatives_informed_on: m.representatives_informed_on,
+                workers_informed_on: m.workers_informed_on,
+                log_retention_months: m.log_retention_months,
+                retention_note: m.retention_note.clone(),
+            });
             rules::row(f, entry.as_ref())
         })
         .collect();
@@ -98,44 +98,54 @@ async fn record(
         payload.consultation_pid,
     )
     .await?;
-    let actor = caller.actor().map(ToString::to_string);
-    let txn = ctx.db.begin().await?;
-    let existing = ai_register_entries::Entity::find()
-        .filter(ai_register_entries::Column::FeatureId.eq(feature.id))
-        .one(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let existing = sqlx::query_scalar!(
+        "SELECT pid FROM ai_register_entries WHERE feature_id = $1",
+        feature.id,
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
+    let pid = if let Some(pid) = existing {
+        sqlx::query!(
+            "UPDATE ai_register_entries
+             SET annex_category = $2, overseer_role = $3, representatives_informed_on = $4, workers_informed_on = $5,
+                 log_retention_months = $6, retention_note = $7, recorded_by = $8
+             WHERE pid = $1",
+            pid,
+            entry.annex_category,
+            entry.overseer_role,
+            entry.representatives_informed_on,
+            entry.workers_informed_on,
+            entry.log_retention_months,
+            entry.retention_note,
+            caller.actor(),
+        )
+        .execute(&mut *tx)
         .await?;
-    let pid = if let Some(row) = existing {
-        let pid = row.pid;
-        let mut active: ai_register_entries::ActiveModel = row.into();
-        active.annex_category = ActiveValue::set(entry.annex_category.clone());
-        active.overseer_role = ActiveValue::set(entry.overseer_role.clone());
-        active.representatives_informed_on = ActiveValue::set(entry.representatives_informed_on);
-        active.workers_informed_on = ActiveValue::set(entry.workers_informed_on);
-        active.log_retention_months = ActiveValue::set(entry.log_retention_months);
-        active.retention_note = ActiveValue::set(entry.retention_note.clone());
-        active.recorded_by = ActiveValue::set(actor.clone());
-        active.update(&txn).await?;
         pid
     } else {
         let pid = Uuid::new_v4();
-        ai_register_entries::ActiveModel {
-            pid: ActiveValue::set(pid),
-            feature_id: ActiveValue::set(feature.id.to_string()),
-            annex_category: ActiveValue::set(entry.annex_category.clone()),
-            overseer_role: ActiveValue::set(entry.overseer_role.clone()),
-            representatives_informed_on: ActiveValue::set(entry.representatives_informed_on),
-            workers_informed_on: ActiveValue::set(entry.workers_informed_on),
-            log_retention_months: ActiveValue::set(entry.log_retention_months),
-            retention_note: ActiveValue::set(entry.retention_note.clone()),
-            recorded_by: ActiveValue::set(actor.clone()),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query!(
+            "INSERT INTO ai_register_entries
+                 (pid, feature_id, annex_category, overseer_role, representatives_informed_on, workers_informed_on,
+                  log_retention_months, retention_note, recorded_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            pid,
+            feature.id,
+            entry.annex_category,
+            entry.overseer_role,
+            entry.representatives_informed_on,
+            entry.workers_informed_on,
+            entry.log_retention_months,
+            entry.retention_note,
+            caller.actor(),
+        )
+        .execute(&mut *tx)
         .await?;
         pid
     };
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "ai_register",
         pid,
         "ai_register_recorded",
@@ -143,7 +153,7 @@ async fn record(
         Some(json!({ "feature": feature.id, "consultation_pid": payload.consultation_pid })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "feature": feature.id, "decision_gate": gate }))
 }
 

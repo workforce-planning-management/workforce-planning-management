@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, movement_pid, worker_pid, final_pay_on,\n                  pay_summary_ref, recorded_by\n           FROM separation_records WHERE movement_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "movement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "movement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "final_pay_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "final_pay_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "pay_summary_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "pay_summary_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5e759d3cbfc4294424c65914fe8c7a277ee65eb6aa2b110972c4d99db0424eb5"
+}

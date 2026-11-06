@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_register_entries\n                 (pid, feature_id, annex_category, overseer_role, representatives_informed_on, workers_informed_on,\n                  log_retention_months, retention_note, recorded_by)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Date",
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2b8ede8f1020c8e3a8515fbaf466edcc09d734b302888d66c2b3f3d545c06788"
+}

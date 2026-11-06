@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT staff_group FROM category_vocabulary\n         WHERE organization_ref = $1 AND kind = 'job_role' AND code = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "staff_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "category_vocabulary",
+            "name": "staff_group"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "829ce88c63a971e44fe6ae93d1bb3a9e0f89ffab51fcedf26aad67515b120896"
+}

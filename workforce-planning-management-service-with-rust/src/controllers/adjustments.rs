@@ -7,14 +7,12 @@
 
 use super::row_json;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db::{self, pool};
 use crate::models::_entities::adjustment_requests;
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
 use crate::models::records;
 use crate::rules::adjustments as rules;
 use crate::validation::Problems;
@@ -61,35 +59,33 @@ async fn create_request(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let txn = ctx.db.begin().await?;
-    let row = adjustment_requests::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        category: ActiveValue::set(payload.category.clone()),
-        barrier: ActiveValue::set(payload.barrier.clone()),
-        impact: ActiveValue::set(payload.impact.clone()),
-        adjustment: ActiveValue::set(payload.adjustment.clone()),
-        status: ActiveValue::set("requested".to_string()),
-        decision_note: ActiveValue::set(None),
-        decided_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let row_pid = uuid::Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO adjustment_requests (pid, worker_pid, category, barrier, impact, adjustment, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'requested')",
+        row_pid,
+        worker.pid,
+        payload.category,
+        payload.barrier,
+        payload.impact,
+        payload.adjustment,
+    )
+    .execute(&mut *tx)
     .await?;
     // The audit row records that a request was made — not its words.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "adjustment_request",
-        row.pid,
+        row_pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({ "category": payload.category })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: row_pid.to_string(),
     })
 }
 
@@ -111,15 +107,16 @@ async fn list_requests(
     )
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
-    let rows = adjustment_requests::Entity::find()
-        .filter(adjustment_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(adjustment_requests::Column::DeletedAt.is_null())
-        .order_by_desc(adjustment_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, category, status, barrier, impact, adjustment, decision_note, decided_on
+         FROM adjustment_requests WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id DESC",
+        worker.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     if !masked && !rows.is_empty() {
-        Audit::record(
-            &ctx.db,
+        db::audit(
+            &mut *pool(&ctx).acquire().await?,
             "adjustment_request",
             worker.pid,
             "adjustments_read",
@@ -171,45 +168,49 @@ async fn decide(
     let mut problems = Problems::new();
     problems.cap_opt("note", payload.note.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let row = adjustment_requests::Entity::find()
-        .filter(adjustment_requests::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(adjustment_requests::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query!(
+        "SELECT pid, worker_pid, category, status FROM adjustment_requests WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     rules::transition(&row.status, &payload.to).map_err(|reason| unprocessable(&reason))?;
-    let from = row.status.clone();
-    let row_pid = row.pid;
-    let worker_pid = row.worker_pid;
-    let category = row.category.clone();
-    let mut active: adjustment_requests::ActiveModel = row.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    active.decided_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    if payload.note.is_some() {
-        active.decision_note = ActiveValue::set(payload.note.clone());
-    }
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        adjustment_requests::Model,
+        r#"UPDATE adjustment_requests
+           SET status = $2, decided_on = $3, decision_note = COALESCE($4, decision_note)
+           WHERE pid = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, category, barrier, impact,
+                     adjustment, status, decision_note, decided_on, deleted_at AS "deleted_at: _""#,
+        row.pid,
+        payload.to,
+        chrono::Utc::now().date_naive(),
+        payload.note,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "adjustment_request",
-        row_pid,
+        row.pid,
         "status_changed",
         caller.actor(),
-        Some(serde_json::json!({ "from": from, "to": payload.to })),
+        Some(serde_json::json!({ "from": row.status, "to": payload.to })),
     )
     .await?;
     // Tell the worker — the body names the category and the state,
     // never the words (WPM-D23 reference-only posture).
-    Notification::push(
-        &txn,
-        worker_pid,
+    db::notify(
+        &mut tx,
+        row.worker_pid,
         "adjustment_update",
-        &format!("Adjustment request ({category}): {}", payload.to),
-        serde_json::json!({ "adjustment_request_pid": row_pid }),
+        &format!("Adjustment request ({}): {}", row.category, payload.to),
+        serde_json::json!({ "adjustment_request_pid": row.pid }),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 

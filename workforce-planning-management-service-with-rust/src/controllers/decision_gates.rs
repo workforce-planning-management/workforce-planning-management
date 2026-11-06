@@ -4,7 +4,6 @@
 //! HR writes; the pointer is shown to whoever makes the change. Spec: `spec/worker-unions.md`.
 
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -13,8 +12,7 @@ use super::bargaining::find_body;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{consultations, decision_gates};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::rules::decision_gate as rules;
 
 /// Where the equality impact template says to record the consultation for a score.
@@ -32,21 +30,23 @@ pub(crate) async fn pointer(
     change: &str,
     consultation_pid: Option<Uuid>,
 ) -> Result<serde_json::Value> {
-    let mut find =
-        decision_gates::Entity::find().filter(decision_gates::Column::ChangeKind.eq(change));
-    if let Some(org) = organization {
-        find = find.filter(decision_gates::Column::OrganizationRef.eq(org));
-    }
-    let gates = find
-        .order_by_asc(decision_gates::Column::OrganizationRef)
-        .all(&ctx.db)
-        .await?;
+    let gates = sqlx::query!(
+        "SELECT organization_ref, change_kind, body_pid, note FROM decision_gates
+         WHERE change_kind = $1 AND ($2::text IS NULL OR organization_ref = $2)
+         ORDER BY organization_ref",
+        change,
+        organization,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     if let Some(reference) = consultation_pid {
-        let known = consultations::Entity::find()
-            .filter(consultations::Column::Pid.eq(reference))
-            .count(&ctx.db)
-            .await?;
-        if known == 0 {
+        let known = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM consultations WHERE pid = $1) AS "known!""#,
+            reference,
+        )
+        .fetch_one(pool(ctx))
+        .await?;
+        if !known {
             return Err(unprocessable(
                 "consultation_pid is not a consultation record",
             ));
@@ -86,11 +86,13 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = decision_gates::Entity::find()
-        .filter(decision_gates::Column::OrganizationRef.eq(&query.organization))
-        .order_by_asc(decision_gates::Column::ChangeKind)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, change_kind, body_pid, note FROM decision_gates
+         WHERE organization_ref = $1 ORDER BY change_kind",
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     format::json(json!({
         "changes": rules::CHANGES,
         "gates": rows.iter().map(|g| json!({ "pid": g.pid, "change_kind": g.change_kind, "body_pid": g.body_pid, "note": g.note })).collect::<Vec<_>>(),
@@ -122,37 +124,40 @@ async fn create(
     if body.organization_ref != payload.organization_ref {
         return Err(unprocessable("body_pid is not a body of this organization"));
     }
-    let clash = decision_gates::Entity::find()
-        .filter(decision_gates::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(decision_gates::Column::ChangeKind.eq(&payload.change_kind))
-        .filter(decision_gates::Column::BodyPid.eq(payload.body_pid))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM decision_gates WHERE organization_ref = $1 AND change_kind = $2 AND body_pid = $3
+           ) AS "clash!""#,
+        payload.organization_ref,
+        payload.change_kind,
+        payload.body_pid,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if clash {
         return Err(unprocessable(
             "this change already has a gate for that body",
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    decision_gates::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        change_kind: ActiveValue::set(payload.change_kind.clone()),
-        body_pid: ActiveValue::set(payload.body_pid),
-        note: ActiveValue::set(
-            payload
-                .note
-                .map(|n| n.trim().to_string())
-                .filter(|n| !n.is_empty()),
-        ),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO decision_gates (pid, organization_ref, change_kind, body_pid, note, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        payload.organization_ref,
+        payload.change_kind,
+        payload.body_pid,
+        payload
+            .note
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "decision_gate",
         pid,
         "decision_gate_created",
@@ -160,7 +165,7 @@ async fn create(
         Some(json!({ "change_kind": payload.change_kind })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 

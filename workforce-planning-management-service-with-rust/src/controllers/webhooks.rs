@@ -6,15 +6,14 @@
 //! sent by the `webhook_deliver` task. Spec: `spec/integrations.md`.
 
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, row_json};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, bound, pool};
 use crate::models::_entities::{webhook_deliveries, webhook_subscriptions};
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::webhook as rules;
 
 /// Only an administrator may see or change webhooks; with sign-in off (a demo) there is no one to ask.
@@ -45,11 +44,17 @@ fn shown(row: &webhook_subscriptions::Model) -> Result<serde_json::Value> {
 #[debug_handler]
 async fn list(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     administrators_only(&caller)?;
-    let rows = webhook_subscriptions::Entity::find()
-        .order_by_asc(webhook_subscriptions::Column::Name)
-        .all(&ctx.db)
+    let rows = sqlx::query_as!(
+        webhook_subscriptions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, url, kinds, secret_ref, active,
+                  created_by
+           FROM webhook_subscriptions ORDER BY name"#
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    let deliveries = sqlx::query!("SELECT subscription_pid, status FROM webhook_deliveries")
+        .fetch_all(pool(&ctx))
         .await?;
-    let deliveries = webhook_deliveries::Entity::find().all(&ctx.db).await?;
     let mut out = Vec::with_capacity(rows.len());
     for row in &rows {
         let count = |status: &str| {
@@ -102,21 +107,22 @@ async fn create(
     administrators_only(&caller)?;
     ensure_valid(&problems(&payload))?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    webhook_subscriptions::ActiveModel {
-        pid: ActiveValue::set(pid),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        url: ActiveValue::set(payload.url.trim().to_string()),
-        kinds: ActiveValue::set(payload.kinds.clone()),
-        secret_ref: ActiveValue::set(payload.secret_ref.clone()),
-        active: ActiveValue::set(payload.active),
-        created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref, active, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        pid,
+        payload.name.trim(),
+        payload.url.trim(),
+        &payload.kinds,
+        payload.secret_ref,
+        payload.active,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "webhook_subscription",
         pid,
         "webhook_subscription_created",
@@ -124,7 +130,7 @@ async fn create(
         Some(json!({ "kinds": payload.kinds.len() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -138,21 +144,23 @@ async fn replace(
 ) -> Result<Response> {
     administrators_only(&caller)?;
     ensure_valid(&problems(&payload))?;
-    let txn = ctx.db.begin().await?;
-    let row = webhook_subscriptions::Entity::find()
-        .filter(webhook_subscriptions::Column::Pid.eq(pid))
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active: webhook_subscriptions::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name.trim().to_string());
-    active.url = ActiveValue::set(payload.url.trim().to_string());
-    active.kinds = ActiveValue::set(payload.kinds.clone());
-    active.secret_ref = ActiveValue::set(payload.secret_ref.clone());
-    active.active = ActiveValue::set(payload.active);
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let updated = sqlx::query!(
+        "UPDATE webhook_subscriptions SET name = $2, url = $3, kinds = $4, secret_ref = $5, active = $6 WHERE pid = $1",
+        pid,
+        payload.name.trim(),
+        payload.url.trim(),
+        &payload.kinds,
+        payload.secret_ref,
+        payload.active,
+    )
+    .execute(&mut *tx)
+    .await?;
+    if updated.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    db::audit(
+        &mut tx,
         "webhook_subscription",
         pid,
         "webhook_subscription_updated",
@@ -160,7 +168,7 @@ async fn replace(
         Some(json!({ "kinds": payload.kinds.len(), "active": payload.active })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -172,15 +180,15 @@ async fn remove(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     administrators_only(&caller)?;
-    let txn = ctx.db.begin().await?;
-    let row = webhook_subscriptions::Entity::find()
-        .filter(webhook_subscriptions::Column::Pid.eq(pid))
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let removed = sqlx::query!("DELETE FROM webhook_subscriptions WHERE pid = $1", pid)
+        .execute(&mut *tx)
+        .await?;
+    if removed.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    db::audit(
+        &mut tx,
         "webhook_subscription",
         pid,
         "webhook_subscription_deleted",
@@ -188,7 +196,7 @@ async fn remove(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "deleted": pid }))
 }
 
@@ -207,17 +215,21 @@ async fn deliveries(
     axum::extract::Query(query): axum::extract::Query<LogQuery>,
 ) -> Result<Response> {
     administrators_only(&caller)?;
-    webhook_subscriptions::Entity::find()
-        .filter(webhook_subscriptions::Column::Pid.eq(pid))
-        .one(&ctx.db)
+    sqlx::query_scalar!("SELECT id FROM webhook_subscriptions WHERE pid = $1", pid)
+        .fetch_optional(pool(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let rows = webhook_deliveries::Entity::find()
-        .filter(webhook_deliveries::Column::SubscriptionPid.eq(pid))
-        .order_by_desc(webhook_deliveries::Column::Id)
-        .limit(query.limit.unwrap_or(100).clamp(1, 500))
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        webhook_deliveries::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, subscription_pid, event_id, kind,
+                  subject, data, occurred_at AS "occurred_at: _", status, attempts, last_status, last_error,
+                  next_attempt_at AS "next_attempt_at: _", delivered_at AS "delivered_at: _"
+           FROM webhook_deliveries WHERE subscription_pid = $1 ORDER BY id DESC LIMIT $2"#,
+        pid,
+        bound(query.limit.unwrap_or(100).clamp(1, 500)),
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     // The log shows how a delivery went, not what it said: the handoff `data` a hire or an ending keeps is not listed.
     let log = rows
         .iter()

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT movement_pid, final_pay_on, pay_summary_ref FROM separation_records WHERE movement_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "movement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "movement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "final_pay_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "final_pay_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "pay_summary_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "separation_records",
+            "name": "pay_summary_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "8d799a35700dfa625075ff088a8a2a1cf0abdd8bac6ccec7873bbecc1981b371"
+}

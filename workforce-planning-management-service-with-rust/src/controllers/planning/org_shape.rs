@@ -3,10 +3,9 @@
 
 #[allow(clippy::wildcard_imports)] // the planning sections share their parent's imports
 use super::*;
-use crate::models::_entities::plan_org_nodes;
+use crate::db::{self, pool};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::org_shape::{self as shape, Node, Person};
-use sea_orm::TransactionTrait;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct TargetNode {
@@ -37,20 +36,14 @@ fn node_of(n: &TargetNode) -> Node {
 }
 
 async fn target_of(ctx: &AppContext, plan: Uuid) -> Result<Vec<Node>> {
-    Ok(plan_org_nodes::Entity::find()
-        .filter(plan_org_nodes::Column::PlanPid.eq(plan))
-        .order_by_asc(plan_org_nodes::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|n| Node {
-            key: n.node_key,
-            parent: n.parent_key,
-            department: n.department,
-            title: n.title,
-            headcount: n.headcount,
-        })
-        .collect())
+    Ok(sqlx::query_as!(
+        Node,
+        r#"SELECT node_key AS key, parent_key AS parent, department, title, headcount
+           FROM plan_org_nodes WHERE plan_pid = $1 ORDER BY id"#,
+        plan,
+    )
+    .fetch_all(pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workforce-plans/{pid}/target-organization` — the roles the plan intends: key, parent, department, title and headcount.
@@ -82,27 +75,27 @@ pub(super) async fn set_target(
     ensure_editable(&plan)?;
     let nodes: Vec<Node> = payload.nodes.iter().map(node_of).collect();
     shape::validate_target(&nodes).map_err(|e| unprocessable(&e.join("; ")))?;
-    let txn = ctx.db.begin().await?;
-    plan_org_nodes::Entity::delete_many()
-        .filter(plan_org_nodes::Column::PlanPid.eq(plan.pid))
-        .exec(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM plan_org_nodes WHERE plan_pid = $1", plan.pid)
+        .execute(&mut *tx)
         .await?;
     for n in &nodes {
-        plan_org_nodes::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            plan_pid: ActiveValue::set(plan.pid),
-            node_key: ActiveValue::set(n.key.clone()),
-            parent_key: ActiveValue::set(n.parent.clone()),
-            department: ActiveValue::set(n.department.clone()),
-            title: ActiveValue::set(n.title.clone()),
-            headcount: ActiveValue::set(n.headcount),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query!(
+            "INSERT INTO plan_org_nodes (pid, plan_pid, node_key, parent_key, department, title, headcount)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            Uuid::new_v4(),
+            plan.pid,
+            n.key,
+            n.parent,
+            n.department,
+            n.title,
+            n.headcount,
+        )
+        .execute(&mut *tx)
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "workforce_plan",
         plan.pid,
         "plan_target_organization_set",
@@ -110,7 +103,7 @@ pub(super) async fn set_target(
         Some(serde_json::json!({ "roles": nodes.len() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
         pid: plan.pid.to_string(),
     })
@@ -128,25 +121,23 @@ pub(super) async fn organization_diff(
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let target = target_of(&ctx, plan.pid).await?;
     let today = chrono::Utc::now().date_naive();
-    let people: Vec<Person> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&plan.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            sea_orm::Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        )
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| Person {
-            key: w.pid.to_string(),
-            manager: w.manager_pid.map(|m| m.to_string()),
-            department: w.department,
-            title: w.job_title,
-        })
-        .collect();
+    let people: Vec<Person> = sqlx::query!(
+        "SELECT pid, manager_pid, department, job_title FROM workers
+         WHERE organization_ref = $1 AND deleted_at IS NULL AND hired_on <= $2
+           AND (terminated_on IS NULL OR terminated_on > $2)",
+        plan.organization_ref,
+        today,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| Person {
+        key: w.pid.to_string(),
+        manager: w.manager_pid.map(|m| m.to_string()),
+        department: w.department,
+        title: w.job_title,
+    })
+    .collect();
     if target.is_empty() {
         return format::json(serde_json::json!({
             "plan": plan.pid, "target_set": false,

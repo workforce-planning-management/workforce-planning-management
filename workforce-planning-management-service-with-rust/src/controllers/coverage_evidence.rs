@@ -5,7 +5,6 @@
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -13,8 +12,8 @@ use uuid::Uuid;
 use super::ensure_valid;
 use super::mandatory_learning::ensure_hr;
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::coverage_evidence;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::coverage_evidence as rules;
 
 /// A record as the API shows it, with its standing on `today`.
@@ -54,13 +53,17 @@ async fn list(
         .days
         .filter(|d| (1..=366).contains(d))
         .unwrap_or(rules::DEFAULT_WINDOW_DAYS);
-    let rows = coverage_evidence::Entity::find()
-        .filter(coverage_evidence::Column::OrganizationRef.eq(&q.organization))
-        .order_by_asc(coverage_evidence::Column::Jurisdiction)
-        .order_by_asc(coverage_evidence::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
+    let rows = sqlx::query_as!(
+        coverage_evidence::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, jurisdiction, kind,
+                  insurer, policy_reference, minimum_cover_minor, currency, valid_from, valid_to, certificate_ref, recorded_by,
+                  retired_on
+           FROM coverage_evidence WHERE organization_ref = $1 ORDER BY jurisdiction, id"#,
+        q.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
         .filter(|r| r.retired_on.is_none_or(|d| d > today))
         .collect::<Vec<_>>();
     format::json(
@@ -132,26 +135,29 @@ async fn create(
     }
     ensure_valid(&problems)?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    coverage_evidence::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization.clone()),
-        jurisdiction: ActiveValue::set(jurisdiction),
-        kind: ActiveValue::set(p.kind.clone()),
-        insurer: ActiveValue::set(insurer),
-        policy_reference: ActiveValue::set(policy),
-        minimum_cover_minor: ActiveValue::set(p.minimum_cover_minor),
-        currency: ActiveValue::set(currency),
-        valid_from: ActiveValue::set(p.valid_from),
-        valid_to: ActiveValue::set(p.valid_to),
-        certificate_ref: ActiveValue::set(certificate),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO coverage_evidence
+             (pid, organization_ref, jurisdiction, kind, insurer, policy_reference, minimum_cover_minor, currency,
+              valid_from, valid_to, certificate_ref, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+        pid,
+        p.organization,
+        jurisdiction,
+        p.kind,
+        insurer,
+        policy,
+        p.minimum_cover_minor,
+        currency,
+        p.valid_from,
+        p.valid_to,
+        certificate,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "coverage_evidence",
         pid,
         "coverage_evidence_added",
@@ -159,7 +165,7 @@ async fn create(
         Some(json!({ "kind": p.kind })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -171,20 +177,26 @@ async fn retire(
     caller: MaybeAuthUser,
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
-    let record = coverage_evidence::Entity::find()
-        .filter(coverage_evidence::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let record = sqlx::query!(
+        "SELECT pid, organization_ref, retired_on FROM coverage_evidence WHERE pid = $1",
+        pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_hr(&ctx, &caller, &record.organization_ref).await?;
     let on = record.retired_on.unwrap_or_else(|| Utc::now().date_naive());
-    let txn = ctx.db.begin().await?;
     if record.retired_on.is_none() {
-        let mut row: coverage_evidence::ActiveModel = record.clone().into();
-        row.retired_on = ActiveValue::set(Some(on));
-        row.update(&txn).await?;
-        Audit::record(
-            &txn,
+        let mut tx = pool(&ctx).begin().await?;
+        sqlx::query!(
+            "UPDATE coverage_evidence SET retired_on = $2 WHERE pid = $1",
+            record.pid,
+            on,
+        )
+        .execute(&mut *tx)
+        .await?;
+        db::audit(
+            &mut tx,
             "coverage_evidence",
             record.pid,
             "coverage_evidence_retired",
@@ -192,8 +204,8 @@ async fn retire(
             None,
         )
         .await?;
+        tx.commit().await?;
     }
-    txn.commit().await?;
     format::json(json!({ "pid": record.pid, "retired_on": on }))
 }
 

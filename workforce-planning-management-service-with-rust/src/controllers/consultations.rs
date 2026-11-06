@@ -5,7 +5,6 @@
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -14,10 +13,8 @@ use super::bargaining::find_body;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    bargaining_units, collective_agreements, consultations, workforce_plans,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::consultations;
 use crate::rules::agreement as agreement_rules;
 use crate::rules::consultation as consult;
 use crate::rules::consultation_register as rules;
@@ -33,11 +30,17 @@ fn json_of(c: &consultations::Model) -> serde_json::Value {
 }
 
 async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<consultations::Model> {
-    let row = consultations::Entity::find()
-        .filter(consultations::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        consultations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, body_pid, plan_pid,
+                  establishment, profile, establishment_size, dismissals, earliest_termination_on, topics, document_ref, started_on,
+                  ended_on, outcome, agreement_pid, recorded_by
+           FROM consultations WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -56,11 +59,16 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = consultations::Entity::find()
-        .filter(consultations::Column::OrganizationRef.eq(&query.organization))
-        .order_by_desc(consultations::Column::EarliestTerminationOn)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        consultations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, body_pid, plan_pid,
+                  establishment, profile, establishment_size, dismissals, earliest_termination_on, topics, document_ref, started_on,
+                  ended_on, outcome, agreement_pid, recorded_by
+           FROM consultations WHERE organization_ref = $1 ORDER BY earliest_termination_on DESC"#,
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     format::json(json!({ "consultations": rows.iter().map(json_of).collect::<Vec<_>>() }))
 }
 
@@ -100,12 +108,16 @@ async fn open(
         )));
     }
     if let Some(plan) = payload.plan_pid {
-        let found = workforce_plans::Entity::find()
-            .filter(workforce_plans::Column::Pid.eq(plan))
-            .filter(workforce_plans::Column::OrganizationRef.eq(&body.organization_ref))
-            .count(&ctx.db)
-            .await?;
-        if found == 0 {
+        let found = sqlx::query_scalar!(
+            r#"SELECT EXISTS (
+                   SELECT 1 FROM workforce_plans WHERE pid = $1 AND organization_ref = $2
+               ) AS "found!""#,
+            plan,
+            body.organization_ref,
+        )
+        .fetch_one(pool(&ctx))
+        .await?;
+        if !found {
             return Err(unprocessable(
                 "plan_pid is not a workforce plan of this organization",
             ));
@@ -113,27 +125,29 @@ async fn open(
     }
     let topics = rules::clean_topics(&payload.topics).map_err(|p| unprocessable(&p))?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    consultations::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(body.organization_ref),
-        body_pid: ActiveValue::set(body.pid),
-        plan_pid: ActiveValue::set(payload.plan_pid),
-        establishment: ActiveValue::set(payload.establishment.trim().to_string()),
-        profile: ActiveValue::set(payload.profile),
-        establishment_size: ActiveValue::set(payload.establishment_size),
-        dismissals: ActiveValue::set(payload.dismissals),
-        earliest_termination_on: ActiveValue::set(payload.earliest_termination_on),
-        topics: ActiveValue::set(topics),
-        document_ref: ActiveValue::set(payload.document_ref.map(|r| r.trim().to_string())),
-        outcome: ActiveValue::set("open".to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO consultations
+             (pid, organization_ref, body_pid, plan_pid, establishment, profile, establishment_size, dismissals,
+              earliest_termination_on, topics, document_ref, outcome, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', $12)",
+        pid,
+        body.organization_ref,
+        body.pid,
+        payload.plan_pid,
+        payload.establishment.trim(),
+        payload.profile,
+        payload.establishment_size,
+        payload.dismissals,
+        payload.earliest_termination_on,
+        topics,
+        payload.document_ref.map(|r| r.trim().to_string()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "consultation",
         pid,
         "consultation_opened",
@@ -141,7 +155,7 @@ async fn open(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -176,15 +190,17 @@ async fn begin(
         &[String::from("other")],
     ));
     ensure_valid(&problems)?;
-    let txn = ctx.db.begin().await?;
-    let mut active: consultations::ActiveModel = row.into();
-    active.started_on = ActiveValue::set(Some(payload.started_on));
-    if let Some(r) = payload.document_ref {
-        active.document_ref = ActiveValue::set(Some(r.trim().to_string()));
-    }
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE consultations SET started_on = $2, document_ref = COALESCE($3, document_ref) WHERE pid = $1",
+        pid,
+        payload.started_on,
+        payload.document_ref.map(|r| r.trim().to_string()),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "consultation",
         pid,
         "consultation_begun",
@@ -192,7 +208,7 @@ async fn begin(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -225,32 +241,34 @@ async fn close(
     }
     ensure_valid(&problems)?;
     if let Some(agreement) = payload.agreement_pid {
-        let units: Vec<Uuid> = bargaining_units::Entity::find()
-            .filter(bargaining_units::Column::BodyPid.eq(row.body_pid))
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|u| u.pid)
-            .collect();
-        let belongs = collective_agreements::Entity::find()
-            .filter(collective_agreements::Column::Pid.eq(agreement))
-            .filter(collective_agreements::Column::UnitPid.is_in(units))
-            .count(&ctx.db)
-            .await?;
-        if belongs == 0 {
+        let belongs = sqlx::query_scalar!(
+            r#"SELECT EXISTS (
+                   SELECT 1 FROM collective_agreements
+                   WHERE pid = $1 AND unit_pid IN (SELECT pid FROM bargaining_units WHERE body_pid = $2)
+               ) AS "belongs!""#,
+            agreement,
+            row.body_pid,
+        )
+        .fetch_one(pool(&ctx))
+        .await?;
+        if !belongs {
             return Err(unprocessable(
                 "agreement_pid is not an agreement of a unit of the body consulted",
             ));
         }
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: consultations::ActiveModel = row.into();
-    active.outcome = ActiveValue::set(payload.outcome.clone());
-    active.ended_on = ActiveValue::set(Some(payload.ended_on));
-    active.agreement_pid = ActiveValue::set(payload.agreement_pid);
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE consultations SET outcome = $2, ended_on = $3, agreement_pid = $4 WHERE pid = $1",
+        pid,
+        payload.outcome,
+        payload.ended_on,
+        payload.agreement_pid,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "consultation",
         pid,
         "consultation_closed",
@@ -258,7 +276,7 @@ async fn close(
         Some(json!({ "outcome": payload.outcome })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -275,32 +293,30 @@ async fn timeline(
     let today = Utc::now().date_naive();
     let profile = consult::profile(&row.profile)
         .ok_or_else(|| Error::string("the record names a profile this service does not know"))?;
-    let others: Vec<(NaiveDate, u32)> = consultations::Entity::find()
-        .filter(consultations::Column::OrganizationRef.eq(&row.organization_ref))
-        .filter(consultations::Column::Establishment.eq(&row.establishment))
-        .filter(consultations::Column::Pid.ne(row.pid))
-        .filter(consultations::Column::Outcome.ne("withdrawn"))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|o| {
-            (
-                o.earliest_termination_on,
-                u32::try_from(o.dismissals).unwrap_or(0),
-            )
-        })
-        .collect();
-    let units: Vec<Uuid> = bargaining_units::Entity::find()
-        .filter(bargaining_units::Column::BodyPid.eq(row.body_pid))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|u| u.pid)
-        .collect();
-    let agreements = collective_agreements::Entity::find()
-        .filter(collective_agreements::Column::UnitPid.is_in(units))
-        .all(&ctx.db)
-        .await?;
+    let others: Vec<(NaiveDate, u32)> = sqlx::query!(
+        "SELECT earliest_termination_on, dismissals FROM consultations
+         WHERE organization_ref = $1 AND establishment = $2 AND pid <> $3 AND outcome <> 'withdrawn'",
+        row.organization_ref,
+        row.establishment,
+        row.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|o| {
+        (
+            o.earliest_termination_on,
+            u32::try_from(o.dismissals).unwrap_or(0),
+        )
+    })
+    .collect();
+    let agreements = sqlx::query!(
+        "SELECT unit_pid, title, version, effective_from, effective_to, consultation_days FROM collective_agreements
+         WHERE unit_pid IN (SELECT pid FROM bargaining_units WHERE body_pid = $1)",
+        row.body_pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let agreed_period = agreements
         .iter()
         .filter(|a| {

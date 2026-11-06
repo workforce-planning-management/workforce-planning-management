@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -15,8 +14,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{cost_centres, positions};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::cost_centres;
 use crate::rules::coding as rules;
 
 fn as_rule(c: &cost_centres::Model) -> rules::CostCentre {
@@ -29,11 +28,15 @@ fn as_rule(c: &cost_centres::Model) -> rules::CostCentre {
 }
 
 async fn register(ctx: &AppContext, organization: &str) -> Result<Vec<cost_centres::Model>> {
-    Ok(cost_centres::Entity::find()
-        .filter(cost_centres::Column::OrganizationRef.eq(organization))
-        .order_by_asc(cost_centres::Column::Code)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        cost_centres::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, code, name,
+                  parent_code, valid_from, valid_to, recorded_by
+           FROM cost_centres WHERE organization_ref = $1 ORDER BY code"#,
+        organization,
+    )
+    .fetch_all(pool(ctx))
+    .await?)
 }
 
 /// A `422` when `code` is not in the organization's register or not open on `on` (WPM-R163).
@@ -132,21 +135,22 @@ async fn create(
         rules::check_open(&all, parent, from).map_err(|m| unprocessable(&m))?;
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    cost_centres::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        code: ActiveValue::set(code),
-        name: ActiveValue::set(p.name.trim().to_string()),
-        parent_code: ActiveValue::set(parent),
-        valid_from: ActiveValue::set(from),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO cost_centres (pid, organization_ref, code, name, parent_code, valid_from, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        pid,
+        p.organization_ref,
+        code,
+        p.name.trim(),
+        parent,
+        from,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "cost_centre",
         pid,
         "cost_centre_added",
@@ -154,7 +158,7 @@ async fn create(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -172,11 +176,13 @@ async fn close(
     Path(pid): Path<Uuid>,
     Json(p): Json<ClosePayload>,
 ) -> Result<Response> {
-    let row = cost_centres::Entity::find()
-        .filter(cost_centres::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query!(
+        "SELECT organization_ref, valid_from, valid_to FROM cost_centres WHERE pid = $1",
+        pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     hr_only(&ctx, &caller, &row.organization_ref).await?;
     if row.valid_to.is_some() {
         return Err(unprocessable("this cost centre is already closed"));
@@ -186,12 +192,16 @@ async fn close(
             "valid_to must not be before the cost centre opened",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: cost_centres::ActiveModel = row.into();
-    active.valid_to = ActiveValue::set(Some(p.valid_to));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE cost_centres SET valid_to = $2 WHERE pid = $1",
+        pid,
+        p.valid_to,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "cost_centre",
         pid,
         "cost_centre_closed",
@@ -199,7 +209,7 @@ async fn close(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "valid_to": p.valid_to }))
 }
 
@@ -218,13 +228,15 @@ async fn unmatched(
         .map(|c| c.code)
         .collect();
     let mut by: BTreeMap<String, usize> = BTreeMap::new();
-    for p in positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(&q.organization))
-        .all(&ctx.db)
-        .await?
+    for cost_centre in sqlx::query_scalar!(
+        "SELECT cost_centre FROM positions WHERE organization_ref = $1",
+        q.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
     {
-        if !codes.contains(&p.cost_centre) {
-            *by.entry(p.cost_centre).or_default() += 1;
+        if !codes.contains(&cost_centre) {
+            *by.entry(cost_centre).or_default() += 1;
         }
     }
     let values: Vec<_> = by

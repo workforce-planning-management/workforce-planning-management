@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO holidays (pid, organization_ref, region, year, name, natural_on, observed_on, source, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, 'manual', $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Date",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c12c871f526c08536233fe8e7509a7a3c73e9daed396c8b436d74a89f081e141"
+}

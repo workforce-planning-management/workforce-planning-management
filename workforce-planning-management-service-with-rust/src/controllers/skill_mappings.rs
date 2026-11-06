@@ -4,30 +4,34 @@
 
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use super::{ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{skill_mappings, skills};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::skill_mappings;
 use crate::rules::crosswalk as rules;
 
 /// `GET /api/skill-mappings` — every mapping, with the names of its two skills.
 #[debug_handler]
 async fn list(State(ctx): State<AppContext>) -> Result<Response> {
-    let names: std::collections::HashMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
-    let rows = skill_mappings::Entity::find()
-        .order_by_asc(skill_mappings::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let names: std::collections::HashMap<Uuid, String> =
+        sqlx::query!("SELECT pid, name FROM skills")
+            .fetch_all(pool(&ctx))
+            .await?
+            .into_iter()
+            .map(|s| (s.pid, s.name))
+            .collect();
+    let rows = sqlx::query_as!(
+        skill_mappings::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, from_skill_pid, to_skill_pid,
+                  confidence, basis, source, recorded_by, recorded_on
+           FROM skill_mappings ORDER BY id"#
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut out = Vec::new();
     for row in &rows {
         let mut v = row_json(row)?;
@@ -54,12 +58,12 @@ struct Payload {
 }
 
 async fn skill_exists(ctx: &AppContext, pid: Uuid) -> Result<bool> {
-    Ok(skills::Entity::find()
-        .filter(skills::Column::Pid.eq(pid))
-        .filter(skills::Column::DeletedAt.is_null())
-        .count(&ctx.db)
-        .await?
-        > 0)
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM skills WHERE pid = $1 AND deleted_at IS NULL) AS "found!""#,
+        pid,
+    )
+    .fetch_one(pool(ctx))
+    .await?)
 }
 
 /// `POST /api/skill-mappings` — state a mapping. The pair is unique; both skills must exist.
@@ -81,33 +85,38 @@ async fn create(
     {
         return Err(unprocessable("both skills must exist"));
     }
-    let clash = skill_mappings::Entity::find()
-        .filter(skill_mappings::Column::FromSkillPid.eq(payload.from_skill_pid))
-        .filter(skill_mappings::Column::ToSkillPid.eq(payload.to_skill_pid))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM skill_mappings WHERE from_skill_pid = $1 AND to_skill_pid = $2
+           ) AS "clash!""#,
+        payload.from_skill_pid,
+        payload.to_skill_pid,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if clash {
         return Err(unprocessable(
             "this pair is already mapped; remove the mapping to state it again",
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    skill_mappings::ActiveModel {
-        pid: ActiveValue::set(pid),
-        from_skill_pid: ActiveValue::set(payload.from_skill_pid),
-        to_skill_pid: ActiveValue::set(payload.to_skill_pid),
-        confidence: ActiveValue::set(payload.confidence.clone()),
-        basis: ActiveValue::set(payload.basis),
-        source: ActiveValue::set(payload.source.trim().to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        recorded_on: ActiveValue::set(Utc::now().date_naive()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO skill_mappings (pid, from_skill_pid, to_skill_pid, confidence, basis, source, recorded_by, recorded_on)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        pid,
+        payload.from_skill_pid,
+        payload.to_skill_pid,
+        payload.confidence,
+        payload.basis,
+        payload.source.trim(),
+        caller.actor(),
+        Utc::now().date_naive(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "skill_mapping",
         pid,
         "skill_mapping_stated",
@@ -115,7 +124,7 @@ async fn create(
         Some(json!({ "confidence": payload.confidence })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -126,17 +135,15 @@ async fn remove(
     caller: MaybeAuthUser,
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
-    let row = skill_mappings::Entity::find()
-        .filter(skill_mappings::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    skill_mappings::Entity::delete_by_id(row.id)
-        .exec(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let removed = sqlx::query!("DELETE FROM skill_mappings WHERE pid = $1", pid)
+        .execute(&mut *tx)
         .await?;
-    Audit::record(
-        &txn,
+    if removed.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    db::audit(
+        &mut tx,
         "skill_mapping",
         pid,
         "skill_mapping_withdrawn",
@@ -144,7 +151,7 @@ async fn remove(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 

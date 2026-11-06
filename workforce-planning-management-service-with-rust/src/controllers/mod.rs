@@ -174,7 +174,15 @@ pub async fn ensure_scale(
     scope: sea_orm::Select<crate::models::_entities::workers::Entity>,
 ) -> Result<()> {
     use sea_orm::PaginatorTrait;
-    let count = scope.count(&ctx.db).await?;
+    ensure_within_ceiling(scope.count(&ctx.db).await?)
+}
+
+/// Refuse `count` workers over the measured ceiling (WPM-R120, WPM-D90): the rule of [`ensure_scale`], for a count already made.
+///
+/// # Errors
+///
+/// A `422` naming the count and the ceiling.
+pub fn ensure_within_ceiling(count: u64) -> Result<()> {
     let ceiling = crate::rules::scale::parse_ceiling(
         crate::compat::env_var("WPM_MAX_ORG_WORKERS").as_deref(),
     );

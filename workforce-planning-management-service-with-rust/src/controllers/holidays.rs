@@ -4,7 +4,6 @@
 
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -12,8 +11,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::holidays;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::holiday as rules;
 
 /// The years a calendar can hold.
@@ -56,20 +55,22 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
-    let mut find =
-        holidays::Entity::find().filter(holidays::Column::OrganizationRef.eq(&q.organization));
     if let Some(region) = &q.region {
         ensure_valid(&rules::region_problems(region))?;
-        find = find.filter(holidays::Column::Region.eq(region));
     }
-    if let Some(year) = q.year {
-        find = find.filter(holidays::Column::Year.eq(year));
-    }
-    let rows = find
-        .order_by_asc(holidays::Column::ObservedOn)
-        .order_by_asc(holidays::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        holidays::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, region, year, name,
+                  natural_on, observed_on, source, recorded_by
+           FROM holidays
+           WHERE organization_ref = $1 AND ($2::text IS NULL OR region = $2) AND ($3::int IS NULL OR year = $3)
+           ORDER BY observed_on, name"#,
+        q.organization,
+        q.region,
+        q.year,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut out = Vec::new();
     for row in &rows {
         let mut v = row_json(row)?;
@@ -138,45 +139,52 @@ async fn generate(
         ),
     };
     let (mut created, mut updated, mut unchanged, mut kept_manual) = (0, 0, 0, 0);
-    let txn = ctx.db.begin().await?;
+    let mut tx = pool(&ctx).begin().await?;
     for h in rules::generate(pack.rules, p.year, &weekend) {
-        let existing = holidays::Entity::find()
-            .filter(holidays::Column::OrganizationRef.eq(&p.organization_ref))
-            .filter(holidays::Column::Region.eq(&p.region))
-            .filter(holidays::Column::NaturalOn.eq(h.natural_on))
-            .filter(holidays::Column::Name.eq(h.name))
-            .one(&txn)
-            .await?;
+        let existing = sqlx::query!(
+            "SELECT id, source, observed_on FROM holidays
+             WHERE organization_ref = $1 AND region = $2 AND natural_on = $3 AND name = $4 LIMIT 1",
+            p.organization_ref,
+            p.region,
+            h.natural_on,
+            h.name,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
         match existing {
             None => {
-                holidays::ActiveModel {
-                    pid: ActiveValue::set(Uuid::new_v4()),
-                    organization_ref: ActiveValue::set(p.organization_ref.clone()),
-                    region: ActiveValue::set(p.region.clone()),
-                    year: ActiveValue::set(p.year),
-                    name: ActiveValue::set(h.name.to_string()),
-                    natural_on: ActiveValue::set(h.natural_on),
-                    observed_on: ActiveValue::set(h.observed_on),
-                    source: ActiveValue::set("generated".to_string()),
-                    recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-                    ..Default::default()
-                }
-                .insert(&txn)
+                sqlx::query!(
+                    "INSERT INTO holidays (pid, organization_ref, region, year, name, natural_on, observed_on, source, recorded_by)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, 'generated', $8)",
+                    Uuid::new_v4(),
+                    p.organization_ref,
+                    p.region,
+                    p.year,
+                    h.name,
+                    h.natural_on,
+                    h.observed_on,
+                    caller.actor(),
+                )
+                .execute(&mut *tx)
                 .await?;
                 created += 1;
             }
             Some(row) if row.source == "manual" => kept_manual += 1,
             Some(row) if row.observed_on == h.observed_on => unchanged += 1,
             Some(row) => {
-                let mut active: holidays::ActiveModel = row.into();
-                active.observed_on = ActiveValue::set(h.observed_on);
-                active.update(&txn).await?;
+                sqlx::query!(
+                    "UPDATE holidays SET observed_on = $2 WHERE id = $1",
+                    row.id,
+                    h.observed_on,
+                )
+                .execute(&mut *tx)
+                .await?;
                 updated += 1;
             }
         }
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "holiday_calendar",
         Uuid::new_v4(),
         "holidays_generated",
@@ -184,7 +192,7 @@ async fn generate(
         Some(json!({ "region": p.region, "year": p.year, "created": created })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
         "region": p.region,
         "year": p.year,
@@ -222,34 +230,46 @@ async fn add(
         return Err(unprocessable("the date must be between 1970 and 2100"));
     }
     let name = p.name.trim().to_string();
-    let clash = holidays::Entity::find()
-        .filter(holidays::Column::OrganizationRef.eq(&p.organization_ref))
-        .filter(holidays::Column::Region.eq(&p.region))
-        .filter(holidays::Column::NaturalOn.eq(p.on))
-        .filter(holidays::Column::Name.eq(&name))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM holidays WHERE organization_ref = $1 AND region = $2 AND natural_on = $3 AND name = $4
+           ) AS "clash!""#,
+        p.organization_ref,
+        p.region,
+        p.on,
+        name,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if clash {
         return Err(unprocessable("that holiday is already in the calendar"));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    holidays::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        region: ActiveValue::set(p.region),
-        year: ActiveValue::set(year),
-        name: ActiveValue::set(name),
-        natural_on: ActiveValue::set(p.on),
-        observed_on: ActiveValue::set(p.on),
-        source: ActiveValue::set("manual".to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO holidays (pid, organization_ref, region, year, name, natural_on, observed_on, source, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'manual', $8)",
+        pid,
+        p.organization_ref,
+        p.region,
+        year,
+        name,
+        p.on,
+        p.on,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "holiday", pid, "holiday_added", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "holiday",
+        pid,
+        "holiday_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
