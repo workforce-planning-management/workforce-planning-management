@@ -84,28 +84,6 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
     }
 }
 
-/// Refuse `db down`, `db reset` and `db truncate` outside development and test, and anywhere without `confirmed` (WPM-R237, WPM-D185).
-/// `process` is the environment the process runs in, whatever `--environment` says, so the flag cannot lift this: both must allow it.
-fn refuse_destruction(
-    command: &Command,
-    process: &Environment,
-    chosen: &Environment,
-    confirmed: Option<&str>,
-) -> Result<()> {
-    let destroys = matches!(
-        command,
-        Command::Db {
-            command: DbCommand::Down { .. } | DbCommand::Reset | DbCommand::Truncate
-        }
-    );
-    if destroys && !(process.may_destroy_data(confirmed) && chosen.may_destroy_data(confirmed)) {
-        return Err(Error::string(
-            "refused: `db down`, `db reset` and `db truncate` run only in development or test, with AXA_DESTROY_DATA=true",
-        ));
-    }
-    Ok(())
-}
-
 /// The standing warning while sign-in is not enforced (WPM-D52).
 fn warn_auth_off() {
     tracing::warn!(
@@ -375,12 +353,6 @@ impl App {
             .environment
             .as_deref()
             .map_or_else(Environment::from_env, Environment::parse);
-        refuse_destruction(
-            &cli.command,
-            &Environment::from_env(),
-            &environment,
-            std::env::var("AXA_DESTROY_DATA").ok().as_deref(),
-        )?;
         let mut config = Self::config(&environment)?;
         if matches!(cli.command, Command::Check) {
             // WPM's own config, not `axa::cli::check`, which re-reads the environment and so reports `axa`'s timeout and CORS, not these.
@@ -671,44 +643,12 @@ impl TestApp for App {
 mod tests {
     use super::*;
 
+    /// `axa::cli::parse` refuses `db down`, `db reset` and `db truncate` (WPM-R237, WPM-D185). `Cli::parse()` would not.
     #[test]
-    fn only_development_and_test_may_destroy_data() {
-        let db = |command| Command::Db { command };
-        let safe = [Environment::Development, Environment::Test];
-        let unsafe_ = [
-            Environment::Production,
-            Environment::Other("demo".to_string()),
-            Environment::Other("staging".to_string()),
-        ];
-        for destroying in [
-            || DbCommand::Reset,
-            || DbCommand::Truncate,
-            || DbCommand::Down { steps: 1 },
-        ] {
-            let yes = Some("true");
-            for environment in &unsafe_ {
-                assert!(
-                    refuse_destruction(&db(destroying()), environment, environment, yes).is_err()
-                );
-                // The flag cannot lift the refusal, in either direction.
-                assert!(refuse_destruction(&db(destroying()), environment, &safe[1], yes).is_err());
-                assert!(refuse_destruction(&db(destroying()), &safe[0], environment, yes).is_err());
-            }
-            for environment in &safe {
-                assert!(
-                    refuse_destruction(&db(destroying()), environment, environment, yes).is_ok()
-                );
-                assert!(
-                    refuse_destruction(&db(destroying()), environment, environment, None).is_err()
-                );
-            }
-        }
-        // What a deployment needs still runs.
-        for environment in &unsafe_ {
-            for command in [DbCommand::Migrate, DbCommand::Status] {
-                assert!(refuse_destruction(&db(command), environment, environment, None).is_ok());
-            }
-        }
+    fn the_binary_reads_its_arguments_through_the_guard() {
+        let main = include_str!("bin/main.rs");
+        assert!(main.contains("axa::cli::parse("));
+        assert!(!main.contains("Cli::parse("));
     }
 
     #[test]

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.5 (WPM-T469)
+
+`axa` 0.4.0 to 0.5.0. `cli::parse` refuses `db down`, `db reset` and `db truncate`, which replaces WPM's own check. The server speaks HTTP/1 only.
+
 ### Changed — axa 0.4 (WPM-T468)
 
 `axa` 0.1 to 0.4.0. **A deployment should run `check` first.** Production now refuses a `DATABASE_URL` with no `sslmode` on a remote host, so a
