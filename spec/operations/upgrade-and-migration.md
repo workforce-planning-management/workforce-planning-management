@@ -4,7 +4,8 @@
 
 - **Migrations only go forward.** `down` exists for the early ones but is not a rollback
   plan; some migrations rewrite data (for example `m20261009_000050_generic_pay_scale_id`
-  moves stored ids and its `down` does nothing). **The way back is a restore.**
+  moves stored ids and its `down` does nothing). **The way back is a restore.** `db down`,
+  `db reset` and `db truncate` are refused in production (WPM-R237).
 - **Back up first, every time.** Run `scripts/backup.sh`, check it, then migrate.
 - **Production does not migrate on start** (`auto_migrate: false`). Migrating is a step
   you take on purpose.

@@ -84,6 +84,27 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
     }
 }
 
+/// Refuse `db down`, `db reset` and `db truncate` outside development and test (WPM-R237, WPM-D185). `process` is the environment the
+/// process runs in, whatever `--environment` says, so the flag cannot lift this: both must allow it.
+fn refuse_destruction(
+    command: &Command,
+    process: &Environment,
+    chosen: &Environment,
+) -> Result<()> {
+    let destroys = matches!(
+        command,
+        Command::Db {
+            command: DbCommand::Down { .. } | DbCommand::Reset | DbCommand::Truncate
+        }
+    );
+    if destroys && (process.is_production_like() || chosen.is_production_like()) {
+        return Err(Error::string(
+            "refused: `db down`, `db reset` and `db truncate` run only in development or test",
+        ));
+    }
+    Ok(())
+}
+
 /// The standing warning while sign-in is not enforced (WPM-D52).
 fn warn_auth_off() {
     tracing::warn!(
@@ -352,6 +373,7 @@ impl App {
             .environment
             .as_deref()
             .map_or_else(Environment::from_env, Environment::parse);
+        refuse_destruction(&cli.command, &Environment::from_env(), &environment)?;
         let mut config = Self::config(&environment)?;
         if let Command::Start { binding, port, .. } = &cli.command {
             if let Some(binding) = binding {
@@ -640,6 +662,37 @@ impl TestApp for App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_development_and_test_may_destroy_data() {
+        let db = |command| Command::Db { command };
+        let safe = [Environment::Development, Environment::Test];
+        let unsafe_ = [
+            Environment::Production,
+            Environment::Other("demo".to_string()),
+            Environment::Other("staging".to_string()),
+        ];
+        for destroying in [
+            || DbCommand::Reset,
+            || DbCommand::Truncate,
+            || DbCommand::Down { steps: 1 },
+        ] {
+            for environment in &unsafe_ {
+                assert!(refuse_destruction(&db(destroying()), environment, environment).is_err());
+                // The flag cannot lift the refusal, in either direction.
+                assert!(refuse_destruction(&db(destroying()), environment, &safe[1]).is_err());
+                assert!(refuse_destruction(&db(destroying()), &safe[0], environment).is_err());
+            }
+            for environment in &safe {
+                assert!(refuse_destruction(&db(destroying()), environment, environment).is_ok());
+            }
+        }
+        // What a deployment needs still runs.
+        for environment in &unsafe_ {
+            assert!(refuse_destruction(&db(DbCommand::Migrate), environment, environment).is_ok());
+            assert!(refuse_destruction(&db(DbCommand::Status), environment, environment).is_ok());
+        }
+    }
 
     #[test]
     fn a_request_timeout_rounds_up_to_whole_seconds() {

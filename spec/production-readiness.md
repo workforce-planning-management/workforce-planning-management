@@ -330,3 +330,13 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 **Why:** a version in the path forks every URL and every client at once, and invites two copies of each handler to be kept in step. A header
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
+
+## WPM-R237 — A command that destroys data does not run in production
+
+- `db down`, `db reset` and `db truncate` are refused in any environment but development and test, before the service connects to anything.
+- `--environment` cannot lift the refusal: the process environment and the flag must both allow the command.
+- `db migrate` and `db status` are not affected.
+
+**Why:** the container defaults to `APP_ENV=production`, and `db reset` drops every table. Migrations only go forward and the way back is a
+restore ([upgrade-and-migration.md](operations/upgrade-and-migration.md)), so nothing in a deployment needs these. **Not claimed:** this guards
+the commands, not the database: a role with the rights to drop tables can still do so by other means, which is why the service runs as `wpm_app`.
