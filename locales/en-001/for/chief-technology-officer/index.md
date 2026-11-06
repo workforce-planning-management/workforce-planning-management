@@ -6,7 +6,7 @@
 
 | Concern | What exists | Read |
 | --- | --- | --- |
-| Stack | Rust with Loco (Axum, SeaORM) and PostgreSQL 18 for the API; SvelteKit 2 with Svelte 5 and TypeScript for the client | [architecture.md](../../../../spec/architecture.md) |
+| Stack | Rust with Axum (axa, SeaORM) and PostgreSQL 18 for the API; SvelteKit 2 with Svelte 5 and TypeScript for the client | [architecture.md](../../../../spec/architecture.md) |
 | Design rule | A pure core: rules are database-free and clock-free, tested exhaustively, then wired into controllers | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | Spec first | A change is a requirement, a decision, a task, code and tests together; each task entry says what was **not** verified | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Tests | Unit tests on the rules, database-backed request tests, enforcement binaries run with sign-in on, front-end unit tests and browser tests. Mutation checks: break the code on purpose and confirm a test fails | [testing.md](../../../../spec/testing.md) |

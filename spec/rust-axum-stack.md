@@ -48,7 +48,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 ](Constraints:
 
 - Podman NOT Docker (because Podman is more open source and more free)
-- Tokio NOT async_std (because we harmonize Loco, Tower, Axum)
+- Tokio NOT async_std (because we harmonize Tower, Axum)
 - MiMalloc NOT jemalloc (because MiMalloc handles multiple page sizes)
 - PostgreSQL NOT SQLite (because we want testing on the same database)
 - jiff NOT chrono (because jiff is better-designed and more-powerful)

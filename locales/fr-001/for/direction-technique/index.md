@@ -6,7 +6,7 @@
 
 | Sujet | Ce qui existe | Lire |
 | --- | --- | --- |
-| Pile technique | Rust avec Loco (Axum, SeaORM) et PostgreSQL 18 pour l’API ; SvelteKit 2 avec Svelte 5 et TypeScript pour le client | [architecture.md](../../../../spec/architecture.md) |
+| Pile technique | Rust avec Axum (axa, SeaORM) et PostgreSQL 18 pour l’API ; SvelteKit 2 avec Svelte 5 et TypeScript pour le client | [architecture.md](../../../../spec/architecture.md) |
 | Règle de conception | Un cœur pur : les règles sont sans base de données ni horloge, testées de façon exhaustive, puis branchées aux contrôleurs | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | La spécification d’abord | Un changement, c’est une exigence, une décision, une tâche, du code et des tests ensemble ; chaque tâche dit ce qui n’a **pas** été vérifié | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Tests | Tests unitaires des règles, tests de requêtes avec base de données, binaires d’application exécutés avec la connexion activée, tests unitaires et de navigateur du front-end. Contrôles par mutation : casser le code exprès et confirmer qu’un test échoue | [testing.md](../../../../spec/testing.md) |

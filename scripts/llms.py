@@ -62,7 +62,7 @@ def render(data: dict) -> str:
     out = [f"# {data['name']} (WPM)", ""]
     out += [
         "> An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,",
-        "> in Rust (Loco, Axum, SeaORM, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17",
+        "> in Rust (Axum, axa, SeaORM, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17",
         "> locales. **Demo software — not a production HR or payroll system; synthetic",
         "> data only.** WPM owns the employment relationship and references identities",
         "> (person, worker, organization, course services) by EntityRef URN.",

@@ -99,7 +99,7 @@ and see when I become eligible for the next step; I am told when that is near.*
 - **The worker and HR only**, as for a job level; edits record who and whether on
   the person's behalf; the audit entry (`pay_position_set`, `pay_position_cleared`) names
   no band, step or amount.
-- **Reminder:** the loco task `pay_progression_reminders [days_ahead:0–90]
+- **Reminder:** the task `pay_progression_reminders [days_ahead:0–90]
   [as_of:YYYY-MM-DD]` (default 30 calendar days; **schedule daily**) tells each person who
   becomes eligible within the window, once (idempotent per eligibility date), if they are
   still employed on that date. The in-app notification (`pay_step_due`) says only

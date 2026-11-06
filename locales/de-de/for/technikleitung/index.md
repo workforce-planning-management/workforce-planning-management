@@ -6,7 +6,7 @@
 
 | Anliegen | Was es gibt | Lesen |
 | --- | --- | --- |
-| Stack | Rust mit Loco (Axum, SeaORM) und PostgreSQL 18 für die API; SvelteKit 2 mit Svelte 5 und TypeScript für den Client | [architecture.md](../../../../spec/architecture.md) |
+| Stack | Rust mit Axum (axa, SeaORM) und PostgreSQL 18 für die API; SvelteKit 2 mit Svelte 5 und TypeScript für den Client | [architecture.md](../../../../spec/architecture.md) |
 | Entwurfsregel | Ein reiner Kern: Regeln sind datenbank- und uhrenfrei, erschöpfend getestet und erst dann an Controller angeschlossen | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | Spezifikation zuerst | Eine Änderung ist Anforderung, Entscheidung, Aufgabe, Code und Tests zusammen; jeder Aufgabeneintrag sagt, was **nicht** geprüft wurde | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Tests | Unit-Tests der Regeln, datenbankgestützte Anfragetests, Durchsetzungs-Binaries mit eingeschalteter Anmeldung, Frontend-Unit- und Browsertests. Mutationsprüfungen: Den Code absichtlich kaputtmachen und bestätigen, dass ein Test fehlschlägt | [testing.md](../../../../spec/testing.md) |

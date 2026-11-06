@@ -6,7 +6,7 @@
 
 | تشویش | کیا موجود ہے | پڑھیں |
 | --- | --- | --- |
-| اسٹیک | API کے لیے Rust، Loco (Axum، SeaORM) اور PostgreSQL 18؛ کلائنٹ کے لیے SvelteKit 2، Svelte 5 اور TypeScript | [architecture.md](../../../../spec/architecture.md) |
+| اسٹیک | API کے لیے Rust، Axum (axa، SeaORM) اور PostgreSQL 18؛ کلائنٹ کے لیے SvelteKit 2، Svelte 5 اور TypeScript | [architecture.md](../../../../spec/architecture.md) |
 | ڈیزائن کا اصول | خالص مرکز: اصول ڈیٹا بیس اور گھڑی سے آزاد ہیں، مکمل جانچے گئے ہیں، پھر کنٹرولرز سے جوڑے جاتے ہیں | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | پہلے تفصیلات | ایک تبدیلی ضرورت، فیصلہ، کام، کوڈ اور ٹیسٹ ایک ساتھ ہے؛ ہر کام کا اندراج بتاتا ہے کہ کیا تصدیق **نہیں** ہوئی | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | ٹیسٹ | اصولوں کے یونٹ ٹیسٹ، ڈیٹا بیس پر مبنی درخواست ٹیسٹ، سائن ان آن رکھ کر چلنے والے نفاذ کے بائنری، فرنٹ اینڈ یونٹ اور براؤزر ٹیسٹ۔ میوٹیشن جانچ: کوڈ جان بوجھ کر توڑنا اور تصدیق کرنا کہ کوئی ٹیسٹ ناکام ہوتا ہے | [testing.md](../../../../spec/testing.md) |

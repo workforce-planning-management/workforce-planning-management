@@ -61,7 +61,7 @@ identities by `EntityRef` URN, never duplicating them.
 
 | Subproject                                                                                                     | Role                           | Stack                                   |
 | -------------------------------------------------------------------------------------------------------------- | ------------------------------ | --------------------------------------- |
-| [workforce-planning-management-service-with-rust](../workforce-planning-management-service-with-rust/)         | Back-end JSON API              | Rust, Loco (Axum + SeaORM), PostgreSQL  |
+| [workforce-planning-management-service-with-rust](../workforce-planning-management-service-with-rust/)         | Back-end JSON API              | Rust, Axum (axa + SeaORM), PostgreSQL   |
 | [workforce-planning-management-ui-with-svelte](../workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
 
 ## Specification (topic files)

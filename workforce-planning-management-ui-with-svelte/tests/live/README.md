@@ -1,6 +1,6 @@
 # Live tests (real service, no stubs)
 
-`live.spec.ts` drives the built UI against a running Loco API. It is skipped unless `WPM_LIVE_API=1`.
+`live.spec.ts` drives the built UI against a running API. It is skipped unless `WPM_LIVE_API=1`.
 
 1. Start Postgres and the API with enforcement off (a demo posture, never for production):
    `WPM_REQUIRE_AUTH=0 DATABASE_URL=… cargo run -- start` (port 5150).

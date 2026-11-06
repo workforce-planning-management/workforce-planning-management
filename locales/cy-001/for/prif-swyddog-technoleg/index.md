@@ -6,7 +6,7 @@
 
 | Pryder | Beth sy'n bodoli | Darllenwch |
 | --- | --- | --- |
-| Pentwr | Rust gyda Loco (Axum, SeaORM) a PostgreSQL 18 ar gyfer yr API; SvelteKit 2 gyda Svelte 5 a TypeScript ar gyfer y cleient | [architecture.md](../../../../spec/architecture.md) |
+| Pentwr | Rust gyda Axum (axa, SeaORM) a PostgreSQL 18 ar gyfer yr API; SvelteKit 2 gyda Svelte 5 a TypeScript ar gyfer y cleient | [architecture.md](../../../../spec/architecture.md) |
 | Rheol dylunio | Craidd pur: mae rheolau'n rhydd o gronfa ddata a chlociau, wedi'u profi'n drylwyr, ac yna'n cael eu cysylltu â rheolyddion | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | Manyleb yn gyntaf | Mae newid yn ofyniad, penderfyniad, tasg, cod a phrofion gyda'i gilydd; mae pob cofnod tasg yn dweud beth **na** chafodd ei wirio | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Profion | Profion uned ar y rheolau, profion ceisiadau â chronfa ddata, deuaidd gorfodi a redir gyda mewngofnodi ymlaen, profion uned a phorwr y pen blaen. Gwiriadau treiglo: torri'r cod yn fwriadol a chadarnhau bod prawf yn methu | [testing.md](../../../../spec/testing.md) |

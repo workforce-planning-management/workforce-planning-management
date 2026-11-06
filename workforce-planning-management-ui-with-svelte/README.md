@@ -1,7 +1,7 @@
 # Workforce Planning Management — SvelteKit front-end
 
 The browser client for the
-[Loco JSON API sibling](../workforce-planning-management-service-with-rust/):
+[JSON API sibling](../workforce-planning-management-service-with-rust/):
 HR, manager, and employee self-service views over the full
 employment lifecycle — hiring boards, onboarding, time and leave,
 rotas with working-time and ergonomic-issue panels, the employee
@@ -20,7 +20,7 @@ rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 UI of the later tasks in [../spec/tasks.md](../spec/tasks.md) (57 pages).
 `pnpm lint` and svelte-check clean (0 errors, 0 warnings); **308 vitest and 335
 Playwright tests** pass, 19 skipped (`page.route`-stubbed — runs without the Rust
-service); the production build is green. Quick start: `pnpm install && pnpm dev` (expects the Loco
+service); the production build is green. Quick start: `pnpm install && pnpm dev` (expects the API
 sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
 
 ## Environment variables

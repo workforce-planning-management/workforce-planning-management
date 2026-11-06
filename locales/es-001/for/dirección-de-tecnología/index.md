@@ -6,7 +6,7 @@
 
 | Asunto | Qué existe | Lea |
 | --- | --- | --- |
-| Pila | Rust con Loco (Axum, SeaORM) y PostgreSQL 18 para la API; SvelteKit 2 con Svelte 5 y TypeScript para el cliente | [architecture.md](../../../../spec/architecture.md) |
+| Pila | Rust con Axum (axa, SeaORM) y PostgreSQL 18 para la API; SvelteKit 2 con Svelte 5 y TypeScript para el cliente | [architecture.md](../../../../spec/architecture.md) |
 | Regla de diseño | Un núcleo puro: las reglas no dependen de la base de datos ni del reloj, se prueban de forma exhaustiva y luego se conectan a los controladores | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | Primero la especificación | Un cambio es requisito, decisión, tarea, código y pruebas juntos; cada entrada de tarea dice qué **no** se verificó | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Pruebas | Pruebas unitarias de las reglas, pruebas de peticiones con base de datos, binarios de aplicación ejecutados con el inicio de sesión activado, pruebas unitarias de la interfaz y de navegador. Comprobaciones de mutación: romper el código a propósito y confirmar que falla una prueba | [testing.md](../../../../spec/testing.md) |

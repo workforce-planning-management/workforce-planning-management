@@ -2,7 +2,7 @@
 //! `workforce-planning-management`.
 //!
 //! The [`Migrator`] runs the ordered list below at boot (or via
-//! `cargo loco db migrate`): the worker core, the acquisition
+//! `cargo run -- db migrate`): the worker core, the acquisition
 //! pipeline, the workforce tables, benefits + development, payroll,
 //! then the `audit_logs` and `event_outbox` side tables. Employment
 //! data is personal data, so the audit trail is the who/what/when
@@ -147,7 +147,7 @@ pub mod m20261105_000131_injury_records;
 pub mod m20261105_000132_goal_skill_target;
 pub mod m20261105_000133_course_requests;
 
-/// The crate's migrator: drives the ordered migration set for the loco
+/// The crate's migrator: drives the ordered migration set for the
 /// CLI / boot-time migration.
 pub struct Migrator;
 
