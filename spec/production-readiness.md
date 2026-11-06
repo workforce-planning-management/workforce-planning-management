@@ -331,6 +331,16 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 
+## WPM-R238 — Every error is a problem document
+
+- Every `4xx` and `5xx` from the service is `application/problem+json` (RFC 9457) with `type`, `title` and `status`, whatever refused it.
+- `detail` says what went wrong, where there is something to say; `code` is the short reason for code to read, where the refusal has one (a plain-text refusal does not). Other members, and every header such as `Retry-After`, stay.
+- A `5xx` carries no text the service did not write for a client.
+- The JSON-RPC answers on `/mcp` are not affected: that protocol has its own error shape. The UI's own proxy errors (`bad_path`, `no_demo`) are not the service's.
+
+**Why:** one shape, named by a standard, lets a client handle any refusal in one place; before this a client met JSON from handlers and plain text from the layers around them.
+**Not claimed:** `type` is always `about:blank`, so `code` is the only stable machine-readable reason, and no problem type URIs are published.
+
 ## WPM-R237 — A command that destroys data does not run in production
 
 - `db down`, `db reset` and `db truncate` are refused in any environment but development and test, before the service connects to anything. In development and test they also need `AXA_DESTROY_DATA=true`.

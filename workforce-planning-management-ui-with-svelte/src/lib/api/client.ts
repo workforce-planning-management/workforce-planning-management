@@ -7,11 +7,12 @@ export class ApiError extends Error {
   status: number;
   body: unknown;
   constructor(status: number, body: unknown) {
-    const description =
-      typeof body === "object" && body !== null && "description" in body
-        ? String((body as { description: unknown }).description)
+    // RFC 9457: `detail` says what went wrong this time (WPM-R238).
+    const detail =
+      typeof body === "object" && body !== null && "detail" in body
+        ? String((body as { detail: unknown }).detail)
         : `API error ${status}`;
-    super(description);
+    super(detail);
     this.status = status;
     this.body = body;
   }

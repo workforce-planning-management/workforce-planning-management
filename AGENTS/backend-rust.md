@@ -42,6 +42,7 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 
 - Validation errors: `unprocessable("message")` (422). Unknown pid / out of
   scope: `Error::NotFound` (404). `records::find_worker(db, pid)` etc. return 404.
+  Keep returning `axa::Error`: `src/problem.rs` turns every error into RFC 9457 problem details (WPM-D186).
 - Multi-step writes in one transaction (`ctx.db.begin()`); put the audit row and
   any notification in it. **No audit, no write** (WPM-D107): if the audit row cannot be written the
   transaction rolls back and the request fails; never audit after the commit or ignore the audit error.

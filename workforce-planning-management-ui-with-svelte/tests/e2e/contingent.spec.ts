@@ -251,11 +251,11 @@ test.describe("contingent workforce", () => {
   test("anyone but HR is told it is not theirs to see", async ({ page }) => {
     await page.route(
       "**/api/proxy/workforce-intelligence/contingent",
-      (route) => route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      (route) => route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.route(
       "**/api/proxy/workforce-intelligence/programmes",
-      (route) => route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      (route) => route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/contingent");
     await expect(page.getByTestId("contingent-forbidden")).toBeVisible();
@@ -412,7 +412,7 @@ test.describe("contingent workforce", () => {
         }),
       );
       await p.route(`**/api/proxy/workers/${WORKER.pid}/funding`, (route) =>
-        route.fulfill({ status: 403, json: { error: "forbidden" } }),
+        route.fulfill({ status: 403, json: { code: "forbidden" } }),
       );
     });
     await page.goto(`/workers/${WORKER.pid}`);
@@ -425,7 +425,7 @@ test.describe("contingent workforce", () => {
   }) => {
     await stubWorker(page, async (p) => {
       await p.route(`**/api/proxy/workers/${WORKER.pid}/engagement`, (route) =>
-        route.fulfill({ status: 403, json: { error: "forbidden" } }),
+        route.fulfill({ status: 403, json: { code: "forbidden" } }),
       );
     });
     await page.goto(`/workers/${WORKER.pid}`);

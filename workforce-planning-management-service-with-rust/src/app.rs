@@ -326,10 +326,16 @@ impl App {
 
     /// The full router: `axa`'s standard middleware inside WPM's own layers.
     ///
+    /// Errors become problems here as well as in [`Self::after_routes`], because `axa` compresses and a compressed body cannot be
+    /// read after it: this pass has what a handler refused, that one what `axa` and WPM's own layers refused (WPM-D186).
+    ///
     /// # Errors
     /// A boot check refuses to start.
     pub async fn router(ctx: &AppContext) -> Result<AxumRouter> {
-        let router = app_routes().into_app(ctx.clone())?;
+        let router = app_routes()
+            .into_router(ctx.clone())
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw));
+        let router = axa::middleware::apply(router, &ctx.config.http)?;
         Self::after_routes(router, ctx).await
     }
 
@@ -492,7 +498,8 @@ impl App {
                 ctx.clone(),
                 crate::need_to_know::need_to_know_mw,
             ))
-            .layer(axum::middleware::from_fn(require_auth_mw));
+            .layer(axum::middleware::from_fn(require_auth_mw))
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw));
         let router = controllers::mcp::mount(router, api, ctx.clone());
         Ok(router
             .layer(axum::middleware::from_fn_with_state(
@@ -510,6 +517,8 @@ impl App {
                 crate::version::require_version_mw,
             ))
             .layer(axum::middleware::from_fn(crate::security::rate_limit_mw))
+            // Outside everything that refuses a request, so a 401, 406, 408, 429 or panic is a problem too (WPM-R238).
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw))
             .layer(axum::middleware::from_fn(
                 crate::security::security_headers_mw,
             ))

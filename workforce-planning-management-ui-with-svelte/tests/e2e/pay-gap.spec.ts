@@ -265,7 +265,7 @@ test.describe("Pay gap", () => {
       route.fulfill({ json: [] }),
     );
     await page.route("**/api/proxy/pay-transparency/gap-report?*", (route) =>
-      route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/pay-gap");
     await expect(page.getByTestId("error")).toContainText(

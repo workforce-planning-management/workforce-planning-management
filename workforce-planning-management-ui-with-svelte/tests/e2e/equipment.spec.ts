@@ -87,7 +87,7 @@ test.describe("Equipment", () => {
       route.fulfill({ json: { worker_pid: WORKER.pid, out: 0, issues: [] } }),
     );
     await page.route("**/api/proxy/assets?*", (route) =>
-      route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/me");
     const panel = page.getByTestId("equipment");

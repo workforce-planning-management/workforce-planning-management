@@ -43,6 +43,10 @@ async fn headers_everywhere_and_the_limiter_trips() {
         assert_eq!(posture.json::<serde_json::Value>()["auth_enforced"], true);
         let unauth = request.get("/api/workers").await;
         assert_eq!(unauth.status_code(), 401, "default is enforced");
+        // WPM-R238: the sign-in layer's refusal is a problem, and keeps its challenge.
+        assert_eq!(unauth.header("content-type"), "application/problem+json");
+        assert!(unauth.headers().contains_key("www-authenticate"));
+        assert_eq!(unauth.json::<serde_json::Value>()["status"], 401);
 
         // Headers are on a 200 and on refusals, and the API is never cached.
         for (path, expect) in [
@@ -98,6 +102,11 @@ async fn headers_everywhere_and_the_limiter_trips() {
         }
         let refused = refused.expect("the limiter never tripped");
         assert!(refused.headers().contains_key("retry-after"));
+        assert_eq!(refused.header("content-type"), "application/problem+json");
+        assert_eq!(
+            refused.json::<serde_json::Value>()["detail"],
+            "rate limit exceeded; retry later"
+        );
         assert!(refused.headers().contains_key("x-content-type-options"));
         // Varying the token does not buy a fresh bucket: the caller is named
         // by its address, not by a header it controls.

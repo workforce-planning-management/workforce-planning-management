@@ -126,7 +126,7 @@ test.describe("AI register", () => {
       }),
     );
     await page.route("**/api/proxy/ai-register/S1", (route) =>
-      route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/ai-register");
     await page.getByTestId("ai-edit").click();

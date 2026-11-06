@@ -1569,6 +1569,17 @@ fn decorate(document: &mut Value) {
         let Some(item) = item.as_object_mut() else {
             continue;
         };
+        for operation in item.values_mut().filter_map(Value::as_object_mut) {
+            if let Some(responses) = operation
+                .get_mut("responses")
+                .and_then(Value::as_object_mut)
+            {
+                responses.insert(
+                    "default".into(),
+                    json!({ "$ref": "#/components/responses/Error" }),
+                );
+            }
+        }
         for method in MUTATING {
             let Some(operation) = item.get_mut(method).and_then(Value::as_object_mut) else {
                 continue;
@@ -1617,18 +1628,32 @@ fn components() -> Value {
             }
         },
         "responses": {
+            "Error": {
+                "description": "An error, as RFC 9457 problem details",
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+            },
             "IdempotencyInProgress": {
                 "description": "A request with this Idempotency-Key is still running; try again after Retry-After seconds",
                 "headers": { "Retry-After": { "schema": { "type": "integer" } } },
-                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
             },
             "IdempotencyRefused": {
                 "description": "Validation failure, or the Idempotency-Key is malformed or was used for a different request",
-                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
             }
         },
         "schemas": {
-            "PlainTextError": { "type": "string", "description": "A sentence saying what to change" },
+            "Problem": {
+                "type": "object", "required": ["type", "title", "status"],
+                "description": "An error, as RFC 9457 problem details",
+                "properties": {
+                    "type": { "type": "string", "example": "about:blank" },
+                    "title": { "type": "string", "description": "The status's standard reason", "example": "Unprocessable Entity" },
+                    "status": { "type": "integer", "example": 422 },
+                    "detail": { "type": "string", "description": "A sentence saying what to change", "example": "name is required" },
+                    "code": { "type": "string", "description": "A short reason for code to read, where the refusal has one", "example": "validation" }
+                }
+            },
             "PostFundingKind": { "type": "string", "enum": ["core", "time_limited", "external", "programme"] },
             "PostFundingPayload": {
                 "type": "object", "required": ["kind"],
