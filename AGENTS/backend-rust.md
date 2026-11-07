@@ -46,7 +46,7 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 - Multi-step writes in one transaction (`ctx.db.begin()`); put the audit row and
   any notification in it. **No audit, no write** (WPM-D107): if the audit row cannot be written the
   transaction rolls back and the request fails; never audit after the commit or ignore the audit error.
-- Lists: `Query<super::Page>` (`axa::pagination::PageParams`), `super::window(&page)?` or `super::resolve(&page, default)?`
+- Lists: `Query<super::Page>` (`axa::offset_pagination::PageParams`), `super::window(&page)?` or `super::resolve(&page, default)?`
   for the `Window`, `window.bounds()` for `LIMIT`/`OFFSET`, `window.respond(total, rows)` for the `x-total-count`,
   `x-limit` and `x-offset` headers (WPM-T476).
 - Read a request with `axa::extract::{Json, Path, Query}`, never Axum's from `axa::prelude` (WPM-T475); a unit test checks.

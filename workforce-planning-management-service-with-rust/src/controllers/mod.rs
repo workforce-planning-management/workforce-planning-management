@@ -301,16 +301,16 @@ pub const MAX_LIMIT: u64 = 500;
 /// past this bound wants a cursor, not a bigger number.
 pub const MAX_OFFSET: u64 = 10_000;
 
-/// `?limit=` / `?offset=` for a collection read: `axa::pagination`'s (WPM-T476). The values are text, so an absent, zero or
+/// `?limit=` / `?offset=` for a collection read: `axa::offset_pagination`'s (WPM-T476). The values are text, so an absent, zero or
 /// unparseable `limit` is the endpoint's default and an unparseable `offset` is `0`, rather than a refusal.
 ///
 /// Declared as its own type (not `#[serde(flatten)]`-ed onto a wider query struct): a flattened struct deserializes from a
 /// string-keyed map. A wider query that also pages builds one from its own `limit` and `offset`.
-pub use axa::pagination::PageParams as Page;
+pub use axa::offset_pagination::PageParams as Page;
 
 /// The page a request resolved to: its `limit` and `offset`, which [`Window::bounds`] gives as `PostgreSQL` takes them and
 /// [`Window::respond`] answers with `X-Total-Count`, `X-Limit` and `X-Offset`.
-pub use axa::pagination::Page as Window;
+pub use axa::offset_pagination::Page as Window;
 
 /// The page `page` asks for, with `default_limit` when it names none and at most [`MAX_LIMIT`].
 ///
@@ -318,7 +318,7 @@ pub use axa::pagination::Page as Window;
 ///
 /// A `400`, code `offset_too_large`, when the offset is past [`MAX_OFFSET`].
 pub fn resolve(page: &Page, default_limit: u64) -> Result<Window> {
-    page.resolve(axa::pagination::Limits {
+    page.resolve(axa::offset_pagination::Limits {
         default_limit,
         max_limit: MAX_LIMIT,
         max_offset: MAX_OFFSET,

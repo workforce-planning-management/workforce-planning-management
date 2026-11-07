@@ -1047,8 +1047,15 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         let text = serde_json::to_string(&notes).unwrap();
         assert_eq!(text.matches("early_warning").count(), 2);
         assert!(text.contains("Synthetic pool") && text.contains("Synthetic vacancy rate"));
-        for figure in ["900", "800", "100"] {
-            assert!(!text.contains(&format!("\"{figure}")) && !text.contains(&format!(" {figure} ")), "no figure {figure} in {text}");
+        // No figure in what HR is told: the words name no number, and the data holds only a kind and ids. The whole JSON is
+        // not searched, because a random id can start with `100`.
+        for note in notes.as_array().unwrap() {
+            let body = note["body"].as_str().unwrap();
+            for figure in ["900", "800", "100"] {
+                assert!(!body.contains(figure), "no figure {figure} in {body}");
+            }
+            let data = note["data"].as_object().unwrap();
+            assert!(data.values().all(Value::is_string), "the data holds no number: {data:?}");
         }
         let list = || async { request.get(&format!("/api/early-warnings?organization={org}")).await.json::<Value>() };
         let l = list().await;

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.7 (WPM-T477)
+
+`axa` 0.6.1 to 0.7.0. **A client may notice:** a write that breaks a check or not-null constraint answers `422` with `code: unprocessable_entity`, not `500`; a client that has stopped reading a response is dropped after `SEND_STALL_TIMEOUT_SECONDS` (60).
+
 ### Changed — lists page with `axa::pagination` (WPM-T476)
 
 **A client may notice:** a `limit` or `offset` that is not a number is the default (`limit` the endpoint's, `offset` `0`), where it was a `400`. An offset past 10,000 is still a `400` with `code: offset_too_large`, and `X-Total-Count`, `X-Limit` and `X-Offset` are as before.
