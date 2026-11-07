@@ -17,18 +17,13 @@
 
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::sea_query::{Alias, Expr, ExprTrait, Func, Query, SimpleExpr};
-use sea_orm::{
-    ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect,
-    Select,
-};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 use super::{Page, with_page_headers};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{leave_requests, worker_backups, workers};
+use crate::db::{self, pool};
 use crate::models::memberships;
 use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::directory as rules;
@@ -53,116 +48,122 @@ struct DirectoryParams {
     offset: Option<u64>,
 }
 
-/// Workers employed `today` in the readable organizations: the one set every part of the directory
-/// (the listing, a manager's name, a cover) is drawn from.
-fn employed_scope(refs: Option<&[String]>, today: NaiveDate) -> Select<workers::Entity> {
-    let mut query = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        );
-    if let Some(refs) = refs {
-        query = query.filter(workers::Column::OrganizationRef.is_in(refs.iter().cloned()));
-    }
-    query
-}
-
-/// `strpos(lower(column), term) > 0`: the term appears in the column, ignoring case. A term is
-/// bound as a value, never spliced, so a `%` or `_` in it is just a character.
-fn contains(column: impl Into<SimpleExpr>, term: &str) -> SimpleExpr {
-    Expr::expr(Func::cust(Alias::new("strpos")).args([Func::lower(column).into(), Expr::val(term)]))
-        .gt(0)
-}
-
-/// The manager is in the readable set (same rule as [`employed_scope`]) and their name has the term.
-fn manager_contains(refs: Option<&[String]>, today: NaiveDate, term: &str) -> SimpleExpr {
-    let m = Alias::new("m");
-    let col = |c: workers::Column| Expr::col((m.clone(), c));
-    let mut sub = Query::select();
-    sub.expr(Expr::val(1))
-        .from_as(workers::Entity, m.clone())
-        .and_where(col(workers::Column::Pid).equals((workers::Entity, workers::Column::ManagerPid)))
-        .and_where(col(workers::Column::DeletedAt).is_null())
-        .and_where(col(workers::Column::HiredOn).lte(today))
-        .cond_where(
-            Condition::any()
-                .add(col(workers::Column::TerminatedOn).is_null())
-                .add(col(workers::Column::TerminatedOn).gt(today)),
-        )
-        .and_where(contains(col(workers::Column::DisplayName), term));
-    if let Some(refs) = refs {
-        sub.and_where(col(workers::Column::OrganizationRef).is_in(refs.iter().cloned()));
-    }
-    Expr::exists(sub)
+/// The whole of a page: how many workers match, and the pids of the page in order.
+struct Matches {
+    total: u64,
+    page: Vec<Uuid>,
 }
 
 /// The listing's filter, in SQL, with the same meaning as [`rules::search`]: every whitespace-separated
 /// term must appear (ignoring case) in the name, title, department, location, the readable manager's
 /// name or the name of a rota the worker is on call for today; and the department, if given, matches
 /// ignoring case.
-fn filtered(
+///
+/// The SQL is one fixed statement so that it is checked at build time. The terms are an array, and a
+/// worker matches when no term fails. `IS NOT TRUE` is what makes that sound: a missing location or
+/// manager makes the test NULL rather than false, and a plain `NOT` would let that term through.
+///
+/// A term is bound as a value, never spliced, and `strpos` takes no pattern, so a `%` or `_` in it is
+/// just a character. `readable` is the one set the listing and a manager's name are drawn from, and it
+/// is `NOT MATERIALIZED` so that a manager is found by the primary key and not by a scan per worker.
+/// One statement counts and pages, so the total cannot disagree with the rows.
+async fn matches(
+    ctx: &AppContext,
     refs: Option<&[String]>,
     today: NaiveDate,
     params: &DirectoryParams,
     on_call: &HashMap<Uuid, Vec<String>>,
-) -> Select<workers::Entity> {
-    let mut query = employed_scope(refs, today);
-    if let Some(department) = params.department.as_deref().filter(|d| !d.is_empty()) {
-        query = query.filter(
-            Func::lower(Expr::col((workers::Entity, workers::Column::Department)))
-                .eq(department.to_lowercase()),
-        );
-    }
-    for term in params.q.as_deref().unwrap_or("").split_whitespace() {
-        let term = term.to_lowercase();
-        let on_call_match: Vec<Uuid> = on_call
-            .iter()
-            .filter(|(_, rotas)| rotas.iter().any(|r| r.to_lowercase().contains(&term)))
-            .map(|(pid, _)| *pid)
-            .collect();
-        let mut any = Condition::any()
-            .add(contains(
-                Expr::col((workers::Entity, workers::Column::DisplayName)),
-                &term,
-            ))
-            .add(contains(
-                Expr::col((workers::Entity, workers::Column::JobTitle)),
-                &term,
-            ))
-            .add(contains(
-                Expr::col((workers::Entity, workers::Column::Department)),
-                &term,
-            ))
-            .add(contains(
-                Expr::col((workers::Entity, workers::Column::Location)),
-                &term,
-            ))
-            .add(manager_contains(refs, today, &term));
-        // an empty `IN ()` is not valid SQL
-        if !on_call_match.is_empty() {
-            any = any.add(workers::Column::Pid.is_in(on_call_match));
-        }
-        query = query.filter(any);
-    }
-    query
+    limit: u64,
+    offset: u64,
+) -> Result<Matches> {
+    let department = params
+        .department
+        .as_deref()
+        .filter(|d| !d.is_empty())
+        .map(str::to_lowercase);
+    let terms: Vec<String> = params
+        .q
+        .as_deref()
+        .unwrap_or("")
+        .split_whitespace()
+        .map(str::to_lowercase)
+        .collect();
+    // One row per rota: lowered here, as the terms are, so the two are compared alike.
+    let (rota_pids, rota_names): (Vec<Uuid>, Vec<String>) = on_call
+        .iter()
+        .flat_map(|(pid, rotas)| rotas.iter().map(|r| (*pid, r.to_lowercase())))
+        .unzip();
+
+    let found = sqlx::query!(
+        r#"
+        WITH readable AS NOT MATERIALIZED (
+            SELECT pid, manager_pid, display_name, job_title, department, location
+            FROM workers
+            WHERE deleted_at IS NULL
+              AND hired_on <= $1
+              AND (terminated_on IS NULL OR terminated_on > $1)
+              AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+        ),
+        matching AS (
+            SELECT w.pid, lower(w.display_name) COLLATE "C" AS sort_name
+            FROM readable w
+            LEFT JOIN readable m ON m.pid = w.manager_pid
+            WHERE ($3::text IS NULL OR lower(w.department) = $3)
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM unnest($4::text[]) AS t(term)
+                  WHERE (
+                      strpos(lower(w.display_name), t.term) > 0
+                      OR strpos(lower(w.job_title), t.term) > 0
+                      OR strpos(lower(w.department), t.term) > 0
+                      OR strpos(lower(w.location), t.term) > 0
+                      OR strpos(lower(m.display_name), t.term) > 0
+                      OR EXISTS (
+                          SELECT 1
+                          FROM unnest($5::uuid[], $6::text[]) AS rota(pid, name)
+                          WHERE rota.pid = w.pid AND strpos(rota.name, t.term) > 0
+                      )
+                  ) IS NOT TRUE
+              )
+        )
+        SELECT
+            (SELECT count(*) FROM matching) AS "total!",
+            ARRAY(
+                SELECT pid FROM matching ORDER BY sort_name, pid LIMIT $7 OFFSET $8
+            ) AS "page!"
+        "#,
+        today,
+        refs,
+        department,
+        &terms,
+        &rota_pids,
+        &rota_names,
+        db::bound(limit),
+        db::bound(offset),
+    )
+    .fetch_one(pool(ctx))
+    .await?;
+    Ok(Matches {
+        total: found.total.unsigned_abs(),
+        page: found.page,
+    })
 }
 
 /// Who among `pids` is on approved leave `today`.
-async fn away_among(ctx: &AppContext, pids: Vec<Uuid>, today: NaiveDate) -> Result<HashSet<Uuid>> {
-    Ok(leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.is_in(pids))
-        .filter(leave_requests::Column::Status.eq("approved"))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .filter(leave_requests::Column::StartOn.lte(today))
-        .filter(leave_requests::Column::EndOn.gte(today))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|l| l.worker_pid)
-        .collect())
+async fn away_among(ctx: &AppContext, pids: &[Uuid], today: NaiveDate) -> Result<HashSet<Uuid>> {
+    let away = sqlx::query_scalar!(
+        "SELECT worker_pid FROM leave_requests
+         WHERE worker_pid = ANY($1)
+           AND status = 'approved'
+           AND deleted_at IS NULL
+           AND start_on <= $2
+           AND end_on >= $2",
+        pids,
+        today,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
+    Ok(away.into_iter().collect())
 }
 
 /// `GET /api/directory?q=&department=&limit=&offset=` — directory entries
@@ -189,49 +190,67 @@ async fn directory(
     let today = chrono::Utc::now().date_naive();
     let on_call = super::rotas::on_call_today(&ctx, &caller).await?;
 
-    let matching = filtered(refs, today, &params, &on_call);
-    let total = matching.clone().count(&ctx.db).await?;
-    let staff: Vec<workers::Model> = matching
-        .order_by_asc(Expr::cust("lower(workers.display_name) COLLATE \"C\""))
-        .order_by_asc(workers::Column::Pid)
-        .limit(limit)
-        .offset(offset)
-        .all(&ctx.db)
-        .await?;
+    let found = matches(&ctx, refs, today, &params, &on_call, limit, offset).await?;
+    let staff = sqlx::query!(
+        r#"
+        SELECT w.pid, w.display_name, w.job_title, w.department, w.location,
+               w.organization_ref, w.manager_pid
+        FROM unnest($1::uuid[]) WITH ORDINALITY AS page(pid, position)
+        JOIN workers w ON w.pid = page.pid
+        ORDER BY page.position
+        "#,
+        &found.page,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
 
     // Who is away today: approved leave covering today, for this page.
-    let mut away = away_among(&ctx, staff.iter().map(|w| w.pid).collect(), today).await?;
-    let mut backups_by_worker: HashMap<Uuid, Vec<worker_backups::Model>> = HashMap::new();
+    let mut away = away_among(&ctx, &found.page, today).await?;
+    let mut backups_by_worker: HashMap<Uuid, Vec<_>> = HashMap::new();
     if !away.is_empty() {
-        for b in worker_backups::Entity::find()
-            .filter(
-                worker_backups::Column::WorkerPid.is_in(away.iter().copied().collect::<Vec<_>>()),
-            )
-            .filter(worker_backups::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?
+        for b in sqlx::query!(
+            "SELECT worker_pid, backup_pid, priority, starts_on, ends_on
+             FROM worker_backups
+             WHERE worker_pid = ANY($1) AND deleted_at IS NULL",
+            &away.iter().copied().collect::<Vec<_>>(),
+        )
+        .fetch_all(pool(&ctx))
+        .await?
         {
             backups_by_worker.entry(b.worker_pid).or_default().push(b);
         }
     }
 
     // The names a page may show beyond its own: managers and backups, only if in the readable set.
+    // The same rule as `readable` in [`matches`].
     let mut wanted: Vec<Uuid> = staff.iter().filter_map(|w| w.manager_pid).collect();
     wanted.extend(backups_by_worker.values().flatten().map(|b| b.backup_pid));
-    let known: HashMap<Uuid, String> = employed_scope(refs, today)
-        .filter(workers::Column::Pid.is_in(wanted.clone()))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w.display_name))
-        .collect();
+    let known: HashMap<Uuid, String> = sqlx::query!(
+        r#"
+        SELECT pid, display_name
+        FROM workers
+        WHERE pid = ANY($1)
+          AND deleted_at IS NULL
+          AND hired_on <= $2
+          AND (terminated_on IS NULL OR terminated_on > $2)
+          AND ($3::text[] IS NULL OR organization_ref = ANY($3))
+        "#,
+        &wanted,
+        today,
+        refs,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w.display_name))
+    .collect();
     let backup_pids: Vec<Uuid> = backups_by_worker
         .values()
         .flatten()
         .map(|b| b.backup_pid)
         .filter(|pid| known.contains_key(pid))
         .collect();
-    away.extend(away_among(&ctx, backup_pids, today).await?);
+    away.extend(away_among(&ctx, &backup_pids, today).await?);
 
     let slice: Vec<rules::Entry> = staff
         .iter()
@@ -270,7 +289,7 @@ async fn directory(
         .collect();
     Ok(with_page_headers(
         format::json(slice)?,
-        total,
+        found.total,
         limit,
         offset,
     ))

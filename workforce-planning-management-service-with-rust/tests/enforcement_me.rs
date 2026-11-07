@@ -767,3 +767,88 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
     })
     .await;
 }
+
+/// The directory names no one outside the caller's organizations, and neither does its search: a
+/// manager in another organization is not shown, and a word from that manager's name finds nothing,
+/// or a search would tell the caller who manages whom.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
+async fn the_directory_search_stops_at_the_organizations_the_caller_can_read() {
+    let (keys, kid) = keys_and_kid();
+    unsafe {
+        std::env::set_var("WPM_REQUIRE_AUTH", "1");
+        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
+        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+    }
+    let (one, both) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+    let bearer = |t: String| format!("Bearer {t}");
+    let in_one = bearer(sign_as(&kid, &one.to_string(), &[]));
+    let in_both = bearer(sign_as(&kid, &both.to_string(), &[]));
+    let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
+
+    request::<App, _, _>(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let (ours, theirs) = (
+            format!("organization:{}", uuid::Uuid::new_v4()),
+            format!("organization:{}", uuid::Uuid::new_v4()),
+        );
+        let hire = |org: String, number: &'static str, name: String| {
+            let (request, svc) = (&request, svc.clone());
+            async move {
+                let r = request
+                    .post("/api/workers")
+                    .add_header("authorization", svc)
+                    .json(&json!({
+                        "person_ref": format!("person:{}", uuid::Uuid::new_v4()),
+                        "organization_ref": org, "worker_number": number, "display_name": name,
+                        "employment_type": "permanent", "department": "engineering",
+                        "job_title": "Engineer", "hired_on": "2023-01-05",
+                    }))
+                    .await;
+                assert_eq!(r.status_code(), 200, "{}", r.text());
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let boss = hire(theirs.clone(), "B-1", format!("Zebedee Boss {tag}")).await;
+        let report = hire(ours.clone(), "R-1", format!("Report {tag}")).await;
+        for (person, org) in [(one, &ours), (both, &ours), (both, &theirs)] {
+            sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+                "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+                 VALUES ('{}', 'person:{person}', '{org}', 'member', '2023-01-05')",
+                uuid::Uuid::new_v4())).await.unwrap();
+        }
+        // a line across two organizations: written directly, whatever the route allows
+        sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+            "UPDATE workers SET manager_pid = '{boss}' WHERE pid = '{report}'")).await.unwrap();
+
+        let search = |token: String, q: String| {
+            let request = &request;
+            async move {
+                let r = request
+                    .get("/api/directory")
+                    .add_query_param("q", q)
+                    .add_header("authorization", token)
+                    .await;
+                assert_eq!(r.status_code(), 200, "{}", r.text());
+                r.json::<Vec<Value>>()
+            }
+        };
+
+        // Someone in both organizations proves the line is there to be found.
+        let seen = search(in_both.clone(), format!("zebedee report {tag}")).await;
+        assert_eq!(seen.len(), 1, "{seen:?}");
+        assert_eq!(seen[0]["manager_name"], format!("Zebedee Boss {tag}"));
+        assert_eq!(search(in_both.clone(), tag.clone()).await.len(), 2);
+
+        // Someone in one of them sees their own colleague, with no manager's name...
+        let seen = search(in_one.clone(), tag.clone()).await;
+        assert_eq!(seen.len(), 1, "the manager is not listed: {seen:?}");
+        assert_eq!(seen[0]["display_name"], format!("Report {tag}"));
+        assert_eq!(seen[0]["manager_name"], Value::Null);
+        // ...and the manager's name is no way to find them.
+        let seen = search(in_one.clone(), format!("zebedee {tag}")).await;
+        assert!(seen.is_empty(), "{seen:?}");
+    })
+    .await;
+}

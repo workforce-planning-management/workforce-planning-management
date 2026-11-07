@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT pid, display_name\n        FROM workers\n        WHERE pid = ANY($1)\n          AND deleted_at IS NULL\n          AND hired_on <= $2\n          AND (terminated_on IS NULL OR terminated_on > $2)\n          AND ($3::text[] IS NULL OR organization_ref = ANY($3))\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Date",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7bc0f5940f8b84faac853988ba9826a00f7ad5f4eb2e9dc5c8608439b2472ae7"
+}
