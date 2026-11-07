@@ -7,6 +7,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::NaiveDate;
 use serde::Deserialize;
@@ -185,7 +186,7 @@ struct ExportQuery {
 async fn export(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ExportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ExportQuery>,
 ) -> Result<Response> {
     rules::valid_period(query.from, query.to).map_err(|e| unprocessable(&e))?;
     auth::authorize_record(

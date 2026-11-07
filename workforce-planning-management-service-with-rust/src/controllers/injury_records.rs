@@ -4,6 +4,7 @@
 //! nothing. HR, the service and an administrator read it, never a line manager or payroll, and each read is audited with no content.
 //! The rules are `rules::injury_record`. Spec: `spec/injury-and-separation-duties.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
@@ -88,7 +89,7 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
     let rows = sqlx::query_as!(
@@ -422,7 +423,7 @@ struct RollupQuery {
 async fn rollup(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<RollupQuery>,
+    axa::extract::Query(q): axa::extract::Query<RollupQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
     if !super::policies::privileged(&ctx, &caller, &q.organization).await? {

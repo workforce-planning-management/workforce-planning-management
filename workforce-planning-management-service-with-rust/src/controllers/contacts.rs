@@ -19,6 +19,7 @@
 // written with `+` has an E.164 form (WPM-D152).
 use super::writable_worker;
 use crate::rules::phone as phone_rules;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -601,7 +602,7 @@ async fn cover(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<CoverQuery>,
+    axa::extract::Query(query): axa::extract::Query<CoverQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(

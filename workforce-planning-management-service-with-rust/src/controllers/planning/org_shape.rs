@@ -7,6 +7,8 @@ use crate::db::{self, pool};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::org_shape::{self as shape, Node, Person};
 
+use axa::extract::{Json, Path};
+
 #[derive(Debug, Deserialize)]
 pub(super) struct TargetNode {
     key: String,

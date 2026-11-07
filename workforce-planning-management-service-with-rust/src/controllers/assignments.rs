@@ -3,6 +3,7 @@
 //! do on that day". The worker row stays the record of the primary assignment and is written through when the primary changes.
 //! Spec: `spec/staff-records-and-pay.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -421,7 +422,7 @@ struct BreakdownQuery {
 async fn breakdown(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<BreakdownQuery>,
+    axa::extract::Query(q): axa::extract::Query<BreakdownQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;

@@ -10,6 +10,7 @@
 //! own organization.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Duration, NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -353,7 +354,7 @@ async fn get_rota(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<WindowQuery>,
+    axa::extract::Query(q): axa::extract::Query<WindowQuery>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let (from, to) = window(q.from, q.to)?;
@@ -415,7 +416,7 @@ async fn on_call(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<OnQuery>,
+    axa::extract::Query(q): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let on = q.on.unwrap_or_else(|| Utc::now().date_naive());
@@ -615,7 +616,7 @@ async fn worker_on_call(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<WindowQuery>,
+    axa::extract::Query(q): axa::extract::Query<WindowQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let (from, to) = window(q.from, q.to)?;

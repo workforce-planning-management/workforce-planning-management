@@ -6,6 +6,7 @@
 //! someone entered, not a measurement, and the answer says so.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
@@ -250,7 +251,7 @@ async fn rows_of(
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let (_, rows) = rows_of(&ctx, &caller, &query).await?;
     format::json(rows.iter().map(view).collect::<Vec<_>>())
@@ -262,7 +263,7 @@ async fn list(
 async fn load(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let (org, rows) = rows_of(&ctx, &caller, &query).await?;
     let commitments: Vec<_> = rows.iter().map(commitment).collect();

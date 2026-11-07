@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `POST /api/learning-paths` body (steps declared inline, ordered).
 #[derive(Debug, Deserialize)]

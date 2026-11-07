@@ -2,6 +2,7 @@
 //! plus any day added by hand for what the rules cannot know. The shipped rule packs are **unverified examples** (see
 //! `rules::holiday`); the listing says so. Reading is open to a signed-in caller in scope; generating and adding are HR's.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use chrono::NaiveDate;
 use serde::Deserialize;
@@ -51,7 +52,7 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;

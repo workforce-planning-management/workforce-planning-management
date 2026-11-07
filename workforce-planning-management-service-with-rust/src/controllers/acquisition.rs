@@ -3,6 +3,7 @@
 //! application creates the Worker in one transaction (WPM-D9).
 
 use super::row_json;
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -238,7 +239,7 @@ async fn list_requisitions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Query(params): Query<RequisitionListParams>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());

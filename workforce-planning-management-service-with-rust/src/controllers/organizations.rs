@@ -27,6 +27,7 @@
 //! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -435,7 +436,7 @@ struct ConfederationListQuery {
 async fn list_confederations(
     State(ctx): State<AppContext>,
     Query(query): Query<ConfederationListQuery>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let mut find = organization_confederations::Entity::find()

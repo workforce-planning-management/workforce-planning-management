@@ -23,6 +23,7 @@
 //! payload names its derivation.
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
@@ -145,7 +146,7 @@ struct InstrumentQuery {
 /// `GET /api/assessment-instruments?category=` — the catalog.
 #[debug_handler]
 async fn list_instruments(
-    axum::extract::Query(query): axum::extract::Query<InstrumentQuery>,
+    axa::extract::Query(query): axa::extract::Query<InstrumentQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     if let Some(category) = &query.category
@@ -592,7 +593,7 @@ struct ProfileQuery {
 /// profile (see [`subject_profile`]).
 #[debug_handler]
 async fn candidate_profile(
-    axum::extract::Query(query): axum::extract::Query<ProfileQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
@@ -607,7 +608,7 @@ async fn candidate_profile(
 /// record-level policy.
 #[debug_handler]
 async fn worker_profile(
-    axum::extract::Query(query): axum::extract::Query<ProfileQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,

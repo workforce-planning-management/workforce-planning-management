@@ -3,6 +3,7 @@
 //! representative or what was said. The timeline reads the pure rules in `rules::consultation` (a suggestion with its evidence, the deployer's
 //! to confirm) and says whether consultation began in time. HR writes and reads; audited without text. Spec: `spec/worker-unions.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
@@ -55,7 +56,7 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

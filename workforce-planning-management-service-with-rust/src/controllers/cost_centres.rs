@@ -5,6 +5,7 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
@@ -64,7 +65,7 @@ struct OrgQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
@@ -219,7 +220,7 @@ async fn close(
 async fn unmatched(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     hr_only(&ctx, &caller, &q.organization).await?;
     let codes: Vec<String> = register(&ctx, &q.organization)

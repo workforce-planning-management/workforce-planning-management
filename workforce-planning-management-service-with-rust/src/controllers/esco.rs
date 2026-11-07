@@ -8,6 +8,7 @@
 //! the result is a draft for a human to edit. Essential skills draft
 //! importance `important`, optional ones `useful`.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
@@ -55,7 +56,7 @@ fn like_pattern(term: &str) -> String {
 #[debug_handler]
 async fn search_occupations(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<SearchQuery>,
+    axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
     let term = query.q.unwrap_or_default();
     if term.trim().chars().count() < 2 {
@@ -115,7 +116,7 @@ async fn search_occupations(
 #[debug_handler]
 async fn search_skills(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<SearchQuery>,
+    axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
     let term = query.q.unwrap_or_default();
     if term.trim().chars().count() < 2 {
@@ -201,7 +202,7 @@ pub(crate) async fn occupation_skills(
 #[debug_handler]
 async fn get_occupation(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<UriQuery>,
+    axa::extract::Query(query): axa::extract::Query<UriQuery>,
 ) -> Result<Response> {
     let occupation = find_occupation(&ctx, &query.uri).await?;
     let linked: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()

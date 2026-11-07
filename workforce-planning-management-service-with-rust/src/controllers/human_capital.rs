@@ -237,7 +237,7 @@ async fn wage_runs(
 async fn human_capital(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

@@ -1,6 +1,7 @@
 //! Positions (WPM-R152, WPM-D104): budgeted seats, their moves, their links and the establishment per cost centre. A position
 //! holds no pay. Who holds it is HR's to see: other callers get the state and the count, not the holder. Spec: `spec/positions.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::NaiveDate;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -58,7 +59,7 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -456,7 +457,7 @@ struct EstablishmentQuery {
 async fn establishment(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<EstablishmentQuery>,
+    axa::extract::Query(query): axa::extract::Query<EstablishmentQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

@@ -64,7 +64,7 @@ struct AsOfQuery {
 /// hundredths so no float rounds a headcount.
 #[debug_handler]
 async fn overview(
-    axum::extract::Query(query): axum::extract::Query<AsOfQuery>,
+    axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let as_of = query
@@ -318,7 +318,7 @@ struct CapabilityAnalysisQuery {
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over skills and declarations
 async fn capability_analysis(
-    axum::extract::Query(query): axum::extract::Query<CapabilityAnalysisQuery>,
+    axa::extract::Query(query): axa::extract::Query<CapabilityAnalysisQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let min_proficiency = query
@@ -520,7 +520,7 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
 /// counts every live record regardless of status — see its derivation.
 #[debug_handler]
 async fn metrics(
-    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
+    axa::extract::Query(query): axa::extract::Query<MetricsQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let m = period_metrics(query, &ctx).await?;
@@ -549,7 +549,7 @@ async fn metrics(
 /// known.
 #[debug_handler]
 async fn insights(
-    axum::extract::Query(query): axum::extract::Query<MetricsQuery>,
+    axa::extract::Query(query): axa::extract::Query<MetricsQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let m = period_metrics(query, &ctx).await?;
@@ -589,7 +589,7 @@ struct HistoryQuery {
 /// not that headcount was zero.
 #[debug_handler]
 async fn headcount_history(
-    axum::extract::Query(query): axum::extract::Query<HistoryQuery>,
+    axa::extract::Query(query): axa::extract::Query<HistoryQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
 ) -> Result<Response> {

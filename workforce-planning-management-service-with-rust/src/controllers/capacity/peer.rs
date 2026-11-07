@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// The longest event id taken from a peer.
 const MAX_EVENT_ID: usize = 128;
@@ -256,7 +257,7 @@ pub(super) struct PeerSupplyQuery {
 pub(super) async fn peer_supply_view(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PeerSupplyQuery>,
+    axa::extract::Query(query): axa::extract::Query<PeerSupplyQuery>,
 ) -> Result<Response> {
     let pool = live_pool(&ctx, &caller, &query.pool.to_string()).await?;
     let Some(peer_pool_ref) = pool.peer_pool_ref.clone() else {

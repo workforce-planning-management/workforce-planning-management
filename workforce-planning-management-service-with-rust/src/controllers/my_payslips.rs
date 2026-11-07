@@ -7,6 +7,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
@@ -236,7 +237,7 @@ struct ListQuery {
 async fn list_queries(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     let wanted = query.status.as_deref().unwrap_or("open");
     if !["open", "closed"].contains(&wanted) {

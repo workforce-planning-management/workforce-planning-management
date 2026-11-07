@@ -12,6 +12,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Datelike, NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -625,7 +626,7 @@ async fn train_or_hire(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<TrainOrHireQuery>,
+    axa::extract::Query(query): axa::extract::Query<TrainOrHireQuery>,
 ) -> Result<Response> {
     let position = positions::Entity::find()
         .filter(positions::Column::Pid.eq(records::parse_pid(&pid)?))
@@ -790,7 +791,7 @@ fn fees_by_ref(courses: Vec<skill_courses::Model>) -> HashMap<String, (i64, Stri
 async fn learning_budget(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<BudgetQuery>,
+    axa::extract::Query(query): axa::extract::Query<BudgetQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
     let year = query.year.unwrap_or_else(|| Utc::now().year());

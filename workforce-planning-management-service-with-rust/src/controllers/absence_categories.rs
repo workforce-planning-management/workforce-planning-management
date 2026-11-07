@@ -16,7 +16,7 @@ struct Query {
 
 /// `GET /api/absence-categories?pay=paid|unpaid|policy` — the categories, optionally only those with the given pay.
 #[debug_handler]
-async fn list(axum::extract::Query(q): axum::extract::Query<Query>) -> Result<Response> {
+async fn list(axa::extract::Query(q): axa::extract::Query<Query>) -> Result<Response> {
     let wanted = match q.pay.as_deref() {
         None => None,
         Some("paid") => Some(Pay::Paid),

@@ -8,6 +8,7 @@
 //! here is about one person, so it is exported with the worker and erased with them.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -496,7 +497,7 @@ struct MissingQuery {
 async fn missing_end_date(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<MissingQuery>,
+    axa::extract::Query(query): axa::extract::Query<MissingQuery>,
 ) -> Result<Response> {
     let mut select = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())

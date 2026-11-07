@@ -308,7 +308,7 @@ async fn scope_for(
 async fn aggregate(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let scope = scope_for(&ctx, &caller, &query).await?;
     let (rows, _) = rows(&ctx, scope.as_deref(), None).await?;
@@ -342,7 +342,7 @@ async fn aggregate(
 async fn named(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let scope = scope_for(&ctx, &caller, &query).await?;
     let (rows, staff) = rows(&ctx, scope.as_deref(), None).await?;

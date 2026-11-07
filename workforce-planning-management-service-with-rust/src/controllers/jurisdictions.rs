@@ -10,6 +10,7 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::Json;
 use axa::prelude::*;
 use chrono::NaiveDate;
 use sea_orm::{ConnectionTrait, DbBackend, Statement, TransactionTrait};
@@ -332,7 +333,7 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     hr_only(&ctx, &caller, &q.organization).await?;
     let org: Vec<sea_orm::Value> = vec![q.organization.clone().into()];

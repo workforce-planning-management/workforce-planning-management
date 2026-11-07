@@ -2,6 +2,7 @@
 //! group and occupation code, with the national standard each comes from. Configuration, imported by the deployer; none is shipped.
 //! Reading is open to a signed-in caller; adding is HR's. Spec: `spec/staff-records-and-pay.md`.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
@@ -42,7 +43,7 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;

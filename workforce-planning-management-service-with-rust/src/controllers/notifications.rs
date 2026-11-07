@@ -2,6 +2,7 @@
 //! list (unread first) and the mark-read action. Reference-only rows;
 //! the write side lives in the handlers that make the change.
 
+use axa::extract::Path;
 use axa::prelude::*;
 use chrono::Utc;
 
@@ -18,7 +19,7 @@ async fn list_notifications(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let (limit, offset) = super::window(page)?;
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;

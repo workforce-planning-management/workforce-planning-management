@@ -11,6 +11,7 @@
 //! Intended caller: the LMS's service account (the `svc` ABAC attribute);
 //! the blanket write guard applies like any other mutation.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use serde::Deserialize;
 use std::str::FromStr;

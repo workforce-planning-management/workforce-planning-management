@@ -5,6 +5,7 @@
 //! worker's record-level ABAC pass (WPM-R15).
 
 use super::row_json;
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use sea_orm::{QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -210,7 +211,7 @@ async fn create_run(
 async fn list_runs(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());

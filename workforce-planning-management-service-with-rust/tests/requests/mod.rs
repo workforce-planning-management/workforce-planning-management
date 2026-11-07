@@ -31,6 +31,7 @@ mod erasure_replay;
 mod ergonomics;
 mod escalations;
 mod expenses;
+mod extractors;
 mod grades;
 mod health_detail;
 mod hr;

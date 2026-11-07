@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Json;
 
 /// `PUT /api/capacity/settings` body.
 #[derive(Debug, Deserialize)]
@@ -76,7 +77,7 @@ pub(super) async fn wip_limit_of(ctx: &AppContext, org: &str) -> Result<Option<i
 pub(super) async fn get_settings(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = query
         .organization

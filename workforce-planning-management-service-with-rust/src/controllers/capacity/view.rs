@@ -345,7 +345,7 @@ pub(crate) async fn pack_view(
 pub(super) async fn capacity_view(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ViewQuery>,
+    axa::extract::Query(query): axa::extract::Query<ViewQuery>,
 ) -> Result<Response> {
     let org = query
         .organization

@@ -8,6 +8,7 @@
 //! *worker's* record, so a person manages their own, and HR can do it on
 //! their behalf (recorded as such).
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect};
@@ -205,7 +206,7 @@ struct ListQuery {
 async fn list_groups(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     let allowed = scope(&ctx, &caller).await?;
     let graph = edges(&ctx).await?;
@@ -303,7 +304,7 @@ async fn list_members(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<MembersQuery>,
+    axa::extract::Query(query): axa::extract::Query<MembersQuery>,
 ) -> Result<Response> {
     let group = find_group(&ctx, &caller, &pid).await?;
     let mut select =
@@ -527,7 +528,7 @@ async fn worker_groups(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<MembersQuery>,
+    axa::extract::Query(query): axa::extract::Query<MembersQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut select =

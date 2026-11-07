@@ -11,6 +11,7 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder};
@@ -133,7 +134,7 @@ async fn checked(
 pub(crate) async fn list_categories(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -472,7 +473,7 @@ pub(crate) fn reporting_tiers(
 pub(crate) async fn gap_report(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, false).await?;
@@ -707,7 +708,7 @@ fn to_csv(built: &Built) -> String {
 pub(crate) async fn gap_report_csv(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, true).await?;

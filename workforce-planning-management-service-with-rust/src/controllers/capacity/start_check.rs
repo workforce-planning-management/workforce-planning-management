@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Json;
 
 /// One line of a what-if.
 #[derive(Debug, Deserialize)]
@@ -256,7 +257,7 @@ pub(super) struct DecisionQuery {
 pub(super) async fn list_start_decisions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<DecisionQuery>,
+    axa::extract::Query(query): axa::extract::Query<DecisionQuery>,
 ) -> Result<Response> {
     let mut select = start_decisions::Entity::find();
     if let Some(programme) = &query.programme {

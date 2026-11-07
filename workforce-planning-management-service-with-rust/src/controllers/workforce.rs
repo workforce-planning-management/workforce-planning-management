@@ -5,6 +5,7 @@
 
 use super::IN_BATCH;
 use super::row_json;
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use sea_orm::{ExprTrait, PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -771,7 +772,7 @@ impl WorkerLimits {
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // limits → minutes → shifts → rest breaches → flagged, linearly
 async fn working_time(
-    axum::extract::Query(query): axum::extract::Query<WorkingTimeQuery>,
+    axa::extract::Query(query): axa::extract::Query<WorkingTimeQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     use crate::rules::jurisdiction::Resolution;

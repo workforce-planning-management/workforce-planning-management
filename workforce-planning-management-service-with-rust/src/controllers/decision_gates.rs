@@ -3,6 +3,7 @@
 //! gate and asks for the consultation reference. It **advises and never blocks**: the law and the agreements decide, not this tool.
 //! HR writes; the pointer is shown to whoever makes the change. Spec: `spec/worker-unions.md`.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
@@ -82,7 +83,7 @@ pub(crate) struct OrgQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -182,7 +183,7 @@ struct CheckQuery {
 async fn check_change(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<CheckQuery>,
+    axa::extract::Query(query): axa::extract::Query<CheckQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

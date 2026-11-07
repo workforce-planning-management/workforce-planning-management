@@ -6,6 +6,7 @@
 //! erased with them. Nothing here changes an engagement.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select, TransactionTrait};
 use serde::Deserialize;
@@ -302,7 +303,7 @@ struct ListQuery {
 async fn contingent_list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     let list = query.list.unwrap_or_default();
     if !LISTS.contains(&list.as_str()) {

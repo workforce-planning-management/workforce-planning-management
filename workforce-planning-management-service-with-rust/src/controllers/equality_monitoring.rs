@@ -189,7 +189,7 @@ struct SummaryQuery {
 async fn summary(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<SummaryQuery>,
+    axa::extract::Query(query): axa::extract::Query<SummaryQuery>,
 ) -> Result<Response> {
     let (_, config, floor) = on()?;
     if !config.has_category(&query.category) {

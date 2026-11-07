@@ -11,6 +11,7 @@
 
 use std::collections::HashMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
 use sea_orm::{ActiveValue, Condition, ConnectionTrait, QueryOrder, TransactionTrait};
@@ -732,7 +733,7 @@ struct RollupQuery {
 async fn rollup(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<RollupQuery>,
+    axa::extract::Query(query): axa::extract::Query<RollupQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
     let goals = worker_goals::Entity::find()

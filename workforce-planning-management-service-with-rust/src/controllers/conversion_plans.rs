@@ -10,6 +10,7 @@
 //! carries the reason.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
@@ -112,8 +113,8 @@ struct ListQuery {
 async fn list_open(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let as_of = Utc::now().date_naive();

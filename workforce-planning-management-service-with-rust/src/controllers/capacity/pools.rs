@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `POST /api/skill-pools` and `PUT /api/skill-pools/{pid}` body.
 #[derive(Debug, Deserialize)]
@@ -173,7 +174,7 @@ pub(super) struct OrgQuery {
 pub(super) async fn list_pools(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let mut select = skill_pools::Entity::find().filter(skill_pools::Column::DeletedAt.is_null());
     if let Some(org) = &query.organization {

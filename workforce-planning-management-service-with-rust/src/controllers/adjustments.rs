@@ -6,6 +6,7 @@
 //! required, and the schema has nowhere to put one.
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 

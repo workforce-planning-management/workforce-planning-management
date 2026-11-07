@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — a request that cannot be read is refused without quoting it (WPM-T475)
+
+**A client may notice:** a malformed body, path or query value answers the same status with a fixed `detail` ("The request body is not valid JSON", "The request body does not fit this route", "A value in the URL is not valid", "A query parameter is not valid"). It no longer names the field or repeats the value, which could have been a token or a name pasted by mistake.
+
 ### Security — the seed runs only in development or test (WPM-R240, WPM-T474)
 
 **An operator must act** to seed a demo database: run `task seed` with `APP_ENV=development` for that one command. Under production, `demo` or any other environment it is refused and writes nothing.

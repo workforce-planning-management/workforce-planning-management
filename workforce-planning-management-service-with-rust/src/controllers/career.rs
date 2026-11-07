@@ -14,6 +14,7 @@
 //! Past entries and aspirations are statements, not assessments.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use sea_orm::{ActiveValue, QueryOrder};
@@ -70,7 +71,7 @@ fn role_row(r: &worker_framework_roles::Model) -> serde_json::Value {
 async fn role_history(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<FrameworkQuery>,
+    axa::extract::Query(query): axa::extract::Query<FrameworkQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut select = worker_framework_roles::Entity::find()
@@ -211,7 +212,7 @@ async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
 async fn skill_history(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<SkillQuery>,
+    axa::extract::Query(query): axa::extract::Query<SkillQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let mut select = worker_skill_history::Entity::find()
@@ -337,7 +338,7 @@ struct AsOfQuery {
 async fn skills_as_of(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<AsOfQuery>,
+    axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let instant = start_of(query.at) + chrono::Duration::days(1) - chrono::Duration::seconds(1);

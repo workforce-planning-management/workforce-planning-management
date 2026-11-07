@@ -5,6 +5,7 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -48,7 +49,7 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -470,7 +471,7 @@ async fn team_counts(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<CountQuery>,
+    axa::extract::Query(query): axa::extract::Query<CountQuery>,
 ) -> Result<Response> {
     let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let someone_else = auth::acting_for_other(&caller, &manager.person_ref);

@@ -2,6 +2,7 @@
 //! position, cost or reading is held. Equipment still out keeps a leaver's record from being completed (`controllers::movements`).
 //! HR writes; a worker reads their own. Spec: `spec/joiners-and-leavers.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
@@ -41,7 +42,7 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

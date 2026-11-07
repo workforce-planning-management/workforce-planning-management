@@ -9,6 +9,7 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::Path;
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder};
@@ -150,7 +151,7 @@ pub(crate) struct ListQuery {
 pub(crate) async fn list_requests(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     if let Some(wanted) = &query.status
         && !["open", "overdue", "answered"].contains(&wanted.as_str())

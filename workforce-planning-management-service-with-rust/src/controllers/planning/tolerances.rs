@@ -10,6 +10,8 @@ use super::*;
 use crate::models::_entities::{plan_escalations, plan_tolerances};
 use crate::rules::tolerance as tol;
 
+use axa::extract::{Json, Path};
+
 /// `PUT /api/workforce-plans/{pid}/tolerances/{dimension}` body.
 #[derive(Debug, Deserialize)]
 pub(super) struct TolerancePayload {

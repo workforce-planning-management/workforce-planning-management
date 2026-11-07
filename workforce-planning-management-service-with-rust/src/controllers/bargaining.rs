@@ -5,6 +5,7 @@
 //! versioned reference data; which agreements apply to a worker is derived from the unit rules, for HR and payroll only (WPM-R103).
 //! Spec: `spec/worker-unions.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
@@ -38,7 +39,7 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -446,7 +447,7 @@ async fn of_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<OnQuery>,
+    axa::extract::Query(query): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;

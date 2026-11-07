@@ -18,6 +18,7 @@
 
 use super::ensure_org_in_scope;
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, DatabaseTransaction, QueryOrder, TransactionTrait};
@@ -247,8 +248,8 @@ struct ListQuery {
 async fn list_movements(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let wanted = q.status.unwrap_or_else(|| "open".to_string());

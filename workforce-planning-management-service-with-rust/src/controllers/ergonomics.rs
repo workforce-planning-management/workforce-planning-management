@@ -5,6 +5,7 @@
 //! body: no symptom field exists anywhere on this surface.
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 use uuid::Uuid;

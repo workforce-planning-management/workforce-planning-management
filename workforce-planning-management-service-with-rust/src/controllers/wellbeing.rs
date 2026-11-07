@@ -14,6 +14,7 @@
 use std::str::FromStr;
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
@@ -168,7 +169,7 @@ struct ListQuery {
 /// optionally filtered by kind (`health | benefit`).
 #[debug_handler]
 async fn list_entitlements(
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let mut problems = Problems::new();

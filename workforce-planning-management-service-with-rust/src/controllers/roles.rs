@@ -6,6 +6,7 @@
 //! competency-gap analysis measures declared proficiency against.
 
 use super::ratio_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -126,7 +127,7 @@ struct ProfileListQuery {
 #[debug_handler]
 async fn list_profiles(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<ProfileListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileListQuery>,
 ) -> Result<Response> {
     let mut select =
         role_profiles::Entity::find().filter(role_profiles::Column::DeletedAt.is_null());
@@ -424,7 +425,7 @@ struct RoleGapQuery {
 async fn worker_role_gap(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<RoleGapQuery>,
+    axa::extract::Query(query): axa::extract::Query<RoleGapQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let profile = find_profile(&ctx, &query.role_profile_pid.to_string()).await?;

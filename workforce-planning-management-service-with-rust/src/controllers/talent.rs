@@ -22,6 +22,7 @@
 //!   would be a false record of a regulated programme.
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
@@ -768,7 +769,7 @@ struct ProgramQuery {
 /// programme's placement counts and conversion rate.
 #[debug_handler]
 async fn list_programs(
-    axum::extract::Query(query): axum::extract::Query<ProgramQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProgramQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     if let Some(kind) = &query.kind

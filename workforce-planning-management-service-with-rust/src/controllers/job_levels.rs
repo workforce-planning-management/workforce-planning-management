@@ -5,6 +5,7 @@
 //! responsibility, WPM-R110) is read from the database. Both need a signed-in
 //! caller: the imported wording does not leave the organization (WPM-R113).
 
+use axa::extract::Path;
 use axa::prelude::*;
 use serde_json::json;
 use sqlx::PgPool;

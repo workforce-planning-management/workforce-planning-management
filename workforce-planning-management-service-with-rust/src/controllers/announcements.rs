@@ -14,6 +14,7 @@
 //! it, never who.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -159,7 +160,7 @@ struct FeedParams {
 async fn feed(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(params): axum::extract::Query<FeedParams>,
+    axa::extract::Query(params): axa::extract::Query<FeedParams>,
 ) -> Result<Response> {
     let page = Page {
         limit: params.limit,

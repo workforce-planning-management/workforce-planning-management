@@ -5,6 +5,7 @@
 //! store only: what the upstream identity services hold is the
 //! deployment's coordination duty, stated in the payloads.
 
+use axa::extract::Path;
 use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
@@ -711,7 +712,7 @@ struct ScheduleQuery {
 async fn retention_schedule(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ScheduleQuery>,
+    axa::extract::Query(q): axa::extract::Query<ScheduleQuery>,
 ) -> Result<Response> {
     let as_of = chrono::Utc::now().date_naive();
     let scope = match &q.organization {

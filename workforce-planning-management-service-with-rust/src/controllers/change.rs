@@ -8,6 +8,7 @@
 //! affected role, and no individual is named or ranked.
 
 use super::ratio_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
@@ -459,7 +460,7 @@ struct ReadinessQuery {
 async fn readiness(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<ReadinessQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReadinessQuery>,
 ) -> Result<Response> {
     let bar = query
         .min_proficiency

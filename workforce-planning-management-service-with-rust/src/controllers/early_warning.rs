@@ -11,6 +11,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::ensure_org_in_scope;
+use axa::extract::Path;
 use axa::prelude::*;
 use chrono::NaiveDate;
 use serde::Deserialize;
@@ -216,7 +217,7 @@ async fn org_of(ctx: &AppContext, caller: &MaybeAuthUser, q: OrgQuery) -> Result
 async fn run_sweep(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
     let today = chrono::Utc::now().date_naive();
@@ -242,7 +243,7 @@ fn warning_json(w: &warnings::Model, today: NaiveDate) -> serde_json::Value {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
     let today = chrono::Utc::now().date_naive();

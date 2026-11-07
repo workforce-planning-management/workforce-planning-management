@@ -29,7 +29,7 @@ pub(super) struct PeopleImpactQuery {
 pub(super) async fn people_impact(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PeopleImpactQuery>,
+    axa::extract::Query(query): axa::extract::Query<PeopleImpactQuery>,
 ) -> Result<Response> {
     let mut problems = Problems::new();
     problems.require_ref("programme", entity_ref::EntityType::Thing, &query.programme);

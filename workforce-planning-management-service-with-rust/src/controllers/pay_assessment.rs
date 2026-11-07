@@ -2,6 +2,7 @@
 //! representatives due for a category of workers, and the record a person keeps of what was justified, remedied and
 //! assessed. It reports; a person decides and records. Spec: `spec/pay-transparency.md`.
 
+use axa::extract::Json;
 use axa::prelude::*;
 use chrono::NaiveDate;
 use serde::Deserialize;
@@ -108,7 +109,7 @@ pub(crate) struct SignalQuery {
 pub(crate) async fn signals(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<SignalQuery>,
+    axa::extract::Query(query): axa::extract::Query<SignalQuery>,
 ) -> Result<Response> {
     let built = build(
         &ctx,
@@ -196,7 +197,7 @@ pub(crate) struct ListQuery {
 pub(crate) async fn list_records(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

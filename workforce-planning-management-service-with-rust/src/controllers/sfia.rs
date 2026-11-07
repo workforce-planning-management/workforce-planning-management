@@ -5,6 +5,7 @@
 //! `import_sfia` filled, and only for a signed-in caller, so it does not leave
 //! the organization (WPM-R113).
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
@@ -219,7 +220,7 @@ struct SearchQuery {
 #[debug_handler]
 async fn search(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<SearchQuery>,
+    axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
     let q = query.q.unwrap_or_default().trim().to_lowercase();
     if q.chars().count() < 2 {

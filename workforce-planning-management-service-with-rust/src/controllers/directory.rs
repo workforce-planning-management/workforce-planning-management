@@ -176,7 +176,7 @@ async fn away_among(ctx: &AppContext, pids: &[Uuid], today: NaiveDate) -> Result
 async fn directory(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(params): axum::extract::Query<DirectoryParams>,
+    axa::extract::Query(params): axa::extract::Query<DirectoryParams>,
 ) -> Result<Response> {
     let page = Page {
         limit: params.limit,

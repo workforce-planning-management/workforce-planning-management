@@ -14,6 +14,7 @@
 //!   is audited); a manager (their reports) and HR see only **cleared** or **not cleared** per
 //!   requirement; the only aggregate is a compliance count with small groups withheld.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -495,7 +496,7 @@ struct ClearanceQuery {
 async fn clearance(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ClearanceQuery>,
+    axa::extract::Query(query): axa::extract::Query<ClearanceQuery>,
 ) -> Result<Response> {
     on()?;
     let today = Utc::now().date_naive();
@@ -567,7 +568,7 @@ struct DetailQuery {
 async fn detail(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<DetailQuery>,
+    axa::extract::Query(query): axa::extract::Query<DetailQuery>,
 ) -> Result<Response> {
     on()?;
     ensure_occupational_health(&caller)?;

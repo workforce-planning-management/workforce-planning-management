@@ -96,7 +96,7 @@ pub(super) struct AnalyticsQuery {
 /// certificates expiring within the horizon.
 #[debug_handler]
 pub(super) async fn training_analytics(
-    axum::extract::Query(query): axum::extract::Query<AnalyticsQuery>,
+    axa::extract::Query(query): axa::extract::Query<AnalyticsQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let horizon_days = query.expiring_within_days.unwrap_or(90).clamp(0, 3650);
@@ -162,7 +162,7 @@ pub(super) async fn training_analytics(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
 pub(super) async fn mentorship_overview(
-    axum::extract::Query(query): axum::extract::Query<MentorshipOverviewQuery>,
+    axa::extract::Query(query): axa::extract::Query<MentorshipOverviewQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let stale_days = query.days.unwrap_or(30).clamp(1, 365);

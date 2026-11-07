@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Path;
 
 /// Query for the cost view.
 #[derive(Debug, Default, Deserialize)]
@@ -28,7 +29,7 @@ pub(super) async fn cost(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<CostQuery>,
+    axa::extract::Query(query): axa::extract::Query<CostQuery>,
 ) -> Result<Response> {
     format::json(cost_value(&ctx, &caller, &pid, query).await?)
 }

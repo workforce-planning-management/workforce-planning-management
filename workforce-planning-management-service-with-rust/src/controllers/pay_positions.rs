@@ -10,6 +10,7 @@
 //! only*; nothing here says the employer will move anyone.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use serde::Deserialize;

@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `POST /api/workforce-plans` body.
 #[derive(Debug, Deserialize)]
@@ -123,7 +124,7 @@ pub(super) struct PlanListQuery {
 pub(super) async fn list_plans(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PlanListQuery>,
+    axa::extract::Query(query): axa::extract::Query<PlanListQuery>,
 ) -> Result<Response> {
     let mut select =
         workforce_plans::Entity::find().filter(workforce_plans::Column::DeletedAt.is_null());

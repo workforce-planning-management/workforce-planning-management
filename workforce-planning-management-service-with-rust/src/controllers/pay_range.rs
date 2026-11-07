@@ -67,7 +67,7 @@ fn most_common_currency(staff: &[&Staff]) -> Option<String> {
 async fn pay_range(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<Query>,
+    axa::extract::Query(query): axa::extract::Query<Query>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;

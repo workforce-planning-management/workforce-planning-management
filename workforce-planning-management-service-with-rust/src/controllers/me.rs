@@ -15,6 +15,7 @@
 //! (the worker and privileged callers only, by the need-to-know guard); that read is audited.
 
 use axa::error::ErrorDetail;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Datelike, Utc};
 use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, TransactionTrait};
@@ -372,7 +373,7 @@ struct PhoneSearch {
 async fn search_by_phone(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<PhoneSearch>,
+    axa::extract::Query(q): axa::extract::Query<PhoneSearch>,
 ) -> Result<Response> {
     super::ensure_valid(&super::pay_transparency::organization_problems(
         &q.organization,
@@ -520,7 +521,7 @@ struct TimeOffQuery {
 async fn my_time_off(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<TimeOffQuery>,
+    axa::extract::Query(query): axa::extract::Query<TimeOffQuery>,
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let today = Utc::now().date_naive();

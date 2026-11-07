@@ -11,6 +11,7 @@ use crate::models::_entities::{organization_memberships, plan_escalations};
 use crate::models::notifications::Model as Notification;
 use crate::rules::escalation as esc;
 use crate::rules::tolerance as tol;
+use axa::extract::{Json, Path};
 
 /// An escalation as the API shows it. `plan_name` is given by the inbox, which lists several plans.
 pub(super) fn escalation_json(
@@ -317,7 +318,7 @@ pub(super) struct InboxQuery {
 pub(super) async fn list_open_escalations(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<InboxQuery>,
+    axa::extract::Query(query): axa::extract::Query<InboxQuery>,
 ) -> Result<Response> {
     let org = query
         .organization

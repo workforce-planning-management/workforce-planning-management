@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Path;
 
 /// `GET /api/workforce-plans/{pid}/alignment` — does the planned headcount
 /// serve the strategy? Share of planned headcount tied to an objective,

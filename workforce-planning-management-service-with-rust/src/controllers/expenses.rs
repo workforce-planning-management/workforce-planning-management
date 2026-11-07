@@ -13,6 +13,7 @@
 //! notifications name no amount, title or description. Items are exported and the
 //! free text scrubbed on erasure; the amounts stay (financial records).
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
@@ -602,8 +603,8 @@ struct QueueParams {
 async fn queue(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(params): axum::extract::Query<QueueParams>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(params): axa::extract::Query<QueueParams>,
+    axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
     let window = super::window(page)?;
     let status = params.status.unwrap_or_else(|| "submitted".to_string());

@@ -435,6 +435,57 @@ where
 mod tests {
     use super::row_json;
 
+    fn sources(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            if path.is_dir() {
+                sources(&path, out);
+            } else if path.extension().is_some_and(|e| e == "rs") {
+                out.push(path);
+            }
+        }
+    }
+
+    /// Every handler reads its body, path and query with `axa::extract` (WPM-T475). Axum's own `Json`, `Path` and `Query`,
+    /// which `axa::prelude` still exports, reject with text that quotes the caller's value. A file that extracts with one of
+    /// them must import `axa`'s, or name it in full.
+    #[test]
+    fn every_extractor_is_axas() {
+        let mut files = Vec::new();
+        sources(std::path::Path::new("src"), &mut files);
+        let mut wrong = Vec::new();
+        for file in files {
+            let source = std::fs::read_to_string(&file).unwrap();
+            for name in ["Json", "Path", "Query"] {
+                for axum in [format!("axum::extract::{name}<"), format!("axum::{name}<")] {
+                    if source.contains(&axum) {
+                        wrong.push(format!("{}: {axum}", file.display()));
+                    }
+                }
+                let extracts = source.lines().any(|line| {
+                    line.contains(&format!("): {name}<")) && !line.contains("axa::extract::")
+                });
+                let imported = source.lines().any(|line| {
+                    line.starts_with("use axa::extract::")
+                        && (line.contains(&format!("::{name};"))
+                            || line.contains(&format!("{{{name}"))
+                            || line.contains(&format!(" {name}"))
+                            || line.contains(&format!("{name},")))
+                });
+                if extracts && !imported {
+                    wrong.push(format!(
+                        "{}: {name} without `use axa::extract`",
+                        file.display()
+                    ));
+                }
+            }
+        }
+        assert!(
+            wrong.is_empty(),
+            "use axa::extract's extractors: {wrong:#?}"
+        );
+    }
+
     /// The cause of a broken invariant stays in the log; the caller learns only that it was internal.
     #[test]
     fn an_internal_error_is_a_500_that_names_nothing() {

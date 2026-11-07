@@ -7,6 +7,7 @@
 //! Scoped to the caller's organizations like the org chart: a worker outside
 //! the caller's scope is `404`, and people outside it never appear.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -189,7 +190,7 @@ async fn downline(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<LimitQuery>,
+    axa::extract::Query(query): axa::extract::Query<LimitQuery>,
 ) -> Result<Response> {
     let limit = list_limit(query.limit);
     let manager = visible_worker(&ctx, &caller, &pid).await?;
@@ -211,7 +212,7 @@ async fn reports(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<KindQuery>,
+    axa::extract::Query(query): axa::extract::Query<KindQuery>,
 ) -> Result<Response> {
     let wanted = match query.kind.as_deref() {
         None => None,
@@ -263,7 +264,7 @@ async fn dotted_line(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<PastQuery>,
+    axa::extract::Query(query): axa::extract::Query<PastQuery>,
 ) -> Result<Response> {
     let worker = visible_worker(&ctx, &caller, &pid).await?;
     let mut select = dotted_line_reports::Entity::find();

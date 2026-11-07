@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Json;
 
 /// The most changes one proposal may carry.
 const MAX_CHANGES: usize = 200;

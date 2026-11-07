@@ -14,6 +14,7 @@
 //!
 //! These are planning estimates, not promises.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
 use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
@@ -364,7 +365,7 @@ async fn worker_plan(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<PlanQuery>,
+    axa::extract::Query(q): axa::extract::Query<PlanQuery>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
@@ -472,7 +473,7 @@ struct DemandQuery {
 async fn training_demand(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<DemandQuery>,
+    axa::extract::Query(q): axa::extract::Query<DemandQuery>,
 ) -> Result<Response> {
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let today = Utc::now().date_naive();

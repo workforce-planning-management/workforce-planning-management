@@ -5,6 +5,7 @@
 //! attempts, never a body. Deliveries are queued in the transaction of the change that caused them (`streaming::emit_on`) and
 //! sent by the `webhook_deliver` task. Spec: `spec/integrations.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
@@ -212,7 +213,7 @@ async fn deliveries(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<Uuid>,
-    axum::extract::Query(query): axum::extract::Query<LogQuery>,
+    axa::extract::Query(query): axa::extract::Query<LogQuery>,
 ) -> Result<Response> {
     administrators_only(&caller)?;
     sqlx::query_scalar!("SELECT id FROM webhook_subscriptions WHERE pid = $1", pid)

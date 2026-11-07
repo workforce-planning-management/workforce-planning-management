@@ -11,6 +11,7 @@
 //! a worker's own record.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;

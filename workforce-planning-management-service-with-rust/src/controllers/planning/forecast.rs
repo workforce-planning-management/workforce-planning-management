@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Path;
 
 /// The departments a plan's demand lines name.
 pub(super) fn departments_of(lines: &[plan_demand_lines::Model]) -> BTreeSet<String> {

@@ -361,6 +361,7 @@ the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 - Every `4xx` and `5xx` from the service is `application/problem+json` (RFC 9457) with `type`, `title` and `status`, whatever refused it.
 - `detail` says what went wrong, where there is something to say; `code` is the short reason for code to read, where the refusal has one (a plain-text refusal does not). Other members, and every header such as `Retry-After`, stay.
 - A `5xx` carries no text the service did not write for a client.
+- A request the service cannot read (a body that is not JSON or not the right shape, a path or query value of the wrong type) is refused with a fixed sentence naming which part was at fault, and quotes nothing the caller sent (WPM-T475).
 - The JSON-RPC answers on `/mcp` are not affected: that protocol has its own error shape. The UI's own proxy errors (`bad_path`, `no_demo`) are not the service's.
 
 **Why:** one shape, named by a standard, lets a client handle any refusal in one place; before this a client met JSON from handlers and plain text from the layers around them.

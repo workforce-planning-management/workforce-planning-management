@@ -2,6 +2,7 @@
 //! slice, the **department-scoped query** (spec `audit.md`), and the
 //! recent event stream.
 
+use axa::extract::{Path, Query};
 use axa::prelude::*;
 use serde::Deserialize;
 

@@ -12,6 +12,7 @@
 //!
 //! It compares **declarations**: an undeclared skill is unknown, never zero.
 
+use axa::extract::Path;
 use axa::prelude::*;
 use chrono::Utc;
 use serde::Deserialize;
@@ -288,7 +289,7 @@ struct WorkforceQuery {
 async fn workforce_gaps(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<WorkforceQuery>,
+    axa::extract::Query(q): axa::extract::Query<WorkforceQuery>,
 ) -> Result<Response> {
     let limit = q.limit.unwrap_or(25).clamp(1, 100);
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;

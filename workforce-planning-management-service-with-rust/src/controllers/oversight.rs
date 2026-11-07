@@ -11,6 +11,7 @@
 use std::collections::BTreeMap;
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Datelike;
 use sea_orm::{ActiveValue, QueryOrder};
@@ -579,7 +580,7 @@ pub struct OrgQuery {
 async fn status(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = q
         .organization

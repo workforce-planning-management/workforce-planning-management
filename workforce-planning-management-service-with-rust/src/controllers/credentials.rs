@@ -4,6 +4,7 @@
 //! The issuer's public key and the status list are public by necessity (a verifier has no account here) and hold no personal data.
 //! Spec: `spec/skills-and-training.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{DateTime, SecondsFormat, Utc};
 use serde::Deserialize;

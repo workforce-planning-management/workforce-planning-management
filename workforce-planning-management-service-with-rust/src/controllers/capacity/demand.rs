@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `PUT /api/programme-demands` body.
 #[derive(Debug, Deserialize)]
@@ -122,7 +123,7 @@ pub(super) async fn visible_pool_pids(
 pub(super) async fn list_demand(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PoolQuery>,
+    axa::extract::Query(query): axa::extract::Query<PoolQuery>,
 ) -> Result<Response> {
     let visible = visible_pool_pids(&ctx, &caller).await?;
     let mut select = programme_demands::Entity::find()
@@ -261,7 +262,7 @@ pub(super) async fn set_commitment(
 pub(super) async fn list_commitments(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PoolQuery>,
+    axa::extract::Query(query): axa::extract::Query<PoolQuery>,
 ) -> Result<Response> {
     let visible = visible_pool_pids(&ctx, &caller).await?;
     let mut select = partner_commitments::Entity::find()
