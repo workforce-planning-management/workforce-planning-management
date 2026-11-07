@@ -1,0 +1,55 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT w.department, e.status,\n                  COUNT(*) AS \"total!\",\n                  COUNT(*) FILTER (WHERE e.certificate_expires_on >= $1\n                                     AND e.certificate_expires_on <= $2) AS \"expiring!\"\n           FROM training_enrollments e\n           JOIN workers w ON w.pid = e.worker_pid AND w.deleted_at IS NULL\n           WHERE e.deleted_at IS NULL\n           GROUP BY w.department, e.status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "expiring!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "879e278f7f1c8a072377722fce1e39d7c0b91def638b9227ccf904afdd618b74"
+}
