@@ -66,6 +66,7 @@ not a statement that your deployment is under that regime.
 | `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `5000`, `600000` | Pool sizes, and timeouts in milliseconds |
 | `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DATABASE_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
 | `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
+| `KEEP_ALIVE_TIMEOUT_SECONDS` | no | `75` | How long an idle connection is kept, counted from the last byte written. A load balancer that keeps idle connections longer needs a higher value, or it can reuse one as it closes and answer `502` |
 | `SHUTDOWN_TIMEOUT_SECONDS` | no | `25` | How long to wait for requests in flight after `SIGTERM`. Keep it under the orchestrator's own limit; `0` waits for as long as they take |
 | `AXA_DESTROY_DATA` | no | off | Confirms `db down`, `db reset` or `db truncate` in development or test. They are refused elsewhere (WPM-R237) |
 

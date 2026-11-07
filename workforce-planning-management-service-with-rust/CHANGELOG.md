@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.6 (WPM-T472)
+
+`axa` 0.5.0 to 0.6.1. Its own errors are RFC 9457 problems now, so they pass through WPM's problem layer untouched, and the bodies a client sees are as before. **A client may notice:** a violated unique or foreign key that no handler maps answers `409`, not `500`; a rejected JSON body's `code` is `bad_request`, `payload_too_large`, `unsupported_media_type` or `unprocessable_entity` by status; a `408` and a failing `/_readiness` are problems. An idle connection now closes after `KEEP_ALIVE_TIMEOUT_SECONDS` (75), not at the header read limit, and a slow client's response is no longer cut off at that limit.
+
 ### Security — the rate limit keys on the address `axa` resolves (WPM-R239, WPM-D187, WPM-T471)
 
 **An operator must act.** Behind a proxy, including the UI's own, list it in `TRUSTED_PROXIES`, or every caller shares the proxy's bucket. `WPM_TRUST_FORWARDED` took the first `X-Forwarded-For` entry, which the caller writes unless the proxy overwrites it, so a proxy that appended gave each forged value a fresh limit. It does nothing now; boot logs a warning if it is set and carries on. The header is believed only from a listed peer and is read from the right. IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. `RateLimiter::check` no longer lets one key's sensitive count fall in the neighbouring key's ordinary slot.
