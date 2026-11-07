@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.criticality,\n                  EXISTS (\n                      SELECT 1 FROM succession_candidates c\n                      WHERE c.plan_pid = p.pid AND c.deleted_at IS NULL AND c.readiness = 'ready_now'\n                  ) AS \"ready_now!\"\n           FROM succession_plans p JOIN workers w ON w.pid = p.incumbent_pid\n           WHERE p.deleted_at IS NULL\n             AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2\n             AND (w.terminated_on IS NULL OR w.terminated_on > $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "criticality",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "criticality"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ready_now!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "aa40ecea9ad01350277fe6f59fb9413540dabb53611887ff2fc93e98f6d80af0"
+}

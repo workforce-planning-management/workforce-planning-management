@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT worker_pid AS \"worker_pid!\"\n           FROM organization_memberships\n           WHERE organization_ref = $1\n             AND role = 'hr_admin'\n             AND deleted_at IS NULL\n             AND worker_pid IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organization_memberships",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "7e1ec5e5da62887525270c9b9e67e43e489f0fbe0189b4ff11020db7dd954a04"
+}

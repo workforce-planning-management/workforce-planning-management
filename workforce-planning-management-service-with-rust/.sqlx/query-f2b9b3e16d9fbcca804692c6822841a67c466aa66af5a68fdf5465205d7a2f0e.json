@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                   id, pid, organization_ref, kind, subject_pid, subject_name,\n                   first_true_on, cleared_on, acknowledged_on\n           FROM early_warnings WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "subject_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "subject_name"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "first_true_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "first_true_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "cleared_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "cleared_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "acknowledged_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "acknowledged_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f2b9b3e16d9fbcca804692c6822841a67c466aa66af5a68fdf5465205d7a2f0e"
+}

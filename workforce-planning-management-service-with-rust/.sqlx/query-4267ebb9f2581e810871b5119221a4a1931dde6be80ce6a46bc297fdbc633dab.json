@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ($1, $2, $3)\n             ON CONFLICT (worker_pid, category) DO UPDATE SET value = EXCLUDED.value",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4267ebb9f2581e810871b5119221a4a1931dde6be80ce6a46bc297fdbc633dab"
+}
