@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, organization_ref, category, reported_on, justified, justification,\n                  remedied_on, assessed_on, outcome, representatives, recorded_by\n           FROM pay_assessment_records\n           WHERE organization_ref = $1\n           ORDER BY reported_on DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "reported_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "reported_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "justified",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "justified"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "justification",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "justification"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "remedied_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "remedied_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "assessed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "assessed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "representatives",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "representatives"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_assessment_records",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "365b5e93e137912113340f8c97c56c82522ce5f69214bc1e1139d90183418514"
+}

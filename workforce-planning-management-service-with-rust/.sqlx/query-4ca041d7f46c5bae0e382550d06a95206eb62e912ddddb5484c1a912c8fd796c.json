@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO training_enrollments\n                     (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on)\n                 VALUES ($1, $2, $3, 'completed', $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4ca041d7f46c5bae0e382550d06a95206eb62e912ddddb5484c1a912c8fd796c"
+}

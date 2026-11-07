@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, incumbent_pid AS \"incumbent_pid!\" FROM succession_plans\n           WHERE deleted_at IS NULL AND incumbent_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "incumbent_pid!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "incumbent_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "7a7ace9f20f284fcef93f54aebd6a8184dd5c47a6646fe1011082647bf7f6d8b"
+}

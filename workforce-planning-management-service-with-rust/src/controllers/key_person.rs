@@ -9,18 +9,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::IN_BATCH;
 use axa::prelude::*;
-use sea_orm::QueryTrait;
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    role_profiles, role_skill_requirements, skills, succession_candidates, succession_plans,
-    worker_backups, worker_skills, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::models::memberships;
 use crate::rules::key_person::{self as rules, Holder, Status};
 
@@ -36,10 +30,18 @@ pub(super) struct Row {
     pub(super) unplaced_holders: usize,
 }
 
+/// What the register needs to know of a person who holds a critical skill.
+pub(super) struct Staff {
+    pid: Uuid,
+    worker_number: String,
+    department: String,
+    location: Option<String>,
+}
+
 /// Everything read from the database for one assessment.
 struct Loaded {
     /// The employed people who hold at least one critical skill at its bar.
-    staff: Vec<workers::Model>,
+    staff: Vec<Staff>,
     minimums: BTreeMap<Uuid, Vec<i32>>,
     names: BTreeMap<Uuid, String>,
     level: BTreeMap<(Uuid, Uuid), i32>,
@@ -53,20 +55,15 @@ struct Loaded {
 #[allow(clippy::too_many_lines)] // skills → holders → their backups and successors, linearly
 async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     let today = chrono::Utc::now().date_naive();
-    let live_profiles: BTreeSet<Uuid> = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| p.pid)
-        .collect();
     let mut minimums: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
-    for r in role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::Importance.eq("critical"))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|r| live_profiles.contains(&r.role_profile_pid))
+    for r in sqlx::query!(
+        "SELECT r.skill_pid, r.min_proficiency
+         FROM role_skill_requirements r
+         JOIN role_profiles p ON p.pid = r.role_profile_pid AND p.deleted_at IS NULL
+         WHERE r.importance = 'critical'",
+    )
+    .fetch_all(pool(ctx))
+    .await?
     {
         minimums
             .entry(r.skill_pid)
@@ -74,37 +71,45 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
             .push(r.min_proficiency);
     }
     let skill_pids: Vec<Uuid> = minimums.keys().copied().collect();
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .filter(skills::Column::Pid.is_in(skill_pids.clone()))
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
+    let names: BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT pid, name FROM skills WHERE pid = ANY($1) AND deleted_at IS NULL",
+        &skill_pids,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    .into_iter()
+    .map(|s| (s.pid, s.name))
+    .collect();
     // A holder meets the bar of the skill, so nobody under the lowest bar can be one.
     let lowest_bar = minimums
         .values()
         .filter_map(|mins| rules::bar(mins))
         .min()
         .unwrap_or(i32::MAX);
-    let employed_pids = super::funding::employed_in_scope_query(scope, today)
-        .select_only()
-        .column(workers::Column::Pid)
-        .into_query();
     let mut level: BTreeMap<(Uuid, Uuid), i32> = BTreeMap::new();
-    if !skill_pids.is_empty() {
-        for s in worker_skills::Entity::find()
-            .filter(worker_skills::Column::DeletedAt.is_null())
-            .filter(worker_skills::Column::SkillPid.is_in(skill_pids))
-            .filter(worker_skills::Column::Proficiency.gte(lowest_bar))
-            .filter(worker_skills::Column::WorkerPid.in_subquery(employed_pids))
-            .all(&ctx.db)
-            .await?
-        {
-            let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0);
-            *e = (*e).max(s.proficiency);
-        }
+    for s in sqlx::query!(
+        "SELECT skill_pid, worker_pid, proficiency
+         FROM worker_skills
+         WHERE deleted_at IS NULL
+           AND skill_pid = ANY($1)
+           AND proficiency >= $2
+           AND worker_pid IN (
+               SELECT pid FROM workers
+               WHERE deleted_at IS NULL
+                 AND hired_on <= $3
+                 AND (terminated_on IS NULL OR terminated_on > $3)
+                 AND ($4::text[] IS NULL OR organization_ref = ANY($4))
+           )",
+        &skill_pids,
+        lowest_bar,
+        today,
+        scope,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    {
+        let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0);
+        *e = (*e).max(s.proficiency);
     }
     let staff_pids: Vec<Uuid> = level
         .keys()
@@ -112,55 +117,55 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
         .collect::<BTreeSet<_>>()
         .into_iter()
         .collect();
-    let mut staff: Vec<workers::Model> = Vec::with_capacity(staff_pids.len());
+    let staff = sqlx::query_as!(
+        Staff,
+        "SELECT pid, worker_number, department, location FROM workers WHERE pid = ANY($1)",
+        &staff_pids,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut backups_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
-    let mut plans: BTreeMap<Uuid, Uuid> = BTreeMap::new();
-    for pids in staff_pids.chunks(IN_BATCH) {
-        staff.extend(
-            workers::Entity::find()
-                .filter(workers::Column::Pid.is_in(pids.to_vec()))
-                .all(&ctx.db)
-                .await?,
-        );
-        for b in worker_backups::Entity::find()
-            .filter(worker_backups::Column::DeletedAt.is_null())
-            .filter(worker_backups::Column::WorkerPid.is_in(pids.to_vec()))
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .filter(|b| b.ends_on.is_none_or(|end| end >= today))
-        {
-            backups_of
-                .entry(b.worker_pid)
-                .or_default()
-                .insert(b.backup_pid);
-        }
-        plans.extend(
-            succession_plans::Entity::find()
-                .filter(succession_plans::Column::DeletedAt.is_null())
-                .filter(succession_plans::Column::IncumbentPid.is_in(pids.to_vec()))
-                .all(&ctx.db)
-                .await?
-                .into_iter()
-                .filter_map(|p| p.incumbent_pid.map(|i| (p.pid, i))),
-        );
+    for b in sqlx::query!(
+        "SELECT worker_pid, backup_pid FROM worker_backups
+         WHERE deleted_at IS NULL
+           AND worker_pid = ANY($1)
+           AND (ends_on IS NULL OR ends_on >= $2)",
+        &staff_pids,
+        today,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    {
+        backups_of
+            .entry(b.worker_pid)
+            .or_default()
+            .insert(b.backup_pid);
     }
+    let plans: BTreeMap<Uuid, Uuid> = sqlx::query!(
+        r#"SELECT pid, incumbent_pid AS "incumbent_pid!" FROM succession_plans
+           WHERE deleted_at IS NULL AND incumbent_pid = ANY($1)"#,
+        &staff_pids,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    .into_iter()
+    .map(|p| (p.pid, p.incumbent_pid))
+    .collect();
     let mut successors_of: BTreeMap<Uuid, BTreeSet<Uuid>> = BTreeMap::new();
     let plan_pids: Vec<Uuid> = plans.keys().copied().collect();
-    for pids in plan_pids.chunks(IN_BATCH) {
-        for c in succession_candidates::Entity::find()
-            .filter(succession_candidates::Column::DeletedAt.is_null())
-            .filter(succession_candidates::Column::Readiness.eq("ready_now"))
-            .filter(succession_candidates::Column::PlanPid.is_in(pids.to_vec()))
-            .all(&ctx.db)
-            .await?
-        {
-            if let Some(incumbent) = plans.get(&c.plan_pid) {
-                successors_of
-                    .entry(*incumbent)
-                    .or_default()
-                    .insert(c.worker_pid);
-            }
+    for c in sqlx::query!(
+        "SELECT plan_pid, worker_pid FROM succession_candidates
+         WHERE deleted_at IS NULL AND readiness = 'ready_now' AND plan_pid = ANY($1)",
+        &plan_pids,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    {
+        if let Some(incumbent) = plans.get(&c.plan_pid) {
+            successors_of
+                .entry(*incumbent)
+                .or_default()
+                .insert(c.worker_pid);
         }
     }
     Ok(Loaded {
@@ -178,7 +183,7 @@ pub(super) async fn rows(
     ctx: &AppContext,
     scope: Option<&[String]>,
     site: Option<&[String]>,
-) -> Result<(Vec<Row>, Vec<workers::Model>)> {
+) -> Result<(Vec<Row>, Vec<Staff>)> {
     let Loaded {
         staff,
         minimums,
@@ -195,11 +200,10 @@ pub(super) async fn rows(
         let holds = |pid: &Uuid| level.get(&(*skill, *pid)).is_some_and(|l| *l >= bar);
         // Read at a site, only the people recorded there count as holders or backups; the people with
         // no site on file are counted apart, since they might be there.
-        let here = |w: &workers::Model| {
+        let here = |w: &Staff| {
             site.is_none_or(|names| crate::rules::cutover::at_site(w.location.as_deref(), names))
         };
-        let holders: Vec<&workers::Model> =
-            staff.iter().filter(|w| holds(&w.pid) && here(w)).collect();
+        let holders: Vec<&Staff> = staff.iter().filter(|w| holds(&w.pid) && here(w)).collect();
         let unplaced_holders = site.map_or(0, |_| {
             staff
                 .iter()
@@ -207,7 +211,7 @@ pub(super) async fn rows(
                 .count()
         });
         let at_the_site: BTreeSet<Uuid> = staff.iter().filter(|w| here(w)).map(|w| w.pid).collect();
-        let facts = |w: &workers::Model| Holder {
+        let facts = |w: &Staff| Holder {
             id: w.pid,
             backups: backups_of
                 .get(&w.pid)
@@ -218,7 +222,7 @@ pub(super) async fn rows(
                 .collect(),
             ready_successors: successors_of.get(&w.pid).cloned().unwrap_or_default(),
         };
-        let mut pools: Vec<(Option<String>, Vec<&workers::Model>)> = vec![(None, holders.clone())];
+        let mut pools: Vec<(Option<String>, Vec<&Staff>)> = vec![(None, holders.clone())];
         let departments: BTreeSet<&str> = holders.iter().map(|w| w.department.as_str()).collect();
         for d in departments {
             pools.push((
@@ -342,7 +346,7 @@ async fn named(
 ) -> Result<Response> {
     let scope = scope_for(&ctx, &caller, &query).await?;
     let (rows, staff) = rows(&ctx, scope.as_deref(), None).await?;
-    let by_pid: BTreeMap<Uuid, &workers::Model> = staff.iter().map(|w| (w.pid, w)).collect();
+    let by_pid: BTreeMap<Uuid, &Staff> = staff.iter().map(|w| (w.pid, w)).collect();
     let people: Vec<serde_json::Value> = rows
         .iter()
         .filter(|r| r.department.is_some() && r.assessment.status == Status::SinglePointOfFailure)
@@ -356,8 +360,8 @@ async fn named(
             }))
         })
         .collect();
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "key_person",
         Uuid::nil(),
         "key_person_read",

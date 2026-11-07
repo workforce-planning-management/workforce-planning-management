@@ -4,7 +4,6 @@
 
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -12,8 +11,8 @@ use uuid::Uuid;
 use super::pay_transparency::{ReportQuery, build};
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::pay_assessment_records;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::joint_assessment::{self as rules, Config, Record};
 use crate::validation::Problems;
 
@@ -127,11 +126,18 @@ pub(crate) async fn signals(
         chrono::Utc::now().date_naive(),
     );
     let config = configured.config;
-    let records = pay_assessment_records::Entity::find()
-        .filter(pay_assessment_records::Column::OrganizationRef.eq(&query.organization))
-        .order_by_desc(pay_assessment_records::Column::ReportedOn)
-        .all(&ctx.db)
-        .await?;
+    let records = sqlx::query_as!(
+        pay_assessment_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, category, reported_on, justified, justification,
+                  remedied_on, assessed_on, outcome, representatives, recorded_by
+           FROM pay_assessment_records
+           WHERE organization_ref = $1
+           ORDER BY reported_on DESC"#,
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut out = Vec::new();
     for c in &built.report.categories {
         let name = c.category.to_lowercase();
@@ -155,8 +161,8 @@ pub(crate) async fn signals(
             "record": record.map(row_json).transpose()?,
         }));
     }
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "pay_gap_report",
         Uuid::nil(),
         "joint_assessment_read",
@@ -194,12 +200,18 @@ pub(crate) async fn list_records(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = pay_assessment_records::Entity::find()
-        .filter(pay_assessment_records::Column::OrganizationRef.eq(&query.organization))
-        .order_by_desc(pay_assessment_records::Column::ReportedOn)
-        .order_by_asc(pay_assessment_records::Column::Category)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        pay_assessment_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, category, reported_on, justified, justification,
+                  remedied_on, assessed_on, outcome, representatives, recorded_by
+           FROM pay_assessment_records
+           WHERE organization_ref = $1
+           ORDER BY reported_on DESC, category ASC"#,
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(row_json)
@@ -222,17 +234,8 @@ pub(crate) struct RecordPayload {
     representatives: Option<String>,
 }
 
-/// `PUT /api/pay-transparency/assessment-records` — record, for a category and a report date, whether the gap was
-/// justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended.
-/// Replaces what was there. A person records; the service never decides.
-#[debug_handler]
-pub(crate) async fn put_record(
-    State(ctx): State<AppContext>,
-    caller: MaybeAuthUser,
-    Json(payload): Json<RecordPayload>,
-) -> Result<Response> {
-    ensure_valid(&organization_problems(&payload.organization_ref))?;
-    ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
+/// The trimmed category of a record that passes every check.
+fn checked_category(payload: &RecordPayload) -> Result<String> {
     let category = payload.category.trim().to_string();
     if category.is_empty() || category.chars().count() > 120 {
         return Err(unprocessable("category is 1 to 120 characters"));
@@ -253,13 +256,31 @@ pub(crate) async fn put_record(
         payload.outcome.as_deref(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let existing = pay_assessment_records::Entity::find()
-        .filter(pay_assessment_records::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(pay_assessment_records::Column::ReportedOn.eq(payload.reported_on))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .find(|r| r.category.to_lowercase() == category.to_lowercase());
+    Ok(category)
+}
+
+/// `PUT /api/pay-transparency/assessment-records` — record, for a category and a report date, whether the gap was
+/// justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended.
+/// Replaces what was there. A person records; the service never decides.
+#[debug_handler]
+pub(crate) async fn put_record(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Json(payload): Json<RecordPayload>,
+) -> Result<Response> {
+    ensure_valid(&organization_problems(&payload.organization_ref))?;
+    ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
+    let category = checked_category(&payload)?;
+    let existing = sqlx::query!(
+        "SELECT pid, category FROM pay_assessment_records
+         WHERE organization_ref = $1 AND reported_on = $2",
+        payload.organization_ref,
+        payload.reported_on,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .find(|r| r.category.to_lowercase() == category.to_lowercase());
     let justification = payload
         .justification
         .as_ref()
@@ -270,42 +291,51 @@ pub(crate) async fn put_record(
         .as_ref()
         .map(|t| t.trim().to_string())
         .filter(|t| !t.is_empty());
-    let txn = ctx.db.begin().await?;
+    let mut tx = pool(&ctx).begin().await?;
     let pid = if let Some(row) = existing {
-        let pid = row.pid;
-        let mut active: pay_assessment_records::ActiveModel = row.into();
-        active.category = ActiveValue::set(category);
-        active.justified = ActiveValue::set(payload.justified);
-        active.justification = ActiveValue::set(justification);
-        active.remedied_on = ActiveValue::set(payload.remedied_on);
-        active.assessed_on = ActiveValue::set(payload.assessed_on);
-        active.outcome = ActiveValue::set(payload.outcome.clone());
-        active.representatives = ActiveValue::set(representatives);
-        active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-        active.update(&txn).await?;
-        pid
+        sqlx::query!(
+            "UPDATE pay_assessment_records
+             SET category = $2, justified = $3, justification = $4, remedied_on = $5,
+                 assessed_on = $6, outcome = $7, representatives = $8, recorded_by = $9
+             WHERE pid = $1",
+            row.pid,
+            category,
+            payload.justified,
+            justification,
+            payload.remedied_on,
+            payload.assessed_on,
+            payload.outcome,
+            representatives,
+            caller.actor(),
+        )
+        .execute(&mut *tx)
+        .await?;
+        row.pid
     } else {
         let pid = Uuid::new_v4();
-        pay_assessment_records::ActiveModel {
-            pid: ActiveValue::set(pid),
-            organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-            category: ActiveValue::set(category),
-            reported_on: ActiveValue::set(payload.reported_on),
-            justified: ActiveValue::set(payload.justified),
-            justification: ActiveValue::set(justification),
-            remedied_on: ActiveValue::set(payload.remedied_on),
-            assessed_on: ActiveValue::set(payload.assessed_on),
-            outcome: ActiveValue::set(payload.outcome.clone()),
-            representatives: ActiveValue::set(representatives),
-            recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query!(
+            "INSERT INTO pay_assessment_records
+                 (pid, organization_ref, category, reported_on, justified, justification,
+                  remedied_on, assessed_on, outcome, representatives, recorded_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+            pid,
+            payload.organization_ref,
+            category,
+            payload.reported_on,
+            payload.justified,
+            justification,
+            payload.remedied_on,
+            payload.assessed_on,
+            payload.outcome,
+            representatives,
+            caller.actor(),
+        )
+        .execute(&mut *tx)
         .await?;
         pid
     };
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "pay_assessment",
         pid,
         "pay_assessment_recorded",
@@ -317,7 +347,7 @@ pub(crate) async fn put_record(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 

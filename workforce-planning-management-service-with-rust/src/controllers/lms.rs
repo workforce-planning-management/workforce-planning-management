@@ -12,15 +12,13 @@
 //! the blanket write guard applies like any other mutation.
 
 use axa::prelude::*;
-use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use std::str::FromStr;
 use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{cpd_entries, training_enrollments, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::rules::lms as rules;
 
 /// The link to a course in the learning system, from the deployer's `WPM_LMS_COURSE_URL` (WPM-R138,
@@ -124,21 +122,23 @@ async fn completions(
     }))
 }
 
-/// Apply one event in its own transaction.
-#[allow(clippy::too_many_lines)] // resolve learner → enrollment → CPD credit, linearly
 /// Complete or create the worker's enrollment for the event's course, auditing a change.
 async fn sync_enrollment(
-    txn: &impl ConnectionTrait,
+    connection: &mut sqlx::PgConnection,
     caller: &MaybeAuthUser,
-    worker: &workers::Model,
+    worker: Uuid,
     event: &CompletionEvent,
 ) -> Result<&'static str> {
-    let existing = training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
-        .filter(training_enrollments::Column::CourseRef.eq(&event.course_ref))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .one(txn)
-        .await?;
+    let existing = sqlx::query!(
+        "SELECT pid, status, completed_on, certificate_expires_on
+         FROM training_enrollments
+         WHERE worker_pid = $1 AND course_ref = $2 AND deleted_at IS NULL
+         LIMIT 1",
+        worker,
+        event.course_ref,
+    )
+    .fetch_optional(&mut *connection)
+    .await?;
     let snapshot = existing.as_ref().map(|e| rules::Existing {
         status: e.status.as_str(),
         completed_on: e.completed_on,
@@ -152,13 +152,18 @@ async fn sync_enrollment(
     Ok(match (action, existing) {
         (rules::EnrollmentAction::Unchanged, _) => "unchanged",
         (rules::EnrollmentAction::Complete, Some(row)) => {
-            let mut active: training_enrollments::ActiveModel = row.into();
-            active.status = ActiveValue::set("completed".to_string());
-            active.completed_on = ActiveValue::set(Some(event.completed_on));
-            active.certificate_expires_on = ActiveValue::set(event.certificate_expires_on);
-            let row = active.update(txn).await?;
-            Audit::record(
-                txn,
+            sqlx::query!(
+                "UPDATE training_enrollments
+                 SET status = 'completed', completed_on = $2, certificate_expires_on = $3
+                 WHERE pid = $1",
+                row.pid,
+                event.completed_on,
+                event.certificate_expires_on,
+            )
+            .execute(&mut *connection)
+            .await?;
+            db::audit(
+                connection,
                 "training_enrollment",
                 row.pid,
                 "lms_completed",
@@ -169,22 +174,23 @@ async fn sync_enrollment(
             "updated"
         }
         (_, _) => {
-            let row = training_enrollments::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                course_ref: ActiveValue::set(event.course_ref.clone()),
-                status: ActiveValue::set("completed".to_string()),
-                completed_on: ActiveValue::set(Some(event.completed_on)),
-                certificate_expires_on: ActiveValue::set(event.certificate_expires_on),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(txn)
+            let pid = Uuid::new_v4();
+            sqlx::query!(
+                "INSERT INTO training_enrollments
+                     (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on)
+                 VALUES ($1, $2, $3, 'completed', $4, $5)",
+                pid,
+                worker,
+                event.course_ref,
+                event.completed_on,
+                event.certificate_expires_on,
+            )
+            .execute(&mut *connection)
             .await?;
-            Audit::record(
-                txn,
+            db::audit(
+                connection,
                 "training_enrollment",
-                row.pid,
+                pid,
                 "lms_created",
                 caller.actor(),
                 None,
@@ -197,60 +203,59 @@ async fn sync_enrollment(
 
 /// Record the CPD credit an event carries, once per `(worker, external_ref)`.
 async fn record_credit(
-    txn: &impl ConnectionTrait,
+    connection: &mut sqlx::PgConnection,
     caller: &MaybeAuthUser,
-    worker: &workers::Model,
+    worker: Uuid,
     event: &CompletionEvent,
     credit: Option<(&'static str, i64)>,
 ) -> Result<&'static str> {
     let reference = event.external_ref.trim();
-    Ok(if let Some((unit, hundredths)) = credit {
-        let already = cpd_entries::Entity::find()
-            .filter(cpd_entries::Column::WorkerPid.eq(worker.pid))
-            .filter(cpd_entries::Column::ExternalRef.eq(reference))
-            .filter(cpd_entries::Column::DeletedAt.is_null())
-            .one(txn)
-            .await?
-            .is_some();
-        if already {
-            "already_recorded"
-        } else {
-            let row = cpd_entries::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                entry_date: ActiveValue::set(event.completed_on),
-                activity: ActiveValue::set(format!("LMS completion: {}", event.course_ref)),
-                category: ActiveValue::set("course".to_string()),
-                unit: ActiveValue::set(unit.to_string()),
-                amount_hundredths: ActiveValue::set(hundredths),
-                evidence_note: ActiveValue::set(None),
-                evidence_url: ActiveValue::set(None),
-                source: ActiveValue::set("lms".to_string()),
-                external_ref: ActiveValue::set(Some(reference.to_string())),
-                course_ref: ActiveValue::set(Some(event.course_ref.clone())),
-                verified_on: ActiveValue::set(None),
-                verified_by: ActiveValue::set(None),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(txn)
-            .await?;
-            Audit::record(
-                txn,
-                "cpd_entry",
-                row.pid,
-                "lms_recorded",
-                caller.actor(),
-                None,
-            )
-            .await?;
-            "recorded"
-        }
-    } else {
-        "none"
-    })
+    let Some((unit, hundredths)) = credit else {
+        return Ok("none");
+    };
+    let already = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM cpd_entries
+               WHERE worker_pid = $1 AND external_ref = $2 AND deleted_at IS NULL
+           ) AS "already!""#,
+        worker,
+        reference,
+    )
+    .fetch_one(&mut *connection)
+    .await?;
+    if already {
+        return Ok("already_recorded");
+    }
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO cpd_entries
+             (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths,
+              source, external_ref, course_ref)
+         VALUES ($1, $2, $3, $4, 'course', $5, $6, 'lms', $7, $8)",
+        pid,
+        worker,
+        event.completed_on,
+        format!("LMS completion: {}", event.course_ref),
+        unit,
+        hundredths,
+        reference,
+        event.course_ref,
+    )
+    .execute(&mut *connection)
+    .await?;
+    db::audit(
+        connection,
+        "cpd_entry",
+        pid,
+        "lms_recorded",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    Ok("recorded")
 }
 
+/// Apply one event in its own transaction.
 async fn apply(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -284,13 +289,16 @@ async fn apply(
     };
 
     // Resolve the learner to exactly one live worker.
-    let mut query = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::PersonRef.eq(&event.person_ref));
-    if let Some(org) = &event.organization_ref {
-        query = query.filter(workers::Column::OrganizationRef.eq(org));
-    }
-    let found = query.all(&ctx.db).await?;
+    let found = sqlx::query_scalar!(
+        "SELECT pid FROM workers
+         WHERE deleted_at IS NULL
+           AND person_ref = $1
+           AND ($2::text IS NULL OR organization_ref = $2)",
+        event.person_ref,
+        event.organization_ref,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let worker = match found.as_slice() {
         [] => {
             return Ok(Outcome::rejected(
@@ -299,7 +307,7 @@ async fn apply(
                 "no worker for person_ref",
             ));
         }
-        [only] => only,
+        [only] => *only,
         _ => {
             return Ok(Outcome::rejected(
                 reference,
@@ -309,10 +317,10 @@ async fn apply(
         }
     };
 
-    let txn = ctx.db.begin().await?;
-    let enrollment = sync_enrollment(&txn, caller, worker, event).await?;
-    let cpd = record_credit(&txn, caller, worker, event, credit).await?;
-    txn.commit().await?;
+    let mut tx = pool(ctx).begin().await?;
+    let enrollment = sync_enrollment(&mut tx, caller, worker, event).await?;
+    let cpd = record_credit(&mut tx, caller, worker, event, credit).await?;
+    tx.commit().await?;
 
     let unchanged = rules::is_unchanged(enrollment, cpd);
     Ok(Outcome {

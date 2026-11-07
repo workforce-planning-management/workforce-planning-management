@@ -1,0 +1,55 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT skill_pid, worker_pid, proficiency\n         FROM worker_skills\n         WHERE deleted_at IS NULL\n           AND skill_pid = ANY($1)\n           AND proficiency >= $2\n           AND worker_pid IN (\n               SELECT pid FROM workers\n               WHERE deleted_at IS NULL\n                 AND hired_on <= $3\n                 AND (terminated_on IS NULL OR terminated_on > $3)\n                 AND ($4::text[] IS NULL OR organization_ref = ANY($4))\n           )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "proficiency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Int4",
+        "Date",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ac87a516eb42bf6dd7f31862627a9260698b0c2bf484e90525cc4c1f45f64d1f"
+}
