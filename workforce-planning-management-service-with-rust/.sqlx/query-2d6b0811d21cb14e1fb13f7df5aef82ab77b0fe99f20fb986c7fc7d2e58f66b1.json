@@ -1,0 +1,184 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, run_pid, worker_pid, currency, gross_minor, deductions, net_minor,\n                  statutory_overtime_minor, employer_cost_minor, employer_costs, deleted_at AS \"deleted_at: _\"\n           FROM payslips WHERE worker_pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "run_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "run_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "gross_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "gross_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deductions",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "deductions"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "net_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "net_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "statutory_overtime_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "statutory_overtime_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "employer_cost_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "employer_cost_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "employer_costs",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "employer_costs"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2d6b0811d21cb14e1fb13f7df5aef82ab77b0fe99f20fb986c7fc7d2e58f66b1"
+}

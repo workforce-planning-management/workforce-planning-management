@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT class FROM injury_records\n         WHERE organization_ref = $1\n           AND EXTRACT(YEAR FROM occurred_at AT TIME ZONE 'UTC')::int = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "class",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "class"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e25d85461eff17668c6e7b103ec1dff41265894ead148a45b62366b8d940ffc7"
+}

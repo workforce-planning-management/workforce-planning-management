@@ -236,6 +236,28 @@ async fn an_injury_record_proves_a_report_and_holds_no_description() {
         assert!(counts["classes"].as_array().unwrap().iter().any(|c| c["class"] == "serious" && c["count"].is_null()));
         assert!(!counts.to_string().contains(&pid) && !counts.to_string().contains("Person"));
 
+        // The year is the calendar year in UTC: the last minutes of 2024 are 2024, and no other year's.
+        let floor = workforce_planning_management::rules::equality_monitoring::DEFAULT_FLOOR;
+        for _ in 0..floor {
+            let at_year_end = json!({
+                "organization": org, "jurisdiction": "US-CA", "kind": "accident",
+                "occurred_at": "2024-12-31T23:30:00Z", "class": "no_absence", "people_affected": 1,
+            });
+            request.post("/api/injury-records").add_header("authorization", hr.clone()).json(&at_year_end).await.assert_status_ok();
+        }
+        let year = |year: i32| {
+            let (request, payroll, org) = (&request, payroll.clone(), org.clone());
+            async move {
+                request
+                    .get(&format!("/api/injury-records/rollup?organization={org}&year={year}"))
+                    .add_header("authorization", payroll)
+                    .await
+                    .json::<Value>()
+            }
+        };
+        assert_eq!(year(2024).await["total"], json!(floor));
+        assert_eq!(year(2025).await["total"], json!(0));
+
         // Audited with no content: the action names nothing, and the read holds a count alone.
         let scalar = |sql: String| {
             let ctx = &ctx;

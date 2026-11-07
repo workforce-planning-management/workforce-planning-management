@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, record_pid, recipient, due_at AS \"due_at: _\", sent_at AS \"sent_at: _\",\n                  method, reference, recorded_by\n           FROM injury_reports\n           WHERE record_pid = ANY($1)\n           ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "record_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "record_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "recipient",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "recipient"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "due_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "due_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "sent_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "sent_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "method",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "method"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "reference"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "b6a68521df0cbdc7a8cf4892ebd3e7f4a6fd3a8c74d355ada4e5271a8aad1c5b"
+}

@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE injury_records\n         SET learned_at = $2, class = $3, absence_days = $4, people_affected = $5,\n             statutory_record_ref = $6, keep_until = $7\n         WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b553acdda2c82d04642867eabbcb3aecadc2b4818097a335440a33b737d6f0a5"
+}

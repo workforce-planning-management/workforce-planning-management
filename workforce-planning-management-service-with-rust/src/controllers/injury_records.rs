@@ -5,8 +5,7 @@
 //! The rules are `rules::injury_record`. Spec: `spec/injury-and-separation-duties.md`.
 
 use axa::prelude::*;
-use chrono::{DateTime, Datelike, NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, HashMap};
@@ -14,8 +13,8 @@ use uuid::Uuid;
 
 use super::{ensure_org_in_scope, ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{injury_records, injury_reports, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::{injury_records, injury_reports};
 use crate::models::records;
 use crate::rules::{equality_monitoring, injury_record as rules};
 
@@ -34,11 +33,18 @@ async fn ensure_hr(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str)
 }
 
 async fn find_record(ctx: &AppContext, pid: Uuid) -> Result<injury_records::Model> {
-    injury_records::Entity::find()
-        .filter(injury_records::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        injury_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, jurisdiction, kind, worker_pid,
+                  occurred_at AS "occurred_at: _", learned_at AS "learned_at: _", class,
+                  absence_days, people_affected, statutory_record_ref, keep_until, recorded_by
+           FROM injury_records WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 fn utc(at: DateTimeWithTimeZone) -> DateTime<Utc> {
@@ -85,26 +91,44 @@ async fn list(
     axum::extract::Query(q): axum::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
-    let rows = injury_records::Entity::find()
-        .filter(injury_records::Column::OrganizationRef.eq(&q.organization))
-        .order_by_desc(injury_records::Column::OccurredAt)
-        .order_by_desc(injury_records::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let reports = injury_reports::Entity::find()
-        .filter(injury_reports::Column::RecordPid.is_in(rows.iter().map(|r| r.pid)))
-        .order_by_asc(injury_reports::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let names: HashMap<Uuid, String> = workers::Entity::find()
-        .filter(workers::Column::Pid.is_in(rows.iter().filter_map(|r| r.worker_pid)))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w.display_name))
-        .collect();
-    Audit::record(
-        &ctx.db,
+    let rows = sqlx::query_as!(
+        injury_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, jurisdiction, kind, worker_pid,
+                  occurred_at AS "occurred_at: _", learned_at AS "learned_at: _", class,
+                  absence_days, people_affected, statutory_record_ref, keep_until, recorded_by
+           FROM injury_records
+           WHERE organization_ref = $1
+           ORDER BY occurred_at DESC, id DESC"#,
+        q.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    let record_pids: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
+    let reports = sqlx::query_as!(
+        injury_reports::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, record_pid, recipient, due_at AS "due_at: _", sent_at AS "sent_at: _",
+                  method, reference, recorded_by
+           FROM injury_reports
+           WHERE record_pid = ANY($1)
+           ORDER BY id"#,
+        &record_pids,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    let worker_pids: Vec<Uuid> = rows.iter().filter_map(|r| r.worker_pid).collect();
+    let names: HashMap<Uuid, String> = sqlx::query!(
+        "SELECT pid, display_name FROM workers WHERE pid = ANY($1)",
+        &worker_pids,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w.display_name))
+    .collect();
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "injury_record",
         Uuid::new_v4(),
         "injury_records_read",
@@ -172,27 +196,30 @@ async fn create(
         }
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    injury_records::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization),
-        jurisdiction: ActiveValue::set(p.jurisdiction),
-        kind: ActiveValue::set(p.kind),
-        worker_pid: ActiveValue::set(p.worker_pid),
-        occurred_at: ActiveValue::set(p.occurred_at.fixed_offset()),
-        learned_at: ActiveValue::set(p.learned_at.map(|at| at.fixed_offset())),
-        class: ActiveValue::set(p.class),
-        absence_days: ActiveValue::set(p.absence_days),
-        people_affected: ActiveValue::set(people),
-        statutory_record_ref: ActiveValue::set(reference),
-        keep_until: ActiveValue::set(p.keep_until),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO injury_records
+             (pid, organization_ref, jurisdiction, kind, worker_pid, occurred_at, learned_at,
+              class, absence_days, people_affected, statutory_record_ref, keep_until, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
+        pid,
+        p.organization,
+        p.jurisdiction,
+        p.kind,
+        p.worker_pid,
+        p.occurred_at,
+        p.learned_at,
+        p.class,
+        p.absence_days,
+        people,
+        reference,
+        p.keep_until,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "injury_record",
         pid,
         "injury_recorded",
@@ -200,7 +227,7 @@ async fn create(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -238,17 +265,24 @@ async fn update(
     ))?;
     let reference =
         rules::clean_ref(p.statutory_record_ref.as_deref()).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let mut row: injury_records::ActiveModel = record.into();
-    row.learned_at = ActiveValue::set(p.learned_at.map(|at| at.fixed_offset()));
-    row.class = ActiveValue::set(p.class);
-    row.absence_days = ActiveValue::set(p.absence_days);
-    row.people_affected = ActiveValue::set(p.people_affected);
-    row.statutory_record_ref = ActiveValue::set(reference);
-    row.keep_until = ActiveValue::set(p.keep_until);
-    row.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE injury_records
+         SET learned_at = $2, class = $3, absence_days = $4, people_affected = $5,
+             statutory_record_ref = $6, keep_until = $7
+         WHERE pid = $1",
+        pid,
+        p.learned_at,
+        p.class,
+        p.absence_days,
+        p.people_affected,
+        reference,
+        p.keep_until,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "injury_record",
         pid,
         "injury_updated",
@@ -256,7 +290,7 @@ async fn update(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -290,22 +324,24 @@ async fn add_report(
     ))?;
     let reference = rules::clean_ref(p.reference.as_deref()).map_err(|e| unprocessable(&e))?;
     let report = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    injury_reports::ActiveModel {
-        pid: ActiveValue::set(report),
-        record_pid: ActiveValue::set(pid),
-        recipient: ActiveValue::set(p.recipient),
-        due_at: ActiveValue::set(p.due_at.map(|at| at.fixed_offset())),
-        sent_at: ActiveValue::set(p.sent_at.map(|at| at.fixed_offset())),
-        method: ActiveValue::set(p.method),
-        reference: ActiveValue::set(reference),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO injury_reports
+             (pid, record_pid, recipient, due_at, sent_at, method, reference, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        report,
+        pid,
+        p.recipient,
+        p.due_at,
+        p.sent_at,
+        p.method,
+        reference,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "injury_record",
         pid,
         "injury_report_added",
@@ -313,7 +349,7 @@ async fn add_report(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": report }))
 }
 
@@ -334,11 +370,13 @@ async fn mark_sent(
     Path(pid): Path<Uuid>,
     Json(p): Json<SentPayload>,
 ) -> Result<Response> {
-    let report = injury_reports::Entity::find()
-        .filter(injury_reports::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let report = sqlx::query!(
+        "SELECT record_pid, recipient FROM injury_reports WHERE pid = $1",
+        pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let record = find_record(&ctx, report.record_pid).await?;
     ensure_hr(&ctx, &caller, &record.organization_ref).await?;
     ensure_valid(&rules::report_problems(
@@ -348,14 +386,18 @@ async fn mark_sent(
         Utc::now(),
     ))?;
     let reference = rules::clean_ref(p.reference.as_deref()).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let mut row: injury_reports::ActiveModel = report.into();
-    row.sent_at = ActiveValue::set(Some(p.sent_at.fixed_offset()));
-    row.method = ActiveValue::set(Some(p.method));
-    row.reference = ActiveValue::set(reference);
-    row.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE injury_reports SET sent_at = $2, method = $3, reference = $4 WHERE pid = $1",
+        pid,
+        p.sent_at,
+        p.method,
+        reference,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "injury_record",
         record.pid,
         "injury_report_sent",
@@ -363,7 +405,7 @@ async fn mark_sent(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -386,14 +428,16 @@ async fn rollup(
     if !super::policies::privileged(&ctx, &caller, &q.organization).await? {
         return Err(super::forbidden("this is done by HR"));
     }
-    let classes: Vec<String> = injury_records::Entity::find()
-        .filter(injury_records::Column::OrganizationRef.eq(&q.organization))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|r| r.occurred_at.year() == q.year)
-        .map(|r| r.class)
-        .collect();
+    // The calendar year in UTC, as an incident's time is held.
+    let classes: Vec<String> = sqlx::query_scalar!(
+        "SELECT class FROM injury_records
+         WHERE organization_ref = $1
+           AND EXTRACT(YEAR FROM occurred_at AT TIME ZONE 'UTC')::int = $2",
+        q.organization,
+        q.year,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let floor = equality_monitoring::DEFAULT_FLOOR;
     let counts = rules::rollup(&classes, floor);
     format::json(json!({
