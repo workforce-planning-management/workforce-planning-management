@@ -336,6 +336,15 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 
+## WPM-R240 — Made-up records are loaded only in development or test
+
+- `task seed`, which loads a synthetic organization, is refused unless both the process (`APP_ENV`) and any `--environment` are development or test. A release binary is production by default; `demo`, `staging` and any other name are refused too. Nothing is written when it is refused.
+- A demo database is seeded with `APP_ENV=development` for that one command, and then served under `demo`. The restore drill does the same.
+- Every other task runs anywhere: the scheduled jobs and the imports load real records.
+
+**Why:** a seed run with production's `DATABASE_URL` still exported would put made-up workers, pay and plans among real ones, and taking them out again is by hand. The refusal is `axa`'s `Task::development_only`, the same rule as `db reset` (WPM-R237).
+**Not claimed:** whoever can set `APP_ENV=development` beside a production `DATABASE_URL` can still seed it; the rule stops a mistake, not an operator.
+
 ## WPM-R239 — A caller cannot name its own rate-limit bucket
 
 - The rate limit counts by the address `axa::client::resolve` gives. `X-Forwarded-For` is believed only from a peer listed in `TRUSTED_PROXIES`, and is read from the right, stopping at the first address that is not listed. With no list, the header is ignored.

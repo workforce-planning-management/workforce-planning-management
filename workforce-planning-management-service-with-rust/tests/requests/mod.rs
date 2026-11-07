@@ -67,6 +67,7 @@ mod removals;
 mod rotas;
 mod scale;
 mod scim;
+mod seed_task;
 mod sfia_import;
 mod shared_cache;
 mod skill_gaps;

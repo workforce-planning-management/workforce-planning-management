@@ -27,6 +27,12 @@ impl Task for Seed {
         }
     }
 
+    /// Made-up workers must not reach real records (WPM-R240): `axa` refuses this
+    /// task unless the process and any `--environment` are development or test.
+    fn development_only(&self) -> bool {
+        true
+    }
+
     #[allow(clippy::too_many_lines)] // one linear walk building the demo org
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
         let db = &ctx.db;

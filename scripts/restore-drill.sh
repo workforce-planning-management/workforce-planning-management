@@ -84,7 +84,8 @@ step "1. migrate and seed the source database ($src)"
 psql "$ADMIN_DATABASE_URL" -qc "CREATE DATABASE $src"
 export APP_ENV=demo
 DATABASE_URL="$SRC_URL" "$WPM_BIN" db migrate >/dev/null
-DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
+# The seed loads made-up records, so it runs only in development or test (WPM-R240).
+APP_ENV=development DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
 src_workers="$(psql "$SRC_URL" -Atc 'select count(*) from workers where deleted_at is null')"
 [ "$src_workers" -gt 0 ] || fail "the seed produced no workers"
 # The seed writes no audit entries; add a few through the database's own chain trigger, so the

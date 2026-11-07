@@ -206,5 +206,7 @@ cargo run -- db migrate     # or let the demo config migrate on start
 cargo run -- task seed      # demo only: a synthetic organization
 ```
 
+`task seed` runs only in development or test (WPM-R240). A release binary defaults to production, so a demo database is seeded once with `APP_ENV=development` set for that one command, and served under `demo`.
+
 Production does not auto-migrate (`auto_migrate: false`): run `db migrate` as a deliberate
 step, after a backup ([upgrade-and-migration.md](upgrade-and-migration.md)).

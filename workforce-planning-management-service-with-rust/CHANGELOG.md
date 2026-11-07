@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — the seed runs only in development or test (WPM-R240, WPM-T474)
+
+**An operator must act** to seed a demo database: run `task seed` with `APP_ENV=development` for that one command. Under production, `demo` or any other environment it is refused and writes nothing.
+
 ### Changed — the rate limit is counted by `axa::ratelimit` (WPM-D188, WPM-T473)
 
 **A client may notice:** a `429` says `code: too_many_requests` and has no `detail`, where it said "rate limit exceeded; retry later"; it and every counted response carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. The settings, the two classes, `0` to disable a class and `Retry-After` are as before, and `/_readiness` is never limited. The caller is held as a keyed hash, and at most 100,000 callers are held. Counts start afresh each time the router is built.
