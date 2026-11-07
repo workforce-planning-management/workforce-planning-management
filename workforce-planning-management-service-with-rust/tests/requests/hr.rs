@@ -303,10 +303,10 @@ async fn worker_list_returns_the_fields_asked_for_and_audits_salary_it_carries()
             }
         };
 
-        // The lean list: three fields per row and nothing else; no salary, so no salary read is recorded. Paging is unchanged.
+        // The lean list: three fields per row and nothing else; no salary, so no salary read is recorded. Paging is unchanged: one page, so no `Link`.
         let lean = request.get(&format!("/api/workers?department={department}&fields=pid,department,person_ref")).await;
         assert_eq!(lean.status_code(), 200);
-        assert_eq!(lean.headers().get("x-total-count").unwrap().to_str().unwrap(), "2");
+        assert!(lean.headers().get("link").is_none());
         let rows: Value = lean.json();
         let rows = rows.as_array().unwrap();
         assert_eq!(rows.len(), 2);

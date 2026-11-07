@@ -381,7 +381,7 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
             .get(&format!("/api/directory?q=dir-{tag}"))
             .await;
         assert_eq!(response.status_code(), 200);
-        assert_eq!(response.header("x-total-count"), "1");
+        assert!(response.headers().get("link").is_none());
         let rows: Vec<Value> = response.json();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["pid"], stay.as_str());

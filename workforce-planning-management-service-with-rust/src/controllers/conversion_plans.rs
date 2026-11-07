@@ -114,7 +114,7 @@ async fn list_open(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(query): axa::extract::Query<ListQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let as_of = Utc::now().date_naive();
@@ -167,7 +167,7 @@ async fn list_open(
         None,
     )
     .await?;
-    Ok(super::paged_vec(out, window))
+    Ok(super::paged_vec(out, &window))
 }
 
 /// `POST …/conversion-plans` body.

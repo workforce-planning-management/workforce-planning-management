@@ -2727,7 +2727,6 @@
     "consultation_ref": "سجل المشاورة لدرجة جديدة أو معدّلة (اختياري)"
   },
   "paging": {
-    "showing": "عرض {shown} من {total}",
     "more": "عرض المزيد"
   },
   "bargaining": {

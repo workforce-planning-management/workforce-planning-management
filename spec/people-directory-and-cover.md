@@ -10,10 +10,10 @@ each subproject's `spec/`.
 title, department, location, manager or rota — and see who is away and who
 covers for them.*
 
-- `GET /api/directory?q=&department=&limit=&offset=`: **employed today**
+- `GET /api/directory?q=&department=&limit=&cursor=`: **employed today**
   ([`is_employed_on`](glossary.md#employed), the one definition) workers in the
   caller's organizations, ordered by name then pid so pages are stable,
-  `x-total-count` set. Every whitespace-separated term of `q` must match
+  paged by a signed cursor with no total (WPM-R241). Every whitespace-separated term of `q` must match
   (case-insensitively) the name, title, department, location, manager's name
   or the name of a rota the person is on call for.
 - **Nothing sensitive**: no salary, employment dates or person reference

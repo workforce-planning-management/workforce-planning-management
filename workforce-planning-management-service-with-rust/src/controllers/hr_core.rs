@@ -270,7 +270,7 @@ async fn create_worker(
 const WORKER_LIST_DEFAULT_LIMIT: u64 = 500;
 
 /// `GET /api/workers` — active workers, filterable by
-/// `?department=` and `?status=`, paginated via `?limit=&offset=`
+/// `?department=` and `?status=`, paged via `?limit=&cursor=`
 /// (WPM-T40; `agents/share/restful.md`). Record-level masking applies
 /// per row (a list must never reveal more than the single read).
 #[derive(Debug, Deserialize)]
@@ -279,12 +279,6 @@ struct WorkerListParams {
     department: Option<String>,
     #[serde(default)]
     status: Option<String>,
-    /// Page size; absent, zero, or unparseable ⇒ [`WORKER_LIST_DEFAULT_LIMIT`].
-    #[serde(default)]
-    limit: Option<String>,
-    /// Rows to skip; absent or unparseable ⇒ 0.
-    #[serde(default)]
-    offset: Option<String>,
     /// A comma-separated allowlist of fields to return (`rules::worker_fields::LIST_FIELDS`); absent ⇒ the whole record. An unknown
     /// name is a 422 (WPM-R216).
     #[serde(default)]
@@ -296,11 +290,8 @@ async fn list_workers(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Query(params): Query<WorkerListParams>,
+    page: Page,
 ) -> Result<Response> {
-    let page = Page {
-        limit: params.limit,
-        offset: params.offset,
-    };
     let window = super::resolve(&page, WORKER_LIST_DEFAULT_LIMIT)?;
     let fields = worker_fields::parse_fields(params.fields.as_deref())
         .map_err(|message| unprocessable(&message))?;
@@ -314,13 +305,16 @@ async fn list_workers(
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(workers::Column::OrganizationRef.is_in(refs));
     }
-    let total = query.clone().count(&ctx.db).await?;
+    let (limit, offset) = window.bounds();
     let rows = query
         .order_by_asc(workers::Column::Id)
-        .limit(window.limit)
-        .offset(window.offset)
+        .limit(limit.unsigned_abs())
+        .offset(offset.unsigned_abs())
         .all(&ctx.db)
         .await?;
+    // The row past the page only says that more follow. It is dropped before the salary audit, which records only
+    // what is sent.
+    let (rows, more) = window.split(rows);
     let discloses_salary = worker_fields::includes_salary(fields.as_deref());
     let mut out = Vec::with_capacity(rows.len());
     let mut salary_reads = Vec::new();
@@ -367,7 +361,11 @@ async fn list_workers(
         }
         txn.commit().await?;
     }
-    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), out))
+    Ok(super::with_next(
+        axum::Json(out).into_response(),
+        &window,
+        more,
+    ))
 }
 
 /// `GET /api/workers/{pid}` — one worker; a salary-bearing read
@@ -876,36 +874,15 @@ async fn create_plan(
 /// endpoint applied before pagination existed (WPM-T40).
 const BENEFIT_PLAN_LIST_DEFAULT_LIMIT: u64 = 200;
 
-/// `?limit=&offset=` for `GET /api/benefit-plans` (WPM-T40).
-#[derive(Debug, Default, Deserialize)]
-struct PlanListParams {
-    #[serde(default)]
-    limit: Option<String>,
-    #[serde(default)]
-    offset: Option<String>,
-}
-
-/// `GET /api/benefit-plans`, paginated via `?limit=&offset=` (WPM-T40;
+/// `GET /api/benefit-plans`, paged via `?limit=&cursor=` (WPM-T40;
 /// `agents/share/restful.md`).
 #[debug_handler]
-async fn list_plans(
-    State(ctx): State<AppContext>,
-    Query(params): Query<PlanListParams>,
-) -> Result<Response> {
-    let page = Page {
-        limit: params.limit,
-        offset: params.offset,
-    };
+async fn list_plans(State(ctx): State<AppContext>, page: Page) -> Result<Response> {
     let window = super::resolve(&page, BENEFIT_PLAN_LIST_DEFAULT_LIMIT)?;
-    let query = benefit_plans::Entity::find().filter(benefit_plans::Column::DeletedAt.is_null());
-    let total = query.clone().count(&ctx.db).await?;
-    let rows = query
-        .order_by_asc(benefit_plans::Column::Id)
-        .limit(window.limit)
-        .offset(window.offset)
-        .all(&ctx.db)
-        .await?;
-    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), rows))
+    let query = benefit_plans::Entity::find()
+        .filter(benefit_plans::Column::DeletedAt.is_null())
+        .order_by_asc(benefit_plans::Column::Id);
+    super::paged_select(&ctx, query, window, |row| Ok(row.clone())).await
 }
 
 /// `POST /api/workers/{pid}/benefit-enrollments` — enrol; the

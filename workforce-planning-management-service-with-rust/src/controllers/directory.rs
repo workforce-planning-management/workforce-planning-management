@@ -40,18 +40,6 @@ struct DirectoryParams {
     /// Exact department (case-insensitive).
     #[serde(default)]
     department: Option<String>,
-    /// Page size; absent, zero or unparseable ⇒ the default.
-    #[serde(default)]
-    limit: Option<String>,
-    /// Rows to skip; absent ⇒ 0.
-    #[serde(default)]
-    offset: Option<String>,
-}
-
-/// The whole of a page: how many workers match, and the pids of the page in order.
-struct Matches {
-    total: u64,
-    page: Vec<Uuid>,
 }
 
 /// The listing's filter, in SQL, with the same meaning as [`rules::search`]: every whitespace-separated
@@ -66,15 +54,15 @@ struct Matches {
 /// A term is bound as a value, never spliced, and `strpos` takes no pattern, so a `%` or `_` in it is
 /// just a character. `readable` is the one set the listing and a manager's name are drawn from, and it
 /// is `NOT MATERIALIZED` so that a manager is found by the primary key and not by a scan per worker.
-/// One statement counts and pages, so the total cannot disagree with the rows.
+/// It answers the page's pids in order, with one more than the page when more follow (WPM-T478); there is no total.
 async fn matches(
     ctx: &AppContext,
     refs: Option<&[String]>,
     today: NaiveDate,
     params: &DirectoryParams,
     on_call: &HashMap<Uuid, Vec<String>>,
-    window: Window,
-) -> Result<Matches> {
+    window: &Window,
+) -> Result<Vec<Uuid>> {
     let (limit, offset) = window.bounds();
     let department = params
         .department
@@ -94,7 +82,7 @@ async fn matches(
         .flat_map(|(pid, rotas)| rotas.iter().map(|r| (*pid, r.to_lowercase())))
         .unzip();
 
-    let found = sqlx::query!(
+    let found = sqlx::query_scalar!(
         r#"
         WITH readable AS NOT MATERIALIZED (
             SELECT pid, manager_pid, display_name, job_title, department, location
@@ -126,11 +114,9 @@ async fn matches(
                   ) IS NOT TRUE
               )
         )
-        SELECT
-            (SELECT count(*) FROM matching) AS "total!",
-            ARRAY(
-                SELECT pid FROM matching ORDER BY sort_name, pid LIMIT $7 OFFSET $8
-            ) AS "page!"
+        SELECT ARRAY(
+            SELECT pid FROM matching ORDER BY sort_name, pid LIMIT $7 OFFSET $8
+        ) AS "page!"
         "#,
         today,
         refs,
@@ -143,10 +129,7 @@ async fn matches(
     )
     .fetch_one(pool(ctx))
     .await?;
-    Ok(Matches {
-        total: found.total.unsigned_abs(),
-        page: found.page,
-    })
+    Ok(found)
 }
 
 /// Who among `pids` is on approved leave `today`.
@@ -166,8 +149,8 @@ async fn away_among(ctx: &AppContext, pids: &[Uuid], today: NaiveDate) -> Result
     Ok(away.into_iter().collect())
 }
 
-/// `GET /api/directory?q=&department=&limit=&offset=` — directory entries
-/// ordered by name, with `x-total-count` of all matches.
+/// `GET /api/directory?q=&department=&limit=&cursor=` — directory entries
+/// ordered by name, with a `Link` to the next page while more follow.
 ///
 /// The search, the order and the page are done by the database, so the work is the size of the page
 /// and not of the organization (WPM-D90); the leave, backups and managers are read for the page only.
@@ -177,11 +160,8 @@ async fn directory(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(params): axa::extract::Query<DirectoryParams>,
+    page: Page,
 ) -> Result<Response> {
-    let page = Page {
-        limit: params.limit.clone(),
-        offset: params.offset.clone(),
-    };
     let window = super::resolve(&page, DIRECTORY_DEFAULT_LIMIT)?;
 
     let refs = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
@@ -189,7 +169,8 @@ async fn directory(
     let today = chrono::Utc::now().date_naive();
     let on_call = super::rotas::on_call_today(&ctx, &caller).await?;
 
-    let found = matches(&ctx, refs, today, &params, &on_call, window).await?;
+    // The pid past the page only says that more follow; nothing is read for it.
+    let (found, more) = window.split(matches(&ctx, refs, today, &params, &on_call, &window).await?);
     let staff = sqlx::query!(
         r#"
         SELECT w.pid, w.display_name, w.job_title, w.department, w.location,
@@ -198,13 +179,13 @@ async fn directory(
         JOIN workers w ON w.pid = page.pid
         ORDER BY page.position
         "#,
-        &found.page,
+        &found,
     )
     .fetch_all(pool(&ctx))
     .await?;
 
     // Who is away today: approved leave covering today, for this page.
-    let mut away = away_among(&ctx, &found.page, today).await?;
+    let mut away = away_among(&ctx, &found, today).await?;
     let mut backups_by_worker: HashMap<Uuid, Vec<_>> = HashMap::new();
     if !away.is_empty() {
         for b in sqlx::query!(
@@ -286,7 +267,11 @@ async fn directory(
             },
         })
         .collect();
-    Ok(window.respond(i64::try_from(found.total).unwrap_or(i64::MAX), slice))
+    Ok(super::with_next(
+        axum::Json(slice).into_response(),
+        &window,
+        more,
+    ))
 }
 
 /// The directory route.

@@ -207,20 +207,13 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let total = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "total!" FROM oversight_packs WHERE organization_ref = $1"#,
-        org,
-    )
-    .fetch_one(pool(&ctx))
-    .await?
-    .unsigned_abs();
     let (limit, offset) = window.bounds();
     let rows = sqlx::query!(
         "SELECT pid, as_of, month FROM oversight_packs
@@ -233,6 +226,8 @@ async fn list(
     )
     .fetch_all(pool(&ctx))
     .await?;
+    // The body is an object, so the page is cut here and the next page's `Link` set by hand.
+    let (rows, more) = window.split(rows);
     let mut out = Vec::new();
     for p in &rows {
         let w = withdrawal_of(&ctx, p.pid).await?;
@@ -240,9 +235,10 @@ async fn list(
             "pid": p.pid, "as_of": p.as_of, "month": p.month, "withdrawn": withdrawn_json(w.as_ref()),
         }));
     }
-    Ok(window.respond(
-        i64::try_from(total).unwrap_or(i64::MAX),
-        json!({ "organization_ref": org, "packs": out }),
+    Ok(super::with_next(
+        axum::Json(json!({ "organization_ref": org, "packs": out })).into_response(),
+        &window,
+        more,
     ))
 }
 

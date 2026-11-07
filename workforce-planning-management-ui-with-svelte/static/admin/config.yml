@@ -3679,7 +3679,6 @@ collections:
             required: false
             i18n: true
             fields:
-              - { name: "showing", label: "Showing", widget: string, required: false, i18n: true }
               - { name: "more", label: "More", widget: string, required: false, i18n: true }
           - name: "bargaining"
             label: "Bargaining"

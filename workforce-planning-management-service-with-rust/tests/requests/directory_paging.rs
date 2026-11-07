@@ -53,15 +53,22 @@ async fn pages_are_in_name_order_ignoring_case_and_add_up_to_the_total() {
             )
             .await;
         }
+        // Three pages of two, two and one, each found by following the last one's `Link` (WPM-T478).
         let mut seen = Vec::new();
-        for offset in [0, 2, 4] {
-            let page = request
-                .get(&format!("/api/directory?q={tag}&limit=2&offset={offset}"))
-                .await;
-            assert_eq!(page.header("x-total-count"), "5");
+        let mut at = Some(format!("/api/directory?q={tag}&limit=2"));
+        let mut pages = 0;
+        while let Some(path) = at {
+            let page = request.get(&path).await;
+            assert!(page.headers().get("x-total-count").is_none(), "no total");
+            at = page.headers().get("link").map(|link| {
+                let link = link.to_str().unwrap();
+                link[1..link.find('>').unwrap()].to_string()
+            });
             let rows: Value = page.json();
             seen.extend(names(&rows).iter().map(ToString::to_string));
+            pages += 1;
         }
+        assert_eq!(pages, 3);
         let expected: Vec<String> = ["alpha", "Bravo", "Charlie", "delta", "Echo"]
             .iter()
             .map(|n| format!("{n} {tag}"))
@@ -115,17 +122,25 @@ async fn a_search_term_is_text_not_a_pattern_and_a_managers_name_is_searchable()
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
-async fn a_page_past_the_end_is_empty_and_still_counts_every_match() {
+async fn the_last_page_has_no_link_and_says_no_total() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         hire(&request, &org, "1", &format!("One {tag}"), None).await;
         hire(&request, &org, "2", &format!("Two {tag}"), None).await;
         let page = request
-            .get(&format!("/api/directory?q={tag}&limit=2&offset=50"))
+            .get(&format!("/api/directory?q={tag}&limit=2"))
             .await;
-        assert_eq!(page.header("x-total-count"), "2");
-        assert_eq!(names(&page.json()), Vec::<&str>::new());
+        assert_eq!(names(&page.json()).len(), 2);
+        assert!(
+            page.headers().get("link").is_none(),
+            "exactly a page, and no more"
+        );
+        assert!(page.headers().get("x-total-count").is_none());
+        let short = request
+            .get(&format!("/api/directory?q={tag}&limit=1"))
+            .await;
+        assert!(short.headers().get("link").is_some(), "one more follows");
     })
     .await;
 }

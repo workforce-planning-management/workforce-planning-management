@@ -2700,7 +2700,6 @@
     "consultation_ref": "Registo de consulta para uma pontuação nova ou alterada (opcional)"
   },
   "paging": {
-    "showing": "A mostrar {shown} de {total}",
     "more": "Mostrar mais"
   },
   "bargaining": {

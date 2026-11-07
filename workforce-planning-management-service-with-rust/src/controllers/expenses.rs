@@ -604,7 +604,7 @@ async fn queue(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(params): axa::extract::Query<QueueParams>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let status = params.status.unwrap_or_else(|| "submitted".to_string());
@@ -685,7 +685,7 @@ async fn queue(
         row["worker_name"] = json!(names.get(&c.worker_pid));
         out.push(row);
     }
-    Ok(super::paged_vec(out, window))
+    Ok(super::paged_vec(out, &window))
 }
 
 /// The expense-claim routes.

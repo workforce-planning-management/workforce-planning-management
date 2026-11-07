@@ -2700,7 +2700,6 @@
     "consultation_ref": "Fiche de consultation pour un score nouveau ou modifié (facultatif)"
   },
   "paging": {
-    "showing": "{shown} affichés sur {total}",
     "more": "Afficher plus"
   },
   "bargaining": {

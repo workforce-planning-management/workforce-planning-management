@@ -2682,7 +2682,6 @@
     "consultation_ref": "Catatan konsultasi untuk skor baru atau yang diubah (opsional)"
   },
   "paging": {
-    "showing": "Menampilkan {shown} dari {total}",
     "more": "Tampilkan lebih banyak"
   },
   "bargaining": {

@@ -30,7 +30,7 @@
     ["other", "movements.reasonOther"],
   ] as const;
 
-  const list = createPagedLoader<Movement>(() => (limit, offset) => listMovementsPage(undefined, limit, offset));
+  const list = createPagedLoader<Movement>(() => (limit, cursor) => listMovementsPage(undefined, limit, cursor));
   const rows = $derived(list.items);
   let people = $state<Array<{ pid: string; display_name: string }>>([]);
   let startError = $state<string | null>(null);
@@ -136,7 +136,7 @@
   {@render table(leavers, "leavers-table", t("movements.lastDay"))}
   <h2>{t("movements.joiners")}</h2>
   {@render table(joiners, "joiners-table", t("movements.startDay"))}
-  <LoadMore shown={rows.length} total={list.total} more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
+  <LoadMore more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
   {#if list.moreError}<ErrorNote testid="more-error" message={list.moreError} />{/if}
 {/if}
 

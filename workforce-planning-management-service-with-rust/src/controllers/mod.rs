@@ -289,79 +289,167 @@ pub(crate) fn row_json<T: serde::Serialize>(row: &T) -> Result<serde_json::Value
     Ok(value)
 }
 
-// ─── Pagination (WPM-T40; agents/share/restful.md) ──────────────────────────
+// ─── Pagination (WPM-T40, WPM-T478; agents/share/restful.md) ─────────────────
 
-/// Largest page any collection read will serve. A bigger `limit` is
-/// **clamped** to this rather than refused.
+/// Largest page any collection read will serve. A bigger `limit` is a `422`, not clamped.
 pub const MAX_LIMIT: u64 = 500;
 
-/// Largest accepted `offset`; past this a request is a `400` — an
-/// unbounded offset would otherwise make the database materialise
-/// arbitrarily many rows only to discard them (SEC-G7). Deep paging
-/// past this bound wants a cursor, not a bigger number.
-pub const MAX_OFFSET: u64 = 10_000;
+/// The key that signs every list's cursors (WPM-D189): `WPM_CURSOR_KEY`, or one made for this process.
+static CURSOR_KEY: std::sync::OnceLock<CursorKey> = std::sync::OnceLock::new();
 
-/// `?limit=` / `?offset=` for a collection read: `axa::offset_pagination`'s (WPM-T476). The values are text, so an absent, zero or
-/// unparseable `limit` is the endpoint's default and an unparseable `offset` is `0`, rather than a refusal.
-///
-/// Declared as its own type (not `#[serde(flatten)]`-ed onto a wider query struct): a flattened struct deserializes from a
-/// string-keyed map. A wider query that also pages builds one from its own `limit` and `offset`.
-pub use axa::offset_pagination::PageParams as Page;
+/// A key of 32 random bytes, for a process given none. Two v4 ids are 244 random bits from the operating system's
+/// generator, which is ample for a key that only signs positions.
+fn random_cursor_key() -> CursorKey {
+    let mut secret = [0u8; 32];
+    secret[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+    secret[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+    CursorKey::new(&secret).expect("32 bytes is long enough")
+}
 
-/// The page a request resolved to: its `limit` and `offset`, which [`Window::bounds`] gives as `PostgreSQL` takes them and
-/// [`Window::respond`] answers with `X-Total-Count`, `X-Limit` and `X-Offset`.
-pub use axa::offset_pagination::Page as Window;
-
-/// The page `page` asks for, with `default_limit` when it names none and at most [`MAX_LIMIT`].
+/// The cursor key from `WPM_CURSOR_KEY`'s value: base64url of at least 32 bytes. `None` means one is made for this process.
 ///
 /// # Errors
 ///
-/// A `400`, code `offset_too_large`, when the offset is past [`MAX_OFFSET`].
-pub fn resolve(page: &Page, default_limit: u64) -> Result<Window> {
-    page.resolve(axa::offset_pagination::Limits {
-        default_limit,
-        max_limit: MAX_LIMIT,
-        max_offset: MAX_OFFSET,
-    })
-    .map_err(|_| {
-        Error::CustomError(
-            StatusCode::BAD_REQUEST,
-            ErrorDetail::new(
-                "offset_too_large",
-                format!("offset must not exceed {MAX_OFFSET}; narrow the query instead"),
-            ),
+/// A value that is not base64url, or is shorter than 32 bytes, so a deployment that meant to set a key does not start
+/// without it. The message never quotes the value.
+pub fn cursor_key_from(value: Option<&str>) -> std::result::Result<Option<CursorKey>, String> {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    let Some(value) = value.map(str::trim).filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    let secret = URL_SAFE_NO_PAD
+        .decode(value.trim_end_matches('='))
+        .map_err(|_| "WPM_CURSOR_KEY is not base64url".to_string())?;
+    CursorKey::new(&secret).map(Some).map_err(|short| {
+        format!(
+            "WPM_CURSOR_KEY is {} bytes; it needs at least 32",
+            short.len
         )
     })
 }
 
-/// Default page size of a whole-organization or whole-service list (WPM-T254). It matches the
-/// ceiling those lists already had, so a client that sends no `limit` sees what it saw; past it,
-/// `x-total-count` says how many there are.
-pub(crate) const LIST_DEFAULT_LIMIT: u64 = 500;
+/// Hold the cursor key for this process: the one given, or a random one. A later call changes nothing.
+pub fn install_cursor_key(key: Option<CursorKey>) {
+    let _ = CURSOR_KEY.set(key.unwrap_or_else(random_cursor_key));
+}
 
-/// The page of a list request, refusing an offset past [`MAX_OFFSET`].
+fn cursor_key() -> &'static CursorKey {
+    CURSOR_KEY.get_or_init(random_cursor_key)
+}
+
+/// A list request's paging, from its URI: `?limit=` and the signed `?cursor=` of `axa::cursor_pagination`, read by
+/// [`resolve`] (WPM-T478). It is the whole URI because a cursor is signed over the path and every other parameter, so a
+/// cursor fits only the list and filters it came from.
+#[derive(Debug, Clone)]
+pub struct Page {
+    uri: axum::http::Uri,
+}
+
+impl<S: Send + Sync> axum::extract::FromRequestParts<S> for Page {
+    type Rejection = std::convert::Infallible;
+
+    fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _: &S,
+    ) -> impl std::future::Future<Output = std::result::Result<Self, Self::Rejection>> + Send {
+        // The URI as the client sent it, so the `Link` it is given names the path it can call.
+        let uri = parts
+            .extensions
+            .get::<axum::extract::OriginalUri>()
+            .map_or_else(|| parts.uri.clone(), |original| original.0.clone());
+        std::future::ready(Ok(Self { uri }))
+    }
+}
+
+impl Page {
+    /// The paging of a request to `uri`, for a handler or test that has no extractor.
+    #[must_use]
+    pub fn of(uri: axum::http::Uri) -> Self {
+        Self { uri }
+    }
+}
+
+/// The page a request resolved to: [`Window::bounds`] gives `LIMIT` (one more than the page, to see whether more follow)
+/// and `OFFSET` as `PostgreSQL` takes them, and [`Window::respond`] answers a bare array with `Link: <...>; rel="next"`
+/// while more rows follow. There is no total, because a total would count rows the caller may not see.
+pub use axa::cursor_pagination::CursorPage as Window;
+use axa::cursor_pagination::{CursorKey, CursorLimits};
+
+/// The page `page` asks for, with `default_limit` when it names none.
 ///
 /// # Errors
 ///
-/// A `400` for an out-of-bound offset.
+/// A `422` for a `limit` that is zero, not a number, given twice or over [`MAX_LIMIT`]; for a cursor this service did
+/// not sign for this list and these filters; and for an `offset`, which is no longer taken, so that a client still
+/// paging by offset is told rather than given the first page again.
+pub fn resolve(page: &Page, default_limit: u64) -> Result<Window> {
+    let offset = page
+        .uri
+        .query()
+        .unwrap_or("")
+        .split('&')
+        .any(|part| part.split_once('=').map_or(part, |(name, _)| name) == "offset");
+    if offset {
+        // The same `code` as `axa`'s refusal of a bad limit or cursor, so a client handles every paging refusal alike.
+        return Err(Error::CustomError(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            ErrorDetail::new(
+                "unprocessable_entity",
+                "offset is not taken; follow the Link header's next page",
+            ),
+        ));
+    }
+    Ok(Window::new(
+        cursor_key(),
+        CursorLimits {
+            default_limit,
+            max_limit: MAX_LIMIT,
+        },
+        &page.uri,
+    )?)
+}
+
+/// Default page size of a whole-organization or whole-service list (WPM-T254). It matches the
+/// ceiling those lists already had, so a client that sends no `limit` sees what it saw; past it,
+/// the `Link` header points to the next page.
+pub(crate) const LIST_DEFAULT_LIMIT: u64 = 500;
+
+/// The page of a list request, at [`LIST_DEFAULT_LIMIT`] unless it names a limit.
+///
+/// # Errors
+///
+/// A `422` for a bad limit, cursor or an offset ([`resolve`]).
 pub(crate) fn window(page: &Page) -> Result<Window> {
     resolve(page, LIST_DEFAULT_LIMIT)
 }
 
-/// One page of an already-built list, with the paging headers. For lists whose rows are
-/// filtered by a rule the database cannot apply.
-pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: Window) -> Response {
-    let total = i64::try_from(items.len()).unwrap_or(i64::MAX);
+/// One page of an already-built list. For lists whose rows are filtered by a rule the database cannot apply.
+pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: &Window) -> Response {
     let page: Vec<T> = items
         .into_iter()
-        .skip(usize::try_from(window.offset).unwrap_or(usize::MAX))
-        .take(usize::try_from(window.limit).unwrap_or(usize::MAX))
+        .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
+        .take(
+            usize::try_from(window.limit())
+                .unwrap_or(usize::MAX)
+                .saturating_add(1),
+        )
         .collect();
-    window.respond(total, page)
+    window.respond(page)
 }
 
-/// One page of `select`, counted and cut by the database, each row shown by `show`. `select`
-/// must already be ordered, or a page is not stable.
+/// `response` with the `Link` to the next page when `more` rows follow: for a list whose body is not a bare array.
+pub(crate) fn with_next(mut response: Response, window: &Window, more: bool) -> Response {
+    if more && let Some(link) = window.next_link() {
+        response
+            .headers_mut()
+            .insert(axum::http::header::LINK, link);
+    }
+    response
+}
+
+/// One page of `select`, cut by the database, each row shown by `show`. `select` must already be ordered by something
+/// that ends in a unique column, or a page is not stable.
 ///
 /// # Errors
 ///
@@ -377,15 +465,15 @@ where
     E::Model: Sync,
     V: serde::Serialize,
 {
-    use sea_orm::{PaginatorTrait, QuerySelect};
-    let total = select.clone().count(&ctx.db).await?;
+    use sea_orm::QuerySelect;
+    let (limit, offset) = window.bounds();
     let rows = select
-        .limit(window.limit)
-        .offset(window.offset)
+        .limit(limit.unsigned_abs())
+        .offset(offset.unsigned_abs())
         .all(&ctx.db)
         .await?;
     let shown = rows.iter().map(show).collect::<Result<Vec<V>>>()?;
-    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), shown))
+    Ok(window.respond(shown))
 }
 
 #[cfg(test)]
@@ -462,48 +550,126 @@ mod tests {
         assert_eq!(status, StatusCode::UNAUTHORIZED);
     }
 
-    #[test]
-    fn a_window_clamps_and_refuses_a_deep_offset() {
-        use super::{Error, Page, StatusCode, Window, window};
-        let page = |limit: Option<&str>, offset: Option<&str>| Page {
-            limit: limit.map(str::to_string),
-            offset: offset.map(str::to_string),
+    fn page(uri: &str) -> super::Page {
+        super::Page::of(uri.parse().unwrap())
+    }
+
+    /// The `cursor` in a response's `Link`, and the target it names.
+    fn next(response: &axum::response::Response) -> Option<(String, String)> {
+        let link = response
+            .headers()
+            .get("link")?
+            .to_str()
+            .unwrap()
+            .to_string();
+        let target = link.strip_prefix('<')?.split_once('>')?.0.to_string();
+        let cursor = target
+            .split_once("cursor=")?
+            .1
+            .split('&')
+            .next()?
+            .to_string();
+        Some((target, cursor))
+    }
+
+    fn unprocessable<T: std::fmt::Debug>(result: super::Result<T>) -> String {
+        let Err(error) = result else {
+            panic!("refused: {result:?}");
         };
-        let at = |limit, offset| Window { limit, offset };
-        assert_eq!(window(&page(None, None)).unwrap(), at(500, 0));
-        assert_eq!(window(&page(Some("0"), Some("5"))).unwrap(), at(500, 5));
-        assert_eq!(window(&page(Some("9999"), None)).unwrap(), at(500, 0));
-        assert_eq!(window(&page(Some("20"), Some("40"))).unwrap(), at(20, 40));
-        assert_eq!(
-            window(&page(Some("many"), Some("-1"))).unwrap(),
-            at(500, 0),
-            "unreadable is the default"
-        );
-        assert_eq!(window(&page(None, Some("10000"))).unwrap(), at(500, 10_000));
-        let Err(Error::CustomError(status, detail)) = window(&page(None, Some("10001"))) else {
-            panic!("a deep offset is refused");
-        };
-        assert_eq!(status, StatusCode::BAD_REQUEST);
-        assert_eq!(detail.code.as_deref(), Some("offset_too_large"));
+        let response = axum::response::IntoResponse::into_response(error);
+        assert_eq!(response.status(), super::StatusCode::UNPROCESSABLE_ENTITY);
+        format!("{response:?}")
     }
 
     #[test]
-    fn a_vec_page_is_cut_after_the_total_is_counted() {
-        use axum::http::header::HeaderName;
-        let window = super::Window {
-            limit: 2,
-            offset: 1,
-        };
-        let response = super::paged_vec(vec![1, 2, 3, 4, 5], window);
-        let header = |n: &'static str| {
-            response.headers()[HeaderName::from_static(n)]
-                .to_str()
+    fn a_limit_is_the_default_when_absent_and_refused_when_bad() {
+        use super::{resolve, window};
+        let w = window(&page("/api/things")).unwrap();
+        assert_eq!((w.limit(), w.offset()), (500, 0));
+        assert_eq!(resolve(&page("/api/things"), 50).unwrap().limit(), 50);
+        assert_eq!(window(&page("/api/things?limit=20")).unwrap().limit(), 20);
+        assert_eq!(window(&page("/api/things?limit=500")).unwrap().limit(), 500);
+        // Refused, never clamped or defaulted (WPM-T478).
+        for bad in ["0", "501", "many", "-1"] {
+            unprocessable(window(&page(&format!("/api/things?limit={bad}"))));
+        }
+        unprocessable(window(&page("/api/things?limit=2&limit=3")));
+    }
+
+    #[test]
+    fn an_offset_is_refused_so_an_old_client_is_told() {
+        let text = unprocessable(super::window(&page("/api/things?offset=500")));
+        assert!(!text.contains("500"), "{text}");
+        unprocessable(super::window(&page("/api/things?status=open&offset")));
+        // A parameter whose name only contains "offset" is a filter like any other.
+        super::window(&page("/api/things?utc_offset=1")).unwrap();
+    }
+
+    #[test]
+    fn a_page_links_to_the_next_while_more_follow_and_the_cursor_moves_on() {
+        let first = super::window(&page("/api/things?status=open&limit=2")).unwrap();
+        assert_eq!(
+            first.bounds(),
+            (3, 0),
+            "one more row than the page, to see if more follow"
+        );
+        let response = super::paged_vec(vec![1, 2, 3, 4, 5], &first);
+        let (target, cursor) = next(&response).expect("more follow");
+        assert!(
+            target.starts_with("/api/things?status=open&limit=2&cursor="),
+            "{target}"
+        );
+        for header in ["x-total-count", "x-limit", "x-offset"] {
+            assert!(response.headers().get(header).is_none(), "no {header}");
+        }
+        let second = super::window(&page(&target)).unwrap();
+        assert_eq!(second.offset(), 2);
+        let last = super::window(&page(&format!(
+            "/api/things?status=open&limit=2&cursor={cursor}"
+        )))
+        .unwrap();
+        let response = super::paged_vec(vec![1, 2, 3, 4], &last);
+        assert!(next(&response).is_none(), "the last page has no Link");
+    }
+
+    #[test]
+    fn a_cursor_fits_only_its_own_list_and_filters() {
+        let first = super::window(&page("/api/things?status=open&limit=1")).unwrap();
+        let (_, cursor) = next(&super::paged_vec(vec![1, 2], &first)).unwrap();
+        unprocessable(super::window(&page(&format!(
+            "/api/things?status=closed&cursor={cursor}"
+        ))));
+        unprocessable(super::window(&page(&format!(
+            "/api/other?status=open&cursor={cursor}"
+        ))));
+        unprocessable(super::window(&page("/api/things?status=open&cursor=AAAA")));
+        // The limit may change between pages.
+        super::window(&page(&format!(
+            "/api/things?status=open&limit=7&cursor={cursor}"
+        )))
+        .unwrap();
+    }
+
+    #[test]
+    fn a_cursor_key_is_base64url_of_32_bytes_and_never_quoted() {
+        use super::cursor_key_from;
+        assert!(cursor_key_from(None).unwrap().is_none());
+        assert!(cursor_key_from(Some("  ")).unwrap().is_none());
+        let good = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE";
+        assert!(cursor_key_from(Some(good)).unwrap().is_some());
+        assert!(
+            cursor_key_from(Some(&format!("{good}=")))
                 .unwrap()
-                .to_string()
-        };
-        assert_eq!(header("x-total-count"), "5");
-        assert_eq!(header("x-limit"), "2");
-        assert_eq!(header("x-offset"), "1");
+                .is_some(),
+            "padding is allowed"
+        );
+        let short = cursor_key_from(Some("c2hvcnQta2V5")).unwrap_err();
+        assert!(
+            short.contains("9 bytes") && !short.contains("c2hvcnQ"),
+            "{short}"
+        );
+        let bad = cursor_key_from(Some("not base64!")).unwrap_err();
+        assert!(!bad.contains("not base64!"), "{bad}");
     }
 
     #[test]

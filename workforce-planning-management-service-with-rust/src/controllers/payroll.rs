@@ -211,7 +211,7 @@ async fn create_run(
 async fn list_runs(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());

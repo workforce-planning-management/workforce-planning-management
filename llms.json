@@ -14,8 +14,8 @@
     "api": "Rust, Axum, axa (Axum + SeaORM), PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 1290,
-      "service_request_declared": 223,
+      "service_unit_declared": 1293,
+      "service_request_declared": 224,
       "ui_unit_declared": 286,
       "ui_e2e_declared": 307,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"

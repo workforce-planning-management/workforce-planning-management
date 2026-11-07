@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — lists page by a signed cursor, with no total (WPM-R241, WPM-D189, WPM-T478)
+
+**Breaking for every client that pages.** A list answers a bare array and, while more rows follow, `Link: <...>; rel="next"`; follow it to the end. `X-Total-Count`, `X-Limit` and `X-Offset` are gone. `?offset=` is a `422`, and so is a `limit` that is zero, not a number or over 500, which used to be clamped or defaulted. A cursor fits only the list and filters it came from. **An operator must act** when more than one instance runs: set `WPM_CURSOR_KEY` (base64url, at least 32 bytes) to the same value on each. **CRM's teams import fails** with `422` until CRM follows `Link`.
+
 ### Changed — axa 0.7 (WPM-T477)
 
 `axa` 0.6.1 to 0.7.0. **A client may notice:** a write that breaks a check or not-null constraint answers `422` with `code: unprocessable_entity`, not `500`; a client that has stopped reading a response is dropped after `SEND_STALL_TIMEOUT_SECONDS` (60).

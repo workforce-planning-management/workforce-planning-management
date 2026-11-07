@@ -249,7 +249,7 @@ async fn list_movements(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<ListQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let wanted = q.status.unwrap_or_else(|| "open".to_string());
@@ -282,7 +282,7 @@ async fn list_movements(
             .collect();
         out.push(movement_json(&m, &worker, rules::progress(&states)));
     }
-    Ok(super::paged_vec(out, window))
+    Ok(super::paged_vec(out, &window))
 }
 
 /// Whether the caller may read why someone left: HR, the service and an administrator under the

@@ -169,7 +169,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&offset=; include=all is for editors) */
+        /** The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&cursor=; include=all is for editors) */
         get: {
             parameters: {
                 query?: never;
@@ -4307,7 +4307,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&offset=); no salary or dates */
+        /** Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&cursor=); no salary or dates */
         get: {
             parameters: {
                 query?: never;
@@ -17408,7 +17408,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does */
+        /** List workers (?department=&status=&limit=&cursor=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does */
         get: {
             parameters: {
                 query?: never;

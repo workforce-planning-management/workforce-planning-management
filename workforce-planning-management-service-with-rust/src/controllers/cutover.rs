@@ -332,7 +332,7 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let org = q

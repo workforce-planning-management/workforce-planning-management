@@ -239,7 +239,7 @@ async fn list_requisitions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Query(params): Query<RequisitionListParams>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());

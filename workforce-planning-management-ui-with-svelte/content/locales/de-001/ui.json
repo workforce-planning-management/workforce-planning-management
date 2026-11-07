@@ -2691,7 +2691,6 @@
     "consultation_ref": "Konsultationseintrag für einen neuen oder geänderten Score (optional)"
   },
   "paging": {
-    "showing": "{shown} von {total} angezeigt",
     "more": "Mehr anzeigen"
   },
   "bargaining": {

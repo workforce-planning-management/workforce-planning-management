@@ -2727,7 +2727,6 @@
     "consultation_ref": "Cofnod ymgynghori ar gyfer sgôr newydd neu wedi'i newid (dewisol)"
   },
   "paging": {
-    "showing": "Yn dangos {shown} o {total}",
     "more": "Dangos mwy"
   },
   "bargaining": {

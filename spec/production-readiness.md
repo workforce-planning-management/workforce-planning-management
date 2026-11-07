@@ -345,6 +345,19 @@ the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 **Why:** a seed run with production's `DATABASE_URL` still exported would put made-up workers, pay and plans among real ones, and taking them out again is by hand. The refusal is `axa`'s `Task::development_only`, the same rule as `db reset` (WPM-R237).
 **Not claimed:** whoever can set `APP_ENV=development` beside a production `DATABASE_URL` can still seed it; the rule stops a mistake, not an operator.
 
+
+## WPM-R241 — A list pages by a signed cursor and says no total
+
+- A paged list takes `?limit=` and `?cursor=` and answers a bare JSON array. While more rows follow it carries `Link: <path?...&cursor=...>; rel="next"`, which names the path the client called with its filters and limit kept; the last page has no `Link`.
+- There is no `X-Total-Count`, `X-Limit` or `X-Offset`. A client knows only that more follow.
+- A cursor is signed (HMAC-SHA256) over its position, the path and every parameter but `cursor` and `limit`, under `WPM_CURSOR_KEY`. One the service did not make, one edited, or one carried to another list or another filter is a `422`. `limit` may change between pages.
+- A `limit` that is zero, not a number, given twice or over 500 is a `422`, never clamped or defaulted. An absent one is the list's default.
+- `?offset=` is a `422` that says to follow the `Link`, so a client still paging by offset is told and not given the first page again.
+- Every refusal has `code: unprocessable_entity` and quotes nothing the caller sent.
+- The row read past a page to see whether more follow is never sent, and nothing is done for it: a list that audits a salary read records only the rows it sends (WPM-D147).
+
+**Why:** a total counts rows the caller's record policy hides, so it can say that records exist which the caller may not see, and a caller could name any offset, so one request could make the database read and discard rows up to it (SEC-G7). A cursor's position is the service's: a deep page is reached only by reading each page before it. WPM-D189 says how.
+**Not claimed:** the position inside a cursor is still an offset, so a deep page still costs a scan to it, and the old bound of 10,000 rows is gone (a client walking every page is bounded by the rate limit, not by paging); and a row added or removed between two pages can make a later page skip or repeat one row; each list orders by something that ends in a unique column so that the order itself is stable. Without `WPM_CURSOR_KEY`, each instance signs with its own key, and a cursor from one is refused by another.
 ## WPM-R239 — A caller cannot name its own rate-limit bucket
 
 - The rate limit counts by the address `axa::client::resolve` gives. `X-Forwarded-For` is believed only from a peer listed in `TRUSTED_PROXIES`, and is read from the right, stopping at the first address that is not listed. With no list, the header is ignored.

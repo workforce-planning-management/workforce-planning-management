@@ -345,7 +345,7 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(query): axa::extract::Query<ListQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let status = query.status.unwrap_or_else(|| "logged".to_string());
@@ -382,7 +382,7 @@ async fn list(
         item["department"] = json!(worker.department);
         out.push(item);
     }
-    Ok(super::paged_vec(out, window))
+    Ok(super::paged_vec(out, &window))
 }
 
 /// `GET /api/resignations/summary` — resignations by department and, where every cell is large

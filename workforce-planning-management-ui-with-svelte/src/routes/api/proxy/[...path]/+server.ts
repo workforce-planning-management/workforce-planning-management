@@ -90,9 +90,8 @@ const proxy: RequestHandler = async ({
   for (const name of [
     "content-type",
     "etag",
-    "x-total-count",
-    "x-limit",
-    "x-offset",
+    // The next page's signed cursor (WPM-T478). Its target is the service's path; the UI reads only its `cursor`.
+    "link",
   ]) {
     const value = upstream.headers.get(name);
     if (value) responseHeaders.set(name, value);

@@ -482,6 +482,17 @@ impl App {
                 "workplace health requirements are ENABLED on the lawful basis recorded as: {basis}"
             );
         }
+        // The key that signs list cursors (WPM-D189). A value that is set but unusable stops the start; none is a key for
+        // this process, which is enough for one instance and refuses another instance's cursors with a `422`.
+        let cursor_key =
+            controllers::cursor_key_from(crate::compat::env_var("WPM_CURSOR_KEY").as_deref())
+                .map_err(|message| Error::string(&message))?;
+        if cursor_key.is_none() && ctx.environment.is_production_like() {
+            tracing::warn!(
+                "WPM_CURSOR_KEY is not set, so each instance signs list cursors with its own key; set it when more than one runs"
+            );
+        }
+        controllers::install_cursor_key(cursor_key);
         // The variable no longer does anything (WPM-D187). Refusing to start would take a running service down over it.
         if let Some(warning) = crate::security::trust_forwarded_warning(
             crate::compat::env_var("WPM_TRUST_FORWARDED").as_deref(),

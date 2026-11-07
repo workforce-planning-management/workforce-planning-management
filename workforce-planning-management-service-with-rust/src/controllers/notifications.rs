@@ -19,7 +19,7 @@ async fn list_notifications(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let (limit, offset) = window.bounds();
@@ -30,12 +30,6 @@ async fn list_notifications(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let total = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "total!" FROM notifications WHERE worker_pid = $1"#,
-        worker.pid,
-    )
-    .fetch_one(pool(&ctx))
-    .await?;
     // Unread first, then newest first.
     let rows = sqlx::query_as!(
         notifications::Model,
@@ -51,7 +45,7 @@ async fn list_notifications(
     .fetch_all(pool(&ctx))
     .await?;
     let shown = rows.iter().map(row_json).collect::<Result<Vec<_>>>()?;
-    Ok(window.respond(total, shown))
+    Ok(window.respond(shown))
 }
 
 /// `POST /api/notifications/{pid}/read` — mark one notification read.

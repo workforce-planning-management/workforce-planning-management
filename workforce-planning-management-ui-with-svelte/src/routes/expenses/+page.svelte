@@ -16,7 +16,7 @@
   let open = $state<string | null>(null);
 
   const list = createPagedLoader<ExpenseClaimSummary>(
-    () => (limit, offset) => expenseQueuePage(status, limit, offset),
+    () => (limit, cursor) => expenseQueuePage(status, limit, cursor),
   );
   const claims = $derived(list.items);
   const error = $derived(list.error);
@@ -67,6 +67,6 @@
       </li>
     {/each}
   </ul>
-  <LoadMore shown={claims.length} total={list.total} more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
+  <LoadMore more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
   {#if list.moreError}<ErrorNote testid="more-error" message={list.moreError} />{/if}
 {/if}

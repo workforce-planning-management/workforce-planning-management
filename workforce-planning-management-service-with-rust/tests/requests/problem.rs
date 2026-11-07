@@ -25,16 +25,16 @@ async fn an_error_from_a_handler_a_layer_or_no_route_is_a_problem() {
         assert!(body.get("error").is_none() && body.get("description").is_none());
 
         // A refusal from a handler: the reason is `code` and the words are `detail`.
-        let deep = request.get("/api/workers?offset=999999999").await;
-        assert_eq!(deep.status_code(), 400);
-        assert_eq!(deep.header("content-type"), PROBLEM_JSON);
-        let body: Value = deep.json();
-        assert_eq!(body["code"], "offset_too_large");
+        let offset = request.get("/api/workers?offset=999999999").await;
+        assert_eq!(offset.status_code(), 422);
+        assert_eq!(offset.header("content-type"), PROBLEM_JSON);
+        let body: Value = offset.json();
+        assert_eq!(body["code"], "unprocessable_entity");
         assert!(
             body["detail"]
                 .as_str()
                 .unwrap()
-                .contains("offset must not exceed"),
+                .contains("offset is not taken"),
             "{body}"
         );
 

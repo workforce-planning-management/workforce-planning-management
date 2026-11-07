@@ -146,26 +146,19 @@ struct FeedParams {
     /// `all`: also scheduled and expired posts — editors only.
     #[serde(default)]
     include: Option<String>,
-    #[serde(default)]
-    limit: Option<String>,
-    #[serde(default)]
-    offset: Option<String>,
 }
 
-/// `GET /api/announcements?organization=&include=all&limit=&offset=` — the
+/// `GET /api/announcements?organization=&include=all&limit=&cursor=` — the
 /// feed for the caller's organizations: live posts, pinned first then newest,
-/// with `x-total-count`. `include=all` adds scheduled and expired posts, for
+/// a page at a time with a `Link` to the next (WPM-T478). `include=all` adds scheduled and expired posts, for
 /// the organizations the caller edits.
 #[debug_handler]
 async fn feed(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(params): axa::extract::Query<FeedParams>,
+    page: Page,
 ) -> Result<Response> {
-    let page = Page {
-        limit: params.limit,
-        offset: params.offset,
-    };
     let window = super::resolve(&page, FEED_DEFAULT_LIMIT)?;
     let mut query =
         announcements::Entity::find().filter(announcements::Column::DeletedAt.is_null());
@@ -218,12 +211,16 @@ async fn feed(
             (b.pinned, b.publish_on, b.id),
         )
     });
-    let total = kept.len() as u64;
-    let page_rows: Vec<&announcements::Model> = kept
-        .iter()
-        .skip(usize::try_from(window.offset).unwrap_or(usize::MAX))
-        .take(usize::try_from(window.limit).unwrap_or(usize::MAX))
-        .collect();
+    let (page_rows, more) = window.split(
+        kept.iter()
+            .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
+            .take(
+                usize::try_from(window.limit())
+                    .unwrap_or(usize::MAX)
+                    .saturating_add(1),
+            )
+            .collect::<Vec<&announcements::Model>>(),
+    );
     // Editors see how many have read each post — a count, never who.
     let ids: Vec<Uuid> = page_rows.iter().map(|a| a.pid).collect();
     let mut counts: HashMap<Uuid, usize> = HashMap::new();
@@ -244,7 +241,11 @@ async fn feed(
             json
         })
         .collect();
-    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), slice))
+    Ok(super::with_next(
+        axum::Json(slice).into_response(),
+        &window,
+        more,
+    ))
 }
 
 /// `GET /api/announcements/{pid}` — one announcement (live ones to anyone

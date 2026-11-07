@@ -318,11 +318,9 @@ async fn enforcement_personas_gate_and_mask() {
         let row_of = |fields: &'static str, token: String| {
             let (request, worker_pid) = (&request, worker_pid.clone());
             async move {
+                let mut at = format!("/api/workers?department=engineering&fields={fields}&limit=500");
                 for page in 0.. {
-                    let response = request
-                        .get(&format!("/api/workers?department=engineering&fields={fields}&limit=500&offset={}", page * 500))
-                        .add_header("authorization", bearer(&token))
-                        .await;
+                    let response = request.get(&at).add_header("authorization", bearer(&token)).await;
                     assert_eq!(response.status_code(), 200);
                     let rows: Value = response.json();
                     let rows = rows.as_array().unwrap();
@@ -330,6 +328,10 @@ async fn enforcement_personas_gate_and_mask() {
                     if let Some(row) = rows.iter().find(|r| r["pid"] == worker_pid.as_str()) {
                         return row.clone();
                     }
+                    // The next page is where the last one's `Link` points (WPM-T478).
+                    let link = response.headers().get("link").expect("the worker is on a later page");
+                    let link = link.to_str().unwrap();
+                    at = link[1..link.find('>').unwrap()].to_string();
                 }
                 unreachable!()
             }

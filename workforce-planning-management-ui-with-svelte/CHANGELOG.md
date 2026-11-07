@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — "Show more" follows the service's cursor (WPM-R241, WPM-T478)
+
+The five long lists (payroll runs, requisitions, the expense queue, joiners and leavers, conversion plans) ask for the next page with the
+cursor the service gives in its `Link` header, which the proxy now forwards. "Showing 500 of 1,240" is gone, because the service no
+longer says a total; only the button shows, while more rows follow. `paging.showing` is removed from the 13 locales.
+
 ### Added — starting a course from a goal (WPM-T464)
 
 A recorded fee of zero enrols at once; anything else goes to a manager (WPM-R236).

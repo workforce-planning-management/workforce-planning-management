@@ -2700,7 +2700,6 @@
     "consultation_ref": "Registro de consulta para una puntuación nueva o modificada (opcional)"
   },
   "paging": {
-    "showing": "Mostrando {shown} de {total}",
     "more": "Mostrar más"
   },
   "bargaining": {

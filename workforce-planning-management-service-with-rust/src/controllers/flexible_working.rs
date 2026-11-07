@@ -691,7 +691,7 @@ async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     axa::extract::Query(query): axa::extract::Query<ListQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     if let Some(s) = &query.status
@@ -755,7 +755,7 @@ async fn list(
         item["department"] = json!(worker.department);
         out.push(item);
     }
-    Ok(super::paged_vec(out, window))
+    Ok(super::paged_vec(out, &window))
 }
 
 /// `GET /api/workers/{pid}/flexible-working` — the worker's requests, for the worker, their line

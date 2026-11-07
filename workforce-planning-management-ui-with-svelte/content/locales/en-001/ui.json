@@ -2691,7 +2691,6 @@
     "consultation_ref": "Consultation record for a new or changed score (optional)"
   },
   "paging": {
-    "showing": "Showing {shown} of {total}",
     "more": "Show more"
   },
   "bargaining": {

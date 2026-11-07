@@ -436,7 +436,7 @@ struct ConfederationListQuery {
 async fn list_confederations(
     State(ctx): State<AppContext>,
     Query(query): Query<ConfederationListQuery>,
-    axa::extract::Query(page): axa::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let mut find = organization_confederations::Entity::find()
