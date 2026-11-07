@@ -241,7 +241,7 @@ async fn list_requisitions(
     Query(params): Query<RequisitionListParams>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());
     if let Some(status) = &params.status {
         query = query.filter(requisitions::Column::Status.eq(status));

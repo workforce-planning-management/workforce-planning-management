@@ -21,9 +21,9 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use super::{Page, with_page_headers};
+use super::{Page, Window};
 use crate::auth::MaybeAuthUser;
-use crate::db::{self, pool};
+use crate::db::pool;
 use crate::models::memberships;
 use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::directory as rules;
@@ -42,10 +42,10 @@ struct DirectoryParams {
     department: Option<String>,
     /// Page size; absent, zero or unparseable ⇒ the default.
     #[serde(default)]
-    limit: Option<u64>,
+    limit: Option<String>,
     /// Rows to skip; absent ⇒ 0.
     #[serde(default)]
-    offset: Option<u64>,
+    offset: Option<String>,
 }
 
 /// The whole of a page: how many workers match, and the pids of the page in order.
@@ -73,9 +73,9 @@ async fn matches(
     today: NaiveDate,
     params: &DirectoryParams,
     on_call: &HashMap<Uuid, Vec<String>>,
-    limit: u64,
-    offset: u64,
+    window: Window,
 ) -> Result<Matches> {
+    let (limit, offset) = window.bounds();
     let department = params
         .department
         .as_deref()
@@ -138,8 +138,8 @@ async fn matches(
         &terms,
         &rota_pids,
         &rota_names,
-        db::bound(limit),
-        db::bound(offset),
+        limit,
+        offset,
     )
     .fetch_one(pool(ctx))
     .await?;
@@ -179,18 +179,17 @@ async fn directory(
     axa::extract::Query(params): axa::extract::Query<DirectoryParams>,
 ) -> Result<Response> {
     let page = Page {
-        limit: params.limit,
-        offset: params.offset,
+        limit: params.limit.clone(),
+        offset: params.offset.clone(),
     };
-    page.check_offset()?;
-    let (limit, offset) = page.resolve(DIRECTORY_DEFAULT_LIMIT);
+    let window = super::resolve(&page, DIRECTORY_DEFAULT_LIMIT)?;
 
     let refs = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let refs = refs.as_deref();
     let today = chrono::Utc::now().date_naive();
     let on_call = super::rotas::on_call_today(&ctx, &caller).await?;
 
-    let found = matches(&ctx, refs, today, &params, &on_call, limit, offset).await?;
+    let found = matches(&ctx, refs, today, &params, &on_call, window).await?;
     let staff = sqlx::query!(
         r#"
         SELECT w.pid, w.display_name, w.job_title, w.department, w.location,
@@ -287,12 +286,7 @@ async fn directory(
             },
         })
         .collect();
-    Ok(with_page_headers(
-        format::json(slice)?,
-        found.total,
-        limit,
-        offset,
-    ))
+    Ok(window.respond(i64::try_from(found.total).unwrap_or(i64::MAX), slice))
 }
 
 /// The directory route.

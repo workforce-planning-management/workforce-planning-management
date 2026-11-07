@@ -301,71 +301,37 @@ pub const MAX_LIMIT: u64 = 500;
 /// past this bound wants a cursor, not a bigger number.
 pub const MAX_OFFSET: u64 = 10_000;
 
-/// `?limit=` / `?offset=` for a collection read.
+/// `?limit=` / `?offset=` for a collection read: `axa::pagination`'s (WPM-T476). The values are text, so an absent, zero or
+/// unparseable `limit` is the endpoint's default and an unparseable `offset` is `0`, rather than a refusal.
 ///
-/// Declared as its own type (not `#[serde(flatten)]`-ed onto a wider
-/// query struct): a flattened struct deserializes from a string-keyed
-/// map, so `limit=2` would arrive as the string `"2"` and fail to parse
-/// as a `u64` — a spurious `400` on a valid request.
-#[derive(Debug, Default, Clone, Copy, serde::Deserialize)]
-pub struct Page {
-    /// Page size; absent, zero, or unparseable ⇒ the endpoint default.
-    #[serde(default)]
-    pub limit: Option<u64>,
-    /// Rows to skip; absent ⇒ 0.
-    #[serde(default)]
-    pub offset: Option<u64>,
-}
+/// Declared as its own type (not `#[serde(flatten)]`-ed onto a wider query struct): a flattened struct deserializes from a
+/// string-keyed map. A wider query that also pages builds one from its own `limit` and `offset`.
+pub use axa::pagination::PageParams as Page;
 
-impl Page {
-    /// The clamped `(limit, offset)` this request will actually use. A
-    /// zero `limit` falls back to `default_limit`: an empty page and an
-    /// empty collection look identical to a client, and only one is an
-    /// answer.
-    #[must_use]
-    pub fn resolve(self, default_limit: u64) -> (u64, u64) {
-        let limit = self
-            .limit
-            .filter(|l| *l > 0)
-            .unwrap_or(default_limit)
-            .min(MAX_LIMIT);
-        (limit, self.offset.unwrap_or(0))
-    }
+/// The page a request resolved to: its `limit` and `offset`, which [`Window::bounds`] gives as `PostgreSQL` takes them and
+/// [`Window::respond`] answers with `X-Total-Count`, `X-Limit` and `X-Offset`.
+pub use axa::pagination::Page as Window;
 
-    /// Reject an out-of-bound offset before it reaches the database.
-    ///
-    /// # Errors
-    ///
-    /// Returns a `400` when the offset exceeds [`MAX_OFFSET`].
-    pub fn check_offset(self) -> Result<()> {
-        if self.offset.unwrap_or(0) > MAX_OFFSET {
-            return Err(Error::CustomError(
-                StatusCode::BAD_REQUEST,
-                ErrorDetail::new(
-                    "offset_too_large",
-                    format!("offset must not exceed {MAX_OFFSET}; narrow the query instead"),
-                ),
-            ));
-        }
-        Ok(())
-    }
-}
-
-/// Stamp `X-Total-Count` / `X-Limit` / `X-Offset` onto a response
-/// (`agents/share/restful.md`).
-#[must_use]
-pub fn with_page_headers(mut response: Response, total: u64, limit: u64, offset: u64) -> Response {
-    let headers = response.headers_mut();
-    for (name, value) in [
-        ("x-total-count", total),
-        ("x-limit", limit),
-        ("x-offset", offset),
-    ] {
-        if let Ok(value) = axum::http::HeaderValue::from_str(&value.to_string()) {
-            headers.insert(name, value);
-        }
-    }
-    response
+/// The page `page` asks for, with `default_limit` when it names none and at most [`MAX_LIMIT`].
+///
+/// # Errors
+///
+/// A `400`, code `offset_too_large`, when the offset is past [`MAX_OFFSET`].
+pub fn resolve(page: &Page, default_limit: u64) -> Result<Window> {
+    page.resolve(axa::pagination::Limits {
+        default_limit,
+        max_limit: MAX_LIMIT,
+        max_offset: MAX_OFFSET,
+    })
+    .map_err(|_| {
+        Error::CustomError(
+            StatusCode::BAD_REQUEST,
+            ErrorDetail::new(
+                "offset_too_large",
+                format!("offset must not exceed {MAX_OFFSET}; narrow the query instead"),
+            ),
+        )
+    })
 }
 
 /// Default page size of a whole-organization or whole-service list (WPM-T254). It matches the
@@ -373,33 +339,25 @@ pub fn with_page_headers(mut response: Response, total: u64, limit: u64, offset:
 /// `x-total-count` says how many there are.
 pub(crate) const LIST_DEFAULT_LIMIT: u64 = 500;
 
-/// The `(limit, offset)` of a list request, refusing an offset past [`MAX_OFFSET`].
+/// The page of a list request, refusing an offset past [`MAX_OFFSET`].
 ///
 /// # Errors
 ///
 /// A `400` for an out-of-bound offset.
-pub(crate) fn window(page: Page) -> Result<(u64, u64)> {
-    page.check_offset()?;
-    Ok(page.resolve(LIST_DEFAULT_LIMIT))
+pub(crate) fn window(page: &Page) -> Result<Window> {
+    resolve(page, LIST_DEFAULT_LIMIT)
 }
 
 /// One page of an already-built list, with the paging headers. For lists whose rows are
 /// filtered by a rule the database cannot apply.
-///
-/// # Errors
-///
-/// When the page does not serialize.
-pub(crate) fn paged_vec<T: serde::Serialize>(
-    items: Vec<T>,
-    (limit, offset): (u64, u64),
-) -> Result<Response> {
-    let total = items.len() as u64;
+pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: Window) -> Response {
+    let total = i64::try_from(items.len()).unwrap_or(i64::MAX);
     let page: Vec<T> = items
         .into_iter()
-        .skip(usize::try_from(offset).unwrap_or(usize::MAX))
-        .take(usize::try_from(limit).unwrap_or(usize::MAX))
+        .skip(usize::try_from(window.offset).unwrap_or(usize::MAX))
+        .take(usize::try_from(window.limit).unwrap_or(usize::MAX))
         .collect();
-    Ok(with_page_headers(format::json(page)?, total, limit, offset))
+    window.respond(total, page)
 }
 
 /// One page of `select`, counted and cut by the database, each row shown by `show`. `select`
@@ -411,7 +369,7 @@ pub(crate) fn paged_vec<T: serde::Serialize>(
 pub(crate) async fn paged_select<E, V>(
     ctx: &AppContext,
     select: sea_orm::Select<E>,
-    (limit, offset): (u64, u64),
+    window: Window,
     show: impl Fn(&E::Model) -> Result<V>,
 ) -> Result<Response>
 where
@@ -421,14 +379,13 @@ where
 {
     use sea_orm::{PaginatorTrait, QuerySelect};
     let total = select.clone().count(&ctx.db).await?;
-    let rows = select.limit(limit).offset(offset).all(&ctx.db).await?;
+    let rows = select
+        .limit(window.limit)
+        .offset(window.offset)
+        .all(&ctx.db)
+        .await?;
     let shown = rows.iter().map(show).collect::<Result<Vec<V>>>()?;
-    Ok(with_page_headers(
-        format::json(shown)?,
-        total,
-        limit,
-        offset,
-    ))
+    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), shown))
 }
 
 #[cfg(test)]
@@ -507,19 +464,37 @@ mod tests {
 
     #[test]
     fn a_window_clamps_and_refuses_a_deep_offset() {
-        use super::{Page, window};
-        let page = |limit, offset| Page { limit, offset };
-        assert_eq!(window(page(None, None)).unwrap(), (500, 0));
-        assert_eq!(window(page(Some(0), Some(5))).unwrap(), (500, 5));
-        assert_eq!(window(page(Some(9_999), None)).unwrap(), (500, 0));
-        assert_eq!(window(page(Some(20), Some(40))).unwrap(), (20, 40));
-        assert!(window(page(None, Some(u64::MAX))).is_err());
+        use super::{Error, Page, StatusCode, Window, window};
+        let page = |limit: Option<&str>, offset: Option<&str>| Page {
+            limit: limit.map(str::to_string),
+            offset: offset.map(str::to_string),
+        };
+        let at = |limit, offset| Window { limit, offset };
+        assert_eq!(window(&page(None, None)).unwrap(), at(500, 0));
+        assert_eq!(window(&page(Some("0"), Some("5"))).unwrap(), at(500, 5));
+        assert_eq!(window(&page(Some("9999"), None)).unwrap(), at(500, 0));
+        assert_eq!(window(&page(Some("20"), Some("40"))).unwrap(), at(20, 40));
+        assert_eq!(
+            window(&page(Some("many"), Some("-1"))).unwrap(),
+            at(500, 0),
+            "unreadable is the default"
+        );
+        assert_eq!(window(&page(None, Some("10000"))).unwrap(), at(500, 10_000));
+        let Err(Error::CustomError(status, detail)) = window(&page(None, Some("10001"))) else {
+            panic!("a deep offset is refused");
+        };
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(detail.code.as_deref(), Some("offset_too_large"));
     }
 
     #[test]
     fn a_vec_page_is_cut_after_the_total_is_counted() {
         use axum::http::header::HeaderName;
-        let response = super::paged_vec(vec![1, 2, 3, 4, 5], (2, 1)).unwrap();
+        let window = super::Window {
+            limit: 2,
+            offset: 1,
+        };
+        let response = super::paged_vec(vec![1, 2, 3, 4, 5], window);
         let header = |n: &'static str| {
             response.headers()[HeaderName::from_static(n)]
                 .to_str()

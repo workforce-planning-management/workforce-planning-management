@@ -17,7 +17,7 @@ categories = ["development-tools", "rust-patterns"]
 include = ["src/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.6", features = ["problem", "ratelimit", "sea-orm", "sqlx"] }
+axa = { version = "0.6", features = ["pagination", "problem", "ratelimit", "sea-orm", "sqlx"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —

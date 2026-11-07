@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use super::{Page, ensure_valid, record_rejection, unprocessable, with_page_headers};
+use super::{Page, ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::metrics::Metrics;
 use crate::models::_entities::{benefit_enrollments, benefit_plans, onboarding_items, workers};
@@ -281,10 +281,10 @@ struct WorkerListParams {
     status: Option<String>,
     /// Page size; absent, zero, or unparseable ⇒ [`WORKER_LIST_DEFAULT_LIMIT`].
     #[serde(default)]
-    limit: Option<u64>,
-    /// Rows to skip; absent ⇒ 0.
+    limit: Option<String>,
+    /// Rows to skip; absent or unparseable ⇒ 0.
     #[serde(default)]
-    offset: Option<u64>,
+    offset: Option<String>,
     /// A comma-separated allowlist of fields to return (`rules::worker_fields::LIST_FIELDS`); absent ⇒ the whole record. An unknown
     /// name is a 422 (WPM-R216).
     #[serde(default)]
@@ -301,10 +301,9 @@ async fn list_workers(
         limit: params.limit,
         offset: params.offset,
     };
-    page.check_offset()?;
+    let window = super::resolve(&page, WORKER_LIST_DEFAULT_LIMIT)?;
     let fields = worker_fields::parse_fields(params.fields.as_deref())
         .map_err(|message| unprocessable(&message))?;
-    let (limit, offset) = page.resolve(WORKER_LIST_DEFAULT_LIMIT);
     let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
     if let Some(department) = &params.department {
         query = query.filter(workers::Column::Department.eq(department));
@@ -318,8 +317,8 @@ async fn list_workers(
     let total = query.clone().count(&ctx.db).await?;
     let rows = query
         .order_by_asc(workers::Column::Id)
-        .limit(limit)
-        .offset(offset)
+        .limit(window.limit)
+        .offset(window.offset)
         .all(&ctx.db)
         .await?;
     let discloses_salary = worker_fields::includes_salary(fields.as_deref());
@@ -368,7 +367,7 @@ async fn list_workers(
         }
         txn.commit().await?;
     }
-    Ok(with_page_headers(format::json(out)?, total, limit, offset))
+    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), out))
 }
 
 /// `GET /api/workers/{pid}` — one worker; a salary-bearing read
@@ -881,9 +880,9 @@ const BENEFIT_PLAN_LIST_DEFAULT_LIMIT: u64 = 200;
 #[derive(Debug, Default, Deserialize)]
 struct PlanListParams {
     #[serde(default)]
-    limit: Option<u64>,
+    limit: Option<String>,
     #[serde(default)]
-    offset: Option<u64>,
+    offset: Option<String>,
 }
 
 /// `GET /api/benefit-plans`, paginated via `?limit=&offset=` (WPM-T40;
@@ -897,17 +896,16 @@ async fn list_plans(
         limit: params.limit,
         offset: params.offset,
     };
-    page.check_offset()?;
-    let (limit, offset) = page.resolve(BENEFIT_PLAN_LIST_DEFAULT_LIMIT);
+    let window = super::resolve(&page, BENEFIT_PLAN_LIST_DEFAULT_LIMIT)?;
     let query = benefit_plans::Entity::find().filter(benefit_plans::Column::DeletedAt.is_null());
     let total = query.clone().count(&ctx.db).await?;
     let rows = query
         .order_by_asc(benefit_plans::Column::Id)
-        .limit(limit)
-        .offset(offset)
+        .limit(window.limit)
+        .offset(window.offset)
         .all(&ctx.db)
         .await?;
-    Ok(with_page_headers(format::json(rows)?, total, limit, offset))
+    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), rows))
 }
 
 /// `POST /api/workers/{pid}/benefit-enrollments` — enrol; the

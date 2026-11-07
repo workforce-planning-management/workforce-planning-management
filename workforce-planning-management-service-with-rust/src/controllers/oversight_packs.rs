@@ -209,7 +209,7 @@ async fn list(
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
@@ -221,15 +221,15 @@ async fn list(
     .fetch_one(pool(&ctx))
     .await?
     .unsigned_abs();
-    let (limit, offset) = window;
+    let (limit, offset) = window.bounds();
     let rows = sqlx::query!(
         "SELECT pid, as_of, month FROM oversight_packs
          WHERE organization_ref = $1
          ORDER BY id DESC
          LIMIT $2 OFFSET $3",
         org,
-        db::bound(limit),
-        db::bound(offset),
+        limit,
+        offset,
     )
     .fetch_all(pool(&ctx))
     .await?;
@@ -240,11 +240,9 @@ async fn list(
             "pid": p.pid, "as_of": p.as_of, "month": p.month, "withdrawn": withdrawn_json(w.as_ref()),
         }));
     }
-    Ok(super::with_page_headers(
-        format::json(json!({ "organization_ref": org, "packs": out }))?,
-        total,
-        limit,
-        offset,
+    Ok(window.respond(
+        i64::try_from(total).unwrap_or(i64::MAX),
+        json!({ "organization_ref": org, "packs": out }),
     ))
 }
 

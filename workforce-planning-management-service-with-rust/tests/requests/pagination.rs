@@ -56,7 +56,17 @@ async fn worker_list_paginates_and_clamps() {
             "limit should clamp to MAX_LIMIT"
         );
 
-        // An `offset` past `MAX_OFFSET` (10 000) is a 400 (SEC-G7).
+        // A value that is not a number is the default, not a refusal (WPM-T476): `limit` the endpoint's, `offset` 0.
+        let unreadable = request.get("/api/workers?limit=many&offset=-1").await;
+        assert_eq!(unreadable.status_code(), 200);
+        assert_eq!(header!(unreadable, "x-limit"), "500");
+        assert_eq!(header!(unreadable, "x-offset"), "0");
+        assert_eq!(header!(unreadable, "x-total-count"), total.to_string());
+
+        // An `offset` at `MAX_OFFSET` is served; past it is a 400 (SEC-G7).
+        let edge = request.get("/api/workers?offset=10000").await;
+        assert_eq!(edge.status_code(), 200);
+        assert_eq!(header!(edge, "x-offset"), "10000");
         let deep = request.get("/api/workers?offset=10001").await;
         assert_eq!(
             deep.status_code(),

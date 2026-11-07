@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, row_json};
 use crate::auth::MaybeAuthUser;
-use crate::db::{self, bound, pool};
+use crate::db::{self, pool};
 use crate::models::_entities::{webhook_deliveries, webhook_subscriptions};
 use crate::rules::webhook as rules;
 
@@ -227,7 +227,7 @@ async fn deliveries(
                   next_attempt_at AS "next_attempt_at: _", delivered_at AS "delivered_at: _"
            FROM webhook_deliveries WHERE subscription_pid = $1 ORDER BY id DESC LIMIT $2"#,
         pid,
-        bound(query.limit.unwrap_or(100).clamp(1, 500)),
+        i64::try_from(query.limit.unwrap_or(100).clamp(1, 500)).unwrap_or(500),
     )
     .fetch_all(pool(&ctx))
     .await?;

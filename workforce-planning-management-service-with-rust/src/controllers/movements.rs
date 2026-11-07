@@ -251,7 +251,7 @@ async fn list_movements(
     axa::extract::Query(q): axa::extract::Query<ListQuery>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let wanted = q.status.unwrap_or_else(|| "open".to_string());
     let mut query = movements::Entity::find().filter(movements::Column::Status.eq(wanted));
     if let Some(kind) = &q.kind {
@@ -282,7 +282,7 @@ async fn list_movements(
             .collect();
         out.push(movement_json(&m, &worker, rules::progress(&states)));
     }
-    super::paged_vec(out, window)
+    Ok(super::paged_vec(out, window))
 }
 
 /// Whether the caller may read why someone left: HR, the service and an administrator under the

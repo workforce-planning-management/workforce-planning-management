@@ -38,7 +38,7 @@ async fn an_error_from_a_handler_a_layer_or_no_route_is_a_problem() {
             "{body}"
         );
 
-        // Axum's own rejection is plain text: it has words and no reason to give.
+        // A body the handler cannot read: `axa::extract` refuses it with a reason and fixed words (WPM-T475).
         let invalid = request
             .post("/api/workers")
             .json(&json!({ "person_ref": "" }))
@@ -46,8 +46,11 @@ async fn an_error_from_a_handler_a_layer_or_no_route_is_a_problem() {
         assert_eq!(invalid.status_code(), 422);
         assert_eq!(invalid.header("content-type"), PROBLEM_JSON);
         let body: Value = invalid.json();
-        assert!(body["detail"].is_string(), "{body}");
-        assert!(body.get("code").is_none(), "{body}");
+        assert_eq!(body["code"], "unprocessable_entity", "{body}");
+        assert_eq!(
+            body["detail"], "The request body does not fit this route",
+            "{body}"
+        );
 
         // A layer's refusal, with its own members kept.
         let version = request

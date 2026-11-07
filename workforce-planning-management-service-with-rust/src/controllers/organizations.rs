@@ -438,7 +438,7 @@ async fn list_confederations(
     Query(query): Query<ConfederationListQuery>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let mut find = organization_confederations::Entity::find()
         .filter(organization_confederations::Column::DeletedAt.is_null());
     match (

@@ -6,9 +6,9 @@ use axa::extract::Path;
 use axa::prelude::*;
 use chrono::Utc;
 
-use super::{record_rejection, row_json, with_page_headers};
+use super::{record_rejection, row_json};
 use crate::auth::{self, MaybeAuthUser};
-use crate::db::{bound, pool};
+use crate::db::pool;
 use crate::models::_entities::notifications;
 use crate::models::records;
 
@@ -21,7 +21,8 @@ async fn list_notifications(
     Path(pid): Path<String>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let (limit, offset) = super::window(page)?;
+    let window = super::window(&page)?;
+    let (limit, offset) = window.bounds();
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
@@ -44,18 +45,13 @@ async fn list_notifications(
            ORDER BY read_at IS NOT NULL, id DESC
            LIMIT $2 OFFSET $3"#,
         worker.pid,
-        bound(limit),
-        bound(offset),
+        limit,
+        offset,
     )
     .fetch_all(pool(&ctx))
     .await?;
     let shown = rows.iter().map(row_json).collect::<Result<Vec<_>>>()?;
-    Ok(with_page_headers(
-        format::json(shown)?,
-        total.unsigned_abs(),
-        limit,
-        offset,
-    ))
+    Ok(window.respond(total, shown))
 }
 
 /// `POST /api/notifications/{pid}/read` — mark one notification read.

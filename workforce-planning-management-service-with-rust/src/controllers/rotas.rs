@@ -18,7 +18,7 @@ use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
 
-use super::{unprocessable, with_page_headers};
+use super::{Window, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{leave_requests, rota_members, rota_overrides, rotas, workers};
 use crate::models::audit_logs::Model as Audit;
@@ -335,8 +335,13 @@ async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
             })),
         }));
     }
+    // Not paged: one page of everything, so a client that pages sees it is whole.
     let total = out.len() as u64;
-    Ok(with_page_headers(format::json(out)?, total, total, 0))
+    Ok(Window {
+        limit: total,
+        offset: 0,
+    }
+    .respond(i64::try_from(total).unwrap_or(i64::MAX), out))
 }
 
 /// Query for a rota's schedule.

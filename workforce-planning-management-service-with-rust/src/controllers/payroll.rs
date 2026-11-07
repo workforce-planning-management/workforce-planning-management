@@ -213,7 +213,7 @@ async fn list_runs(
     caller: MaybeAuthUser,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
     if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
         query = query.filter(payroll_runs::Column::OrganizationRef.is_in(refs));

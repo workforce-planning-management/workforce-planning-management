@@ -22,7 +22,7 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use super::{Page, forbidden, record_rejection, unprocessable, with_page_headers};
+use super::{Page, forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{announcement_reads, announcements, workers};
 use crate::models::audit_logs::Model as Audit;
@@ -147,9 +147,9 @@ struct FeedParams {
     #[serde(default)]
     include: Option<String>,
     #[serde(default)]
-    limit: Option<u64>,
+    limit: Option<String>,
     #[serde(default)]
-    offset: Option<u64>,
+    offset: Option<String>,
 }
 
 /// `GET /api/announcements?organization=&include=all&limit=&offset=` — the
@@ -166,8 +166,7 @@ async fn feed(
         limit: params.limit,
         offset: params.offset,
     };
-    page.check_offset()?;
-    let (limit, offset) = page.resolve(FEED_DEFAULT_LIMIT);
+    let window = super::resolve(&page, FEED_DEFAULT_LIMIT)?;
     let mut query =
         announcements::Entity::find().filter(announcements::Column::DeletedAt.is_null());
     if let Some(org) = &params.organization {
@@ -222,8 +221,8 @@ async fn feed(
     let total = kept.len() as u64;
     let page_rows: Vec<&announcements::Model> = kept
         .iter()
-        .skip(usize::try_from(offset).unwrap_or(usize::MAX))
-        .take(usize::try_from(limit).unwrap_or(usize::MAX))
+        .skip(usize::try_from(window.offset).unwrap_or(usize::MAX))
+        .take(usize::try_from(window.limit).unwrap_or(usize::MAX))
         .collect();
     // Editors see how many have read each post — a count, never who.
     let ids: Vec<Uuid> = page_rows.iter().map(|a| a.pid).collect();
@@ -245,12 +244,7 @@ async fn feed(
             json
         })
         .collect();
-    Ok(with_page_headers(
-        format::json(slice)?,
-        total,
-        limit,
-        offset,
-    ))
+    Ok(window.respond(i64::try_from(total).unwrap_or(i64::MAX), slice))
 }
 
 /// `GET /api/announcements/{pid}` — one announcement (live ones to anyone

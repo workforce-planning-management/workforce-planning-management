@@ -12,12 +12,6 @@ pub fn pool(ctx: &AppContext) -> &PgPool {
     ctx.db.get_postgres_connection_pool()
 }
 
-/// A page bound for `LIMIT` or `OFFSET`, which `PostgreSQL` takes as a signed integer.
-#[must_use]
-pub fn bound(value: u64) -> i64 {
-    i64::try_from(value).unwrap_or(i64::MAX)
-}
-
 /// Whether `cause` is a unique constraint refusing a row.
 #[must_use]
 pub fn is_unique_violation(cause: &sqlx::Error) -> bool {

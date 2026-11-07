@@ -334,7 +334,7 @@ async fn list(
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
     axa::extract::Query(page): axa::extract::Query<super::Page>,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;

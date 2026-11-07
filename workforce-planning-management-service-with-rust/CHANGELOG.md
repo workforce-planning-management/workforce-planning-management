@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — lists page with `axa::pagination` (WPM-T476)
+
+**A client may notice:** a `limit` or `offset` that is not a number is the default (`limit` the endpoint's, `offset` `0`), where it was a `400`. An offset past 10,000 is still a `400` with `code: offset_too_large`, and `X-Total-Count`, `X-Limit` and `X-Offset` are as before.
+
 ### Security — a request that cannot be read is refused without quoting it (WPM-T475)
 
 **A client may notice:** a malformed body, path or query value answers the same status with a fixed `detail` ("The request body is not valid JSON", "The request body does not fit this route", "A value in the URL is not valid", "A query parameter is not valid"). It no longer names the field or repeats the value, which could have been a token or a name pasted by mistake.
