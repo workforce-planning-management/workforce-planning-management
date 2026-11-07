@@ -55,9 +55,12 @@ file.
 
 - Per caller and per minute: `WPM_RATE_LIMIT_PER_MINUTE` (default 600) for any
   route, and `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` (default 20) for erase,
-  sweep, import, merge, deduplicate and token routes and for exports. A refusal
-  is `429` with `Retry-After`. `0` disables a class. Health, ping and posture
-  are never limited.
+  sweep, import, merge, deduplicate and token routes and for exports, counted
+  apart. A refusal is a `429` problem with `code` `too_many_requests`,
+  `Retry-After` and the `RateLimit-*` headers; a counted request that is let
+  through carries `RateLimit-Limit`, `RateLimit-Remaining` and
+  `RateLimit-Reset`. `0` disables a class. Health, ping, readiness and posture
+  are never limited. `axa::ratelimit` counts (WPM-D188).
 - The caller is its **network address**, as `axa` resolves it from the
   connection and `TRUSTED_PROXIES` ([WPM-R239](#wpm-r239--a-caller-cannot-name-its-own-rate-limit-bucket)).
   A deployment behind a reverse proxy must list that proxy (otherwise every
@@ -205,8 +208,8 @@ sign-in enforcement explicitly off** (see its header).
   off is explicit, logged, visible at `/_posture`, and refused in production; a
   missing key source stops a production service instead of opening it.
 - **WPM-D54 Rate limits keep no history, and trust no header the caller
-  controls.** Counters are in memory per window, keyed by a hash of the network
-  address; no address, subject or token is stored or logged. A bearer token is
+  controls.** Counters are in memory per window, keyed by a keyed hash of the network
+  address and dropped within two windows; no address, subject or token is stored or logged. A bearer token is
   never the key, because varying it would buy a fresh bucket on every request.
   The left end of `X-Forwarded-For` is the same, which is why WPM-D187 replaced
   `WPM_TRUST_FORWARDED`.

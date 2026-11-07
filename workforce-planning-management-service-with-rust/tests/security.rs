@@ -39,7 +39,7 @@ const BASELINE: [&str; 6] = [
 /// The ordinary limit these tests run with.
 const LIMIT: usize = 8;
 
-/// Read on first use: a small ordinary limit, a sensitive limit of one.
+/// Read when the router is built: a small ordinary limit, a sensitive limit of one.
 fn settings() {
     // `set_var` is `unsafe` in edition 2024; these tests are serial.
     unsafe {
@@ -211,8 +211,15 @@ async fn headers_everywhere_and_the_limiter_trips() {
         assert!(refused.headers().contains_key("retry-after"));
         assert_eq!(refused.header("content-type"), "application/problem+json");
         assert_eq!(
-            refused.json::<serde_json::Value>()["detail"],
-            "rate limit exceeded; retry later"
+            refused.json::<serde_json::Value>()["code"],
+            "too_many_requests"
+        );
+        // WPM-D188: `axa::ratelimit` answers, with the limit and the wait.
+        assert_eq!(refused.header("ratelimit-limit"), LIMIT.to_string());
+        assert_eq!(refused.header("ratelimit-remaining"), "0");
+        assert_eq!(
+            refused.header("retry-after"),
+            refused.header("ratelimit-reset")
         );
         assert!(refused.headers().contains_key("x-content-type-options"));
         // Nor does a left entry the caller wrote, over a real connection from a
@@ -236,6 +243,8 @@ async fn headers_everywhere_and_the_limiter_trips() {
             .add_header("x-forwarded-for", "198.51.100.2")
             .await;
         assert_ne!(other.status_code(), 429);
+        // What is let through says how much is left.
+        assert_eq!(other.header("ratelimit-remaining"), (LIMIT - 1).to_string());
         assert_eq!(request.get("/_health").await.status_code(), 200);
 
         // The sensitive class is stricter: the second erase from one caller

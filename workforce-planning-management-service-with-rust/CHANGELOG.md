@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the rate limit is counted by `axa::ratelimit` (WPM-D188, WPM-T473)
+
+**A client may notice:** a `429` says `code: too_many_requests` and has no `detail`, where it said "rate limit exceeded; retry later"; it and every counted response carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. The settings, the two classes, `0` to disable a class and `Retry-After` are as before, and `/_readiness` is never limited. The caller is held as a keyed hash, and at most 100,000 callers are held. Counts start afresh each time the router is built.
+
 ### Changed — axa 0.6 (WPM-T472)
 
 `axa` 0.5.0 to 0.6.1. Its own errors are RFC 9457 problems now, so they pass through WPM's problem layer untouched, and the bodies a client sees are as before. **A client may notice:** a violated unique or foreign key that no handler maps answers `409`, not `500`; a rejected JSON body's `code` is `bad_request`, `payload_too_large`, `unsupported_media_type` or `unprocessable_entity` by status; a `408` and a failing `/_readiness` are problems. An idle connection now closes after `KEEP_ALIVE_TIMEOUT_SECONDS` (75), not at the header read limit, and a slow client's response is no longer cut off at that limit.

@@ -524,7 +524,9 @@ impl App {
             ))
             // Outside `axa`'s layers, so it resolves the address itself, from the same list (WPM-D187).
             .layer(axum::middleware::from_fn_with_state(
-                std::sync::Arc::new(ctx.config.http.trusted_proxies.clone()),
+                std::sync::Arc::new(crate::security::RateLimits::from_env(
+                    ctx.config.http.trusted_proxies.clone(),
+                )),
                 crate::security::rate_limit_mw,
             ))
             // Outside everything that refuses a request, so a 401, 406, 408, 429 or panic is a problem too (WPM-R238).
