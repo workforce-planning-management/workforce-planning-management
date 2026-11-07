@@ -76,7 +76,8 @@ not a statement that your deployment is under that regime.
 | `WPM_REQUIRE_AUTH` | on | Only an explicit `0`/`false`/`no`/`off` disables sign-in; production refuses that |
 | `WPM_RATE_LIMIT_PER_MINUTE` | 600 | Requests per caller per minute (`0` disables) |
 | `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` | 20 | Erase, sweep, import, merge, token and export routes |
-| `WPM_TRUST_FORWARDED` | off | Name callers by the first `X-Forwarded-For` hop. Set only behind a proxy that **overwrites** that header |
+| `TRUSTED_PROXIES` | none | Comma-separated addresses or CIDR ranges of your proxies, such as `10.0.0.5,192.168.1.0/24`. **Needed behind any proxy**: see [Proxy and TLS](#proxy-and-tls). A bad list stops production from starting; elsewhere it logs a warning and trusts no proxy |
+| `WPM_TRUST_FORWARDED` | retired | Does nothing (WPM-D187). If it is set, boot logs a warning. Remove it and set `TRUSTED_PROXIES` |
 | `WPM_MAX_TOKEN_LIFETIME_SECONDS` | `86400` | The longest token lifetime accepted (`exp` minus `iat`); a longer one, or one with no issue time, is `401`. `0` or `off` removes the limit. Tighten it to what your identity provider issues, see [Token age and revocation](../auth.md#token-age-and-revocation-wpm-r72-wpm-t200) |
 | `WPM_MAX_ORG_WORKERS` | `200000` | The most employed workers the plan forecast and cost views will read for one request (the workers of the departments the plan names); over it they answer `422`. The default is the largest size the load test ran with no failure; raise it only after running `scripts/load-test.sh` on your hardware (see `BENCHMARKS.md`) |
 | `WPM_LMS_COURSE_URL` | unset | A link template to a course in your learning management system, e.g. `https://lms.example.org/course/{course}`. `{course}` is replaced by the id of the course URN. `https` only, one placeholder, a real host with no user-info; anything else is ignored with a warning in the log. Unset means no links. See [skills-and-training](../skills-and-training.md) (WPM-R138, WPM-D91) |
@@ -100,10 +101,18 @@ service (the table above).
 
 ## Proxy and TLS
 
-Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), and if you
-set `WPM_TRUST_FORWARDED` it must overwrite `X-Forwarded-For` with the real client
-address, or callers can pick their own rate-limit bucket. Without `WPM_TRUST_FORWARDED`,
-every caller behind the proxy shares one bucket, which is safe but coarse.
+Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), and it must
+add the address it saw to `X-Forwarded-For`, by appending or by overwriting. **List every
+proxy in `TRUSTED_PROXIES`**, including the UI's server when the UI calls the API through
+its own proxy, by the address the service sees it connect from. The header is believed
+only from a listed peer, and is read from the right, so a caller cannot pick its own
+rate-limit bucket (WPM-R239). Without the list, every caller behind the proxy shares the
+proxy's one bucket, which is safe but coarse, and at the default limit it can refuse real
+users.
+
+Name the proxies themselves. A client inside a listed range can write the entries to the
+left of its own, so do not list a whole network that callers are in. `check` prints the
+list the service read.
 
 ## Running more than one instance (WPM-T198)
 
@@ -120,7 +129,7 @@ the rate limiter a dependency whose outage blocks every request, so that is left
 3. **Pin a caller to an instance** (sticky routing by client address): then each caller meets one counter again. It costs even load
    and does not survive an instance restart.
 
-Whatever you choose, name callers correctly: set `WPM_TRUST_FORWARDED` only when the proxy overwrites `X-Forwarded-For` (above), or
+Whatever you choose, name callers correctly: list every proxy in `TRUSTED_PROXIES` (above), or
 every caller shares the proxy's bucket. The sensitive limit is the one that matters most, since it protects irreversible routes.
 What does **not** need sharing: the cache (use `REDIS_URL`, WPM-D78), tokens (stateless), and the policy (each instance reloads its file).
 

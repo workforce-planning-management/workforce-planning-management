@@ -64,7 +64,7 @@ repository root; "T" numbers are in [tasks.md](../tasks.md).
 | 4.2 | How are users authenticated? | Met | Offline-verified signed tokens from an identity provider (PASETO or OIDC, including Entra ID); the UI holds no token in browser JavaScript (WPM-D62, `SECURITY.md`) |
 | 4.3 | Is multi-factor authentication supported? | Deployer to answer | It is the identity provider's feature; WPM neither adds nor blocks it |
 | 4.4 | Are security headers and a content security policy set? | Met | API and UI (WPM-R73, T127); a test asserts them. `style-src` allows inline styles; the content manager loads an unpinned script from a public CDN (a known gap) |
-| 4.5 | Is there protection against brute force and abuse? | Partly met | Per-address rate limiting with a stricter class (WPM-R74, T128), tested. Per instance only; behind a proxy it needs `WPM_TRUST_FORWARDED` and a proxy that overwrites the header |
+| 4.5 | Is there protection against brute force and abuse? | Partly met | Per-address rate limiting with a stricter class (WPM-R74, T128), tested. Per instance only; behind a proxy it needs `TRUSTED_PROXIES` (WPM-R239), or every caller shares the proxy's bucket |
 | 4.6 | Is data encrypted in transit and at rest? | Deployer to answer | TLS is terminated by the deployer's proxy (HSTS is sent); encryption at rest is the database and backup storage's |
 | 4.7 | Is there an independent penetration test? | Not met | None. A ZAP baseline scan is written for CI but has not run (T124) |
 | 4.8 | Are vulnerabilities in dependencies found and fixed? | Partly met | `cargo deny check` (passes locally), Dependabot and an advisory `pnpm audit`, all written for CI; CI has not run on the hosting platform (T124) |

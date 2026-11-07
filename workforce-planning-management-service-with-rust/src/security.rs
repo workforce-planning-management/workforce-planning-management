@@ -10,16 +10,20 @@
 //! window and are never logged, so the limiter stores no address, no subject
 //! and no token.
 //!
-//! **The key is the peer address, never a header the caller controls.** A
-//! bearer token or `X-Forwarded-For` taken at face value would let a guesser
-//! vary it on every request and never meet a limit. `X-Forwarded-For` is read
-//! only when `WPM_TRUST_FORWARDED` is set, which a deployment behind a reverse
-//! proxy that *overwrites* that header must do (otherwise every caller shares
-//! the proxy's address, and one bucket).
+//! **The key is the client's address as `axa` resolves it, never a header the
+//! caller controls** (WPM-R239, WPM-D187). A bearer token, or the left end of
+//! `X-Forwarded-For`, would let a guesser vary it on every request and never
+//! meet a limit. [`axa::client::resolve`] believes that header only from a peer
+//! in `TRUSTED_PROXIES`, and walks it from the right, so behind a proxy that
+//! list must be set, or every caller shares the proxy's address and one bucket.
+//!
+//! [`rate_limit_mw`] resolves the address itself, with the same list. It runs
+//! outside `axa::middleware::apply`, because a limit has to run before sign-in
+//! refuses, so the address `apply` records is not on the request yet.
 
-use axa::prelude::*;
+use axa::{client::ProxyNet, prelude::*};
 use axum::{
-    extract::{ConnectInfo, Request},
+    extract::{ConnectInfo, Request, State},
     http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
@@ -27,8 +31,8 @@ use axum::{
 use std::{
     collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
-    net::{IpAddr, SocketAddr},
-    sync::{Mutex, OnceLock},
+    net::{IpAddr, Ipv6Addr, SocketAddr},
+    sync::{Arc, Mutex, OnceLock},
     time::{Instant, SystemTime},
 };
 
@@ -150,8 +154,8 @@ pub fn is_sensitive(method: &axum::http::Method, path: &str) -> bool {
 pub struct RateLimiter {
     limit: u32,
     sensitive_limit: u32,
-    /// key → (window start in seconds, count in that window)
-    seen: HashMap<u64, (u64, u32)>,
+    /// (key, sensitive) → (window start in seconds, count in that window)
+    seen: HashMap<(u64, bool), (u64, u32)>,
 }
 
 /// The answer to one request.
@@ -193,8 +197,7 @@ impl RateLimiter {
                 .retain(|_, (start, _)| now.saturating_sub(*start) < WINDOW_SECS);
         }
         // A sensitive request is counted apart from ordinary ones.
-        let slot = key ^ u64::from(sensitive);
-        let entry = self.seen.entry(slot).or_insert((now, 0));
+        let entry = self.seen.entry((key, sensitive)).or_insert((now, 0));
         if now.saturating_sub(entry.0) >= WINDOW_SECS {
             *entry = (now, 0);
         }
@@ -210,33 +213,33 @@ impl RateLimiter {
     }
 }
 
-/// The caller reduced to a hash of its address: the first forwarded address
-/// when `trust_forwarded` and the header is present, otherwise the peer
-/// address, otherwise one shared bucket. Only the hash is kept.
+/// The caller reduced to a hash of its `address`, the one resolved from the
+/// connection and `TRUSTED_PROXIES`. With no address, every caller shares one
+/// bucket. IPv4-mapped addresses count as IPv4, and IPv6 counts by its `/64`,
+/// the block one customer is routinely given, as one address in it would be
+/// free to replace. Only the hash is kept.
 #[must_use]
-pub fn caller_key(peer: Option<IpAddr>, headers: &HeaderMap, trust_forwarded: bool) -> u64 {
-    let forwarded = if trust_forwarded {
-        headers
-            .get("x-forwarded-for")
-            .and_then(|v| v.to_str().ok())
-            .map(|v| v.split(',').next().unwrap_or(v).trim().to_string())
-            .filter(|v| !v.is_empty())
-    } else {
-        None
+pub fn caller_key(address: Option<IpAddr>) -> u64 {
+    let basis = match address.map(|address| address.to_canonical()) {
+        Some(IpAddr::V4(address)) => address.to_string(),
+        Some(IpAddr::V6(address)) => {
+            let [a, b, c, d, ..] = address.segments();
+            format!("{}/64", Ipv6Addr::new(a, b, c, d, 0, 0, 0, 0))
+        }
+        None => String::new(),
     };
-    let basis = forwarded
-        .or_else(|| peer.map(|ip| ip.to_string()))
-        .unwrap_or_default();
     let mut hasher = DefaultHasher::new();
     basis.hash(&mut hasher);
     hasher.finish()
 }
 
-/// Whether `X-Forwarded-For` is trusted (`WPM_TRUST_FORWARDED`), read once.
-fn trust_forwarded() -> bool {
-    static TRUST: OnceLock<bool> = OnceLock::new();
-    *TRUST.get_or_init(|| {
-        crate::compat::env_var("WPM_TRUST_FORWARDED").is_some_and(|v| crate::auth::parse_bool(&v))
+/// What to log when the retired `WPM_TRUST_FORWARDED` is still set. It does
+/// nothing now, and a deployment that relies on it needs `TRUSTED_PROXIES`.
+#[must_use]
+pub fn trust_forwarded_warning(setting: Option<&str>) -> Option<&'static str> {
+    setting.map(|_| {
+        "WPM_TRUST_FORWARDED does nothing and TRUSTED_PROXIES replaces it; \
+         behind a proxy, list it there or every caller shares its rate limit"
     })
 }
 
@@ -271,17 +274,21 @@ fn now_secs() -> u64 {
 
 /// Middleware: refuse with `429` and `Retry-After` when a caller is over its
 /// limit. Health, ping and the posture probe are never limited.
-pub async fn rate_limit_mw(req: Request, next: Next) -> Response {
+pub async fn rate_limit_mw(
+    State(trusted): State<Arc<Vec<ProxyNet>>>,
+    req: Request,
+    next: Next,
+) -> Response {
     let path = req.uri().path();
     if matches!(path, "/_health" | "/_ping" | "/_posture") {
         return next.run(req).await;
     }
     let sensitive = is_sensitive(req.method(), path);
-    let peer = req
+    let address = req
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
-        .map(|info| info.0.ip());
-    let key = caller_key(peer, req.headers(), trust_forwarded());
+        .map(|info| axa::client::resolve(info.0.ip(), req.headers(), &trusted));
+    let key = caller_key(address);
     let verdict = limiter()
         .lock()
         .map_or(Verdict::Allow, |mut l| l.check(key, sensitive, now_secs()));
@@ -397,6 +404,16 @@ mod tests {
     }
 
     #[test]
+    fn a_key_and_its_neighbour_do_not_share_a_class() {
+        // `key ^ sensitive` put key 2's sensitive count in key 3's ordinary slot.
+        let mut l = RateLimiter::new(1, 1);
+        assert_eq!(l.check(3, false, 0), Verdict::Allow);
+        assert_eq!(l.check(2, true, 0), Verdict::Allow);
+        assert_eq!(l.check(2, false, 0), Verdict::Allow);
+        assert_eq!(l.check(3, true, 0), Verdict::Allow);
+    }
+
+    #[test]
     fn a_zero_limit_disables_the_class() {
         let mut l = RateLimiter::new(0, 0);
         for _ in 0..1000 {
@@ -405,60 +422,73 @@ mod tests {
         }
     }
 
+    fn address(text: &str) -> IpAddr {
+        text.parse().unwrap()
+    }
+
     #[test]
-    fn the_caller_key_is_the_address_and_not_a_header_the_caller_controls() {
-        let one: IpAddr = "203.0.113.1".parse().unwrap();
-        let two: IpAddr = "203.0.113.2".parse().unwrap();
-        let none = HeaderMap::new();
-        // Different peers, different buckets; the same peer, the same bucket.
-        assert_ne!(
-            caller_key(Some(one), &none, false),
-            caller_key(Some(two), &none, false)
-        );
+    fn the_caller_key_is_the_address() {
+        let one = caller_key(Some(address("203.0.113.1")));
+        assert_eq!(one, caller_key(Some(address("203.0.113.1"))));
+        assert_ne!(one, caller_key(Some(address("203.0.113.2"))));
+    }
+
+    #[test]
+    fn with_no_address_every_caller_shares_one_bucket() {
+        assert_eq!(caller_key(None), caller_key(None));
+        assert_ne!(caller_key(None), caller_key(Some(address("203.0.113.1"))));
+    }
+
+    #[test]
+    fn an_ipv4_mapped_address_is_the_ipv4_address() {
         assert_eq!(
-            caller_key(Some(one), &none, false),
-            caller_key(Some(one), &none, false)
-        );
-        // A token, or a forwarded address when not trusted, changes nothing:
-        // varying either must not buy a fresh bucket.
-        let mut spoof = HeaderMap::new();
-        spoof.insert(
-            header::AUTHORIZATION,
-            HeaderValue::from_static("Bearer one"),
-        );
-        spoof.insert("x-forwarded-for", HeaderValue::from_static("198.51.100.9"));
-        assert_eq!(
-            caller_key(Some(one), &spoof, false),
-            caller_key(Some(one), &none, false)
+            caller_key(Some(address("::ffff:203.0.113.9"))),
+            caller_key(Some(address("203.0.113.9")))
         );
     }
 
     #[test]
-    fn a_trusted_proxy_header_names_the_caller_by_its_first_hop() {
-        let proxy: IpAddr = "10.0.0.1".parse().unwrap();
-        let mut a = HeaderMap::new();
-        a.insert(
-            "x-forwarded-for",
-            HeaderValue::from_static("203.0.113.9, 10.0.0.1"),
-        );
-        let mut b = HeaderMap::new();
-        b.insert("x-forwarded-for", HeaderValue::from_static("203.0.113.9"));
-        let mut c = HeaderMap::new();
-        c.insert("x-forwarded-for", HeaderValue::from_static("203.0.113.10"));
+    fn ipv6_counts_by_its_block() {
+        let block = caller_key(Some(address("2001:db8:1:2::1")));
+        assert_eq!(block, caller_key(Some(address("2001:db8:1:2:ffff::9"))));
+        assert_ne!(block, caller_key(Some(address("2001:db8:1:3::1"))));
+    }
+
+    #[test]
+    fn the_key_comes_from_axa_and_a_forged_entry_changes_nothing() {
+        // The caller wrote the first entry, and the proxy appended the second.
+        let forwarded = |value: &'static str| {
+            let mut headers = HeaderMap::new();
+            headers.insert("x-forwarded-for", HeaderValue::from_static(value));
+            headers
+        };
+        let proxy = address("10.0.0.1");
+        let trusted = ["10.0.0.0/8".parse().unwrap()];
+        let key = |headers: &HeaderMap, trusted: &[ProxyNet]| {
+            caller_key(Some(axa::client::resolve(proxy, headers, trusted)))
+        };
+        let real = forwarded("203.0.113.9");
+        let forged = forwarded("198.51.100.1, 203.0.113.9");
+        assert_eq!(key(&real, &trusted), key(&forged, &trusted));
         assert_eq!(
-            caller_key(Some(proxy), &a, true),
-            caller_key(Some(proxy), &b, true)
+            key(&real, &trusted),
+            caller_key(Some(address("203.0.113.9")))
         );
         assert_ne!(
-            caller_key(Some(proxy), &a, true),
-            caller_key(Some(proxy), &c, true)
+            key(&real, &trusted),
+            key(&forwarded("203.0.113.10"), &trusted)
         );
-        // Empty header: fall back to the peer.
-        let mut empty = HeaderMap::new();
-        empty.insert("x-forwarded-for", HeaderValue::from_static(""));
-        assert_eq!(
-            caller_key(Some(proxy), &empty, true),
-            caller_key(Some(proxy), &HeaderMap::new(), true)
-        );
+        // A peer nobody listed is the caller, whatever it sends.
+        assert_eq!(key(&real, &[]), caller_key(Some(proxy)));
+    }
+
+    #[test]
+    fn the_retired_setting_warns_and_names_its_replacement() {
+        assert_eq!(trust_forwarded_warning(None), None);
+        for setting in ["1", "true", "0"] {
+            let warning = trust_forwarded_warning(Some(setting)).unwrap();
+            assert!(warning.contains("does nothing"), "{warning}");
+            assert!(warning.contains("TRUSTED_PROXIES"), "{warning}");
+        }
     }
 }

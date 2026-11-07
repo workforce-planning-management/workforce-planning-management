@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — the rate limit keys on the address `axa` resolves (WPM-R239, WPM-D187, WPM-T471)
+
+**An operator must act.** Behind a proxy, including the UI's own, list it in `TRUSTED_PROXIES`, or every caller shares the proxy's bucket. `WPM_TRUST_FORWARDED` took the first `X-Forwarded-For` entry, which the caller writes unless the proxy overwrites it, so a proxy that appended gave each forged value a fresh limit. It does nothing now; boot logs a warning if it is set and carries on. The header is believed only from a listed peer and is read from the right. IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. `RateLimiter::check` no longer lets one key's sensitive count fall in the neighbouring key's ordinary slot.
+
 ### Changed — errors are RFC 9457 problem details (WPM-T470)
 
 **A client must change.** Every `4xx` and `5xx` is now `application/problem+json`, in place of `{"error", "description"}` from handlers and plain text from the layers. `description` is now `detail`, and `error` is now `code`. Statuses and headers do not change. JSON-RPC errors on `/mcp` do not change.

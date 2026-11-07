@@ -6,11 +6,25 @@
 //! default (**on**) here, which also proves the default: an unauthenticated
 //! read is a `401`, not a `200`.
 //!
+//! The caller is the address `axa` resolves (WPM-R239, WPM-D187). `axa::testing::request`
+//! serves over a real socket, so its peer is `127.0.0.1`, which `TRUSTED_PROXIES` lists here:
+//! the test client plays a trusted proxy, and `X-Forwarded-For` is what that proxy reports.
+//! Other peers are a request sent straight to the router with the `ConnectInfo` the server
+//! would have put on it, which also shows every layer of the real app in order.
+//!
 //! `#[ignore]`d: boots the app (needs PostgreSQL via
 //! `DATABASE_URL`). Run with `cargo test --test security -- --ignored`.
 
 use axa::testing::prelude::*;
+use axum::{
+    Router,
+    body::Body,
+    extract::ConnectInfo,
+    http::{Request, StatusCode},
+};
 use serial_test::serial;
+use std::net::SocketAddr;
+use tower::ServiceExt;
 use workforce_planning_management::app::App;
 
 const BASELINE: [&str; 6] = [
@@ -22,20 +36,113 @@ const BASELINE: [&str; 6] = [
     "cross-origin-resource-policy",
 ];
 
+/// The ordinary limit these tests run with.
+const LIMIT: usize = 8;
+
+/// Read on first use: a small ordinary limit, a sensitive limit of one.
+fn settings() {
+    // `set_var` is `unsafe` in edition 2024; these tests are serial.
+    unsafe {
+        std::env::remove_var("WPM_REQUIRE_AUTH");
+        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", LIMIT.to_string());
+        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "1");
+        // Loopback is the test client, and 10.0.0.0/8 the proxies in the direct requests.
+        std::env::set_var("TRUSTED_PROXIES", "127.0.0.1/32, 10.0.0.0/8");
+        // Retired: it must neither stop the boot nor believe a header.
+        std::env::set_var("WPM_TRUST_FORWARDED", "1");
+    }
+}
+
+/// `GET /api/workers` straight to the router, from `peer` if there is one.
+async fn get(router: &Router, peer: Option<&str>, forwarded: &str) -> StatusCode {
+    let mut request = Request::get("/api/workers")
+        .header("x-forwarded-for", forwarded)
+        .body(Body::empty())
+        .unwrap();
+    if let Some(peer) = peer {
+        let peer: SocketAddr = format!("{peer}:443").parse().unwrap();
+        request.extensions_mut().insert(ConnectInfo(peer));
+    }
+    router.clone().oneshot(request).await.unwrap().status()
+}
+
+/// How many of `LIMIT + 2` requests got through before the first `429`, where
+/// `send` is told which request this is and may forge a fresh header for it.
+async fn allowed_before_refusal<F, Fut>(send: F) -> usize
+where
+    F: Fn(usize) -> Fut,
+    Fut: Future<Output = StatusCode>,
+{
+    for n in 0..LIMIT + 2 {
+        if send(n).await == StatusCode::TOO_MANY_REQUESTS {
+            return n;
+        }
+    }
+    panic!("the limiter never tripped");
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test security -- --ignored`"]
+async fn the_header_is_believed_only_from_a_trusted_peer() {
+    settings();
+    let boot = boot_test::<App>()
+        .await
+        .expect("the retired setting must not stop the boot");
+    let router = boot.router.expect("a router");
+    let router = &router;
+
+    // A peer nobody listed is the caller: a fresh header on every request buys nothing.
+    let peer = Some("203.0.113.50");
+    let allowed =
+        allowed_before_refusal(
+            |n| async move { get(router, peer, &format!("198.51.100.{n}")).await },
+        )
+        .await;
+    assert_eq!(allowed, LIMIT, "an untrusted peer named its own bucket");
+    // It is refused under any header at all, and another peer has its own bucket.
+    assert_eq!(
+        get(router, peer, "192.0.2.1").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    assert_ne!(
+        get(router, Some("203.0.113.51"), "198.51.100.0").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+
+    // Behind a trusted proxy, a fresh left entry from the caller buys nothing: the
+    // proxy's own right entry names it, through whichever listed proxy it comes.
+    let allowed = allowed_before_refusal(|n| async move {
+        let proxy = format!("10.0.0.{}", 1 + n % 2);
+        get(router, Some(&proxy), &format!("192.0.2.{n}, 203.0.113.60")).await
+    })
+    .await;
+    assert_eq!(allowed, LIMIT, "a forged left entry bought a fresh bucket");
+    // Two real clients behind it are told apart.
+    assert_ne!(
+        get(router, Some("10.0.0.1"), "203.0.113.61").await,
+        StatusCode::TOO_MANY_REQUESTS,
+        "two clients behind one proxy shared its bucket"
+    );
+
+    // A proxy that sends no address, or none that can be read, is its own caller.
+    let allowed = allowed_before_refusal(|_| get(router, Some("10.0.0.9"), "junk")).await;
+    assert_eq!(allowed, LIMIT);
+
+    // With no peer there is no address, and the header is not one: one shared bucket.
+    let allowed =
+        allowed_before_refusal(
+            |n| async move { get(router, None, &format!("198.51.100.{n}")).await },
+        )
+        .await;
+    assert_eq!(allowed, LIMIT, "with no peer, the header named a bucket");
+}
+
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test security -- --ignored`"]
 async fn headers_everywhere_and_the_limiter_trips() {
-    // Read on first use: a small ordinary limit, a sensitive limit of one.
-    // `set_var` is `unsafe` in edition 2024; single-threaded setup.
-    unsafe {
-        std::env::remove_var("WPM_REQUIRE_AUTH");
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "8");
-        // The test transport has no peer address; name callers by the header,
-        // as a deployment behind a proxy that overwrites it would.
-        std::env::set_var("WPM_TRUST_FORWARDED", "1");
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "1");
-    }
+    settings();
     request::<App, _, _>(|request, _ctx| async move {
         // Secure by default: no variable set, so sign-in is enforced.
         let posture = request.get("/_posture").await;
@@ -108,6 +215,13 @@ async fn headers_everywhere_and_the_limiter_trips() {
             "rate limit exceeded; retry later"
         );
         assert!(refused.headers().contains_key("x-content-type-options"));
+        // Nor does a left entry the caller wrote, over a real connection from a
+        // trusted proxy: this is what an appending proxy forwards.
+        let forged = request
+            .get("/api/workers")
+            .add_header("x-forwarded-for", "192.0.2.77, 198.51.100.1")
+            .await;
+        assert_eq!(forged.status_code(), 429);
         // Varying the token does not buy a fresh bucket: the caller is named
         // by its address, not by a header it controls.
         let varied = request

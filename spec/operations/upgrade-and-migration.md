@@ -17,7 +17,10 @@
 1. Read the release notes and `CHANGELOG.md` for **BREAKING** entries. For example, in
    the 2026-10 changes: sign-in enforcement became **on by default**; `/metrics.prom`
    now needs a token; `GET /api/retention` returns `horizons` per record kind in place of
-   `horizon_days`; the pay scale id became `national-2026-27`.
+   `horizon_days`; the pay scale id became `national-2026-27`. In the 2026-11 changes:
+   **behind a proxy, `TRUSTED_PROXIES` must be set before you upgrade**, or every caller
+   shares the proxy's rate-limit bucket. `WPM_TRUST_FORWARDED` does nothing now, so remove
+   it (WPM-R239).
 2. Take and verify a backup: `scripts/backup.sh` (the `.sha256` file is checked on
    restore). Start the next restore drill on a copy if you can.
 3. Stop traffic (or put the proxy in maintenance) if the release says migrations lock
@@ -26,8 +29,8 @@
 4. Deploy the new binary or image **without** starting traffic, then
    `workforce-planning-management db migrate`.
 5. Start it. Check `GET /_health`, `GET /_posture` (`auth_enforced: true`), and a read.
-6. Watch the logs for `WARN` lines: the service warns when sign-in is off and when it is
-   on with no key source.
+6. Watch the logs for `WARN` lines: the service warns when sign-in is off, when it is
+   on with no key source, and when `WPM_TRUST_FORWARDED` is still set.
 7. Keep the previous image and the backup until the new version has run a full
    scheduled-task cycle.
 

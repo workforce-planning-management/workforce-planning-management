@@ -482,6 +482,12 @@ impl App {
                 "workplace health requirements are ENABLED on the lawful basis recorded as: {basis}"
             );
         }
+        // The variable no longer does anything (WPM-D187). Refusing to start would take a running service down over it.
+        if let Some(warning) = crate::security::trust_forwarded_warning(
+            crate::compat::env_var("WPM_TRUST_FORWARDED").as_deref(),
+        ) {
+            tracing::warn!("{warning}");
+        }
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
@@ -516,7 +522,11 @@ impl App {
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
             ))
-            .layer(axum::middleware::from_fn(crate::security::rate_limit_mw))
+            // Outside `axa`'s layers, so it resolves the address itself, from the same list (WPM-D187).
+            .layer(axum::middleware::from_fn_with_state(
+                std::sync::Arc::new(ctx.config.http.trusted_proxies.clone()),
+                crate::security::rate_limit_mw,
+            ))
             // Outside everything that refuses a request, so a 401, 406, 408, 429 or panic is a problem too (WPM-R238).
             .layer(axum::middleware::from_fn(crate::problem::problem_mw))
             .layer(axum::middleware::from_fn(

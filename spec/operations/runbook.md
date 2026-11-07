@@ -26,10 +26,12 @@ rotate keys faster than the refresh (restart to force a fetch).
 
 ## Some callers get `429`
 
-The rate limiter named them by address. Behind a proxy without `WPM_TRUST_FORWARDED`, all
-callers share one bucket: raise `WPM_RATE_LIMIT_PER_MINUTE`, or set the variable and make
-the proxy overwrite `X-Forwarded-For`. A burst of `429` on erase, sweep or import routes
-is the stricter class working as designed.
+The rate limiter named them by address. Behind a proxy that is not in `TRUSTED_PROXIES`,
+all callers share the proxy's one bucket: list the proxy by the address the service sees
+it connect from, and check with `check` that the list was read. A `WARN` line at boot
+naming `WPM_TRUST_FORWARDED` means that variable is left over from before WPM-D187: it
+does nothing, so remove it and set the list. A burst of `429` on erase, sweep or import
+routes is the stricter class working as designed.
 
 ## `GET /_posture` says `auth_enforced: false` in production
 

@@ -58,13 +58,13 @@ file.
   sweep, import, merge, deduplicate and token routes and for exports. A refusal
   is `429` with `Retry-After`. `0` disables a class. Health, ping and posture
   are never limited.
-- The caller is its **network address**: the peer address, or the first
-  `X-Forwarded-For` hop only when `WPM_TRUST_FORWARDED` is set, which a
-  deployment behind a reverse proxy that *overwrites* that header must do
-  (otherwise every caller shares the proxy's address and one bucket). The UI's
-  same-origin proxy is such a proxy: it overwrites `X-Forwarded-For` with the
-  address it sees (`getClientAddress()`; behind a further proxy, set the Node
-  adapter's `ADDRESS_HEADER`), and forwards only `accept`, `content-type`,
+- The caller is its **network address**, as `axa` resolves it from the
+  connection and `TRUSTED_PROXIES` ([WPM-R239](#wpm-r239--a-caller-cannot-name-its-own-rate-limit-bucket)).
+  A deployment behind a reverse proxy must list that proxy (otherwise every
+  caller shares the proxy's address and one bucket). The UI's same-origin proxy
+  is such a proxy: it overwrites `X-Forwarded-For` with the address it sees
+  (`getClientAddress()`; behind a further proxy, set the Node adapter's
+  `ADDRESS_HEADER`), and forwards only `accept`, `content-type`,
   `if-none-match`, a plain idempotency key and its own bearer (WPM-T248).
 - Limits are per instance (in memory); behind several instances each counts
   alone, so the caller's real limit is the number of instances times the setting.
@@ -208,6 +208,8 @@ sign-in enforcement explicitly off** (see its header).
   controls.** Counters are in memory per window, keyed by a hash of the network
   address; no address, subject or token is stored or logged. A bearer token is
   never the key, because varying it would buy a fresh bucket on every request.
+  The left end of `X-Forwarded-For` is the same, which is why WPM-D187 replaced
+  `WPM_TRUST_FORWARDED`.
 
 ## WPM-R137 — The service fails cleanly when its database misbehaves, and heals
 
@@ -330,6 +332,17 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 **Why:** a version in the path forks every URL and every client at once, and invites two copies of each handler to be kept in step. A header
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
+
+## WPM-R239 — A caller cannot name its own rate-limit bucket
+
+- The rate limit counts by the address `axa::client::resolve` gives. `X-Forwarded-For` is believed only from a peer listed in `TRUSTED_PROXIES`, and is read from the right, stopping at the first address that is not listed. With no list, the header is ignored.
+- A left entry the caller wrote buys no new bucket, a header from an unlisted peer changes nothing, and two clients behind one listed proxy are counted apart.
+- With no address at all, every caller shares one bucket.
+- IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. An ordinary and a sensitive request from one caller are counted apart, and no two callers' classes share a counter.
+- `WPM_TRUST_FORWARDED` does nothing. If it is still set, boot logs a warning and goes on.
+
+**Why:** a proxy that appends leaves the caller's own value first, so the first entry was the caller's choice, and each forged value was a fresh limit. The old rule was safe only if the operator's proxy overwrote the header, and nothing checked that it did.
+**Not claimed:** a limit is still per instance. A client that shares a listed range can write the entries left of its own, so `TRUSTED_PROXIES` should name the proxies and not a whole network that callers are in. A shared address (a carrier's, or an office's) is one caller.
 
 ## WPM-R238 — Every error is a problem document
 
