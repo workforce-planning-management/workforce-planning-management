@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ok FROM ergonomic_items WHERE assessment_pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ok",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_items",
+            "name": "ok"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "6810679a6738936fa4504bad4a4ecec05275ed5c64d6e0d077862f7c6f3dfce5"
+}

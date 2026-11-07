@@ -6,14 +6,13 @@
 
 use super::row_json;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{ergonomic_assessments, ergonomic_items, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::{ergonomic_assessments, ergonomic_items};
 use crate::models::records;
 use crate::rules::ergonomics as rules;
 use crate::validation::Problems;
@@ -58,44 +57,41 @@ async fn create_assessment(
     } else {
         payload.items.iter().map(|n| (None, n.clone())).collect()
     };
-    let txn = ctx.db.begin().await?;
-    let assessment = ergonomic_assessments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        workstation: ActiveValue::set(payload.workstation.clone()),
-        status: ActiveValue::set("open".to_string()),
-        assessed_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let assessment_pid = Uuid::new_v4();
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO ergonomic_assessments (pid, worker_pid, workstation, status)
+         VALUES ($1, $2, $3, 'open')",
+        assessment_pid,
+        worker.pid,
+        payload.workstation,
+    )
+    .execute(&mut *tx)
     .await?;
     for (key, name) in &items {
-        ergonomic_items::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            assessment_pid: ActiveValue::set(assessment.pid),
-            name: ActiveValue::set(name.clone()),
-            item_key: ActiveValue::set(key.map(ToString::to_string)),
-            ok: ActiveValue::set(None),
-            note: ActiveValue::set(None),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query!(
+            "INSERT INTO ergonomic_items (pid, assessment_pid, name, item_key)
+             VALUES ($1, $2, $3, $4)",
+            Uuid::new_v4(),
+            assessment_pid,
+            name,
+            *key,
+        )
+        .execute(&mut *tx)
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "ergonomic_assessment",
-        assessment.pid,
+        assessment_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: assessment.pid.to_string(),
+        pid: assessment_pid.to_string(),
     })
 }
 
@@ -107,20 +103,27 @@ async fn list_assessments(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let assessments = ergonomic_assessments::Entity::find()
-        .filter(ergonomic_assessments::Column::WorkerPid.eq(worker.pid))
-        .filter(ergonomic_assessments::Column::DeletedAt.is_null())
-        .order_by_desc(ergonomic_assessments::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let assessments = sqlx::query!(
+        "SELECT pid, workstation, status, assessed_on FROM ergonomic_assessments
+         WHERE worker_pid = $1 AND deleted_at IS NULL
+         ORDER BY id DESC",
+        worker.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut view = Vec::new();
     for assessment in &assessments {
-        let items = ergonomic_items::Entity::find()
-            .filter(ergonomic_items::Column::AssessmentPid.eq(assessment.pid))
-            .filter(ergonomic_items::Column::DeletedAt.is_null())
-            .order_by_asc(ergonomic_items::Column::Id)
-            .all(&ctx.db)
-            .await?;
+        let items = sqlx::query_as!(
+            ergonomic_items::Model,
+            r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, assessment_pid, name, item_key, ok, note, deleted_at AS "deleted_at: _"
+               FROM ergonomic_items
+               WHERE assessment_pid = $1 AND deleted_at IS NULL
+               ORDER BY id"#,
+            assessment.pid,
+        )
+        .fetch_all(pool(&ctx))
+        .await?;
         // a row written before keys, holding a default sentence, is shown by that sentence's key
         let shown: Vec<serde_json::Value> = items
             .iter()
@@ -167,39 +170,47 @@ async fn answer_item(
     let mut problems = Problems::new();
     problems.cap_opt("note", payload.note.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let item = ergonomic_items::Entity::find()
-        .filter(ergonomic_items::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(ergonomic_items::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let assessment = ergonomic_assessments::Entity::find()
-        .filter(ergonomic_assessments::Column::Pid.eq(item.assessment_pid))
-        .filter(ergonomic_assessments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    if assessment.status != "open" {
+    let item = sqlx::query!(
+        "SELECT pid, assessment_pid FROM ergonomic_items WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let status = sqlx::query_scalar!(
+        "SELECT status FROM ergonomic_assessments WHERE pid = $1 AND deleted_at IS NULL",
+        item.assessment_pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    if status != "open" {
         return Err(unprocessable(
             "a completed assessment is a record; open a new one",
         ));
     }
-    let item_pid = item.pid;
-    let mut active: ergonomic_items::ActiveModel = item.into();
-    active.ok = ActiveValue::set(Some(payload.ok));
-    active.note = ActiveValue::set(payload.note.clone());
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        ergonomic_items::Model,
+        r#"UPDATE ergonomic_items SET ok = $2, note = $3 WHERE pid = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, assessment_pid, name, item_key, ok, note, deleted_at AS "deleted_at: _""#,
+        item.pid,
+        payload.ok,
+        payload.note,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "ergonomic_item",
-        item_pid,
+        item.pid,
         "answered",
         caller.actor(),
         Some(serde_json::json!({ "ok": payload.ok })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -211,39 +222,45 @@ async fn complete_assessment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let assessment = ergonomic_assessments::Entity::find()
-        .filter(ergonomic_assessments::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(ergonomic_assessments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let assessment = sqlx::query!(
+        "SELECT pid, status FROM ergonomic_assessments WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if assessment.status != "open" {
         return Err(unprocessable("already completed"));
     }
-    let items = ergonomic_items::Entity::find()
-        .filter(ergonomic_items::Column::AssessmentPid.eq(assessment.pid))
-        .filter(ergonomic_items::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let answers: Vec<Option<bool>> = items.iter().map(|i| i.ok).collect();
+    let answers: Vec<Option<bool>> = sqlx::query_scalar!(
+        "SELECT ok FROM ergonomic_items WHERE assessment_pid = $1 AND deleted_at IS NULL",
+        assessment.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     rules::may_complete(&answers).map_err(|reason| unprocessable(&reason))?;
     let issues = rules::open_issues(&answers);
-    let assessment_pid = assessment.pid;
-    let mut active: ergonomic_assessments::ActiveModel = assessment.into();
-    active.status = ActiveValue::set("completed".to_string());
-    active.assessed_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        ergonomic_assessments::Model,
+        r#"UPDATE ergonomic_assessments SET status = 'completed', assessed_on = $2 WHERE pid = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, worker_pid, workstation, status, assessed_on, deleted_at AS "deleted_at: _""#,
+        assessment.pid,
+        chrono::Utc::now().date_naive(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "ergonomic_assessment",
-        assessment_pid,
+        assessment.pid,
         "completed",
         caller.actor(),
         Some(serde_json::json!({ "open_issues": issues })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -253,66 +270,32 @@ async fn complete_assessment(
 /// per-department counts.
 #[debug_handler]
 async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
-    // The flagged items first; then only their assessments and those assessments' workers.
-    let items = ergonomic_items::Entity::find()
-        .filter(ergonomic_items::Column::DeletedAt.is_null())
-        .filter(ergonomic_items::Column::Ok.eq(false))
-        .all(&ctx.db)
-        .await?;
-    let assessment_pids: Vec<uuid::Uuid> = items
-        .iter()
-        .map(|i| i.assessment_pid)
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    let assessments: std::collections::HashMap<uuid::Uuid, ergonomic_assessments::Model> =
-        super::find_in(
-            &ctx,
-            ergonomic_assessments::Entity::find()
-                .filter(ergonomic_assessments::Column::DeletedAt.is_null()),
-            ergonomic_assessments::Column::Pid,
-            &assessment_pids,
-        )
-        .await?
-        .into_iter()
-        .map(|a| (a.pid, a))
-        .collect();
-    let worker_pids: Vec<uuid::Uuid> = assessments
-        .values()
-        .map(|a| a.worker_pid)
-        .collect::<std::collections::BTreeSet<_>>()
-        .into_iter()
-        .collect();
-    let worker_rows: std::collections::HashMap<uuid::Uuid, workers::Model> = super::find_in(
-        &ctx,
-        workers::Entity::find().filter(workers::Column::DeletedAt.is_null()),
-        workers::Column::Pid,
-        &worker_pids,
+    // An item counts only while its assessment and that assessment's worker are live.
+    let rows = sqlx::query!(
+        "SELECT i.name, i.item_key, i.note, a.workstation, a.status,
+                w.pid AS worker_pid, w.department, w.display_name
+         FROM ergonomic_items i
+         JOIN ergonomic_assessments a ON a.pid = i.assessment_pid AND a.deleted_at IS NULL
+         JOIN workers w ON w.pid = a.worker_pid AND w.deleted_at IS NULL
+         WHERE i.deleted_at IS NULL AND i.ok = false
+         ORDER BY i.id",
     )
-    .await?
-    .into_iter()
-    .map(|w| (w.pid, w))
-    .collect();
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut listed = Vec::new();
     let mut by_department: std::collections::BTreeMap<String, usize> =
         std::collections::BTreeMap::new();
-    for item in &items {
-        let Some(assessment) = assessments.get(&item.assessment_pid) else {
-            continue;
-        };
-        let Some(worker) = worker_rows.get(&assessment.worker_pid) else {
-            continue;
-        };
-        *by_department.entry(worker.department.clone()).or_default() += 1;
+    for row in &rows {
+        *by_department.entry(row.department.clone()).or_default() += 1;
         listed.push(serde_json::json!({
-            "department": worker.department,
-            "worker_pid": worker.pid,
-            "display_name": worker.display_name,
-            "workstation": assessment.workstation,
-            "item": item.name,
-            "item_key": rules::display_key(item.item_key.as_deref(), &item.name),
-            "note": item.note,
-            "assessment_status": assessment.status,
+            "department": row.department,
+            "worker_pid": row.worker_pid,
+            "display_name": row.display_name,
+            "workstation": row.workstation,
+            "item": row.name,
+            "item_key": rules::display_key(row.item_key.as_deref(), &row.name),
+            "note": row.note,
+            "assessment_status": row.status,
         }));
     }
     format::json(serde_json::json!({

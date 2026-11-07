@@ -4,7 +4,6 @@
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -14,8 +13,8 @@ use super::{
     ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable, writable_worker,
 };
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{asset_issues, assets, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::assets;
 use crate::models::records;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::equipment as rules;
@@ -23,11 +22,12 @@ use crate::rules::metrics::is_employed_on;
 
 /// How many pieces of equipment `worker` still holds.
 pub(crate) async fn out_count(ctx: &AppContext, worker: Uuid) -> Result<usize> {
-    let n = asset_issues::Entity::find()
-        .filter(asset_issues::Column::WorkerPid.eq(worker))
-        .filter(asset_issues::Column::ReturnedOn.is_null())
-        .count(&ctx.db)
-        .await?;
+    let n = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM asset_issues WHERE worker_pid = $1 AND returned_on IS NULL"#,
+        worker,
+    )
+    .fetch_one(pool(ctx))
+    .await?;
     Ok(usize::try_from(n).unwrap_or(usize::MAX))
 }
 
@@ -45,18 +45,18 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = assets::Entity::find()
-        .filter(assets::Column::OrganizationRef.eq(&query.organization))
-        .order_by_asc(assets::Column::Tag)
-        .all(&ctx.db)
+    let rows = sqlx::query_as!(
+        assets::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, kind, tag, owner_role, recorded_by
+           FROM assets WHERE organization_ref = $1 ORDER BY tag"#,
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    let open = sqlx::query_scalar!("SELECT asset_pid FROM asset_issues WHERE returned_on IS NULL")
+        .fetch_all(pool(&ctx))
         .await?;
-    let open: Vec<Uuid> = asset_issues::Entity::find()
-        .filter(asset_issues::Column::ReturnedOn.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|i| i.asset_pid)
-        .collect();
     let mut out = Vec::new();
     for row in &rows {
         let mut v = row_json(row)?;
@@ -92,31 +92,36 @@ async fn create(
         &payload.owner_role,
     ))?;
     let tag = payload.tag.trim().to_string();
-    let clash = assets::Entity::find()
-        .filter(assets::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(assets::Column::Tag.eq(&tag))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM assets WHERE organization_ref = $1 AND tag = $2
+           ) AS "clash!""#,
+        payload.organization_ref,
+        tag,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if clash {
         return Err(unprocessable(
             "another asset in this organization has that tag",
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    assets::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        kind: ActiveValue::set(payload.kind.clone()),
-        tag: ActiveValue::set(tag),
-        owner_role: ActiveValue::set(payload.owner_role.trim().to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO assets (pid, organization_ref, kind, tag, owner_role, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        payload.organization_ref,
+        payload.kind,
+        tag,
+        payload.owner_role.trim(),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "asset",
         pid,
         "asset_created",
@@ -124,16 +129,21 @@ async fn create(
         Some(json!({ "kind": payload.kind })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
 async fn find_asset(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<assets::Model> {
-    let row = assets::Entity::find()
-        .filter(assets::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        assets::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, kind, tag, owner_role, recorded_by
+           FROM assets WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -153,12 +163,14 @@ async fn issue(
     Json(payload): Json<IssuePayload>,
 ) -> Result<Response> {
     let asset = find_asset(&ctx, &caller, pid).await?;
-    let worker = workers::Entity::find()
-        .filter(workers::Column::Pid.eq(payload.worker_pid))
-        .filter(workers::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| unprocessable("the worker is not in this organization"))?;
+    let worker = sqlx::query!(
+        "SELECT pid, organization_ref, hired_on, terminated_on FROM workers
+         WHERE pid = $1 AND deleted_at IS NULL",
+        payload.worker_pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or_else(|| unprocessable("the worker is not in this organization"))?;
     if worker.organization_ref != asset.organization_ref {
         return Err(unprocessable("the worker is not in this organization"));
     }
@@ -168,30 +180,34 @@ async fn issue(
     }
     let issued_on = payload.issued_on.unwrap_or(today);
     ensure_valid(&rules::issue_problems(issued_on, today, worker.hired_on))?;
-    let held = asset_issues::Entity::find()
-        .filter(asset_issues::Column::AssetPid.eq(pid))
-        .filter(asset_issues::Column::ReturnedOn.is_null())
-        .count(&ctx.db)
-        .await?;
-    if held > 0 {
+    let held = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM asset_issues WHERE asset_pid = $1 AND returned_on IS NULL
+           ) AS "held!""#,
+        pid,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if held {
         return Err(unprocessable(
             "the asset is already out; record its return first",
         ));
     }
     let issue_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    asset_issues::ActiveModel {
-        pid: ActiveValue::set(issue_pid),
-        asset_pid: ActiveValue::set(pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        issued_on: ActiveValue::set(issued_on),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO asset_issues (pid, asset_pid, worker_pid, issued_on, recorded_by)
+         VALUES ($1, $2, $3, $4, $5)",
+        issue_pid,
+        pid,
+        worker.pid,
+        issued_on,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "asset_issue",
         issue_pid,
         "asset_issued",
@@ -199,7 +215,7 @@ async fn issue(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": issue_pid }))
 }
 
@@ -218,11 +234,13 @@ async fn close(
     Path(pid): Path<Uuid>,
     Json(payload): Json<ReturnPayload>,
 ) -> Result<Response> {
-    let issue = asset_issues::Entity::find()
-        .filter(asset_issues::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let issue = sqlx::query!(
+        "SELECT asset_pid, issued_on, returned_on FROM asset_issues WHERE pid = $1",
+        pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     find_asset(&ctx, &caller, issue.asset_pid).await?;
     if issue.returned_on.is_some() {
         return Err(unprocessable("this issue is already closed"));
@@ -241,21 +259,25 @@ async fn close(
     } else {
         "asset_written_off"
     };
-    let txn = ctx.db.begin().await?;
-    let mut active: asset_issues::ActiveModel = issue.into();
-    active.returned_on = ActiveValue::set(Some(returned_on));
-    active.outcome = ActiveValue::set(Some(payload.outcome.clone()));
-    active.note = ActiveValue::set(
-        payload
-            .note
-            .as_ref()
-            .map(|n| n.trim().to_string())
-            .filter(|n| !n.is_empty()),
-    );
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(&txn, "asset_issue", pid, action, caller.actor(), None).await?;
-    txn.commit().await?;
+    let note = payload
+        .note
+        .as_ref()
+        .map(|n| n.trim().to_string())
+        .filter(|n| !n.is_empty());
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE asset_issues SET returned_on = $2, outcome = $3, note = $4, recorded_by = $5
+         WHERE pid = $1",
+        pid,
+        returned_on,
+        payload.outcome,
+        note,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "asset_issue", pid, action, caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "outcome": payload.outcome }))
 }
 
@@ -267,29 +289,33 @@ async fn of_worker(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let issues = asset_issues::Entity::find()
-        .filter(asset_issues::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(asset_issues::Column::IssuedOn)
-        .all(&ctx.db)
-        .await?;
-    let mut out = Vec::new();
-    for i in &issues {
-        let asset = assets::Entity::find()
-            .filter(assets::Column::Pid.eq(i.asset_pid))
-            .one(&ctx.db)
-            .await?;
-        out.push(json!({
-            "issue_pid": i.pid,
-            "asset_pid": i.asset_pid,
-            "kind": asset.as_ref().map(|a| a.kind.clone()),
-            "tag": asset.as_ref().map(|a| a.tag.clone()),
-            "issued_on": i.issued_on,
-            "returned_on": i.returned_on,
-            "outcome": i.outcome,
-            "note": i.note,
-        }));
-    }
+    let issues = sqlx::query!(
+        r#"SELECT i.pid, i.asset_pid, i.issued_on, i.returned_on, i.outcome, i.note,
+                  a.kind AS "kind?", a.tag AS "tag?"
+           FROM asset_issues i
+           LEFT JOIN assets a ON a.pid = i.asset_pid
+           WHERE i.worker_pid = $1
+           ORDER BY i.issued_on DESC"#,
+        worker.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let still_out = issues.iter().filter(|i| i.returned_on.is_none()).count();
+    let out: Vec<serde_json::Value> = issues
+        .into_iter()
+        .map(|i| {
+            json!({
+                "issue_pid": i.pid,
+                "asset_pid": i.asset_pid,
+                "kind": i.kind,
+                "tag": i.tag,
+                "issued_on": i.issued_on,
+                "returned_on": i.returned_on,
+                "outcome": i.outcome,
+                "note": i.note,
+            })
+        })
+        .collect();
     format::json(json!({ "worker_pid": worker.pid, "out": still_out, "issues": out }))
 }
 
@@ -308,24 +334,25 @@ async fn team_count(
         return Err(forbidden("a manager's team count is for that manager"));
     }
     let today = Utc::now().date_naive();
-    let team: Vec<Uuid> = workers::Entity::find()
-        .filter(workers::Column::ManagerPid.eq(manager.pid))
-        .filter(workers::Column::OrganizationRef.eq(manager.organization_ref.clone()))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .map(|w| w.pid)
-        .collect();
-    let holders = asset_issues::Entity::find()
-        .filter(asset_issues::Column::WorkerPid.is_in(team.clone()))
-        .filter(asset_issues::Column::ReturnedOn.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|i| i.worker_pid)
-        .collect::<std::collections::BTreeSet<_>>();
+    let team: Vec<Uuid> = sqlx::query!(
+        "SELECT pid, hired_on, terminated_on FROM workers
+         WHERE manager_pid = $1 AND organization_ref = $2 AND deleted_at IS NULL",
+        manager.pid,
+        manager.organization_ref,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .map(|w| w.pid)
+    .collect();
+    let holders = sqlx::query_scalar!(
+        "SELECT DISTINCT worker_pid FROM asset_issues
+         WHERE worker_pid = ANY($1) AND returned_on IS NULL",
+        &team,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let count = rules::team_holding(team.len(), holders.len(), DEFAULT_FLOOR);
     format::json(json!({ "manager_pid": manager.pid, "floor": DEFAULT_FLOOR, "count": count }))
 }

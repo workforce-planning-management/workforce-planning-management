@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO asset_issues (pid, asset_pid, worker_pid, issued_on, recorded_by)\n         VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "62f56440ba333eaf2cc4f3c412efbc92732558d5ee99c781973439b62a893ea6"
+}

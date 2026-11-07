@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM asset_issues WHERE asset_pid = $1 AND returned_on IS NULL\n           ) AS \"held!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "held!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fd4f816f7f25b052a3e231f691cb5464cc06e2f11c29078dc6d58b7d7e8b530e"
+}

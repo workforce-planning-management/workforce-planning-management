@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.pid, i.asset_pid, i.issued_on, i.returned_on, i.outcome, i.note,\n                  a.kind AS \"kind?\", a.tag AS \"tag?\"\n           FROM asset_issues i\n           LEFT JOIN assets a ON a.pid = i.asset_pid\n           WHERE i.worker_pid = $1\n           ORDER BY i.issued_on DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "asset_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "asset_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "issued_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "issued_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "returned_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "returned_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "asset_issues",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kind?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "tag?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "tag"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "c15bf47d0893da9757fac8969764b862862c7ea2e5813064f263750e18284c91"
+}
