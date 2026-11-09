@@ -17,7 +17,6 @@
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use uuid::Uuid;
@@ -25,8 +24,8 @@ use uuid::Uuid;
 use super::skill_gaps::{Evidence, load_evidence};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{skill_courses, skills, training_enrollments, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::skill_courses;
 use crate::models::{memberships, records};
 use crate::rules::skill_gap::{self as gap_rules, Gap, Status};
 use crate::rules::training::{self as rules, Course, DEFAULT_HOURS_PER_LEVEL, Recommendation};
@@ -34,13 +33,35 @@ use crate::rules::training_economics::valid_fee;
 
 // ─── The course catalogue ───────────────────────────────────────────────────
 
-async fn find_skill(ctx: &AppContext, pid: &str) -> Result<skills::Model> {
-    skills::Entity::find()
-        .filter(skills::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+/// A skill, as the catalogue reads it.
+struct Skill {
+    pid: Uuid,
+    hours_per_level: Option<i32>,
+}
+
+async fn find_skill(ctx: &AppContext, pid: &str) -> Result<Skill> {
+    sqlx::query_as!(
+        Skill,
+        "SELECT pid, hours_per_level FROM skills WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// A live course by pid.
+async fn find_course(ctx: &AppContext, pid: &str) -> Result<skill_courses::Model> {
+    sqlx::query_as!(
+        skill_courses::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, skill_pid, course_ref, title, hours, levels,
+                  deleted_at AS "deleted_at: _", fee_minor, fee_currency
+             FROM skill_courses WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 fn course_json(c: &skill_courses::Model) -> serde_json::Value {
@@ -61,12 +82,15 @@ fn course_json(c: &skill_courses::Model) -> serde_json::Value {
 #[debug_handler]
 async fn list_courses(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let skill = find_skill(&ctx, &pid).await?;
-    let rows = skill_courses::Entity::find()
-        .filter(skill_courses::Column::SkillPid.eq(skill.pid))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .order_by_asc(skill_courses::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        skill_courses::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, skill_pid, course_ref, title, hours, levels,
+                  deleted_at AS "deleted_at: _", fee_minor, fee_currency
+             FROM skill_courses WHERE skill_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        skill.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({
         "skill_pid": skill.pid,
         "hours_per_level": skill.hours_per_level,
@@ -116,35 +140,39 @@ async fn add_course(
         return Err(unprocessable("levels must be between 1 and 4"));
     }
     valid_fee(payload.fee_minor, payload.fee_currency.as_deref()).map_err(|e| unprocessable(&e))?;
-    let taken = skill_courses::Entity::find()
-        .filter(skill_courses::Column::SkillPid.eq(skill.pid))
-        .filter(skill_courses::Column::CourseRef.eq(payload.course_ref.trim()))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM skill_courses WHERE skill_pid = $1 AND course_ref = $2 AND deleted_at IS NULL)
+             AS "taken!""#,
+        skill.pid,
+        payload.course_ref.trim(),
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     if taken {
         return Err(unprocessable(
             "that course is already listed for this skill",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let row = skill_courses::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        skill_pid: ActiveValue::set(skill.pid),
-        course_ref: ActiveValue::set(payload.course_ref.trim().to_string()),
-        title: ActiveValue::set(payload.title.trim().to_string()),
-        hours: ActiveValue::set(payload.hours),
-        levels: ActiveValue::set(levels),
-        fee_minor: ActiveValue::set(payload.fee_minor),
-        fee_currency: ActiveValue::set(payload.fee_currency.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        skill_courses::Model,
+        r#"INSERT INTO skill_courses (pid, skill_pid, course_ref, title, hours, levels, fee_minor, fee_currency)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, skill_pid, course_ref, title, hours, levels,
+                  deleted_at AS "deleted_at: _", fee_minor, fee_currency"#,
+        Uuid::new_v4(),
+        skill.pid,
+        payload.course_ref.trim(),
+        payload.title.trim(),
+        payload.hours,
+        levels,
+        payload.fee_minor,
+        payload.fee_currency,
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "skill_course",
         row.pid,
         "created",
@@ -152,7 +180,7 @@ async fn add_course(
         Some(course_json(&row)),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(course_json(&row))
 }
 
@@ -174,19 +202,21 @@ async fn set_fee(
     Json(payload): Json<FeePayload>,
 ) -> Result<Response> {
     valid_fee(payload.fee_minor, payload.fee_currency.as_deref()).map_err(|e| unprocessable(&e))?;
-    let row = skill_courses::Entity::find()
-        .filter(skill_courses::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active: skill_courses::ActiveModel = row.into();
-    active.fee_minor = ActiveValue::set(payload.fee_minor);
-    active.fee_currency = ActiveValue::set(payload.fee_currency.clone());
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let row = find_course(&ctx, &pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        skill_courses::Model,
+        r#"UPDATE skill_courses SET fee_minor = $2, fee_currency = $3 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, skill_pid, course_ref, title, hours, levels,
+                  deleted_at AS "deleted_at: _", fee_minor, fee_currency"#,
+        row.id,
+        payload.fee_minor,
+        payload.fee_currency,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "skill_course",
         updated.pid,
         "fee_set",
@@ -197,7 +227,7 @@ async fn set_fee(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(course_json(&updated))
 }
 
@@ -208,26 +238,25 @@ async fn remove_course(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = skill_courses::Entity::find()
-        .filter(skill_courses::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    let mut active: skill_courses::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let removed = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let row = find_course(&ctx, &pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE skill_courses SET deleted_at = $2 WHERE id = $1",
+        row.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "skill_course",
-        removed.pid,
+        row.pid,
         "deleted",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -254,27 +283,37 @@ async fn set_hours(
     {
         return Err(unprocessable("hours_per_level must be between 1 and 500"));
     }
-    let mut active: skills::ActiveModel = skill.into();
-    active.hours_per_level = ActiveValue::set(payload.hours_per_level);
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE skills SET hours_per_level = $2 WHERE pid = $1",
+        skill.pid,
+        payload.hours_per_level,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "skill",
-        updated.pid,
+        skill.pid,
         "updated",
         caller.actor(),
-        Some(serde_json::json!({ "hours_per_level": updated.hours_per_level })),
+        Some(serde_json::json!({ "hours_per_level": payload.hours_per_level })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
-        "skill_pid": updated.pid,
-        "hours_per_level": updated.hours_per_level,
+        "skill_pid": skill.pid,
+        "hours_per_level": payload.hours_per_level,
     }))
 }
 
 // ─── Recommendations ────────────────────────────────────────────────────────
+
+/// A person below a need, as the demand view reads them.
+struct Staff {
+    pid: Uuid,
+    department: String,
+}
 
 /// What recommendations need beyond the gaps themselves.
 pub(crate) struct Catalogue {
@@ -286,10 +325,12 @@ pub(crate) struct Catalogue {
 
 pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Result<Catalogue> {
     let mut courses: HashMap<Uuid, Vec<Course>> = HashMap::new();
-    for c in skill_courses::Entity::find()
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
+    let db = db::pool(ctx);
+    for c in sqlx::query!(
+        "SELECT skill_pid, course_ref, title, hours, levels FROM skill_courses WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?
     {
         courses.entry(c.skill_pid).or_default().push(Course {
             course_ref: c.course_ref,
@@ -300,21 +341,22 @@ pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Re
     }
     let mut hours_per_level = HashMap::new();
     let mut names = HashMap::new();
-    for s in skills::Entity::find().all(&ctx.db).await? {
+    for s in sqlx::query!("SELECT pid, name, hours_per_level FROM skills")
+        .fetch_all(db)
+        .await?
+    {
         if let Some(h) = s.hours_per_level.and_then(|h| u32::try_from(h).ok()) {
             hours_per_level.insert(s.pid, h);
         }
         names.insert(s.pid, s.name);
     }
     let mut completed: HashMap<Uuid, HashSet<String>> = HashMap::new();
-    for t in super::find_in(
-        ctx,
-        training_enrollments::Entity::find()
-            .filter(training_enrollments::Column::DeletedAt.is_null())
-            .filter(training_enrollments::Column::Status.eq("completed")),
-        training_enrollments::Column::WorkerPid,
+    for t in sqlx::query!(
+        "SELECT worker_pid, course_ref FROM training_enrollments
+          WHERE deleted_at IS NULL AND status = 'completed' AND worker_pid = ANY($1)",
         worker_pids,
     )
+    .fetch_all(db)
     .await?
     {
         completed
@@ -481,13 +523,17 @@ async fn training_demand(
     // Only people below a need can add hours, so only they are read whole; everyone else is counted.
     let (considered, pids) =
         super::gap_sql::workers_below_a_need(&ctx, scope.as_deref(), department, today).await?;
-    let by_pid: HashMap<Uuid, workers::Model> =
-        super::find_in(&ctx, workers::Entity::find(), workers::Column::Pid, &pids)
-            .await?
-            .into_iter()
-            .map(|w| (w.pid, w))
-            .collect();
-    let staff: Vec<&workers::Model> = pids.iter().filter_map(|p| by_pid.get(p)).collect();
+    let by_pid: HashMap<Uuid, Staff> = sqlx::query_as!(
+        Staff,
+        "SELECT pid, department FROM workers WHERE pid = ANY($1)",
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect();
+    let staff: Vec<&Staff> = pids.iter().filter_map(|p| by_pid.get(p)).collect();
     let evidence: Evidence = load_evidence(&ctx, &pids, false).await?;
     let catalogue = load_catalogue(&ctx, &pids).await?;
 

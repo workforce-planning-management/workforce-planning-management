@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM skill_courses WHERE skill_pid = $1 AND course_ref = $2 AND deleted_at IS NULL)\n             AS \"taken!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "taken!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "8dd4c7cfe359a7eea9bd72cc0439e7ff04e575db9b349f94d0a1397da5c34fd2"
+}
