@@ -1,0 +1,202 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE programme_demands\n                  SET fte_centi = $2, status = $3, peer_withdrawn_at = $4, peer_event_id = $5, received_at = $6,\n                      peer_sent_at = $7\n                WHERE id = $1\n                RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, programme_ref, pool_pid, month,\n                  fte_centi, status, source, peer_event_id, received_at AS \"received_at: _\",\n                  peer_sent_at AS \"peer_sent_at: _\", peer_withdrawn_at AS \"peer_withdrawn_at: _\",\n                  deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "fte_centi",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "fte_centi"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "peer_event_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "peer_event_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "received_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "received_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "peer_sent_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "peer_sent_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "peer_withdrawn_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "peer_withdrawn_at"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Varchar",
+        "Timestamptz",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "aa51f21d32ed8cd80670111410dbf057d7057581e7e5d7dad8fe071c7453d5fa"
+}

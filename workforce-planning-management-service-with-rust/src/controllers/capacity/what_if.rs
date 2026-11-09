@@ -106,9 +106,9 @@ pub(super) async fn what_if(
         }
         None => None,
     };
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    crate::db::audit(
+        &mut tx,
         "capacity",
         Uuid::new_v4(),
         "capacity_what_if_asked",
@@ -120,7 +120,7 @@ pub(super) async fn what_if(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     let mut body = answer_json(&result, &names, from);
     body["programme_new_end"] = json!(payload.programme_new_end);
     body["contingent_ending"] = json!(contingent.map(|counts| {

@@ -198,6 +198,29 @@ async fn capacity_records_validate_and_soft_delete() {
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0]["fte_centi"], 175);
         assert_eq!(listed[0]["status"], "proposed");
+        // Closed, then set again with no status: it stays closed, and a new deleted claim is not reused below.
+        let mut closed = good.clone();
+        closed["status"] = json!("closed");
+        request
+            .put("/api/programme-demands")
+            .json(&closed)
+            .await
+            .assert_status_ok();
+        let mut quiet = good.clone();
+        quiet["fte_centi"] = json!(160);
+        request
+            .put("/api/programme-demands")
+            .json(&quiet)
+            .await
+            .assert_status_ok();
+        let listed: Vec<Value> = request
+            .get(&format!("/api/programme-demands?pool={pool}"))
+            .await
+            .json();
+        assert_eq!(
+            (listed[0]["status"].clone(), listed[0]["fte_centi"].clone()),
+            (json!("closed"), json!(160))
+        );
         request
             .delete(&format!(
                 "/api/programme-demands/{}",

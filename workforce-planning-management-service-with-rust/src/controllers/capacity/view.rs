@@ -174,28 +174,11 @@ pub(crate) async fn load_org_capacity(
     count: u32,
 ) -> Result<OrgCapacity> {
     let months = rules::months(from, count).map_err(|e| unprocessable(&e))?;
-    let pools = skill_pools::Entity::find()
-        .filter(skill_pools::Column::OrganizationRef.eq(org))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .order_by_asc(skill_pools::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let pools = pools_of(ctx, org).await?;
     let pool_pids: Vec<Uuid> = pools.iter().map(|p| p.pid).collect();
-    let member_rows = skill_pool_members::Entity::find()
-        .filter(skill_pool_members::Column::PoolPid.is_in(pool_pids.clone()))
-        .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let demand_rows = programme_demands::Entity::find()
-        .filter(programme_demands::Column::PoolPid.is_in(pool_pids.clone()))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let commitment_rows = partner_commitments::Entity::find()
-        .filter(partner_commitments::Column::PoolPid.is_in(pool_pids))
-        .filter(partner_commitments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let member_rows = members_in(ctx, &pool_pids).await?;
+    let demand_rows = demands_on(ctx, &pool_pids).await?;
+    let commitment_rows = commitments_to(ctx, &pool_pids).await?;
     let members_by_pool: Vec<Vec<rules::Member>> = pools
         .iter()
         .map(|pool| {

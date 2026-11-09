@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, partner_ref, pool_pid, month,\n                  fte_centi, status, deleted_at AS \"deleted_at: _\"\n             FROM partner_commitments WHERE pool_pid = ANY($1) AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "partner_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "partner_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "fte_centi",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "fte_centi"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "c8601431db0c6d995d5f10a920983f7edb1db59405bc68e88822019f5b25b1df"
+}

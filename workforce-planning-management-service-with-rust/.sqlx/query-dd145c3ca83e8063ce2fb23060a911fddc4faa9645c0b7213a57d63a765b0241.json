@@ -1,0 +1,138 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, programme_ref, pool_pid, month, fte_centi, status, source, received_at, peer_sent_at,\n                peer_withdrawn_at\n           FROM programme_demands\n          WHERE deleted_at IS NULL AND pool_pid = ANY($1) AND ($2::uuid IS NULL OR pool_pid = $2)\n            AND ($3::text IS NULL OR programme_ref = $3)\n          ORDER BY month, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "fte_centi",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "fte_centi"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "received_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "received_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "peer_sent_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "peer_sent_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "peer_withdrawn_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "peer_withdrawn_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dd145c3ca83e8063ce2fb23060a911fddc4faa9645c0b7213a57d63a765b0241"
+}

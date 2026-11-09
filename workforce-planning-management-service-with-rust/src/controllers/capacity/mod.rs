@@ -10,7 +10,6 @@
 use super::ensure_org_in_scope;
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, IntoActiveModel, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
@@ -19,10 +18,8 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::{
-    partner_commitments, programme_demands, role_profiles, skill_pool_members, skill_pools, skills,
-    start_decisions,
+    partner_commitments, programme_demands, skill_pool_members, skill_pools,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::capacity as rules;
 use crate::validation::Problems;
@@ -46,14 +43,108 @@ async fn live_pool(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<skill_pools::Model> {
-    let pool = skill_pools::Entity::find()
-        .filter(skill_pools::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+    let pool = pool_by_pid(ctx, records::parse_pid(pid)?)
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &pool.organization_ref).await?;
     Ok(pool)
+}
+
+// The shared reads, into the same models (WPM-T466). Each statement is written out once here.
+
+/// A live pool by pid.
+async fn pool_by_pid(ctx: &AppContext, pid: Uuid) -> Result<Option<skill_pools::Model>> {
+    Ok(sqlx::query_as!(
+        skill_pools::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name,
+                  description, operations_reservation_bp, peer_pool_ref, deleted_at AS "deleted_at: _"
+             FROM skill_pools WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?)
+}
+
+/// The live pools of `org`, by name.
+async fn pools_of(ctx: &AppContext, org: &str) -> Result<Vec<skill_pools::Model>> {
+    Ok(sqlx::query_as!(
+        skill_pools::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name,
+                  description, operations_reservation_bp, peer_pool_ref, deleted_at AS "deleted_at: _"
+             FROM skill_pools WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY name"#,
+        org,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
+}
+
+/// The live members of `pools`.
+async fn members_in(ctx: &AppContext, pools: &[Uuid]) -> Result<Vec<skill_pool_members::Model>> {
+    Ok(sqlx::query_as!(
+        skill_pool_members::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pool_pid, role_profile_pid,
+                  skill_pid, min_proficiency, deleted_at AS "deleted_at: _"
+             FROM skill_pool_members WHERE pool_pid = ANY($1) AND deleted_at IS NULL ORDER BY id"#,
+        pools,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
+}
+
+/// The live demand claims on `pools`.
+async fn demands_on(ctx: &AppContext, pools: &[Uuid]) -> Result<Vec<programme_demands::Model>> {
+    Ok(sqlx::query_as!(
+        programme_demands::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, programme_ref, pool_pid, month,
+                  fte_centi, status, source, peer_event_id, received_at AS "received_at: _",
+                  peer_sent_at AS "peer_sent_at: _", peer_withdrawn_at AS "peer_withdrawn_at: _",
+                  deleted_at AS "deleted_at: _"
+             FROM programme_demands WHERE pool_pid = ANY($1) AND deleted_at IS NULL ORDER BY id"#,
+        pools,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
+}
+
+/// The live demand claims of `programme`: only `proposed` ones when `proposed_only`, and only on `pools` when given.
+async fn demands_of_programme(
+    ctx: &AppContext,
+    programme: &str,
+    proposed_only: bool,
+    pools: Option<&[Uuid]>,
+) -> Result<Vec<programme_demands::Model>> {
+    Ok(sqlx::query_as!(
+        programme_demands::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, programme_ref, pool_pid, month,
+                  fte_centi, status, source, peer_event_id, received_at AS "received_at: _",
+                  peer_sent_at AS "peer_sent_at: _", peer_withdrawn_at AS "peer_withdrawn_at: _",
+                  deleted_at AS "deleted_at: _"
+             FROM programme_demands
+            WHERE programme_ref = $1 AND deleted_at IS NULL AND (NOT $2 OR status = 'proposed')
+              AND ($3::uuid[] IS NULL OR pool_pid = ANY($3))
+            ORDER BY id"#,
+        programme,
+        proposed_only,
+        pools,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
+}
+
+/// The live partner commitments to `pools`.
+async fn commitments_to(
+    ctx: &AppContext,
+    pools: &[Uuid],
+) -> Result<Vec<partner_commitments::Model>> {
+    Ok(sqlx::query_as!(
+        partner_commitments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, partner_ref, pool_pid, month,
+                  fte_centi, status, deleted_at AS "deleted_at: _"
+             FROM partner_commitments WHERE pool_pid = ANY($1) AND deleted_at IS NULL ORDER BY id"#,
+        pools,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }
 
 fn pid_ref(pid: Uuid) -> serde_json::Value {
