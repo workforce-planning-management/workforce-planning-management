@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE dotted_line_reports SET ended_at = $3 WHERE report_pid = $1 AND manager_pid = $2 AND ended_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "daf750bb9db4499537f61f0a42c403fc23d10f7ac5109857483a3f7cd7ce4469"
+}
