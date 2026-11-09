@@ -41,7 +41,7 @@ ed25519-dalek = { version = "3.0.0" }
 base64 = { version = "0.23" }
 axa = { workspace = true }
 # The schedule's cron expressions (`src/scheduler.rs`).
-cron = { version = "0.15" }
+cron = { version = "0.17" }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
