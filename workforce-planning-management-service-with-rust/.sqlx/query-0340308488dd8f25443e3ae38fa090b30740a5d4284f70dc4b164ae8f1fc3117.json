@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT program_pid, status, outcome FROM program_placements WHERE deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "program_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "program_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "outcome"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0340308488dd8f25443e3ae38fa090b30740a5d4284f70dc4b164ae8f1fc3117"
+}

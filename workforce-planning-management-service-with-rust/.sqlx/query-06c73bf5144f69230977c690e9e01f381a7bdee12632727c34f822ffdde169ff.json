@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(DISTINCT ws.worker_pid) AS \"with_gap!\",\n                  COUNT(DISTINCT ws.worker_pid) FILTER (WHERE EXISTS (\n                      SELECT 1 FROM development_plans dp\n                       WHERE dp.worker_pid = ws.worker_pid AND dp.deleted_at IS NULL\n                         AND dp.status = 'active')) AS \"covered!\"\n             FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid\n            WHERE ws.deleted_at IS NULL AND ws.target IS NOT NULL AND ws.proficiency < ws.target\n              AND e.deleted_at IS NULL AND e.hired_on <= $1 AND (e.terminated_on IS NULL OR e.terminated_on > $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "with_gap!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "covered!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "06c73bf5144f69230977c690e9e01f381a7bdee12632727c34f822ffdde169ff"
+}

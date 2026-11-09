@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ws.skill_pid, COUNT(*) AS \"declared!\",\n                  COUNT(*) FILTER (WHERE ws.proficiency >= $2) AS \"proficient!\",\n                  COUNT(DISTINCT e.department) FILTER (WHERE ws.proficiency >= $2) AS \"departments!\"\n             FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid\n            WHERE ws.deleted_at IS NULL AND e.deleted_at IS NULL AND e.hired_on <= $1\n              AND (e.terminated_on IS NULL OR e.terminated_on > $1)\n            GROUP BY ws.skill_pid",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "declared!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "proficient!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "departments!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "1b680b840ab5455730fefcf7dd818508ad2f1aff84128ae371b3b2cb3162ade2"
+}

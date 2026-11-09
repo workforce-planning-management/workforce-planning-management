@@ -1,0 +1,98 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, role_title, department, criticality, risk_of_loss, incumbent_pid, vacancy_expected_on\n           FROM succession_plans WHERE deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "role_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "role_title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "criticality",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "criticality"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "risk_of_loss",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "risk_of_loss"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "incumbent_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "incumbent_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "vacancy_expected_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "vacancy_expected_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "3649804d4a6a4331f94174f0049830c1f318e2d6a635c0d7767c39ca0ec8ba8e"
+}

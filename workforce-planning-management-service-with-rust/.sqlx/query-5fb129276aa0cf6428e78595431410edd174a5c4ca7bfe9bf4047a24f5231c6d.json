@@ -1,0 +1,46 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) FILTER (WHERE hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)) AS \"opening!\",\n                  count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS \"closing!\",\n                  count(*) FILTER (WHERE hired_on >= $3 AND hired_on <= $2) AS \"starters!\",\n                  count(*) FILTER (WHERE terminated_on >= $3 AND terminated_on <= $2) AS \"leavers!\"\n             FROM workers WHERE deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "opening!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "closing!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "starters!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "leavers!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "5fb129276aa0cf6428e78595431410edd174a5c4ca7bfe9bf4047a24f5231c6d"
+}

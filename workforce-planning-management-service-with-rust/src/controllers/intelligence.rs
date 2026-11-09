@@ -28,20 +28,11 @@
 
 use super::ratio_json;
 use axa::prelude::*;
-use sea_orm::sea_query::Expr;
-use sea_orm::{
-    ColumnTrait, Condition, ConnectionTrait, DatabaseBackend, EntityTrait, PaginatorTrait,
-    QueryFilter, QuerySelect, Select, Statement,
-};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    early_career_programs, headcount_snapshots, pipeline_members, program_placements, requisitions,
-    skills, succession_candidates, succession_plans, talent_pipelines, workers,
-};
 use crate::models::memberships;
 use crate::rules::assessment as assessment_rules;
 use crate::rules::capability as capability_rules;
@@ -72,58 +63,70 @@ async fn overview(
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
     // Counts are worked out by the database, one small grouped query each: the dashboard asks for this
     // on every load, and reading every worker into memory made it fail at 50,000 (WPM-D90).
-    let headcount = employed_on(as_of).count(&ctx.db).await?;
-    let by_department = grouped(&ctx, as_of, workers::Column::Department).await?;
-    let by_status = grouped(&ctx, as_of, workers::Column::Status).await?;
-    let by_employment_type = grouped(&ctx, as_of, workers::Column::EmploymentType).await?;
-    let hire_dates: Vec<(chrono::NaiveDate, i64)> = employed_on(as_of)
-        .select_only()
-        .column(workers::Column::HiredOn)
-        .column_as(Expr::cust("count(*)"), "n")
-        .group_by(workers::Column::HiredOn)
-        .into_tuple()
-        .all(&ctx.db)
-        .await?;
-    let mut by_tenure: BTreeMap<&str, usize> = BTreeMap::new();
-    for (hired_on, n) in hire_dates {
-        let months = rules::months_of_service(hired_on, as_of);
-        *by_tenure.entry(rules::tenure_bucket(months)).or_default() +=
-            usize::try_from(n).unwrap_or(0);
+    let db = crate::db::pool(&ctx);
+    let headcount = employed_count(&ctx, as_of).await?;
+    let (mut by_department, mut by_status, mut by_employment_type) =
+        (BTreeMap::new(), BTreeMap::new(), BTreeMap::new());
+    for row in sqlx::query!(
+        r#"WITH e AS (SELECT department, status, employment_type FROM workers
+                       WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1))
+           SELECT 'department' AS "dimension!", department AS "key!", count(*) AS "n!" FROM e GROUP BY department
+           UNION ALL SELECT 'status', status, count(*) FROM e GROUP BY status
+           UNION ALL SELECT 'employment_type', employment_type, count(*) FROM e GROUP BY employment_type"#,
+        as_of,
+    )
+    .fetch_all(db)
+    .await?
+    {
+        let n = usize::try_from(row.n).unwrap_or(0);
+        match row.dimension.as_str() {
+            "department" => by_department.insert(row.key, n),
+            "status" => by_status.insert(row.key, n),
+            _ => by_employment_type.insert(row.key, n),
+        };
     }
-    let (fte_percent_total,): (i64,) = employed_on(as_of)
-        .select_only()
-        .column_as(Expr::cust("COALESCE(SUM(fte_percent), 0)::bigint"), "total")
-        .into_tuple()
-        .one(&ctx.db)
-        .await?
-        .unwrap_or((0,));
-    let managers: Vec<(Uuid, i64)> = employed_on(as_of)
-        .select_only()
-        .column(workers::Column::ManagerPid)
-        .column_as(Expr::cust("count(*)"), "n")
-        .filter(workers::Column::ManagerPid.is_not_null())
-        .group_by(workers::Column::ManagerPid)
-        .into_tuple()
-        .all(&ctx.db)
-        .await?;
-    // a manager is named only if they are employed on the date too
-    let names: BTreeMap<Uuid, String> = employed_on(as_of)
-        .select_only()
-        .column(workers::Column::Pid)
-        .column(workers::Column::DisplayName)
-        .filter(workers::Column::Pid.is_in(managers.iter().map(|(m, _)| *m)))
-        .into_tuple::<(Uuid, String)>()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .collect();
+    let hire_dates = sqlx::query!(
+        r#"SELECT hired_on, count(*) AS "n!" FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
+            GROUP BY hired_on"#,
+        as_of,
+    )
+    .fetch_all(db)
+    .await?;
+    let mut by_tenure: BTreeMap<&str, usize> = BTreeMap::new();
+    for row in hire_dates {
+        let months = rules::months_of_service(row.hired_on, as_of);
+        *by_tenure.entry(rules::tenure_bucket(months)).or_default() +=
+            usize::try_from(row.n).unwrap_or(0);
+    }
+    let fte_percent_total = sqlx::query_scalar!(
+        r#"SELECT COALESCE(SUM(fte_percent), 0)::bigint AS "total!" FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
+        as_of,
+    )
+    .fetch_one(db)
+    .await?;
+    // Each manager of someone employed on the date, with the count, and their name only if they are employed then too.
+    let managers = sqlx::query!(
+        r#"SELECT r.manager_pid AS "manager_pid!", count(*) AS "n!",
+                  (SELECT m.display_name FROM workers m
+                    WHERE m.pid = r.manager_pid AND m.deleted_at IS NULL AND m.hired_on <= $1
+                      AND (m.terminated_on IS NULL OR m.terminated_on > $1)) AS "name?"
+             FROM workers r
+            WHERE r.deleted_at IS NULL AND r.hired_on <= $1 AND (r.terminated_on IS NULL OR r.terminated_on > $1)
+              AND r.manager_pid IS NOT NULL
+            GROUP BY r.manager_pid"#,
+        as_of,
+    )
+    .fetch_all(db)
+    .await?;
     let mut spans: Vec<serde_json::Value> = managers
         .iter()
-        .map(|(manager, reports)| {
+        .map(|m| {
             serde_json::json!({
-                "manager_pid": manager,
-                "display_name": names.get(manager),
-                "direct_reports": reports,
+                "manager_pid": m.manager_pid,
+                "display_name": m.name,
+                "direct_reports": m.n,
             })
         })
         .collect();
@@ -160,10 +163,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let headcount = employed_count(&ctx, today).await?;
 
-    let skill_rows = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let skill_rows = live_skills(&ctx).await?;
     let skill_name: BTreeMap<Uuid, &str> = skill_rows
         .iter()
         .map(|s| (s.pid, s.name.as_str()))
@@ -172,47 +172,44 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     // skill → (holders, at-or-above-target, below-target), counted by the database over employed people
     // (a declaration from a departed worker is not counted).
     let mut per_skill: BTreeMap<Uuid, (usize, usize, usize)> = BTreeMap::new();
-    for row in rows_on(
-        &ctx,
-        &format!(
-            "SELECT ws.skill_pid AS skill_pid, COUNT(*)::bigint AS holders,
-                    (COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency >= ws.target))::bigint AS at_target,
-                    (COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency < ws.target))::bigint AS below
-               FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
-              WHERE ws.deleted_at IS NULL GROUP BY ws.skill_pid"
-        ),
+    let db = crate::db::pool(&ctx);
+    for row in sqlx::query!(
+        r#"SELECT ws.skill_pid, COUNT(*) AS "holders!",
+                  COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency >= ws.target) AS "at_target!",
+                  COUNT(*) FILTER (WHERE ws.target IS NOT NULL AND ws.proficiency < ws.target) AS "below!"
+             FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid
+            WHERE ws.deleted_at IS NULL AND e.deleted_at IS NULL AND e.hired_on <= $1
+              AND (e.terminated_on IS NULL OR e.terminated_on > $1)
+            GROUP BY ws.skill_pid"#,
         today,
     )
+    .fetch_all(db)
     .await?
     {
-        let count = |name: &str| -> Result<usize> {
-            Ok(usize::try_from(row.try_get::<i64>("", name)?).unwrap_or(0))
-        };
+        let count = |n: i64| usize::try_from(n).unwrap_or(0);
         per_skill.insert(
-            row.try_get("", "skill_pid")?,
-            (count("holders")?, count("at_target")?, count("below")?),
+            row.skill_pid,
+            (count(row.holders), count(row.at_target), count(row.below)),
         );
     }
     // Employed people with a declared gap, and how many of them have an active development plan.
-    let gap_counts = rows_on(
-        &ctx,
-        &format!(
-            "SELECT COUNT(DISTINCT ws.worker_pid)::bigint AS with_gap,
-                    (COUNT(DISTINCT ws.worker_pid) FILTER (WHERE EXISTS (
-                        SELECT 1 FROM development_plans dp
-                         WHERE dp.worker_pid = ws.worker_pid AND dp.deleted_at IS NULL
-                           AND dp.status = 'active')))::bigint AS covered
-               FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
-              WHERE ws.deleted_at IS NULL AND ws.target IS NOT NULL AND ws.proficiency < ws.target"
-        ),
+    let gaps = sqlx::query!(
+        r#"SELECT COUNT(DISTINCT ws.worker_pid) AS "with_gap!",
+                  COUNT(DISTINCT ws.worker_pid) FILTER (WHERE EXISTS (
+                      SELECT 1 FROM development_plans dp
+                       WHERE dp.worker_pid = ws.worker_pid AND dp.deleted_at IS NULL
+                         AND dp.status = 'active')) AS "covered!"
+             FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid
+            WHERE ws.deleted_at IS NULL AND ws.target IS NOT NULL AND ws.proficiency < ws.target
+              AND e.deleted_at IS NULL AND e.hired_on <= $1 AND (e.terminated_on IS NULL OR e.terminated_on > $1)"#,
         today,
     )
+    .fetch_one(db)
     .await?;
-    let count_of = |name: &str| -> Result<usize> {
-        let n: i64 = gap_counts.first().map_or(Ok(0), |r| r.try_get("", name))?;
-        Ok(usize::try_from(n).unwrap_or(0))
-    };
-    let (with_gap, gap_covered) = (count_of("with_gap")?, count_of("covered")?);
+    let (with_gap, gap_covered) = (
+        usize::try_from(gaps.with_gap).unwrap_or(0),
+        usize::try_from(gaps.covered).unwrap_or(0),
+    );
 
     let coverage: Vec<serde_json::Value> = skill_rows
         .iter()
@@ -233,40 +230,31 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
 
     // Development plans in flight, by kind and status.
     let mut plans_by_kind: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-    for row in rows_on(
-        &ctx,
-        "SELECT kind, status, COUNT(*)::bigint AS total FROM development_plans
-          WHERE deleted_at IS NULL AND $1::date IS NOT NULL GROUP BY kind, status",
-        today,
+    for row in sqlx::query!(
+        r#"SELECT kind, status, COUNT(*) AS "total!" FROM development_plans
+            WHERE deleted_at IS NULL GROUP BY kind, status"#
     )
+    .fetch_all(db)
     .await?
     {
         plans_by_kind
-            .entry(row.try_get("", "kind")?)
+            .entry(row.kind)
             .or_default()
-            .insert(
-                row.try_get("", "status")?,
-                usize::try_from(row.try_get::<i64>("", "total")?).unwrap_or(0),
-            );
+            .insert(row.status, usize::try_from(row.total).unwrap_or(0));
     }
 
     // Assessment coverage: workers with at least one completed sitting, per instrument category.
     let mut assessed_by_category: BTreeMap<String, usize> = BTreeMap::new();
-    for row in rows_on(
-        &ctx,
-        "SELECT i.category AS category, COUNT(DISTINCT a.subject_pid)::bigint AS assessed
-           FROM assessments a JOIN assessment_instruments i ON i.pid = a.instrument_pid
-          WHERE a.deleted_at IS NULL AND a.subject_kind = 'worker' AND a.status = 'completed'
-            AND $1::date IS NOT NULL
-          GROUP BY i.category",
-        today,
+    for row in sqlx::query!(
+        r#"SELECT i.category, COUNT(DISTINCT a.subject_pid) AS "assessed!"
+             FROM assessments a JOIN assessment_instruments i ON i.pid = a.instrument_pid
+            WHERE a.deleted_at IS NULL AND a.subject_kind = 'worker' AND a.status = 'completed'
+            GROUP BY i.category"#
     )
+    .fetch_all(db)
     .await?
     {
-        assessed_by_category.insert(
-            row.try_get("", "category")?,
-            usize::try_from(row.try_get::<i64>("", "assessed")?).unwrap_or(0),
-        );
+        assessed_by_category.insert(row.category, usize::try_from(row.assessed).unwrap_or(0));
     }
     let assessment_coverage: Vec<serde_json::Value> = assessment_rules::ASSESSMENT_CATEGORIES
         .iter()
@@ -338,35 +326,33 @@ async fn capability_analysis(
 
     let today = chrono::Utc::now().date_naive();
     let headcount = employed_count(&ctx, today).await?;
-    let skill_rows = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let skill_rows = live_skills(&ctx).await?;
 
     // skill → (declared, proficient, departments of the proficient), counted by the database over employed people
     // (a declaration from a departed worker is not counted).
     let mut per_skill: BTreeMap<Uuid, (usize, usize, usize)> = BTreeMap::new();
-    for row in ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            format!(
-                "SELECT ws.skill_pid AS skill_pid, COUNT(*)::bigint AS declared,
-                        (COUNT(*) FILTER (WHERE ws.proficiency >= $2))::bigint AS proficient,
-                        COUNT(DISTINCT e.department) FILTER (WHERE ws.proficiency >= $2) AS departments
-                   FROM worker_skills ws JOIN ({EMPLOYED_SQL}) e ON e.pid = ws.worker_pid
-                  WHERE ws.deleted_at IS NULL GROUP BY ws.skill_pid"
-            ),
-            [today.into(), min_proficiency.into()],
-        ))
-        .await?
+    for row in sqlx::query!(
+        r#"SELECT ws.skill_pid, COUNT(*) AS "declared!",
+                  COUNT(*) FILTER (WHERE ws.proficiency >= $2) AS "proficient!",
+                  COUNT(DISTINCT e.department) FILTER (WHERE ws.proficiency >= $2) AS "departments!"
+             FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid
+            WHERE ws.deleted_at IS NULL AND e.deleted_at IS NULL AND e.hired_on <= $1
+              AND (e.terminated_on IS NULL OR e.terminated_on > $1)
+            GROUP BY ws.skill_pid"#,
+        today,
+        min_proficiency,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?
     {
-        let count = |name: &str| -> Result<usize> {
-            Ok(usize::try_from(row.try_get::<i64>("", name)?).unwrap_or(0))
-        };
+        let count = |n: i64| usize::try_from(n).unwrap_or(0);
         per_skill.insert(
-            row.try_get("", "skill_pid")?,
-            (count("declared")?, count("proficient")?, count("departments")?),
+            row.skill_pid,
+            (
+                count(row.declared),
+                count(row.proficient),
+                count(row.departments),
+            ),
         );
     }
 
@@ -448,53 +434,52 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
 
     // Opening and closing headcount, starters and leavers: one pass in the database over live workers.
     let opening_date = from.pred_opt().unwrap_or(from);
-    let counts_row = ctx
-        .db
-        .query_one_raw(Statement::from_sql_and_values(
-            DatabaseBackend::Postgres,
-            "SELECT count(*) FILTER (WHERE hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)) AS opening,
-                    count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS closing,
-                    count(*) FILTER (WHERE hired_on >= $3 AND hired_on <= $2) AS starters,
-                    count(*) FILTER (WHERE terminated_on >= $3 AND terminated_on <= $2) AS leavers
-               FROM workers WHERE deleted_at IS NULL",
-            [opening_date.into(), to.into(), from.into()],
-        ))
-        .await?
-        .ok_or_else(|| super::internal("the headcount query returned no row"))?;
-    let count = |name: &str| -> Result<usize> {
-        let n: i64 = counts_row.try_get("", name)?;
-        Ok(usize::try_from(n).unwrap_or(0))
-    };
+    let db = crate::db::pool(ctx);
+    let counts = sqlx::query!(
+        r#"SELECT count(*) FILTER (WHERE hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)) AS "opening!",
+                  count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS "closing!",
+                  count(*) FILTER (WHERE hired_on >= $3 AND hired_on <= $2) AS "starters!",
+                  count(*) FILTER (WHERE terminated_on >= $3 AND terminated_on <= $2) AS "leavers!"
+             FROM workers WHERE deleted_at IS NULL"#,
+        opening_date,
+        to,
+        from,
+    )
+    .fetch_one(db)
+    .await?;
+    let count = |n: i64| usize::try_from(n).unwrap_or(0);
     let (opening, closing, starters, leavers) = (
-        count("opening")?,
-        count("closing")?,
-        count("starters")?,
-        count("leavers")?,
+        count(counts.opening),
+        count(counts.closing),
+        count(counts.starters),
+        count(counts.leavers),
     );
 
     // Span of control over managers of workers employed on `to`: one row per manager.
-    let reports: Vec<(i64,)> = employed_on(to)
-        .select_only()
-        .column_as(Expr::cust("count(*)"), "n")
-        .filter(workers::Column::ManagerPid.is_not_null())
-        .group_by(workers::Column::ManagerPid)
-        .into_tuple()
-        .all(&ctx.db)
-        .await?;
-    let counts: Vec<usize> = reports
-        .iter()
-        .map(|(n,)| usize::try_from(*n).unwrap_or(0))
-        .collect();
+    let counts: Vec<usize> = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
+              AND manager_pid IS NOT NULL
+            GROUP BY manager_pid"#,
+        to,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(count)
+    .collect();
 
     // Time-to-fill over requisitions filled within the period.
-    let filled_days: Vec<i64> = requisitions::Entity::find()
-        .filter(requisitions::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .iter()
-        .filter(|r| r.filled_on.is_some_and(|d| d >= from && d <= to))
-        .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on, r.filled_on))
-        .collect();
+    let filled_days: Vec<i64> = sqlx::query!(
+        "SELECT opened_on, filled_on FROM requisitions WHERE deleted_at IS NULL AND filled_on BETWEEN $1 AND $2",
+        from,
+        to,
+    )
+    .fetch_all(db)
+    .await?
+    .iter()
+    .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on, r.filled_on))
+    .collect();
 
     Ok(PeriodMetrics {
         from,
@@ -593,26 +578,20 @@ async fn headcount_history(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
 ) -> Result<Response> {
-    use sea_orm::QueryOrder;
-    let mut select = headcount_snapshots::Entity::find();
-    if let Some(org) = &query.organization {
-        select = select.filter(headcount_snapshots::Column::OrganizationRef.eq(org));
-    }
-    if let Some(from) = query.from {
-        select = select.filter(headcount_snapshots::Column::AsOf.gte(from));
-    }
-    if let Some(to) = query.to {
-        select = select.filter(headcount_snapshots::Column::AsOf.lte(to));
-    }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        select = select.filter(headcount_snapshots::Column::OrganizationRef.is_in(refs));
-    }
-    let rows = select
-        .order_by_asc(headcount_snapshots::Column::AsOf)
-        .order_by_asc(headcount_snapshots::Column::OrganizationRef)
-        .order_by_asc(headcount_snapshots::Column::Department)
-        .all(&ctx.db)
-        .await?;
+    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let rows = sqlx::query!(
+        "SELECT as_of, organization_ref, department, headcount, fte_percent_total, starters, leavers
+           FROM headcount_snapshots
+          WHERE ($1::text IS NULL OR organization_ref = $1) AND ($2::date IS NULL OR as_of >= $2)
+            AND ($3::date IS NULL OR as_of <= $3) AND ($4::text[] IS NULL OR organization_ref = ANY($4))
+          ORDER BY as_of, organization_ref, department",
+        query.organization,
+        query.from,
+        query.to,
+        scope.as_deref(),
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     let snapshots: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {
@@ -642,22 +621,25 @@ async fn headcount_history(
 /// criticality threshold, since exposure is criticality × risk).
 #[debug_handler]
 async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
-    let plans = succession_plans::Entity::find()
-        .filter(succession_plans::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let db = crate::db::pool(&ctx);
+    let plans = sqlx::query!(
+        "SELECT pid, role_title, department, criticality, risk_of_loss, incumbent_pid, vacancy_expected_on
+           FROM succession_plans WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
     // Only the plan and the rating are needed, so only those two columns are read, grouped once.
     let mut readiness_of: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
-    for (plan_pid, readiness) in succession_candidates::Entity::find()
-        .select_only()
-        .column(succession_candidates::Column::PlanPid)
-        .column(succession_candidates::Column::Readiness)
-        .filter(succession_candidates::Column::DeletedAt.is_null())
-        .into_tuple::<(Uuid, String)>()
-        .all(&ctx.db)
-        .await?
+    for row in sqlx::query!(
+        "SELECT plan_pid, readiness FROM succession_candidates WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?
     {
-        readiness_of.entry(plan_pid).or_default().push(readiness);
+        readiness_of
+            .entry(row.plan_pid)
+            .or_default()
+            .push(row.readiness);
     }
 
     let mut by_coverage: BTreeMap<&str, usize> = BTreeMap::new();
@@ -723,21 +705,24 @@ async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
 /// counts and conversion rates.
 #[debug_handler]
 async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
-    let pipelines = talent_pipelines::Entity::find()
-        .filter(talent_pipelines::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let db = crate::db::pool(&ctx);
+    let pipelines = sqlx::query!(
+        "SELECT pid, name, purpose, target_job_title, target_department FROM talent_pipelines
+          WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
     let mut stages_of: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
-    for (pipeline_pid, stage) in pipeline_members::Entity::find()
-        .select_only()
-        .column(pipeline_members::Column::PipelinePid)
-        .column(pipeline_members::Column::Stage)
-        .filter(pipeline_members::Column::DeletedAt.is_null())
-        .into_tuple::<(Uuid, String)>()
-        .all(&ctx.db)
-        .await?
+    for row in sqlx::query!(
+        "SELECT pipeline_pid, stage FROM pipeline_members WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?
     {
-        stages_of.entry(pipeline_pid).or_default().push(stage);
+        stages_of
+            .entry(row.pipeline_pid)
+            .or_default()
+            .push(row.stage);
     }
 
     let mut by_purpose: BTreeMap<String, usize> = BTreeMap::new();
@@ -760,25 +745,22 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
         }));
     }
 
-    let programs = early_career_programs::Entity::find()
-        .filter(early_career_programs::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let programs = sqlx::query!(
+        "SELECT pid, kind FROM early_career_programs WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
     let mut placements_of: BTreeMap<Uuid, Vec<(String, String)>> = BTreeMap::new();
-    for (program_pid, status, outcome) in program_placements::Entity::find()
-        .select_only()
-        .column(program_placements::Column::ProgramPid)
-        .column(program_placements::Column::Status)
-        .column(program_placements::Column::Outcome)
-        .filter(program_placements::Column::DeletedAt.is_null())
-        .into_tuple::<(Uuid, String, String)>()
-        .all(&ctx.db)
-        .await?
+    for row in sqlx::query!(
+        "SELECT program_pid, status, outcome FROM program_placements WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?
     {
         placements_of
-            .entry(program_pid)
+            .entry(row.program_pid)
             .or_default()
-            .push((status, outcome));
+            .push((row.status, row.outcome));
     }
 
     let mut per_kind: BTreeMap<&str, (usize, Vec<String>, usize)> = BTreeMap::new();
@@ -819,67 +801,32 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     }))
 }
 
-/// Live workers employed on `date` ([`metric_rules::is_employed_on`] in SQL): the one population every
+/// The live skills of the catalogue.
+struct Skill {
+    pid: Uuid,
+    name: String,
+    category: String,
+}
+
+async fn live_skills(ctx: &AppContext) -> Result<Vec<Skill>> {
+    Ok(sqlx::query_as!(
+        Skill,
+        "SELECT pid, name, category FROM skills WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
+}
+
+/// How many people are employed on `date` ([`metric_rules::is_employed_on`], in SQL): the one population every
 /// headcount-style view counts.
-fn employed_on(date: chrono::NaiveDate) -> Select<workers::Entity> {
-    workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::HiredOn.lte(date))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(date)),
-        )
-}
-
-/// Workers employed on `date` counted by one text column (department, status, employment type).
-async fn grouped(
-    ctx: &AppContext,
-    date: chrono::NaiveDate,
-    column: workers::Column,
-) -> Result<BTreeMap<String, usize>> {
-    Ok(employed_on(date)
-        .select_only()
-        .column(column)
-        .column_as(Expr::cust("count(*)"), "n")
-        .group_by(column)
-        .into_tuple::<(String, i64)>()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|(key, n)| (key, usize::try_from(n).unwrap_or(0)))
-        .collect())
-}
-
-/// The people employed on `$1` ([`metric_rules::is_employed_on`], in SQL), as a subquery.
-const EMPLOYED_SQL: &str = "SELECT pid, department FROM workers
-     WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)";
-
-/// Run `sql` (which binds `$1` as the date) and return its rows.
-async fn rows_on(
-    ctx: &AppContext,
-    sql: &str,
-    date: chrono::NaiveDate,
-) -> Result<Vec<sea_orm::QueryResult>> {
-    Ok(ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            sql,
-            [date.into()],
-        ))
-        .await?)
-}
-
-/// How many people are employed on `date`.
 async fn employed_count(ctx: &AppContext, date: chrono::NaiveDate) -> Result<usize> {
-    let rows = rows_on(
-        ctx,
-        &format!("SELECT COUNT(*)::bigint AS total FROM ({EMPLOYED_SQL}) e"),
+    let total = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "total!" FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
         date,
     )
+    .fetch_one(crate::db::pool(ctx))
     .await?;
-    let total: i64 = rows.first().map_or(Ok(0), |r| r.try_get("", "total"))?;
     Ok(usize::try_from(total).unwrap_or(0))
 }
 
