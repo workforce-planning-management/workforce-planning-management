@@ -1023,6 +1023,16 @@ async fn demand_lines_by_basis_and_programme_reach_the_forecast() {
         line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "contractor", "expected_ends_on": "2027-12-31" })).await.assert_status_ok();
         let shown: Value = request.get(&format!("/api/workforce-plans/{plan}")).await.json();
         assert_eq!(shown["demand_lines"].as_array().unwrap().len(), 3, "the same department and date can hold a line for each basis");
+        // The same key again (no role, no programme) changes that line and adds none.
+        let first: Value = line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "contractor", "expected_ends_on": "2027-12-31" })).await.json();
+        let again: Value = line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "contractor", "expected_ends_on": "2027-11-30" })).await.json();
+        assert_eq!(first["pid"], again["pid"], "one line per key");
+        let reshown: Value = request.get(&format!("/api/workforce-plans/{plan}")).await.json();
+        let lines = reshown["demand_lines"].as_array().unwrap();
+        assert_eq!(lines.len(), 3);
+        let contractor = lines.iter().find(|l| l["basis"] == "contractor").unwrap();
+        assert_eq!(contractor["expected_ends_on"], "2027-11-30");
+        line(json!({ "department": dept, "target_on": "2027-06-30", "target_headcount": 1, "basis": "contractor", "expected_ends_on": "2027-12-31" })).await.assert_status_ok();
         let f: Value = request.get(&format!("/api/workforce-plans/{plan}/forecast")).await.json();
         let d = &f["departments"][0];
         assert_eq!(d["planned_demand"], 4);
