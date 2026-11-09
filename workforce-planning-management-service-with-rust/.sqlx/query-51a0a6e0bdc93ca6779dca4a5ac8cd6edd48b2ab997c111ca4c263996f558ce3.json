@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "proficiency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "51a0a6e0bdc93ca6779dca4a5ac8cd6edd48b2ab997c111ca4c263996f558ce3"
+}

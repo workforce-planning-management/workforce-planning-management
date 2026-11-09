@@ -952,6 +952,9 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
             422
         );
         assert_eq!(interest(json!({})).await.status_code(), 422);
+        // A different role is a different interest, not a duplicate.
+        let other: Value = interest(json!({ "role_profile_pid": roles[1] })).await.json();
+        request.delete(&format!("/api/mobility-interests/{}", other["pid"].as_str().unwrap())).await.assert_status_ok();
 
         // Others see counts, never who.
         let summary: Value = request.get("/api/mobility/interest-summary").await.json();
@@ -969,6 +972,7 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
 
         let pid = created["pid"].as_str().unwrap();
         request.delete(&format!("/api/mobility-interests/{pid}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/mobility-interests/{pid}")).await.status_code(), 404, "withdrawn once");
         let after: Value = request.get(&format!("/api/workers/{worker}/mobility-interests")).await.json();
         assert!(after.as_array().unwrap().is_empty());
     })

@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM mobility_interests\n                           WHERE worker_pid = $1 AND deleted_at IS NULL\n                             AND role_profile_pid IS NOT DISTINCT FROM $2\n                             AND requisition_pid IS NOT DISTINCT FROM $3) AS \"exists!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e791ff153554004214780da5492844fd820947cac6136bbfcf29337f692c8014"
+}
