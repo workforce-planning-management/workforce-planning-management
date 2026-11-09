@@ -34,7 +34,7 @@ here), and the live Playwright specs against a real service. See each subproject
 
 | Subproject | Role | Stack |
 | --- | --- | --- |
-| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Axum and axa, SeaORM, PostgreSQL |
+| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Axum and axa, `sqlx` and SeaORM, PostgreSQL |
 | [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 3, Svelte 5 runes, TypeScript |
 | [workforce-planning-management-matcher-with-rust](workforce-planning-management-matcher-with-rust/) | Worker-record matcher crate (published; the service uses the crates.io copy) | Rust, no database, no clock |
 

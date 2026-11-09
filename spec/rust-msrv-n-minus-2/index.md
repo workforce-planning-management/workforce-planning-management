@@ -63,7 +63,10 @@ started requiring a newer toolchain than the policy allows.
 
 ## Current value
 
-As of the most recent update to this document, stable Rust is **1.98**, so the
-MSRV is **1.96**. If stable has moved on since, this document is stale in its
+As of 2026-11-09, stable Rust is **1.99**, so the MSRV is **1.97**. The matcher,
+the migration crate and the vendored `entity-ref` declare 1.97 and CI's `msrv` job
+checks them on it. The service still declares 1.99, because the published matcher
+0.1.0 it depends on declares 1.99; it is lowered once a matcher declaring 1.97 is
+published (WPM-T390). If stable has moved on since, this document is stale in its
 example only — the rule above is what binds, and `Cargo.toml` must be brought
 back in line with it.

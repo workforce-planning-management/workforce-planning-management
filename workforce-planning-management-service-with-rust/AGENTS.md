@@ -1,13 +1,13 @@
 # AGENTS.md — working agreements
 
 A pocket guide for human and AI collaborators working in this
-subproject. Read this **before** opening a PR. (Updated 2026-10-30,
-through WPM-T396.)
+subproject. Read this **before** opening a PR. (Updated 2026-11-09,
+through WPM-T479.)
 
 ## What this project is
 
 A **back-end JSON API**, written in Rust on Axum and [axa](https://crates.io/crates/axa)
-(Axum + SeaORM + PostgreSQL), for workforce planning management across
+(Axum + PostgreSQL; queries moving from SeaORM to `sqlx`, WPM-D184), for workforce planning management across
 the whole employment lifecycle:
 
 - **Hiring and the worker record** — requisitions, the applicant pipeline,
@@ -117,7 +117,7 @@ WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default (WPM-D5
 cargo test --lib                    # DB-free unit tests (1,040 on 2026-10-30)
 cargo test --test mod -- --ignored --test-threads=1    # request tests (Postgres; serial, they share a database)
 cargo test --test enforcement -- --ignored             # auth persona matrix
-cargo test --test security -- --ignored                # headers and rate limits
+cargo test --test security -- --ignored                # headers, rate limits and the lockout
 cargo test --test chaos -- --ignored --nocapture       # database faults (reset, blackhole, slow, a seeded monkey)
 cargo test --no-default-features --features keycloak \
   --test keycloak -- --ignored      # real Keycloak via Testcontainers (Podman)
