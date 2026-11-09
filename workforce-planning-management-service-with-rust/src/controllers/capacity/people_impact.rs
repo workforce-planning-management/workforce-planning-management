@@ -257,25 +257,24 @@ async fn members_among(
     members: &[rules::Member],
     among: &[Uuid],
 ) -> Result<Vec<Uuid>> {
-    let list = among
-        .iter()
-        .map(|p| format!("'{p}'"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    let sql = format!(
-        "SELECT w.pid AS pid FROM workers w
-         WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.pid IN ({list}) AND ({})",
-        holds_sql(members)
-    );
-    let rows = ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            sql,
-            [org.into()],
-        ))
-        .await?;
-    rows.iter()
-        .map(|r| r.try_get::<Uuid>("", "pid").map_err(Into::into))
-        .collect()
+    let held = held_by(members);
+    Ok(sqlx::query_scalar!(
+        "SELECT w.pid FROM workers w
+          WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.pid = ANY($2)
+            AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
+                           AND r.ended_at IS NULL AND r.role_profile_pid = ANY($3::uuid[]))
+                 OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p
+                                                  WHERE p.pid = ANY($3::uuid[]) AND p.deleted_at IS NULL)
+                 OR EXISTS (SELECT 1 FROM worker_skills k
+                              JOIN unnest($4::uuid[], $5::int[]) AS need(skill, least_level)
+                                ON k.skill_pid = need.skill AND k.proficiency >= need.least_level
+                             WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))",
+        org,
+        among,
+        &held.roles,
+        &held.skills,
+        &held.minimums,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }

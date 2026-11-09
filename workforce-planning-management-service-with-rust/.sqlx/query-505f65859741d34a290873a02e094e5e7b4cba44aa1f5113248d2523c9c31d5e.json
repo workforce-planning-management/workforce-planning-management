@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH m(first, last) AS (SELECT * FROM unnest($2::date[], $3::date[])),\n             span AS (\n               SELECT w.pid, greatest(w.fte_percent, 0) AS fte, m.first,\n                      greatest(m.first, w.hired_on) AS f,\n                      least(m.last, coalesce(w.terminated_on - 1, m.last)) AS t\n               FROM workers w CROSS JOIN m\n               WHERE w.deleted_at IS NULL AND w.organization_ref = $1\n                 AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid\n                                AND r.ended_at IS NULL AND r.role_profile_pid = ANY($4::uuid[]))\n                      OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p\n                                                       WHERE p.pid = ANY($4::uuid[]) AND p.deleted_at IS NULL)\n                      OR EXISTS (SELECT 1 FROM worker_skills k\n                                   JOIN unnest($5::uuid[], $6::int[]) AS need(skill, least_level)\n                                     ON k.skill_pid = need.skill AND k.proficiency >= need.least_level\n                                  WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))\n                 AND greatest(m.first, w.hired_on) <= least(m.last, coalesce(w.terminated_on - 1, m.last))),\n             clipped AS (\n               SELECT s.pid, s.first, s.f, greatest(l.start_on, s.f) AS ls, least(l.end_on, s.t) AS le\n               FROM span s JOIN leave_requests l\n                 ON l.worker_pid = s.pid AND l.status = 'approved' AND l.deleted_at IS NULL\n                AND l.start_on <= s.t AND l.end_on >= s.f),\n             away AS (\n               SELECT pid, first, sum(greatest(0, le - greatest(ls, coalesce(covered, f - 1) + 1) + 1)) AS days\n               FROM (SELECT c.*, max(le) OVER (PARTITION BY pid, first ORDER BY ls, le\n                                               ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS covered\n                     FROM clipped c) c\n               GROUP BY pid, first)\n             SELECT s.first AS \"first!\",\n                    coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS \"total!\",\n                    count(DISTINCT s.pid)::bigint AS \"workers!\"\n             FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first\n             GROUP BY s.first",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first!",
+        "type_info": "Date",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "workers!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "DateArray",
+        "DateArray",
+        "UuidArray",
+        "UuidArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "505f65859741d34a290873a02e094e5e7b4cba44aa1f5113248d2523c9c31d5e"
+}

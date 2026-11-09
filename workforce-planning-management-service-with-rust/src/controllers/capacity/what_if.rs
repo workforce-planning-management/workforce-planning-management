@@ -146,24 +146,26 @@ async fn contingent_effect(
         let members = capacity.members.get(&key).map_or(&[][..], Vec::as_slice);
         let mut ends = Vec::new();
         if !members.is_empty() {
-            let sql = format!(
-                "SELECT w.engagement_ends_on AS ends FROM workers w
-                 WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.terminated_on IS NULL
-                   AND w.employment_type IN ('fixed_term', 'contractor') AND w.engagement_ends_on IS NOT NULL
-                   AND ({})",
-                holds_sql(members)
-            );
-            for row in ctx
-                .db
-                .query_all_raw(sea_orm::Statement::from_sql_and_values(
-                    sea_orm::DbBackend::Postgres,
-                    sql,
-                    [org.into()],
-                ))
-                .await?
-            {
-                ends.push(row.try_get::<NaiveDate>("", "ends")?);
-            }
+            let held = held_by(members);
+            ends = sqlx::query_scalar!(
+                r#"SELECT w.engagement_ends_on AS "ends!" FROM workers w
+                    WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.terminated_on IS NULL
+                      AND w.employment_type IN ('fixed_term', 'contractor') AND w.engagement_ends_on IS NOT NULL
+                      AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
+                                     AND r.ended_at IS NULL AND r.role_profile_pid = ANY($2::uuid[]))
+                           OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p
+                                                            WHERE p.pid = ANY($2::uuid[]) AND p.deleted_at IS NULL)
+                           OR EXISTS (SELECT 1 FROM worker_skills k
+                                        JOIN unnest($3::uuid[], $4::int[]) AS need(skill, least_level)
+                                          ON k.skill_pid = need.skill AND k.proficiency >= need.least_level
+                                       WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))"#,
+                org,
+                &held.roles,
+                &held.skills,
+                &held.minimums,
+            )
+            .fetch_all(crate::db::pool(ctx))
+            .await?;
         }
         per_pool.push((key, ends));
     }
