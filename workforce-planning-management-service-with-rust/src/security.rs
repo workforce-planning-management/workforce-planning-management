@@ -45,6 +45,27 @@ pub const DEFAULT_LIMIT: u32 = 600;
 /// Default requests per window for a sensitive route ([`is_sensitive`]).
 pub const DEFAULT_SENSITIVE_LIMIT: u32 = 20;
 
+/// The window a lockout counts `401`s over, and the longest it lasts: 15 minutes (WPM-R242).
+pub const LOCKOUT_WINDOW_SECS: NonZeroU32 = NonZeroU32::new(900).unwrap();
+
+/// The failed sign-in lockout `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` sets (WPM-R242, WPM-D190): a client address
+/// that earns that many `401`s in [`LOCKOUT_WINDOW_SECS`] is refused with `429` until the window ends. Unset,
+/// empty or `0` is no lockout. Anything else that is not a whole number is an error, so a typo does not leave
+/// the lockout silently off; the message does not quote the value.
+///
+/// # Errors
+/// When the value is not a whole number.
+pub fn lockout_from(value: Option<&str>) -> std::result::Result<Option<Limiter>, String> {
+    let Some(value) = value.map(str::trim).filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    let count: u32 = value.parse().map_err(|_| {
+        "LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT is not a whole number; set a count of 401s, or 0 for no lockout"
+            .to_string()
+    })?;
+    Ok(NonZeroU32::new(count).map(|count| Limiter::new(count, LOCKOUT_WINDOW_SECS)))
+}
+
 /// The content security policy for JSON responses: nothing may load, and
 /// nothing may frame the response.
 const API_CSP: &str = "default-src 'none'; frame-ancestors 'none'";
@@ -233,6 +254,16 @@ pub async fn rate_limit_mw(
     req: Request,
     next: Next,
 ) -> Response {
+    let address = req
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|info| axa::client::resolve(info.0.ip(), req.headers(), &limits.trusted));
+    // The lockout inside counts by the address `axa` keeps on the request, which `axa::middleware::apply` has not
+    // put there yet (WPM-D190).
+    let mut req = req;
+    if let Some(address) = address {
+        req.extensions_mut().insert(address);
+    }
     let path = req.uri().path();
     if path == "/_posture" || EXEMPT.contains(&path) {
         return next.run(req).await;
@@ -240,10 +271,6 @@ pub async fn rate_limit_mw(
     let Some(limiter) = limits.class(is_sensitive(req.method(), path)) else {
         return next.run(req).await;
     };
-    let address = req
-        .extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .map(|info| axa::client::resolve(info.0.ip(), req.headers(), &limits.trusted));
     let verdict = limiter.check(caller(address));
     if !verdict.allowed {
         return verdict.refusal();
@@ -270,6 +297,19 @@ pub fn routes() -> Routes {
 mod tests {
     use super::*;
     use axum::http::Method;
+
+    #[test]
+    fn the_lockout_is_off_unless_a_count_is_set_and_a_bad_count_stops_the_start() {
+        for off in [None, Some(""), Some("  "), Some("0")] {
+            assert!(lockout_from(off).unwrap().is_none(), "{off:?}");
+        }
+        assert!(lockout_from(Some("5")).unwrap().is_some());
+        assert!(lockout_from(Some(" 10 ")).unwrap().is_some());
+        for bad in ["five", "-1", "2.5", "99999999999"] {
+            let message = lockout_from(Some(bad)).unwrap_err();
+            assert!(!message.contains(bad), "{message} quotes the value");
+        }
+    }
 
     fn names(path: &str, https: bool) -> Vec<String> {
         security_headers(path, https)

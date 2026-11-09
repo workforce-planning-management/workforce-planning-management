@@ -493,6 +493,16 @@ impl App {
             );
         }
         controllers::install_cursor_key(cursor_key);
+        // The failed sign-in lockout (WPM-R242, WPM-D190). A count that is set but unreadable stops the start.
+        let lockout = crate::security::lockout_from(
+            crate::compat::env_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT").as_deref(),
+        )
+        .map_err(|message| Error::string(&message))?;
+        if lockout.is_some() {
+            tracing::info!(
+                "a client address is locked out for up to 15 minutes after LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT 401s"
+            );
+        }
         // The variable no longer does anything (WPM-D187). Refusing to start would take a running service down over it.
         if let Some(warning) = crate::security::trust_forwarded_warning(
             crate::compat::env_var("WPM_TRUST_FORWARDED").as_deref(),
@@ -518,7 +528,7 @@ impl App {
             .layer(axum::middleware::from_fn(require_auth_mw))
             .layer(axum::middleware::from_fn(crate::problem::problem_mw));
         let router = controllers::mcp::mount(router, api, ctx.clone());
-        Ok(router
+        let router = router
             .layer(axum::middleware::from_fn_with_state(
                 ctx.clone(),
                 crate::idempotency::idempotency_mw,
@@ -532,7 +542,17 @@ impl App {
             .layer(axum::middleware::from_fn(controllers::mcp::challenge_mw))
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
-            ))
+            ));
+        // Outside sign-in, so it sees every 401, and inside the rate limit, which puts the address on the request
+        // (WPM-R242, WPM-D190). Off unless a count is set.
+        let router = match lockout {
+            Some(limiter) => router.layer(axum::middleware::from_fn_with_state(
+                limiter,
+                axa::ratelimit::lock_out_failures,
+            )),
+            None => router,
+        };
+        Ok(router
             // Outside `axa`'s layers, so it resolves the address itself, from the same list (WPM-D187).
             .layer(axum::middleware::from_fn_with_state(
                 std::sync::Arc::new(crate::security::RateLimits::from_env(

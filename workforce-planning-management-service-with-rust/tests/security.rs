@@ -50,6 +50,8 @@ fn settings() {
         std::env::set_var("TRUSTED_PROXIES", "127.0.0.1/32, 10.0.0.0/8");
         // Retired: it must neither stop the boot nor believe a header.
         std::env::set_var("WPM_TRUST_FORWARDED", "1");
+        // Off, so the unauthenticated requests above count only towards the rate limit.
+        std::env::remove_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT");
     }
 }
 
@@ -261,4 +263,79 @@ async fn headers_everywhere_and_the_limiter_trips() {
         assert_eq!(second.status_code(), 429);
     })
     .await;
+}
+
+/// The failed sign-in lockout (WPM-R242, WPM-D190): after `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` `401`s, that client
+/// address is refused with `429` on every route but the probes; another address is not; and with it unset, the
+/// `401`s go on.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test security -- --ignored`"]
+async fn a_client_address_is_locked_out_after_its_401s_and_only_that_one() {
+    settings();
+    let router = boot_test::<App>()
+        .await
+        .expect("boot")
+        .router
+        .expect("a router");
+    for _ in 0..5 {
+        assert_eq!(
+            get(&router, Some("203.0.113.80"), "junk").await,
+            StatusCode::UNAUTHORIZED,
+            "unset is no lockout"
+        );
+    }
+
+    // `set_var` is `unsafe` in edition 2024; these tests are serial.
+    unsafe { std::env::set_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT", "3") };
+    let router = boot_test::<App>()
+        .await
+        .expect("boot")
+        .router
+        .expect("a router");
+    let peer = Some("203.0.113.81");
+    for _ in 0..3 {
+        assert_eq!(get(&router, peer, "junk").await, StatusCode::UNAUTHORIZED);
+    }
+    let mut request = Request::get("/api/workers").body(Body::empty()).unwrap();
+    request.extensions_mut().insert(ConnectInfo::<SocketAddr>(
+        "203.0.113.81:443".parse().unwrap(),
+    ));
+    let refused = router.clone().oneshot(request).await.unwrap();
+    assert_eq!(refused.status(), StatusCode::TOO_MANY_REQUESTS);
+    let wait: u32 = refused.headers()["retry-after"]
+        .to_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert!((1..=900).contains(&wait), "{wait}");
+    assert_eq!(
+        refused.headers()["content-type"],
+        "application/problem+json"
+    );
+    // Behind a trusted proxy the client it names is locked out, not the proxy.
+    assert_eq!(
+        get(&router, Some("10.0.0.1"), "203.0.113.81").await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
+    assert_eq!(
+        get(&router, Some("10.0.0.1"), "203.0.113.82").await,
+        StatusCode::UNAUTHORIZED,
+        "another address is not locked out"
+    );
+    let mut health = Request::get("/_health").body(Body::empty()).unwrap();
+    health.extensions_mut().insert(ConnectInfo::<SocketAddr>(
+        "203.0.113.81:443".parse().unwrap(),
+    ));
+    assert_eq!(
+        router.clone().oneshot(health).await.unwrap().status(),
+        StatusCode::OK
+    );
+
+    unsafe { std::env::set_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT", "several") };
+    assert!(
+        boot_test::<App>().await.is_err(),
+        "an unreadable count stops the start"
+    );
+    unsafe { std::env::remove_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT") };
 }

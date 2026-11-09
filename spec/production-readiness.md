@@ -336,6 +336,15 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 
+## WPM-R242 — A client address can be locked out after its failed sign-ins
+
+- `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` sets how many `401`s one client address may earn in 15 minutes. At that count, every request from that address is refused with `429`, `Retry-After` and the `RateLimit-*` headers until the 15 minutes end, whatever its token, whatever the route, the probes (`/_ping`, `/_health`, `/_readiness`) excepted.
+- Unset, empty or `0` is no lockout, which is the default. A value that is not a whole number stops the start, and the message does not quote it.
+- The address is the one the rate limit counts by (WPM-R239): `X-Forwarded-For` only from `TRUSTED_PROXIES`, IPv6 by its `/64`. Another address is never locked out by it. Only a `401` counts, so a successful request, a `403` or a `422` adds nothing.
+
+**Why:** the owner asked for it on 2026-11-09. A client sending token after token that fails is slowed for 15 minutes rather than for the minute of the ordinary limit.
+**Not claimed:** WPM takes no password, so there is no password to guess here; a forged token is refused by its signature whatever the count, and password guessing is stopped, if at all, by the identity provider. The count is per address, so behind a shared address (an office, a carrier, an unlisted proxy) a few expired tokens on one machine lock out everyone there, and a request that succeeds does not clear it; a bridge whose token lapses is locked out for the window. A refusal is counted in one process, so each instance keeps its own count. Guesses sent at once can pass the count by however many are in flight; the rate limit outside caps that.
+
 ## WPM-R240 — Made-up records are loaded only in development or test
 
 - `task seed`, which loads a synthetic organization, is refused unless both the process (`APP_ENV`) and any `--environment` are development or test. A release binary is production by default; `demo`, `staging` and any other name are refused too. Nothing is written when it is refused.

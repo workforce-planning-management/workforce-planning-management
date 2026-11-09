@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a failed sign-in lockout, off by default (WPM-R242, WPM-D190, WPM-T479)
+
+Set `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` to the number of `401`s one client address may earn in 15 minutes; at that count every request from it is a `429` until they end. Unset or `0` is off; a value that is not a whole number stops the start. Behind a proxy, set `TRUSTED_PROXIES`, or one client's expired tokens lock out everyone behind it.
+
 ### Changed — lists page by a signed cursor, with no total (WPM-R241, WPM-D189, WPM-T478)
 
 **Breaking for every client that pages.** A list answers a bare array and, while more rows follow, `Link: <...>; rel="next"`; follow it to the end. `X-Total-Count`, `X-Limit` and `X-Offset` are gone. `?offset=` is a `422`, and so is a `limit` that is zero, not a number or over 500, which used to be clamped or defaulted. A cursor fits only the list and filters it came from. **An operator must act** when more than one instance runs: set `WPM_CURSOR_KEY` (base64url, at least 32 bytes) to the same value on each. **CRM's teams import fails** with `422` until CRM follows `Link`.
