@@ -203,7 +203,7 @@ async fn plan_cost(
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
     if reader.on_behalf && hours.resolved().is_some() {
@@ -414,7 +414,7 @@ async fn plan_viability(
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
     let rows = development_plan_benefits::Entity::find()
@@ -647,7 +647,7 @@ async fn train_or_hire(
     let pay_visible = !obligations.iter().any(|o| o == "mask");
 
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &candidate).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &candidate).await?;
     let Some(currency) = candidate.salary_currency.clone() else {
         return format::json(serde_json::json!({
             "position_pid": position.pid,

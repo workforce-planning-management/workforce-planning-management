@@ -195,7 +195,7 @@ async fn list(
         Some(org) => {
             ensure_valid(&organization_problems(org))?;
             ensure_org_in_scope(&ctx, &caller, org).await?;
-            Some(Scope::for_organization(&ctx.db, org).await?)
+            Some(Scope::for_organization(crate::db::pool(&ctx), org).await?)
         }
         None => None,
     };

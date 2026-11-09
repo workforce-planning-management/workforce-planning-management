@@ -803,7 +803,8 @@ async fn working_time(
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect();
-    let profiles = super::jurisdictions::profiles_for(&ctx.db, &organizations).await?;
+    let profiles =
+        super::jurisdictions::profiles_for(crate::db::pool(&ctx), &organizations).await?;
     let empty = super::jurisdictions::Profile::default();
     let limits: std::collections::BTreeMap<Uuid, WorkerLimits> = places
         .iter()

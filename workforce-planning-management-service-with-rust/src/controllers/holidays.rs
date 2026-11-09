@@ -119,11 +119,13 @@ async fn generate(
     }
     // The weekend is the organization's `holidays.weekend_days` for the region (WPM-D144, WPM-T379), resolved as of 1 January of
     // the year; where the profile has none, the pack's own example weekend, and the answer says which.
-    let profile =
-        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&p.organization_ref))
-            .await?
-            .remove(&p.organization_ref)
-            .unwrap_or_default();
+    let profile = super::jurisdictions::profiles_for(
+        crate::db::pool(&ctx),
+        std::slice::from_ref(&p.organization_ref),
+    )
+    .await?
+    .remove(&p.organization_ref)
+    .unwrap_or_default();
     let on = NaiveDate::from_ymd_opt(p.year, 1, 1).unwrap_or_default();
     let resolved = profile.resolve("holidays.weekend_days", Some(&p.region), on);
     let configured = match &resolved {

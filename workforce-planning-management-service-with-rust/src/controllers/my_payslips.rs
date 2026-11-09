@@ -130,7 +130,7 @@ pub(crate) async fn my_payslips(
         });
     }
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let year_to_date = tax_year_start(&scope, today)
         .map(|start| rules::year_to_date(&slips, start))
         .transpose()

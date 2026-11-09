@@ -106,7 +106,7 @@ pub(crate) async fn ask_for(
         > 0;
     rules::may_ask(open).map_err(|e| unprocessable(&e))?;
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let months = answer_months(Some(&scope), today);
     let due_on = rules::due_on(today, months.value)
         .ok_or_else(|| unprocessable("the due date runs past the supported calendar"))?;

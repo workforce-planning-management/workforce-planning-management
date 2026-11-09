@@ -654,8 +654,12 @@ async fn sweep_horizons(
 ) -> Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>> {
     let as_of = chrono::Utc::now().date_naive();
     let mut all = horizons(None, as_of);
-    for organization in super::jurisdictions::organizations_with_a_home(&ctx.db).await? {
-        let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &organization).await?;
+    for organization in
+        super::jurisdictions::organizations_with_a_home(crate::db::pool(ctx)).await?
+    {
+        let scope =
+            super::jurisdictions::Scope::for_organization(crate::db::pool(ctx), &organization)
+                .await?;
         for (kind, found) in horizons(Some(&scope), as_of) {
             if found.value.source != rules::HorizonSource::Profile {
                 continue;
@@ -719,7 +723,7 @@ async fn retention_schedule(
         Some(org) => {
             super::ensure_valid(&super::pay_transparency::organization_problems(org))?;
             super::ensure_org_in_scope(&ctx, &caller, org).await?;
-            Some(super::jurisdictions::Scope::for_organization(&ctx.db, org).await?)
+            Some(super::jurisdictions::Scope::for_organization(crate::db::pool(&ctx), org).await?)
         }
         None => None,
     };

@@ -123,7 +123,7 @@ pub(crate) async fn signals(
     )
     .await?;
     let configured = configured(
-        Some(&Scope::for_organization(&ctx.db, &query.organization).await?),
+        Some(&Scope::for_organization(crate::db::pool(&ctx), &query.organization).await?),
         chrono::Utc::now().date_naive(),
     );
     let config = configured.config;

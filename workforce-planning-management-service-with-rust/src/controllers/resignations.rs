@@ -55,7 +55,7 @@ pub fn notice_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<i64> {
 
 /// [`notice_days`] for `worker`, over their own chain.
 pub(crate) async fn notice_for(ctx: &AppContext, worker: &workers::Model) -> Result<InForce<i64>> {
-    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     Ok(notice_days(Some(&scope), Utc::now().date_naive()))
 }
 

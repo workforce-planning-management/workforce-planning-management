@@ -477,7 +477,9 @@ pub(crate) async fn gap_report(
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, false).await?;
-    let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &built.organization).await?;
+    let scope =
+        super::jurisdictions::Scope::for_organization(crate::db::pool(&ctx), &built.organization)
+            .await?;
     let tiers = reporting_tiers(Some(&scope), built.as_of);
     let tier = pay_gap::tier_for(built.headcount, &tiers.value);
     format::json(json!({

@@ -296,9 +296,11 @@ async fn requisition_status(
     // vacancy states it before it is opened.
     // Over the organization's home jurisdiction's chain (WPM-D153), else the setting, else on.
     let pay_range_required = if payload.to == "open" {
-        let scope =
-            super::jurisdictions::Scope::for_organization(&ctx.db, &requisition.organization_ref)
-                .await?;
+        let scope = super::jurisdictions::Scope::for_organization(
+            crate::db::pool(&ctx),
+            &requisition.organization_ref,
+        )
+        .await?;
         super::pay_information::pay_range_required(Some(&scope), chrono::Utc::now().date_naive())
             .value
     } else {

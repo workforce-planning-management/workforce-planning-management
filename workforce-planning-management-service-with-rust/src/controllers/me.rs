@@ -165,7 +165,9 @@ async fn get_my_details(State(ctx): State<AppContext>, caller: MaybeAuthUser) ->
 #[debug_handler]
 async fn my_countries(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
-    let added = super::jurisdictions::deployer_countries(&ctx.db, &worker.organization_ref).await?;
+    let added =
+        super::jurisdictions::deployer_countries(crate::db::pool(&ctx), &worker.organization_ref)
+            .await?;
     format::json(json!({
         "deployer_codes": added
             .into_iter()
@@ -231,12 +233,14 @@ async fn set_my_details(
     let details = payload.cleaned();
     contact_rules::validate(&details).map_err(|e| unprocessable(&e))?;
     if let Some(country) = &details.country {
-        let added: Vec<String> =
-            super::jurisdictions::deployer_countries(&ctx.db, &worker.organization_ref)
-                .await?
-                .into_iter()
-                .map(|(code, _)| code)
-                .collect();
+        let added: Vec<String> = super::jurisdictions::deployer_countries(
+            crate::db::pool(&ctx),
+            &worker.organization_ref,
+        )
+        .await?
+        .into_iter()
+        .map(|(code, _)| code)
+        .collect();
         contact_rules::validate_country_known(country, &added).map_err(|e| unprocessable(&e))?;
     }
     let recorded_by = caller.actor().map(ToString::to_string);

@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT organization_ref FROM organization_settings WHERE home_jurisdiction IS NOT NULL ORDER BY organization_ref",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "organization_settings",
+            "name": "organization_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8d5ab9d1d4fa305b2fdca085acf64d641920286c0c5f2164167309c807e33799"
+}

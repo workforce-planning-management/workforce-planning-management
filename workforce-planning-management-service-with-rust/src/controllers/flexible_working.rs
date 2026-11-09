@@ -132,7 +132,7 @@ async fn appeal_days_for(
     worker: &workers::Model,
     as_of: NaiveDate,
 ) -> Result<u32> {
-    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     Ok(appeal_calendar_days(Some(&scope), as_of).value)
 }
 
@@ -228,7 +228,7 @@ pub(crate) async fn create_for(
         .iter()
         .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
         .collect();
-    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let per_year = requests_per_year(Some(&scope), today);
     let limit = per_year.value;
     if !rules::within_limit(&previous, today, limit) {
@@ -550,7 +550,7 @@ async fn decide(
         "counter" => (Action::Counter, "flexible_working_counter_proposed"),
         _ => return Err(unprocessable("outcome must be approve, refuse or counter")),
     };
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let allowed = refusal_reasons(Some(&scope), today).value;
     let allowed_refs: Vec<&str> = allowed.iter().map(String::as_str).collect();
     match action {
@@ -733,7 +733,7 @@ async fn list(
             }
         }
         if !profiles.contains_key(&worker.organization_ref) {
-            let loaded = Scope::for_worker(&ctx.db, &worker).await?;
+            let loaded = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
             profiles.insert(worker.organization_ref.clone(), loaded);
         }
         let appeal_days = profiles.get(&worker.organization_ref).map_or(

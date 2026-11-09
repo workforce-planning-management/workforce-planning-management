@@ -257,6 +257,13 @@ async fn calculate_run(
         .filter(workers::Column::EmploymentType.is_not_in(rules::OFF_PAYROLL_TYPES.iter().copied()))
         .all(&ctx.db)
         .await?;
+    // Jurisdiction parameters for the statutory overtime premium (WPM-D169), resolved once for the organization. Read before
+    // the transaction: they are append-only and this run writes none.
+    let profiles = super::jurisdictions::profiles_for(
+        crate::db::pool(&ctx),
+        std::slice::from_ref(&run.organization_ref),
+    )
+    .await?;
     let txn = ctx.db.begin().await?;
     // Replace any prior calculation for this run.
     payslips::Entity::delete_many()
@@ -265,10 +272,6 @@ async fn calculate_run(
         .await?;
     let (stub, stub_configured) = tax_stub();
     let full_day = contracted_day();
-    // Jurisdiction parameters for the statutory overtime premium (WPM-D169), resolved once for the organization.
-    let profiles =
-        super::jurisdictions::profiles_for(&txn, std::slice::from_ref(&run.organization_ref))
-            .await?;
     let no_profile = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&no_profile);
     let holidays = holiday_dates(
@@ -811,9 +814,11 @@ pub(crate) async fn check_minimum_wage(
     for (worker, entry_minutes) in entries {
         *minutes.entry(worker).or_default() += i64::from(entry_minutes);
     }
-    let profiles =
-        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&run.organization_ref))
-            .await?;
+    let profiles = super::jurisdictions::profiles_for(
+        crate::db::pool(ctx),
+        std::slice::from_ref(&run.organization_ref),
+    )
+    .await?;
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
     let as_of = run.period_end;
@@ -1322,9 +1327,11 @@ async fn overtime_check(
             *days.entry(worker).or_default().entry(on).or_default() += minutes;
         }
     }
-    let profiles =
-        super::jurisdictions::profiles_for(&ctx.db, std::slice::from_ref(&run.organization_ref))
-            .await?;
+    let profiles = super::jurisdictions::profiles_for(
+        crate::db::pool(&ctx),
+        std::slice::from_ref(&run.organization_ref),
+    )
+    .await?;
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
     let as_of = run.period_end;
