@@ -74,12 +74,14 @@ pub(super) async fn set_line_objectives(
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     ensure_editable(&plan)?;
-    let line = plan_demand_lines::Entity::find()
-        .filter(plan_demand_lines::Column::PlanPid.eq(plan.pid))
-        .filter(plan_demand_lines::Column::Pid.eq(records::parse_pid(&line_pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let line = sqlx::query_scalar!(
+        "SELECT pid FROM plan_demand_lines WHERE plan_pid = $1 AND pid = $2",
+        plan.pid,
+        records::parse_pid(&line_pid)?,
+    )
+    .fetch_optional(crate::db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let known: BTreeSet<Uuid> = sqlx::query_scalar!(
         "SELECT pid FROM plan_objectives WHERE plan_pid = $1",
         plan.pid
@@ -96,7 +98,7 @@ pub(super) async fn set_line_objectives(
     let mut tx = crate::db::pool(&ctx).begin().await?;
     sqlx::query!(
         "DELETE FROM demand_line_objectives WHERE line_pid = $1",
-        line.pid
+        line
     )
     .execute(&mut *tx)
     .await?;
@@ -104,7 +106,7 @@ pub(super) async fn set_line_objectives(
     sqlx::query!(
         "INSERT INTO demand_line_objectives (pid, line_pid, objective_pid)
          SELECT gen_random_uuid(), $1, objective FROM unnest($2::uuid[]) AS objective",
-        line.pid,
+        line,
         &wanted,
     )
     .execute(&mut *tx)

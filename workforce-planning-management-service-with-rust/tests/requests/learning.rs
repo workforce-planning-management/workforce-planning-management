@@ -1268,6 +1268,15 @@ async fn workforce_plan_forecasts_gaps_and_alignment() {
             422,
             "objectives must belong to the plan"
         );
+        // The plan shows which objectives each line serves, and the list counts its lines.
+        let detail: Value = request.get(&format!("/api/workforce-plans/{plan_pid}")).await.json();
+        let lines = detail["demand_lines"].as_array().unwrap();
+        assert_eq!(lines[0]["objective_pids"], json!([served["pid"]]));
+        assert_eq!(lines[1]["objective_pids"], json!([]));
+        assert_eq!(detail["objectives"].as_array().unwrap().len(), 2);
+        let listed: Vec<Value> = request.get("/api/workforce-plans").await.json();
+        let this = listed.iter().find(|p| p["pid"] == detail["pid"]).unwrap();
+        assert_eq!(this["demand_lines"], 2);
         let view: Value = request.get(&format!("/api/workforce-plans/{plan_pid}/alignment")).await.json();
         assert_eq!(view["planned_headcount"], 9);
         assert_eq!(view["aligned_share"]["numerator"], 5);

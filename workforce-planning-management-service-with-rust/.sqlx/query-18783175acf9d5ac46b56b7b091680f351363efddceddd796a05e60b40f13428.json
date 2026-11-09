@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid AS \"worker_pid!\" FROM organization_memberships\n            WHERE organization_ref = $1 AND role IN ('hr_admin', 'org_admin') AND deleted_at IS NULL\n              AND worker_pid IS NOT NULL\n            ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organization_memberships",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "18783175acf9d5ac46b56b7b091680f351363efddceddd796a05e60b40f13428"
+}

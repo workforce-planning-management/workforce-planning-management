@@ -10,17 +10,13 @@
 
 use super::{ensure_org_in_scope, ratio_json};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    demand_line_objectives, plan_demand_lines, plan_objectives, role_profiles, workforce_plans,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::models::_entities::{plan_demand_lines, workforce_plans};
 use crate::models::{memberships, records};
 use crate::rules::cost as cost_rules;
 use crate::rules::planning as rules;

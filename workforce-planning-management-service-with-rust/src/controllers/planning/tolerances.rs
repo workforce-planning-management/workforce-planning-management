@@ -149,12 +149,17 @@ pub(super) async fn list_tolerances(
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let today = chrono::Utc::now().date_naive();
     let states = dimension_states(&ctx, &caller, &pid, &plan).await?;
-    let open: BTreeMap<String, plan_escalations::Model> = plan_escalations::Entity::find()
-        .filter(plan_escalations::Column::PlanPid.eq(plan.pid))
-        .filter(plan_escalations::Column::Status.eq("open"))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
+    let open: BTreeMap<String, plan_escalations::Model> = sqlx::query_as!(
+        plan_escalations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, dimension, level, status,
+                  raised_by, raised_on, level_raised_on, note, rag_at_raise, deviation_at_raise, limit_at_raise, decision,
+                  decided_by, decided_on, decision_note, rag_at_decision, deviation_at_decision
+             FROM plan_escalations WHERE plan_pid = $1 AND status = 'open' ORDER BY id"#,
+        plan.pid,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?
+    .into_iter()
         .map(|e| (e.dimension.clone(), e))
         .collect();
     let overall_inputs: Vec<tol::Rag> = states
