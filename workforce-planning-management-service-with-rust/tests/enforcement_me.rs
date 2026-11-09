@@ -473,6 +473,10 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(post("/api/me/resignation/withdraw".into(), me.clone(), json!({})).await.status_code(), 422, "already withdrawn");
         let again = post("/api/me/resignation".into(), me.clone(), json!({ "proposed_last_day": day(35) })).await;
         let r2 = again.json::<Value>()["pid"].as_str().unwrap().to_string();
+        // One open at a time: the database's unique index is the refusal, in words.
+        let twice = post("/api/me/resignation".into(), me.clone(), json!({ "proposed_last_day": day(36) })).await;
+        assert_eq!(twice.status_code(), 422);
+        assert!(twice.text().contains("already logged a resignation"), "{}", twice.text());
 
         // Only a person with authority accepts it; the worker cannot accept their own.
         assert_eq!(post(format!("/api/resignations/{r2}/accept"), me.clone(), json!({})).await.status_code(), 403);
@@ -499,6 +503,10 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(post(format!("/api/resignations/{r2}/accept"), hr_m.clone(), json!({})).await.status_code(), 422, "not twice");
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), me.clone(), json!({})).await.status_code(), 403);
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), hr_m.clone(), json!({})).await.status_code(), 200);
+        // The leaver record it opened, still open, is cancelled with it.
+        let cancelled = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+            format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
+        assert_eq!(cancelled.try_get::<String>("", "status").unwrap(), "cancelled");
         let row = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
             format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
         assert_eq!(row.try_get::<String>("", "status").unwrap(), "cancelled", "setting it aside cancels the open leaver record");
