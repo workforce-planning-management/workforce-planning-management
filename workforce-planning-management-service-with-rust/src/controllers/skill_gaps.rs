@@ -296,8 +296,7 @@ async fn workforce_gaps(
     let today = Utc::now().date_naive();
     let department = q.department.as_deref();
     // Counted by the database (see `gap_sql`): the same grading as `Evidence::gaps_for`, for everyone at once.
-    let considered = super::gap_sql::staff_count(&ctx, scope.as_deref(), department, today).await?;
-    let (rows, with_needs) =
+    let (considered, rows, with_needs) =
         super::gap_sql::gap_rows(&ctx, scope.as_deref(), department, today).await?;
     let rolled = rules::rollup_counted(&rows);
     let total = rolled.len();

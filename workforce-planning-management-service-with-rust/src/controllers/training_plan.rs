@@ -479,8 +479,7 @@ async fn training_demand(
     let today = Utc::now().date_naive();
     let department = q.department.as_deref();
     // Only people below a need can add hours, so only they are read whole; everyone else is counted.
-    let considered = super::gap_sql::staff_count(&ctx, scope.as_deref(), department, today).await?;
-    let pids =
+    let (considered, pids) =
         super::gap_sql::workers_below_a_need(&ctx, scope.as_deref(), department, today).await?;
     let by_pid: HashMap<Uuid, workers::Model> =
         super::find_in(&ctx, workers::Entity::find(), workers::Column::Pid, &pids)
