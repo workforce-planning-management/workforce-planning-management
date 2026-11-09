@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, ends_on AS \"ends_on!\" FROM post_fundings WHERE ends_on IS NOT NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ends_on!",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "89bf661adc7c7f4d839d5ba0dfcbcf696b03946418a45035da1037813d9ea268"
+}

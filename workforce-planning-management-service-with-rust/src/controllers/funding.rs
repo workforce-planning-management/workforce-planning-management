@@ -8,16 +8,14 @@
 use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, ExprTrait, QuerySelect, Select, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    engagement_decisions, engagement_extensions, headcount_snapshots, post_fundings, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::workers;
 use crate::models::{memberships, records};
 use crate::need_to_know::facts_for;
 use crate::rules::engagement::{
@@ -31,14 +29,24 @@ use crate::validation::Problems;
 /// How far ahead the funding horizon looks.
 const HORIZON_MONTHS: u32 = 12;
 
-async fn find(ctx: &AppContext, worker_pid: uuid::Uuid) -> Result<Option<post_fundings::Model>> {
-    Ok(post_fundings::Entity::find()
-        .filter(post_fundings::Column::WorkerPid.eq(worker_pid))
-        .one(&ctx.db)
-        .await?)
+/// A post's recorded funding.
+struct Funding {
+    kind: String,
+    programme_ref: Option<String>,
+    ends_on: Option<chrono::NaiveDate>,
 }
 
-fn view(worker: &workers::Model, row: Option<&post_fundings::Model>) -> serde_json::Value {
+async fn find(ctx: &AppContext, worker_pid: Uuid) -> Result<Option<Funding>> {
+    Ok(sqlx::query_as!(
+        Funding,
+        "SELECT kind, programme_ref, ends_on FROM post_fundings WHERE worker_pid = $1",
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
+}
+
+fn view(worker: &workers::Model, row: Option<&Funding>) -> serde_json::Value {
     let alignment = rules::align(worker.engagement_ends_on, row.map(|r| r.ends_on));
     json!({
         "funding": row.map(|r| json!({
@@ -116,30 +124,24 @@ async fn set_funding(
     ensure_valid(&problems.into_vec())?;
     rules::validate(&payload.kind, payload.ends_on, worker.hired_on)
         .map_err(|e| unprocessable(&e))?;
-    let by = caller.actor().map(ToString::to_string);
-    let existing = find(&ctx, worker.pid).await?;
-    let txn = ctx.db.begin().await?;
-    let saved = if let Some(row) = existing {
-        let mut active: post_fundings::ActiveModel = row.into();
-        active.kind = ActiveValue::set(payload.kind);
-        active.programme_ref = ActiveValue::set(payload.programme_ref);
-        active.ends_on = ActiveValue::set(payload.ends_on);
-        active.recorded_by = ActiveValue::set(by);
-        active.update(&txn).await?
-    } else {
-        post_fundings::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            kind: ActiveValue::set(payload.kind),
-            programme_ref: ActiveValue::set(payload.programme_ref),
-            ends_on: ActiveValue::set(payload.ends_on),
-            recorded_by: ActiveValue::set(by),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One row per worker: one upsert on its unique key rather than a read and a write.
+    let saved = sqlx::query_as!(
+        Funding,
+        "INSERT INTO post_fundings (worker_pid, kind, programme_ref, ends_on, recorded_by) VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (worker_pid) DO UPDATE SET kind = EXCLUDED.kind, programme_ref = EXCLUDED.programme_ref,
+             ends_on = EXCLUDED.ends_on, recorded_by = EXCLUDED.recorded_by
+         RETURNING kind, programme_ref, ends_on",
+        worker.pid,
+        payload.kind,
+        payload.programme_ref,
+        payload.ends_on,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "post_funding_set",
@@ -147,7 +149,7 @@ async fn set_funding(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&worker, Some(&saved)))
 }
 
@@ -160,17 +162,19 @@ async fn clear_funding(
 ) -> Result<Response> {
     let worker = super::writable_worker(&ctx, &caller, &pid).await?;
     ensure_privileged(&ctx, &caller, &worker).await?;
-    let txn = ctx.db.begin().await?;
-    let removed = post_fundings::Entity::delete_many()
-        .filter(post_fundings::Column::WorkerPid.eq(worker.pid))
-        .exec(&txn)
-        .await?
-        .rows_affected;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let removed = sqlx::query!(
+        "DELETE FROM post_fundings WHERE worker_pid = $1",
+        worker.pid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
     if removed == 0 {
         return Err(Error::NotFound);
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "post_funding_cleared",
@@ -178,81 +182,84 @@ async fn clear_funding(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&worker, None))
 }
 
-/// The people employed on `today` in the caller's scope (`None` is everyone).
-pub(super) async fn employed_in_scope(
+/// What the engagement, funding and capacity views read of a person employed today.
+pub(crate) struct Employed {
+    pub pid: Uuid,
+    pub organization_ref: String,
+    pub worker_number: String,
+    pub department: String,
+    pub employment_type: String,
+    pub fte_percent: i32,
+    pub hired_on: chrono::NaiveDate,
+    pub engagement_ends_on: Option<chrono::NaiveDate>,
+}
+
+/// The people employed on `today` ([`crate::rules::metrics::is_employed_on`], in SQL) in the caller's scope (`None` is
+/// everyone), only those among `among` when it is given, and only contractors and fixed-term people when `contingent`.
+async fn employed(
     ctx: &AppContext,
     scope: Option<&[String]>,
     today: chrono::NaiveDate,
-) -> Result<Vec<workers::Model>> {
-    Ok(employed_in_scope_query(scope, today).all(&ctx.db).await?)
+    among: Option<&[Uuid]>,
+    contingent: bool,
+) -> Result<Vec<Employed>> {
+    Ok(sqlx::query_as!(
+        Employed,
+        "SELECT pid, organization_ref, worker_number, department, employment_type, fte_percent, hired_on, engagement_ends_on
+           FROM workers
+          WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
+            AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+            AND ($3::uuid[] IS NULL OR pid = ANY($3))
+            AND (NOT $4 OR employment_type IN ('contractor', 'fixed_term'))
+          ORDER BY id",
+        today,
+        scope,
+        among,
+        contingent,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// The people among `pids` who are employed on `today` in the caller's scope, by id.
-pub(super) async fn employed_among(
+pub(crate) async fn employed_among(
     ctx: &AppContext,
     scope: Option<&[String]>,
     today: chrono::NaiveDate,
-    pids: &[uuid::Uuid],
-) -> Result<std::collections::HashMap<uuid::Uuid, workers::Model>> {
-    Ok(super::find_in(
-        ctx,
-        employed_in_scope_query(scope, today),
-        workers::Column::Pid,
-        pids,
-    )
-    .await?
-    .into_iter()
-    .map(|w| (w.pid, w))
-    .collect())
-}
-
-/// The same people as a query, to filter, count or use as a subquery in the database
-/// ([`crate::rules::metrics::is_employed_on`], in SQL).
-pub(super) fn employed_in_scope_query(
-    scope: Option<&[String]>,
-    today: chrono::NaiveDate,
-) -> Select<workers::Entity> {
-    let mut find = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        );
-    if let Some(refs) = scope {
-        find = find.filter(workers::Column::OrganizationRef.is_in(refs.to_vec()));
-    }
-    find
+    pids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, Employed>> {
+    Ok(employed(ctx, scope, today, Some(pids), false)
+        .await?
+        .into_iter()
+        .map(|w| (w.pid, w))
+        .collect())
 }
 
 /// Each contractor and fixed-term person among `staff`, as the engagement rules see them.
 async fn engagements_of<'a>(
     ctx: &AppContext,
-    staff: &'a [workers::Model],
-) -> Result<Vec<(&'a workers::Model, ContingentEngagement)>> {
-    let contingent_staff: Vec<&workers::Model> = staff
+    staff: &'a [Employed],
+) -> Result<Vec<(&'a Employed, ContingentEngagement)>> {
+    let contingent_staff: Vec<&Employed> = staff
         .iter()
         .filter(|w| matches!(w.employment_type.as_str(), "contractor" | "fixed_term"))
         .collect();
-    let contingent_pids: Vec<uuid::Uuid> = contingent_staff.iter().map(|w| w.pid).collect();
-    let decisions = super::find_in(
-        ctx,
-        engagement_decisions::Entity::find(),
-        engagement_decisions::Column::WorkerPid,
+    let contingent_pids: Vec<Uuid> = contingent_staff.iter().map(|w| w.pid).collect();
+    let decisions = sqlx::query!(
+        "SELECT worker_pid, ends_on FROM engagement_decisions WHERE worker_pid = ANY($1)",
         &contingent_pids,
     )
+    .fetch_all(db::pool(ctx))
     .await?;
-    let extensions = super::find_in(
-        ctx,
-        engagement_extensions::Entity::find(),
-        engagement_extensions::Column::WorkerPid,
+    let extensions = sqlx::query_scalar!(
+        "SELECT worker_pid FROM engagement_extensions WHERE worker_pid = ANY($1)",
         &contingent_pids,
     )
+    .fetch_all(db::pool(ctx))
     .await?;
     Ok(contingent_staff
         .into_iter()
@@ -266,7 +273,7 @@ async fn engagements_of<'a>(
                         .iter()
                         .any(|d| d.worker_pid == w.pid && d.ends_on == end)
                 }),
-                extensions: extensions.iter().filter(|x| x.worker_pid == w.pid).count(),
+                extensions: extensions.iter().filter(|x| **x == w.pid).count(),
             };
             (w, engagement)
         })
@@ -276,7 +283,7 @@ async fn engagements_of<'a>(
 /// The engagement figures of the contingent view (WPM-R86) for the people employed today.
 async fn engagement_counts(
     ctx: &AppContext,
-    staff: &[workers::Model],
+    staff: &[Employed],
     today: chrono::NaiveDate,
     floor: usize,
 ) -> Result<ContingentCounts> {
@@ -314,17 +321,17 @@ async fn contingent_list(
     }
     let today = chrono::Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let staff = employed_in_scope(&ctx, scope.as_deref(), today).await?;
+    let staff = employed(&ctx, scope.as_deref(), today, None, false).await?;
     let mut found: Vec<_> = engagements_of(&ctx, &staff)
         .await?
         .into_iter()
         .filter(|(_, e)| on_list(&list, e, today) == Some(true))
         .collect();
     found.sort_by(|a, b| a.0.worker_number.cmp(&b.0.worker_number));
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "contingent_workforce",
-        uuid::Uuid::nil(),
+        Uuid::nil(),
         "contingent_list_read",
         caller.actor(),
         None,
@@ -351,14 +358,14 @@ async fn snapshot_trend(
     scope: Option<&[String]>,
     floor: usize,
 ) -> Result<rules::ContingentTrend> {
-    let mut select = headcount_snapshots::Entity::find();
-    if let Some(refs) = scope {
-        select = select.filter(headcount_snapshots::Column::OrganizationRef.is_in(refs.to_vec()));
-    }
-    let rows: Vec<rules::SplitRow> = select
-        .all(&ctx.db)
-        .await?
-        .into_iter()
+    let rows: Vec<rules::SplitRow> = sqlx::query!(
+        "SELECT as_of, headcount, fte_percent_total, contractor_fte_percent_total, fixed_term_fte_percent_total
+           FROM headcount_snapshots WHERE $1::text[] IS NULL OR organization_ref = ANY($1) ORDER BY id",
+        scope,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
         .map(|r| rules::SplitRow {
             as_of: r.as_of,
             headcount: i64::from(r.headcount),
@@ -378,41 +385,40 @@ async fn snapshot_trend(
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let db = db::pool(&ctx);
     // Grouped by the database: department, basis and FTE with the number of people who share them.
-    let groups: Vec<(String, String, i32, usize)> =
-        employed_in_scope_query(scope.as_deref(), today)
-            .select_only()
-            .column(workers::Column::Department)
-            .column(workers::Column::EmploymentType)
-            .column(workers::Column::FtePercent)
-            .column_as(
-                sea_orm::sea_query::Expr::col(workers::Column::Id).count(),
-                "people",
-            )
-            .group_by(workers::Column::Department)
-            .group_by(workers::Column::EmploymentType)
-            .group_by(workers::Column::FtePercent)
-            .into_tuple::<(String, String, i32, i64)>()
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|(department, basis, fte, people)| {
-                (department, basis, fte, usize::try_from(people).unwrap_or(0))
-            })
-            .collect();
+    let groups: Vec<(String, String, i32, usize)> = sqlx::query!(
+        r#"SELECT department, employment_type, fte_percent, COUNT(id) AS "people!"
+             FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
+              AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+            GROUP BY department, employment_type, fte_percent"#,
+        today,
+        scope.as_deref(),
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|g| {
+        (
+            g.department,
+            g.employment_type,
+            g.fte_percent,
+            usize::try_from(g.people).unwrap_or(0),
+        )
+    })
+    .collect();
     let floor = DEFAULT_FLOOR;
     let share = rules::contingent_share_counted(&groups, floor);
     // Only the contractors and fixed-term people are read whole: the engagement figures are about them.
-    let contingent_staff: Vec<workers::Model> = employed_in_scope_query(scope.as_deref(), today)
-        .filter(workers::Column::EmploymentType.is_in(["contractor", "fixed_term"]))
-        .all(&ctx.db)
-        .await?;
+    let contingent_staff = employed(&ctx, scope.as_deref(), today, None, true).await?;
     // The funding ends of employed people, with their FTE.
-    let funded = post_fundings::Entity::find()
-        .filter(post_fundings::Column::EndsOn.is_not_null())
-        .all(&ctx.db)
-        .await?;
-    let funded_pids: Vec<uuid::Uuid> = funded
+    let funded = sqlx::query!(
+        r#"SELECT worker_pid, ends_on AS "ends_on!" FROM post_fundings WHERE ends_on IS NOT NULL ORDER BY id"#
+    )
+    .fetch_all(db)
+    .await?;
+    let funded_pids: Vec<Uuid> = funded
         .iter()
         .map(|f| f.worker_pid)
         .collect::<std::collections::BTreeSet<_>>()
@@ -421,15 +427,15 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     let employed = employed_among(&ctx, scope.as_deref(), today, &funded_pids).await?;
     let ends: Vec<(chrono::NaiveDate, i32)> = funded
         .into_iter()
-        .filter_map(|f| Some((f.ends_on?, employed.get(&f.worker_pid)?.fte_percent)))
+        .filter_map(|f| Some((f.ends_on, employed.get(&f.worker_pid)?.fte_percent)))
         .collect();
     let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor);
     let counts = engagement_counts(&ctx, &contingent_staff, today, floor).await?;
     let trend = snapshot_trend(&ctx, scope.as_deref(), floor).await?;
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "contingent_workforce",
-        uuid::Uuid::nil(),
+        Uuid::nil(),
         "contingent_workforce_read",
         caller.actor(),
         None,

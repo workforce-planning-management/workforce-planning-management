@@ -139,7 +139,7 @@ struct Gathered {
 async fn gather(
     ctx: &AppContext,
     orgs: &BTreeSet<String>,
-    staff: &std::collections::HashMap<Uuid, crate::models::_entities::workers::Model>,
+    staff: &std::collections::HashMap<Uuid, crate::controllers::funding::Employed>,
     demand_rows: &[programme_demands::Model],
     today: NaiveDate,
     months_asked: u32,
