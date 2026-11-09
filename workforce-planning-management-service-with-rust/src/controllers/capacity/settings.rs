@@ -32,27 +32,21 @@ pub(super) async fn set_settings(
         return Err(unprocessable("wip_limit must not be negative"));
     }
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
-    let existing = capacity_settings::Entity::find()
-        .filter(capacity_settings::Column::OrganizationRef.eq(&payload.organization_ref))
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    let row = if let Some(row) = existing {
-        let mut active = row.into_active_model();
-        active.wip_limit = ActiveValue::set(payload.wip_limit);
-        active.update(&txn).await?
-    } else {
-        capacity_settings::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-            wip_limit: ActiveValue::set(payload.wip_limit),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    // One row per organization: one upsert on its unique key rather than a read and a write. A row already there
+    // keeps its pid.
+    let row = sqlx::query!(
+        "INSERT INTO capacity_settings (pid, organization_ref, wip_limit) VALUES ($1, $2, $3)
+         ON CONFLICT (organization_ref) DO UPDATE SET wip_limit = EXCLUDED.wip_limit
+         RETURNING pid, organization_ref, wip_limit",
+        Uuid::new_v4(),
+        payload.organization_ref,
+        payload.wip_limit,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "capacity_settings",
         row.pid,
         "set",
@@ -60,16 +54,18 @@ pub(super) async fn set_settings(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "organization_ref": row.organization_ref, "wip_limit": row.wip_limit }))
 }
 
 pub(super) async fn wip_limit_of(ctx: &AppContext, org: &str) -> Result<Option<i32>> {
-    Ok(capacity_settings::Entity::find()
-        .filter(capacity_settings::Column::OrganizationRef.eq(org))
-        .one(&ctx.db)
-        .await?
-        .and_then(|s| s.wip_limit))
+    Ok(sqlx::query_scalar!(
+        "SELECT wip_limit FROM capacity_settings WHERE organization_ref = $1",
+        org
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .flatten())
 }
 
 /// `GET /api/capacity/settings?organization=`.

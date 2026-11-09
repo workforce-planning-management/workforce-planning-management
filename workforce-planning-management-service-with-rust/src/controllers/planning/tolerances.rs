@@ -7,7 +7,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
-use crate::models::_entities::{plan_escalations, plan_tolerances};
+use crate::models::_entities::plan_escalations;
 use crate::rules::tolerance as tol;
 
 use axa::extract::{Json, Path};
@@ -69,10 +69,17 @@ fn lines_of(forecast: &serde_json::Value) -> Vec<tol::Line> {
         .collect()
 }
 
+/// A dimension's tolerance as set.
+pub(super) struct Tolerance {
+    dimension: String,
+    pub(super) limit_value: i64,
+    amber_percent: i32,
+}
+
 /// One dimension as it stands now: the tolerance (if set), the deviation and the status.
 pub(super) struct DimensionState {
     pub(super) dimension: tol::Dimension,
-    pub(super) tolerance: Option<plan_tolerances::Model>,
+    pub(super) tolerance: Option<Tolerance>,
     pub(super) deviation: Option<i64>,
     pub(super) rag: tol::Rag,
 }
@@ -85,13 +92,16 @@ pub(super) async fn dimension_states(
     pid: &str,
     plan: &workforce_plans::Model,
 ) -> Result<Vec<DimensionState>> {
-    let mut set: BTreeMap<String, plan_tolerances::Model> = plan_tolerances::Entity::find()
-        .filter(plan_tolerances::Column::PlanPid.eq(plan.pid))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|t| (t.dimension.clone(), t))
-        .collect();
+    let mut set: BTreeMap<String, Tolerance> = sqlx::query_as!(
+        Tolerance,
+        "SELECT dimension, limit_value, amber_percent FROM plan_tolerances WHERE plan_pid = $1",
+        plan.pid,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|t| (t.dimension.clone(), t))
+    .collect();
     let today = chrono::Utc::now().date_naive();
     let forecast = forecast_value(ctx, caller, pid).await?;
     let cost = cost_value(ctx, caller, pid, CostQuery::default()).await?;
@@ -203,43 +213,47 @@ pub(super) async fn set_tolerance(
     let dimension = dimension_of(&dimension)?;
     let amber = payload.amber_percent.unwrap_or(tol::DEFAULT_AMBER_PERCENT);
     tol::validate(payload.limit, amber).map_err(|e| unprocessable(&e))?;
-    let existing = plan_tolerances::Entity::find()
-        .filter(plan_tolerances::Column::PlanPid.eq(plan.pid))
-        .filter(plan_tolerances::Column::Dimension.eq(dimension.as_str()))
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    let verb = if let Some(row) = existing {
-        let mut active: plan_tolerances::ActiveModel = row.into();
-        active.limit_value = ActiveValue::set(payload.limit);
-        active.amber_percent = ActiveValue::set(amber);
-        active.update(&txn).await?;
-        "tolerance_changed"
-    } else {
-        plan_tolerances::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            plan_pid: ActiveValue::set(plan.pid),
-            dimension: ActiveValue::set(dimension.as_str().to_string()),
-            limit_value: ActiveValue::set(payload.limit),
-            amber_percent: ActiveValue::set(amber),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?;
-        "tolerance_set"
-    };
-    Audit::record(
-        &txn,
-        "workforce_plan",
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    // One per plan and dimension: one upsert on that key. `xmax` is 0 on a row this statement inserted, so the audit
+    // still says whether it was set or changed.
+    let inserted = sqlx::query_scalar!(
+        r#"INSERT INTO plan_tolerances (pid, plan_pid, dimension, limit_value, amber_percent) VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (plan_pid, dimension)
+           DO UPDATE SET limit_value = EXCLUDED.limit_value, amber_percent = EXCLUDED.amber_percent
+           RETURNING (xmax = 0) AS "inserted!""#,
+        Uuid::new_v4(),
         plan.pid,
-        verb,
-        caller.actor(),
-        Some(serde_json::json!({
-            "dimension": dimension, "limit": payload.limit, "amber_percent": amber,
-        })),
+        dimension.as_str(),
+        payload.limit,
+        amber,
     )
+    .fetch_one(&mut *tx)
     .await?;
-    txn.commit().await?;
+    let snapshot = Some(serde_json::json!({
+        "dimension": dimension, "limit": payload.limit, "amber_percent": amber,
+    }));
+    if inserted {
+        crate::db::audit(
+            &mut tx,
+            "workforce_plan",
+            plan.pid,
+            "tolerance_set",
+            caller.actor(),
+            snapshot,
+        )
+        .await?;
+    } else {
+        crate::db::audit(
+            &mut tx,
+            "workforce_plan",
+            plan.pid,
+            "tolerance_changed",
+            caller.actor(),
+            snapshot,
+        )
+        .await?;
+    }
+    tx.commit().await?;
     list_tolerances(State(ctx), caller, Path(pid)).await
 }
 
@@ -252,17 +266,19 @@ pub(super) async fn delete_tolerance(
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let dimension = dimension_of(&dimension)?;
-    let txn = ctx.db.begin().await?;
-    let removed = plan_tolerances::Entity::delete_many()
-        .filter(plan_tolerances::Column::PlanPid.eq(plan.pid))
-        .filter(plan_tolerances::Column::Dimension.eq(dimension.as_str()))
-        .exec(&txn)
-        .await?;
-    if removed.rows_affected == 0 {
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    let removed = sqlx::query!(
+        "DELETE FROM plan_tolerances WHERE plan_pid = $1 AND dimension = $2",
+        plan.pid,
+        dimension.as_str(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    if removed.rows_affected() == 0 {
         return Err(Error::NotFound);
     }
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "workforce_plan",
         plan.pid,
         "tolerance_removed",
@@ -270,6 +286,6 @@ pub(super) async fn delete_tolerance(
         Some(serde_json::json!({ "dimension": dimension })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }

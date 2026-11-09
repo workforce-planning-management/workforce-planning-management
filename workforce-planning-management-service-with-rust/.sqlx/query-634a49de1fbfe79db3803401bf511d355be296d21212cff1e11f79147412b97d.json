@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO demand_line_objectives (pid, line_pid, objective_pid)\n         SELECT gen_random_uuid(), $1, objective FROM unnest($2::uuid[]) AS objective",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "634a49de1fbfe79db3803401bf511d355be296d21212cff1e11f79147412b97d"
+}

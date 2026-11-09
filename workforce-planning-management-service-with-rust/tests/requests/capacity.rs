@@ -467,6 +467,15 @@ async fn capacity_view_start_check_and_decisions() {
             .await
             .json();
         assert_eq!(settings["wip_limit"], 1);
+        // Set again: the one row is changed, and no limit clears it.
+        for (limit, shown) in [(json!(3), json!(3)), (Value::Null, Value::Null), (json!(1), json!(1))] {
+            let set: Value = request
+                .put("/api/capacity/settings")
+                .json(&json!({ "organization_ref": org, "wip_limit": limit }))
+                .await
+                .json();
+            assert_eq!(set["wip_limit"], shown);
+        }
         let check: Value = request
             .post("/api/capacity/start-check")
             .json(&json!({ "organization_ref": org, "programme_ref": b }))

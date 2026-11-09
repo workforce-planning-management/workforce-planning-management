@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM plan_tolerances WHERE plan_pid = $1 AND dimension = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a7d8ddd438c9a55985f8212af16b05233f78d320957da8e08e0d1eb58386977"
+}

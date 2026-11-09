@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM demand_line_objectives WHERE line_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cc1af2d7087f00243623f763e5efc555337f3ba9cbd4dcd9c1660e65ffb7c3c1"
+}
