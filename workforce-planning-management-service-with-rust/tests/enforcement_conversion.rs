@@ -6,7 +6,7 @@
 //! themself, a stranger and a manager outside the chain are refused, only HR reads, nobody
 //! approves their own proposal, and marking a conversion done changes the worker in one step.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

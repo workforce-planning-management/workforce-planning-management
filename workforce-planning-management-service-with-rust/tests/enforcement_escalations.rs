@@ -5,7 +5,7 @@
 //! escalation's own rule: anyone who may write to the plan can say a breach needs a decision, but only an
 //! administrator of the plan's organization decides it, and a caller outside the organization cannot see the plan.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

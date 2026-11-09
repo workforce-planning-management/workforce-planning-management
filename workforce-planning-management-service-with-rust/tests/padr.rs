@@ -1,7 +1,7 @@
 //! The PADR record under enforcement (WPM-R172, WPM-R225, WPM-R232, WPM-D176), against the shipped reference policy: who opens,
 //! reads and signs, the objectives as goals and their frozen snapshot, a correction, the due date, the roll-up and what is told.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,

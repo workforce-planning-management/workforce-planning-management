@@ -10,7 +10,7 @@ use workforce_planning_management::tasks::policy_reminders::send_reminders;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     department: &str,
     manager: Option<&str>,
@@ -222,7 +222,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
     .await;
 }
 
-async fn listed_version(request: &axa::TestServer, org: &str, policy: &str) -> String {
+async fn listed_version(request: &axa_test::TestServer, org: &str, policy: &str) -> String {
     let listed: Value = request
         .get(&format!("/api/policies?organization={org}"))
         .await

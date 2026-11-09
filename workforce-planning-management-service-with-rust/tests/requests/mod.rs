@@ -88,7 +88,7 @@ pub fn a_person() -> String {
 /// Give `org` a working-time profile under the code `code` (`(weeks, ceiling minutes, rest minutes)`, `example` rows from
 /// 2000-01-01) and record `workers` as working there (WPM-D144, WPM-T380). Returns nothing; each call asserts success.
 pub async fn working_time_profile(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     code: &str,
     (weeks, ceiling, rest): (i64, i64, i64),
@@ -154,7 +154,7 @@ pub fn text_without_ids(value: &serde_json::Value) -> String {
 ///
 /// A macro, not a function: the `request` handed to each test by
 /// loco's `request()` helper is a `loco_rs`-internal-pinned
-/// `axa::TestServer` — a type this crate cannot name directly
+/// `axa_test::TestServer` — a type this crate cannot name directly
 /// without pulling in that exact same `axum-test` version as a direct
 /// dependency (defeating the point of tracking a newer one for the
 /// dev-dependency's own sake). Expanding inline sidesteps naming the
@@ -212,7 +212,7 @@ pub(crate) use activate;
 #[allow(clippy::future_not_send)]
 pub async fn request_open<F, Fut>(callback: F)
 where
-    F: FnOnce(axa::TestServer, axa::AppContext) -> Fut,
+    F: FnOnce(axa_test::TestServer, axa::AppContext) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
     static OPEN: std::sync::Once = std::sync::Once::new();
@@ -227,7 +227,7 @@ where
             std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
         };
     });
-    axa::testing::prelude::request::<workforce_planning_management::app::App, _, _>(callback).await;
+    axa_test::prelude::request::<workforce_planning_management::app::App, _, _>(callback).await;
 }
 
 /// Run set-up DDL for a test (a trigger that refuses audit rows, and its removal). The runtime database role may not change the schema,

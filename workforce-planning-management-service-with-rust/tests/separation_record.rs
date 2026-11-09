@@ -1,7 +1,7 @@
 //! The separation record under enforcement (WPM-R222), against the shipped reference policy: built from the leaver record, HR only,
 //! audited with no content, and an export with a row for every leaver in the period.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -73,7 +73,7 @@ async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -101,7 +101,7 @@ async fn worker(
     pid
 }
 
-async fn leaver(request: &axa::TestServer, token: &str, worker: &str, day: &str) -> String {
+async fn leaver(request: &axa_test::TestServer, token: &str, worker: &str, day: &str) -> String {
     let opened: Value = request
         .post(&format!("/api/workers/{worker}/movements"))
         .add_header("authorization", token.to_string())

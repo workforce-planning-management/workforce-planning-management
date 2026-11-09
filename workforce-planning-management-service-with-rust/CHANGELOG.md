@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.10 (WPM-T481)
+
+`axa` 0.7.0 to 0.10.0. The request-level test helpers are the new `axa-test` dev-dependency, in place of `axa`'s `testing` feature. Nothing a client or an operator sees changes: WPM runs no `axa` outbox, queue or idempotency, and pages by cursor already.
+
 ### Added — a failed sign-in lockout, off by default (WPM-R242, WPM-D190, WPM-T479)
 
 Set `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` to the number of `401`s one client address may earn in 15 minutes; at that count every request from it is a `429` until they end. Unset or `0` is off; a value that is not a whole number stops the start. Behind a proxy, set `TRUSTED_PROXIES`, or one client's expired tokens lock out everyone behind it.

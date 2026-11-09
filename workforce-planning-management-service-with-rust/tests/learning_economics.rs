@@ -2,7 +2,7 @@
 //! see it, what a masked reader is told, train or hire, a stated benefit, and spend against a budget. Its own test binary,
 //! because the auth flag and policy are cached in process-wide `OnceLock`s.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -85,7 +85,7 @@ async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
 
 /// Create an active worker with a place of work.
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -121,7 +121,7 @@ async fn worker(
 }
 
 /// One dated row of a jurisdiction profile, through the API so the registry's checks apply.
-async fn parameter(request: &axa::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
+async fn parameter(request: &axa_test::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
     request
         .post("/api/jurisdiction-parameters")
         .add_header("authorization", svc.to_string())
@@ -131,7 +131,7 @@ async fn parameter(request: &axa::TestServer, svc: &str, org: &str, key: &str, v
         .assert_status_ok();
 }
 
-async fn a_skill(request: &axa::TestServer, svc: &str) -> String {
+async fn a_skill(request: &axa_test::TestServer, svc: &str) -> String {
     let skill: Value = request
         .post("/api/skills")
         .add_header("authorization", svc.to_string())

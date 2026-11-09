@@ -9,7 +9,7 @@
 //! `#[ignore]`d: boots the app (needs PostgreSQL via
 //! `DATABASE_URL`). Run with `cargo test --test retention_schedule -- --ignored`.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;

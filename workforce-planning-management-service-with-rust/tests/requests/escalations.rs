@@ -6,7 +6,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn plan_with_breaches(request: &axa::TestServer, org: &str) -> String {
+async fn plan_with_breaches(request: &axa_test::TestServer, org: &str) -> String {
     for i in 0..6 {
         request
             .post("/api/workers")
@@ -46,7 +46,7 @@ async fn plan_with_breaches(request: &axa::TestServer, org: &str) -> String {
     pid
 }
 
-async fn view(request: &axa::TestServer, pid: &str) -> Value {
+async fn view(request: &axa_test::TestServer, pid: &str) -> Value {
     request
         .get(&format!("/api/workforce-plans/{pid}/tolerances"))
         .await

@@ -9,7 +9,7 @@
 //! Before this guard, a signed-in caller with no attributes could read a colleague's sick-leave
 //! request with its reason, their time-entry notes and every applicant's e-mail address.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

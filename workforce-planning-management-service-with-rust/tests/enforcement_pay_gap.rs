@@ -5,7 +5,7 @@
 //! payroll and the service the report; that the report names no one and carries no head count; and that no audit
 //! entry holds a figure.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

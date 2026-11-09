@@ -27,7 +27,7 @@ fn a_programme() -> String {
 }
 
 async fn make_pool(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     name: &str,
     reservation_bp: i32,

@@ -7,7 +7,7 @@
 use std::io;
 use std::sync::{Arc, Mutex};
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use serial_test::serial;
 use tracing_subscriber::fmt::MakeWriter;
 use workforce_planning_management::app::App;

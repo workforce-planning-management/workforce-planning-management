@@ -5,7 +5,7 @@
 //! verified: the rate is masked like salary. Payroll and the worker themself see it; HR, who may
 //! record it, and every other signed-in caller see that a rate exists and not what it is.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

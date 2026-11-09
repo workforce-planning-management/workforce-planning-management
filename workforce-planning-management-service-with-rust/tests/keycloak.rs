@@ -31,7 +31,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use workforce_planning_management::app::App;
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 
 /// Fully qualified (Podman refuses short names).
 const KEYCLOAK_IMAGE: &str = "quay.io/keycloak/keycloak";

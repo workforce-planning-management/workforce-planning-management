@@ -5,7 +5,7 @@
 //! capacity view, not the workers, and nothing that writes. Everyone reads the same payload, and it
 //! holds no worker, no worker number and no name.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

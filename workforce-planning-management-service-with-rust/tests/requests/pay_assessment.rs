@@ -36,7 +36,7 @@ impl Drop for MonitoringOn {
 }
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     title: &str,

@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
 
-async fn make_nurse(request: &axa::TestServer, worker: &str) {
+async fn make_nurse(request: &axa_test::TestServer, worker: &str) {
     let list: Value = request
         .get(&format!("/api/workers/{worker}/assignments"))
         .await

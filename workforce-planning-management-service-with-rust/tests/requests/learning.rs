@@ -2401,7 +2401,7 @@ async fn confederation_groups_and_transfers() {
     .await;
 }
 
-async fn capability_view(request: &axa::TestServer) -> Value {
+async fn capability_view(request: &axa_test::TestServer) -> Value {
     request
         .get("/api/workforce-intelligence/capability")
         .await

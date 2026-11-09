@@ -9,7 +9,7 @@ use super::{a_person, an_org};
 
 /// Hire `n` workers in `department`, all on band 6 and paid `salary` minor units (a currency of GBP).
 async fn staff(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     department: &str,

@@ -5,7 +5,7 @@ use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
-async fn rpc(request: &axa::TestServer, body: Value) -> (u16, Value) {
+async fn rpc(request: &axa_test::TestServer, body: Value) -> (u16, Value) {
     let response = request.post("/mcp").json(&body).await;
     let status = response.status_code().as_u16();
     let text = response.text();

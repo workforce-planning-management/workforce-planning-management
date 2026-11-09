@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, activate, an_org};
 
 async fn create(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     number: &str,
     basis: &str,

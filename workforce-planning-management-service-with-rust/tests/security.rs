@@ -6,7 +6,7 @@
 //! default (**on**) here, which also proves the default: an unauthenticated
 //! read is a `401`, not a `200`.
 //!
-//! The caller is the address `axa` resolves (WPM-R239, WPM-D187). `axa::testing::request`
+//! The caller is the address `axa` resolves (WPM-R239, WPM-D187). `axa_test::prelude::request`
 //! serves over a real socket, so its peer is `127.0.0.1`, which `TRUSTED_PROXIES` lists here:
 //! the test client plays a trusted proxy, and `X-Forwarded-For` is what that proxy reports.
 //! Other peers are a request sent straight to the router with the `ConnectInfo` the server
@@ -15,7 +15,7 @@
 //! `#[ignore]`d: boots the app (needs PostgreSQL via
 //! `DATABASE_URL`). Run with `cargo test --test security -- --ignored`.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use axum::{
     Router,
     body::Body,

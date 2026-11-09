@@ -4,7 +4,7 @@
 //! and reads only their own requests with a computed due date and one waiting at a time; that the answer is worked out
 //! only for a caller who may read salaries and recorded only by one who may write; and that the answer names no one else.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

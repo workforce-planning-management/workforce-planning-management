@@ -94,7 +94,7 @@ async fn serve(stub: Shared) -> String {
 }
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     number: &str,
     manager: Option<&str>,

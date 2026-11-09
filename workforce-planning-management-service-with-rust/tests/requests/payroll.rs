@@ -370,7 +370,7 @@ impl Drop for YenStub {
 }
 
 /// Open and calculate a July run for `org`: the run, the status code and the body.
-async fn calculate_july(request: &axa::TestServer, org: &str) -> (String, u16, String) {
+async fn calculate_july(request: &axa_test::TestServer, org: &str) -> (String, u16, String) {
     let run: Value = request
         .post("/api/payroll-runs")
         .json(&json!({
@@ -477,7 +477,7 @@ impl Drop for SixHourDay {
 }
 
 /// Record a time entry and approve it.
-async fn approved_time(request: &axa::TestServer, worker: &str, body: Value) {
+async fn approved_time(request: &axa_test::TestServer, worker: &str, body: Value) {
     let entry: Value = request
         .post(&format!("/api/workers/{worker}/time-entries"))
         .json(&body)
@@ -493,7 +493,7 @@ async fn approved_time(request: &axa::TestServer, worker: &str, body: Value) {
 }
 
 /// The derived overtime minutes per day in a worker's timesheet.
-async fn timesheet_overtime(request: &axa::TestServer, worker: &str) -> Vec<(String, i64)> {
+async fn timesheet_overtime(request: &axa_test::TestServer, worker: &str) -> Vec<(String, i64)> {
     let listed: Value = request
         .get(&format!(
             "/api/workers/{worker}/time-entries?from=2026-07-01&to=2026-07-31"

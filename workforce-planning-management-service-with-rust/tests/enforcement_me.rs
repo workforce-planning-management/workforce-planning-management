@@ -6,7 +6,7 @@
 //! because those routes are on the explicit self-service list, and only those: every other write
 //! stays refused, and nobody can touch another person's record through `/api/me`.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

@@ -378,7 +378,7 @@ async fn working_time_guardrails() {
 }
 
 /// The flagged row for `who` in the working-time view as of 2026-07-10, if any.
-async fn flagged_as_of(request: &axa::TestServer, who: &str) -> Option<Value> {
+async fn flagged_as_of(request: &axa_test::TestServer, who: &str) -> Option<Value> {
     let signals: Value = request
         .get("/api/workforce/working-time?as_of=2026-07-10")
         .await

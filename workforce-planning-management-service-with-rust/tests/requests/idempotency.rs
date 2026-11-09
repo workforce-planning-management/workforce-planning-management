@@ -9,7 +9,7 @@ use super::an_org;
 
 const KEY: &str = "0123456789abcdef-test-key";
 
-async fn count(request: &axa::TestServer, org: &str, title: &str) -> usize {
+async fn count(request: &axa_test::TestServer, org: &str, title: &str) -> usize {
     let feed: Value = request
         .get(&format!("/api/announcements?organization={org}"))
         .await

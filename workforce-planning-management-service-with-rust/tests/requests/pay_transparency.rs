@@ -39,7 +39,7 @@ const BASIS: &str = "Same skills, effort, responsibility and working conditions.
 
 /// Hire `n` workers with a title, a sex answer and a salary; returns their pids.
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     title: &str,
@@ -74,7 +74,7 @@ async fn hire(
     pids
 }
 
-async fn category(request: &axa::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
+async fn category(request: &axa_test::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
     request
         .post("/api/pay-categories")
         .json(

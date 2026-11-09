@@ -1,7 +1,7 @@
 //! Individual goals under enforcement (WPM-R224 to WPM-R226), against the shipped reference policy: who proposes and agrees, who
 //! reads, what is audited, a measure and a check-in, the review tie-in and its frozen snapshot, and the roll-up's floor.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,

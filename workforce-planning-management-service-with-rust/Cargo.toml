@@ -17,7 +17,7 @@ categories = ["development-tools", "rust-patterns"]
 include = ["src/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.7", features = ["cursor-pagination", "problem", "ratelimit", "sea-orm", "sqlx"] }
+axa = { version = "0.10", features = ["cursor-pagination", "problem", "ratelimit", "sea-orm", "sqlx"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -124,9 +124,10 @@ path = "src/bin/main.rs"
 required-features = []
 
 [dev-dependencies]
-axa = { workspace = true, features = ["testing"] }
-# Name the `TestServer` type in shared request-test helpers (same
-# version axa's testing feature uses).
+axa = { workspace = true }
+axa-test = { version = "0.1" }
+# Name `axum_test::TestResponse` in shared request-test helpers (the same
+# version `axa-test` uses).
 axum-test = { version = "21.1.0" }
 tokio = { version = "1.54", default-features = false, features = [
   "rt-multi-thread",

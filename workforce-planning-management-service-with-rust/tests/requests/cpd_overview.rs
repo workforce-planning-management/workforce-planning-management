@@ -9,7 +9,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     n: usize,
     title: &str,
@@ -28,7 +28,7 @@ async fn hire(
 }
 
 async fn record(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     worker: &str,
     date: &str,
     unit: &str,

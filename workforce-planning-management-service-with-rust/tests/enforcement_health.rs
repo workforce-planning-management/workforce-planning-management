@@ -5,7 +5,7 @@
 //! occupational-health role records a status; the worker sees their own; a manager and HR see only
 //! **cleared** or **not cleared**, never the status; no reason is held; and nothing else reads it.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

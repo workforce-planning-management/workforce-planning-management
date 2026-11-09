@@ -1,7 +1,7 @@
 //! Starting a course (WPM-R236, WPM-D182) on PostgreSQL under the reference policy: a recorded zero enrols at once, a fee or an unknown
 //! fee goes to a manager above the person, and only that manager decides.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -91,7 +91,7 @@ async fn worker(
 }
 
 async fn course(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     skill: &str,
     tag: &str,

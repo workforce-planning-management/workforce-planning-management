@@ -38,7 +38,7 @@ async fn serve(stub: Arc<Stub>) -> String {
     url
 }
 
-async fn worker(request: &axa::TestServer, number: &str) -> String {
+async fn worker(request: &axa_test::TestServer, number: &str) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -51,7 +51,7 @@ async fn worker(request: &axa::TestServer, number: &str) -> String {
     created["pid"].as_str().unwrap().to_string()
 }
 
-async fn status(request: &axa::TestServer, pid: &str, to: &str) {
+async fn status(request: &axa_test::TestServer, pid: &str, to: &str) {
     request
         .post(&format!("/api/workers/{pid}/status"))
         .json(&json!({ "to": to }))

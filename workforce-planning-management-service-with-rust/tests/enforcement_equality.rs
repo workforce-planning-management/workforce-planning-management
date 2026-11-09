@@ -5,7 +5,7 @@
 //! that once on only the worker can read their own answers, that the only output is an aggregate
 //! with small groups withheld, and that no audit entry carries a value.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

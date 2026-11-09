@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn worker(request: &axa::TestServer, org: &str, number: &str, fte: i32) -> String {
+async fn worker(request: &axa_test::TestServer, org: &str, number: &str, fte: i32) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -20,7 +20,7 @@ async fn worker(request: &axa::TestServer, org: &str, number: &str, fte: i32) ->
     created["pid"].as_str().unwrap().to_string()
 }
 
-async fn seat(request: &axa::TestServer, org: &str, cost_centre: &str, budget: i32) -> String {
+async fn seat(request: &axa_test::TestServer, org: &str, cost_centre: &str, budget: i32) -> String {
     let made = request
         .post("/api/positions")
         .json(&json!({ "organization_ref": org, "cost_centre": cost_centre, "title": "Engineer", "budget_fte_percent": budget, "funding_kind": "core" }))
@@ -29,7 +29,7 @@ async fn seat(request: &axa::TestServer, org: &str, cost_centre: &str, budget: i
     made.json::<Value>()["pid"].as_str().unwrap().to_string()
 }
 
-async fn go(request: &axa::TestServer, pid: &str, to: &str) -> (u16, String) {
+async fn go(request: &axa_test::TestServer, pid: &str, to: &str) -> (u16, String) {
     let r = request
         .post(&format!("/api/positions/{pid}/status"))
         .json(&json!({ "to": to }))

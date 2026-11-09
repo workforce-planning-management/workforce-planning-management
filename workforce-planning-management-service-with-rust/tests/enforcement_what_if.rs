@@ -7,7 +7,7 @@
 //! write rule (a what-if is a POST) plus the organization's scope; a caller who is only a partner
 //! reads the frozen packs and nothing else.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

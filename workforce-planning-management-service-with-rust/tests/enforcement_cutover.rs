@@ -6,7 +6,7 @@
 //! lets write. Reading the readiness is open to anyone in the organization's scope and to nobody outside it,
 //! and a caller who holds only the `partner` role reads nothing here.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

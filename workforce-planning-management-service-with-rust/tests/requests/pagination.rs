@@ -33,7 +33,7 @@ fn no_totals(response: &axum_test::TestResponse, what: &str) {
 }
 
 /// Every page of `first`, following `Link` to the end: the rows, and how many pages there were.
-async fn walk(request: &axa::TestServer, first: &str) -> (Vec<Value>, usize) {
+async fn walk(request: &axa_test::TestServer, first: &str) -> (Vec<Value>, usize) {
     let mut rows = Vec::new();
     let mut pages = 0;
     let mut at = Some(first.to_string());

@@ -1,7 +1,7 @@
 //! The injury record under enforcement (WPM-R221, WPM-D179), against the shipped reference policy: HR only, no description in any
 //! field, each report a row of its own, audited with no content, and erasure that keeps the proof and drops the person.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -73,7 +73,7 @@ async fn seat(ctx: &axa::AppContext, person: &str, org: &str, role: &str) {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,

@@ -9,7 +9,7 @@ use super::{an_org, seed_worker};
 
 /// Record `code` (with `layer` and `parent`) in `org`, and append one `example` row of `key` at it.
 async fn profile_row(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     (code, layer, parent): (&str, &str, Option<&str>),
     key: &str,
@@ -29,7 +29,7 @@ async fn profile_row(
 }
 
 /// Set `org`'s home jurisdiction (`null` clears it).
-async fn set_home(request: &axa::TestServer, org: &str, code: Value) {
+async fn set_home(request: &axa_test::TestServer, org: &str, code: Value) {
     request
         .put("/api/home-jurisdiction")
         .json(&json!({ "organization_ref": org, "home_jurisdiction": code }))

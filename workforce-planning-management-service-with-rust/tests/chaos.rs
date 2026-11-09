@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde_json::{Value, json};
 use serial_test::serial;
@@ -298,7 +298,7 @@ async fn the_service_fails_cleanly_and_heals() {
 }
 
 /// The service must answer `200` again within a few seconds of the database returning.
-async fn heal(request: &axa::TestServer, db: &sea_orm::DatabaseConnection) {
+async fn heal(request: &axa_test::TestServer, db: &sea_orm::DatabaseConnection) {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let response = request.get("/api/workers").await;

@@ -6,7 +6,7 @@
 //! (the reference policy lets only HR write). The service then decides *which* requests such a caller
 //! may decide: their own reports', never their own, and an appeal never by who refused.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

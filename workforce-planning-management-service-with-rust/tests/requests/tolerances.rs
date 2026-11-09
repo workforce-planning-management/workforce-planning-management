@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire_salaried(request: &axa::TestServer, org: &str, n: usize) {
+async fn hire_salaried(request: &axa_test::TestServer, org: &str, n: usize) {
     for i in 0..n {
         request
             .post("/api/workers")

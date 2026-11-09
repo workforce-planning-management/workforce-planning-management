@@ -5,7 +5,7 @@
 //! payroll caller who holds no seat in the run's organization is told the run does not exist. (The run's own routes are not
 //! scoped by membership: an HR or payroll attribute in a token is deployment-wide, as the personas test in `enforcement.rs` has it.) the answer for one who may read names no age.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;

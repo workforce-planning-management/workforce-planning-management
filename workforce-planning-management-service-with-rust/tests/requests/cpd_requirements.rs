@@ -7,7 +7,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &axa::TestServer) -> String {
+async fn hire(request: &axa_test::TestServer) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -21,7 +21,7 @@ async fn hire(request: &axa::TestServer) -> String {
 }
 
 /// The worker's first requirement in their progress.
-async fn progress(request: &axa::TestServer, worker: &str) -> Value {
+async fn progress(request: &axa_test::TestServer, worker: &str) -> Value {
     let p: Value = request
         .get(&format!("/api/workers/{worker}/cpd-progress"))
         .await

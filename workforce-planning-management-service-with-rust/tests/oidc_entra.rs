@@ -24,7 +24,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use axum::extract::{Form, Path, Query, State};
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Redirect};
