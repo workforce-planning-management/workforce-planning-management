@@ -148,6 +148,12 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
             .assert_status_ok();
         let now: Value = request.get(&format!("/api/rotas/{rota_pid}/on-call")).await.json();
         assert_eq!(now["worker_pid"], c.as_str());
+        // The rotation keeps the order given, numbered from 1.
+        let shown: Value = request.get(&format!("/api/rotas/{rota_pid}")).await.json();
+        let order: Vec<(i64, String)> = shown["members"].as_array().unwrap().iter()
+            .map(|m| (m["position"].as_i64().unwrap(), m["worker_pid"].as_str().unwrap().to_string()))
+            .collect();
+        assert_eq!(order, [(1, c.clone()), (2, b.clone()), (3, a.clone())]);
 
         // It appears in the list with who is on call today; then retire it.
         let list: Vec<Value> = request.get("/api/rotas").await.json();

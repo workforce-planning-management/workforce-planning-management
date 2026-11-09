@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM rota_members WHERE rota_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "df53d0a6c49c9b8617e76d3e2531b78b32ec96ea792ecdbad8ed65c267366eda"
+}

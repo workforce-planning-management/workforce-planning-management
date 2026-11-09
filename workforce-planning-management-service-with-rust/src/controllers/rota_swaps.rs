@@ -16,7 +16,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use super::rotas::{check_members, compute, find_rota, name_of, require_scope, workers_by_pid};
+use super::rotas::{
+    RotaPerson, check_members, compute, find_rota, name_of, require_scope, workers_by_pid,
+};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::db;
@@ -43,7 +45,7 @@ async fn writable_worker(
 fn request_json(
     r: &rota_swap_requests::Model,
     rota_name: Option<&str>,
-    people: &HashMap<Uuid, workers::Model>,
+    people: &HashMap<Uuid, RotaPerson>,
 ) -> serde_json::Value {
     serde_json::json!({
         "pid": r.pid,
