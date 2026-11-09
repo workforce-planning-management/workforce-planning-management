@@ -201,6 +201,68 @@ pub async fn emit_on<C: ConnectionTrait>(
     Ok(())
 }
 
+/// [`emit_on`] for a `sqlx` transaction (WPM-T466): the same envelope, the same outbox row and the same webhook
+/// deliveries, written on `connection`, so a change that rolls back tells nobody.
+///
+/// # Errors
+///
+/// When an insert fails (the `memory` path is infallible).
+pub async fn emit_in(
+    connection: &mut sqlx::PgConnection,
+    entity: &str,
+    kind: &str,
+    pid: &str,
+    name: &str,
+    actor: Option<&str>,
+    data: Option<serde_json::Value>,
+) -> axa::Result<()> {
+    let env = envelope(entity, kind, pid, name, actor, data);
+    if transport().is_outbox() {
+        let row = OutboxInsert::from_envelope(&env, chrono::Utc::now().into())
+            .map_err(axa::Error::Model)?;
+        sqlx::query!(
+            "INSERT INTO event_outbox (event_id, entity, entity_pid, kind, occurred_at, actor, schema_version, payload)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            row.event_id,
+            row.entity,
+            row.entity_pid,
+            row.kind,
+            row.occurred_at,
+            row.actor,
+            row.schema_version,
+            row.payload,
+        )
+        .execute(&mut *connection)
+        .await
+        .map_err(|e| axa::Error::Message(e.to_string()))?;
+    } else {
+        let mut events = publisher()
+            .events
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if events.len() >= MEMORY_CAPACITY {
+            events.remove(0);
+        }
+        events.push(env.clone());
+    }
+    if crate::rules::webhook::offered(&env.entity, &env.kind) {
+        sqlx::query!(
+            "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
+             SELECT gen_random_uuid(), s.pid, $1, $2::text, $3, $4, now(), now()
+               FROM webhook_subscriptions s WHERE s.active AND $2::text = ANY (s.kinds)
+             ON CONFLICT (subscription_pid, event_id) DO NOTHING",
+            env.event_id,
+            env.kind,
+            crate::rules::webhook::subject(&env.entity, &env.pid),
+            crate::rules::webhook::delivery_data(&env.kind, env.data.as_ref()),
+        )
+        .execute(&mut *connection)
+        .await
+        .map_err(|e| axa::Error::Message(e.to_string()))?;
+    }
+    Ok(())
+}
+
 /// Queue a delivery for every active subscription that asked for this event, **on the same connection** (the mutation's
 /// transaction), so a change that rolls back tells nobody and a change that commits is never missed. Only the event id, the
 /// kind and the URN of the record are written, and for a hire or an ending the handoff references and date the event carried

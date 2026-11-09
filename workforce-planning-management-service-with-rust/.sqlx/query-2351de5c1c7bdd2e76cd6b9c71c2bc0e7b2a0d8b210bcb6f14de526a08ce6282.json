@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM organization_confederations\n                           WHERE parent_organization_ref = $1 AND child_organization_ref = $2 AND deleted_at IS NULL)\n             AS \"exists!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2351de5c1c7bdd2e76cd6b9c71c2bc0e7b2a0d8b210bcb6f14de526a08ce6282"
+}

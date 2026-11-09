@@ -29,14 +29,12 @@
 
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{organization_confederations, organization_memberships};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
 use crate::models::{confederations, memberships, records};
 use crate::rules::{org_access, tokens};
 use crate::streaming;
@@ -144,35 +142,29 @@ struct MembershipView {
     ends_on: Option<chrono::NaiveDate>,
 }
 
-impl From<organization_memberships::Model> for MembershipView {
-    fn from(row: organization_memberships::Model) -> Self {
-        Self {
-            pid: row.pid.to_string(),
-            person_ref: row.person_ref,
-            organization_ref: row.organization_ref,
-            worker_pid: row.worker_pid,
-            employed: row.worker_pid.is_some(),
-            role: row.role,
-            starts_on: row.starts_on,
-            ends_on: row.ends_on,
-        }
-    }
-}
-
 /// The live (not soft-deleted) memberships for one `person_ref`,
 /// oldest first — shared by the token-derived "mine" read and the
 /// `?person_ref=` admin listing below, so the two never drift.
-async fn memberships_for(
-    db: &sea_orm::DatabaseConnection,
-    person_ref: &str,
-) -> Result<Vec<MembershipView>> {
-    let rows = organization_memberships::Entity::find()
-        .filter(organization_memberships::Column::PersonRef.eq(person_ref))
-        .filter(organization_memberships::Column::DeletedAt.is_null())
-        .order_by_asc(organization_memberships::Column::Id)
-        .all(db)
-        .await?;
-    Ok(rows.into_iter().map(MembershipView::from).collect())
+async fn memberships_for(ctx: &AppContext, person_ref: &str) -> Result<Vec<MembershipView>> {
+    Ok(sqlx::query!(
+        "SELECT pid, person_ref, organization_ref, worker_pid, role, starts_on, ends_on
+           FROM organization_memberships WHERE person_ref = $1 AND deleted_at IS NULL ORDER BY id",
+        person_ref,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|row| MembershipView {
+        pid: row.pid.to_string(),
+        person_ref: row.person_ref,
+        organization_ref: row.organization_ref,
+        worker_pid: row.worker_pid,
+        employed: row.worker_pid.is_some(),
+        role: row.role,
+        starts_on: row.starts_on,
+        ends_on: row.ends_on,
+    })
+    .collect())
 }
 
 /// `GET /api/me/organizations` — the caller's own memberships across
@@ -189,7 +181,7 @@ async fn list_my_organizations(
         return format::json(Vec::<MembershipView>::new());
     };
     let person_ref = format!("person:{}", claims.sub);
-    format::json(memberships_for(&ctx.db, &person_ref).await?)
+    format::json(memberships_for(&ctx, &person_ref).await?)
 }
 
 /// `GET /api/me/organizations/scope` — every organization the caller
@@ -235,7 +227,7 @@ async fn list_memberships(
         Some(v) if !v.trim().is_empty() => v,
         _ => return Err(unprocessable("person_ref is required")),
     };
-    format::json(memberships_for(&ctx.db, &person_ref).await?)
+    format::json(memberships_for(&ctx, &person_ref).await?)
 }
 
 /// `POST /api/organization-memberships` body.
@@ -304,55 +296,59 @@ async fn grant(
         }
     }
 
-    let existing = organization_memberships::Entity::find()
-        .filter(organization_memberships::Column::PersonRef.eq(&payload.person_ref))
-        .filter(organization_memberships::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(organization_memberships::Column::Role.eq(&payload.role))
-        .filter(organization_memberships::Column::DeletedAt.is_null())
-        .count(&ctx.db)
-        .await?;
-    if existing > 0 {
+    let existing = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM organization_memberships
+                           WHERE person_ref = $1 AND organization_ref = $2 AND role = $3 AND deleted_at IS NULL)
+             AS "exists!""#,
+        payload.person_ref,
+        payload.organization_ref,
+        payload.role,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
+    if existing {
         return Err(unprocessable(
             "this person already holds this role in this organization",
         ));
     }
 
-    let txn = ctx.db.begin().await?;
-    let row = organization_memberships::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        person_ref: ActiveValue::set(payload.person_ref),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        worker_pid: ActiveValue::set(payload.worker_pid),
-        role: ActiveValue::set(payload.role),
-        starts_on: ActiveValue::set(payload.starts_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let membership = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on, ends_on)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        membership,
+        payload.person_ref,
+        payload.organization_ref,
+        payload.worker_pid,
+        payload.role,
+        payload.starts_on,
+        payload.ends_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "organization_membership",
-        row.pid,
+        membership,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "organization_membership",
         "granted",
-        &row.pid.to_string(),
-        &row.role,
+        &membership.to_string(),
+        &payload.role,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: membership.to_string(),
     })
 }
 
@@ -368,13 +364,17 @@ async fn revoke(
     if !may_manage_membership(&ctx.db, &caller, &row.organization_ref, &row.role).await? {
         return Err(not_privileged());
     }
-    let txn = ctx.db.begin().await?;
     let pid = row.pid;
-    let mut active: organization_memberships::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE organization_memberships SET deleted_at = $2 WHERE pid = $1",
+        pid,
+        chrono::Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "organization_membership",
         pid,
         "deleted",
@@ -382,8 +382,8 @@ async fn revoke(
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "organization_membership",
         "revoked",
         &pid.to_string(),
@@ -392,7 +392,7 @@ async fn revoke(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -404,18 +404,6 @@ struct ConfederationView {
     child_organization_ref: String,
     starts_on: chrono::NaiveDate,
     ends_on: Option<chrono::NaiveDate>,
-}
-
-impl From<organization_confederations::Model> for ConfederationView {
-    fn from(row: organization_confederations::Model) -> Self {
-        Self {
-            pid: row.pid.to_string(),
-            parent_organization_ref: row.parent_organization_ref,
-            child_organization_ref: row.child_organization_ref,
-            starts_on: row.starts_on,
-            ends_on: row.ends_on,
-        }
-    }
 }
 
 /// `GET /api/organization-confederations?parent_organization_ref=` or
@@ -439,39 +427,41 @@ async fn list_confederations(
     page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
-    let mut find = organization_confederations::Entity::find()
-        .filter(organization_confederations::Column::DeletedAt.is_null());
-    match (
-        query
-            .parent_organization_ref
-            .filter(|v| !v.trim().is_empty()),
-        query
-            .child_organization_ref
-            .filter(|v| !v.trim().is_empty()),
-    ) {
-        (None, None) => {
-            return Err(unprocessable(
-                "parent_organization_ref or child_organization_ref is required",
-            ));
-        }
-        (parent, child) => {
-            if let Some(parent) = parent {
-                find = find
-                    .filter(organization_confederations::Column::ParentOrganizationRef.eq(parent));
-            }
-            if let Some(child) = child {
-                find = find
-                    .filter(organization_confederations::Column::ChildOrganizationRef.eq(child));
-            }
-        }
+    let parent = query
+        .parent_organization_ref
+        .filter(|v| !v.trim().is_empty());
+    let child = query
+        .child_organization_ref
+        .filter(|v| !v.trim().is_empty());
+    if parent.is_none() && child.is_none() {
+        return Err(unprocessable(
+            "parent_organization_ref or child_organization_ref is required",
+        ));
     }
-    super::paged_select(
-        &ctx,
-        find.order_by_asc(organization_confederations::Column::Id),
-        window,
-        |row| Ok(ConfederationView::from(row.clone())),
+    let (limit, offset) = window.bounds();
+    let rows: Vec<ConfederationView> = sqlx::query!(
+        "SELECT pid, parent_organization_ref, child_organization_ref, starts_on, ends_on
+           FROM organization_confederations
+          WHERE deleted_at IS NULL AND ($1::text IS NULL OR parent_organization_ref = $1)
+            AND ($2::text IS NULL OR child_organization_ref = $2)
+          ORDER BY id LIMIT $3 OFFSET $4",
+        parent,
+        child,
+        limit,
+        offset,
     )
-    .await
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|row| ConfederationView {
+        pid: row.pid.to_string(),
+        parent_organization_ref: row.parent_organization_ref,
+        child_organization_ref: row.child_organization_ref,
+        starts_on: row.starts_on,
+        ends_on: row.ends_on,
+    })
+    .collect();
+    Ok(window.respond(rows))
 }
 
 /// `POST /api/organization-confederations` body.
@@ -527,58 +517,56 @@ async fn grant_confederation(
         ));
     }
 
-    let existing = organization_confederations::Entity::find()
-        .filter(
-            organization_confederations::Column::ParentOrganizationRef
-                .eq(&payload.parent_organization_ref),
-        )
-        .filter(
-            organization_confederations::Column::ChildOrganizationRef
-                .eq(&payload.child_organization_ref),
-        )
-        .filter(organization_confederations::Column::DeletedAt.is_null())
-        .count(&ctx.db)
-        .await?;
-    if existing > 0 {
+    let existing = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM organization_confederations
+                           WHERE parent_organization_ref = $1 AND child_organization_ref = $2 AND deleted_at IS NULL)
+             AS "exists!""#,
+        payload.parent_organization_ref,
+        payload.child_organization_ref,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
+    if existing {
         return Err(unprocessable(
             "this parent already confederates this child organization",
         ));
     }
 
-    let txn = ctx.db.begin().await?;
-    let row = organization_confederations::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        parent_organization_ref: ActiveValue::set(payload.parent_organization_ref),
-        child_organization_ref: ActiveValue::set(payload.child_organization_ref),
-        starts_on: ActiveValue::set(payload.starts_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let edge = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO organization_confederations (pid, parent_organization_ref, child_organization_ref, starts_on, ends_on)
+         VALUES ($1, $2, $3, $4, $5)",
+        edge,
+        payload.parent_organization_ref,
+        payload.child_organization_ref,
+        payload.starts_on,
+        payload.ends_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "organization_confederation",
-        row.pid,
+        edge,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "organization_confederation",
         "granted",
-        &row.pid.to_string(),
-        &row.child_organization_ref,
+        &edge.to_string(),
+        &payload.child_organization_ref,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: edge.to_string(),
     })
 }
 
@@ -594,13 +582,17 @@ async fn revoke_confederation(
     if !may_manage_confederation(&ctx.db, &caller, &row.parent_organization_ref).await? {
         return Err(not_privileged_for_confederation());
     }
-    let txn = ctx.db.begin().await?;
     let pid = row.pid;
-    let mut active: organization_confederations::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE organization_confederations SET deleted_at = $2 WHERE pid = $1",
+        pid,
+        chrono::Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "organization_confederation",
         pid,
         "deleted",
@@ -608,8 +600,8 @@ async fn revoke_confederation(
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "organization_confederation",
         "revoked",
         &pid.to_string(),
@@ -618,7 +610,7 @@ async fn revoke_confederation(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
