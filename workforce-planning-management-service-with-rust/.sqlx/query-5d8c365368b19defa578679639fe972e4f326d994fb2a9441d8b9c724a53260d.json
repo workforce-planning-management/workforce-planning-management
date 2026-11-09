@@ -1,0 +1,138 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pay_information_requests SET answered_on = $2, answered_by = $3 WHERE id = $1\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, asked_on, due_on, answered_on,\n                  answered_by, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "asked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "asked_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "due_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "due_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "answered_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "answered_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "answered_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "answered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5d8c365368b19defa578679639fe972e4f326d994fb2a9441d8b9c724a53260d"
+}

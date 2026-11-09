@@ -12,17 +12,14 @@ use std::collections::BTreeMap;
 use axa::extract::Path;
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use super::{equality_monitoring, forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    equality_declarations, pay_categories, pay_information_requests, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{pay_information_requests, workers};
 use crate::rules::equality_monitoring::{DEFAULT_FLOOR, Gate};
 use crate::rules::metrics::is_employed_on;
 use crate::rules::pay_category as category_rules;
@@ -81,12 +78,15 @@ fn view(row: &pay_information_requests::Model, today: NaiveDate) -> serde_json::
 /// `GET /api/me/pay-information-requests`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
     let today = Utc::now().date_naive();
-    let rows = pay_information_requests::Entity::find()
-        .filter(pay_information_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(pay_information_requests::Column::DeletedAt.is_null())
-        .order_by_desc(pay_information_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        pay_information_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, asked_on, due_on, answered_on,
+                  answered_by, deleted_at AS "deleted_at: _"
+             FROM pay_information_requests WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id DESC"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     format::json(rows.iter().map(|r| view(r, today)).collect::<Vec<_>>())
 }
 
@@ -97,31 +97,32 @@ pub(crate) async fn ask_for(
     caller: &MaybeAuthUser,
     worker: &workers::Model,
 ) -> Result<Response> {
-    let open = pay_information_requests::Entity::find()
-        .filter(pay_information_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(pay_information_requests::Column::DeletedAt.is_null())
-        .filter(pay_information_requests::Column::AnsweredOn.is_null())
-        .count(&ctx.db)
-        .await?
-        > 0;
+    let open = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM pay_information_requests
+                           WHERE worker_pid = $1 AND deleted_at IS NULL AND answered_on IS NULL) AS "open!""#,
+        worker.pid,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?;
     rules::may_ask(open).map_err(|e| unprocessable(&e))?;
     let today = Utc::now().date_naive();
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let months = answer_months(Some(&scope), today);
     let due_on = rules::due_on(today, months.value)
         .ok_or_else(|| unprocessable("the due date runs past the supported calendar"))?;
-    let txn = ctx.db.begin().await?;
-    let row = pay_information_requests::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        asked_on: ActiveValue::set(today),
-        due_on: ActiveValue::set(due_on),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let request = Uuid::new_v4();
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO pay_information_requests (pid, worker_pid, asked_on, due_on) VALUES ($1, $2, $3, $4)",
+        request,
+        worker.pid,
+        today,
+        due_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "pay_information_requested",
@@ -129,9 +130,9 @@ pub(crate) async fn ask_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
-        "pid": row.pid,
+        "pid": request,
         "due_on": due_on,
         // Where the period came from: the worker's profile, the setting or the default (WPM-D153).
         "due_on_basis": months.came_from,
@@ -161,34 +162,21 @@ pub(crate) async fn list_requests(
     let scope =
         crate::models::memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
     let today = Utc::now().date_naive();
-    let rows = pay_information_requests::Entity::find()
-        .filter(pay_information_requests::Column::DeletedAt.is_null())
-        .order_by_asc(pay_information_requests::Column::DueOn)
-        .order_by_asc(pay_information_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let people: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect();
+    // One read with the asker, in the caller's organizations (and the one asked for); a removed worker's is left out.
+    let rows = sqlx::query!(
+        "SELECT r.pid, r.asked_on, r.due_on, r.answered_on,
+                w.pid AS worker_pid, w.worker_number, w.display_name, w.organization_ref
+           FROM pay_information_requests r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL
+          WHERE r.deleted_at IS NULL AND ($1::text IS NULL OR w.organization_ref = $1)
+            AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))
+          ORDER BY r.due_on, r.id",
+        query.organization,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut out = Vec::new();
     for row in &rows {
-        let Some(w) = people.get(&row.worker_pid) else {
-            continue;
-        };
-        if query
-            .organization
-            .as_ref()
-            .is_some_and(|o| o != &w.organization_ref)
-            || scope
-                .as_ref()
-                .is_some_and(|refs| !refs.iter().any(|r| r == &w.organization_ref))
-        {
-            continue;
-        }
         let standing = rules::standing(row.answered_on, row.due_on, today);
         let label = serde_json::to_value(standing)
             .ok()
@@ -200,12 +188,17 @@ pub(crate) async fn list_requests(
         {
             continue;
         }
-        let mut item = view(row, today);
-        item["worker_pid"] = json!(w.pid);
-        item["worker_number"] = json!(w.worker_number);
-        item["display_name"] = json!(w.display_name);
-        item["organization_ref"] = json!(w.organization_ref);
-        out.push(item);
+        out.push(json!({
+            "pid": row.pid,
+            "asked_on": row.asked_on,
+            "due_on": row.due_on,
+            "answered_on": row.answered_on,
+            "standing": standing,
+            "worker_pid": row.worker_pid,
+            "worker_number": row.worker_number,
+            "display_name": row.display_name,
+            "organization_ref": row.organization_ref,
+        }));
     }
     format::json(out)
 }
@@ -216,26 +209,35 @@ async fn request_and_worker(
     pid: &str,
 ) -> Result<(pay_information_requests::Model, workers::Model)> {
     let pid = Uuid::parse_str(pid).map_err(|_| Error::NotFound)?;
-    let row = pay_information_requests::Entity::find()
-        .filter(pay_information_requests::Column::Pid.eq(pid))
-        .filter(pay_information_requests::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let worker = workers::Entity::find()
-        .filter(workers::Column::Pid.eq(row.worker_pid))
-        .filter(workers::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        pay_information_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, asked_on, due_on, answered_on,
+                  answered_by, deleted_at AS "deleted_at: _"
+             FROM pay_information_requests WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let worker = crate::models::records::find_worker(&ctx.db, row.worker_pid).await?;
     super::ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((row, worker))
+}
+
+/// What an answer reads of a worker.
+struct Paid {
+    pid: Uuid,
+    job_title: String,
+    salary_minor: Option<i64>,
+    salary_currency: Option<String>,
+    hired_on: NaiveDate,
+    terminated_on: Option<NaiveDate>,
 }
 
 /// The pay of the workers of each sex in the asker's category, or why there is none, with the floor to use.
 async fn pools_for(
     ctx: &AppContext,
-    staff: &[workers::Model],
+    staff: &[Paid],
     by_title: &BTreeMap<String, String>,
     category: Option<&String>,
     currency: Option<&String>,
@@ -250,13 +252,15 @@ async fn pools_for(
     if !config.has_category(&sex_category) {
         return Ok((floor, Err(Reason::NoSexRecorded)));
     }
-    let answers: BTreeMap<Uuid, String> = equality_declarations::Entity::find()
-        .filter(equality_declarations::Column::Category.eq(&sex_category))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|a| (a.worker_pid, a.value))
-        .collect();
+    let answers: BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT worker_pid, value FROM equality_declarations WHERE category = $1",
+        sex_category,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|a| (a.worker_pid, a.value))
+    .collect();
     let (mut female, mut male) = (Vec::new(), Vec::new());
     for w in staff {
         if by_title.get(&category_rules::title_key(&w.job_title)) != Some(name) {
@@ -299,20 +303,24 @@ pub(crate) async fn answer(
         ));
     }
     let today = Utc::now().date_naive();
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&worker.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .collect();
-    let categories = pay_categories::Entity::find()
-        .filter(pay_categories::Column::OrganizationRef.eq(&worker.organization_ref))
-        .filter(pay_categories::Column::DeletedAt.is_null())
-        .order_by_asc(pay_categories::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let staff: Vec<Paid> = sqlx::query_as!(
+        Paid,
+        "SELECT pid, job_title, salary_minor, salary_currency, hired_on, terminated_on FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+        worker.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .collect();
+    let categories = sqlx::query!(
+        "SELECT name, basis, job_titles FROM pay_categories
+          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY name",
+        worker.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let held: Vec<(String, Vec<String>)> = categories
         .iter()
         .map(|c| {
@@ -342,8 +350,8 @@ pub(crate) async fn answer(
             .map_err(|r| *r),
         floor,
     );
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "pay_information_request",
         row.pid,
         "pay_information_answer_read",
@@ -382,23 +390,29 @@ pub(crate) async fn mark_answered(
     if row.answered_on.is_some() {
         return Err(unprocessable("this request is already answered"));
     }
-    let row_pid = row.pid;
     let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
-    let mut active: pay_information_requests::ActiveModel = row.into();
-    active.answered_on = ActiveValue::set(Some(today));
-    active.answered_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        pay_information_requests::Model,
+        r#"UPDATE pay_information_requests SET answered_on = $2, answered_by = $3 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, asked_on, due_on, answered_on,
+                  answered_by, deleted_at AS "deleted_at: _""#,
+        row.id,
+        today,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "pay_information_request",
-        row_pid,
+        row.pid,
         "pay_information_answered",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(view(&saved, today))
 }
 
