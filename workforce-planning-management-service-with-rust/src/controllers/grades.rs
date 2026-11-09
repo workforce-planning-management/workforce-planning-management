@@ -15,14 +15,14 @@ use super::writable_worker;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{role_profiles, worker_job_levels, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::workers;
 use crate::models::records;
 use crate::rules::grade as rules;
 use crate::rules::pay_scale as scale_rules;
@@ -83,14 +83,22 @@ fn band_view(scale: &str, band: &str) -> serde_json::Value {
 
 // ─── A worker's level ───────────────────────────────────────────────────────
 
-async fn current(
-    ctx: &AppContext,
-    worker: &workers::Model,
-) -> Result<Option<worker_job_levels::Model>> {
-    Ok(worker_job_levels::Entity::find()
-        .filter(worker_job_levels::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
-        .await?)
+/// A worker's recorded level.
+struct Held {
+    framework: String,
+    level_number: i32,
+    effective_on: chrono::NaiveDate,
+    on_behalf: bool,
+}
+
+async fn current(ctx: &AppContext, worker: &workers::Model) -> Result<Option<Held>> {
+    Ok(sqlx::query_as!(
+        Held,
+        "SELECT framework, level_number, effective_on, on_behalf FROM worker_job_levels WHERE worker_pid = $1",
+        worker.pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/job-level` — the worker's level, or `null`.
@@ -138,35 +146,25 @@ async fn set_worker_level(
     rules::validate_effective_on(effective_on, today).map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
-    let existing = current(&ctx, &worker).await?;
-    let txn = ctx.db.begin().await?;
-    match existing {
-        Some(row) => {
-            let mut active: worker_job_levels::ActiveModel = row.into();
-            active.framework = ActiveValue::set(framework.clone());
-            active.level_number = ActiveValue::set(i32::from(number));
-            active.effective_on = ActiveValue::set(effective_on);
-            active.recorded_by = ActiveValue::set(recorded_by);
-            active.on_behalf = ActiveValue::set(on_behalf);
-            active.update(&txn).await?;
-        }
-        None => {
-            worker_job_levels::ActiveModel {
-                worker_pid: ActiveValue::set(worker.pid),
-                framework: ActiveValue::set(framework.clone()),
-                level_number: ActiveValue::set(i32::from(number)),
-                effective_on: ActiveValue::set(effective_on),
-                recorded_by: ActiveValue::set(recorded_by),
-                on_behalf: ActiveValue::set(on_behalf),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-        }
-    }
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One row per worker: one upsert on its unique key rather than a read and a write.
+    sqlx::query!(
+        "INSERT INTO worker_job_levels (worker_pid, framework, level_number, effective_on, recorded_by, on_behalf)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (worker_pid) DO UPDATE SET framework = EXCLUDED.framework, level_number = EXCLUDED.level_number,
+             effective_on = EXCLUDED.effective_on, recorded_by = EXCLUDED.recorded_by, on_behalf = EXCLUDED.on_behalf",
+        worker.pid,
+        framework,
+        i32::from(number),
+        effective_on,
+        recorded_by,
+        on_behalf,
+    )
+    .execute(&mut *tx)
+    .await?;
     // No level in the audit entry: the level is the sensitive thing.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "job_level_set",
@@ -174,7 +172,7 @@ async fn set_worker_level(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     let mut view = level_view(&ctx, &framework, i32::from(number)).await?;
     view["effective_on"] = json!(effective_on);
     view["on_behalf"] = json!(on_behalf);
@@ -189,13 +187,18 @@ async fn clear_worker_level(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let row = current(&ctx, &worker).await?.ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    worker_job_levels::Entity::delete_by_id(row.id)
-        .exec(&txn)
-        .await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let cleared = sqlx::query!(
+        "DELETE FROM worker_job_levels WHERE worker_pid = $1",
+        worker.pid
+    )
+    .execute(&mut *tx)
+    .await?;
+    if cleared.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "job_level_cleared",
@@ -203,22 +206,59 @@ async fn clear_worker_level(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 
 // ─── A role profile's grade ─────────────────────────────────────────────────
 
-async fn find_profile(ctx: &AppContext, pid: &str) -> Result<role_profiles::Model> {
-    role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+/// A role profile's grade.
+struct Grade {
+    pid: Uuid,
+    job_level_framework: Option<String>,
+    job_level: Option<i32>,
+    pay_scale_id: Option<String>,
+    pay_band: Option<String>,
 }
 
-async fn grade_view(ctx: &AppContext, profile: &role_profiles::Model) -> Result<serde_json::Value> {
+async fn find_profile(ctx: &AppContext, pid: &str) -> Result<Grade> {
+    sqlx::query_as!(
+        Grade,
+        "SELECT pid, job_level_framework, job_level, pay_scale_id, pay_band FROM role_profiles
+          WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// Set a role profile's grade (all `None` clears it) and return it, or a 404 when the profile is gone.
+async fn write_grade(
+    tx: &mut sqlx::PgConnection,
+    pid: Uuid,
+    framework: Option<String>,
+    level: Option<i32>,
+    scale: Option<String>,
+    band: Option<String>,
+) -> Result<Grade> {
+    sqlx::query_as!(
+        Grade,
+        "UPDATE role_profiles SET job_level_framework = $2, job_level = $3, pay_scale_id = $4, pay_band = $5
+          WHERE pid = $1 AND deleted_at IS NULL
+          RETURNING pid, job_level_framework, job_level, pay_scale_id, pay_band",
+        pid,
+        framework,
+        level,
+        scale,
+        band,
+    )
+    .fetch_optional(tx)
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+async fn grade_view(ctx: &AppContext, profile: &Grade) -> Result<serde_json::Value> {
     let level = match (&profile.job_level_framework, profile.job_level) {
         (Some(f), Some(n)) => Some(level_view(ctx, f, n).await?),
         _ => None,
@@ -287,15 +327,18 @@ async fn set_role_grade(
         .map(|b| rules::resolve_band(&b.scale, &b.band))
         .transpose()
         .map_err(|e| unprocessable(&e))?;
-    let mut active: role_profiles::ActiveModel = profile.into();
-    active.job_level_framework = ActiveValue::set(level.as_ref().map(|(f, _)| f.clone()));
-    active.job_level = ActiveValue::set(level.as_ref().map(|(_, n)| i32::from(*n)));
-    active.pay_scale_id = ActiveValue::set(band.map(|(s, _)| s.to_string()));
-    active.pay_band = ActiveValue::set(band.map(|(_, b)| b.to_string()));
-    let txn = ctx.db.begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let saved = write_grade(
+        &mut tx,
+        profile.pid,
+        level.as_ref().map(|(f, _)| f.clone()),
+        level.as_ref().map(|(_, n)| i32::from(*n)),
+        band.map(|(s, _)| s.to_string()),
+        band.map(|(_, b)| b.to_string()),
+    )
+    .await?;
+    db::audit(
+        &mut tx,
         "role_profile",
         saved.pid,
         "grade_set",
@@ -306,7 +349,7 @@ async fn set_role_grade(
         ),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(grade_view(&ctx, &saved).await?)
 }
 
@@ -318,15 +361,10 @@ async fn clear_role_grade(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let profile = find_profile(&ctx, &pid).await?;
-    let mut active: role_profiles::ActiveModel = profile.into();
-    active.job_level_framework = ActiveValue::set(None);
-    active.job_level = ActiveValue::set(None);
-    active.pay_scale_id = ActiveValue::set(None);
-    active.pay_band = ActiveValue::set(None);
-    let txn = ctx.db.begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let saved = write_grade(&mut tx, profile.pid, None, None, None, None).await?;
+    db::audit(
+        &mut tx,
         "role_profile",
         saved.pid,
         "grade_cleared",
@@ -334,7 +372,7 @@ async fn clear_role_grade(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 

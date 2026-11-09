@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, skill_pid, target_level FROM worker_aspirations\n              WHERE deleted_at IS NULL AND kind = 'skill' AND status = ANY($2) AND worker_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "target_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "target_level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c26686edc36b3ab7bfc2f87da01011a4a8db59668257c1bdde572c04111b39cb"
+}

@@ -21,10 +21,6 @@ use uuid::Uuid;
 
 use super::record_rejection;
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    role_skill_requirements, skill_mappings, skills, worker_aspirations, worker_framework_roles,
-    worker_skills,
-};
 use crate::models::{memberships, records};
 use crate::rules::crosswalk;
 use crate::rules::skill_gap::{self as rules, Gap, Need, Source, Status};
@@ -33,16 +29,29 @@ use crate::tasks::import_framework::PCF_SLUG;
 /// Aspirations that still count as a want (not achieved, not dropped).
 const ACTIVE_ASPIRATIONS: &[&str] = &["idea", "planned", "in_progress"];
 
+/// A role's requirement of one skill.
+struct Requirement {
+    skill_pid: Uuid,
+    min_proficiency: i32,
+    importance: String,
+}
+
+/// An active skill aspiration.
+struct Aspiration {
+    skill_pid: Option<Uuid>,
+    target_level: Option<i32>,
+}
+
 /// The needs and declarations behind a set of workers, loaded in bulk.
 pub(crate) struct Evidence {
     /// Role requirements by role profile.
-    requirements: HashMap<Uuid, Vec<role_skill_requirements::Model>>,
+    requirements: HashMap<Uuid, Vec<Requirement>>,
     /// Each worker's current PCF role profile.
     roles: HashMap<Uuid, Uuid>,
     /// Each worker's declarations: skill → (proficiency, target).
     declared: HashMap<Uuid, BTreeMap<Uuid, (i32, Option<i32>)>>,
     /// Active skill aspirations by worker (loaded only when asked).
-    aspirations: HashMap<Uuid, Vec<worker_aspirations::Model>>,
+    aspirations: HashMap<Uuid, Vec<Aspiration>>,
 }
 
 pub(crate) async fn load_evidence(
@@ -50,35 +59,46 @@ pub(crate) async fn load_evidence(
     worker_pids: &[Uuid],
     with_aspirations: bool,
 ) -> Result<Evidence> {
-    let roles_rows = super::find_in(
-        ctx,
-        worker_framework_roles::Entity::find()
-            .filter(worker_framework_roles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .filter(worker_framework_roles::Column::EndedAt.is_null()),
-        worker_framework_roles::Column::WorkerPid,
+    let db = crate::db::pool(ctx);
+    let roles: HashMap<Uuid, Uuid> = sqlx::query!(
+        r#"SELECT worker_pid, role_profile_pid AS "role_profile_pid!" FROM worker_framework_roles
+            WHERE framework_slug = $1 AND ended_at IS NULL AND role_profile_pid IS NOT NULL
+              AND worker_pid = ANY($2)
+            ORDER BY id"#,
+        PCF_SLUG,
         worker_pids,
     )
-    .await?;
-    let roles: HashMap<Uuid, Uuid> = roles_rows
-        .iter()
-        .filter_map(|r| r.role_profile_pid.map(|p| (r.worker_pid, p)))
-        .collect();
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|r| (r.worker_pid, r.role_profile_pid))
+    .collect();
     let profile_ids: Vec<Uuid> = roles.values().copied().collect();
-    let mut requirements: HashMap<Uuid, Vec<role_skill_requirements::Model>> = HashMap::new();
-    for r in role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.is_in(profile_ids))
-        .all(&ctx.db)
-        .await?
+    let mut requirements: HashMap<Uuid, Vec<Requirement>> = HashMap::new();
+    for r in sqlx::query!(
+        "SELECT role_profile_pid, skill_pid, min_proficiency, importance FROM role_skill_requirements
+          WHERE role_profile_pid = ANY($1) ORDER BY id",
+        &profile_ids,
+    )
+    .fetch_all(db)
+    .await?
     {
-        requirements.entry(r.role_profile_pid).or_default().push(r);
+        requirements
+            .entry(r.role_profile_pid)
+            .or_default()
+            .push(Requirement {
+                skill_pid: r.skill_pid,
+                min_proficiency: r.min_proficiency,
+                importance: r.importance,
+            });
     }
     let mut declared: HashMap<Uuid, BTreeMap<Uuid, (i32, Option<i32>)>> = HashMap::new();
-    for d in super::find_in(
-        ctx,
-        worker_skills::Entity::find().filter(worker_skills::Column::DeletedAt.is_null()),
-        worker_skills::Column::WorkerPid,
+    for d in sqlx::query!(
+        "SELECT worker_pid, skill_pid, proficiency, target FROM worker_skills
+          WHERE deleted_at IS NULL AND worker_pid = ANY($1) ORDER BY id",
         worker_pids,
     )
+    .fetch_all(db)
     .await?
     {
         declared
@@ -86,21 +106,24 @@ pub(crate) async fn load_evidence(
             .or_default()
             .insert(d.skill_pid, (d.proficiency, d.target));
     }
-    let mut aspirations: HashMap<Uuid, Vec<worker_aspirations::Model>> = HashMap::new();
+    let mut aspirations: HashMap<Uuid, Vec<Aspiration>> = HashMap::new();
     if with_aspirations {
-        for a in super::find_in(
-            ctx,
-            worker_aspirations::Entity::find()
-                .filter(worker_aspirations::Column::DeletedAt.is_null())
-                .filter(worker_aspirations::Column::Kind.eq("skill")),
-            worker_aspirations::Column::WorkerPid,
+        for a in sqlx::query!(
+            "SELECT worker_pid, skill_pid, target_level FROM worker_aspirations
+              WHERE deleted_at IS NULL AND kind = 'skill' AND status = ANY($2) AND worker_pid = ANY($1) ORDER BY id",
             worker_pids,
+            &ACTIVE_ASPIRATIONS.iter().map(ToString::to_string).collect::<Vec<_>>(),
         )
+        .fetch_all(db)
         .await?
         {
-            if ACTIVE_ASPIRATIONS.contains(&a.status.as_str()) {
-                aspirations.entry(a.worker_pid).or_default().push(a);
-            }
+            aspirations
+                .entry(a.worker_pid)
+                .or_default()
+                .push(Aspiration {
+                    skill_pid: a.skill_pid,
+                    target_level: a.target_level,
+                });
         }
     }
     Ok(Evidence {
@@ -159,8 +182,8 @@ impl Evidence {
 
 /// Skill names and categories by pid.
 async fn skill_index(ctx: &AppContext) -> Result<HashMap<Uuid, (String, String)>> {
-    Ok(skills::Entity::find()
-        .all(&ctx.db)
+    Ok(sqlx::query!("SELECT pid, name, category FROM skills")
+        .fetch_all(crate::db::pool(ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, (s.name, s.category)))
@@ -191,7 +214,10 @@ async fn worker_gaps(
     let evidence = load_evidence(&ctx, &[worker.pid], own_view).await?;
     let mut gaps = evidence.gaps_for(worker.pid);
     // The crosswalk (WPM-R158): an undeclared need is graded through an exact or close mapping from a skill the person did declare.
-    let mapping_rows = skill_mappings::Entity::find().all(&ctx.db).await?;
+    let mapping_rows =
+        sqlx::query!("SELECT from_skill_pid, to_skill_pid, confidence FROM skill_mappings")
+            .fetch_all(crate::db::pool(&ctx))
+            .await?;
     let mappings: Vec<crosswalk::Mapping<'_>> = mapping_rows
         .iter()
         .map(|m| crosswalk::Mapping {

@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE role_profiles SET job_level_framework = $2, job_level = $3, pay_scale_id = $4, pay_band = $5\n          WHERE pid = $1 AND deleted_at IS NULL\n          RETURNING pid, job_level_framework, job_level, pay_scale_id, pay_band",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_level_framework",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_level_framework"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "job_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_level"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pay_scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pay_scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pay_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pay_band"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5c0de83170196a153defc8f1b6182a026c432612de0d0f879b780b033cd7872f"
+}
