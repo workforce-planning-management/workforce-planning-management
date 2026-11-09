@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pay_categories SET name = $2, basis = $3, job_titles = $4, set_by = $5 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Text",
+        "Jsonb",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f4114f7093dc1db5709d172574ed72f5088c0edd96dc1718b6e24265490ae19f"
+}
