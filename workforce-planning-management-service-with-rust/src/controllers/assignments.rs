@@ -6,19 +6,18 @@
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
 use super::pay_transparency::organization_problems;
 use super::{
-    ensure_org_in_scope, ensure_scale, ensure_valid, forbidden, row_json, unprocessable,
+    ensure_org_in_scope, ensure_valid, ensure_within_ceiling, forbidden, row_json, unprocessable,
     writable_worker,
 };
 use crate::auth::MaybeAuthUser;
+use crate::db;
 use crate::models::_entities::{assignments, workers};
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::assignment as rules;
 
@@ -32,11 +31,56 @@ fn as_rule(a: &assignments::Model) -> rules::Assignment {
 }
 
 async fn of(ctx: &AppContext, worker: Uuid) -> Result<Vec<assignments::Model>> {
-    Ok(assignments::Entity::find()
-        .filter(assignments::Column::WorkerPid.eq(worker))
-        .order_by_desc(assignments::Column::StartsOn)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        assignments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, job_title, department,
+                  location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,
+                  starts_on, ends_on, recorded_by
+             FROM assignments WHERE worker_pid = $1 ORDER BY starts_on DESC"#,
+        worker,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// Insert one assignment.
+async fn insert(tx: &mut sqlx::PgConnection, a: &New<'_>) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO assignments (pid, worker_pid, job_title, department, location, site, area_of_work, job_role, staff_group,
+                                  occupation_code, cost_centre, fte_percent, is_primary, starts_on, ends_on, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+        a.pid,
+        a.worker_pid,
+        a.fields.job_title.trim(),
+        a.fields.department.trim(),
+        a.fields.location,
+        a.fields.site,
+        a.fields.area_of_work,
+        a.fields.job_role,
+        a.fields.staff_group,
+        a.fields.occupation_code,
+        a.fields.cost_centre,
+        a.fte_percent,
+        a.is_primary,
+        a.starts_on,
+        a.ends_on,
+        a.recorded_by,
+    )
+    .execute(tx)
+    .await?;
+    Ok(())
+}
+
+/// An assignment to insert.
+struct New<'a> {
+    pid: Uuid,
+    worker_pid: Uuid,
+    fields: &'a Fields,
+    fte_percent: i32,
+    is_primary: bool,
+    starts_on: NaiveDate,
+    ends_on: Option<NaiveDate>,
+    recorded_by: Option<&'a str>,
 }
 
 /// The worker `pid` for a write: in the caller's scope and HR's to change, not the worker's own.
@@ -184,30 +228,34 @@ async fn add(
         of(&ctx, worker.pid).await?.iter().map(as_rule).collect();
     ensure_valid(&rules::fte_problems(&existing, &new))?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    assignments::ActiveModel {
-        pid: ActiveValue::set(pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        job_title: ActiveValue::set(p.job_title.trim().to_string()),
-        department: ActiveValue::set(p.department.trim().to_string()),
-        location: ActiveValue::set(clean(p.location)),
-        site: ActiveValue::set(clean(p.site)),
-        area_of_work: ActiveValue::set(clean(p.area_of_work)),
-        job_role: ActiveValue::set(clean(p.job_role)),
-        staff_group: ActiveValue::set(clean(p.staff_group)),
-        occupation_code: ActiveValue::set(clean(p.occupation_code)),
-        cost_centre: ActiveValue::set(clean(p.cost_centre)),
-        fte_percent: ActiveValue::set(new.fte_percent),
-        is_primary: ActiveValue::set(false),
-        starts_on: ActiveValue::set(new.starts_on),
-        ends_on: ActiveValue::set(new.ends_on),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let fields = Fields {
+        job_title: p.job_title,
+        department: p.department,
+        location: clean(p.location),
+        site: clean(p.site),
+        area_of_work: clean(p.area_of_work),
+        job_role: clean(p.job_role),
+        staff_group: clean(p.staff_group),
+        occupation_code: clean(p.occupation_code),
+        cost_centre: clean(p.cost_centre),
+    };
+    let mut tx = db::pool(&ctx).begin().await?;
+    insert(
+        &mut tx,
+        &New {
+            pid,
+            worker_pid: worker.pid,
+            fields: &fields,
+            fte_percent: new.fte_percent,
+            is_primary: false,
+            starts_on: new.starts_on,
+            ends_on: new.ends_on,
+            recorded_by: caller.actor(),
+        },
+    )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "assignment",
         pid,
         "assignment_added",
@@ -215,7 +263,7 @@ async fn add(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -243,11 +291,17 @@ async fn change(
     Path(pid): Path<Uuid>,
     Json(p): Json<ChangePayload>,
 ) -> Result<Response> {
-    let old = assignments::Entity::find()
-        .filter(assignments::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let old = sqlx::query_as!(
+        assignments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, job_title, department,
+                  location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,
+                  starts_on, ends_on, recorded_by
+             FROM assignments WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let worker = hr_worker(&ctx, &caller, old.worker_pid).await?;
     let today = Utc::now().date_naive();
     let effective_on = p.effective_on.unwrap_or(today);
@@ -280,44 +334,43 @@ async fn change(
     ensure_valid(&rules::fte_problems(&others, &new))?;
 
     let new_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    let mut ended: assignments::ActiveModel = old.clone().into();
-    ended.ends_on = ActiveValue::set(Some(end));
-    ended.update(&txn).await?;
-    assignments::ActiveModel {
-        pid: ActiveValue::set(new_pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        job_title: ActiveValue::set(f.job_title.trim().to_string()),
-        department: ActiveValue::set(f.department.trim().to_string()),
-        location: ActiveValue::set(f.location.clone()),
-        site: ActiveValue::set(f.site.clone()),
-        area_of_work: ActiveValue::set(f.area_of_work.clone()),
-        job_role: ActiveValue::set(f.job_role.clone()),
-        staff_group: ActiveValue::set(f.staff_group.clone()),
-        occupation_code: ActiveValue::set(f.occupation_code.clone()),
-        cost_centre: ActiveValue::set(f.cost_centre.clone()),
-        fte_percent: ActiveValue::set(new.fte_percent),
-        is_primary: ActiveValue::set(old.is_primary),
-        starts_on: ActiveValue::set(effective_on),
-        ends_on: ActiveValue::set(old.ends_on),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE assignments SET ends_on = $2 WHERE id = $1",
+        old.id,
+        end
+    )
+    .execute(&mut *tx)
+    .await?;
+    insert(
+        &mut tx,
+        &New {
+            pid: new_pid,
+            worker_pid: worker.pid,
+            fields: &f,
+            fte_percent: new.fte_percent,
+            is_primary: old.is_primary,
+            starts_on: effective_on,
+            ends_on: old.ends_on,
+            recorded_by: caller.actor(),
+        },
+    )
     .await?;
     if old.is_primary {
-        write_through(
-            &txn,
-            worker,
-            &f.job_title,
-            &f.department,
-            f.location.clone(),
+        // The worker row is the record of the primary assignment: write the new values through to it.
+        sqlx::query!(
+            "UPDATE workers SET job_title = $2, department = $3, location = $4, fte_percent = $5 WHERE id = $1",
+            worker.id,
+            f.job_title.trim(),
+            f.department.trim(),
+            f.location,
             new.fte_percent,
         )
+        .execute(&mut *tx)
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "assignment",
         new_pid,
         "assignment_changed",
@@ -325,7 +378,7 @@ async fn change(
         Some(json!({ "replaces": pid })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": new_pid, "replaces": pid, "previous_ends_on": end }))
 }
 
@@ -391,24 +444,6 @@ fn with_ended(rows: &[assignments::Model], pid: Uuid, end: NaiveDate) -> Vec<rul
         .collect()
 }
 
-/// The worker row is the record of the primary assignment: write the new values through to it.
-async fn write_through(
-    txn: &sea_orm::DatabaseTransaction,
-    worker: workers::Model,
-    job_title: &str,
-    department: &str,
-    location: Option<String>,
-    fte_percent: i32,
-) -> Result<()> {
-    let mut w: workers::ActiveModel = worker.into();
-    w.job_title = ActiveValue::set(job_title.trim().to_string());
-    w.department = ActiveValue::set(department.trim().to_string());
-    w.location = ActiveValue::set(location);
-    w.fte_percent = ActiveValue::set(fte_percent);
-    w.update(txn).await?;
-    Ok(())
-}
-
 #[derive(Debug, Deserialize)]
 struct BreakdownQuery {
     organization: String,
@@ -432,31 +467,37 @@ async fn breakdown(
         ));
     }
     let today = Utc::now().date_naive();
-    let in_org = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&q.organization))
-        .filter(workers::Column::DeletedAt.is_null());
-    ensure_scale(&ctx, in_org.clone()).await?;
-    let pids: Vec<Uuid> = in_org
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| w.pid)
-        .collect();
-    let rows: Vec<(Uuid, Option<String>, i32)> = assignments::Entity::find()
-        .filter(assignments::Column::WorkerPid.is_in(pids))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|a| as_rule(a).current_on(today))
-        .map(|a| {
-            let category = match q.by.as_str() {
-                "staff_group" => a.staff_group,
-                "job_role" => a.job_role,
-                _ => a.area_of_work,
-            };
-            (a.worker_pid, category, a.fte_percent)
-        })
-        .collect();
+    let db = db::pool(&ctx);
+    let in_org = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "count!" FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL"#,
+        q.organization,
+    )
+    .fetch_one(db)
+    .await?;
+    ensure_within_ceiling(in_org.unsigned_abs())?;
+    let rows: Vec<(Uuid, Option<String>, i32)> = sqlx::query!(
+        "SELECT a.worker_pid, a.fte_percent, a.starts_on, a.ends_on, a.is_primary,
+                CASE $2 WHEN 'staff_group' THEN a.staff_group WHEN 'job_role' THEN a.job_role ELSE a.area_of_work END
+                    AS category
+           FROM assignments a JOIN workers w ON w.pid = a.worker_pid
+          WHERE w.organization_ref = $1 AND w.deleted_at IS NULL",
+        q.organization,
+        q.by,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .filter(|a| {
+        rules::Assignment {
+            fte_percent: a.fte_percent,
+            starts_on: a.starts_on,
+            ends_on: a.ends_on,
+            primary: a.is_primary,
+        }
+        .current_on(today)
+    })
+    .map(|a| (a.worker_pid, a.category, a.fte_percent))
+    .collect();
     let floor = crate::rules::equality_monitoring::DEFAULT_FLOOR;
     let cells: Vec<_> = rules::breakdown(&rows, floor)
         .into_iter()
