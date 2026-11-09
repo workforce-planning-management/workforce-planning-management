@@ -25,17 +25,21 @@ pub(super) async fn alignment_value(
 ) -> Result<serde_json::Value> {
     let plan = scoped_plan(ctx, caller, pid).await?;
     let lines = plan_lines(ctx, plan.pid).await?;
-    let objectives = plan_objectives::Entity::find()
-        .filter(plan_objectives::Column::PlanPid.eq(plan.pid))
-        .all(&ctx.db)
-        .await?;
-    let line_pids: BTreeSet<Uuid> = lines.iter().map(|l| l.pid).collect();
-    let link_rows: Vec<demand_line_objectives::Model> = demand_line_objectives::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|k| line_pids.contains(&k.line_pid))
-        .collect();
+    let db = crate::db::pool(ctx);
+    let objectives = sqlx::query!(
+        "SELECT pid, title FROM plan_objectives WHERE plan_pid = $1 ORDER BY id",
+        plan.pid,
+    )
+    .fetch_all(db)
+    .await?;
+    let line_pids: Vec<Uuid> = lines.iter().map(|l| l.pid).collect();
+    // Only the links of this plan's lines are read, where every link was read and filtered.
+    let link_rows = sqlx::query!(
+        "SELECT line_pid, objective_pid FROM demand_line_objectives WHERE line_pid = ANY($1)",
+        &line_pids,
+    )
+    .fetch_all(db)
+    .await?;
     let linked_lines: BTreeSet<Uuid> = link_rows.iter().map(|k| k.line_pid).collect();
     let served_objectives: BTreeSet<Uuid> = link_rows.iter().map(|k| k.objective_pid).collect();
 
@@ -61,14 +65,16 @@ pub(super) async fn alignment_value(
 
     // Critical roles with no ready successor (the shared single-point rule).
     let plan_departments: BTreeSet<&str> = lines.iter().map(|l| l.department.as_str()).collect();
-    let succession = succession_plans::Entity::find()
-        .filter(succession_plans::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let candidates = succession_candidates::Entity::find()
-        .filter(succession_candidates::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let succession = sqlx::query!(
+        "SELECT pid, department, criticality, risk_of_loss FROM succession_plans WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
+    let candidates = sqlx::query!(
+        "SELECT plan_pid, readiness FROM succession_candidates WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
     let (mut spof_total, mut spof_in_plan, mut plans_in_plan) = (0usize, 0usize, 0usize);
     for s in &succession {
         if plan_departments.contains(s.department.as_str()) {

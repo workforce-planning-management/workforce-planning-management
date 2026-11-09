@@ -76,12 +76,13 @@ pub(super) async fn cost_value(
         BTreeMap::new()
     };
     let titles = role_titles(ctx).await?;
-    let medians: BTreeMap<String, i64> = benchmarks::Entity::find()
-        .filter(benchmarks::Column::DeletedAt.is_null())
-        .filter(benchmarks::Column::Currency.eq(&currency))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
+    let medians: BTreeMap<String, i64> = sqlx::query!(
+        "SELECT job_title, median_minor FROM benchmarks WHERE deleted_at IS NULL AND currency = $1 ORDER BY id",
+        currency,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?
+    .into_iter()
         .map(|b| (b.job_title.trim().to_lowercase(), b.median_minor))
         .collect();
 

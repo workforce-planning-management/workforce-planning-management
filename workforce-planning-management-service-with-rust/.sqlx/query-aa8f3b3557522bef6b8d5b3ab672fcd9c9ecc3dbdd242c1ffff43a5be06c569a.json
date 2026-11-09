@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid, skill_pid, importance, min_proficiency FROM role_skill_requirements ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "importance",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "importance"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "min_proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "min_proficiency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "aa8f3b3557522bef6b8d5b3ab672fcd9c9ecc3dbdd242c1ffff43a5be06c569a"
+}

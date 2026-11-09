@@ -18,9 +18,7 @@ use uuid::Uuid;
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    benchmarks, demand_line_objectives, headcount_snapshots, plan_demand_lines, plan_objectives,
-    role_profiles, role_skill_requirements, succession_candidates, succession_plans,
-    workforce_plans,
+    demand_line_objectives, plan_demand_lines, plan_objectives, role_profiles, workforce_plans,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
