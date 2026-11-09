@@ -12,7 +12,6 @@
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -20,9 +19,8 @@ use uuid::Uuid;
 use super::rotas::{check_members, compute, find_rota, name_of, require_scope, workers_by_pid};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{rota_overrides, rota_swap_requests, rotas, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db;
+use crate::models::_entities::{rota_swap_requests, rotas, workers};
 use crate::models::records;
 use crate::rules::rota as rules;
 
@@ -63,11 +61,16 @@ fn request_json(
 }
 
 async fn find_request(ctx: &AppContext, pid: &str) -> Result<rota_swap_requests::Model> {
-    rota_swap_requests::Entity::find()
-        .filter(rota_swap_requests::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        rota_swap_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, rota_pid, requester_pid, taker_pid,
+                  starts_on, ends_on, note, status, decided_at AS "decided_at: _", created_by
+             FROM rota_swap_requests WHERE pid = $1"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `POST /api/rotas/{pid}/swap-requests` body.
@@ -108,51 +111,53 @@ async fn request_swap(
     if rules::stretches_for(&assignments, requester.pid).is_empty() {
         return Err(unprocessable("the requester is not on call in that window"));
     }
-    let open = rota_swap_requests::Entity::find()
-        .filter(rota_swap_requests::Column::RotaPid.eq(rota.pid))
-        .filter(rota_swap_requests::Column::RequesterPid.eq(requester.pid))
-        .filter(rota_swap_requests::Column::TakerPid.eq(payload.taker_pid))
-        .filter(rota_swap_requests::Column::StartsOn.eq(payload.starts_on))
-        .filter(rota_swap_requests::Column::EndsOn.eq(payload.ends_on))
-        .filter(rota_swap_requests::Column::Status.eq("requested"))
-        .one(&ctx.db)
-        .await?;
-    if open.is_some() {
+    let open = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM rota_swap_requests
+                           WHERE rota_pid = $1 AND requester_pid = $2 AND taker_pid = $3 AND starts_on = $4
+                             AND ends_on = $5 AND status = 'requested') AS "open!""#,
+        rota.pid,
+        requester.pid,
+        payload.taker_pid,
+        payload.starts_on,
+        payload.ends_on,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
+    if open {
         return Err(unprocessable("that swap has already been requested"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = rota_swap_requests::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        rota_pid: ActiveValue::set(rota.pid),
-        requester_pid: ActiveValue::set(requester.pid),
-        taker_pid: ActiveValue::set(payload.taker_pid),
-        starts_on: ActiveValue::set(payload.starts_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        note: ActiveValue::set(
-            payload
-                .note
-                .map(|n| n.trim().to_string())
-                .filter(|n| !n.is_empty()),
-        ),
-        status: ActiveValue::set("requested".to_string()),
-        created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let request = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO rota_swap_requests (pid, rota_pid, requester_pid, taker_pid, starts_on, ends_on, note, status, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'requested', $8)",
+        request,
+        rota.pid,
+        requester.pid,
+        payload.taker_pid,
+        payload.starts_on,
+        payload.ends_on,
+        payload
+            .note
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Notification::push(
-        &txn,
+    db::notify(
+        &mut tx,
         payload.taker_pid,
         "swap_requested",
         &format!(
             "{} asks you to take their on-call for {} from {} to {}.",
             requester.display_name, rota.name, payload.starts_on, payload.ends_on
         ),
-        serde_json::json!({ "rota_pid": rota.pid, "swap_request_pid": row.pid }),
+        serde_json::json!({ "rota_pid": rota.pid, "swap_request_pid": request }),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "rota",
         rota.pid,
         "swap_requested",
@@ -160,20 +165,20 @@ async fn request_swap(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": request }))
 }
 
 /// Tell the other party how a request ended.
 async fn tell(
-    db: &impl ConnectionTrait,
+    tx: &mut sqlx::PgConnection,
     to: Uuid,
     rota: &rotas::Model,
     request: Uuid,
     message: String,
 ) -> Result<()> {
-    Notification::push(
-        db,
+    db::notify(
+        tx,
         to,
         "swap_decided",
         &message,
@@ -185,20 +190,25 @@ async fn tell(
 
 /// Move a requested swap to `to`, once. Returns the request and its rota.
 async fn decide(
-    db: &impl ConnectionTrait,
+    tx: &mut sqlx::PgConnection,
     request: &rota_swap_requests::Model,
     to: &str,
-) -> Result<rota_swap_requests::Model> {
+) -> Result<()> {
     if !rules::swap_can_move(&request.status, to) {
         return Err(unprocessable(&format!(
             "that request is already {}",
             request.status
         )));
     }
-    let mut active: rota_swap_requests::ActiveModel = request.clone().into();
-    active.status = ActiveValue::set(to.to_string());
-    active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    Ok(active.update(db).await?)
+    sqlx::query!(
+        "UPDATE rota_swap_requests SET status = $2, decided_at = $3 WHERE id = $1",
+        request.id,
+        to,
+        Utc::now(),
+    )
+    .execute(tx)
+    .await?;
+    Ok(())
 }
 
 /// `POST /api/rota-swap-requests/{pid}/accept` — the colleague takes it: the
@@ -227,30 +237,36 @@ async fn accept(
             "the requester is no longer on call in that window",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    for run in &stretches {
-        rota_overrides::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            rota_pid: ActiveValue::set(rota.pid),
-            worker_pid: ActiveValue::set(taker.pid),
-            starts_on: ActiveValue::set(run.from),
-            ends_on: ActiveValue::set(run.to),
-            note: ActiveValue::set(Some(format!(
-                "Swap with {}",
-                name_of(&people, Some(request.requester_pid)).unwrap_or_default()
-            ))),
-            created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?;
-    }
-    let mut active: rota_swap_requests::ActiveModel = request.clone().into();
-    active.status = ActiveValue::set("accepted".to_string());
-    active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&txn).await?;
+    let note = format!(
+        "Swap with {}",
+        name_of(&people, Some(request.requester_pid)).unwrap_or_default()
+    );
+    let froms: Vec<NaiveDate> = stretches.iter().map(|run| run.from).collect();
+    let tos: Vec<NaiveDate> = stretches.iter().map(|run| run.to).collect();
+    let mut tx = db::pool(&ctx).begin().await?;
+    // Every stretch becomes the taker's override, in one statement.
+    sqlx::query!(
+        "INSERT INTO rota_overrides (pid, rota_pid, worker_pid, starts_on, ends_on, note, created_by)
+         SELECT gen_random_uuid(), $1, $2, run.starts_on, run.ends_on, $5, $6
+           FROM unnest($3::date[], $4::date[]) AS run(starts_on, ends_on)",
+        rota.pid,
+        taker.pid,
+        &froms,
+        &tos,
+        note,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "UPDATE rota_swap_requests SET status = 'accepted', decided_at = $2 WHERE id = $1",
+        request.id,
+        Utc::now(),
+    )
+    .execute(&mut *tx)
+    .await?;
     tell(
-        &txn,
+        &mut tx,
         request.requester_pid,
         &rota,
         request.pid,
@@ -260,8 +276,8 @@ async fn accept(
         ),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "rota",
         rota.pid,
         "swap_accepted",
@@ -269,7 +285,7 @@ async fn accept(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "status": "accepted", "days_moved": stretches.len() }))
 }
 
@@ -283,10 +299,10 @@ async fn decline(
     let request = find_request(&ctx, &pid).await?;
     let taker = writable_worker(&ctx, &caller, request.taker_pid).await?;
     let rota = find_rota(&ctx, &caller, &request.rota_pid.to_string()).await?;
-    let txn = ctx.db.begin().await?;
-    decide(&txn, &request, "declined").await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    decide(&mut tx, &request, "declined").await?;
     tell(
-        &txn,
+        &mut tx,
         request.requester_pid,
         &rota,
         request.pid,
@@ -296,8 +312,8 @@ async fn decline(
         ),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "rota",
         rota.pid,
         "swap_declined",
@@ -305,7 +321,7 @@ async fn decline(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "status": "declined" }))
 }
 
@@ -319,10 +335,10 @@ async fn cancel(
     let request = find_request(&ctx, &pid).await?;
     let requester = writable_worker(&ctx, &caller, request.requester_pid).await?;
     let rota = find_rota(&ctx, &caller, &request.rota_pid.to_string()).await?;
-    let txn = ctx.db.begin().await?;
-    decide(&txn, &request, "cancelled").await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    decide(&mut tx, &request, "cancelled").await?;
     tell(
-        &txn,
+        &mut tx,
         request.taker_pid,
         &rota,
         request.pid,
@@ -332,8 +348,8 @@ async fn cancel(
         ),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "rota",
         rota.pid,
         "swap_cancelled",
@@ -341,7 +357,7 @@ async fn cancel(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "status": "cancelled" }))
 }
 
@@ -353,11 +369,15 @@ async fn list_for_rota(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
-    let rows = rota_swap_requests::Entity::find()
-        .filter(rota_swap_requests::Column::RotaPid.eq(rota.pid))
-        .order_by_desc(rota_swap_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        rota_swap_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, rota_pid, requester_pid, taker_pid,
+                  starts_on, ends_on, note, status, decided_at AS "decided_at: _", created_by
+             FROM rota_swap_requests WHERE rota_pid = $1 ORDER BY id DESC"#,
+        rota.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let ids: Vec<Uuid> = rows
         .iter()
         .flat_map(|r| [r.requester_pid, r.taker_pid])
@@ -380,25 +400,27 @@ async fn list_for_worker(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = rota_swap_requests::Entity::find()
-        .filter(rota_swap_requests::Column::Status.eq("requested"))
-        .filter(
-            sea_orm::Condition::any()
-                .add(rota_swap_requests::Column::RequesterPid.eq(worker.pid))
-                .add(rota_swap_requests::Column::TakerPid.eq(worker.pid)),
-        )
-        .order_by_asc(rota_swap_requests::Column::StartsOn)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        rota_swap_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, rota_pid, requester_pid, taker_pid,
+                  starts_on, ends_on, note, status, decided_at AS "decided_at: _", created_by
+             FROM rota_swap_requests
+            WHERE status = 'requested' AND (requester_pid = $1 OR taker_pid = $1)
+            ORDER BY starts_on, id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut rota_names: HashMap<Uuid, String> = HashMap::new();
     let mut visible = Vec::new();
     for r in rows {
         if !rota_names.contains_key(&r.rota_pid)
-            && let Some(rota) = rotas::Entity::find()
-                .filter(rotas::Column::Pid.eq(r.rota_pid))
-                .filter(rotas::Column::DeletedAt.is_null())
-                .one(&ctx.db)
-                .await?
+            && let Some(rota) = sqlx::query!(
+                "SELECT name, organization_ref FROM rotas WHERE pid = $1 AND deleted_at IS NULL",
+                r.rota_pid,
+            )
+            .fetch_optional(db::pool(&ctx))
+            .await?
             && require_scope(&ctx, &caller, &rota.organization_ref)
                 .await
                 .is_ok()

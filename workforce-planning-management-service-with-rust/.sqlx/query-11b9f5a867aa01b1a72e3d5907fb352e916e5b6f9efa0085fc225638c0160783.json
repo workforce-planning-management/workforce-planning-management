@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rota_swap_requests SET status = 'accepted', decided_at = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "11b9f5a867aa01b1a72e3d5907fb352e916e5b6f9efa0085fc225638c0160783"
+}

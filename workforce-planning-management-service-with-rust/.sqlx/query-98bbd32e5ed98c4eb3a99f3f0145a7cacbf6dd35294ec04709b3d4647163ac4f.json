@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM rota_swap_requests\n                           WHERE rota_pid = $1 AND requester_pid = $2 AND taker_pid = $3 AND starts_on = $4\n                             AND ends_on = $5 AND status = 'requested') AS \"open!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "open!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "98bbd32e5ed98c4eb3a99f3f0145a7cacbf6dd35294ec04709b3d4647163ac4f"
+}
