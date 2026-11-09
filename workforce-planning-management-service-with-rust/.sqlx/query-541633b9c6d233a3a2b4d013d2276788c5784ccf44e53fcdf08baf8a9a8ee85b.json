@@ -1,0 +1,191 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE announcements SET department = $2, links = $3, title = $4, body = $5, pinned = $6, publish_on = $7,\n                  expires_on = $8\n            WHERE id = $1\n            RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, title, body, pinned,\n                  publish_on, expires_on, department, links, author, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "body",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "pinned",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "pinned"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "publish_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "publish_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "expires_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "expires_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "links",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "links"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "author",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "author"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "announcements",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Jsonb",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "541633b9c6d233a3a2b4d013d2276788c5784ccf44e53fcdf08baf8a9a8ee85b"
+}
