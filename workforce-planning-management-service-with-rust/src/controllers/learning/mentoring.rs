@@ -5,6 +5,20 @@
 use super::*;
 use axa::extract::{Json, Path};
 
+/// One live mentorship by pid, or 404.
+async fn find_mentorship(ctx: &AppContext, pid: &str) -> Result<mentorships::Model> {
+    sqlx::query_as!(
+        mentorships::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, mentor_pid, mentee_pid, focus, status,
+                  started_on, ended_on, deleted_at AS "deleted_at: _"
+             FROM mentorships WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
 /// `POST /api/mentorships` body.
 #[derive(Debug, Deserialize)]
 pub(super) struct MentorshipPayload {
@@ -29,23 +43,20 @@ pub(super) async fn create_mentorship(
     ensure_valid(&problems.into_vec())?;
     records::find_worker(&ctx.db, payload.mentor_pid).await?;
     records::find_worker(&ctx.db, payload.mentee_pid).await?;
-    let txn = ctx.db.begin().await?;
-    let row = mentorships::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        mentor_pid: ActiveValue::set(payload.mentor_pid),
-        mentee_pid: ActiveValue::set(payload.mentee_pid),
-        focus: ActiveValue::set(payload.focus.clone()),
-        status: ActiveValue::set("proposed".to_string()),
-        started_on: ActiveValue::set(None),
-        ended_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO mentorships (pid, mentor_pid, mentee_pid, focus, status) VALUES ($1, $2, $3, $4, 'proposed')",
+        pid,
+        payload.mentor_pid,
+        payload.mentee_pid,
+        payload.focus,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "mentorship", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    crate::db::audit(&mut tx, "mentorship", pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(PidRef::of(pid))
 }
 
 /// `POST /api/mentorships/{pid}/status` body.
@@ -64,36 +75,37 @@ pub(super) async fn mentorship_status(
     Path(pid): Path<String>,
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
-    let row = mentorships::Entity::find()
-        .filter(mentorships::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(mentorships::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = find_mentorship(&ctx, &pid).await?;
     rules::mentorship_transition(&row.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
     let today = chrono::Utc::now().date_naive();
     let from = row.status.clone();
-    let row_pid = row.pid;
-    let mut active: mentorships::ActiveModel = row.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if payload.to == "active" {
-        active.started_on = ActiveValue::set(Some(today));
-    } else if matches!(payload.to.as_str(), "completed" | "ended") {
-        active.ended_on = ActiveValue::set(Some(today));
-    }
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    // Activating stamps `started_on`, closing stamps `ended_on`; any other move leaves both.
+    let updated = sqlx::query_as!(
+        mentorships::Model,
+        r#"UPDATE mentorships SET status = $2::text,
+                  started_on = CASE WHEN $2::text = 'active' THEN $3 ELSE started_on END,
+                  ended_on = CASE WHEN $2::text IN ('completed', 'ended') THEN $3 ELSE ended_on END
+            WHERE id = $1
+            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, mentor_pid, mentee_pid, focus, status,
+                  started_on, ended_on, deleted_at AS "deleted_at: _""#,
+        row.id,
+        payload.to,
+        today,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "mentorship",
-        row_pid,
+        row.pid,
         "status_changed",
         caller.actor(),
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -113,12 +125,7 @@ pub(super) async fn log_session(
     Path(pid): Path<String>,
     Json(payload): Json<SessionPayload>,
 ) -> Result<Response> {
-    let mentorship = mentorships::Entity::find()
-        .filter(mentorships::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(mentorships::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let mentorship = find_mentorship(&ctx, &pid).await?;
     if mentorship.status != "active" {
         return Err(unprocessable(
             "sessions can only be logged on an active mentorship",
@@ -128,27 +135,28 @@ pub(super) async fn log_session(
     problems.require_text("notes", &payload.notes);
     problems.cap_text("notes", &payload.notes);
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = mentorship_sessions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        mentorship_pid: ActiveValue::set(mentorship.pid),
-        held_on: ActiveValue::set(payload.held_on),
-        notes: ActiveValue::set(payload.notes.clone()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let session = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO mentorship_sessions (pid, mentorship_pid, held_on, notes) VALUES ($1, $2, $3, $4)",
+        session,
+        mentorship.pid,
+        payload.held_on,
+        payload.notes,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "mentorship_session",
-        row.pid,
+        session,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(session))
 }
 
 /// `GET /api/mentorships/{pid}` — one mentorship + its session log.
@@ -157,16 +165,14 @@ pub(super) async fn get_mentorship(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let mentorship = mentorships::Entity::find()
-        .filter(mentorships::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(mentorships::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let sessions = mentorship_sessions::Entity::find()
-        .filter(mentorship_sessions::Column::MentorshipPid.eq(mentorship.pid))
-        .order_by_desc(mentorship_sessions::Column::HeldOn)
-        .all(&ctx.db)
-        .await?;
+    let mentorship = find_mentorship(&ctx, &pid).await?;
+    let sessions = sqlx::query_as!(
+        mentorship_sessions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, mentorship_pid, held_on, notes
+             FROM mentorship_sessions WHERE mentorship_pid = $1 ORDER BY held_on DESC"#,
+        mentorship.pid,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({ "mentorship": mentorship, "sessions": sessions }))
 }

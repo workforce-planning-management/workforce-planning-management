@@ -37,63 +37,60 @@ pub(super) async fn create_path(
         problems.require_text(&format!("steps[{index}].title"), &step.title);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let path = learning_paths::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        summary: ActiveValue::set(payload.summary.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let path = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO learning_paths (pid, name, summary) VALUES ($1, $2, $3)",
+        path,
+        payload.name,
+        payload.summary,
+    )
+    .execute(&mut *tx)
     .await?;
-    for (index, step) in payload.steps.iter().enumerate() {
-        learning_path_steps::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            path_pid: ActiveValue::set(path.pid),
-            course_ref: ActiveValue::set(step.course_ref.clone()),
-            title: ActiveValue::set(step.title.clone()),
-            position: ActiveValue::set(i32::try_from(index).unwrap_or(i32::MAX)),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?;
-    }
-    Audit::record(
-        &txn,
+    // The steps in one statement, each at its place in the order given (from 0).
+    let courses: Vec<String> = payload.steps.iter().map(|s| s.course_ref.clone()).collect();
+    let titles: Vec<String> = payload.steps.iter().map(|s| s.title.clone()).collect();
+    sqlx::query!(
+        "INSERT INTO learning_path_steps (pid, path_pid, course_ref, title, position)
+         SELECT gen_random_uuid(), $1, step.course_ref, step.title, (step.n - 1)::int
+           FROM unnest($2::text[], $3::text[]) WITH ORDINALITY AS step(course_ref, title, n)",
+        path,
+        &courses,
+        &titles,
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "learning_path",
-        path.pid,
+        path,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(path.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(path))
 }
 
 /// `GET /api/learning-paths` — all paths with their step counts.
 #[debug_handler]
 pub(super) async fn list_paths(State(ctx): State<AppContext>) -> Result<Response> {
-    let paths = learning_paths::Entity::find()
-        .filter(learning_paths::Column::DeletedAt.is_null())
-        .order_by_asc(learning_paths::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let steps = learning_path_steps::Entity::find().all(&ctx.db).await?;
-    let mut counts: std::collections::BTreeMap<Uuid, usize> = std::collections::BTreeMap::new();
-    for step in &steps {
-        *counts.entry(step.path_pid).or_default() += 1;
-    }
-    let view: Vec<serde_json::Value> = paths
-        .iter()
-        .map(|path| {
-            serde_json::json!({
-                "pid": path.pid, "name": path.name, "summary": path.summary,
-                "steps": counts.get(&path.pid).copied().unwrap_or(0),
-            })
+    // Each path with its step count, counted by the database.
+    let view: Vec<serde_json::Value> = sqlx::query!(
+        r#"SELECT p.pid, p.name, p.summary,
+                  (SELECT COUNT(*) FROM learning_path_steps s WHERE s.path_pid = p.pid) AS "steps!"
+             FROM learning_paths p WHERE p.deleted_at IS NULL ORDER BY p.id"#
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|path| {
+        serde_json::json!({
+            "pid": path.pid, "name": path.name, "summary": path.summary, "steps": path.steps,
         })
-        .collect();
+    })
+    .collect();
     format::json(view)
 }
 
@@ -114,37 +111,40 @@ pub(super) async fn enroll_path(
 ) -> Result<Response> {
     let path = find_path(&ctx, &pid).await?;
     let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
-    let existing = path_enrollments::Entity::find()
-        .filter(path_enrollments::Column::PathPid.eq(path.pid))
-        .filter(path_enrollments::Column::WorkerPid.eq(worker.pid))
-        .filter(path_enrollments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?;
-    if existing.is_some() {
+    let db = crate::db::pool(&ctx);
+    let existing = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM path_enrollments WHERE path_pid = $1 AND worker_pid = $2 AND deleted_at IS NULL)
+             AS "exists!""#,
+        path.pid,
+        worker.pid,
+    )
+    .fetch_one(db)
+    .await?;
+    if existing {
         return Err(unprocessable("worker is already enrolled in this path"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = path_enrollments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        path_pid: ActiveValue::set(path.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        enrolled_on: ActiveValue::set(chrono::Utc::now().date_naive()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let enrollment = Uuid::new_v4();
+    let mut tx = db.begin().await?;
+    sqlx::query!(
+        "INSERT INTO path_enrollments (pid, path_pid, worker_pid, enrolled_on) VALUES ($1, $2, $3, $4)",
+        enrollment,
+        path.pid,
+        worker.pid,
+        chrono::Utc::now().date_naive(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "path_enrollment",
-        row.pid,
+        enrollment,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(enrollment))
 }
 
 /// `GET /api/learning-paths/{pid}/progress` — each enrolled worker's
@@ -157,40 +157,40 @@ pub(super) async fn path_progress(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let path = find_path(&ctx, &pid).await?;
-    let mut steps = learning_path_steps::Entity::find()
-        .filter(learning_path_steps::Column::PathPid.eq(path.pid))
-        .all(&ctx.db)
-        .await?;
-    steps.sort_by_key(|step| step.position);
+    let db = crate::db::pool(&ctx);
+    let steps = sqlx::query!(
+        "SELECT course_ref, title, position FROM learning_path_steps WHERE path_pid = $1 ORDER BY position, id",
+        path.pid,
+    )
+    .fetch_all(db)
+    .await?;
     let step_courses: Vec<String> = steps.iter().map(|s| s.course_ref.clone()).collect();
-    let enrollments = path_enrollments::Entity::find()
-        .filter(path_enrollments::Column::PathPid.eq(path.pid))
-        .filter(path_enrollments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let mut members = Vec::new();
-    for enrollment in &enrollments {
-        let completed: Vec<String> = training_enrollments::Entity::find()
-            .filter(training_enrollments::Column::WorkerPid.eq(enrollment.worker_pid))
-            .filter(training_enrollments::Column::DeletedAt.is_null())
-            .filter(training_enrollments::Column::Status.eq("completed"))
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|t| t.course_ref)
-            .collect();
-        let (done, total) = rules::path_progress(&step_courses, &completed);
-        let worker = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(enrollment.worker_pid))
-            .one(&ctx.db)
-            .await?;
-        members.push(serde_json::json!({
-            "worker_pid": enrollment.worker_pid,
-            "display_name": worker.map(|e| e.display_name),
-            "completed_steps": done,
-            "total_steps": total,
-        }));
-    }
+    // Each enrolled worker with their name and the courses they have completed, in one read, where it was two reads
+    // per worker.
+    let enrolled = sqlx::query!(
+        r#"SELECT e.worker_pid, w.display_name AS "display_name?",
+                  ARRAY(SELECT t.course_ref FROM training_enrollments t
+                         WHERE t.worker_pid = e.worker_pid AND t.deleted_at IS NULL AND t.status = 'completed')
+                      AS "completed!"
+             FROM path_enrollments e LEFT JOIN workers w ON w.pid = e.worker_pid
+            WHERE e.path_pid = $1 AND e.deleted_at IS NULL
+            ORDER BY e.id"#,
+        path.pid,
+    )
+    .fetch_all(db)
+    .await?;
+    let members: Vec<serde_json::Value> = enrolled
+        .iter()
+        .map(|e| {
+            let (done, total) = rules::path_progress(&step_courses, &e.completed);
+            serde_json::json!({
+                "worker_pid": e.worker_pid,
+                "display_name": e.display_name,
+                "completed_steps": done,
+                "total_steps": total,
+            })
+        })
+        .collect();
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
         "path": { "pid": path.pid, "name": path.name },

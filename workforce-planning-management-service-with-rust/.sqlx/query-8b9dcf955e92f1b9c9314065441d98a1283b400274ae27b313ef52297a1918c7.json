@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO path_enrollments (pid, path_pid, worker_pid, enrolled_on) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8b9dcf955e92f1b9c9314065441d98a1283b400274ae27b313ef52297a1918c7"
+}

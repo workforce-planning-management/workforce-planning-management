@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.worker_pid, w.display_name AS \"display_name?\",\n                  ARRAY(SELECT t.course_ref FROM training_enrollments t\n                         WHERE t.worker_pid = e.worker_pid AND t.deleted_at IS NULL AND t.status = 'completed')\n                      AS \"completed!\"\n             FROM path_enrollments e LEFT JOIN workers w ON w.pid = e.worker_pid\n            WHERE e.path_pid = $1 AND e.deleted_at IS NULL\n            ORDER BY e.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "path_enrollments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "completed!",
+        "type_info": "VarcharArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "05241220bb2db9d746df4fb23d4870ba14f4d794ef001409098a2de11f4237c0"
+}

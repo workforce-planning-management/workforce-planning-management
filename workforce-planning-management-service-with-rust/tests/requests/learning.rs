@@ -122,6 +122,15 @@ async fn learning_round_trip() {
         let member = &progress["members"][0];
         assert_eq!(member["completed_steps"], 1);
         assert_eq!(member["total_steps"], 2);
+        // The steps keep the order given, from position 0, and the list counts them.
+        let steps: Vec<(String, i64)> = progress["steps"].as_array().unwrap().iter()
+            .map(|s| (s["title"].as_str().unwrap().to_string(), s["position"].as_i64().unwrap()))
+            .collect();
+        assert_eq!(steps, [("Intro".to_string(), 0), ("Advanced".to_string(), 1)]);
+        let listed: Vec<Value> = request.get("/api/learning-paths").await.json();
+        let this = listed.iter().find(|p| p["pid"] == path["pid"]).unwrap();
+        assert_eq!(this["steps"], 2);
+        assert_eq!(member["display_name"], "Test Worker E-2");
 
         // ── Training analytics: engineering completion 1/1.
         let analytics: Value = request.get("/api/learning/training-analytics").await.json();
@@ -179,6 +188,19 @@ async fn learning_round_trip() {
             .assert_status_ok();
         let detail: Value = request.get(&format!("/api/mentorships/{m_pid}")).await.json();
         assert_eq!(detail["sessions"].as_array().unwrap().len(), 1);
+        assert!(activated["ended_on"].is_null());
+        // Completing stamps the end and keeps the start (a second pairing, so the overview below is unchanged).
+        let second: Value = request
+            .post("/api/mentorships")
+            .json(&json!({ "mentor_pid": mentee, "mentee_pid": mentor, "focus": "reverse" }))
+            .await
+            .json();
+        let second = format!("/api/mentorships/{}/status", second["pid"].as_str().unwrap());
+        let started: Value = request.post(&second).json(&json!({ "to": "active" })).await.json();
+        let completed: Value = request.post(&second).json(&json!({ "to": "completed" })).await.json();
+        assert_eq!(completed["status"], "completed");
+        assert_eq!(completed["started_on"], started["started_on"]);
+        assert!(completed["ended_on"].is_string());
 
         let overview: Value = request
             .get("/api/learning/mentorship-overview?days=3650")

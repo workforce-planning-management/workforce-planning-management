@@ -14,9 +14,8 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    development_plan_items, initiative_skill_shifts, learning_path_steps, learning_paths,
-    mentorship_sessions, mentorships, path_enrollments, role_skill_requirements,
-    skill_external_refs, skills, training_enrollments, worker_skills, workers,
+    development_plan_items, initiative_skill_shifts, mentorship_sessions, mentorships,
+    role_skill_requirements, skill_external_refs, skills, worker_skills,
 };
 use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
@@ -43,14 +42,22 @@ mod mentoring;
 mod paths;
 mod views;
 
+/// A learning path's pid and name.
+struct FoundPath {
+    pid: Uuid,
+    name: String,
+}
+
 /// Find one live learning path by pid, or 404.
-async fn find_path(ctx: &AppContext, pid: &str) -> Result<learning_paths::Model> {
-    learning_paths::Entity::find()
-        .filter(learning_paths::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(learning_paths::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+async fn find_path(ctx: &AppContext, pid: &str) -> Result<FoundPath> {
+    sqlx::query_as!(
+        FoundPath,
+        "SELECT pid, name FROM learning_paths WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// The learning routes.

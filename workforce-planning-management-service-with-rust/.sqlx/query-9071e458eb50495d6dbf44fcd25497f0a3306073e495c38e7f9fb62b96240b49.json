@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, mentorship_pid, held_on, notes\n             FROM mentorship_sessions WHERE mentorship_pid = $1 ORDER BY held_on DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "mentorship_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "mentorship_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "held_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "held_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mentorship_sessions",
+            "name": "notes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9071e458eb50495d6dbf44fcd25497f0a3306073e495c38e7f9fb62b96240b49"
+}
