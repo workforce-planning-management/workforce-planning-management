@@ -417,7 +417,12 @@ for (const [locale, headline] of [
     await expect(page.locator("main .landing-hero h1 + p")).not.toBeEmpty();
     await expect(page.locator("main .landing-hero blockquote")).toBeVisible();
     await expect(page.locator("main .landing-hero p.actions a")).toHaveCount(3);
-    await expect(page.locator("main h2")).toHaveCount(5);
+    // One per `## ` section of the locale's own page, which differ: en-001 has a Getting help section the others do not yet.
+    const sections = (docs.files as Record<string, string>)[`locales/${locale}/index.md`]
+      .split("\n")
+      .filter((line) => line.startsWith("## ")).length;
+    expect(sections).toBeGreaterThanOrEqual(5);
+    await expect(page.locator("main h2")).toHaveCount(sections);
     await expect(page.locator("main table")).toBeVisible();
     await expect(page.locator("main .source")).toHaveCount(0);
     await expect(page.locator(".site-header nav").getByRole("link", { name: s.nav.briefs, exact: true })).toBeVisible();

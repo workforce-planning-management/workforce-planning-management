@@ -150,7 +150,8 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(count(&request, &org, &title).await, 5, "an abandoned claim is taken over");
 
         // Expiry: a stored response older than the keep period is gone, so the same key runs again.
-        sqlx::raw_sql("UPDATE idempotency_keys SET created_at = now() - interval '2 days' WHERE idem_key = '0123456789abcdef-test-key'")
+        sqlx::query("UPDATE idempotency_keys SET created_at = now() - interval '2 days' WHERE idem_key = $1")
+            .bind("0123456789abcdef-test-key")
             .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();

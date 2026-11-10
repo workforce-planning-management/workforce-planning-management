@@ -128,8 +128,8 @@ step "5. the restored database matches the backup"
 checksums "$DST_URL" > "$work/after.sums"
 if ! diff -u "$work/before.sums" "$work/after.sums" >&2; then fail "a restored table differs from the backup"; fi
 echo "all $tables tables match (row checksums)" >&2
-applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from seaql_migrations')"
-applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from seaql_migrations')"
+applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from _sqlx_migrations')"
+applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from _sqlx_migrations')"
 [ "$applied_src" = "$applied_dst" ] || fail "migrations differ: $applied_src vs $applied_dst"
 echo "$applied_dst migrations recorded" >&2
 chain_after="$(DATABASE_URL="$DST_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)" \
