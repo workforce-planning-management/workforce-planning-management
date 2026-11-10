@@ -613,7 +613,7 @@ async fn worker_profile(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -953,7 +953,7 @@ async fn subject_display_name(
     caller: &MaybeAuthUser,
 ) -> Result<String> {
     if subject_kind == "worker" {
-        let worker = records::find_worker(&ctx.db, subject_pid).await?;
+        let worker = records::worker_by_pid(ctx, subject_pid).await?;
         auth::authorize_record(
             caller,
             authentication_verifier::Action::Write,

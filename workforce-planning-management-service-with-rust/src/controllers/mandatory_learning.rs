@@ -377,7 +377,7 @@ async fn record_completion(
         .await?
         .ok_or(Error::NotFound)?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
-    let worker = records::find_worker(&ctx.db, p.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, p.worker_pid).await?;
     if worker.organization_ref != req.organization_ref {
         return Err(Error::NotFound);
     }
@@ -616,7 +616,7 @@ async fn team(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &manager.organization_ref).await?;
     if crate::auth::acting_for_other(&caller, &manager.person_ref)
         && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?

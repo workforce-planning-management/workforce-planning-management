@@ -279,7 +279,7 @@ async fn worker_prompts(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -396,7 +396,7 @@ async fn acknowledge(
     let mut problems = Problems::new();
     problems.require_token("response", rules::RESPONSES, &payload.response);
     ensure_valid(&problems.into_vec())?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -663,7 +663,7 @@ async fn submit_response(
     if !pulse::survey_open(survey.active_from, survey.active_until, today) {
         return Err(super::unprocessable("this survey is not open"));
     }
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,

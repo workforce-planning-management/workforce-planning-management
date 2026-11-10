@@ -309,7 +309,7 @@ async fn successor(
     leaver: &workers::Model,
     on: NaiveDate,
 ) -> Result<workers::Model> {
-    let w = records::find_worker(&ctx.db, to)
+    let w = records::worker_by_pid(ctx, to)
         .await
         .map_err(|_| unprocessable("the new holder is not a worker here"))?;
     if w.organization_ref != leaver.organization_ref {

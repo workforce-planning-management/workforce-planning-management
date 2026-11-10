@@ -93,7 +93,7 @@ async fn plan_and_worker(
     pid: &str,
 ) -> Result<(development_plans::Model, workers::Model)> {
     let plan = records::find_development_plan(&ctx.db, records::parse_pid(pid)?).await?;
-    let worker = records::find_worker(&ctx.db, plan.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, plan.worker_pid).await?;
     Ok((plan, worker))
 }
 
@@ -349,7 +349,7 @@ async fn delete_benefit(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find_benefit(&ctx, &pid).await?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, row.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -634,7 +634,7 @@ async fn train_or_hire(
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(&ctx, &caller, &position.organization_ref).await?;
-    let candidate = records::find_worker(&ctx.db, records::parse_pid(&query.candidate)?).await?;
+    let candidate = records::worker_by_pid(&ctx, records::parse_pid(&query.candidate)?).await?;
     if candidate.organization_ref != position.organization_ref {
         return Err(Error::NotFound);
     }

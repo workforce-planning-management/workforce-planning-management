@@ -77,7 +77,7 @@ async fn list_for_worker(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let worker = scoped_worker(&ctx, &caller, worker).await?;
     let as_of = Utc::now().date_naive();
     let rows = conversion_plans::Entity::find()
@@ -193,7 +193,7 @@ async fn propose(
     Path(pid): Path<String>,
     Json(payload): Json<ProposePayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     super::flexible_working::ensure_decider(&ctx, &caller, &worker).await?;
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
@@ -277,7 +277,7 @@ async fn plan_and_worker(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     let worker = scoped_worker(ctx, caller, worker).await?;
     super::flexible_working::ensure_decider(ctx, caller, &worker).await?;
     Ok((row, worker))

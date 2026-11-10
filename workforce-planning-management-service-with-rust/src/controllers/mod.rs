@@ -236,8 +236,7 @@ pub(crate) async fn writable_worker(
     pid: &str,
 ) -> Result<crate::models::_entities::workers::Model> {
     let worker =
-        crate::models::records::find_worker(&ctx.db, crate::models::records::parse_pid(pid)?)
-            .await?;
+        crate::models::records::worker_by_pid(ctx, crate::models::records::parse_pid(pid)?).await?;
     crate::auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,

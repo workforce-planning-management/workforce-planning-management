@@ -48,7 +48,7 @@ async fn create_assessment(
     problems.cap_text("workstation", &payload.workstation);
     problems.cap_list("items", &payload.items);
     ensure_valid(&problems.into_vec())?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     // (key, text): a default item is stored by its key, with its English text for an API reader
     let items: Vec<(Option<&str>, String)> = if payload.items.is_empty() {
         rules::DSE_ITEMS
@@ -103,7 +103,7 @@ async fn list_assessments(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let assessments = sqlx::query!(
         "SELECT pid, workstation, status, assessed_on FROM ergonomic_assessments
          WHERE worker_pid = $1 AND deleted_at IS NULL

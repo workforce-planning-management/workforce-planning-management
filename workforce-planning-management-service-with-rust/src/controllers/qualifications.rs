@@ -161,7 +161,7 @@ async fn verify(
     Json(p): Json<VerifyPayload>,
 ) -> Result<Response> {
     let q = find(&ctx, pid).await?;
-    let worker = records::find_worker(&ctx.db, q.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, q.worker_pid).await?;
     ensure_hr(&ctx, &caller, &worker.organization_ref).await?;
     let evidence = p.evidence_ref.trim().to_string();
     ensure_valid(
@@ -200,7 +200,7 @@ async fn remove(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let q = find(&ctx, pid).await?;
-    let worker = records::find_worker(&ctx.db, q.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, q.worker_pid).await?;
     writable_worker(&ctx, &caller, &worker.pid.to_string()).await?;
     let txn = ctx.db.begin().await?;
     qualifications::Entity::delete_many()
@@ -290,7 +290,7 @@ async fn team(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     super::ensure_org_in_scope(&ctx, &caller, &manager.organization_ref).await?;
     if crate::auth::acting_for_other(&caller, &manager.person_ref)
         && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?

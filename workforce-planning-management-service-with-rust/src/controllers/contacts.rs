@@ -343,7 +343,7 @@ pub(crate) async fn delete_contact_for(
 /// A live worker by pid, or 422 (a backup that does not exist is a bad
 /// request, not a missing page).
 async fn live_worker(ctx: &AppContext, pid: Uuid) -> Result<workers::Model> {
-    records::find_worker(&ctx.db, pid)
+    records::worker_by_pid(ctx, pid)
         .await
         .map_err(|_| unprocessable("that backup is not a worker here"))
 }
@@ -396,7 +396,7 @@ async fn list_backups(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -556,7 +556,7 @@ async fn update_backup(
     )
     .await?;
     txn.commit().await?;
-    let who = records::find_worker(&ctx.db, updated.backup_pid).await.ok();
+    let who = records::worker_by_pid(&ctx, updated.backup_pid).await.ok();
     format::json(backup_row(&updated, who.as_ref()))
 }
 
@@ -604,7 +604,7 @@ async fn cover(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<CoverQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,

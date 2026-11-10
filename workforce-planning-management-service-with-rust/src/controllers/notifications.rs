@@ -23,7 +23,7 @@ async fn list_notifications(
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let (limit, offset) = window.bounds();
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -64,7 +64,7 @@ async fn mark_read(
     .fetch_optional(pool(&ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    let owner = records::find_worker(&ctx.db, notification.worker_pid).await?;
+    let owner = records::worker_by_pid(&ctx, notification.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,

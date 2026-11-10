@@ -94,7 +94,7 @@ async fn padr_and_worker(ctx: &AppContext, pid: &str) -> Result<(reviews::Model,
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, review.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, review.worker_pid).await?;
     Ok((review, worker))
 }
 
@@ -305,7 +305,7 @@ pub(crate) async fn open(
     Path(pid): Path<String>,
     Json(payload): Json<OpenPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let sub = subject(&caller)?;
     if is_self(sub, &worker.person_ref) || !is_line_manager(&ctx, &worker, sub).await? {
         return Err(Error::NotFound);

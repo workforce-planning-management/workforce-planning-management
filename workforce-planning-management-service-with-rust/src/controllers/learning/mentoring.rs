@@ -41,8 +41,8 @@ pub(super) async fn create_mentorship(
         problems.push("mentor and mentee must be different workers");
     }
     ensure_valid(&problems.into_vec())?;
-    records::find_worker(&ctx.db, payload.mentor_pid).await?;
-    records::find_worker(&ctx.db, payload.mentee_pid).await?;
+    records::worker_by_pid(&ctx, payload.mentor_pid).await?;
+    records::worker_by_pid(&ctx, payload.mentee_pid).await?;
     let pid = Uuid::new_v4();
     let mut tx = crate::db::pool(&ctx).begin().await?;
     sqlx::query!(

@@ -496,7 +496,7 @@ async fn request_and_worker(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((row, worker))
 }
@@ -765,7 +765,7 @@ async fn worker_requests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     list_for(&ctx, &worker).await
 }
 

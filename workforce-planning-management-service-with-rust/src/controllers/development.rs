@@ -217,7 +217,7 @@ async fn create_review(
     if cycle.status != "open" {
         return Err(unprocessable("review cycle is closed"));
     }
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let mut problems = Problems::new();
     problems.require_ref(
         "reviewer_ref",
@@ -256,7 +256,7 @@ async fn list_reviews(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = reviews::Entity::find()
         .filter(reviews::Column::WorkerPid.eq(worker.pid))
         .filter(reviews::Column::Kind.eq("performance"))
@@ -532,7 +532,7 @@ async fn create_training(
     Path(pid): Path<String>,
     Json(payload): Json<TrainingPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     // Accept either course-family entity type.
     let parsed: std::result::Result<entity_ref::EntityRef, _> = payload.course_ref.parse();
     match parsed {
@@ -576,7 +576,7 @@ async fn create_training(
 /// `GET /api/workers/{pid}/training-enrollments`.
 #[debug_handler]
 async fn list_training(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = training_enrollments::Entity::find()
         .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(training_enrollments::Column::DeletedAt.is_null())
@@ -701,7 +701,7 @@ async fn create_succession(
     );
     ensure_valid(&problems.into_vec())?;
     if let Some(incumbent) = payload.incumbent_pid {
-        records::find_worker(&ctx.db, incumbent).await?;
+        records::worker_by_pid(&ctx, incumbent).await?;
     }
     let txn = ctx.db.begin().await?;
     let row = succession_plans::ActiveModel {
@@ -775,7 +775,7 @@ async fn add_succession_candidate(
     Json(payload): Json<SuccessionCandidatePayload>,
 ) -> Result<Response> {
     let plan = records::find_succession_plan(&ctx.db, records::parse_pid(&pid)?).await?;
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let mut problems = Problems::new();
     problems.require_token("readiness", tokens::READINESS, &payload.readiness);
     if payload.rank < 1 {
@@ -859,7 +859,7 @@ async fn update_succession(
     );
     ensure_valid(&problems.into_vec())?;
     if let Some(incumbent) = payload.incumbent_pid {
-        records::find_worker(&ctx.db, incumbent).await?;
+        records::worker_by_pid(&ctx, incumbent).await?;
     }
 
     let plan_pid = plan.pid;

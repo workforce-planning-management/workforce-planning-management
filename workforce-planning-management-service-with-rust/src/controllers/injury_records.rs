@@ -189,7 +189,7 @@ async fn create(
     let reference =
         rules::clean_ref(p.statutory_record_ref.as_deref()).map_err(|e| unprocessable(&e))?;
     if let Some(worker) = p.worker_pid {
-        let worker = records::find_worker(&ctx.db, worker)
+        let worker = records::worker_by_pid(&ctx, worker)
             .await
             .map_err(|_| unprocessable("that worker is not on record"))?;
         if worker.organization_ref != p.organization {

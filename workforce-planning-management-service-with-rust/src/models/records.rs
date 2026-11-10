@@ -102,6 +102,27 @@ macro_rules! find_active_by_pid {
 }
 
 find_active_by_pid!(find_worker, workers);
+
+/// The active (not soft-deleted) worker by public id, through `sqlx`. [`find_worker`] stays for the
+/// callers still inside a `SeaORM` transaction (WPM-T466).
+///
+/// # Errors
+///
+/// [`Error::NotFound`] when absent or soft-deleted; any query error otherwise.
+pub async fn worker_by_pid(ctx: &AppContext, pid: Uuid) -> Result<workers::Model> {
+    sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
 find_active_by_pid!(find_requisition, requisitions);
 find_active_by_pid!(find_candidate, candidates);
 find_active_by_pid!(find_application, applications);

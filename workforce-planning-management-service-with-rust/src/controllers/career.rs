@@ -73,7 +73,7 @@ async fn role_history(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<FrameworkQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut select = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid));
     if let Some(framework) = &query.framework {
@@ -214,7 +214,7 @@ async fn skill_history(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<SkillQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut select = worker_skill_history::Entity::find()
         .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid));
     if let Some(skill) = query.skill_pid {
@@ -340,7 +340,7 @@ async fn skills_as_of(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let instant = start_of(query.at) + chrono::Duration::days(1) - chrono::Duration::seconds(1);
     let rows = worker_skill_history::Entity::find()
         .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid))
@@ -652,7 +652,7 @@ async fn list_aspirations(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let viewer = viewer_of(&ctx, &caller, &worker).await?;
     let rows = worker_aspirations::Entity::find()
         .filter(worker_aspirations::Column::WorkerPid.eq(worker.pid))
@@ -715,7 +715,7 @@ async fn downline_aspirations(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let viewer = if auth::acting_for_other(&caller, &manager.person_ref) {
         rules::Viewer::Other
     } else {

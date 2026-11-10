@@ -107,7 +107,7 @@ async fn visible_worker(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
+    let worker = records::worker_by_pid(ctx, records::parse_pid(pid)?).await?;
     let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     if scope.is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
         return Err(Error::NotFound);
@@ -351,7 +351,7 @@ async fn add_dotted_manager(
     Path(pid): Path<String>,
     Json(payload): Json<DottedPayload>,
 ) -> Result<Response> {
-    let report = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let report = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -413,7 +413,7 @@ async fn end_dotted_manager(
     caller: MaybeAuthUser,
     Path((pid, manager_pid)): Path<(String, String)>,
 ) -> Result<Response> {
-    let report = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let report = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,

@@ -449,7 +449,7 @@ async fn of_worker(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
     let day = query.on.unwrap_or_else(|| Utc::now().date_naive());
     let facts = rules::Facts {

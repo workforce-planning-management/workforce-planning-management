@@ -49,7 +49,7 @@ pub(super) async fn find_movement(
     .fetch_optional(db::pool(ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, movement.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, movement.worker_pid).await?;
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((movement, worker))
 }
@@ -437,7 +437,7 @@ async fn worker_movements(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
     let today = Utc::now().date_naive();
     let rows = sqlx::query_as!(
@@ -666,7 +666,7 @@ async fn item_assign(
 ) -> Result<Response> {
     let (item, _, worker) = find_item(&ctx, &caller, &pid).await?;
     if let Some(a) = payload.assignee_pid {
-        records::find_worker(&ctx.db, a)
+        records::worker_by_pid(&ctx, a)
             .await
             .map_err(|_| unprocessable("that assignee is not a worker here"))?;
     }

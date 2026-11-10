@@ -565,7 +565,7 @@ async fn masked_payslips(
 ) -> Result<Vec<payslips::Model>> {
     let mut out = Vec::with_capacity(rows.len());
     for slip in rows {
-        let worker = records::find_worker(&ctx.db, slip.worker_pid).await?;
+        let worker = records::worker_by_pid(ctx, slip.worker_pid).await?;
         let obligations = auth::authorize_record(
             caller,
             authentication_verifier::Action::Read,
@@ -616,7 +616,7 @@ async fn worker_payslips(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = payslips::Entity::find()
         .filter(payslips::Column::WorkerPid.eq(worker.pid))
         .filter(payslips::Column::DeletedAt.is_null())

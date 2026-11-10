@@ -286,7 +286,7 @@ async fn grant(
     }
 
     if let Some(worker_pid) = payload.worker_pid {
-        let worker = records::find_worker(&ctx.db, worker_pid).await?;
+        let worker = records::worker_by_pid(&ctx, worker_pid).await?;
         let matches = worker.person_ref == payload.person_ref
             && worker.organization_ref == payload.organization_ref;
         if !matches {

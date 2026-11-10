@@ -781,7 +781,7 @@ async fn add_onboarding(
     Path(pid): Path<String>,
     Json(payload): Json<OnboardingPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if payload.items.is_empty() {
         problems.push("items must be non-empty".to_string());
@@ -830,7 +830,7 @@ async fn list_onboarding(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = onboarding_items::Entity::find()
         .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
         .filter(onboarding_items::Column::DeletedAt.is_null())

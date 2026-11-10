@@ -54,7 +54,7 @@ async fn leaver(ctx: &AppContext, pid: &str) -> Result<(Leaver, workers::Model)>
     .fetch_optional(pool(ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, movement.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, movement.worker_pid).await?;
     Ok((movement, worker))
 }
 

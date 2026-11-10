@@ -261,7 +261,7 @@ async fn create_entry(
     Path(pid): Path<String>,
     Json(payload): Json<EntryPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("activity", &payload.activity);
     problems.cap_text("activity", &payload.activity);
@@ -355,7 +355,7 @@ async fn worker_entries(ctx: &AppContext, worker_pid: Uuid) -> Result<Vec<cpd_en
 /// `GET /api/workers/{pid}/cpd-entries` — a worker's ledger, newest first.
 #[debug_handler]
 async fn list_entries(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = worker_entries(&ctx, worker.pid).await?;
     format::json(rows.iter().map(entry_json).collect::<Vec<_>>())
 }
@@ -439,7 +439,7 @@ async fn create_registration(
     Path(pid): Path<String>,
     Json(payload): Json<RegistrationPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("body", &payload.body);
     problems.cap_text("body", &payload.body);
@@ -498,7 +498,7 @@ async fn list_registrations(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let today = chrono::Utc::now().date_naive();
     let rows = worker_registrations(&ctx, worker.pid).await?;
     let out: Vec<serde_json::Value> = rows
@@ -525,7 +525,7 @@ async fn list_registrations(
 /// the worker's registrations with expiry status.
 #[debug_handler]
 async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let today = chrono::Utc::now().date_naive();
     let entries = worker_entries(&ctx, worker.pid).await?;
     let requirements: Vec<serde_json::Value> = live_requirements(&ctx)

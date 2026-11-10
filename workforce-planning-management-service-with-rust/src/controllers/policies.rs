@@ -473,7 +473,7 @@ async fn team_counts(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<CountQuery>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let someone_else = auth::acting_for_other(&caller, &manager.person_ref);
     let (version, organization) =
         version_and_org(&ctx, &caller, query.version_pid, someone_else).await?;

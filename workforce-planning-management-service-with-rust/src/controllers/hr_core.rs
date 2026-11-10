@@ -195,7 +195,7 @@ async fn create_worker(
 ) -> Result<Response> {
     ensure_valid(&validate_worker(&payload))?;
     if let Some(manager) = payload.manager_pid {
-        records::find_worker(&ctx.db, manager).await?;
+        records::worker_by_pid(&ctx, manager).await?;
     }
     let txn = ctx.db.begin().await?;
     let row = workers::ActiveModel {
@@ -376,7 +376,7 @@ async fn get_worker(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -425,7 +425,7 @@ async fn update_worker(
     Path(pid): Path<String>,
     Json(payload): Json<WorkerUpdate>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -480,7 +480,7 @@ async fn update_worker(
         return Err(super::forbidden("where the work is done is set by HR"));
     }
     if let Some(manager) = payload.manager_pid {
-        records::find_worker(&ctx.db, manager).await?;
+        records::worker_by_pid(&ctx, manager).await?;
         let map = manager_map(&ctx.db).await?;
         if org::would_create_cycle(worker.pid, manager, &map) {
             return Err(unprocessable("manager assignment would create a cycle"));
@@ -566,7 +566,7 @@ async fn change_status(
     problems.require_token("to", tokens::WORKER_STATUSES, &payload.to);
     problems.cap_opt("reason", payload.reason.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -643,7 +643,7 @@ async fn delete_worker(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Destructive,
@@ -894,7 +894,7 @@ async fn enroll(
     Path(pid): Path<String>,
     Json(payload): Json<EnrollmentPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let plan = records::find_benefit_plan(&ctx.db, payload.plan_pid).await?;
     if payload.ends_on.is_some_and(|end| end < payload.starts_on) {
         return Err(unprocessable("ends_on is before starts_on"));
@@ -951,7 +951,7 @@ async fn list_enrollments(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = benefit_enrollments::Entity::find()
         .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())

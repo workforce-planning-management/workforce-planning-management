@@ -318,7 +318,7 @@ async fn record_status(
 ) -> Result<Response> {
     on()?;
     ensure_occupational_health(&caller)?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let requirement = find_requirement(&ctx, &req_pid).await?;
     if !rules::applies(&departments_of(&requirement), &worker.department) {
         return Err(unprocessable(
@@ -398,7 +398,7 @@ async fn remove_record(
 ) -> Result<Response> {
     on()?;
     ensure_occupational_health(&caller)?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let requirement = find_requirement(&ctx, &req_pid).await?;
     let txn = ctx.db.begin().await?;
     let removed = worker_health_records::Entity::delete_many()
@@ -572,7 +572,7 @@ async fn detail(
 ) -> Result<Response> {
     on()?;
     ensure_occupational_health(&caller)?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&query.worker)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&query.worker)?).await?;
     let today = Utc::now().date_naive();
     let held = records_for(&ctx, worker.pid).await?;
     let list: Vec<serde_json::Value> = live_requirements(&ctx)

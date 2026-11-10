@@ -121,7 +121,7 @@ async fn goal_and_worker(
         .one(&ctx.db)
         .await?
         .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, goal.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, goal.worker_pid).await?;
     Ok((goal, worker))
 }
 
@@ -344,7 +344,7 @@ async fn worker_goals_view(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_reader(&ctx, &caller, &worker).await?;
     let goals = goals_of(&ctx, worker.pid).await?;
     audit_reads(&ctx, &caller, &goals).await?;
@@ -520,7 +520,7 @@ pub(crate) async fn propose_for_report(
     Path(pid): Path<String>,
     Json(payload): Json<GoalPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if require_party(&ctx, &caller, &worker).await? != Party::Manager {
         return Err(Error::NotFound);
     }
@@ -806,7 +806,7 @@ async fn review_goals(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let (review, cycle) = review_and_period(&ctx, &pid).await?;
-    let worker = records::find_worker(&ctx.db, review.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, review.worker_pid).await?;
     if !is_reviewer(&ctx, &caller, &review).await? {
         ensure_reader(&ctx, &caller, &worker).await?;
     }

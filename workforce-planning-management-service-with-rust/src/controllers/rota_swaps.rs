@@ -32,7 +32,7 @@ async fn writable_worker(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, pid).await?;
+    let worker = records::worker_by_pid(ctx, pid).await?;
     auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,
@@ -401,7 +401,7 @@ async fn list_for_worker(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         rota_swap_requests::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, rota_pid, requester_pid, taker_pid,

@@ -270,7 +270,7 @@ async fn decidable(
     row: &CourseRequest,
 ) -> Result<workers::Model> {
     let sub = subject(caller)?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     if is_line_manager(ctx, &worker, sub).await? {
         Ok(worker)
     } else {

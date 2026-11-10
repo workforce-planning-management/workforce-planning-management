@@ -344,7 +344,7 @@ async fn writable_worker(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, pid).await?;
+    let worker = records::worker_by_pid(ctx, pid).await?;
     auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,
@@ -530,7 +530,7 @@ async fn worker_groups(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<MembersQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut select =
         group_members::Entity::find().filter(group_members::Column::WorkerPid.eq(worker.pid));
     if !query.include_past {

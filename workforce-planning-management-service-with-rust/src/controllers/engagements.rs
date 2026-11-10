@@ -119,7 +119,7 @@ async fn decide(
     Path(pid): Path<String>,
     Json(payload): Json<DecisionPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     super::flexible_working::ensure_decider(&ctx, &caller, &worker).await?;
     rules::validate_decision(&payload.decision).map_err(|e| unprocessable(&e))?;
     let ends_on = worker
@@ -264,7 +264,7 @@ async fn get_details(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,

@@ -674,7 +674,7 @@ async fn worker_on_call(
     Path(pid): Path<String>,
     axa::extract::Query(q): axa::extract::Query<WindowQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let (from, to) = window(q.from, q.to)?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut out: BTreeMap<(NaiveDate, String), serde_json::Value> = BTreeMap::new();

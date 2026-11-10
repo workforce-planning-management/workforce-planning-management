@@ -90,7 +90,7 @@ async fn create_time_entry(
     Path(pid): Path<String>,
     Json(payload): Json<TimeEntryPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::TIME_KINDS, &payload.kind);
     problems.cap_opt("notes", payload.notes.as_deref());
@@ -159,7 +159,7 @@ async fn list_time_entries(
     Path(pid): Path<String>,
     Query(params): Query<TimeListParams>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut query = time_entries::Entity::find()
         .filter(time_entries::Column::WorkerPid.eq(worker.pid))
         .filter(time_entries::Column::DeletedAt.is_null());
@@ -235,7 +235,7 @@ async fn create_entitlement(
     Path(pid): Path<String>,
     Json(payload): Json<EntitlementPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     if !(2000..=2100).contains(&payload.year) {
@@ -294,7 +294,7 @@ async fn list_entitlements(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = leave_entitlements::Entity::find()
         .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
@@ -314,7 +314,7 @@ async fn create_leave_request(
     Path(pid): Path<String>,
     Json(payload): Json<LeaveRequestPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     create_leave_for(&ctx, &caller, &worker, payload).await
 }
 
@@ -414,7 +414,7 @@ async fn list_leave_requests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = leave_requests::Entity::find()
         .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::DeletedAt.is_null())
@@ -627,7 +627,7 @@ async fn assign_shift(
     Json(payload): Json<AssignmentPayload>,
 ) -> Result<Response> {
     let shift = records::find_shift(&ctx.db, records::parse_pid(&pid)?).await?;
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     // Double-booking: any live assignment to an overlapping shift.
     let their_assignments = shift_assignments::Entity::find()
         .filter(shift_assignments::Column::WorkerPid.eq(worker.pid))

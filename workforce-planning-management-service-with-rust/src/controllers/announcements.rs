@@ -470,7 +470,7 @@ struct ReadPayload {
 
 /// A worker, authorized for a write to their record: themself, or HR.
 async fn own_worker(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, pid).await?;
+    let worker = records::worker_by_pid(ctx, pid).await?;
     auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,

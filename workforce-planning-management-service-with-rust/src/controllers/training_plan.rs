@@ -409,7 +409,7 @@ async fn worker_plan(
     Path(pid): Path<String>,
     axa::extract::Query(q): axa::extract::Query<PlanQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,

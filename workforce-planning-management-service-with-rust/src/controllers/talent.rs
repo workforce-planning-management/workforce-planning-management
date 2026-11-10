@@ -105,7 +105,7 @@ async fn create_plan(
     Path(pid): Path<String>,
     Json(payload): Json<PlanPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -228,7 +228,7 @@ async fn list_plans(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -534,7 +534,7 @@ async fn add_member(
 
     // The subject must exist.
     if payload.subject_kind == "worker" {
-        records::find_worker(&ctx.db, payload.subject_pid).await?;
+        records::worker_by_pid(&ctx, payload.subject_pid).await?;
     } else {
         candidates::Entity::find()
             .filter(candidates::Column::Pid.eq(payload.subject_pid))
@@ -866,7 +866,7 @@ async fn create_placement(
     Json(payload): Json<PlacementPayload>,
 ) -> Result<Response> {
     let program = records::find_early_career_program(&ctx.db, records::parse_pid(&pid)?).await?;
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -887,7 +887,7 @@ async fn create_placement(
     }
     ensure_valid(&problems.into_vec())?;
     if let Some(supervisor_pid) = payload.supervisor_pid {
-        records::find_worker(&ctx.db, supervisor_pid).await?;
+        records::worker_by_pid(&ctx, supervisor_pid).await?;
     }
 
     let txn = ctx.db.begin().await?;
@@ -1072,7 +1072,7 @@ async fn list_worker_placements(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,

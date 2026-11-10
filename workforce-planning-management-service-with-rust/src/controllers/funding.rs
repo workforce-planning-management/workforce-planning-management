@@ -59,7 +59,7 @@ fn view(worker: &workers::Model, row: Option<&Funding>) -> serde_json::Value {
 }
 
 async fn scoped(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
+    let worker = records::worker_by_pid(ctx, records::parse_pid(pid)?).await?;
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok(worker)
 }

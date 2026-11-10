@@ -427,7 +427,7 @@ async fn worker_role_gap(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<RoleGapQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let profile = find_profile(&ctx, &query.role_profile_pid.to_string()).await?;
     let requirements = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))

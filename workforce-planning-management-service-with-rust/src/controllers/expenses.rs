@@ -95,7 +95,7 @@ async fn find_claim(ctx: &AppContext, pid: &str) -> Result<expense_claims::Model
 }
 
 async fn claimant_of(ctx: &AppContext, claim: &expense_claims::Model) -> Result<workers::Model> {
-    records::find_worker(&ctx.db, claim.worker_pid).await
+    records::worker_by_pid(ctx, claim.worker_pid).await
 }
 
 async fn items_of(ctx: &AppContext, claim_pid: Uuid) -> Result<Vec<expense_items::Model>> {
@@ -149,7 +149,7 @@ async fn create_claim(
     Path(pid): Path<String>,
     Json(payload): Json<ClaimPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if !gate(&ctx, &caller, &worker).await?.edit() {
         return Err(denied());
     }
@@ -202,7 +202,7 @@ async fn list_claims(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if !gate(&ctx, &caller, &worker).await?.view() {
         return Err(denied());
     }

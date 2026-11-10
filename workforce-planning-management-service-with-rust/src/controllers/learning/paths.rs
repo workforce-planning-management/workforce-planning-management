@@ -110,7 +110,7 @@ pub(super) async fn enroll_path(
     Json(payload): Json<PathEnrollPayload>,
 ) -> Result<Response> {
     let path = find_path(&ctx, &pid).await?;
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let db = crate::db::pool(&ctx);
     let existing = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM path_enrollments WHERE path_pid = $1 AND worker_pid = $2 AND deleted_at IS NULL)

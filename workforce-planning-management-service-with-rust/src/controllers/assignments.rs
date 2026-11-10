@@ -85,7 +85,7 @@ struct New<'a> {
 
 /// The worker `pid` for a write: in the caller's scope and HR's to change, not the worker's own.
 async fn hr_worker(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, pid).await?;
+    let worker = records::worker_by_pid(ctx, pid).await?;
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     if !super::policies::privileged(ctx, caller, &worker.organization_ref).await? {
         return Err(forbidden("assignments are changed by HR"));

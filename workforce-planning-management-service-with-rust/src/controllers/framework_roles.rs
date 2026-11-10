@@ -77,7 +77,7 @@ async fn list_selections(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
         .filter(worker_framework_roles::Column::EndedAt.is_null())
@@ -240,7 +240,7 @@ async fn role_skills(
     Path((pid, framework)): Path<(String, String)>,
 ) -> Result<Response> {
     check_framework(&framework)?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let selection = current_selection(&ctx, worker.pid, &framework)
         .await?
         .ok_or_else(|| unprocessable("no role selected in this framework yet"))?;

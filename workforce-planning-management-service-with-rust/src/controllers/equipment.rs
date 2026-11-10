@@ -328,7 +328,7 @@ async fn team_count(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if auth::acting_for_other(&caller, &manager.person_ref)
         && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?
     {

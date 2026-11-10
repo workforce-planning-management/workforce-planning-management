@@ -218,7 +218,7 @@ async fn request_and_worker(
     .fetch_optional(db::pool(ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    let worker = crate::models::records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = crate::models::records::worker_by_pid(ctx, row.worker_pid).await?;
     super::ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     Ok((row, worker))
 }

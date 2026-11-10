@@ -65,7 +65,7 @@ async fn create_appraisal(
         problems.push("competencies must be unique");
     }
     ensure_valid(&problems.into_vec())?;
-    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let subject = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let txn = ctx.db.begin().await?;
     let row = appraisals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
@@ -102,7 +102,7 @@ async fn list_appraisals(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let subject = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -166,7 +166,7 @@ async fn nominate(
     if appraisal.status != "draft" {
         return Err(unprocessable("nominations are frozen once collecting"));
     }
-    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
+    let rater = records::worker_by_pid(&ctx, payload.rater_pid).await?;
     if rater.pid == appraisal.worker_pid {
         return Err(unprocessable("the subject rates only as `self`"));
     }
@@ -366,7 +366,7 @@ async fn respond(
     let declared: Vec<String> =
         serde_json::from_value(appraisal.competencies.clone()).unwrap_or_default();
     rules::check_scores(&declared, &payload.scores).map_err(|reason| unprocessable(&reason))?;
-    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
+    let rater = records::worker_by_pid(&ctx, payload.rater_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -427,7 +427,7 @@ async fn report(
     if appraisal.status != "shared" {
         return Err(unprocessable("the report is readable once shared"));
     }
-    let subject = records::find_worker(&ctx.db, appraisal.worker_pid).await?;
+    let subject = records::worker_by_pid(&ctx, appraisal.worker_pid).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -523,7 +523,7 @@ async fn rater_requests(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let rater = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let rater = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,

@@ -124,7 +124,7 @@ fn fit_json(readiness: &gap_rules::Readiness) -> serde_json::Value {
 /// never ranks people.
 #[debug_handler]
 async fn role_matches(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let fits = load_fits(&ctx, worker.pid).await?;
     let mut rows: Vec<(&Profile, gap_rules::Readiness)> = fits
         .profiles
@@ -160,7 +160,7 @@ async fn role_matches(State(ctx): State<AppContext>, Path(pid): Path<String>) ->
 /// worker's fit when a role profile exists for that title.
 #[debug_handler]
 async fn opportunities(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let fits = load_fits(&ctx, worker.pid).await?;
     let open = sqlx::query!(
         "SELECT pid, job_title, department, status FROM requisitions
@@ -216,7 +216,7 @@ async fn express_interest(
     Path(pid): Path<String>,
     Json(payload): Json<InterestPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let target = rules::interest_target(
         payload.role_profile_pid.is_some(),
         payload.requisition_pid.is_some(),
@@ -307,7 +307,7 @@ async fn list_interests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query!(
         "SELECT pid, role_profile_pid, requisition_pid, note FROM mobility_interests
           WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id DESC",

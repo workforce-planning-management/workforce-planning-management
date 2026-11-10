@@ -645,7 +645,7 @@ pub(super) async fn declare_skill(
         problems.push("target must be between 1 and 5");
     }
     ensure_valid(&problems.into_vec())?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let skill = skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
@@ -736,7 +736,7 @@ pub(super) async fn list_worker_skills(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
