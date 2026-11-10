@@ -158,7 +158,9 @@ async fn the_service_fails_cleanly_and_heals() {
     let (chaos, port) = start_proxy(upstream_address()).await;
     // `set_var` is `unsafe` in edition 2024; set before the app boots and reads it.
     unsafe {
+        // Both names: the service reads `DB_URL` first, so setting only `DATABASE_URL` would go round the proxy (WPM-T482).
         std::env::set_var("DATABASE_URL", through_proxy(port));
+        std::env::set_var("DB_URL", through_proxy(port));
         std::env::set_var("WPM_REQUIRE_AUTH", "0");
         std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
         std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");

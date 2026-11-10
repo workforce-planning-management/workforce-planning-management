@@ -1,6 +1,5 @@
 //! **Plain SQL** (WPM-D184): each query is written out with `sqlx::query!` and checked against the schema at build time, so a reviewer
-//! reads exactly what runs. While `SeaORM` is being retired, both share one pool. A handler moves whole, because a transaction belongs to
-//! one library and cannot span the two.
+//! reads exactly what runs.
 
 use axa::AppContext;
 use sqlx::PgPool;
@@ -10,14 +9,6 @@ use uuid::Uuid;
 #[must_use]
 pub const fn pool(ctx: &AppContext) -> &PgPool {
     &ctx.db
-}
-
-/// A `SeaORM` connection over the same pool, for the code not yet moved to `sqlx` (WPM-T466). axa 0.11 makes the context's handle
-/// the `sqlx` pool when both features are on, so `SeaORM` wraps it here; the wrapper holds the pool's own `Arc`, so it opens nothing.
-/// It goes when `SeaORM` does.
-#[must_use]
-pub fn orm(ctx: &AppContext) -> sea_orm::DatabaseConnection {
-    sea_orm::SqlxPostgresConnector::from_sqlx_postgres_pool(ctx.db.clone())
 }
 
 /// Whether `cause` is a unique constraint refusing a row.
