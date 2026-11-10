@@ -12,6 +12,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -77,7 +78,6 @@ const CATEGORIES: &str = r#"{"sex":["female","male"]}"#;
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_pay_information -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answer_it_can() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -120,8 +120,8 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
             let pid = r.json::<Value>()["pid"].as_str().unwrap().to_string();
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
-                "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')")).await.unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             pids.push(pid);
         }
         for (p, n, role) in [(hr_p, "HR", "hr_admin"), (payroll_p, "PAY", "payroll_admin")] {
@@ -129,9 +129,9 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
                 "person_ref": format!("person:{p}"), "organization_ref": org, "worker_number": format!("PIE-{n}"),
                 "display_name": format!("Pay Info Enforcement {n}"), "employment_type": "permanent", "department": "people",
                 "job_title": "Administrator", "hired_on": "2020-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-                 VALUES ('{}', 'person:{p}', '{org}', '{w}', '{role}', '2020-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                 VALUES ('{}', 'person:{p}', '{org}', '{w}', '{role}', '2020-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         request.post("/api/pay-categories").add_header("authorization", hr.clone()).json(&json!({
             "organization_ref": org, "name": "Engineering",
@@ -198,15 +198,14 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
         // ── It is in the worker's own export, and the audit holds no figure ─────────────
         let export: Value = get(format!("/api/workers/{}/subject-access", pids[0]), tokens[0].clone()).await.json();
         assert_eq!(export["pay_information_requests"].as_array().unwrap().len(), 2);
-        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action LIKE 'pay_information%' ORDER BY id".to_string()))
+        let rows = sqlx::query("SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action LIKE 'pay_information%' ORDER BY id").fetch_all(workforce_planning_management::db::pool(&ctx))
             .await.unwrap();
-        let actions: Vec<String> = rows.iter().map(|r| r.try_get("", "action").unwrap()).collect();
+        let actions: Vec<String> = rows.iter().map(|r| r.try_get("action").unwrap()).collect();
         for expected in ["pay_information_requested", "pay_information_answer_read", "pay_information_answered"] {
             assert!(actions.iter().any(|a| a == expected), "{expected} in {actions:?}");
         }
         for row in &rows {
-            let snapshot: Option<String> = row.try_get("", "snapshot").unwrap();
+            let snapshot: Option<String> = row.try_get("snapshot").unwrap();
             assert!(!snapshot.unwrap_or_default().contains("000000"), "a figure in an audit snapshot");
         }
     })

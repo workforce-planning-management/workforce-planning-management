@@ -6,7 +6,6 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
@@ -127,12 +126,11 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         for person in ["hr-goals", "pay-goals"] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -327,10 +325,9 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
             .json();
         assert_eq!(export["worker_goals"].as_array().map(Vec::len), Some(2));
         assert_eq!(export["review_goal_outcomes"].as_array().map(Vec::len), Some(1));
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE workers SET status = 'terminated', terminated_on = '2026-11-01' WHERE pid = '{mine}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         request
@@ -339,16 +336,12 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
             .json(&json!({}))
             .await
             .assert_status_ok();
-        let left = workforce_planning_management::db::orm(&ctx)
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
+        let left = sqlx::query(sqlx::AssertSqlSafe(format!(
                     "SELECT 1 FROM goal_measures WHERE worker_pid = '{mine}' UNION ALL \
                      SELECT 1 FROM goal_check_ins WHERE worker_pid = '{mine}' UNION ALL \
                      SELECT 1 FROM review_goal_outcomes WHERE worker_pid = '{mine}' UNION ALL \
                      SELECT 1 FROM worker_goals WHERE worker_pid = '{mine}'"
-                ),
-            ))
+                ))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         assert!(left.is_none(), "erasure leaves nothing");
@@ -373,12 +366,11 @@ async fn the_rollup_counts_by_department_with_a_floor() {
 
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES ('{}', 'person:hr-rollup', '{org}', 'hr_admin', '2023-01-05')",
                 uuid::Uuid::new_v4()
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         for (n, person) in people.iter().enumerate() {

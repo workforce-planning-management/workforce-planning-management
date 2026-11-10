@@ -1,11 +1,11 @@
 //! The human capital report (WPM-R147, WPM-D100): figures from measures WPM already works out, small groups withheld,
 //! what it cannot compute unknown, nothing named.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 async fn hire(
     request: &axa_test::TestServer,
@@ -29,12 +29,12 @@ async fn hire(
             .json();
         if let Some(day) = left_on {
             let pid = created["pid"].as_str().expect("pid");
-            workforce_planning_management::db::orm(ctx)
-                .execute_unprepared(&format!(
-                    "UPDATE workers SET terminated_on = '{day}' WHERE pid = '{pid}'"
-                ))
-                .await
-                .unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                "UPDATE workers SET terminated_on = '{day}' WHERE pid = '{pid}'"
+            )))
+            .execute(workforce_planning_management::db::pool(ctx))
+            .await
+            .unwrap();
         }
     }
 }
@@ -102,16 +102,12 @@ async fn the_report_counts_withholds_and_says_what_it_cannot_know() {
         assert_eq!(request.get("/api/reports/human-capital?organization=nope").await.status_code(), 422);
 
         // The read is audited, with the date and nothing else.
-        let rows = workforce_planning_management::db::orm(&ctx)
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT snapshot::text AS snapshot FROM audit_logs WHERE action = 'human_capital_report_read'".to_string(),
-            ))
+        let rows = sqlx::query("SELECT snapshot::text AS snapshot FROM audit_logs WHERE action = 'human_capital_report_read'").fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         assert!(!rows.is_empty());
         for row in rows {
-            let snapshot: Option<String> = row.try_get("", "snapshot").unwrap();
+            let snapshot: Option<String> = row.try_get("snapshot").unwrap();
             assert!(!snapshot.unwrap_or_default().contains("headcount"));
         }
     })
@@ -148,10 +144,9 @@ async fn the_report_counts_incidents_and_pay_periods_below_a_floor() {
             }
         }
 
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE workers SET status = 'active', fte_percent = 100, salary_minor = 3600000, salary_currency = 'GBP', work_jurisdiction = 'XA' WHERE organization_ref = '{org}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         request
@@ -173,11 +168,11 @@ async fn the_report_counts_incidents_and_pay_periods_below_a_floor() {
         let low = |salary: i64| {
             format!("UPDATE workers SET salary_minor = {salary} WHERE pid = (SELECT pid FROM workers WHERE organization_ref = '{org}' ORDER BY id LIMIT 1)")
         };
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&low(1_200_000)).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(&*low(1_200_000))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         // Eleven runs, December to October; the period's first month is November, so all fall inside it.
         for (i, (year, month)) in (0..11).map(|i| if i == 0 { (2025, 12) } else { (2026, i) }).enumerate() {
             if i == 2 {
-                workforce_planning_management::db::orm(&ctx).execute_unprepared(&low(3_600_000)).await.unwrap();
+                sqlx::raw_sql(sqlx::AssertSqlSafe(&*low(3_600_000))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             }
             let run: Value = request
                 .post("/api/payroll-runs")

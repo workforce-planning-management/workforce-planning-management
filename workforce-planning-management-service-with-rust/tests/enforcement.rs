@@ -18,6 +18,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -189,13 +190,11 @@ async fn enforcement_personas_gate_and_mask() {
         };
         assert_eq!(stranger, 403, "a stranger does not read a colleague's record");
         {
-            use sea_orm::ConnectionTrait;
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{other_person}', '{org}', '{worker_pid}', 'member', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -302,16 +301,11 @@ async fn enforcement_personas_gate_and_mask() {
         // The list with `?fields=` (WPM-T388) keeps the mask: a masked colleague asking for the salary gets null and no salary read is
         // recorded; payroll asking for it gets the figure, and its list read is audited as the single read is.
         let salary_reads = || async {
-            use sea_orm::{ConnectionTrait, Statement};
-            workforce_planning_management::db::orm(&ctx)
-                .query_one_raw(Statement::from_string(
-                    workforce_planning_management::db::orm(&ctx).get_database_backend(),
-                    format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"),
-                ))
+            sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap()
-                .try_get::<i64>("", "n")
+                .try_get::<i64, _>("n")
                 .unwrap()
         };
         // The database may hold more workers than one page, so page through to the one made here.
@@ -338,13 +332,11 @@ async fn enforcement_personas_gate_and_mask() {
         };
         // The list is scoped to the caller's organizations (the single read is not), so payroll needs a membership in this one.
         {
-            use sea_orm::ConnectionTrait;
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:payroll-user', '{org}', 'member', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

@@ -10,22 +10,21 @@
 //! `DATABASE_URL`). Run with `cargo test --test retention_schedule -- --ignored`.
 
 use axa_test::prelude::*;
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 /// How many rows of `table` still exist (soft-deleted or not).
 async fn count(ctx: &axa::AppContext, table: &str) -> i64 {
-    workforce_planning_management::db::orm(ctx)
-        .query_one_raw(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT COUNT(*) AS n FROM {table}"),
-        ))
-        .await
-        .unwrap()
-        .and_then(|row| row.try_get::<i64>("", "n").ok())
-        .unwrap()
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "SELECT COUNT(*) AS n FROM {table}"
+    )))
+    .fetch_optional(workforce_planning_management::db::pool(ctx))
+    .await
+    .unwrap()
+    .and_then(|row| row.try_get::<i64, _>("n").ok())
+    .unwrap()
 }
 
 #[tokio::test]
@@ -106,13 +105,13 @@ async fn each_kind_is_swept_at_its_own_horizon() {
             ("announcements", &young_post, 150),
             ("announcements", &old_post, 200),
         ] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
-                    "UPDATE {table} SET deleted_at = now() - interval '{age} days' \
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                "UPDATE {table} SET deleted_at = now() - interval '{age} days' \
                      WHERE pid = '{pid}'"
-                ))
-                .await
-                .unwrap();
+            )))
+            .execute(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
         }
 
         // ── The report counts only what is past its own table's horizon:
@@ -129,15 +128,14 @@ async fn each_kind_is_swept_at_its_own_horizon() {
         assert_eq!(sweep["deleted"]["candidates"], 1, "{sweep}");
         assert_eq!(sweep["deleted"]["announcements"], 2, "{sweep}");
         assert_eq!(count(&ctx, "announcements").await, 0);
-        let remaining = workforce_planning_management::db::orm(&ctx)
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT COUNT(*) AS n FROM candidates WHERE pid = '{young_candidate}'"),
-            ))
-            .await
-            .unwrap()
-            .and_then(|row| row.try_get::<i64>("", "n").ok())
-            .unwrap();
+        let remaining = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT COUNT(*) AS n FROM candidates WHERE pid = '{young_candidate}'"
+        )))
+        .fetch_optional(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap()
+        .and_then(|row| row.try_get::<i64, _>("n").ok())
+        .unwrap();
         assert_eq!(remaining, 1, "inside the recruitment horizon, so kept");
     })
     .await;

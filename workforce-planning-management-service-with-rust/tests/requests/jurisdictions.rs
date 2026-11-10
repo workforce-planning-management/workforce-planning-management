@@ -1,11 +1,11 @@
 //! Jurisdiction profiles (WPM-D144, WPM-T380): codes, append-only parameter rows, the worker's `work_jurisdiction`, and the
 //! working-time view resolving each worker's limits from them. The codes are ISO 3166 user-assigned ones, so no country is named.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker, working_time_profile};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -74,7 +74,7 @@ async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
             format!("UPDATE jurisdiction_parameters SET source = 'x' WHERE pid = '{pid}'"),
             format!("DELETE FROM jurisdiction_parameters WHERE pid = '{pid}'"),
         ] {
-            assert!(workforce_planning_management::db::orm(&ctx).execute_unprepared(&sql).await.is_err(), "{sql}");
+            assert!(sqlx::raw_sql(sqlx::AssertSqlSafe(&*sql)).execute(workforce_planning_management::db::pool(&ctx)).await.is_err(), "{sql}");
         }
         // The audit names the code and the key, not the value.
         let audit = serde_json::to_string(&request.get(&format!("/api/audits/{pid}")).await.json::<Value>()).unwrap();
@@ -242,43 +242,89 @@ async fn the_home_jurisdiction_is_set_cleared_and_audited() {
         let home = |value: Value| json!({ "organization_ref": org, "home_jurisdiction": value });
         let profile = || {
             let (request, org) = (&request, org.clone());
-            async move { request.get(&format!("/api/jurisdiction-profiles?organization={org}")).await.json::<Value>() }
+            async move {
+                request
+                    .get(&format!("/api/jurisdiction-profiles?organization={org}"))
+                    .await
+                    .json::<Value>()
+            }
         };
-        assert_eq!(profile().await["home_jurisdiction"], Value::Null, "unset is null, never a guess");
-        for (value, why) in [(json!("xa"), "lower case"), (json!("XA-"), "an empty subdivision"), (json!("XAAA"), "too long")] {
-            assert_eq!(request.put("/api/home-jurisdiction").json(&home(value)).await.status_code(), 422, "{why}");
+        assert_eq!(
+            profile().await["home_jurisdiction"],
+            Value::Null,
+            "unset is null, never a guess"
+        );
+        for (value, why) in [
+            (json!("xa"), "lower case"),
+            (json!("XA-"), "an empty subdivision"),
+            (json!("XAAA"), "too long"),
+        ] {
+            assert_eq!(
+                request
+                    .put("/api/home-jurisdiction")
+                    .json(&home(value))
+                    .await
+                    .status_code(),
+                422,
+                "{why}"
+            );
         }
         let bad_org = json!({ "organization_ref": "nope", "home_jurisdiction": "XA" });
-        assert_eq!(request.put("/api/home-jurisdiction").json(&bad_org).await.status_code(), 422);
-        let set: Value = request.put("/api/home-jurisdiction").json(&home(json!("XA"))).await.json();
+        assert_eq!(
+            request
+                .put("/api/home-jurisdiction")
+                .json(&bad_org)
+                .await
+                .status_code(),
+            422
+        );
+        let set: Value = request
+            .put("/api/home-jurisdiction")
+            .json(&home(json!("XA")))
+            .await
+            .json();
         assert_eq!(set["home_jurisdiction"], "XA");
         assert_eq!(profile().await["home_jurisdiction"], "XA");
         // A cycle recorded behind HR's back (the API refuses one) makes the chain unbuildable: the setter refuses it.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code) VALUES \
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code) VALUES \
                  ('{org}', 'XB', 'national', 'QY'), ('{org}', 'QY', 'supranational', 'XB')"
-            ))
-            .await
-            .unwrap();
-        assert_eq!(request.put("/api/home-jurisdiction").json(&home(json!("XB"))).await.status_code(), 422);
-        assert_eq!(profile().await["home_jurisdiction"], "XA", "a refusal changes nothing");
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert_eq!(
+            request
+                .put("/api/home-jurisdiction")
+                .json(&home(json!("XB")))
+                .await
+                .status_code(),
+            422
+        );
+        assert_eq!(
+            profile().await["home_jurisdiction"],
+            "XA",
+            "a refusal changes nothing"
+        );
         for clear in [Value::Null, json!("  ")] {
-            let cleared: Value = request.put("/api/home-jurisdiction").json(&home(clear)).await.json();
+            let cleared: Value = request
+                .put("/api/home-jurisdiction")
+                .json(&home(clear))
+                .await
+                .json();
             assert_eq!(cleared["home_jurisdiction"], Value::Null);
         }
-        let audits = workforce_planning_management::db::orm(&ctx)
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
-                    "SELECT snapshot::text AS s FROM audit_logs WHERE action = 'home_jurisdiction_set' \
+        let audits = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT snapshot::text AS s FROM audit_logs WHERE action = 'home_jurisdiction_set' \
                      AND snapshot->>'organization_ref' = '{org}' ORDER BY id"
-                ),
-            ))
-            .await
-            .unwrap();
-        let snapshots: Vec<Value> =
-            audits.iter().map(|row| serde_json::from_str(&row.try_get::<String>("", "s").unwrap()).unwrap()).collect();
+        )))
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        let snapshots: Vec<Value> = audits
+            .iter()
+            .map(|row| serde_json::from_str(&row.try_get::<String, _>("s").unwrap()).unwrap())
+            .collect();
         assert_eq!(snapshots.len(), 3, "set, cleared, cleared");
         assert_eq!(snapshots[0]["to"], "XA");
         assert_eq!(snapshots[1]["from"], "XA");

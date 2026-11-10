@@ -2,7 +2,6 @@
 //! targets and (for them alone) aspirations; and the workforce roll-up, which
 //! counts people and never names them.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -47,19 +46,17 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
                 .assert_status_ok();
         }
         // Make it a PCF role and give both workers that current role.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         for w in [&a, &b] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO worker_framework_roles \
                      (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
                      VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'SG role', CURRENT_DATE, now(), false)"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -172,18 +169,16 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
                 .await
                 .assert_status_ok();
         }
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO worker_framework_roles \
                  (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
                  VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'TP role', CURRENT_DATE, now(), false)"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         // S1: 2 → needs 4 (short 2). S2: 1 → needs 3 (short 2). S3: undeclared.
@@ -316,18 +311,16 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
 
         // Every catalogue write is audited (WPM-T246): the course's creation and removal, and the per-level figure.
         let actions = |entity: &'static str, pid: String| {
-            let db = workforce_planning_management::db::orm(&ctx).clone();
+            let db = workforce_planning_management::db::pool(&ctx).clone();
             async move {
-                db.query_all_raw(sea_orm::Statement::from_sql_and_values(
-                    sea_orm::DbBackend::Postgres,
+                sqlx::query_scalar::<_, String>(
                     "SELECT action FROM audit_logs WHERE entity = $1 AND entity_pid = $2::uuid ORDER BY id",
-                    [entity.into(), pid.into()],
-                ))
+                )
+                .bind(entity)
+                .bind(pid)
+                .fetch_all(&db)
                 .await
                 .unwrap()
-                .iter()
-                .map(|r| r.try_get::<String>("", "action").unwrap())
-                .collect::<Vec<_>>()
             }
         };
         let fast_pid = fast_row["pid"].as_str().unwrap().to_string();

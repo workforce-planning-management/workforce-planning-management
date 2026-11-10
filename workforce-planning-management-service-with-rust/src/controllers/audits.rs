@@ -28,7 +28,7 @@ async fn recent(State(ctx): State<AppContext>) -> Result<Response> {
 
 /// Check the whole chain: every entry's hash is the hash of its content and the entry before it, in order. Reports the first
 /// place it breaks, the number of entries and the head hash to record somewhere the database cannot reach.
-async fn verify_chain(ctx: &AppContext) -> Result<ChainReport> {
+pub(crate) async fn verify_chain(ctx: &AppContext) -> Result<ChainReport> {
     let broken = sqlx::query_scalar!(
         r#"SELECT chain_seq AS "chain_seq!" FROM (
                SELECT chain_seq, prev_hash, entry_hash,

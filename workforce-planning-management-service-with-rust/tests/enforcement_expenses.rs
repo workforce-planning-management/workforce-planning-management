@@ -11,7 +11,6 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
@@ -101,12 +100,11 @@ async fn nobody_decides_their_own_claim() {
                 .assert_status_ok();
         }
         // HR: a membership role in the claimants' organization, not a policy attribute.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{hr}', '{org}', '{w_hr}', 'hr_admin', '2026-01-05')",
                 uuid::Uuid::new_v4()
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let _ = (&w_stranger, &w_peer);

@@ -75,8 +75,6 @@ const REFERENCE_POLICY_FILE: &str = concat!(
     "/config/abac-policy.reference.json"
 );
 
-use sea_orm::ConnectionTrait;
-
 /// One boot, every persona against every class.
 #[tokio::test]
 #[serial]
@@ -143,12 +141,11 @@ async fn reads_are_need_to_know() {
             (hr_member_p, &org_a, &w_hr, "hr_admin"),
             (hr_other_p, &org_b, &w_other, "hr_admin"),
         ] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

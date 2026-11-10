@@ -81,7 +81,6 @@ fn policy_with_deciders() -> String {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_oversight_pack -- --ignored`"]
 async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -120,11 +119,11 @@ async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other_org = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (workforce_planning_management::db::orm(&ctx), organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::pool(&ctx), organization.to_string());
             async move {
-                db.execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
-                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(db).await.unwrap();
             }
         };
         grant("svc-user".to_string(), &org, "org_admin").await;
@@ -226,8 +225,8 @@ async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
         assert_eq!(get(one.clone(), elsewhere.clone()).await.status_code(), 404);
         assert_eq!(get(list.clone(), elsewhere.clone()).await.status_code(), 404);
         // A frozen pack is never changed or removed, not even by direct SQL.
-        assert!(workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE oversight_packs SET month = month WHERE pid = '{pack_pid}'")).await.is_err());
-        assert!(workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("DELETE FROM oversight_packs WHERE pid = '{pack_pid}'")).await.is_err());
+        assert!(sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE oversight_packs SET month = month WHERE pid = '{pack_pid}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.is_err());
+        assert!(sqlx::raw_sql(sqlx::AssertSqlSafe(format!("DELETE FROM oversight_packs WHERE pid = '{pack_pid}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.is_err());
     })
     .await;
 }

@@ -1,6 +1,5 @@
 //! The skills crosswalk (WPM-R158, WPM-D109): mappings with a stated basis, and gap analysis reading them.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -27,10 +26,10 @@ async fn a_mapping_lets_a_declared_skill_stand_in_for_a_need_only_when_it_is_exa
             request.put(&format!("/api/role-profiles/{role}/requirements"))
                 .json(&json!({ "skill_pid": skill, "min_proficiency": level, "importance": "important" })).await.assert_status_ok();
         }
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'")).await.unwrap();
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
-             VALUES (gen_random_uuid(), '{a}', 'uk-gdad-pcf', '{role}', 'CW role', CURRENT_DATE, now(), false)")).await.unwrap();
+             VALUES (gen_random_uuid(), '{a}', 'uk-gdad-pcf', '{role}', 'CW role', CURRENT_DATE, now(), false)"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         request.put(&format!("/api/workers/{a}/skills")).json(&json!({ "skill_pid": skills[1], "proficiency": 4 })).await.assert_status_ok();
         let gaps_url = format!("/api/workers/{a}/skill-gaps");
 
@@ -108,15 +107,15 @@ async fn the_workforce_roll_up_grades_through_the_crosswalk_as_one_person_does()
             request.put(&format!("/api/role-profiles/{role}/requirements"))
                 .json(&json!({ "skill_pid": skill, "min_proficiency": level, "importance": "important" })).await.assert_status_ok();
         }
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let mut people = Vec::new();
         for who in ["A", "B"] {
             let w = seed_worker!(&request, &org, format!("RU-{tag}-{who}"), None).await;
             activate!(&request, &w).await;
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE workers SET department = 'ru{tag}' WHERE pid = '{w}'; \
                  INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
-                 VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'RU role', CURRENT_DATE, now(), false)")).await.unwrap();
+                 VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'RU role', CURRENT_DATE, now(), false)"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             request.put(&format!("/api/workers/{w}/skills")).json(&json!({ "skill_pid": skills[1], "proficiency": 4 })).await.assert_status_ok();
             people.push(w);
         }

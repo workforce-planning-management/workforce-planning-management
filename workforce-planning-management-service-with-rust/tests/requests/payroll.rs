@@ -7,6 +7,7 @@ use serial_test::serial;
 use workforce_planning_management::rules::payroll as rules;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -646,7 +647,6 @@ async fn overtime_counts_from_a_configured_contracted_day() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
-    use sea_orm::{ConnectionTrait, Statement};
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         // Annual salaries of 36 000.00, 24 960.00 and 12 000.00 pay 3 000.00, 2 080.00 and 1 000.00 for a month: 18.75, 13.00 and
@@ -755,27 +755,19 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
         request.post(&format!("/api/payroll-runs/{run_pid}/approve")).await.assert_status_ok();
 
         // The audit entry holds the counts and no worker.
-        let counted: i64 = workforce_planning_management::db::orm(&ctx)
-            .query_one_raw(Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT count(*) AS n FROM audit_logs WHERE entity_pid = '{run_pid}' AND action = 'minimum_wage_checked' AND snapshot->'counts'->>'below' = '1'"),
-            ))
+        let counted: i64 = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM audit_logs WHERE entity_pid = '{run_pid}' AND action = 'minimum_wage_checked' AND snapshot->'counts'->>'below' = '1'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get("", "n")
+            .try_get("n")
             .unwrap();
         assert_eq!(counted, 1);
         for (_, pid) in &slips {
-            let leaked: i64 = workforce_planning_management::db::orm(&ctx)
-                .query_one_raw(Statement::from_string(
-                    sea_orm::DatabaseBackend::Postgres,
-                    format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'minimum_wage_checked' AND snapshot::text LIKE '%{pid}%'"),
-                ))
+            let leaked: i64 = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'minimum_wage_checked' AND snapshot::text LIKE '%{pid}%'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap()
-                .try_get("", "n")
+                .try_get("n")
                 .unwrap();
             assert_eq!(leaked, 0, "a worker is named in the audit entry");
         }

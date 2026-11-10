@@ -9,7 +9,7 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 
-use crate::models::audit_logs::Model as Audit;
+use crate::controllers::audits::verify_chain;
 
 /// The audit-chain verification task.
 pub struct VerifyAuditChain;
@@ -25,7 +25,7 @@ impl Task for VerifyAuditChain {
     }
 
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
-        let report = Audit::verify_chain(&crate::db::orm(ctx)).await?;
+        let report = verify_chain(ctx).await?;
         println!(
             "{}",
             serde_json::to_string(&report).map_err(|e| Error::string(&e.to_string()))?

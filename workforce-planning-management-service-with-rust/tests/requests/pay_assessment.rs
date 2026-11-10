@@ -1,11 +1,11 @@
 //! The joint pay assessment signal (WPM-R146, WPM-D99): it reports whether an assessment is due from a category's gap and
 //! what a person recorded, and a person records; it never decides.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 struct MonitoringOn;
 
@@ -57,10 +57,9 @@ async fn hire(
             .await
             .json();
         let pid = created["pid"].as_str().expect("pid").to_string();
-        workforce_planning_management::db::orm(ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"
-            ))
+            ))).execute(workforce_planning_management::db::pool(ctx))
             .await
             .unwrap();
     }
@@ -177,17 +176,13 @@ async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
         assert_eq!(category(&strict, "Engineering")["signal"], json!({ "status": "not_due", "why": "below_threshold" }), "ten percent is under twelve");
 
         // Audited, with no figure and no words.
-        let rows = workforce_planning_management::db::orm(&ctx)
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action IN ('joint_assessment_read', 'pay_assessment_recorded')".to_string(),
-            ))
+        let rows = sqlx::query("SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action IN ('joint_assessment_read', 'pay_assessment_recorded')").fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        let actions: Vec<String> = rows.iter().map(|r| r.try_get("", "action").unwrap()).collect();
+        let actions: Vec<String> = rows.iter().map(|r| r.try_get("action").unwrap()).collect();
         assert!(actions.contains(&"joint_assessment_read".to_string()) && actions.contains(&"pay_assessment_recorded".to_string()), "{actions:?}");
         for r in &rows {
-            let snapshot: String = r.try_get::<Option<String>>("", "snapshot").unwrap().unwrap_or_default();
+            let snapshot: String = r.try_get::<Option<String>, _>("snapshot").unwrap().unwrap_or_default();
             assert!(!snapshot.contains("job evaluation") && !snapshot.contains("gap_bp") && !snapshot.contains("Staff side"), "{snapshot}");
         }
         let text = request.get(&url("&as_of=2026-10-24")).await.text();

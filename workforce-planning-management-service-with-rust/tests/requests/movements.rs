@@ -2,7 +2,6 @@
 //! list what they hold, reassign it, revoke access, with an audit trail.
 
 use chrono::{Duration, Utc};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -118,12 +117,11 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
             .await
             .assert_status_ok();
         let person: Value = request.get(&format!("/api/workers/{l}")).await.json();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES (gen_random_uuid(), '{}', '{org}', 'hr_admin', CURRENT_DATE - 30)",
                 person["person_ref"].as_str().unwrap()
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
 

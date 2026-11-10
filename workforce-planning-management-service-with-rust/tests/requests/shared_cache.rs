@@ -1,7 +1,6 @@
 //! The shared cache (WPM-D78): non-personal lookups only, fail open, invalidated when the data behind
 //! them changes. The Redis provider is checked against a real server when `WPM_TEST_REDIS_URL` is set.
 
-use sea_orm::ConnectionTrait;
 use serde_json::Value;
 use serial_test::serial;
 use workforce_planning_management::shared_cache::{self as cache, Namespace};
@@ -16,12 +15,12 @@ async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let uri = format!("http://data.europa.eu/esco/occupation/{tag}");
         let term = format!("zzcache{}", &tag[..8]);
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "INSERT INTO esco_occupations (uri, label) VALUES ('{uri}', 'Test {term} keeper')"
-            ))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO esco_occupations (uri, label) VALUES ('{uri}', 'Test {term} keeper')"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let search = || {
             let (request, term) = (&request, term.clone());
             async move {
@@ -32,10 +31,12 @@ async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
             }
         };
         assert_eq!(search().await.as_array().unwrap().len(), 1);
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!("DELETE FROM esco_occupations WHERE uri = '{uri}'"))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "DELETE FROM esco_occupations WHERE uri = '{uri}'"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         assert_eq!(
             search().await.as_array().unwrap().len(),
             1,

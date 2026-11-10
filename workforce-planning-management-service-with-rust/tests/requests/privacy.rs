@@ -7,6 +7,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -67,29 +68,24 @@ async fn subject_rights_round_trip() {
 
         // The identity provider's link for the worker is held, and erasure removes it.
         {
-            use sea_orm::ConnectionTrait;
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO scim_pushes (pid, worker_pid, scim_id) VALUES (gen_random_uuid(), '{worker}', 'idp-1')"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "WITH s AS (INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref) VALUES (gen_random_uuid(), 'x', 'https://hooks.example/x', ARRAY['worker_terminated'], 'WPM_WEBHOOK_SECRET_X') RETURNING pid)
                      INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, occurred_at) SELECT gen_random_uuid(), pid, gen_random_uuid(), 'worker_terminated', 'worker:{worker}', now() FROM s"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
 
         {
-            use sea_orm::ConnectionTrait;
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state, holder_worker_pid) \
                      SELECT gen_random_uuid(), organization_ref, 'CC-ERASE', 'Seat', 100, 'core', 'filled', pid FROM workers WHERE pid = '{worker}'"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -117,37 +113,24 @@ async fn subject_rights_round_trip() {
             .json();
         assert_eq!(erased["erased"], worker.as_str());
         {
-            use sea_orm::ConnectionTrait;
-            let left = workforce_planning_management::db::orm(&ctx)
-                .query_one_raw(sea_orm::Statement::from_string(
-                    sea_orm::DatabaseBackend::Postgres,
-                    format!("SELECT count(*) AS n FROM scim_pushes WHERE worker_pid = '{worker}'"),
-                ))
+            let left = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM scim_pushes WHERE worker_pid = '{worker}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap();
-            let n: i64 = left.try_get("", "n").unwrap();
+            let n: i64 = left.try_get("n").unwrap();
             assert_eq!(n, 0, "erasure removes the identity provider link");
-            let queued = workforce_planning_management::db::orm(&ctx)
-                .query_one_raw(sea_orm::Statement::from_string(
-                    sea_orm::DatabaseBackend::Postgres,
-                    format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subject = 'worker:{worker}'"),
-                ))
+            let queued = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subject = 'worker:{worker}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap();
-            let n: i64 = queued.try_get("", "n").unwrap();
+            let n: i64 = queued.try_get("n").unwrap();
             assert_eq!(n, 0, "erasure removes the webhook deliveries that name the worker");
-            let seat = workforce_planning_management::db::orm(&ctx)
-                .query_one_raw(sea_orm::Statement::from_string(
-                    sea_orm::DatabaseBackend::Postgres,
-                    "SELECT count(*) AS seats, count(holder_worker_pid) AS held FROM positions WHERE cost_centre = 'CC-ERASE'".to_string(),
-                ))
+            let seat = sqlx::query("SELECT count(*) AS seats, count(holder_worker_pid) AS held FROM positions WHERE cost_centre = 'CC-ERASE'").fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(seat.try_get::<i64>("", "seats").unwrap(), 1, "the seat outlives the person (WPM-D104)");
-            assert_eq!(seat.try_get::<i64>("", "held").unwrap(), 0, "only the link is cut");
+            assert_eq!(seat.try_get::<i64, _>("seats").unwrap(), 1, "the seat outlives the person (WPM-D104)");
+            assert_eq!(seat.try_get::<i64, _>("held").unwrap(), 0, "only the link is cut");
         }
         // The worker is gone from reads (soft-deleted) …
         assert_eq!(
@@ -203,19 +186,17 @@ async fn subject_rights_round_trip() {
 #[serial_test::serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn every_soft_deleting_table_has_a_deleted_at_index() {
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|_request, ctx| async move {
-        let rows = workforce_planning_management::db::orm(&ctx)
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DbBackend::Postgres,
-                "SELECT tablename FROM pg_indexes WHERE schemaname = current_schema()
+        let rows = sqlx::query(
+            "SELECT tablename FROM pg_indexes WHERE schemaname = current_schema()
                    AND indexdef LIKE '%(deleted_at) WHERE (deleted_at IS NOT NULL)%'",
-            ))
-            .await
-            .unwrap();
+        )
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let indexed: std::collections::BTreeSet<String> = rows
             .iter()
-            .map(|r| r.try_get::<String>("", "tablename").unwrap())
+            .map(|r| r.try_get::<String, _>("tablename").unwrap())
             .collect();
         for table in workforce_planning_management::rules::privacy::SOFT_DELETED_TABLES {
             assert!(
@@ -233,7 +214,6 @@ async fn every_soft_deleting_table_has_a_deleted_at_index() {
 #[serial_test::serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_invitations() {
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let candidate = |n: &str| json!({ "display_name": format!("Test Applicant {n}"), "email": format!("{n}-{tag}@example.com"), "source": "referral" });
@@ -241,8 +221,8 @@ async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_in
         let other: Value = request.post("/api/candidates").json(&candidate("b")).await.json();
         let (mine, other) = (mine["pid"].as_str().unwrap().to_string(), other["pid"].as_str().unwrap().to_string());
         let sql = |q: String| {
-            let db = workforce_planning_management::db::orm(&ctx).clone();
-            async move { db.execute_unprepared(&q).await.unwrap() }
+            let db = workforce_planning_management::db::pool(&ctx).clone();
+            async move { sqlx::raw_sql(sqlx::AssertSqlSafe(&*q)).execute(&db).await.unwrap() }
         };
         for (cand, note) in [(&mine, "strong on systems"), (&other, "another applicants note")] {
             let (app, requisition) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
@@ -272,9 +252,8 @@ async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_in
         assert_eq!(sweep["deleted"]["appraisal_nominations"], 1);
         assert_eq!(sweep["deleted"]["appraisal_responses"], 1);
         for (table, left) in [("appraisal_nominations", 1), ("appraisal_responses", 0)] {
-            let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-                format!("SELECT count(*) AS n FROM {table} WHERE appraisal_pid IN ('{appraisal}', '{live}')"))).await.unwrap().unwrap();
-            assert_eq!(row.try_get::<i64>("", "n").unwrap(), left, "{table}");
+            let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM {table} WHERE appraisal_pid IN ('{appraisal}', '{live}')"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+            assert_eq!(row.try_get::<i64, _>("n").unwrap(), left, "{table}");
         }
     })
     .await;

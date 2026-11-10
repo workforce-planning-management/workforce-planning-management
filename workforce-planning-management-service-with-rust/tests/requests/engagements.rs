@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, activate, an_org};
+use sqlx::Row;
 
 async fn create(
     request: &axa_test::TestServer,
@@ -237,7 +238,6 @@ async fn the_end_date_follows_the_basis() {
 // as missing and never given an invented date; recording one removes it from the list.
 async fn existing_engagements_without_an_end_date_are_listed_not_invented() {
     crate::requests::request_open(|request, ctx| async move {
-        use sea_orm::ConnectionTrait;
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let made: Value = create(
@@ -251,12 +251,12 @@ async fn existing_engagements_without_an_end_date_are_listed_not_invented() {
         .1;
         let pid = made["pid"].as_str().unwrap().to_string();
         // Simulate a row from before the column existed.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "UPDATE workers SET engagement_ends_on = NULL WHERE pid = '{pid}'"
-            ))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE workers SET engagement_ends_on = NULL WHERE pid = '{pid}'"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let permanent: Value = create(&request, &org, &format!("EP-{tag}"), "permanent", None)
             .await
             .1;
@@ -459,36 +459,21 @@ async fn contractor_details_and_assessments() {
             .await
             .assert_status_ok();
         // The worker is gone from reads; the rows about them are gone from the tables.
-        use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
-        use workforce_planning_management::models::_entities::{
-            engagement_extensions, engagement_status_assessments, worker_contractor_details,
-        };
         let pid: uuid::Uuid = worker.parse().unwrap();
+        let rows = |table: &str| {
+            sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(format!(
+                "SELECT count(*) FROM {table} WHERE worker_pid = $1"
+            )))
+            .bind(pid)
+            .fetch_one(workforce_planning_management::db::pool(&ctx))
+        };
         assert_eq!(
-            worker_contractor_details::Entity::find()
-                .filter(worker_contractor_details::Column::WorkerPid.eq(pid))
-                .count(&workforce_planning_management::db::orm(&ctx))
-                .await
-                .unwrap(),
+            rows("worker_contractor_details").await.unwrap(),
             0,
             "details erased with the person"
         );
-        assert_eq!(
-            engagement_status_assessments::Entity::find()
-                .filter(engagement_status_assessments::Column::WorkerPid.eq(pid))
-                .count(&workforce_planning_management::db::orm(&ctx))
-                .await
-                .unwrap(),
-            0
-        );
-        assert_eq!(
-            engagement_extensions::Entity::find()
-                .filter(engagement_extensions::Column::WorkerPid.eq(pid))
-                .count(&workforce_planning_management::db::orm(&ctx))
-                .await
-                .unwrap(),
-            0
-        );
+        assert_eq!(rows("engagement_status_assessments").await.unwrap(), 0);
+        assert_eq!(rows("engagement_extensions").await.unwrap(), 0);
     })
     .await;
 }
@@ -501,7 +486,6 @@ async fn contractor_details_and_assessments() {
 // already past its end with no decision; it names no rate; a decision settles the end date it was
 // made for, and an extension gives a new date and so a new question.
 async fn end_of_engagement_reminders_and_decisions() {
-    use sea_orm::ConnectionTrait;
     use workforce_planning_management::tasks::engagement_end_reminders::send_reminders;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -525,9 +509,9 @@ async fn end_of_engagement_reminders_and_decisions() {
         };
         let manager = make(format!("RM-{tag}"), "permanent", None, None).await;
         let hr = make(format!("RH-{tag}"), "permanent", None, None).await;
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
+             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let ending = make(format!("RA-{tag}"), "contractor", Some(day(30)), Some(manager.clone())).await;
         let _later = make(format!("RB-{tag}"), "fixed_term", Some(day(90)), Some(manager.clone())).await;
         let past = make(format!("RC-{tag}"), "contractor", Some(day(-1)), Some(manager.clone())).await;
@@ -674,9 +658,9 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
         assert_eq!(mine["plan"]["status"], "proposed");
 
         // The database itself refuses a second open plan, whatever the handler does.
-        let duplicate = workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+        let duplicate = sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status) \
-             VALUES ('{}', '{w}', 'end', '{}', 'proposed')", uuid::Uuid::new_v4(), day(5))).await;
+             VALUES ('{}', '{w}', 'end', '{}', 'proposed')", uuid::Uuid::new_v4(), day(5)))).execute(workforce_planning_management::db::pool(&ctx)).await;
         assert!(duplicate.is_err(), "one open plan per worker is a database rule");
 
         // Abandoning keeps the plan as history and frees the slot.
@@ -706,11 +690,7 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
             request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
         }
         request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
-        use sea_orm::{ConnectionTrait, Statement};
-        let left = workforce_planning_management::db::orm(&ctx).query_one_raw(Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT count(*) AS n FROM conversion_plans WHERE worker_pid = '{w}'"),
-        )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
+        let left = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM conversion_plans WHERE worker_pid = '{w}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap().try_get::<i64, _>("n").unwrap();
         assert_eq!(left, 0, "erased with the worker");
     })
     .await;
@@ -763,11 +743,7 @@ async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
             request.post(&format!("/api/workers/{w}/status")).json(&json!({ "to": to })).await.assert_status_ok();
         }
         request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
-        use sea_orm::{ConnectionTrait, Statement};
-        let left = workforce_planning_management::db::orm(&ctx).query_one_raw(Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT count(*) AS n FROM post_fundings WHERE worker_pid = '{w}'"),
-        )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
+        let left = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM post_fundings WHERE worker_pid = '{w}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap().try_get::<i64, _>("n").unwrap();
         assert_eq!(left, 0, "erased with the worker");
     })
     .await;
@@ -868,12 +844,13 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
         assert!(points[2]["contractor_percent_of_fte"].as_f64().unwrap() > 0.0);
         assert!(points[2]["fixed_term_percent_of_fte"].as_f64().unwrap() > 0.0);
         // A row recorded before the split is unknown, not zero: its whole date is left out.
-        use sea_orm::{ConnectionTrait, Statement};
-        workforce_planning_management::db::orm(&ctx).execute_raw(Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
+        sqlx::raw_sql(
             "UPDATE headcount_snapshots SET contractor_headcount = NULL, contractor_fte_percent_total = NULL, \
-             fixed_term_headcount = NULL, fixed_term_fte_percent_total = NULL WHERE as_of = '2025-02-15'".to_string(),
-        )).await.unwrap();
+             fixed_term_headcount = NULL, fixed_term_fte_percent_total = NULL WHERE as_of = '2025-02-15'",
+        )
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "insufficient_history", "two usable dates remain");
         assert_eq!(v["trend"]["dates_left_out_without_split"], 1);

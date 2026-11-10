@@ -14,6 +14,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -159,9 +160,9 @@ async fn a_worker_manages_only_their_own_details() {
             }
         };
         // HR searches within an organization it belongs to; the worker belongs to none here.
-        sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
-             VALUES ('{}', 'person:hr-user', '{org}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+             VALUES ('{}', 'person:hr-user', '{org}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         assert_eq!(search(me.clone()).await.status_code(), 404, "outside the organizations the worker may search: not found");
         let found = search(hr.clone()).await;
         assert_eq!(found.status_code(), 200, "{}", found.text());
@@ -365,7 +366,6 @@ async fn a_worker_manages_only_their_own_details() {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -413,9 +413,9 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         let _ = make(other_p, "RS-O", None).await;
         let w_hr = make(hr_p, "RS-H", None).await;
         for (person, wp) in [(worker_p, &w), (mgr_p, &w_mgr), (hr_p, &w_hr)] {
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4(), role = if person == hr_p { "hr_admin" } else { "member" })).await.unwrap();
+                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4(), role = if person == hr_p { "hr_admin" } else { "member" }))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let today = chrono::Utc::now().date_naive();
         let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
@@ -486,11 +486,10 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(accepted.status_code(), 200);
         let movement = accepted.json::<Value>()["movement_pid"].as_str().unwrap().to_string();
         // The leaver process is open for the agreed day; employment itself has NOT ended.
-        let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-            format!("SELECT kind, status, effective_on::text AS day FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
-        assert_eq!(row.try_get::<String>("", "kind").unwrap(), "leaver");
-        assert_eq!(row.try_get::<String>("", "status").unwrap(), "open");
-        assert_eq!(row.try_get::<String>("", "day").unwrap(), day(30));
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT kind, status, effective_on::text AS day FROM movements WHERE pid = '{movement}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(row.try_get::<String, _>("kind").unwrap(), "leaver");
+        assert_eq!(row.try_get::<String, _>("status").unwrap(), "open");
+        assert_eq!(row.try_get::<String, _>("day").unwrap(), day(30));
         let status = request.get(&format!("/api/workers/{w}")).add_header("authorization", hr_m.clone()).await.json::<Value>();
         assert_eq!(status["status"], "active", "accepting a resignation does not end employment");
         assert!(status["terminated_on"].is_null());
@@ -504,12 +503,10 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), me.clone(), json!({})).await.status_code(), 403);
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), hr_m.clone(), json!({})).await.status_code(), 200);
         // The leaver record it opened, still open, is cancelled with it.
-        let cancelled = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-            format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
-        assert_eq!(cancelled.try_get::<String>("", "status").unwrap(), "cancelled");
-        let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-            format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
-        assert_eq!(row.try_get::<String>("", "status").unwrap(), "cancelled", "setting it aside cancels the open leaver record");
+        let cancelled = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT status FROM movements WHERE pid = '{movement}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(cancelled.try_get::<String, _>("status").unwrap(), "cancelled");
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT status FROM movements WHERE pid = '{movement}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(row.try_get::<String, _>("status").unwrap(), "cancelled", "setting it aside cancels the open leaver record");
 
         // The aggregate withholds a group this small: nobody can be picked out.
         let summary: Value = request.get("/api/resignations/summary").add_header("authorization", hr_m.clone()).await.json();
@@ -552,14 +549,11 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         for person in ["hr-user", "payroll-user"] {
-            sea_orm::ConnectionTrait::execute_unprepared(
-                &workforce_planning_management::db::orm(&ctx),
-                &format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
                     uuid::Uuid::new_v4()
-                ),
-            )
+                ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         }
@@ -821,14 +815,14 @@ async fn the_directory_search_stops_at_the_organizations_the_caller_can_read() {
         let boss = hire(theirs.clone(), "B-1", format!("Zebedee Boss {tag}")).await;
         let report = hire(ours.clone(), "R-1", format!("Report {tag}")).await;
         for (person, org) in [(one, &ours), (both, &ours), (both, &theirs)] {
-            sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', 'member', '2023-01-05')",
-                uuid::Uuid::new_v4())).await.unwrap();
+                uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         // a line across two organizations: written directly, whatever the route allows
-        sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
-            "UPDATE workers SET manager_pid = '{boss}' WHERE pid = '{report}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE workers SET manager_pid = '{boss}' WHERE pid = '{report}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
 
         let search = |token: String, q: String| {
             let request = &request;

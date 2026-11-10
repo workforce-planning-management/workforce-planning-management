@@ -13,6 +13,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -80,7 +81,6 @@ const CATEGORIES: &str =
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_reads_their_answers()
 {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -127,9 +127,9 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
             "person_ref": format!("person:{hr_p}"), "organization_ref": org, "worker_number": "EQ-HR",
             "display_name": "Test Worker EQ-HR", "employment_type": "permanent", "department": "people",
             "job_title": "HR", "hired_on": "2023-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-             VALUES ('{}', 'person:{hr_p}', '{org}', '{hr_w}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+             VALUES ('{}', 'person:{hr_p}', '{org}', '{hr_w}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let put = |i: usize, body: Value| {
             let (request, t) = (&request, token(i));
             async move { request.put("/api/me/equality-monitoring").add_header("authorization", t).json(&body).await }
@@ -239,12 +239,11 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
         assert_eq!(after["declarations"], json!({ "religion_or_belief": "none" }), "only the withdrawn category went");
         assert_eq!(request.delete("/api/me/equality-monitoring").add_header("authorization", token(1)).await.status_code(), 200);
         let count = |pid: &str| {
-            let db = workforce_planning_management::db::orm(&ctx).clone();
+            let db = workforce_planning_management::db::pool(&ctx).clone();
             let pid = pid.to_string();
             async move {
-                db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-                    format!("SELECT count(*)::bigint AS n FROM equality_declarations WHERE worker_pid = '{pid}'")))
-                    .await.unwrap().unwrap().try_get::<i64>("", "n").unwrap()
+                sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*)::bigint AS n FROM equality_declarations WHERE worker_pid = '{pid}'"))).fetch_optional(&db)
+                    .await.unwrap().unwrap().try_get::<i64, _>("n").unwrap()
             }
         };
         assert_eq!(count(&pids[2]).await, 2, "a sex answer and a religion answer");

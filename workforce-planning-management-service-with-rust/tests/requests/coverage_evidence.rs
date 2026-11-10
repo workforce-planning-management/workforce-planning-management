@@ -68,7 +68,6 @@ async fn coverage_is_recorded_checked_stood_and_retired() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
-    use sea_orm::ConnectionTrait;
     use workforce_planning_management::tasks::coverage_expiry_reminders::send_reminders;
 
     crate::requests::request_open(|request, ctx| async move {
@@ -78,13 +77,12 @@ async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
         let day = |n: i64| (today + Duration::days(n)).to_string();
         let hr = super::seed_worker!(&request, &org, format!("CV-H-{tag}"), None).await;
         super::activate!(&request, &hr).await;
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')",
                 uuid::Uuid::new_v4(),
                 uuid::Uuid::new_v4()
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let add = |code: &str, to: Option<String>| {
@@ -126,8 +124,7 @@ async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
         send_reminders(&ctx, today, 60).await.unwrap();
         assert_eq!(notes().await.matches("coverage_expiring").count(), 1);
         request.post(&format!("/api/coverage-evidence/{soon}/retire")).await.assert_status_ok();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!("DELETE FROM coverage_reminders WHERE coverage_pid = '{soon}'"))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("DELETE FROM coverage_reminders WHERE coverage_pid = '{soon}'"))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         send_reminders(&ctx, today, 60).await.unwrap();

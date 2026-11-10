@@ -2,23 +2,19 @@
 //! demand, partner commitments, the capacity view, the start check and the recorded
 //! start decision.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org};
+use sqlx::Row;
 
 async fn scalar(ctx: &axa::AppContext, sql: String) -> i64 {
-    use sea_orm::Statement;
-    workforce_planning_management::db::orm(ctx)
-        .query_one_raw(Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            sql,
-        ))
+    sqlx::query(sqlx::AssertSqlSafe(&*sql))
+        .fetch_optional(workforce_planning_management::db::pool(ctx))
         .await
         .unwrap()
         .unwrap()
-        .try_get("", "n")
+        .try_get("n")
         .unwrap()
 }
 
@@ -902,8 +898,6 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
 // months it used, and a month the data cannot speak for is a null that is never a pass.
 async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a_pass() {
     use chrono::{Datelike, Months, NaiveDate, Utc};
-    use sea_orm::{ActiveValue, EntityTrait};
-    use workforce_planning_management::models::_entities::{headcount_snapshots, workers};
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
@@ -918,42 +912,37 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
         // Twenty people hired long ago; one of them leaves four days into last month but one.
         let left_on = month(2) + chrono::Days::new(4);
         for n in 0..20 {
-            workers::Entity::insert(workers::ActiveModel {
-                pid: ActiveValue::set(uuid::Uuid::new_v4()),
-                person_ref: ActiveValue::set(super::a_person()),
-                organization_ref: ActiveValue::set(org.clone()),
-                worker_number: ActiveValue::set(format!("D{n:03}")),
-                display_name: ActiveValue::set(format!("Synthetic Worker {n}")),
-                status: ActiveValue::set("active".into()),
-                employment_type: ActiveValue::set("permanent".into()),
-                fte_percent: ActiveValue::set(100),
-                department: ActiveValue::set("engineering".into()),
-                job_title: ActiveValue::set("Engineer".into()),
-                hired_on: ActiveValue::set(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap()),
-                terminated_on: ActiveValue::set((n == 0).then_some(left_on)),
-                ..Default::default()
-            })
-            .exec(&workforce_planning_management::db::orm(&ctx))
+            sqlx::query(
+                "INSERT INTO workers (pid, person_ref, organization_ref, worker_number, display_name, status, employment_type, \
+                 fte_percent, department, job_title, hired_on, terminated_on) \
+                 VALUES ($1, $2, $3, $4, $5, 'active', 'permanent', 100, 'engineering', 'Engineer', $6, $7)",
+            )
+            .bind(uuid::Uuid::new_v4())
+            .bind(super::a_person())
+            .bind(&org)
+            .bind(format!("D{n:03}"))
+            .bind(format!("Synthetic Worker {n}"))
+            .bind(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap())
+            .bind((n == 0).then_some(left_on))
+            .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         }
         // Two snapshots in last month: the earlier shows no contingent FTE, the later (the one that
         // counts) 100 contractor and 100 fixed-term out of 20 people and 2000 FTE.
-        for (days, contractor, fixed) in [(2, 0, 0), (10, 100, 100)] {
-        headcount_snapshots::Entity::insert(headcount_snapshots::ActiveModel {
-            pid: ActiveValue::set(uuid::Uuid::new_v4()),
-            organization_ref: ActiveValue::set(org.clone()),
-            department: ActiveValue::set("engineering".into()),
-            as_of: ActiveValue::set(month(1) + chrono::Days::new(days)),
-            headcount: ActiveValue::set(20),
-            fte_percent_total: ActiveValue::set(2000),
-            contractor_fte_percent_total: ActiveValue::set(Some(contractor)),
-            fixed_term_fte_percent_total: ActiveValue::set(Some(fixed)),
-            ..Default::default()
-        })
-        .exec(&workforce_planning_management::db::orm(&ctx))
-        .await
-        .unwrap();
+        for (days, contractor, fixed) in [(2, 0_i64, 0_i64), (10, 100, 100)] {
+            sqlx::query(
+                "INSERT INTO headcount_snapshots (pid, organization_ref, department, as_of, headcount, fte_percent_total, \
+                 contractor_fte_percent_total, fixed_term_fte_percent_total) VALUES ($1, $2, 'engineering', $3, 20, 2000, $4, $5)",
+            )
+            .bind(uuid::Uuid::new_v4())
+            .bind(&org)
+            .bind(month(1) + chrono::Days::new(days))
+            .bind(Some(contractor))
+            .bind(Some(fixed))
+            .execute(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
         }
         let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
         let level = level["pid"].as_str().unwrap().to_string();
@@ -1020,10 +1009,13 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
         assert_eq!(p["derived_values"][0]["value"], 1);
         assert_eq!(p["status"], "not_met", "one pool over is above an at-most of none");
         // Derived measures are read, never stored: the readings table holds nothing for them.
-        use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
-        use workforce_planning_management::models::_entities::oversight_readings;
         let pids: Vec<uuid::Uuid> = [&turnover_pid, &contingent_pid, &pools_pid].iter().map(|p| p.parse().unwrap()).collect();
-        assert_eq!(oversight_readings::Entity::find().filter(oversight_readings::Column::MeasurePid.is_in(pids)).count(&workforce_planning_management::db::orm(&ctx)).await.unwrap(), 0);
+        let stored: i64 = sqlx::query_scalar("SELECT count(*) FROM oversight_readings WHERE measure_pid = ANY($1)")
+            .bind(pids)
+            .fetch_one(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
+        assert_eq!(stored, 0);
     })
     .await;
 }
@@ -1037,7 +1029,6 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
 // time to acknowledge, unknown while any is open.
 async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_report() {
     use chrono::{Datelike, Days, Months, Utc};
-    use sea_orm::ConnectionTrait;
     use workforce_planning_management::controllers::early_warning::sweep;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -1049,9 +1040,9 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
             "display_name": "Synthetic HR", "employment_type": "permanent", "department": "people",
             "job_title": "Administrator", "hired_on": "2026-01-05" })).await.json();
         let hr = hr["pid"].as_str().unwrap().to_string();
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
+             VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         // A measure that breaches last month (value 900 against an at-most of 800), on the level the organization is at.
         let level: Value = request.post("/api/oversight/levels").json(&json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json();
         let level = level["pid"].as_str().unwrap().to_string();
@@ -1102,7 +1093,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         assert_eq!(t(&status().await)["derived_values"][0]["value"], Value::Null);
         // The pool warning was first seen last month (backdated here), the breach today.
         let seen = last_month + Days::new(2);
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.assert_status_ok();
         assert_eq!(request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.status_code(), 422, "once only");
         assert_eq!(request.post(&format!("/api/early-warnings/{}/acknowledge", uuid::Uuid::new_v4())).await.status_code(), 404);
@@ -1204,7 +1195,6 @@ async fn the_scheduled_freeze_is_idempotent_for_a_month() {
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_ready() {
     use super::{activate, seed_worker};
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -1225,9 +1215,9 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let (late_done, expiring, gardener, unplaced_holder) = (people[4].clone(), people[5].clone(), people[6].clone(), people[7].clone());
         let annex = format!("Synthetic Annex {tag}");
         let set_site = |w: &str, loc: &str| {
-            let db = workforce_planning_management::db::orm(&ctx);
+            let db = workforce_planning_management::db::pool(&ctx);
             let sql = format!("UPDATE workers SET location = '{loc}' WHERE pid = '{w}'");
-            async move { db.execute_unprepared(&sql).await.unwrap(); }
+            async move { sqlx::raw_sql(sqlx::AssertSqlSafe(&*sql)).execute(db).await.unwrap(); }
         };
         // A is recorded with different case and punctuation; B under the site's alias: both are at the site.
         set_site(&a, &format!("  {}. ", site.to_uppercase())).await;
@@ -1236,25 +1226,25 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         for w in [&late_done, &expiring, &gardener] {
             set_site(w, &site).await;
         }
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET job_title = 'Gardener' WHERE pid = '{gardener}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET job_title = 'Gardener' WHERE pid = '{gardener}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let complete = |w: &str| {
-            let db = workforce_planning_management::db::orm(&ctx);
+            let db = workforce_planning_management::db::pool(&ctx);
             let sql = format!(
                 "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on) \
                  VALUES ('{}', '{w}', '{course}', 'completed', '{}')", uuid::Uuid::new_v4(), day(-5));
-            async move { db.execute_unprepared(&sql).await.unwrap(); }
+            async move { sqlx::raw_sql(sqlx::AssertSqlSafe(&*sql)).execute(db).await.unwrap(); }
         };
         complete(&a).await;
         complete(&c).await; // trained, no site recorded
         complete(&d).await;
         complete(&gardener).await; // at the site and trained, but not in the role
         let enrol = |w: &str, completed: i64, expires: Option<i64>| {
-            let db = workforce_planning_management::db::orm(&ctx);
+            let db = workforce_planning_management::db::pool(&ctx);
             let expires = expires.map_or("NULL".to_string(), |n| format!("'{}'", day(n)));
             let sql = format!(
                 "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on) \
                  VALUES ('{}', '{w}', '{course}', 'completed', '{}', {expires})", uuid::Uuid::new_v4(), day(completed));
-            async move { db.execute_unprepared(&sql).await.unwrap(); }
+            async move { sqlx::raw_sql(sqlx::AssertSqlSafe(&*sql)).execute(db).await.unwrap(); }
         };
         enrol(&late_done, 11, None).await; // completes the day after the window opens: not trained for it
         enrol(&expiring, -5, Some(11)).await; // the certificate lapses before the window closes
@@ -1376,7 +1366,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let closed = sweep(&ctx, &org, today).await.unwrap();
         assert_eq!((closed.opened, closed.cleared), (0, 1));
         // A course renamed in the learning records cannot be checked, and is said so.
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE training_enrollments SET course_ref = 'RENAMED-{tag}' WHERE course_ref = '{course}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE training_enrollments SET course_ref = 'RENAMED-{tag}' WHERE course_ref = '{course}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let renamed = ready().await;
         assert_eq!(renamed["checks"]["trained_staff"]["status"], "unknown");
         assert!(renamed["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("not in the learning records"));
@@ -1436,7 +1426,6 @@ fn walked_weighted_days(
 // pending and a withdrawn leave, a worker who qualifies twice — equal to walking the days.
 async fn capacity_supply_equals_walking_the_days() {
     use chrono::NaiveDate;
-    use sea_orm::ConnectionTrait;
     let d = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
@@ -1478,19 +1467,19 @@ async fn capacity_supply_equals_walking_the_days() {
                     .await.assert_status_ok();
             }
             if let Some(end) = ended {
-                workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET terminated_on = '{end}' WHERE pid = '{pid}'")).await.unwrap();
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '{end}' WHERE pid = '{pid}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             }
             for (s, e) in leave {
-                workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
-                     VALUES (gen_random_uuid(), '{pid}', 'annual', '{s}', '{e}', 1, 'approved')")).await.unwrap();
+                     VALUES (gen_random_uuid(), '{pid}', 'annual', '{s}', '{e}', 1, 'approved')"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             }
             // Pending and withdrawn leave never count.
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
                  VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'requested');
                  INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status, deleted_at)
-                 VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'approved', now())")).await.unwrap();
+                 VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'approved', now())"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
             who.push(pid);
         }
         let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
@@ -1573,8 +1562,7 @@ async fn the_what_if_says_what_a_change_does_stores_nothing_and_names_no_one() {
                 .assert_status_ok();
         }
         for programme in [&other, &mine] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -1688,8 +1676,7 @@ async fn a_moved_end_date_counts_the_engagements_that_would_end_before_it_per_po
         // An intern with an early end is not fixed-term or contractor; a fixed-term worker already terminated does not end later.
         hire(big_title.clone(), 9, "intern", Some("2027-01-31")).await;
         hire(big_title.clone(), 10, "fixed_term", Some("2027-01-31")).await;
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2026-12-01' WHERE worker_number = 'CE-{}-Bf10'", &tag[..8]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '2026-12-01' WHERE worker_number = 'CE-{}-Bf10'", &tag[..8]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         // The small pool: three end early, which is under the floor.
@@ -1788,7 +1775,7 @@ async fn a_linked_pool_counts_the_peers_demand_and_not_its_own_and_unlinking_ret
         let activate = || {
             let (ctx, programme) = (&ctx, programme.clone());
             async move {
-                workforce_planning_management::db::orm(ctx).execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'")).await.unwrap();
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))).execute(workforce_planning_management::db::pool(ctx)).await.unwrap();
             }
         };
         let demand_in_january = || {
@@ -2189,8 +2176,7 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
         }
         // A contractor whose end was never recorded (an older record: the API now asks for one), in no pool.
         hire(&title_c, 0, "contractor", Some(end), &programme).await;
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!("UPDATE workers SET engagement_ends_on = NULL WHERE worker_number = 'PI-{}-C0'", &tag[..8]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET engagement_ends_on = NULL WHERE worker_number = 'PI-{}-C0'", &tag[..8]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         hire(&title_a, 99, "fixed_term", Some(early), &a_programme()).await;
@@ -2212,8 +2198,7 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
             .json(&json!({ "programme_ref": programme, "pool_pid": pools[0], "month": next_month, "fte_centi": 5000 }))
             .await
             .assert_status_ok();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let audits_before = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE action = 'people_impact_asked'".to_string()).await;

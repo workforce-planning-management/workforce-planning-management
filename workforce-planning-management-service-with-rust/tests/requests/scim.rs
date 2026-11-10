@@ -8,12 +8,12 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::routing::{post, put};
 use axum::{Json, Router};
 use chrono::{Duration, NaiveDate, Utc};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::scim_push::{Config, Summary, run};
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 #[derive(Default)]
 struct Stub {
@@ -132,10 +132,9 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         let future = hire(&request, &org, "S-4", None, &(today() + Duration::days(30)).to_string()).await;
         // Personal contact details exist, and must not leave.
         for pid in [&manager, &report] {
-            workforce_planning_management::db::orm(&ctx)
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO worker_contact_details (worker_pid, personal_email, phone_mobile, postcode, on_behalf) VALUES ('{pid}', 'private.person@example.org', '+44 7700 900123', 'ZZ1 1ZZ', false)"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -168,9 +167,9 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         assert_eq!(stub.calls.lock().unwrap().len(), before);
 
         // A change in title replaces one user; a leaver is deactivated.
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET job_title = 'Senior Engineer' WHERE pid = '{report}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET job_title = 'Senior Engineer' WHERE pid = '{report}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let left = (today() - Duration::days(1)).to_string();
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET terminated_on = '{left}' WHERE worker_number = 'S-3'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '{left}' WHERE worker_number = 'S-3'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let third = run(&ctx, &cfg, today(), now).await.unwrap();
         assert_eq!(third, Summary { replaced: 2, unchanged: 1, skipped: 1, ..Summary::default() });
         {
@@ -186,14 +185,13 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         let _ = future;
 
         // A provider failure is recorded as a status and retried after a back-off; nothing of its body is kept.
-        workforce_planning_management::db::orm(&ctx).execute_unprepared("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-4')").await.unwrap();
+        sqlx::raw_sql("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-4')").execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         *stub.fail.lock().unwrap() = Some(503);
         let failed = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
         assert_eq!(failed.failed, 1, "{failed:?}");
-        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT last_error, attempts FROM scim_pushes WHERE last_error IS NOT NULL".to_string())).await.unwrap();
+        let rows = sqlx::query("SELECT last_error, attempts FROM scim_pushes WHERE last_error IS NOT NULL").fetch_all(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         assert_eq!(rows.len(), 1);
-        let error: String = rows[0].try_get("", "last_error").unwrap();
+        let error: String = rows[0].try_get("last_error").unwrap();
         assert_eq!(error, "HTTP 503");
         assert!(!error.contains("SECRET"));
         let waiting = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
@@ -208,7 +206,7 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         assert_eq!(later.created, 1, "after the wait it is tried again and works: {later:?}");
 
         // A user the provider already has is found by externalId and replaced, not duplicated.
-        workforce_planning_management::db::orm(&ctx).execute_unprepared("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-1')").await.unwrap();
+        sqlx::raw_sql("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-1')").execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         *stub.conflict.lock().unwrap() = true;
         let again = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::minutes(10)).await.unwrap();
         assert_eq!(again.created, 1, "{again:?}");

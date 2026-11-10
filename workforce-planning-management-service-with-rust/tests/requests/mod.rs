@@ -234,17 +234,17 @@ where
 /// so the least-privilege drill (`scripts/verify-db-roles.sh`, WPM-R123) sets `WPM_TEST_DDL_URL` to the schema owner's URL and the DDL
 /// goes through that connection; everywhere else it goes through the test's own connection.
 pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
-    use sea_orm::ConnectionTrait;
     match std::env::var("WPM_TEST_DDL_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
     {
         Some(url) => {
-            let owner = sea_orm::Database::connect(&url)
+            use sqlx::Connection;
+            let mut owner = sqlx::PgConnection::connect(&url)
                 .await
                 .expect("the schema owner's connection");
-            owner
-                .execute_unprepared(sql)
+            sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+                .execute(&mut owner)
                 .await
                 .expect("the DDL runs as the schema owner");
             owner
@@ -253,8 +253,8 @@ pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
                 .expect("the schema owner's connection closes");
         }
         None => {
-            workforce_planning_management::db::orm(ctx)
-                .execute_unprepared(sql)
+            sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+                .execute(workforce_planning_management::db::pool(ctx))
                 .await
                 .expect("the DDL runs");
         }

@@ -13,6 +13,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -76,7 +77,6 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_health -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_manager_sees_cleared_or_not_and_never_the_status() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -125,9 +125,9 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         let w_nb = make(neighbour_p, "HR-N", "office", None).await;
         let w_hr = make(hr_p, "HR-H", "people", None).await;
         for (person, wp, role) in [(worker_p, &w, "member"), (office_p, &w_office, "member"), (mgr_p, &w_mgr, "member"), (neighbour_p, &w_nb, "member"), (hr_p, &w_hr, "hr_admin")] {
-            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let today = chrono::Utc::now().date_naive();
         let post = |path: String, t: String, body: Value| { let request = &request; async move { request.post(&path).add_header("authorization", t).json(&body).await } };
@@ -197,7 +197,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(hep_view["standing"], "up_to_date");
         assert_eq!(hep_view["next_due"], (today + chrono::Duration::days(365)).to_string().as_str(), "the re-check period in calendar days");
         // Overdue: the reminder shows and they are no longer cleared.
-        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE worker_health_records SET next_due = CURRENT_DATE - 1 WHERE worker_pid = '{w}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE worker_health_records SET next_due = CURRENT_DATE - 1 WHERE worker_pid = '{w}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let late: Value = get("/api/me/health-requirements".into(), worker.clone()).await.json();
         let late_hep = late["requirements"].as_array().unwrap().iter().find(|r| r["requirement"]["name"] == "Hepatitis B").unwrap();
         assert_eq!((late_hep["standing"].as_str(), late_hep["reminder"].as_bool(), late_hep["cleared"].as_bool()), (Some("overdue"), Some(true), Some(false)));
@@ -258,12 +258,11 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(request.delete(&format!("/api/workers/{w}/health-requirements/{induction}")).add_header("authorization", oh.clone()).await.status_code(), 200, "removing a mistaken entry");
         assert_eq!(request.delete(&format!("/api/workers/{w}/health-requirements/{induction}")).add_header("authorization", oh.clone()).await.status_code(), 404);
         let count = || {
-            let db = workforce_planning_management::db::orm(&ctx).clone();
+            let db = workforce_planning_management::db::pool(&ctx).clone();
             let w = w.clone();
             async move {
-                db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
-                    format!("SELECT count(*)::bigint AS n FROM worker_health_records WHERE worker_pid = '{w}'")))
-                    .await.unwrap().unwrap().try_get::<i64>("", "n").unwrap()
+                sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*)::bigint AS n FROM worker_health_records WHERE worker_pid = '{w}'"))).fetch_optional(&db)
+                    .await.unwrap().unwrap().try_get::<i64, _>("n").unwrap()
             }
         };
         assert_eq!(count().await, 1);

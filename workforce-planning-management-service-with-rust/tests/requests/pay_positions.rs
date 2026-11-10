@@ -3,12 +3,12 @@
 //! exported and erased with the person, and a reminder that names no pay.
 
 use chrono::{Duration, Months, Utc};
-use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::pay_progression_reminders::send_reminders;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -103,15 +103,11 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
             request.post(&format!("/api/workers/{worker}/erase")).await.status_code(),
             200
         );
-        let row = workforce_planning_management::db::orm(&ctx)
-            .query_one_raw(Statement::from_string(
-                workforce_planning_management::db::orm(&ctx).get_database_backend(),
-                format!("SELECT count(*) FROM worker_pay_positions WHERE worker_pid = '{worker}'"),
-            ))
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM worker_pay_positions WHERE worker_pid = '{worker}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(row.try_get_by_index::<i64>(0).unwrap(), 0);
+        assert_eq!(row.try_get::<i64, _>(0).unwrap(), 0);
     })
     .await;
 }

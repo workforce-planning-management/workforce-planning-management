@@ -341,7 +341,6 @@ async fn the_gap_roll_up_hides_a_small_group_and_counts_a_large_one() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiry_reminders_tell_the_person_and_their_manager_once() {
-    use sea_orm::ConnectionTrait;
     use workforce_planning_management::tasks::qualification_expiry_reminders::send_reminders;
 
     crate::requests::request_open(|request, ctx| async move {
@@ -439,13 +438,13 @@ async fn expiry_reminders_tell_the_person_and_their_manager_once() {
         );
 
         // A renewal is a new expiry date and so a new reminder.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "UPDATE qualifications SET expires_on = '{}' WHERE pid = '{soon}'",
-                day(50)
-            ))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE qualifications SET expires_on = '{}' WHERE pid = '{soon}'",
+            day(50)
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         send_reminders(&ctx, today, 60).await.unwrap();
         assert_eq!(
             notes(&me).await.matches("qualification_expiring").count(),

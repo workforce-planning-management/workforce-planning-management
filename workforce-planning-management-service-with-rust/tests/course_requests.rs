@@ -6,7 +6,6 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
@@ -135,12 +134,22 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let manager = worker(&request, &svc, &org, &boss.to_string(), "CR-1", None).await;
-        let mine = worker(&request, &svc, &org, &me.to_string(), "CR-2", Some(&manager)).await;
+        let mine = worker(
+            &request,
+            &svc,
+            &org,
+            &me.to_string(),
+            "CR-2",
+            Some(&manager),
+        )
+        .await;
         worker(&request, &svc, &org, &other.to_string(), "CR-3", None).await;
         let skill: Value = request
             .post("/api/skills")
             .add_header("authorization", svc.clone())
-            .json(&json!({ "name": format!("CR {}", uuid::Uuid::new_v4()), "category": "technical" }))
+            .json(
+                &json!({ "name": format!("CR {}", uuid::Uuid::new_v4()), "category": "technical" }),
+            )
             .await
             .json();
         let skill = skill["pid"].as_str().unwrap().to_string();
@@ -166,38 +175,63 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
                     .add_header("authorization", as_me)
                     .await
                     .json();
-                rows.as_array().unwrap().iter().map(|r| r["course_ref"].as_str().unwrap().to_string()).collect::<Vec<_>>()
+                rows.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|r| r["course_ref"].as_str().unwrap().to_string())
+                    .collect::<Vec<_>>()
             }
         };
 
-        assert_eq!(start("course:nowhere".to_string()).await.status_code(), 422, "catalogue courses only");
+        assert_eq!(
+            start("course:nowhere".to_string()).await.status_code(),
+            422,
+            "catalogue courses only"
+        );
 
         let first: Value = start(free.clone()).await.json();
-        assert_eq!(first["started"]["outcome"], "enrolled", "a recorded zero starts at once");
+        assert_eq!(
+            first["started"]["outcome"], "enrolled",
+            "a recorded zero starts at once"
+        );
         assert_eq!(courses_of_mine().await, vec![free.clone()]);
-        assert_eq!(start(free.clone()).await.status_code(), 409, "already enrolled");
+        assert_eq!(
+            start(free.clone()).await.status_code(),
+            409,
+            "already enrolled"
+        );
 
         let asked: Value = start(paid.clone()).await.json();
         assert_eq!(asked["started"]["outcome"], "requested", "a fee waits");
         assert_eq!(asked["has_manager"], true);
         let paid_pid = asked["started"]["pid"].as_str().unwrap().to_string();
-        assert_eq!(start(paid.clone()).await.status_code(), 409, "one open request");
+        assert_eq!(
+            start(paid.clone()).await.status_code(),
+            409,
+            "one open request"
+        );
         let asked: Value = start(unpriced.clone()).await.json();
-        assert_eq!(asked["started"]["outcome"], "requested", "unknown is not free");
+        assert_eq!(
+            asked["started"]["outcome"], "requested",
+            "unknown is not free"
+        );
         let unpriced_pid = asked["started"]["pid"].as_str().unwrap().to_string();
-        assert_eq!(courses_of_mine().await.len(), 1, "nothing is enrolled by asking");
+        assert_eq!(
+            courses_of_mine().await.len(),
+            1,
+            "nothing is enrolled by asking"
+        );
 
         let told = |kind: &'static str, whom: String| {
             let ctx = ctx.clone();
             async move {
-                workforce_planning_management::db::orm(&ctx)
-                    .query_all_raw(sea_orm::Statement::from_string(
-                        sea_orm::DatabaseBackend::Postgres,
-                        format!("SELECT id FROM notifications WHERE kind = '{kind}' AND worker_pid = '{whom}'"),
-                    ))
-                    .await
-                    .unwrap()
-                    .len()
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "SELECT id FROM notifications WHERE kind = '{kind}' AND worker_pid = '{whom}'"
+                )))
+                .fetch_all(workforce_planning_management::db::pool(&ctx))
+                .await
+                .unwrap()
+                .len()
             }
         };
         assert_eq!(told("course_requested", manager.clone()).await, 2);
@@ -212,9 +246,21 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
                     .status_code()
             }
         };
-        assert_eq!(act(paid_pid.clone(), "approve", as_other.clone()).await, 404, "not their manager");
-        assert_eq!(act(paid_pid.clone(), "approve", as_me.clone()).await, 404, "nobody approves their own");
-        assert_eq!(act(paid_pid.clone(), "withdraw", as_other.clone()).await, 404, "not theirs");
+        assert_eq!(
+            act(paid_pid.clone(), "approve", as_other.clone()).await,
+            404,
+            "not their manager"
+        );
+        assert_eq!(
+            act(paid_pid.clone(), "approve", as_me.clone()).await,
+            404,
+            "nobody approves their own"
+        );
+        assert_eq!(
+            act(paid_pid.clone(), "withdraw", as_other.clone()).await,
+            404,
+            "not theirs"
+        );
 
         let waiting: Value = request
             .get("/api/me/team-course-requests")
@@ -235,10 +281,17 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
 
         assert_eq!(act(paid_pid.clone(), "approve", as_boss.clone()).await, 200);
         assert!(courses_of_mine().await.contains(&paid), "approval enrols");
-        assert_eq!(act(paid_pid.clone(), "approve", as_boss.clone()).await, 409, "settled once");
+        assert_eq!(
+            act(paid_pid.clone(), "approve", as_boss.clone()).await,
+            409,
+            "settled once"
+        );
         assert_eq!(courses_of_mine().await.len(), 2, "no second enrolment");
 
-        assert_eq!(act(unpriced_pid.clone(), "decline", as_boss.clone()).await, 200);
+        assert_eq!(
+            act(unpriced_pid.clone(), "decline", as_boss.clone()).await,
+            200
+        );
         assert_eq!(courses_of_mine().await.len(), 2, "a decline enrols nobody");
         assert_eq!(told("course_decided", mine.clone()).await, 2);
 
@@ -250,10 +303,19 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
             .add_header("authorization", as_me.clone())
             .await
             .json();
-        let statuses: Vec<&str> = read["requests"].as_array().unwrap().iter().map(|r| r["status"].as_str().unwrap()).collect();
+        let statuses: Vec<&str> = read["requests"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["status"].as_str().unwrap())
+            .collect();
         assert_eq!(statuses, vec!["withdrawn", "declined", "approved"]);
         assert!(read["requests"][1]["decided_on"].is_string());
-        assert_eq!(act(again, "approve", as_boss.clone()).await, 409, "withdrawn is settled");
+        assert_eq!(
+            act(again, "approve", as_boss.clone()).await,
+            409,
+            "withdrawn is settled"
+        );
     })
     .await;
 }

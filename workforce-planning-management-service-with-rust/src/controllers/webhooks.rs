@@ -2,7 +2,7 @@
 //!
 //! A subscription holds an endpoint, the event kinds it wants and the **name** of the environment variable that holds its signing
 //! secret; the secret is never stored, returned or logged. A delivery holds an event id, a kind, the URN of the record and the
-//! attempts, never a body. Deliveries are queued in the transaction of the change that caused them (`streaming::emit_on`) and
+//! attempts, never a body. Deliveries are queued in the transaction of the change that caused them (`streaming::emit_in`) and
 //! sent by the `webhook_deliver` task. Spec: `spec/integrations.md`.
 
 use axa::extract::{Json, Path};

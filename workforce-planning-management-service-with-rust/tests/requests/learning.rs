@@ -2135,7 +2135,6 @@ async fn career_history_and_aspirations() {
 #[ignore = "needs Postgres"]
 async fn reporting_lines_stop_at_a_manager_who_has_left() {
     crate::requests::request_open(|request, ctx| async move {
-        use sea_orm::ConnectionTrait;
         let org = an_org();
         let mut pids = Vec::new();
         for n in ["L-1", "L-2", "L-3", "L-4"] {
@@ -2161,12 +2160,12 @@ async fn reporting_lines_stop_at_a_manager_who_has_left() {
             .json();
         assert_eq!(down["summary"]["total"], 3);
 
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
-            ))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let up: Value = request
             .get(&format!("/api/workers/{low}/upline"))
             .await
@@ -2407,7 +2406,7 @@ async fn confederation_groups_and_transfers() {
              WHERE entity_pid = $1::text::uuid AND action = 'transferred'",
         )
         .bind(&in_a)
-        .fetch_one(workforce_planning_management::db::orm(&ctx).get_postgres_connection_pool())
+        .fetch_one(workforce_planning_management::db::pool(&ctx))
         .await
         .unwrap();
         assert_eq!(ended, 1, "the audit entry keeps what the move ended");
@@ -2442,7 +2441,6 @@ async fn capability_view(request: &axa_test::TestServer) -> Value {
 // own target, the people with a gap and how many of them have an active plan, completed sittings per category.
 // Read as the difference from before, since the test database holds other people.
 async fn capability_counts_targets_plans_and_completed_sittings() {
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {
         let org = super::an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -2474,11 +2472,10 @@ async fn capability_counts_targets_plans_and_completed_sittings() {
             }))
             .await
             .assert_status_ok();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE development_plans SET status = 'active' WHERE worker_pid = '{}'",
                 people[1]
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         // The first person completed an aptitude sitting; the third only scheduled one.

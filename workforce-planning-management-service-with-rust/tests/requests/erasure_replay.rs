@@ -3,22 +3,19 @@
 //! scrubbed again by the replay, the replay is idempotent, an unknown pid is
 //! counted rather than an error, and `since` limits what is replayed.
 
-use sea_orm::ConnectionTrait;
 use serde_json::json;
 use serial_test::serial;
 use workforce_planning_management::controllers::privacy::{ReplayReport, replay_erasures};
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 async fn scalar(ctx: &axa::AppContext, sql: &str) -> i64 {
-    workforce_planning_management::db::orm(ctx)
-        .query_one_raw(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            sql.to_string(),
-        ))
+    sqlx::query(sqlx::AssertSqlSafe(&*sql.to_string()))
+        .fetch_optional(workforce_planning_management::db::pool(ctx))
         .await
         .unwrap()
-        .and_then(|row| row.try_get::<i64>("", "n").ok())
+        .and_then(|row| row.try_get::<i64, _>("n").ok())
         .unwrap()
 }
 
@@ -58,19 +55,19 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── A "restore": put the person and their note back, as an older dump would.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "UPDATE workers SET display_name = 'Restored Person', salary_minor = 3600000, \
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE workers SET display_name = 'Restored Person', salary_minor = 3600000, \
                  salary_currency = 'GBP', deleted_at = NULL WHERE pid = '{worker}'"
-            ))
-            .await
-            .unwrap();
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "UPDATE time_entries SET notes = 'restored private note' WHERE worker_pid = '{worker}'"
-            ))
-            .await
-            .unwrap();
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE time_entries SET notes = 'restored private note' WHERE worker_pid = '{worker}'"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         assert_eq!(
             request
                 .get(&format!("/api/workers/{worker}"))
@@ -81,7 +78,9 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── The replay erases them again, before traffic.
-        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap();
+        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None)
+            .await
+            .unwrap();
         assert_eq!(
             report,
             ReplayReport {
@@ -123,23 +122,39 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── Idempotent: a second replay changes nothing more.
-        assert_eq!(replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap().reapplied, 1);
+        assert_eq!(
+            replay_erasures(workforce_planning_management::db::pool(&ctx), None)
+                .await
+                .unwrap()
+                .reapplied,
+            1
+        );
 
         // ── A pid the database does not hold is counted, not an error.
-        workforce_planning_management::db::orm(&ctx)
-            .execute_unprepared(&format!(
-                "INSERT INTO erasure_ledger (worker_pid) VALUES ('{}')",
-                uuid::Uuid::new_v4()
-            ))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO erasure_ledger (worker_pid) VALUES ('{}')",
+            uuid::Uuid::new_v4()
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None)
             .await
             .unwrap();
-        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap();
-        assert_eq!((report.considered, report.reapplied, report.missing), (2, 1, 1));
+        assert_eq!(
+            (report.considered, report.reapplied, report.missing),
+            (2, 1, 1)
+        );
 
         // ── `since` limits it: nothing was erased tomorrow or later.
         let tomorrow = chrono::Utc::now().date_naive() + chrono::Duration::days(1);
         assert_eq!(
-            replay_erasures(workforce_planning_management::db::pool(&ctx), Some(tomorrow)).await.unwrap(),
+            replay_erasures(
+                workforce_planning_management::db::pool(&ctx),
+                Some(tomorrow)
+            )
+            .await
+            .unwrap(),
             ReplayReport::default()
         );
 

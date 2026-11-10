@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -86,16 +87,14 @@ async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
         }
         let erased = request.post(&format!("/api/workers/{worker}/erase")).await;
         assert_eq!(erased.status_code(), 200);
-        use sea_orm::{ConnectionTrait, Statement};
-        let row = workforce_planning_management::db::orm(&ctx)
-            .query_one_raw(Statement::from_string(
-                workforce_planning_management::db::orm(&ctx).get_database_backend(),
-                format!("SELECT count(*) FROM worker_job_levels WHERE worker_pid = '{worker}'"),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        let count: i64 = row.try_get_by_index(0).unwrap();
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "SELECT count(*) FROM worker_job_levels WHERE worker_pid = '{worker}'"
+        )))
+        .fetch_optional(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap()
+        .unwrap();
+        let count: i64 = row.try_get(0).unwrap();
         assert_eq!(count, 0, "the level is erased with the person");
     })
     .await;

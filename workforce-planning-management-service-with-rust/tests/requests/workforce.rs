@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -398,7 +399,6 @@ async fn flagged_as_of(request: &axa_test::TestServer, who: &str) -> Option<Valu
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn working_time_window_edges_and_rollup_follow_the_entries() {
-    use sea_orm::{ConnectionTrait, Statement};
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let who = seed_worker!(&request, &org, "WT-EDGE", None).await;
@@ -429,10 +429,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
 
         // The rollup equals the entries after an update, a soft delete, a restore and a hard delete.
         let rollup_matches = || async {
-            let rows = workforce_planning_management::db::orm(&ctx)
-                .query_all_raw(Statement::from_string(
-                    sea_orm::DbBackend::Postgres,
-                    "SELECT (SELECT COALESCE(SUM(minutes), 0) FROM time_entry_weeks)::bigint AS rolled,
+            let rows = sqlx::query("SELECT (SELECT COALESCE(SUM(minutes), 0) FROM time_entry_weeks)::bigint AS rolled,
                             (SELECT COALESCE(SUM(minutes), 0) FROM time_entries WHERE deleted_at IS NULL)::bigint AS entered,
                             (SELECT COUNT(*) FROM (
                                  SELECT worker_pid, date_trunc('week', worked_on)::date AS w, SUM(minutes) AS m
@@ -441,18 +438,17 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
                             (SELECT COUNT(*) FROM (
                                  SELECT worker_pid, week_start, minutes FROM time_entry_weeks
                                  EXCEPT SELECT worker_pid, date_trunc('week', worked_on)::date, SUM(minutes)
-                                   FROM time_entries WHERE deleted_at IS NULL GROUP BY 1, 2) y)::bigint AS extra",
-                ))
+                                   FROM time_entries WHERE deleted_at IS NULL GROUP BY 1, 2) y)::bigint AS extra").fetch_all(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
-            let get = |c: &str| rows[0].try_get::<i64>("", c).unwrap();
+            let get = |c: &str| rows[0].try_get::<i64, _>(c).unwrap();
             assert_eq!((get("missing"), get("extra")), (0, 0), "rollup rows equal the entries");
             assert_eq!(get("rolled"), get("entered"));
         };
         rollup_matches().await;
         let sql = |s: String| {
-            let db = workforce_planning_management::db::orm(&ctx).clone();
-            async move { db.execute_unprepared(&s).await.unwrap() }
+            let db = workforce_planning_management::db::pool(&ctx).clone();
+            async move { sqlx::raw_sql(sqlx::AssertSqlSafe(&*s)).execute(&db).await.unwrap() }
         };
         let pid = who.clone();
         sql(format!("UPDATE time_entries SET minutes = minutes + 60, worked_on = worked_on + 9 WHERE worker_pid = '{pid}' AND minutes = 1")).await;

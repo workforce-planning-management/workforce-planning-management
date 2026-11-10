@@ -1,9 +1,9 @@
 //! The read-only MCP server (WPM-R149, WPM-D101): it speaks the pinned revision, calls the API as the caller, adds no tool
 //! without a route, and refuses a call whose audit cannot be written (WPM-D107).
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
+use sqlx::Row;
 
 async fn rpc(request: &axa_test::TestServer, body: Value) -> (u16, Value) {
     let response = request.post("/mcp").json(&body).await;
@@ -49,11 +49,10 @@ async fn tools_are_the_api_reads_and_a_call_that_cannot_be_audited_is_not_made()
         assert_eq!(junk.status_code().as_u16(), 400);
 
         // Each call left a row with the tool name and nothing else.
-        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT snapshot::text AS snapshot FROM audit_logs WHERE action = 'mcp_tool_called'".to_string())).await.unwrap();
+        let rows = sqlx::query("SELECT snapshot::text AS snapshot FROM audit_logs WHERE action = 'mcp_tool_called'").fetch_all(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         assert_eq!(rows.len(), 2, "one per tool call, none for initialize or list");
         for row in rows {
-            let snapshot: Option<String> = row.try_get("", "snapshot").unwrap();
+            let snapshot: Option<String> = row.try_get("snapshot").unwrap();
             let snapshot = snapshot.unwrap_or_default();
             assert!(snapshot.contains("tool") && !snapshot.contains("11111111"), "{snapshot}");
         }
