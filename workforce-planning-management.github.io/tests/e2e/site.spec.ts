@@ -418,7 +418,7 @@ for (const [locale, headline] of [
     await expect(page.locator("main .landing-hero blockquote")).toBeVisible();
     await expect(page.locator("main .landing-hero p.actions a")).toHaveCount(3);
     // One per `## ` section of the locale's own page, which differ: en-001 has a Getting help section the others do not yet.
-    const sections = (docs.files as Record<string, string>)[`locales/${locale}/index.md`]
+    const sections = ((docs.files as Record<string, string>)[`locales/${locale}/index.md`] ?? "")
       .split("\n")
       .filter((line) => line.startsWith("## ")).length;
     expect(sections).toBeGreaterThanOrEqual(5);
