@@ -49,6 +49,12 @@ The table compares WPM with three categories of HR system. It is a general orien
 - **Developers and architects.** See the [specification](../../spec/index.md) and the [install guide](../../INSTALL.md).
 - **Assessors.** The [readiness assessment](../../spec/readiness-assessment.md) lists the gaps between WPM and production use.
 
+## Getting help
+
+- **Report a bug or ask a question** in the [issue tracker](https://github.com/workforce-planning-management/workforce-planning-management/issues). State the page, what you did, what you expected and what happened. Do not include real personal data.
+- **Report a security problem** by email, as described in the [security policy](../../SECURITY.md), not in a public issue.
+- **Learn a task in the application.** The **Help** link in the application's header opens the help page and the tour. Each error message also links to it.
+
 ## Next steps
 
 1. **Read the brief for your role.** Each brief describes what WPM provides and what remains open.

@@ -56,7 +56,8 @@
     "mandatoryLearning": "Formação obrigatória",
     "coverageEvidence": "Comprovativo de cobertura",
     "qualifications": "Qualificações",
-    "injuryRecords": "Registos de lesões"
+    "injuryRecords": "Registos de lesões",
+    "help": "Ajuda"
   },
   "pr": {
     "retention": "Retenção",
@@ -402,6 +403,11 @@
       "title": "Pronto para experimentar você mesmo?",
       "body": "Entre com um link mágico e explore com dados reais — sem senha, sem compromisso.",
       "button": "Entrar"
+    },
+    "help": {
+      "title": "Encravado, ou encontrou um erro?",
+      "body": "A página de ajuda explica como comunicar um problema, como fazer uma pergunta e onde cada tarefa é explicada.",
+      "link": "Obter ajuda"
     }
   },
   "insights": {
@@ -1565,7 +1571,8 @@
     "myDevelopment": "Os meus planos de desenvolvimento — WPM",
     "myGoals": "Os meus objetivos — WPM",
     "myPadrs": "As minhas avaliações de desenvolvimento — WPM",
-    "padr": "Avaliação de desenvolvimento — WPM"
+    "padr": "Avaliação de desenvolvimento — WPM",
+    "help": "Ajuda — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2444,7 +2451,13 @@
     "conflict": "Isso entra em conflito com o estado atual",
     "invalid": "Isso não foi aceite",
     "server": "Algo correu mal do nosso lado. Tente novamente; se continuar, avise o seu administrador.",
-    "generic": "Algo correu mal."
+    "generic": "Algo correu mal.",
+    "next": {
+      "retry": "Tente novamente ou recarregue a página. Se continuar a acontecer, comunique-o.",
+      "access": "Se achar que devia poder fazer isto, pergunte à sua chefia ou aos RH.",
+      "input": "Verifique o que escreveu, recarregue a página para ver a versão mais recente e tente novamente."
+    },
+    "getHelp": "Obter ajuda"
   },
   "labels": {
     "nominee": "Colega a nomear",
@@ -3305,5 +3318,30 @@
     "from": "De",
     "to": "Até",
     "download": "Transferir CSV"
+  },
+  "help": {
+    "title": "Obter ajuda",
+    "intro": "O que fazer quando algo corre mal ou é confuso, e onde cada tarefa é explicada.",
+    "bugTitle": "Comunicar um erro",
+    "bugBody": "Se uma página mostrar um erro, um valor parecer errado ou um botão não fizer nada, abra uma questão no rastreador de questões do projeto. Diga em que página estava (copie o endereço), o que fez, o que esperava e o que aconteceu em vez disso. Nunca cole dados pessoais reais: o WPM é software de demonstração e contém apenas dados fictícios.",
+    "bugLink": "Abrir o rastreador de questões",
+    "securityBody": "Um problema de segurança é comunicado por e-mail, não numa questão pública.",
+    "securityLink": "Ler a política de segurança",
+    "questionTitle": "Perguntar quando algo é confuso",
+    "questionBody": "Se uma palavra, um valor ou um estado não for claro, leia primeiro a nota curta sob o título da página e o guia passo a passo da sua função. Se continuar pouco claro, pergunte no rastreador de questões e diga que é uma pergunta. Também vale a pena comunicar um ecrã confuso.",
+    "questionLink": "Fazer uma pergunta",
+    "learnTitle": "Aprender a fazer uma tarefa",
+    "learnBody": "A visita explica o que faz cada parte do WPM. Os guias no site abordam a instalação do WPM, a demonstração e a especificação.",
+    "tourLink": "Fazer a visita",
+    "docsLink": "Ler os guias no site",
+    "errorTitle": "Quando vir um erro",
+    "errorBody": "Cada erro diz em palavras simples o que correu mal. Tente novamente primeiro e depois recarregue a página. Se a sua sessão terminou, inicie sessão outra vez. Se lhe disserem que não pode ver ou alterar algo e achar que devia poder, pergunte à sua chefia ou aos RH. Se continuar a acontecer, comunique-o como um erro.",
+    "deployerNote": "Estas ligações levam ao próprio projeto WPM. Uma organização que use o WPM para o seu pessoal apontaria esta página para o seu próprio serviço de apoio."
+  },
+  "errorPage": {
+    "notFound": "Página não encontrada",
+    "failed": "Algo correu mal",
+    "hint": "Verifique o endereço ou comece de novo a partir da página inicial. Se uma ligação dentro do WPM o trouxe aqui, por favor comunique-a.",
+    "home": "Ir para a página inicial"
   }
 }

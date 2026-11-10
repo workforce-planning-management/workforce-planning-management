@@ -56,7 +56,8 @@
     "mandatoryLearning": "Hyfforddiant gorfodol",
     "coverageEvidence": "Tystiolaeth yswiriant",
     "qualifications": "Cymwysterau",
-    "injuryRecords": "Cofnodion anafiadau"
+    "injuryRecords": "Cofnodion anafiadau",
+    "help": "Cymorth"
   },
   "pr": {
     "retention": "Cadw data",
@@ -402,6 +403,11 @@
       "title": "Barod i'w drio eich hun?",
       "body": "Mewngofnodwch gyda dolen hud ac archwiliwch gyda data go iawn — dim cyfrinair, dim ymrwymiad.",
       "button": "Mewngofnodi"
+    },
+    "help": {
+      "title": "Yn sownd, neu wedi dod o hyd i nam?",
+      "body": "Mae'r dudalen help yn dweud sut i roi gwybod am broblem, sut i ofyn cwestiwn a ble mae pob tasg wedi'i hesbonio.",
+      "link": "Cael help"
     }
   },
   "insights": {
@@ -1586,7 +1592,8 @@
     "myDevelopment": "Fy nghynlluniau datblygu — WPM",
     "myGoals": "Fy nodau — WPM",
     "myPadrs": "Fy adolygiadau datblygu — WPM",
-    "padr": "Adolygiad datblygu — WPM"
+    "padr": "Adolygiad datblygu — WPM",
+    "help": "Cymorth — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2468,7 +2475,13 @@
     "conflict": "Mae hynny'n gwrthdaro â'r cyflwr presennol",
     "invalid": "Ni dderbyniwyd hynny",
     "server": "Aeth rhywbeth o'i le ar ein hochr ni. Rhowch gynnig arall arni; os digwydd eto, dywedwch wrth eich gweinyddwr.",
-    "generic": "Aeth rhywbeth o'i le."
+    "generic": "Aeth rhywbeth o'i le.",
+    "next": {
+      "retry": "Rhowch gynnig arall arni, neu ail-lwythwch y dudalen. Os yw'n parhau i ddigwydd, rhowch wybod.",
+      "access": "Os ydych yn meddwl y dylech allu gwneud hyn, gofynnwch i'ch rheolwr neu i AD.",
+      "input": "Gwiriwch yr hyn a roesoch, ail-lwythwch y dudalen i weld y fersiwn ddiweddaraf, a rhowch gynnig arall arni."
+    },
+    "getHelp": "Cael help"
   },
   "labels": {
     "nominee": "Cydweithiwr i'w enwebu",
@@ -3332,5 +3345,30 @@
     "from": "O",
     "to": "I",
     "download": "Lawrlwytho CSV"
+  },
+  "help": {
+    "title": "Cael help",
+    "intro": "Beth i'w wneud pan aiff rhywbeth o'i le, pan fydd rhywbeth yn ddryslyd, a ble mae pob tasg wedi'i hesbonio.",
+    "bugTitle": "Rhoi gwybod am nam",
+    "bugBody": "Os yw tudalen yn dangos gwall, os yw ffigur yn edrych yn anghywir neu os nad yw botwm yn gwneud dim, agorwch fater yn nhraciwr materion y prosiect. Dywedwch ar ba dudalen yr oeddech (copïwch ei chyfeiriad), beth wnaethoch chi, beth yr oeddech yn ei ddisgwyl a beth ddigwyddodd yn lle hynny. Peidiwch byth â gludo data personol go iawn: meddalwedd arddangos yw WPM ac mae'n dal data ffug yn unig.",
+    "bugLink": "Agor y traciwr materion",
+    "securityBody": "Rhowch wybod am broblem diogelwch drwy e-bost, nid mewn mater cyhoeddus.",
+    "securityLink": "Darllen y polisi diogelwch",
+    "questionTitle": "Gofyn pan fydd rhywbeth yn ddryslyd",
+    "questionBody": "Os nad yw gair, ffigur neu statws yn glir, darllenwch yn gyntaf y nodyn byr o dan bennawd y dudalen a'r daith dywys ar gyfer eich rôl. Os yw'n dal yn aneglur, gofynnwch yn y traciwr materion a dywedwch mai cwestiwn ydyw. Mae'n werth rhoi gwybod am sgrin ddryslyd hefyd.",
+    "questionLink": "Gofyn cwestiwn",
+    "learnTitle": "Dysgu sut i wneud tasg",
+    "learnBody": "Mae'r daith yn dweud beth mae pob rhan o WPM yn ei wneud. Mae'r canllawiau ar y wefan yn ymdrin â gosod WPM, rhedeg y demo a'r fanyleb.",
+    "tourLink": "Mynd ar y daith",
+    "docsLink": "Darllen y canllawiau ar y wefan",
+    "errorTitle": "Pan welwch wall",
+    "errorBody": "Mae pob gwall yn dweud mewn geiriau plaen beth aeth o'i le. Rhowch gynnig arall arni yn gyntaf, yna ail-lwythwch y dudalen. Os cawsoch eich allgofnodi, mewngofnodwch eto. Os dywedir wrthych na chewch weld neu newid rhywbeth a'ch bod yn meddwl y dylech, gofynnwch i'ch rheolwr neu i AD. Os yw'n parhau i ddigwydd, rhowch wybod amdano fel nam.",
+    "deployerNote": "Mae'r dolenni hyn yn mynd at brosiect WPM ei hun. Byddai sefydliad sy'n rhedeg WPM ar gyfer ei staff yn cyfeirio'r dudalen hon at ei ddesg wasanaeth ei hun."
+  },
+  "errorPage": {
+    "notFound": "Heb ddod o hyd i'r dudalen",
+    "failed": "Aeth rhywbeth o'i le",
+    "hint": "Gwiriwch y cyfeiriad, neu dechreuwch eto o'r dudalen gartref. Os daeth dolen o fewn WPM â chi yma, rhowch wybod amdani.",
+    "home": "Mynd i'r dudalen gartref"
   }
 }

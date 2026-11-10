@@ -56,7 +56,8 @@
     "mandatoryLearning": "Pflichtschulungen",
     "coverageEvidence": "Versicherungsnachweise",
     "qualifications": "Qualifikationen",
-    "injuryRecords": "Verletzungsmeldungen"
+    "injuryRecords": "Verletzungsmeldungen",
+    "help": "Hilfe"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -402,6 +403,11 @@
       "title": "Bereit, es selbst auszuprobieren?",
       "body": "Melden Sie sich mit einem Magic Link an und erkunden Sie mit echten Daten — kein Passwort, keine Verpflichtung.",
       "button": "Anmelden"
+    },
+    "help": {
+      "title": "Nicht weitergekommen oder einen Fehler gefunden?",
+      "body": "Die Hilfeseite sagt, wie Sie ein Problem melden, wie Sie eine Frage stellen und wo jede Aufgabe erklärt wird.",
+      "link": "Hilfe erhalten"
     }
   },
   "insights": {
@@ -1558,7 +1564,8 @@
     "myDevelopment": "Meine Entwicklungspläne — WPM",
     "myGoals": "Meine Ziele — WPM",
     "myPadrs": "Meine Entwicklungsgespräche — WPM",
-    "padr": "Entwicklungsgespräch — WPM"
+    "padr": "Entwicklungsgespräch — WPM",
+    "help": "Hilfe — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2436,7 +2443,13 @@
     "conflict": "Das steht im Widerspruch zum aktuellen Stand",
     "invalid": "Das wurde nicht akzeptiert",
     "server": "Auf unserer Seite ist etwas schiefgelaufen. Versuchen Sie es erneut; wenn es weiter auftritt, informieren Sie Ihre Administration.",
-    "generic": "Etwas ist schiefgelaufen."
+    "generic": "Etwas ist schiefgelaufen.",
+    "next": {
+      "retry": "Versuchen Sie es erneut oder laden Sie die Seite neu. Wenn es weiter passiert, melden Sie es.",
+      "access": "Wenn Sie meinen, dass Sie das tun können sollten, fragen Sie Ihre Führungskraft oder die Personalabteilung.",
+      "input": "Prüfen Sie Ihre Eingabe, laden Sie die Seite neu, um den neuesten Stand zu sehen, und versuchen Sie es erneut."
+    },
+    "getHelp": "Hilfe erhalten"
   },
   "labels": {
     "nominee": "Zu nominierende Kollegin oder Kollege",
@@ -3296,5 +3309,30 @@
     "from": "Von",
     "to": "Bis",
     "download": "CSV herunterladen"
+  },
+  "help": {
+    "title": "Hilfe erhalten",
+    "intro": "Was zu tun ist, wenn etwas schiefgeht oder unklar ist, und wo jede Aufgabe erklärt wird.",
+    "bugTitle": "Einen Fehler melden",
+    "bugBody": "Wenn eine Seite einen Fehler zeigt, eine Zahl falsch aussieht oder eine Schaltfläche nichts tut, eröffnen Sie ein Issue im Issue-Tracker des Projekts. Nennen Sie die Seite (kopieren Sie ihre Adresse), was Sie getan haben, was Sie erwartet haben und was stattdessen geschah. Fügen Sie niemals echte personenbezogene Daten ein: WPM ist Demonstrationssoftware und enthält nur fiktive Daten.",
+    "bugLink": "Issue-Tracker öffnen",
+    "securityBody": "Ein Sicherheitsproblem wird per E-Mail gemeldet, nicht in einem öffentlichen Issue.",
+    "securityLink": "Sicherheitsrichtlinie lesen",
+    "questionTitle": "Fragen, wenn etwas unklar ist",
+    "questionBody": "Wenn ein Wort, eine Zahl oder ein Status nicht klar ist, lesen Sie zuerst den kurzen Hinweis unter der Seitenüberschrift und den Rundgang für Ihre Rolle. Ist es dann noch unklar, fragen Sie im Issue-Tracker und schreiben Sie, dass es eine Frage ist. Auch eine verwirrende Seite ist eine Meldung wert.",
+    "questionLink": "Eine Frage stellen",
+    "learnTitle": "Lernen, wie eine Aufgabe geht",
+    "learnBody": "Die Tour sagt, was jeder Teil von WPM tut. Die Anleitungen auf der Website behandeln die Installation, die Demo und die Spezifikation.",
+    "tourLink": "Die Tour ansehen",
+    "docsLink": "Die Anleitungen auf der Website lesen",
+    "errorTitle": "Wenn Sie einen Fehler sehen",
+    "errorBody": "Jeder Fehler sagt in einfachen Worten, was schiefging. Versuchen Sie es zuerst erneut und laden Sie dann die Seite neu. Wenn Sie abgemeldet wurden, melden Sie sich wieder an. Wenn Ihnen gesagt wird, dass Sie etwas nicht sehen oder ändern dürfen, und Sie meinen, Sie sollten es können, fragen Sie Ihre Führungskraft oder die Personalabteilung. Wenn es weiter passiert, melden Sie es als Fehler.",
+    "deployerNote": "Diese Links führen zum WPM-Projekt selbst. Eine Organisation, die WPM für ihre Beschäftigten betreibt, würde diese Seite auf ihren eigenen Service-Desk verweisen lassen."
+  },
+  "errorPage": {
+    "notFound": "Seite nicht gefunden",
+    "failed": "Etwas ist schiefgegangen",
+    "hint": "Prüfen Sie die Adresse oder beginnen Sie neu auf der Startseite. Wenn ein Link innerhalb von WPM Sie hierher geführt hat, melden Sie ihn bitte.",
+    "home": "Zur Startseite"
   }
 }

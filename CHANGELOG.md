@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — getting help (WPM-R243, WPM-D191, WPM-T484, 2026-11-10)
+
+A Help link in every header of the app, a help page, and every error saying what to try with a link to help. `README.md`, the
+documentation index and the site's English landing page have a Getting help section pointing to the issue tracker.
+
 ### Security — a caller can no longer name its own rate-limit bucket (WPM-R239, WPM-D187, WPM-T471, 2026-11-07)
 
 **An operator must act.** Behind a proxy, set `TRUSTED_PROXIES`, or every caller shares the proxy's bucket. `WPM_TRUST_FORWARDED` does nothing now, and boot warns if it is set.

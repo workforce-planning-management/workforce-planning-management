@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — getting help (WPM-R243, WPM-T484)
+
+A Help link in the header, a public `/help` page, a next step and a help link under every error (`ErrorNote`), and a not-found page
+(`+error.svelte`); `tests/e2e/help.spec.ts`; 30 strings in 13 locales (AI-written, unreviewed).
+
 ### Changed — "Show more" follows the service's cursor (WPM-R241, WPM-T478)
 
 The five long lists (payroll runs, requisitions, the expense queue, joiners and leavers, conversion plans) ask for the next page with the

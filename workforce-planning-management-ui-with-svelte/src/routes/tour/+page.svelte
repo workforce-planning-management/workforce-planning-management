@@ -46,6 +46,12 @@
     </section>
   {/each}
 
+  <section class="tourpage-section" id="help" data-testid="tour-help">
+    <h2>{t("tour.help.title")}</h2>
+    <p>{t("tour.help.body")}</p>
+    <p><a href={l("/help")} data-testid="tour-help-link">{t("tour.help.link")}</a></p>
+  </section>
+
   <section class="tourpage-cta panel">
     <h2>{t("tour.cta.title")}</h2>
     <p>{t("tour.cta.body")}</p>

@@ -56,7 +56,8 @@
     "mandatoryLearning": "Mandatory learning",
     "coverageEvidence": "Coverage evidence",
     "qualifications": "Qualifications",
-    "injuryRecords": "Injury records"
+    "injuryRecords": "Injury records",
+    "help": "Help"
   },
   "pr": {
     "retention": "Retention",
@@ -402,6 +403,11 @@
       "title": "Ready to try it yourself?",
       "body": "Sign in with a magic link and explore with real data — no password, no commitment.",
       "button": "Sign in"
+    },
+    "help": {
+      "title": "Stuck, or found a bug?",
+      "body": "The help page says how to report a problem, how to ask a question and where each task is explained.",
+      "link": "Get help"
     }
   },
   "insights": {
@@ -1558,7 +1564,8 @@
     "myDevelopment": "My development plans — WPM",
     "myGoals": "My goals — WPM",
     "myPadrs": "My development reviews — WPM",
-    "padr": "Development review — WPM"
+    "padr": "Development review — WPM",
+    "help": "Help — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -2436,7 +2443,13 @@
     "conflict": "That conflicts with the current state",
     "invalid": "That was not accepted",
     "server": "Something went wrong on our side. Try again; if it keeps happening, tell your administrator.",
-    "generic": "Something went wrong."
+    "generic": "Something went wrong.",
+    "next": {
+      "retry": "Try again, or reload the page. If it keeps happening, report it.",
+      "access": "If you think you should be able to do this, ask your manager or HR.",
+      "input": "Check what you entered, reload the page to see the latest version, and try again."
+    },
+    "getHelp": "Get help"
   },
   "labels": {
     "nominee": "Colleague to nominate",
@@ -3296,5 +3309,30 @@
     "from": "From",
     "to": "To",
     "download": "Download CSV"
+  },
+  "help": {
+    "title": "Get help",
+    "intro": "What to do when something goes wrong, when something is confusing, and where each task is explained.",
+    "bugTitle": "Report a bug",
+    "bugBody": "If a page shows an error, a figure looks wrong or a button does nothing, open an issue in the project's issue tracker. Say which page you were on (copy its address), what you did, what you expected and what happened instead. Never paste real personal data: WPM is demonstration software and holds fictitious data only.",
+    "bugLink": "Open the issue tracker",
+    "securityBody": "A security problem is reported by email, not in a public issue.",
+    "securityLink": "Read the security policy",
+    "questionTitle": "Ask when something is confusing",
+    "questionBody": "If a word, a figure or a status is not clear, first read the short note under the page's heading and the walkthrough for your role. If it is still unclear, ask in the issue tracker and say it is a question. A confusing screen is worth reporting too.",
+    "questionLink": "Ask a question",
+    "learnTitle": "Learn how to do a task",
+    "learnBody": "The tour says what each part of WPM does. The guides on the website cover installing WPM, running the demo and the specification.",
+    "tourLink": "Take the tour",
+    "docsLink": "Read the guides on the website",
+    "errorTitle": "When you see an error",
+    "errorBody": "Every error says in plain words what went wrong. Try again first, then reload the page. If you were signed out, sign in again. If you are told you may not see or change something and you think you should, ask your manager or HR. If it keeps happening, report it as a bug.",
+    "deployerNote": "These links go to the WPM project itself. An organization that runs WPM for its staff would point this page at its own service desk."
+  },
+  "errorPage": {
+    "notFound": "Page not found",
+    "failed": "Something went wrong",
+    "hint": "Check the address, or start again from the home page. If a link inside WPM brought you here, please report it.",
+    "home": "Go to the home page"
   }
 }

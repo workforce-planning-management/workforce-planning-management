@@ -171,3 +171,4 @@ announcement read receipts are counts, never names (WPM-D35).
   security
 - **Local-first CI/CD (proposed):** [local-ci-cd.md](local-ci-cd.md).
 - **Learning, upskilling and economic viability:** [learning-economics.md](learning-economics.md).
+- **Help, learning to use WPM, and what is required of me:** [help-and-learning.md](help-and-learning.md).

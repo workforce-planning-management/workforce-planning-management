@@ -432,3 +432,8 @@ and says which it used. Confirmed by the product owner, 2026-10-31 ([worldwide.m
 Sign-in is enforced unless explicitly turned off, production refuses an open or
 keyless start, and the rate limiter names callers by network address and keeps
 nothing — [production-readiness.md](production-readiness.md).
+
+## WPM-D191 — Help points to the project's own channels
+
+The issue tracker and the security policy that `CONTRIBUTING.md` and `SECURITY.md` name; nothing invented, and the page says a
+deployer would point it at its own service desk ([help-and-learning.md](help-and-learning.md)).

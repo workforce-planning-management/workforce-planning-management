@@ -56,7 +56,8 @@
     "mandatoryLearning": "Formations obligatoires",
     "coverageEvidence": "Preuves de couverture",
     "qualifications": "Qualifications",
-    "injuryRecords": "Registres des blessures"
+    "injuryRecords": "Registres des blessures",
+    "help": "Aide"
   },
   "pr": {
     "retention": "Conservation",
@@ -402,6 +403,11 @@
       "title": "Prêt à l'essayer vous-même ?",
       "body": "Connectez-vous avec un lien magique et explorez avec de vraies données — sans mot de passe, sans engagement.",
       "button": "Se connecter"
+    },
+    "help": {
+      "title": "Bloqué, ou vous avez trouvé un bogue ?",
+      "body": "La page d'aide explique comment signaler un problème, comment poser une question et où chaque tâche est expliquée.",
+      "link": "Obtenir de l'aide"
     }
   },
   "insights": {
@@ -1565,7 +1571,8 @@
     "myDevelopment": "Mes plans de développement — WPM",
     "myGoals": "Mes objectifs — WPM",
     "myPadrs": "Mes entretiens de développement — WPM",
-    "padr": "Entretien de développement — WPM"
+    "padr": "Entretien de développement — WPM",
+    "help": "Aide — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2444,7 +2451,13 @@
     "conflict": "Cela est en conflit avec l'état actuel",
     "invalid": "Cela n'a pas été accepté",
     "server": "Un problème est survenu de notre côté. Réessayez ; s'il persiste, prévenez votre administrateur.",
-    "generic": "Un problème est survenu."
+    "generic": "Un problème est survenu.",
+    "next": {
+      "retry": "Réessayez ou rechargez la page. Si cela continue, signalez-le.",
+      "access": "Si vous pensez devoir pouvoir le faire, demandez à votre responsable ou aux RH.",
+      "input": "Vérifiez ce que vous avez saisi, rechargez la page pour voir la dernière version, puis réessayez."
+    },
+    "getHelp": "Obtenir de l'aide"
   },
   "labels": {
     "nominee": "Collègue à nommer",
@@ -3305,5 +3318,30 @@
     "from": "Du",
     "to": "Au",
     "download": "Télécharger le CSV"
+  },
+  "help": {
+    "title": "Obtenir de l'aide",
+    "intro": "Que faire quand quelque chose ne va pas ou n'est pas clair, et où chaque tâche est expliquée.",
+    "bugTitle": "Signaler un bogue",
+    "bugBody": "Si une page affiche une erreur, si un chiffre semble faux ou si un bouton ne fait rien, ouvrez un ticket dans le suivi des tickets du projet. Indiquez la page où vous étiez (copiez son adresse), ce que vous avez fait, ce que vous attendiez et ce qui s'est passé à la place. Ne collez jamais de données personnelles réelles : WPM est un logiciel de démonstration qui ne contient que des données fictives.",
+    "bugLink": "Ouvrir le suivi des tickets",
+    "securityBody": "Un problème de sécurité se signale par courriel, pas dans un ticket public.",
+    "securityLink": "Lire la politique de sécurité",
+    "questionTitle": "Demander quand quelque chose n'est pas clair",
+    "questionBody": "Si un mot, un chiffre ou un statut n'est pas clair, lisez d'abord la courte note sous le titre de la page et le parcours guidé de votre rôle. Si ce n'est toujours pas clair, posez la question dans le suivi des tickets en précisant qu'il s'agit d'une question. Un écran déroutant mérite aussi d'être signalé.",
+    "questionLink": "Poser une question",
+    "learnTitle": "Apprendre à faire une tâche",
+    "learnBody": "La visite explique ce que fait chaque partie de WPM. Les guides du site web couvrent l'installation de WPM, la démonstration et la spécification.",
+    "tourLink": "Faire la visite",
+    "docsLink": "Lire les guides sur le site web",
+    "errorTitle": "Quand vous voyez une erreur",
+    "errorBody": "Chaque erreur dit en termes simples ce qui n'a pas fonctionné. Réessayez d'abord, puis rechargez la page. Si vous avez été déconnecté, reconnectez-vous. Si l'on vous dit que vous ne pouvez pas voir ou modifier quelque chose alors que vous pensez le devoir, demandez à votre responsable ou aux RH. Si cela continue, signalez-le comme un bogue.",
+    "deployerNote": "Ces liens mènent au projet WPM lui-même. Une organisation qui utilise WPM pour son personnel ferait pointer cette page vers son propre service d'assistance."
+  },
+  "errorPage": {
+    "notFound": "Page introuvable",
+    "failed": "Une erreur s'est produite",
+    "hint": "Vérifiez l'adresse ou recommencez depuis la page d'accueil. Si un lien dans WPM vous a amené ici, merci de le signaler.",
+    "home": "Aller à la page d'accueil"
   }
 }

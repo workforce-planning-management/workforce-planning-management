@@ -3,7 +3,7 @@
 // sitemap, so the sitemap can never list a page the gate would redirect.
 
 /** Route prefixes (without the locale) reachable with no session. */
-export const PUBLIC_PATHS = ["/signin", "/verify", "/tour"] as const;
+export const PUBLIC_PATHS = ["/signin", "/verify", "/tour", "/help"] as const;
 
 /** Whether `rest` (a path with its locale prefix removed) needs no session. `/`
  *  is exact-matched: every path starts with "/", so a prefix match would make the
@@ -13,8 +13,8 @@ export function isPublicPath(rest: string): boolean {
 }
 
 /**
- * The public pages worth indexing: the splash, the tour and the sign-in page.
+ * The public pages worth indexing: the splash, the tour, help (WPM-R243) and the sign-in page.
  * `/verify` is left out — it is a one-time-token landing page, not content.
  * Every signed-in page is absent by construction (they redirect to sign-in).
  */
-export const INDEXABLE_PAGES = ["/", "/tour", "/signin"] as const;
+export const INDEXABLE_PAGES = ["/", "/tour", "/help", "/signin"] as const;

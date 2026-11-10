@@ -224,6 +224,7 @@
   <a class="brand" href={l("/")}>{t("brand.name")}</a>
   <span class="spacer"></span>
   <a href={l("/tour")}>{t("nav.tour")}</a>
+  <a href={l("/help")} class="help-link" data-testid="help-link">{t("nav.help")}</a>
   {#if page.data.signedIn}
     <!-- A form, not a link: signing out changes state, so it is a POST (the route is not locale-prefixed). -->
     <form method="POST" action="/signout" class="signout">
@@ -422,6 +423,10 @@
     font: inherit;
     color: var(--accent);
     cursor: pointer;
+  }
+  /* Help is in every header, signed in or not, and reads a little stronger than its neighbours (WPM-R243). */
+  .help-link {
+    font-weight: 600;
   }
   .linklike:hover {
     text-decoration: underline;

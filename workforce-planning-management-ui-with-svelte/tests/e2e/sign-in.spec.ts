@@ -49,9 +49,10 @@ test.describe("sign-in gate (WPM-T38)", () => {
     expect(sitemap.headers()["content-type"]).toContain("application/xml");
     const origin = new URL(sitemap.url()).origin;
     const xml = await sitemap.text();
-    // 17 locales × 3 public pages, each with hreflang alternates and x-default.
-    expect(xml.match(/<url>/g)).toHaveLength(51);
+    // 17 locales × 4 public pages (the splash, the tour, help and sign-in), each with hreflang alternates and x-default.
+    expect(xml.match(/<url>/g)).toHaveLength(68);
     expect(xml).toContain(`<loc>${origin}/cy-001/tour</loc>`);
+    expect(xml).toContain(`<loc>${origin}/cy-001/help</loc>`);
     expect(xml).toContain(`hreflang="x-default" href="${origin}/en-001"`);
     // Signed-in pages are never listed.
     expect(xml).not.toContain("/workers");

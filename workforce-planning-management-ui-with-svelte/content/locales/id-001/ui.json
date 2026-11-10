@@ -56,7 +56,8 @@
     "mandatoryLearning": "Pelatihan wajib",
     "coverageEvidence": "Bukti perlindungan",
     "qualifications": "Kualifikasi",
-    "injuryRecords": "Catatan cedera"
+    "injuryRecords": "Catatan cedera",
+    "help": "Bantuan"
   },
   "pr": {
     "retention": "Retensi",
@@ -402,6 +403,11 @@
       "title": "Siap mencobanya sendiri?",
       "body": "Masuk dengan tautan ajaib dan jelajahi dengan data nyata — tanpa kata sandi, tanpa komitmen.",
       "button": "Masuk"
+    },
+    "help": {
+      "title": "Buntu, atau menemukan bug?",
+      "body": "Halaman bantuan menjelaskan cara melaporkan masalah, cara bertanya, dan di mana setiap tugas dijelaskan.",
+      "link": "Dapatkan bantuan"
     }
   },
   "insights": {
@@ -1551,7 +1557,8 @@
     "myDevelopment": "Rencana pengembangan saya — WPM",
     "myGoals": "Tujuan saya — WPM",
     "myPadrs": "Penilaian pengembangan saya — WPM",
-    "padr": "Penilaian pengembangan — WPM"
+    "padr": "Penilaian pengembangan — WPM",
+    "help": "Bantuan — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2428,7 +2435,13 @@
     "conflict": "Itu bertentangan dengan keadaan saat ini",
     "invalid": "Itu tidak diterima",
     "server": "Terjadi masalah di pihak kami. Coba lagi; jika terus terjadi, beri tahu administrator Anda.",
-    "generic": "Terjadi kesalahan."
+    "generic": "Terjadi kesalahan.",
+    "next": {
+      "retry": "Coba lagi, atau muat ulang halaman. Jika terus terjadi, laporkan.",
+      "access": "Jika menurut Anda seharusnya Anda bisa melakukan ini, tanyakan kepada atasan atau bagian SDM.",
+      "input": "Periksa isian Anda, muat ulang halaman untuk melihat versi terbaru, lalu coba lagi."
+    },
+    "getHelp": "Dapatkan bantuan"
   },
   "labels": {
     "nominee": "Rekan yang akan dinominasikan",
@@ -3287,5 +3300,30 @@
     "from": "Dari",
     "to": "Sampai",
     "download": "Unduh CSV"
+  },
+  "help": {
+    "title": "Dapatkan bantuan",
+    "intro": "Apa yang harus dilakukan saat ada yang salah atau membingungkan, dan di mana setiap tugas dijelaskan.",
+    "bugTitle": "Laporkan bug",
+    "bugBody": "Jika halaman menampilkan galat, angka tampak salah, atau tombol tidak berfungsi, buka isu di pelacak isu proyek. Sebutkan halaman tempat Anda berada (salin alamatnya), apa yang Anda lakukan, apa yang Anda harapkan, dan apa yang terjadi. Jangan pernah menempelkan data pribadi asli: WPM adalah perangkat lunak demonstrasi dan hanya berisi data fiktif.",
+    "bugLink": "Buka pelacak isu",
+    "securityBody": "Masalah keamanan dilaporkan lewat email, bukan di isu publik.",
+    "securityLink": "Baca kebijakan keamanan",
+    "questionTitle": "Bertanya saat ada yang membingungkan",
+    "questionBody": "Jika sebuah kata, angka, atau status tidak jelas, baca dulu catatan singkat di bawah judul halaman dan panduan langkah demi langkah untuk peran Anda. Jika masih belum jelas, tanyakan di pelacak isu dan sebutkan bahwa itu pertanyaan. Layar yang membingungkan juga layak dilaporkan.",
+    "questionLink": "Ajukan pertanyaan",
+    "learnTitle": "Pelajari cara melakukan tugas",
+    "learnBody": "Tur menjelaskan apa yang dilakukan setiap bagian WPM. Panduan di situs web membahas pemasangan WPM, menjalankan demo, dan spesifikasinya.",
+    "tourLink": "Ikuti tur",
+    "docsLink": "Baca panduan di situs web",
+    "errorTitle": "Saat Anda melihat galat",
+    "errorBody": "Setiap galat menjelaskan dengan kata-kata sederhana apa yang salah. Coba lagi dulu, lalu muat ulang halaman. Jika Anda keluar, masuk lagi. Jika Anda diberi tahu tidak boleh melihat atau mengubah sesuatu dan menurut Anda seharusnya boleh, tanyakan kepada atasan atau bagian SDM. Jika terus terjadi, laporkan sebagai bug.",
+    "deployerNote": "Tautan ini menuju proyek WPM itu sendiri. Organisasi yang menjalankan WPM untuk stafnya akan mengarahkan halaman ini ke meja layanannya sendiri."
+  },
+  "errorPage": {
+    "notFound": "Halaman tidak ditemukan",
+    "failed": "Terjadi kesalahan",
+    "hint": "Periksa alamatnya, atau mulai lagi dari beranda. Jika tautan di dalam WPM membawa Anda ke sini, mohon laporkan.",
+    "home": "Ke beranda"
   }
 }

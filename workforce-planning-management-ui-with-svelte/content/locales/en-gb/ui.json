@@ -18,5 +18,8 @@
       "region": "County or region",
       "postcode": "Postcode"
     }
+  },
+  "help": {
+    "deployerNote": "These links go to the WPM project itself. An organisation that runs WPM for its staff would point this page at its own service desk."
   }
 }
