@@ -150,16 +150,14 @@ mod tests {
     /// gets the key a new one would.
     #[test]
     fn the_backfill_migration_holds_the_same_pairs() {
-        // compared without whitespace or a trailing comma, so rustfmt may wrap the pairs as it likes
-        let squeeze = |s: &str| s.split_whitespace().collect::<String>().replace(",)", ")");
-        let sql = squeeze(include_str!(
-            "../../migration/src/m20261030_000111_ergonomic_item_keys.rs"
-        ));
+        let sql = include_str!("../../migrations/20261030000111_ergonomic_item_keys.sql");
         for item in DSE_ITEMS {
-            assert!(
-                sql.contains(&squeeze(&format!("(\"{}\", \"{}\")", item.key, item.text))),
-                "{item:?} is not in the backfill"
+            let update = format!(
+                "SET item_key = '{}' WHERE item_key IS NULL AND name = '{}'",
+                item.key,
+                item.text.replace('\'', "''")
             );
+            assert!(sql.contains(&update), "{item:?} is not in the backfill");
         }
     }
 

@@ -50,6 +50,12 @@ what would be lost (the audit log shows what changed) before restoring.
 
 New data-changing migrations add a row here in the change that introduces them.
 
+**From a `SeaORM` release to the first `sqlx` one (WPM-D193).** Nothing to do by hand: the first `db migrate` (or start, outside
+production) reads `seaql_migrations`, records those migrations as applied in `_sqlx_migrations`, and runs only the newer ones.
+It refuses a history with a gap or a name it does not know, naming it; migrate with the release that wrote that history first.
+`seaql_migrations` is left in place. `db down` is refused from this release on: the migrations have no down steps, so roll back by
+restoring the backup taken before the upgrade.
+
 ## Compatibility
 
 The API is versioned by header (`Accepts-version`), never by URL (`/api/v1` is not used; WPM-D98); an unsupported version is a `406`.

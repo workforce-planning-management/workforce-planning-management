@@ -158,7 +158,7 @@ fn the_guard_flags_what_it_should_and_nothing_else() {
 fn the_guard_reads_what_it_should() {
     let mut sources = Vec::new();
     files(&root().join("src"), &["rs"], &mut sources);
-    files(&root().join("migration/src"), &["rs"], &mut sources);
+    files(&root().join("migrations"), &["sql"], &mut sources);
     assert!(
         sources.len() > 200,
         "expected the service and migration sources, found {}",
@@ -187,7 +187,7 @@ fn the_guard_reads_what_it_should() {
 fn the_service_and_its_schema_name_no_membership() {
     let mut sources = Vec::new();
     files(&root().join("src"), &["rs"], &mut sources);
-    files(&root().join("migration/src"), &["rs"], &mut sources);
+    files(&root().join("migrations"), &["sql"], &mut sources);
     files(&root().join("config"), &["yaml", "yml"], &mut sources);
     let found = scan(&sources, true);
     assert!(
@@ -215,7 +215,7 @@ fn the_api_document_and_the_catalogue_say_nothing_about_membership() {
 /// kind of leave or time names representative duties.
 #[test]
 fn facility_time_has_no_person_and_no_time_entry_kind() {
-    let migration = fs::read_dir(root().join("migration/src"))
+    let migration = fs::read_dir(root().join("migrations"))
         .unwrap()
         .flatten()
         .map(|e| e.path())
@@ -225,7 +225,7 @@ fn facility_time_has_no_person_and_no_time_entry_kind() {
     let start = sql
         .find("create table if not exists facility_time_periods")
         .expect("the table");
-    let table = &sql[start..sql[start..].find(")\",").map_or(sql.len(), |n| start + n)];
+    let table = &sql[start..sql[start..].find(");").map_or(sql.len(), |n| start + n)];
     for column in [
         "worker",
         "person",

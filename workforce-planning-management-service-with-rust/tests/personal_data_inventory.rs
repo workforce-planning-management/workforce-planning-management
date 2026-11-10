@@ -66,11 +66,11 @@ fn root() -> PathBuf {
 /// Tables created by raw SQL in the migrations, with the person columns each declares.
 fn person_tables() -> Vec<Table> {
     let mut seen: BTreeMap<String, Vec<&'static str>> = BTreeMap::new();
-    let mut dir: Vec<_> = fs::read_dir(root().join("migration/src"))
+    let mut dir: Vec<_> = fs::read_dir(root().join("migrations"))
         .unwrap()
         .filter_map(Result::ok)
         .map(|e| e.path())
-        .filter(|p| p.extension().is_some_and(|x| x == "rs"))
+        .filter(|p| p.extension().is_some_and(|x| x == "sql"))
         .collect();
     dir.sort();
     for path in dir {

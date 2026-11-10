@@ -43,6 +43,7 @@ pub mod db;
 pub mod hardening;
 pub mod idempotency;
 pub mod metrics;
+pub mod migrations;
 pub mod models;
 pub mod need_to_know;
 pub mod openapi;

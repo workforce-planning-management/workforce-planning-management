@@ -114,12 +114,12 @@ jobs:
       - run: cargo test --locked
 
   # spec/rust-msrv-n-minus-2: the MSRV is the current stable minus two (1.99 - 2 = 1.97 on 2026-10-30).
-  # The matcher, the migration crate and the vendored entity-ref declare 1.97 and are checked on it here. The service still
+  # The matcher and the vendored entity-ref declare 1.97 and are checked on it here. The service still
   # declares 1.99, because the published matcher 0.1.0 it depends on declares 1.99; it compiles on
   # 1.97 (`cargo +1.97 check --all-targets --ignore-rust-version`), and is lowered once a matcher
   # declaring 1.97 is published (WPM-T390).
   msrv:
-    name: MSRV · matcher and migration on Rust 1.97
+    name: MSRV · matcher and entity-ref on Rust 1.97
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -129,9 +129,9 @@ jobs:
       - name: matcher
         working-directory: workforce-planning-management-matcher-with-rust
         run: cargo +1.97 check --locked --all-targets
-      - name: migration
+      - name: entity-ref
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo +1.97 check --locked -p workforce-planning-management-migration -p entity-ref
+        run: cargo +1.97 check --locked -p entity-ref
 
   api-db:
     name: api · database, enforcement and security suites
@@ -179,6 +179,7 @@ jobs:
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_engagements -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_duplicates -- --ignored --test-threads=1
+      - run: cargo test --locked --test migration_adoption -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
       - run: cargo test --locked --test learning_economics -- --ignored --test-threads=1

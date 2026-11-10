@@ -7,7 +7,6 @@ use axa::{
     boot::{BootResult, TestApp},
     cli::{Cli, Command, DbCommand, parse_vars},
     config::{Config, Defaults, Logger, MB},
-    db::truncate_table,
     routes::{AppRoutes, Routes},
     server,
     task::Tasks,
@@ -18,9 +17,8 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use migration::{Migrator, MigratorTrait};
 
-use crate::{auth, controllers, models::_entities::prelude::*, rules, tasks};
+use crate::{auth, controllers, rules, tasks};
 
 /// Blanket auth-enforcement middleware: reads `WPM_REQUIRE_AUTH` per
 /// request and delegates to the pure [`auth::enforce`] (public paths
@@ -90,6 +88,75 @@ fn warn_auth_off() {
         "WPM_REQUIRE_AUTH is off: sign-in is NOT enforced. Development only; production refuses to start this way"
     );
 }
+
+/// The tables a test boot empties, children before parents.
+const TRUNCATED: &[&str] = &[
+    "idempotency_keys",
+    "event_outbox",
+    "post_fundings",
+    "conversion_plans",
+    "engagement_decisions",
+    "engagement_reminders",
+    "worker_health_records",
+    "health_requirements",
+    "equality_declarations",
+    "flexible_working_requests",
+    "resignations",
+    "worker_contact_details",
+    "engagement_status_assessments",
+    "worker_contractor_details",
+    "engagement_extensions",
+    "start_decisions",
+    "capacity_settings",
+    "partner_commitments",
+    "programme_demands",
+    "skill_pool_members",
+    "skill_pools",
+    "audit_logs",
+    "entitlement_acknowledgements",
+    "wellbeing_entitlements",
+    "pulse_responses",
+    "pulse_surveys",
+    "appraisal_responses",
+    "appraisal_nominations",
+    "appraisals",
+    "notifications",
+    "adjustment_requests",
+    "ergonomic_items",
+    "ergonomic_assessments",
+    "program_placements",
+    "early_career_programs",
+    "pipeline_members",
+    "talent_pipelines",
+    "development_plan_items",
+    "development_plans",
+    "assessment_results",
+    "assessments",
+    "assessment_instruments",
+    "benchmarks",
+    "payslips",
+    "payroll_runs",
+    "succession_candidates",
+    "succession_plans",
+    "training_enrollments",
+    "feedback_entries",
+    "goals",
+    "reviews",
+    "review_cycles",
+    "benefit_enrollments",
+    "benefit_plans",
+    "shift_assignments",
+    "shifts",
+    "leave_requests",
+    "leave_entitlements",
+    "time_entries",
+    "onboarding_items",
+    "interviews",
+    "applications",
+    "candidates",
+    "requisitions",
+    "workers",
+];
 
 /// The `workforce-planning-management` application.
 pub struct App;
@@ -233,7 +300,7 @@ fn defaults() -> Defaults {
 /// logs (WPM-R122); `src/request_log.rs` writes the request line instead.
 fn log_filter(level: axa::logger::LogLevel) -> String {
     format!(
-        "{}={level},axa={level},sea_orm_migration={level},tower_http=warn",
+        "{}={level},axa={level},tower_http=warn",
         env!("CARGO_CRATE_NAME")
     )
 }
@@ -358,10 +425,20 @@ impl App {
 
     async fn db(ctx: &AppContext, command: DbCommand) -> Result<()> {
         match command {
-            DbCommand::Migrate => Migrator::up(&crate::db::orm(ctx), None).await?,
-            DbCommand::Down { steps } => Migrator::down(&crate::db::orm(ctx), Some(steps)).await?,
-            DbCommand::Reset => Migrator::fresh(&crate::db::orm(ctx)).await?,
-            DbCommand::Status => Migrator::status(&crate::db::orm(ctx)).await?,
+            DbCommand::Migrate => crate::migrations::up(crate::db::pool(ctx)).await?,
+            // The migrations are forward only (WPM-D193): a step back is a new migration, or a restore.
+            DbCommand::Down { steps } => {
+                return Err(Error::string(&format!(
+                    "db down {steps}: the migrations have no down steps; write a new migration, or restore a backup"
+                )));
+            }
+            DbCommand::Reset => crate::migrations::fresh(crate::db::pool(ctx)).await?,
+            DbCommand::Status => {
+                for m in crate::migrations::status(crate::db::pool(ctx)).await? {
+                    let state = if m.applied { "applied" } else { "pending" };
+                    println!("{}\t{state}\t{}", m.version, m.description);
+                }
+            }
             DbCommand::Truncate => Self::truncate(ctx).await?,
         }
         Ok(())
@@ -388,7 +465,7 @@ impl App {
         let ctx = Self::context(environment, config).await?;
         axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
         if ctx.config.database.auto_migrate && !matches!(cli.command, Command::Db { .. }) {
-            Migrator::up(&crate::db::orm(&ctx), None).await?;
+            crate::migrations::up(crate::db::pool(&ctx)).await?;
         }
         match cli.command {
             Command::Start { .. } => {
@@ -617,71 +694,13 @@ impl App {
     /// # Errors
     /// Propagates a database failure.
     pub async fn truncate(ctx: &AppContext) -> Result<()> {
-        truncate_table(&crate::db::orm(ctx), IdempotencyKeys).await?;
-        truncate_table(&crate::db::orm(ctx), EventOutbox).await?;
-        truncate_table(&crate::db::orm(ctx), PostFundings).await?;
-        truncate_table(&crate::db::orm(ctx), ConversionPlans).await?;
-        truncate_table(&crate::db::orm(ctx), EngagementDecisions).await?;
-        truncate_table(&crate::db::orm(ctx), EngagementReminders).await?;
-        truncate_table(&crate::db::orm(ctx), WorkerHealthRecords).await?;
-        truncate_table(&crate::db::orm(ctx), HealthRequirements).await?;
-        truncate_table(&crate::db::orm(ctx), EqualityDeclarations).await?;
-        truncate_table(&crate::db::orm(ctx), FlexibleWorkingRequests).await?;
-        truncate_table(&crate::db::orm(ctx), Resignations).await?;
-        truncate_table(&crate::db::orm(ctx), WorkerContactDetails).await?;
-        truncate_table(&crate::db::orm(ctx), EngagementStatusAssessments).await?;
-        truncate_table(&crate::db::orm(ctx), WorkerContractorDetails).await?;
-        truncate_table(&crate::db::orm(ctx), EngagementExtensions).await?;
-        truncate_table(&crate::db::orm(ctx), StartDecisions).await?;
-        truncate_table(&crate::db::orm(ctx), CapacitySettings).await?;
-        truncate_table(&crate::db::orm(ctx), PartnerCommitments).await?;
-        truncate_table(&crate::db::orm(ctx), ProgrammeDemands).await?;
-        truncate_table(&crate::db::orm(ctx), SkillPoolMembers).await?;
-        truncate_table(&crate::db::orm(ctx), SkillPools).await?;
-        truncate_table(&crate::db::orm(ctx), AuditLogs).await?;
-        truncate_table(&crate::db::orm(ctx), EntitlementAcknowledgements).await?;
-        truncate_table(&crate::db::orm(ctx), WellbeingEntitlements).await?;
-        truncate_table(&crate::db::orm(ctx), PulseResponses).await?;
-        truncate_table(&crate::db::orm(ctx), PulseSurveys).await?;
-        truncate_table(&crate::db::orm(ctx), AppraisalResponses).await?;
-        truncate_table(&crate::db::orm(ctx), AppraisalNominations).await?;
-        truncate_table(&crate::db::orm(ctx), Appraisals).await?;
-        truncate_table(&crate::db::orm(ctx), Notifications).await?;
-        truncate_table(&crate::db::orm(ctx), AdjustmentRequests).await?;
-        truncate_table(&crate::db::orm(ctx), ErgonomicItems).await?;
-        truncate_table(&crate::db::orm(ctx), ErgonomicAssessments).await?;
-        truncate_table(&crate::db::orm(ctx), ProgramPlacements).await?;
-        truncate_table(&crate::db::orm(ctx), EarlyCareerPrograms).await?;
-        truncate_table(&crate::db::orm(ctx), PipelineMembers).await?;
-        truncate_table(&crate::db::orm(ctx), TalentPipelines).await?;
-        truncate_table(&crate::db::orm(ctx), DevelopmentPlanItems).await?;
-        truncate_table(&crate::db::orm(ctx), DevelopmentPlans).await?;
-        truncate_table(&crate::db::orm(ctx), AssessmentResults).await?;
-        truncate_table(&crate::db::orm(ctx), Assessments).await?;
-        truncate_table(&crate::db::orm(ctx), AssessmentInstruments).await?;
-        truncate_table(&crate::db::orm(ctx), Benchmarks).await?;
-        truncate_table(&crate::db::orm(ctx), Payslips).await?;
-        truncate_table(&crate::db::orm(ctx), PayrollRuns).await?;
-        truncate_table(&crate::db::orm(ctx), SuccessionCandidates).await?;
-        truncate_table(&crate::db::orm(ctx), SuccessionPlans).await?;
-        truncate_table(&crate::db::orm(ctx), TrainingEnrollments).await?;
-        truncate_table(&crate::db::orm(ctx), FeedbackEntries).await?;
-        truncate_table(&crate::db::orm(ctx), Goals).await?;
-        truncate_table(&crate::db::orm(ctx), Reviews).await?;
-        truncate_table(&crate::db::orm(ctx), ReviewCycles).await?;
-        truncate_table(&crate::db::orm(ctx), BenefitEnrollments).await?;
-        truncate_table(&crate::db::orm(ctx), BenefitPlans).await?;
-        truncate_table(&crate::db::orm(ctx), ShiftAssignments).await?;
-        truncate_table(&crate::db::orm(ctx), Shifts).await?;
-        truncate_table(&crate::db::orm(ctx), LeaveRequests).await?;
-        truncate_table(&crate::db::orm(ctx), LeaveEntitlements).await?;
-        truncate_table(&crate::db::orm(ctx), TimeEntries).await?;
-        truncate_table(&crate::db::orm(ctx), OnboardingItems).await?;
-        truncate_table(&crate::db::orm(ctx), Interviews).await?;
-        truncate_table(&crate::db::orm(ctx), Applications).await?;
-        truncate_table(&crate::db::orm(ctx), Candidates).await?;
-        truncate_table(&crate::db::orm(ctx), Requisitions).await?;
-        truncate_table(&crate::db::orm(ctx), Workers).await?;
+        // One `DELETE` per table, in this order (children first), as the `SeaORM` truncation did; a `TRUNCATE` would need a
+        // privilege the runtime role does not hold.
+        for table in TRUNCATED {
+            sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table}")))
+                .execute(crate::db::pool(ctx))
+                .await?;
+        }
         Ok(())
     }
 }
@@ -695,7 +714,7 @@ impl TestApp for App {
         let config = Self::config(&environment)?;
         let app_context = Self::context(environment, config).await?;
         if flag("WPM_TEST_FRESH_SCHEMA") {
-            Migrator::fresh(&crate::db::orm(&app_context)).await?;
+            crate::migrations::fresh(crate::db::pool(&app_context)).await?;
         }
         if flag("WPM_TEST_TRUNCATE") {
             Self::truncate(&app_context).await?;

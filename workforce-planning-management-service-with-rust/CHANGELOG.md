@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the migrations are SQL files that `sqlx` runs (WPM-D193, WPM-T466)
+
+The 133 migrations are `migrations/*.sql`, statement for statement the same. A database a `SeaORM` release migrated is adopted on
+its first `db migrate`: its history is recorded and only newer migrations run. **`db down` is refused:** the migrations are
+forward only, so roll back by restoring a backup. The `workforce-planning-management-migration` crate is no longer built.
+
 ### Changed — axa 0.11 (WPM-T482)
 
 `axa` 0.10.0 to 0.11.0. **An operator must act before deploying:** the health probes moved to `/_health/live` (liveness), `/_health/ready` (readiness) and `/_health/startup`; `/_health`, `/_ping` and `/_readiness` answer `404`, so move every probe, load balancer and uptime check first. The database is `DB_URL`; `DATABASE_URL` still works when `DB_URL` is unset. **A client may notice:** a database that cannot serve answers `503` with `Retry-After`, not `500`, and every response carries `cross-origin-opener-policy`, `cross-origin-resource-policy` and `permissions-policy`.

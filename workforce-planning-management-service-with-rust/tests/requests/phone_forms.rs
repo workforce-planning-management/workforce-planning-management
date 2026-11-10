@@ -27,8 +27,8 @@ async fn insert_raw(
 }
 
 async fn backfill(db: &impl ConnectionTrait) {
-    for sql in migration::m20261031_000114_phone_forms::backfill() {
-        db.execute_unprepared(&sql).await.expect("backfill");
+    for sql in workforce_planning_management::migrations::phone_backfill() {
+        db.execute_unprepared(sql).await.expect("backfill");
     }
 }
 

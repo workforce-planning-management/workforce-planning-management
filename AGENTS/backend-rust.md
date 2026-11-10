@@ -10,9 +10,10 @@
    DB-free, clock-free (dates are arguments), `serde` only for output types, unit
    tests alongside. Test the edges: ties, empty, "nobody", "unknown", windows,
    completion gating. Make orderings total (tie-break by id) so pages are stable.
-2. **Migration** `migration/src/m<YYYYMMDD>_<seq>_<name>.rs` — explicit SQL
-   (`CREATE TABLE IF NOT EXISTS …`, constraints and `CHECK`s in the schema), add to
-   `migration/src/lib.rs` in order. Plural table names. `pid UUID` public id.
+2. **Migration** `migrations/<YYYYMMDD><seq>_<name>.sql` (the next number after the
+   last file) — explicit SQL (`CREATE TABLE IF NOT EXISTS …`, constraints and `CHECK`s in
+   the schema), forward only, headed by `--` comments saying what it does (WPM-D193).
+   Never edit an applied file: `sqlx` checks its checksum. Plural table names. `pid UUID` public id.
 3. **Entity** `src/models/_entities/<table>.rs` + `mod.rs` + `prelude.rs` (hand
    written, same shape as the others).
 4. **Controller** `src/controllers/<area>.rs` + `pub mod` in
