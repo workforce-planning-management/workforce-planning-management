@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT dimension, limit_value, amber_percent FROM plan_tolerances WHERE plan_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dimension",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_tolerances",
+            "name": "dimension"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "limit_value",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "plan_tolerances",
+            "name": "limit_value"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "amber_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "plan_tolerances",
+            "name": "amber_percent"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "92a238afb20b56798f9074e221b990a97f36ffff83eeed22f3414442a6699a6b"
+}

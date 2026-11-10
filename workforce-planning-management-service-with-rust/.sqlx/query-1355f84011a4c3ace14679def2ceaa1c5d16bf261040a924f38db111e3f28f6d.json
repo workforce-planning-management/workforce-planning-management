@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t), '[]') AS \"rows!\" FROM benefit_enrollments t WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1355f84011a4c3ace14679def2ceaa1c5d16bf261040a924f38db111e3f28f6d"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO mentorships (pid, mentor_pid, mentee_pid, focus, status) VALUES ($1, $2, $3, $4, 'proposed')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42c9e14010a313c85c3992f606c72f94c3bcef91b5b3fa162c12aadeb642829a"
+}

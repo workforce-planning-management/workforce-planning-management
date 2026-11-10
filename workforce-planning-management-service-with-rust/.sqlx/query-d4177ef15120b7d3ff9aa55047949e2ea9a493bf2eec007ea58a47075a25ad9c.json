@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO organization_confederations (pid, parent_organization_ref, child_organization_ref, starts_on, ends_on)\n         VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d4177ef15120b7d3ff9aa55047949e2ea9a493bf2eec007ea58a47075a25ad9c"
+}

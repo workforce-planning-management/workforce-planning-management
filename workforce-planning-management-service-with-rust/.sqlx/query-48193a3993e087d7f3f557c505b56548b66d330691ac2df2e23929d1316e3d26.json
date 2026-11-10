@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE shift_assignments SET worker_pid = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "48193a3993e087d7f3f557c505b56548b66d330691ac2df2e23929d1316e3d26"
+}

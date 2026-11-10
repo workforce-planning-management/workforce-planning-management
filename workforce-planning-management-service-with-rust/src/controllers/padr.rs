@@ -11,21 +11,19 @@
 
 use std::collections::HashMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, QuerySelect, SqlErr, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::individual_goals::{
-    audit_reads, check_plan_item, goal_snapshot, is_reviewer, objectives_of, reports_of, subject,
-    views,
+    audit_reads, check_plan_item, is_reviewer, reports_of, subject, views,
 };
 use super::{ensure_org_in_scope, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{assignments, padr_versions, reviews, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db;
+use crate::models::_entities::{goal_measures, padr_versions, reviews, worker_goals, workers};
 use crate::models::records;
 use crate::need_to_know::is_line_manager;
 use crate::rules::career::is_self;
@@ -86,38 +84,100 @@ fn writer(role: Role) -> Result<Signer> {
 
 /// A live PADR and its worker.
 async fn padr_and_worker(ctx: &AppContext, pid: &str) -> Result<(reviews::Model, workers::Model)> {
-    let review = reviews::Entity::find()
-        .filter(reviews::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(reviews::Column::Kind.eq("padr"))
-        .filter(reviews::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, review.worker_pid).await?;
+    let review = sqlx::query_as!(
+        reviews::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
+                  reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _"
+             FROM reviews WHERE pid = $1 AND kind = 'padr' AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let worker = records::worker_by_pid(ctx, review.worker_pid).await?;
     Ok((review, worker))
 }
 
-/// A PADR's versions, oldest first.
-async fn versions_of<C: ConnectionTrait>(
-    db: &C,
-    review: Uuid,
-) -> Result<Vec<padr_versions::Model>> {
-    Ok(padr_versions::Entity::find()
-        .filter(padr_versions::Column::ReviewPid.eq(review))
-        .order_by_asc(padr_versions::Column::Version)
-        .all(db)
-        .await?)
+/// The versions of these PADRs, each review's oldest first.
+async fn versions_of(ctx: &AppContext, reviews: &[Uuid]) -> Result<Vec<padr_versions::Model>> {
+    Ok(sqlx::query_as!(
+        padr_versions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, worker_pid, version,
+                  period_start, period_end, values_summary, wellbeing_offered, development_needs, reviewer_signed_on,
+                  reviewee_signed_on, reviewee_comment, objectives
+             FROM padr_versions WHERE review_pid = ANY($1)
+            ORDER BY version"#,
+        reviews,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// The latest version, held for the transaction, so that two people signing at once cannot each miss the other's signature.
-async fn latest_locked<C: ConnectionTrait>(db: &C, review: Uuid) -> Result<padr_versions::Model> {
-    padr_versions::Entity::find()
-        .filter(padr_versions::Column::ReviewPid.eq(review))
-        .order_by_desc(padr_versions::Column::Version)
-        .lock_exclusive()
-        .one(db)
-        .await?
-        .ok_or(Error::NotFound)
+async fn latest_locked(
+    connection: &mut sqlx::PgConnection,
+    review: Uuid,
+) -> Result<padr_versions::Model> {
+    sqlx::query_as!(
+        padr_versions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, worker_pid, version,
+                  period_start, period_end, values_summary, wellbeing_offered, development_needs, reviewer_signed_on,
+                  reviewee_signed_on, reviewee_comment, objectives
+             FROM padr_versions WHERE review_pid = $1
+            ORDER BY version DESC LIMIT 1 FOR UPDATE"#,
+        review,
+    )
+    .fetch_optional(connection)
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// A PADR's objectives (WPM-R225): the person's live goals in its period, withdrawn ones left out. The `sqlx` twin of
+/// `individual_goals::objectives_of`, which is still `SeaORM`.
+async fn objectives_of(
+    connection: &mut sqlx::PgConnection,
+    worker: Uuid,
+    period: (NaiveDate, NaiveDate),
+) -> Result<Vec<worker_goals::Model>> {
+    Ok(sqlx::query_as!(
+        worker_goals::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, organization_ref, title,
+                  description, period_start, period_end, status, proposed_by, agreed_on, skill_pid, skill_target_level,
+                  plan_item_pid, aligns_to, deleted_at AS "deleted_at: _"
+             FROM worker_goals WHERE worker_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        worker,
+    )
+    .fetch_all(connection)
+    .await?
+    .into_iter()
+    .filter(|g| goals::is_objective(&g.status, (g.period_start, g.period_end), period))
+    .collect())
+}
+
+/// What a signed PADR keeps of a goal (WPM-R225). The `sqlx` twin of `individual_goals::goal_snapshot`, which is still `SeaORM`.
+pub(super) async fn goal_snapshot(
+    connection: &mut sqlx::PgConnection,
+    goal: &worker_goals::Model,
+) -> Result<serde_json::Value> {
+    let measures = sqlx::query_as!(
+        goal_measures::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, goal_pid, worker_pid, name, kind,
+                  unit, start_value, target_value, current_value, done
+             FROM goal_measures WHERE goal_pid = $1
+            ORDER BY id"#,
+        goal.pid,
+    )
+    .fetch_all(connection)
+    .await?;
+    Ok(serde_json::json!({
+        "pid": goal.pid,
+        "title": goal.title,
+        "status": goal.status,
+        "period_start": goal.period_start,
+        "period_end": goal.period_end,
+        "measures": measures,
+    }))
 }
 
 const fn sign_offs(version: &padr_versions::Model) -> SignOffs {
@@ -138,25 +198,15 @@ fn reviewer_pid(review: &reviews::Model) -> Option<Uuid> {
 
 /// The day each of these people's last PADR was completed.
 async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, NaiveDate>> {
-    let live = super::find_in(
-        ctx,
-        reviews::Entity::find()
-            .filter(reviews::Column::Kind.eq("padr"))
-            .filter(reviews::Column::DeletedAt.is_null()),
-        reviews::Column::WorkerPid,
+    let live = sqlx::query!(
+        "SELECT pid, worker_pid FROM reviews WHERE kind = 'padr' AND deleted_at IS NULL AND worker_pid = ANY($1)",
         people,
     )
+    .fetch_all(db::pool(ctx))
     .await?;
     let pids: Vec<Uuid> = live.iter().map(|r| r.pid).collect();
     let mut by_review: HashMap<Uuid, Vec<padr_versions::Model>> = HashMap::new();
-    for row in super::find_in(
-        ctx,
-        padr_versions::Entity::find().order_by_asc(padr_versions::Column::Version),
-        padr_versions::Column::ReviewPid,
-        &pids,
-    )
-    .await?
-    {
+    for row in versions_of(ctx, &pids).await? {
         by_review.entry(row.review_pid).or_default().push(row);
     }
     let mut last: HashMap<Uuid, NaiveDate> = HashMap::new();
@@ -179,12 +229,11 @@ async fn primary_starts(
     people: &[Uuid],
     today: NaiveDate,
 ) -> Result<HashMap<Uuid, NaiveDate>> {
-    let rows = super::find_in(
-        ctx,
-        assignments::Entity::find().filter(assignments::Column::IsPrimary.eq(true)),
-        assignments::Column::WorkerPid,
+    let rows = sqlx::query!(
+        "SELECT worker_pid, starts_on, ends_on FROM assignments WHERE is_primary AND worker_pid = ANY($1) ORDER BY id",
         people,
     )
+    .fetch_all(db::pool(ctx))
     .await?;
     Ok(rows
         .into_iter()
@@ -226,16 +275,22 @@ async fn summaries(
     ctx: &AppContext,
     people: &[Uuid],
 ) -> Result<HashMap<Uuid, Vec<serde_json::Value>>> {
-    let mut rows = reviews::Entity::find()
-        .filter(reviews::Column::Kind.eq("padr"))
-        .filter(reviews::Column::DeletedAt.is_null())
-        .filter(reviews::Column::WorkerPid.is_in(people.iter().copied()))
-        .order_by_desc(reviews::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, worker_pid, status FROM reviews
+          WHERE kind = 'padr' AND deleted_at IS NULL AND worker_pid = ANY($1)
+          ORDER BY id DESC",
+        people,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
+    let pids: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
+    let mut by_review: HashMap<Uuid, Vec<padr_versions::Model>> = HashMap::new();
+    for row in versions_of(ctx, &pids).await? {
+        by_review.entry(row.review_pid).or_default().push(row);
+    }
     let mut lines: HashMap<Uuid, Vec<serde_json::Value>> = HashMap::new();
-    for review in rows.drain(..) {
-        let versions = versions_of(&ctx.db, review.pid).await?;
+    for review in rows {
+        let versions = by_review.remove(&review.pid).unwrap_or_default();
         let offs: Vec<SignOffs> = versions.iter().map(sign_offs).collect();
         let latest = versions.last();
         lines
@@ -304,7 +359,7 @@ pub(crate) async fn open(
     Path(pid): Path<String>,
     Json(payload): Json<OpenPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let sub = subject(&caller)?;
     if is_self(sub, &worker.person_ref) || !is_line_manager(&ctx, &worker, sub).await? {
         return Err(Error::NotFound);
@@ -314,55 +369,54 @@ pub(crate) async fn open(
     }
     rules::valid_period(payload.period_start, payload.period_end).map_err(|e| unprocessable(&e))?;
     let me = super::me::me_worker(&ctx, &caller).await?;
-    let txn = ctx.db.begin().await?;
-    let review = reviews::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        cycle_pid: ActiveValue::set(None),
-        kind: ActiveValue::set("padr".to_string()),
-        worker_pid: ActiveValue::set(worker.pid),
-        reviewer_ref: ActiveValue::set(format!("worker:{}", me.pid)),
-        status: ActiveValue::set("draft".to_string()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let review_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO reviews (pid, cycle_pid, kind, worker_pid, reviewer_ref, status)
+         VALUES ($1, NULL, 'padr', $2, $3, 'draft')",
+        review_pid,
+        worker.pid,
+        format!("worker:{}", me.pid),
+    )
+    .execute(&mut *tx)
     .await
-    .map_err(|e| match e.sql_err() {
-        Some(SqlErr::UniqueConstraintViolation(_)) => {
+    .map_err(|e| {
+        if db::is_unique_violation(&e) {
             unprocessable("this person already has a PADR open")
+        } else {
+            Error::from(e)
         }
-        _ => Error::from(e),
     })?;
-    padr_versions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        review_pid: ActiveValue::set(review.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        version: ActiveValue::set(1),
-        period_start: ActiveValue::set(payload.period_start),
-        period_end: ActiveValue::set(payload.period_end),
-        development_needs: ActiveValue::set(serde_json::json!([])),
-        ..Default::default()
-    }
-    .insert(&txn)
+    sqlx::query!(
+        "INSERT INTO padr_versions (pid, review_pid, worker_pid, version, period_start, period_end, development_needs)
+         VALUES ($1, $2, $3, 1, $4, $5, '[]'::jsonb)",
+        Uuid::new_v4(),
+        review_pid,
+        worker.pid,
+        payload.period_start,
+        payload.period_end,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "padr",
-        review.pid,
+        review_pid,
         "padr_opened",
         caller.actor(),
         None,
     )
     .await?;
-    Notification::push(
-        &txn,
+    db::notify(
+        &mut tx,
         worker.pid,
         "padr_opened",
         "A personal development review has been opened with you.",
-        serde_json::json!({ "padr_pid": review.pid }),
+        serde_json::json!({ "padr_pid": review_pid }),
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": review.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": review_pid }))
 }
 
 /// `GET /api/me/padrs/{pid}` — one PADR with every version: the person, the reviewer and managers in the chain. An unsigned
@@ -375,20 +429,20 @@ pub(crate) async fn detail(
 ) -> Result<Response> {
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     let role = role_of(&ctx, &caller, &review, &worker).await?;
-    let versions = versions_of(&ctx.db, review.pid).await?;
+    let versions = versions_of(&ctx, &[review.pid]).await?;
     let latest = versions.last().ok_or(Error::NotFound)?;
     let live = if sign_offs(latest).frozen() {
         Vec::new()
     } else {
         objectives_of(
-            &ctx.db,
+            &mut *db::pool(&ctx).acquire().await?,
             worker.pid,
             (latest.period_start, latest.period_end),
         )
         .await?
     };
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "padr",
         review.pid,
         "padr_read",
@@ -470,18 +524,24 @@ pub(crate) async fn edit(
             plan_item_pid: n.plan_item_pid,
         })
         .collect();
-    let txn = ctx.db.begin().await?;
-    let latest = latest_locked(&txn, review.pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let latest = latest_locked(&mut tx, review.pid).await?;
     rules::check_editable(sign_offs(&latest)).map_err(reject)?;
-    let mut active: padr_versions::ActiveModel = latest.into();
-    active.period_start = ActiveValue::set(payload.period_start);
-    active.period_end = ActiveValue::set(payload.period_end);
-    active.values_summary = ActiveValue::set(summary);
-    active.wellbeing_offered = ActiveValue::set(payload.wellbeing_offered);
-    active.development_needs = ActiveValue::set(serde_json::json!(needs));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    sqlx::query!(
+        "UPDATE padr_versions SET period_start = $2, period_end = $3, values_summary = $4, wellbeing_offered = $5,
+                development_needs = $6
+          WHERE id = $1",
+        latest.id,
+        payload.period_start,
+        payload.period_end,
+        summary,
+        payload.wellbeing_offered,
+        serde_json::json!(needs),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "padr",
         review.pid,
         "padr_edited",
@@ -489,7 +549,7 @@ pub(crate) async fn edit(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": review.pid }))
 }
 
@@ -504,26 +564,34 @@ pub(crate) async fn sign(
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     let who = writer(role_of(&ctx, &caller, &review, &worker).await?)?;
     let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
-    let latest = latest_locked(&txn, review.pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let latest = latest_locked(&mut tx, review.pid).await?;
     rules::ready_to_sign(latest.wellbeing_offered).map_err(unprocessable)?;
     let before = sign_offs(&latest);
     let after = rules::sign(before, who, today, today).map_err(|e| unprocessable(&e))?;
     let period = (latest.period_start, latest.period_end);
     let version = latest.version;
-    let mut active: padr_versions::ActiveModel = latest.into();
-    if !before.frozen() {
+    let objectives = if before.frozen() {
+        latest.objectives
+    } else {
         let mut snapshot = Vec::new();
-        for goal in objectives_of(&txn, worker.pid, period).await? {
-            snapshot.push(goal_snapshot(&txn, &goal).await?);
+        for goal in objectives_of(&mut tx, worker.pid, period).await? {
+            snapshot.push(goal_snapshot(&mut tx, &goal).await?);
         }
-        active.objectives = ActiveValue::set(Some(serde_json::json!(snapshot)));
-    }
-    active.reviewer_signed_on = ActiveValue::set(after.reviewer);
-    active.reviewee_signed_on = ActiveValue::set(after.reviewee);
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+        Some(serde_json::json!(snapshot))
+    };
+    sqlx::query!(
+        "UPDATE padr_versions SET objectives = $2, reviewer_signed_on = $3, reviewee_signed_on = $4
+          WHERE id = $1",
+        latest.id,
+        objectives,
+        after.reviewer,
+        after.reviewee,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "padr",
         review.pid,
         "padr_signed",
@@ -540,8 +608,8 @@ pub(crate) async fn sign(
             Signer::Reviewee => reviewer_pid(&review),
         };
         if let Some(other) = other {
-            Notification::push(
-                &txn,
+            db::notify(
+                &mut tx,
                 other,
                 "padr_to_sign",
                 "A personal development review is waiting for your signature.",
@@ -552,11 +620,14 @@ pub(crate) async fn sign(
     }
     let complete = after.complete();
     if complete && review.status == "draft" {
-        let mut row: reviews::ActiveModel = review.clone().into();
-        row.status = ActiveValue::set("shared".to_string());
-        row.update(&txn).await?;
+        sqlx::query!(
+            "UPDATE reviews SET status = 'shared' WHERE id = $1",
+            review.id,
+        )
+        .execute(&mut *tx)
+        .await?;
     }
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": review.pid, "complete": complete }))
 }
 
@@ -583,12 +654,17 @@ pub(crate) async fn comment(
         ));
     }
     let text = rules::clean_text(payload.comment.as_deref()).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let mut active: padr_versions::ActiveModel = latest_locked(&txn, review.pid).await?.into();
-    active.reviewee_comment = ActiveValue::set(text);
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let latest = latest_locked(&mut tx, review.pid).await?;
+    sqlx::query!(
+        "UPDATE padr_versions SET reviewee_comment = $2 WHERE id = $1",
+        latest.id,
+        text,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "padr",
         review.pid,
         "padr_commented",
@@ -596,7 +672,7 @@ pub(crate) async fn comment(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": review.pid }))
 }
 
@@ -609,34 +685,37 @@ pub(crate) async fn correct(
 ) -> Result<Response> {
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     writer(role_of(&ctx, &caller, &review, &worker).await?)?;
-    let txn = ctx.db.begin().await?;
-    let latest = latest_locked(&txn, review.pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let latest = latest_locked(&mut tx, review.pid).await?;
     rules::may_correct(sign_offs(&latest)).map_err(unprocessable)?;
-    let next = padr_versions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        review_pid: ActiveValue::set(review.pid),
-        worker_pid: ActiveValue::set(latest.worker_pid),
-        version: ActiveValue::set(latest.version + 1),
-        period_start: ActiveValue::set(latest.period_start),
-        period_end: ActiveValue::set(latest.period_end),
-        values_summary: ActiveValue::set(latest.values_summary),
-        wellbeing_offered: ActiveValue::set(latest.wellbeing_offered),
-        development_needs: ActiveValue::set(latest.development_needs),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let next = latest.version + 1;
+    sqlx::query!(
+        "INSERT INTO padr_versions (pid, review_pid, worker_pid, version, period_start, period_end, values_summary,
+                                    wellbeing_offered, development_needs)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        Uuid::new_v4(),
+        review.pid,
+        latest.worker_pid,
+        next,
+        latest.period_start,
+        latest.period_end,
+        latest.values_summary,
+        latest.wellbeing_offered,
+        latest.development_needs,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "padr",
         review.pid,
         "padr_versioned",
         caller.actor(),
-        Some(serde_json::json!({ "version": next.version })),
+        Some(serde_json::json!({ "version": next })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": review.pid, "version": next.version }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": review.pid, "version": next }))
 }
 
 /// Query for the roll-up.
@@ -651,15 +730,17 @@ struct RollupQuery {
 async fn rollup(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<RollupQuery>,
+    axa::extract::Query(query): axa::extract::Query<RollupQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let staff = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .all(&ctx.db)
-        .await?;
+    let staff = sqlx::query!(
+        "SELECT pid, department FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL AND terminated_on IS NULL
+          ORDER BY id",
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let people: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let standing = standings(&ctx, &people).await?;
     let rows: Vec<RollupRow> = staff

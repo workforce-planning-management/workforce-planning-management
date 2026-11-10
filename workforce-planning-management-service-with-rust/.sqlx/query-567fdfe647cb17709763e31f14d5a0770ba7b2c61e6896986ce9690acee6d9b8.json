@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, hired_on, terminated_on FROM workers WHERE deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "hired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "hired_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "terminated_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "terminated_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "567fdfe647cb17709763e31f14d5a0770ba7b2c61e6896986ce9690acee6d9b8"
+}

@@ -30,7 +30,7 @@ roles_sql "$TEMPLATE"
 (cd "$SERVICE" && APP_ENV=test WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
   DATABASE_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$TEMPLATE" cargo run -q -- db migrate >/dev/null 2>&1)
 roles_sql "$TEMPLATE"
-echo "   $(in_db "$TEMPLATE" -c 'select count(*) from seaql_migrations') migrations applied"
+echo "   $(in_db "$TEMPLATE" -c 'select count(*) from _sqlx_migrations') migrations applied"
 
 echo "== what wpm_app must NOT be able to do"
 fail=0

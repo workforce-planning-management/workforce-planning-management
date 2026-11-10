@@ -96,3 +96,54 @@ async fn the_trail_is_exported_in_order_and_resumes_where_it_stopped() {
     })
     .await;
 }
+
+/// The department-scoped query (spec `audit.md`): only entries since the time whose snapshot names the department, newest first.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn the_department_query_keeps_to_the_department_and_the_time() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let since = (chrono::Utc::now() - chrono::Duration::minutes(1))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let first = seed_worker!(&request, &org, "d1", None::<i64>).await;
+        let second = seed_worker!(&request, &org, "d2", None::<i64>).await;
+
+        let found = request
+            .get(&format!("/api/audits?department=engineering&since={since}"))
+            .await;
+        assert_eq!(found.status_code(), 200);
+        let found: Value = found.json();
+        let entries = found.as_array().expect("an array");
+        assert!(!entries.is_empty());
+        for entry in entries {
+            assert_eq!(entry["snapshot"]["department"], "engineering", "{entry}");
+        }
+        let at = |pid: &str| {
+            entries
+                .iter()
+                .position(|e| e["entity_pid"] == pid)
+                .unwrap_or_else(|| panic!("{pid} is in the department's trail"))
+        };
+        assert!(at(&second) < at(&first), "newest first");
+        let ids: Vec<i64> = entries.iter().filter_map(|e| e["id"].as_i64()).collect();
+        assert!(ids.windows(2).all(|w| w[0] > w[1]), "newest first: {ids:?}");
+
+        let elsewhere: Value = request
+            .get(&format!(
+                "/api/audits?department=nowhere-at-all&since={since}"
+            ))
+            .await
+            .json();
+        assert_eq!(elsewhere, serde_json::json!([]));
+
+        let later = (chrono::Utc::now() + chrono::Duration::hours(1))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let none: Value = request
+            .get(&format!("/api/audits?department=engineering&since={later}"))
+            .await
+            .json();
+        assert_eq!(none, serde_json::json!([]), "nothing before the time");
+    })
+    .await;
+}

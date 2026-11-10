@@ -1,0 +1,146 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, from_skill_pid, to_skill_pid,\n                  confidence, basis, source, recorded_by, recorded_on\n           FROM skill_mappings ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "from_skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "from_skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "to_skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "to_skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "confidence",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "confidence"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "basis",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "basis"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "recorded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "recorded_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "cf41bbffd87aaa49197df586399e16027d24f78a6944256960b5b8c7e6edee26"
+}

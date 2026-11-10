@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO esco_occupation_skills (occupation_uri, skill_uri, relation)\n         SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "93784b11acdb292d88d222d27270a975a068b430a7cbd33f2aef7ffae6d4ffa7"
+}

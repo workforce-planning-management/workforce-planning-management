@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, name, scope, organization_ref FROM groups",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "groups",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "groups",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "scope",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "groups",
+            "name": "scope"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "groups",
+            "name": "organization_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "24fad246648a8e281063e95a982ed5b5d7bd5c6b6d40b9d7dbdbaad8777807e8"
+}

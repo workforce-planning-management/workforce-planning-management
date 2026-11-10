@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t), '[]') AS \"rows!\" FROM engagement_status_assessments t WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2136edcf077ffc4ede84a92b2149088146f989149c84eb30eed5fd79f3213fe3"
+}

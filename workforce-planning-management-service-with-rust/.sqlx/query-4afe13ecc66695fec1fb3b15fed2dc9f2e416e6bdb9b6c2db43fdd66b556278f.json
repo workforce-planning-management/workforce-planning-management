@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, parent_organization_ref FROM organization_confederations WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "parent_organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "parent_organization_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "4afe13ecc66695fec1fb3b15fed2dc9f2e416e6bdb9b6c2db43fdd66b556278f"
+}

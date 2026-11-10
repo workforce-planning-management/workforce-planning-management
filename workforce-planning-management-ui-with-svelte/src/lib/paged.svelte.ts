@@ -1,13 +1,19 @@
-// A paged list for a page (WPM-T254): the rows read so far, the total, the "more" flag, and a guard so a slow answer to an
+// A paged list for a page (WPM-T254, WPM-T478): the rows read so far, the "more" flag, and a guard so a slow answer to an
 // older load never replaces a newer one. `load()` re-reads every page already asked for; `showMore()` adds the next.
 
 import { latestOnly, messageOf } from "#lib/loader.svelte.js";
-import { readNext, readPages, type PageReader } from "#lib/paged.js";
+import {
+  readNext,
+  readPages,
+  type PageReader,
+  type Paged,
+} from "#lib/paged.js";
 
 export function createPagedLoader<T>(reader: () => PageReader<T>) {
   let items = $state<T[] | null>(null) as T[] | null;
-  let total = $state<number | null>(null);
   let more = $state(false);
+  /** Where the next page starts; not shown, so not state. */
+  let next: string | null = null;
   let loadingMore = $state(false);
   let error = $state<string | null>(null);
   let moreError = $state<string | null>(null);
@@ -17,9 +23,6 @@ export function createPagedLoader<T>(reader: () => PageReader<T>) {
   return {
     get items() {
       return items;
-    },
-    get total() {
-      return total;
     },
     get more() {
       return more;
@@ -42,7 +45,7 @@ export function createPagedLoader<T>(reader: () => PageReader<T>) {
         const got = await readPages(read, pages);
         if (!current()) return;
         items = got.items;
-        total = got.total;
+        next = got.next;
         more = got.more;
         error = null;
         moreError = null;
@@ -60,10 +63,11 @@ export function createPagedLoader<T>(reader: () => PageReader<T>) {
       loadingMore = true;
       moreError = null;
       try {
-        const got = await readNext(reader(), items);
+        const held: Paged<T> = { items, next, more };
+        const got = await readNext(reader(), held);
         if (!current()) return;
         items = got.items;
-        total = got.total;
+        next = got.next;
         more = got.more;
         pages += 1;
       } catch (cause) {

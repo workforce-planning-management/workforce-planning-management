@@ -1,0 +1,149 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, kind, provider,\n                  worker_cost_minor, employer_cost_minor, currency, deleted_at AS \"deleted_at: _\"\n             FROM benefit_plans WHERE deleted_at IS NULL ORDER BY id LIMIT $1 OFFSET $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "provider",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "worker_cost_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "worker_cost_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "employer_cost_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "employer_cost_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benefit_plans",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0e5fb1436b4b16cfb967bc0a1d033df7b5619d4aad63c4de63eec5559e041c37"
+}

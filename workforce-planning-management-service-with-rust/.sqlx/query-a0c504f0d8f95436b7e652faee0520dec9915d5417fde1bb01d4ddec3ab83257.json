@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t), '[]') AS \"rows!\" FROM asset_issues t WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a0c504f0d8f95436b7e652faee0520dec9915d5417fde1bb01d4ddec3ab83257"
+}

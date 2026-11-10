@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO mobility_interests (pid, worker_pid, role_profile_pid, requisition_pid, note) VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "38a67a856a5cb3789c3e797da18af181e8edb4d8105647c46e3542d5582bb4f9"
+}

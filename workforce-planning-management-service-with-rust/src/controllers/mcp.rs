@@ -19,7 +19,6 @@ use tower::ServiceExt;
 use uuid::Uuid;
 
 use crate::auth::MaybeAuthUser;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::mcp::{self, Plan};
 
 /// The largest API answer passed on to a model.
@@ -108,16 +107,20 @@ async fn handle(
         Plan::Accepted => StatusCode::ACCEPTED.into_response(),
         Plan::Call { id, tool, target } => {
             // The audit comes first: a call that cannot be recorded is not made.
-            if let Err(error) = Audit::record(
-                &mcp.ctx.db,
-                "mcp",
-                Uuid::nil(),
-                "mcp_tool_called",
-                caller.actor(),
-                Some(json!({ "tool": tool.name })),
-            )
-            .await
-            {
+            let recorded = async {
+                let mut connection = crate::db::pool(&mcp.ctx).acquire().await?;
+                crate::db::audit(
+                    &mut connection,
+                    "mcp",
+                    Uuid::nil(),
+                    "mcp_tool_called",
+                    caller.actor(),
+                    Some(json!({ "tool": tool.name })),
+                )
+                .await
+            }
+            .await;
+            if let Err(error) = recorded {
                 tracing::error!(%error, "mcp: the audit could not be written, so the call was refused");
                 return json_status(
                     StatusCode::INTERNAL_SERVER_ERROR,

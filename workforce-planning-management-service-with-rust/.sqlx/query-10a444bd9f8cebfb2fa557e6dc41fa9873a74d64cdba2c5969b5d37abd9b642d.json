@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, staff_group, job_role, area_of_work, starts_on, ends_on\n           FROM assignments WHERE worker_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "staff_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "staff_group"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "job_role",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "job_role"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "area_of_work",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "area_of_work"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "10a444bd9f8cebfb2fa557e6dc41fa9873a74d64cdba2c5969b5d37abd9b642d"
+}

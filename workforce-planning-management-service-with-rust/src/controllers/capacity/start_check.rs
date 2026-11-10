@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Json;
 
 /// One line of a what-if.
 #[derive(Debug, Deserialize)]
@@ -54,27 +55,19 @@ pub(super) async fn run_start_check(
     );
     ensure_valid(&problems.into_vec())?;
     ensure_org_in_scope(ctx, caller, &payload.organization_ref).await?;
-    let pool_rows = skill_pools::Entity::find()
-        .filter(skill_pools::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let pool_rows = pools_of(ctx, &payload.organization_ref).await?;
     let org_pools: Vec<Uuid> = pool_rows.iter().map(|p| p.pid).collect();
     let linked: std::collections::HashSet<Uuid> = pool_rows
         .iter()
         .filter(|p| p.peer_pool_ref.is_some())
         .map(|p| p.pid)
         .collect();
-    let proposed: Vec<programme_demands::Model> = programme_demands::Entity::find()
-        .filter(programme_demands::Column::ProgrammeRef.eq(&payload.programme_ref))
-        .filter(programme_demands::Column::Status.eq("proposed"))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .filter(programme_demands::Column::PoolPid.is_in(org_pools.clone()))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|r| counts_here(&r.source, linked.contains(&r.pool_pid)))
-        .collect();
+    let proposed: Vec<programme_demands::Model> =
+        demands_of_programme(ctx, &payload.programme_ref, true, Some(&org_pools))
+            .await?
+            .into_iter()
+            .filter(|r| counts_here(&r.source, linked.contains(&r.pool_pid)))
+            .collect();
     let lines: Vec<(String, NaiveDate, i64)> = if let Some(wish) = &payload.lines {
         let mut out = Vec::with_capacity(wish.len());
         for line in wish {
@@ -199,38 +192,42 @@ pub(super) async fn record_start_decision(
         ));
     }
     let checked = run_start_check(&ctx, &caller, &payload).await?;
-    let txn = ctx.db.begin().await?;
-    let row = start_decisions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-        decision: ActiveValue::set(decision.clone()),
-        reason: ActiveValue::set(reason.trim().to_string()),
-        fit: ActiveValue::set(checked.check.fit.as_str().to_string()),
-        earliest_shift_months: ActiveValue::set(
-            checked
-                .check
-                .earliest_shift_months
-                .and_then(|n| i32::try_from(n).ok()),
-        ),
-        wip_exceeds: ActiveValue::set(checked.check.wip.as_ref().map(|w| w.exceeds)),
-        decided_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let decision_pid = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO start_decisions (pid, organization_ref, programme_ref, decision, reason, fit, earliest_shift_months,
+                                      wip_exceeds, decided_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        decision_pid,
+        payload.organization_ref,
+        payload.programme_ref,
+        decision,
+        reason.trim(),
+        checked.check.fit.as_str(),
+        checked
+            .check
+            .earliest_shift_months
+            .and_then(|n| i32::try_from(n).ok()),
+        checked.check.wip.as_ref().map(|w| w.exceeds),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
     if decision == "proceed" {
-        for claim in &checked.proposed {
-            let mut active = claim.clone().into_active_model();
-            active.status = ActiveValue::set("active".to_string());
-            active.update(&txn).await?;
-        }
+        // The claims the check was made on become active, in one statement.
+        let claims: Vec<i32> = checked.proposed.iter().map(|c| c.id).collect();
+        sqlx::query!(
+            "UPDATE programme_demands SET status = 'active' WHERE id = ANY($1)",
+            &claims
+        )
+        .execute(&mut *tx)
+        .await?;
     }
     // The audit entry names the decision, not the reason text.
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "start_decision",
-        row.pid,
+        decision_pid,
         if decision == "proceed" {
             "proceeded"
         } else {
@@ -240,8 +237,10 @@ pub(super) async fn record_start_decision(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "decision": decision, "check": check_json(&checked) }))
+    tx.commit().await?;
+    format::json(
+        json!({ "pid": decision_pid, "decision": decision, "check": check_json(&checked) }),
+    )
 }
 
 /// Query for the decision list.
@@ -256,22 +255,22 @@ pub(super) struct DecisionQuery {
 pub(super) async fn list_start_decisions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<DecisionQuery>,
+    axa::extract::Query(query): axa::extract::Query<DecisionQuery>,
 ) -> Result<Response> {
-    let mut select = start_decisions::Entity::find();
-    if let Some(programme) = &query.programme {
-        select = select.filter(start_decisions::Column::ProgrammeRef.eq(programme));
-    }
-    if let Some(org) = &query.organization {
-        select = select.filter(start_decisions::Column::OrganizationRef.eq(org));
-    }
-    if let Some(refs) = scope(&ctx, &caller).await? {
-        select = select.filter(start_decisions::Column::OrganizationRef.is_in(refs));
-    }
-    let rows = select
-        .order_by_desc(start_decisions::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let refs = scope(&ctx, &caller).await?;
+    let rows = sqlx::query!(
+        "SELECT pid, organization_ref, programme_ref, decision, reason, fit, earliest_shift_months, wip_exceeds,
+                decided_by, created_at
+           FROM start_decisions
+          WHERE ($1::text IS NULL OR programme_ref = $1) AND ($2::text IS NULL OR organization_ref = $2)
+            AND ($3::text[] IS NULL OR organization_ref = ANY($3))
+          ORDER BY id DESC",
+        query.programme,
+        query.organization,
+        refs.as_deref(),
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(|r| {

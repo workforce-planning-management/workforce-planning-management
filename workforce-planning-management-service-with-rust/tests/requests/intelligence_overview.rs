@@ -7,7 +7,7 @@ use serial_test::serial;
 use super::{a_person, an_org};
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     n: usize,
     department: &str,
@@ -165,7 +165,6 @@ async fn the_overview_counts_employed_workers_by_group_with_managers_named_only_
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn period_metrics_count_opening_closing_starters_and_leavers_from_the_dates() {
     crate::requests::request_open(|request, ctx| async move {
-        use sea_orm::ConnectionTrait;
         let org = an_org();
         let department = format!("dept-{}", uuid::Uuid::new_v4().simple());
         let metrics = || async {
@@ -181,12 +180,12 @@ async fn period_metrics_count_opening_closing_starters_and_leavers_from_the_date
         let leaves = hire(&request, &org, 3, &department, "2019-03-01", 100, None).await;
         let left_before = hire(&request, &org, 4, &department, "2019-03-01", 100, None).await;
         for (worker, on) in [(&leaves, "2021-09-30"), (&left_before, "2020-05-31")] {
-            ctx.db
-                .execute_unprepared(&format!(
-                    "UPDATE workers SET terminated_on = '{on}' WHERE pid = '{worker}'"
-                ))
-                .await
-                .unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                "UPDATE workers SET terminated_on = '{on}' WHERE pid = '{worker}'"
+            )))
+            .execute(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
         }
         let after = metrics().await;
         let delta = |path: &[&str]| {

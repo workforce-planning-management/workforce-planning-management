@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.pid, s.department, s.starts_at AS \"starts_at: DateTime<FixedOffset>\"\n             FROM shift_assignments a\n             JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shift_assignments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "starts_at: DateTime<FixedOffset>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "starts_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b1b42830ae270c4a2b78acb27e2896e58630d31ac37a15692762a52f6082e630"
+}

@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH staff AS (\n             SELECT pid, department FROM workers\n              WHERE deleted_at IS NULL AND hired_on <= $1\n                AND (terminated_on IS NULL OR terminated_on > $1)\n                AND ($3::text[] IS NULL OR organization_ref = ANY($3))\n                AND ($4::text IS NULL OR lower(department) = lower($4))),\n         needs AS (\n             SELECT r.worker_pid, q.skill_pid, q.min_proficiency AS required,\n                    CASE q.importance WHEN 'critical' THEN 3 WHEN 'important' THEN 2 ELSE 1 END AS weight\n               FROM worker_framework_roles r\n               JOIN role_skill_requirements q ON q.role_profile_pid = r.role_profile_pid\n              WHERE r.framework_slug = $2 AND r.ended_at IS NULL\n             UNION ALL\n             SELECT worker_pid, skill_pid, target, 2 FROM worker_skills\n              WHERE deleted_at IS NULL AND target IS NOT NULL),\n         merged AS (\n             SELECT n.worker_pid, n.skill_pid, s.department, MAX(n.required) AS required, MAX(n.weight) AS weight\n               FROM needs n JOIN staff s ON s.pid = n.worker_pid\n              GROUP BY n.worker_pid, n.skill_pid, s.department),\n         -- The skills crosswalk (`rules::crosswalk::apply`): a need the person did not declare is graded through the best\n         -- exact or close mapping from a skill they did declare, the most confident first, then the highest declared level.\n         -- Driven from the declarations and joined to the needs once, which measured about a quarter of the cost of looking a\n         -- mapping up for every need. A direct declaration wins below; a broader or narrower mapping is never counted.\n         via AS (\n             SELECT DISTINCT ON (mg.worker_pid, mg.skill_pid) mg.worker_pid, mg.skill_pid, ds.proficiency AS level\n               FROM worker_skills ds\n               JOIN skill_mappings m ON m.from_skill_pid = ds.skill_pid AND m.confidence IN ('exact', 'close')\n               JOIN merged mg ON mg.worker_pid = ds.worker_pid AND mg.skill_pid = m.to_skill_pid\n              WHERE ds.deleted_at IS NULL\n              ORDER BY mg.worker_pid, mg.skill_pid, (m.confidence = 'exact') DESC, ds.proficiency DESC, m.from_skill_pid),\n         graded AS (\n             SELECT mg.worker_pid, mg.skill_pid, mg.department, mg.required, mg.weight,\n                    COALESCE(d.proficiency, v.level) AS declared\n               FROM merged mg\n               LEFT JOIN worker_skills d ON d.worker_pid = mg.worker_pid AND d.skill_pid = mg.skill_pid\n                                        AND d.deleted_at IS NULL\n               LEFT JOIN via v ON v.worker_pid = mg.worker_pid AND v.skill_pid = mg.skill_pid),\n         -- A shortfall is there only when below, so 0 stands for none and the status says which.\n         counted AS (\n             SELECT skill_pid, department, weight,\n                    CASE WHEN declared IS NULL THEN 'undeclared'\n                         WHEN declared >= required THEN 'met' ELSE 'below' END AS status,\n                    COALESCE(CASE WHEN declared < required THEN required - declared END, 0) AS shortfall,\n                    COUNT(*)::bigint AS people\n               FROM graded WHERE $5\n              GROUP BY skill_pid, department, weight, status, shortfall)\n         SELECT (SELECT COUNT(*) FROM staff)::bigint AS \"considered!\",\n                -- Who has a need does not depend on the crosswalk, so this leaves the mapping work (`via`) unevaluated.\n                CASE WHEN $5 THEN (SELECT COUNT(DISTINCT worker_pid) FROM merged) ELSE 0 END::bigint AS \"with_needs!\",\n                ARRAY(SELECT skill_pid FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"skills!: Vec<Uuid>\",\n                ARRAY(SELECT department::text FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"departments!: Vec<String>\",\n                ARRAY(SELECT weight FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"weights!: Vec<i32>\",\n                ARRAY(SELECT status FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"statuses!: Vec<String>\",\n                ARRAY(SELECT shortfall FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"shortfalls!: Vec<i32>\",\n                ARRAY(SELECT people FROM counted ORDER BY skill_pid, department, weight, status, shortfall) AS \"people!: Vec<i64>\",\n                ARRAY(SELECT g.worker_pid FROM graded g\n                       WHERE $6 AND g.declared < g.required GROUP BY g.worker_pid\n                       ORDER BY (SELECT id FROM workers w WHERE w.pid = g.worker_pid)) AS \"below!: Vec<Uuid>\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "considered!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "with_needs!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "skills!: Vec<Uuid>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "departments!: Vec<String>",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "weights!: Vec<i32>",
+        "type_info": "Int4Array",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "statuses!: Vec<String>",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "shortfalls!: Vec<i32>",
+        "type_info": "Int4Array",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "people!: Vec<i64>",
+        "type_info": "Int8Array",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "below!: Vec<Uuid>",
+        "type_info": "UuidArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Text",
+        "TextArray",
+        "Text",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "48051f68f7b4cd0ace7aecdb67d6b28c62cff221a3b3462935ddb17bbf1ed0b9"
+}

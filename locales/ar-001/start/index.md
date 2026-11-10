@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## الخطوة 2: شغّل الخدمة
 
-تقرأ الخدمة `DATABASE_URL`. وقيمته الافتراضية `postgres://loco:loco@localhost:5432/workforce_planning_management_development`؛ اضبط هذا المتغير إذا كان لقاعدة بياناتك اسم أو مستخدم أو منفذ آخر. جهّز قاعدة البيانات الفارغة وشغّل واجهة البرمجة. يتوقف تسجيل الدخول لهذه النسخة فقط، ويُرفع حد المعدل من أجل الجولة.
+تقرأ الخدمة `DATABASE_URL`. وقيمته الافتراضية `postgres://postgres:postgres@localhost:5432/workforce_planning_management_development`؛ اضبط هذا المتغير إذا كان لقاعدة بياناتك اسم أو مستخدم أو منفذ آخر. جهّز قاعدة البيانات الفارغة وشغّل واجهة البرمجة. يتوقف تسجيل الدخول لهذه النسخة فقط، ويُرفع حد المعدل من أجل الجولة.
 
 ```sh
 cd workforce-planning-management-service-with-rust

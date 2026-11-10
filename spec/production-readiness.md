@@ -20,7 +20,7 @@ file.
   when no token key source is set (`WPM_PASETO_KEYS`, `WPM_PASETO_KEYS_URL` or
   `WPM_KEYCLOAK_JWKS_URL`). Outside production, no key source is a warning: every
   request is then a `401`.
-- Public paths are `/_health`, `/_ping`, `/_posture`, `/api-docs/openapi.json`
+- Public paths are `/_health/live`, `/_health/ready`, `/_health/startup`, `/_posture`, `/api-docs/openapi.json`
   and `/swagger-ui*`. **`/metrics.prom` is not public**: a scraper presents a
   bearer token the ABAC policy allows (the reference policy allows `svc`). Any
   other path, including an unknown one, is a `401`.
@@ -55,16 +55,19 @@ file.
 
 - Per caller and per minute: `WPM_RATE_LIMIT_PER_MINUTE` (default 600) for any
   route, and `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` (default 20) for erase,
-  sweep, import, merge, deduplicate and token routes and for exports. A refusal
-  is `429` with `Retry-After`. `0` disables a class. Health, ping and posture
-  are never limited.
-- The caller is its **network address**: the peer address, or the first
-  `X-Forwarded-For` hop only when `WPM_TRUST_FORWARDED` is set, which a
-  deployment behind a reverse proxy that *overwrites* that header must do
-  (otherwise every caller shares the proxy's address and one bucket). The UI's
-  same-origin proxy is such a proxy: it overwrites `X-Forwarded-For` with the
-  address it sees (`getClientAddress()`; behind a further proxy, set the Node
-  adapter's `ADDRESS_HEADER`), and forwards only `accept`, `content-type`,
+  sweep, import, merge, deduplicate and token routes and for exports, counted
+  apart. A refusal is a `429` problem with `code` `too_many_requests`,
+  `Retry-After` and the `RateLimit-*` headers; a counted request that is let
+  through carries `RateLimit-Limit`, `RateLimit-Remaining` and
+  `RateLimit-Reset`. `0` disables a class. Health, ping, readiness and posture
+  are never limited. `axa::ratelimit` counts (WPM-D188).
+- The caller is its **network address**, as `axa` resolves it from the
+  connection and `TRUSTED_PROXIES` ([WPM-R239](#wpm-r239--a-caller-cannot-name-its-own-rate-limit-bucket)).
+  A deployment behind a reverse proxy must list that proxy (otherwise every
+  caller shares the proxy's address and one bucket). The UI's same-origin proxy
+  is such a proxy: it overwrites `X-Forwarded-For` with the address it sees
+  (`getClientAddress()`; behind a further proxy, set the Node adapter's
+  `ADDRESS_HEADER`), and forwards only `accept`, `content-type`,
   `if-none-match`, a plain idempotency key and its own bearer (WPM-T248).
 - Limits are per instance (in memory); behind several instances each counts
   alone, so the caller's real limit is the number of instances times the setting.
@@ -129,7 +132,7 @@ sign-in enforcement explicitly off** (see its header).
 - **Database TLS.** In the `production` environment, boot refuses a `DATABASE_URL` that reaches another host
   without TLS (`sslmode` of `require`, `verify-ca` or `verify-full`). `disable`, `allow`, `prefer` (which falls
   back to plaintext) and no `sslmode` all count as plaintext. A loopback address or a Unix socket is not on a
-  network and needs nothing. `WPM_ALLOW_PLAINTEXT_DATABASE=1` is the explicit, logged override. `require` and
+  network and needs nothing. `WPM_ALLOW_PLAINTEXT_DATABASE=1` is the explicit, logged override, and `axa` asks for `DB_ALLOW_INSECURE=true` as well. `require` and
   `verify-ca` start with a warning to use `verify-full`, because they do not check the server's identity.
 - **Request timeout.** The production configuration answers a request that runs past
   `WPM_REQUEST_TIMEOUT_MS` (default 30000 milliseconds) with `408`.
@@ -205,9 +208,11 @@ sign-in enforcement explicitly off** (see its header).
   off is explicit, logged, visible at `/_posture`, and refused in production; a
   missing key source stops a production service instead of opening it.
 - **WPM-D54 Rate limits keep no history, and trust no header the caller
-  controls.** Counters are in memory per window, keyed by a hash of the network
-  address; no address, subject or token is stored or logged. A bearer token is
+  controls.** Counters are in memory per window, keyed by a keyed hash of the network
+  address and dropped within two windows; no address, subject or token is stored or logged. A bearer token is
   never the key, because varying it would buy a fresh bucket on every request.
+  The left end of `X-Forwarded-For` is the same, which is why WPM-D187 replaced
+  `WPM_TRUST_FORWARDED`.
 
 ## WPM-R137 — The service fails cleanly when its database misbehaves, and heals
 
@@ -330,3 +335,66 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 **Why:** a version in the path forks every URL and every client at once, and invites two copies of each handler to be kept in step. A header
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
+
+## WPM-R242 — A client address can be locked out after its failed sign-ins
+
+- `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` sets how many `401`s one client address may earn in 15 minutes. At that count, every request from that address is refused with `429`, `Retry-After` and the `RateLimit-*` headers until the 15 minutes end, whatever its token, whatever the route, the probes (`/_ping`, `/_health`, `/_readiness`) excepted.
+- Unset, empty or `0` is no lockout, which is the default. A value that is not a whole number stops the start, and the message does not quote it.
+- The address is the one the rate limit counts by (WPM-R239): `X-Forwarded-For` only from `TRUSTED_PROXIES`, IPv6 by its `/64`. Another address is never locked out by it. Only a `401` counts, so a successful request, a `403` or a `422` adds nothing.
+
+**Why:** the owner asked for it on 2026-11-09. A client sending token after token that fails is slowed for 15 minutes rather than for the minute of the ordinary limit.
+**Not claimed:** WPM takes no password, so there is no password to guess here; a forged token is refused by its signature whatever the count, and password guessing is stopped, if at all, by the identity provider. The count is per address, so behind a shared address (an office, a carrier, an unlisted proxy) a few expired tokens on one machine lock out everyone there, and a request that succeeds does not clear it; a bridge whose token lapses is locked out for the window. A refusal is counted in one process, so each instance keeps its own count. Guesses sent at once can pass the count by however many are in flight; the rate limit outside caps that.
+
+## WPM-R240 — Made-up records are loaded only in development or test
+
+- `task seed`, which loads a synthetic organization, is refused unless both the process (`APP_ENV`) and any `--environment` are development or test. A release binary is production by default; `demo`, `staging` and any other name are refused too. Nothing is written when it is refused.
+- A demo database is seeded with `APP_ENV=development` for that one command, and then served under `demo`. The restore drill does the same.
+- Every other task runs anywhere: the scheduled jobs and the imports load real records.
+
+**Why:** a seed run with production's `DATABASE_URL` still exported would put made-up workers, pay and plans among real ones, and taking them out again is by hand. The refusal is `axa`'s `Task::development_only`, the same rule as `db reset` (WPM-R237).
+**Not claimed:** whoever can set `APP_ENV=development` beside a production `DATABASE_URL` can still seed it; the rule stops a mistake, not an operator.
+
+
+## WPM-R241 — A list pages by a signed cursor and says no total
+
+- A paged list takes `?limit=` and `?cursor=` and answers a bare JSON array. While more rows follow it carries `Link: <path?...&cursor=...>; rel="next"`, which names the path the client called with its filters and limit kept; the last page has no `Link`.
+- There is no `X-Total-Count`, `X-Limit` or `X-Offset`. A client knows only that more follow.
+- A cursor is signed (HMAC-SHA256) over its position, the path and every parameter but `cursor` and `limit`, under `WPM_CURSOR_KEY`. One the service did not make, one edited, or one carried to another list or another filter is a `422`. `limit` may change between pages.
+- A `limit` that is zero, not a number, given twice or over 500 is a `422`, never clamped or defaulted. An absent one is the list's default.
+- `?offset=` is a `422` that says to follow the `Link`, so a client still paging by offset is told and not given the first page again.
+- Every refusal has `code: unprocessable_entity` and quotes nothing the caller sent.
+- The row read past a page to see whether more follow is never sent, and nothing is done for it: a list that audits a salary read records only the rows it sends (WPM-D147).
+
+**Why:** a total counts rows the caller's record policy hides, so it can say that records exist which the caller may not see, and a caller could name any offset, so one request could make the database read and discard rows up to it (SEC-G7). A cursor's position is the service's: a deep page is reached only by reading each page before it. WPM-D189 says how.
+**Not claimed:** the position inside a cursor is still an offset, so a deep page still costs a scan to it, and the old bound of 10,000 rows is gone (a client walking every page is bounded by the rate limit, not by paging); and a row added or removed between two pages can make a later page skip or repeat one row; each list orders by something that ends in a unique column so that the order itself is stable. Without `WPM_CURSOR_KEY`, each instance signs with its own key, and a cursor from one is refused by another.
+## WPM-R239 — A caller cannot name its own rate-limit bucket
+
+- The rate limit counts by the address `axa::client::resolve` gives. `X-Forwarded-For` is believed only from a peer listed in `TRUSTED_PROXIES`, and is read from the right, stopping at the first address that is not listed. With no list, the header is ignored.
+- A left entry the caller wrote buys no new bucket, a header from an unlisted peer changes nothing, and two clients behind one listed proxy are counted apart.
+- With no address at all, every caller shares one bucket.
+- IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. An ordinary and a sensitive request from one caller are counted apart, and no two callers' classes share a counter.
+- `WPM_TRUST_FORWARDED` does nothing. If it is still set, boot logs a warning and goes on.
+
+**Why:** a proxy that appends leaves the caller's own value first, so the first entry was the caller's choice, and each forged value was a fresh limit. The old rule was safe only if the operator's proxy overwrote the header, and nothing checked that it did.
+**Not claimed:** a limit is still per instance. A client that shares a listed range can write the entries left of its own, so `TRUSTED_PROXIES` should name the proxies and not a whole network that callers are in. A shared address (a carrier's, or an office's) is one caller.
+
+## WPM-R238 — Every error is a problem document
+
+- Every `4xx` and `5xx` from the service is `application/problem+json` (RFC 9457) with `type`, `title` and `status`, whatever refused it.
+- `detail` says what went wrong, where there is something to say; `code` is the short reason for code to read, where the refusal has one (a plain-text refusal does not). Other members, and every header such as `Retry-After`, stay.
+- A `5xx` carries no text the service did not write for a client.
+- A request the service cannot read (a body that is not JSON or not the right shape, a path or query value of the wrong type) is refused with a fixed sentence naming which part was at fault, and quotes nothing the caller sent (WPM-T475).
+- The JSON-RPC answers on `/mcp` are not affected: that protocol has its own error shape. The UI's own proxy errors (`bad_path`, `no_demo`) are not the service's.
+
+**Why:** one shape, named by a standard, lets a client handle any refusal in one place; before this a client met JSON from handlers and plain text from the layers around them.
+**Not claimed:** `type` is always `about:blank`, so `code` is the only stable machine-readable reason, and no problem type URIs are published.
+
+## WPM-R237 — A command that destroys data does not run in production
+
+- `db down`, `db reset` and `db truncate` are refused in any environment but development and test, before the service connects to anything. In development and test they also need `AXA_DESTROY_DATA=true`.
+- `--environment` cannot lift the refusal: the process environment and the flag must both allow the command.
+- `db migrate` and `db status` are not affected.
+
+**Why:** the container defaults to `APP_ENV=production`, and `db reset` drops every table. Migrations only go forward and the way back is a
+restore ([upgrade-and-migration.md](operations/upgrade-and-migration.md)), so nothing in a deployment needs these. **Not claimed:** this guards
+the commands, not the database: a role with the rights to drop tables can still do so by other means, which is why the service runs as `wpm_app`.

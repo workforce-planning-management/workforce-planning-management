@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM worker_job_levels WHERE worker_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a275d4aa3e77a746b19cdc24dda2d82ce673a13bab5300c8253d7df9cbe2bf60"
+}

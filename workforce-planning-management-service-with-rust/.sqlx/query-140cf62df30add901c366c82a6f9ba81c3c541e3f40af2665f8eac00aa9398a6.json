@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, ends_on FROM post_fundings WHERE programme_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "140cf62df30add901c366c82a6f9ba81c3c541e3f40af2665f8eac00aa9398a6"
+}

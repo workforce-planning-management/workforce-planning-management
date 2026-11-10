@@ -1,15 +1,15 @@
 //! The injury record under enforcement (WPM-R221, WPM-D179), against the shipped reference policy: HR only, no description in any
 //! field, each report a row of its own, audited with no content, and erasure that keeps the proof and drops the person.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -62,18 +62,18 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str, role: &str) {
-    ctx.db
-        .execute_unprepared(&format!(
-            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', '{role}', '2023-01-05')",
-            uuid::Uuid::new_v4()
-        ))
-        .await
-        .unwrap();
+        uuid::Uuid::new_v4()
+    )))
+    .execute(workforce_planning_management::db::pool(ctx))
+    .await
+    .unwrap();
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -236,16 +236,37 @@ async fn an_injury_record_proves_a_report_and_holds_no_description() {
         assert!(counts["classes"].as_array().unwrap().iter().any(|c| c["class"] == "serious" && c["count"].is_null()));
         assert!(!counts.to_string().contains(&pid) && !counts.to_string().contains("Person"));
 
+        // The year is the calendar year in UTC: the last minutes of 2024 are 2024, and no other year's.
+        let floor = workforce_planning_management::rules::equality_monitoring::DEFAULT_FLOOR;
+        for _ in 0..floor {
+            let at_year_end = json!({
+                "organization": org, "jurisdiction": "US-CA", "kind": "accident",
+                "occurred_at": "2024-12-31T23:30:00Z", "class": "no_absence", "people_affected": 1,
+            });
+            request.post("/api/injury-records").add_header("authorization", hr.clone()).json(&at_year_end).await.assert_status_ok();
+        }
+        let year = |year: i32| {
+            let (request, payroll, org) = (&request, payroll.clone(), org.clone());
+            async move {
+                request
+                    .get(&format!("/api/injury-records/rollup?organization={org}&year={year}"))
+                    .add_header("authorization", payroll)
+                    .await
+                    .json::<Value>()
+            }
+        };
+        assert_eq!(year(2024).await["total"], json!(floor));
+        assert_eq!(year(2025).await["total"], json!(0));
+
         // Audited with no content: the action names nothing, and the read holds a count alone.
         let scalar = |sql: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
-                    .query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres, sql))
+                sqlx::query(sqlx::AssertSqlSafe(&*sql)).fetch_optional(workforce_planning_management::db::pool(ctx))
                     .await
                     .unwrap()
                     .unwrap()
-                    .try_get_by_index::<i64>(0)
+                    .try_get::<i64, _>(0)
                     .unwrap()
             }
         };

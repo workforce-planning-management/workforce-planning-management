@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO program_placements (pid, program_pid, worker_pid, supervisor_pid, started_on, ends_on, status,\n                                        off_the_job_hours, outcome, deleted_at)\n         VALUES ($1, $2, $3, $4, $5, $6, 'offered', 0, 'pending', NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7d463508f0538f5ae29935eeb2b1b38caaed1a6612ca6bc834bc8daacc91fd5f"
+}

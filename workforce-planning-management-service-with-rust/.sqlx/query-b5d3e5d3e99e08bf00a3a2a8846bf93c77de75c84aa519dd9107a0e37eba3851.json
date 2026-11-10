@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO policy_versions (pid, policy_pid, version, title, document_ref, effective_on, audience_kind,\n                                      audience_value, acknowledge_within_days, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b5d3e5d3e99e08bf00a3a2a8846bf93c77de75c84aa519dd9107a0e37eba3851"
+}

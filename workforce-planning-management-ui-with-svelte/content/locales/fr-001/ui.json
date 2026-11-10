@@ -56,7 +56,8 @@
     "mandatoryLearning": "Formations obligatoires",
     "coverageEvidence": "Preuves de couverture",
     "qualifications": "Qualifications",
-    "injuryRecords": "Registres des blessures"
+    "injuryRecords": "Registres des blessures",
+    "help": "Aide"
   },
   "pr": {
     "retention": "Conservation",
@@ -110,7 +111,10 @@
     "respond": "Répondre",
     "report": "Rapport",
     "withheld": "Masqué sous 3 réponses",
-    "requests": "Mes demandes 360"
+    "requests": "Mes demandes 360",
+    "hint": "Une évaluation 360° recueille l'avis d'un responsable, de pairs et de collaborateurs, en plus de la personne elle-même. Indiquez les compétences, créez-en une nouvelle, désignez au moins trois évaluateurs, puis lancez la collecte. Un groupe de moins de trois réponses n'est jamais affiché.",
+    "competencies": "Compétences (séparées par des virgules, douze au plus)",
+    "recordLink": "Mon dossier : absences, bulletins de paie, évaluations et évaluations 360°"
   },
   "notif": {
     "markRead": "Marquer comme lue",
@@ -402,6 +406,15 @@
       "title": "Prêt à l'essayer vous-même ?",
       "body": "Connectez-vous avec un lien magique et explorez avec de vraies données — sans mot de passe, sans engagement.",
       "button": "Se connecter"
+    },
+    "help": {
+      "title": "Bloqué, ou vous avez trouvé un bogue ?",
+      "body": "La page d'aide explique comment signaler un problème, comment poser une question et où chaque tâche est expliquée.",
+      "link": "Obtenir de l'aide"
+    },
+    "learn": {
+      "title": "Apprendre en pratiquant",
+      "body": "Des guides pas à pas pour un salarié, un manager et les RH : chaque tâche indique où cliquer et ce que vous voyez."
     }
   },
   "insights": {
@@ -1565,7 +1578,10 @@
     "myDevelopment": "Mes plans de développement — WPM",
     "myGoals": "Mes objectifs — WPM",
     "myPadrs": "Mes entretiens de développement — WPM",
-    "padr": "Entretien de développement — WPM"
+    "padr": "Entretien de développement — WPM",
+    "help": "Aide — WPM",
+    "guides": "Guides pas à pas — WPM",
+    "required": "Mes formations obligatoires et certifications — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -2444,7 +2460,13 @@
     "conflict": "Cela est en conflit avec l'état actuel",
     "invalid": "Cela n'a pas été accepté",
     "server": "Un problème est survenu de notre côté. Réessayez ; s'il persiste, prévenez votre administrateur.",
-    "generic": "Un problème est survenu."
+    "generic": "Un problème est survenu.",
+    "next": {
+      "retry": "Réessayez ou rechargez la page. Si cela continue, signalez-le.",
+      "access": "Si vous pensez devoir pouvoir le faire, demandez à votre responsable ou aux RH.",
+      "input": "Vérifiez ce que vous avez saisi, rechargez la page pour voir la dernière version, puis réessayez."
+    },
+    "getHelp": "Obtenir de l'aide"
   },
   "labels": {
     "nominee": "Collègue à nommer",
@@ -2700,7 +2722,6 @@
     "consultation_ref": "Fiche de consultation pour un score nouveau ou modifié (facultatif)"
   },
   "paging": {
-    "showing": "{shown} affichés sur {total}",
     "more": "Afficher plus"
   },
   "bargaining": {
@@ -3306,5 +3327,126 @@
     "from": "Du",
     "to": "Au",
     "download": "Télécharger le CSV"
+  },
+  "help": {
+    "title": "Obtenir de l'aide",
+    "intro": "Que faire quand quelque chose ne va pas ou n'est pas clair, et où chaque tâche est expliquée.",
+    "bugTitle": "Signaler un bogue",
+    "bugBody": "Si une page affiche une erreur, si un chiffre semble faux ou si un bouton ne fait rien, ouvrez un ticket dans le suivi des tickets du projet. Indiquez la page où vous étiez (copiez son adresse), ce que vous avez fait, ce que vous attendiez et ce qui s'est passé à la place. Ne collez jamais de données personnelles réelles : WPM est un logiciel de démonstration qui ne contient que des données fictives.",
+    "bugLink": "Ouvrir le suivi des tickets",
+    "securityBody": "Un problème de sécurité se signale par courriel, pas dans un ticket public.",
+    "securityLink": "Lire la politique de sécurité",
+    "questionTitle": "Demander quand quelque chose n'est pas clair",
+    "questionBody": "Si un mot, un chiffre ou un statut n'est pas clair, lisez d'abord la courte note sous le titre de la page et le parcours guidé de votre rôle. Si ce n'est toujours pas clair, posez la question dans le suivi des tickets en précisant qu'il s'agit d'une question. Un écran déroutant mérite aussi d'être signalé.",
+    "questionLink": "Poser une question",
+    "learnTitle": "Apprendre à faire une tâche",
+    "learnBody": "La visite explique ce que fait chaque partie de WPM. Les guides du site web couvrent l'installation de WPM, la démonstration et la spécification.",
+    "tourLink": "Faire la visite",
+    "docsLink": "Lire les guides sur le site web",
+    "errorTitle": "Quand vous voyez une erreur",
+    "errorBody": "Chaque erreur dit en termes simples ce qui n'a pas fonctionné. Réessayez d'abord, puis rechargez la page. Si vous avez été déconnecté, reconnectez-vous. Si l'on vous dit que vous ne pouvez pas voir ou modifier quelque chose alors que vous pensez le devoir, demandez à votre responsable ou aux RH. Si cela continue, signalez-le comme un bogue.",
+    "deployerNote": "Ces liens mènent au projet WPM lui-même. Une organisation qui utilise WPM pour son personnel ferait pointer cette page vers son propre service d'assistance."
+  },
+  "errorPage": {
+    "notFound": "Page introuvable",
+    "failed": "Une erreur s'est produite",
+    "hint": "Vérifiez l'adresse ou recommencez depuis la page d'accueil. Si un lien dans WPM vous a amené ici, merci de le signaler.",
+    "home": "Aller à la page d'accueil"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Sur une page avec une liste d'organisations, choisissez d'abord l'organisation : les listes et les formulaires apparaissent ensuite.",
+      "title": "Pour les RH",
+      "intro": "Les pages des RH se trouvent dans le menu (☰). Chacune indique sous son titre ce qu'elle montre et ce qu'elle laisse de côté.",
+      "requirement": {
+        "title": "Définir une exigence de formation obligatoire",
+        "body": "Ouvrez Formations obligatoires. Sous Ajouter une exigence, indiquez le sujet, s'il est légal ou obligatoire, la périodicité de recyclage en mois et à qui il s'applique. Le tableau montre, pour chaque exigence, combien de personnes sont à jour ; un groupe trop petit pour être affiché l'indique."
+      },
+      "completion": {
+        "title": "Enregistrer une formation suivie ailleurs",
+        "body": "Sur Formations obligatoires, sous Enregistrer une réalisation, choisissez la personne et l'exigence, le jour où elle a été réalisée et l'endroit, puis enregistrez. Le statut de la personne est mis à jour à partir de ce jour."
+      },
+      "verify": {
+        "title": "Vérifier une qualification",
+        "body": "Ouvrez Qualifications. La liste montre les qualifications déclarées que personne n'a encore vérifiées. Indiquez où la preuve est conservée et appuyez sur Vérifier. Sous Ce que demande chaque poste, choisissez un poste pour ajouter les qualifications qu'il exige."
+      },
+      "vacancy": {
+        "title": "Ouvrir un poste vacant",
+        "body": "Ouvrez Postes vacants. Sous Ouvrir une demande de recrutement, renseignez le service, l'intitulé du poste et l'effectif, puis appuyez sur Créer. Chaque demande est une carte sur le tableau, que vous déplacez de colonne en colonne au fil de son avancement."
+      },
+      "movement": {
+        "title": "Ouvrir un dossier d'arrivée ou de départ",
+        "body": "Ouvrez Arrivées et départs, puis Ouvrir un dossier : choisissez la personne, arrivée ou départ, et le jour. La liste de contrôle du dossier montre chaque élément comme fait, à faire aujourd'hui, en retard ou à venir, et la passation d'un départ liste ce que la personne détient encore."
+      }
+    },
+    "title": "Guides pas à pas",
+    "intro": "Les tâches de chaque rôle, étape par étape : où cliquer et ce que vous voyez.",
+    "open": "Ouvrir cette page",
+    "others": "Autres guides pas à pas",
+    "signin": "Ces pages s'ouvrent une fois que vous êtes connecté. Dans la démo, connectez-vous en tant que example@example.com.",
+    "employee": {
+      "title": "Pour un salarié",
+      "intro": "Tout commence ici à partir de Mon profil : ouvrez le menu (☰) en haut et choisissez Mon profil.",
+      "waiting": {
+        "title": "Voir ce qui vous attend",
+        "body": "Sur Mon profil, un panneau En attente de votre action, près du haut, liste tout ce qui vous concerne : un objectif à accepter, une demande de formation tranchée, un entretien de développement à signer. Chaque élément renvoie à l'endroit où agir, et Marquer comme lue l'efface."
+      },
+      "goal": {
+        "title": "Proposer un objectif",
+        "body": "Sur Mon profil, choisissez Mes objectifs. Sous Proposer un objectif, indiquez un titre, un début et une fin, puis appuyez sur Proposer. L'objectif attend l'accord de votre manager ; enregistrez ensuite l'avancement sous Où en êtes-vous ?"
+      },
+      "qualification": {
+        "title": "Ajouter une qualification que vous détenez",
+        "body": "Sur Mon profil, faites défiler jusqu'à Qualifications. Sous Ajouter une qualification, choisissez son type, saisissez son intitulé et ses dates, puis appuyez sur Enregistrer. Elle apparaît comme Déclarée jusqu'à ce que les RH la vérifient ; seule une qualification vérifiée compte comme satisfaite sous Ce que demande mon poste."
+      },
+      "payslips": {
+        "title": "Consulter vos bulletins de paie",
+        "body": "Sur Mon profil, choisissez Mes bulletins de paie. Chaque période de paie a sa propre section avec ses lignes, et le cumul annuel est calculé pour chaque année fiscale."
+      },
+      "feedback": {
+        "title": "Répondre à une demande de feedback 360°",
+        "body": "Sur Mon profil, choisissez Mon dossier : absences, bulletins de paie, évaluations et évaluations 360°. Sous Mes demandes 360, appuyez sur Répondre, notez chaque compétence de 1 à 5, ajoutez un commentaire si vous le souhaitez, puis appuyez de nouveau sur Répondre. Les réponses des pairs et des collaborateurs ne sont jamais présentées qu'en groupe de trois ou plus."
+      },
+      "required": {
+        "title": "Trouver vos formations obligatoires et certifications",
+        "body": "Sur Mon profil, choisissez Mes formations obligatoires et certifications. Formations à suivre liste chaque exigence avec son statut (À jour, Bientôt échue, Expirée, Jamais réalisée) et sa date d'échéance ; Certifications demandées par votre poste liste chacune avec sa situation et le jour où elle expire. Ce qui demande votre attention figure en haut, avec la marche à suivre et un lien."
+      }
+    },
+    "manager": {
+      "title": "Pour un manager",
+      "intro": "Les tâches d'un manager se trouvent sur les mêmes pages que les siennes, dans des sections intitulées Mon équipe.",
+      "team": {
+        "title": "Vérifier les formations et qualifications de votre équipe",
+        "body": "Sur Mon profil, les panneaux Formations légales et obligatoires de mon équipe et Qualifications de mon équipe listent les personnes placées sous votre responsabilité qui demandent votre attention, par leur nom, avec le statut de chaque exigence. Si personne ne demande d'attention, le panneau l'indique."
+      },
+      "goals": {
+        "title": "Accepter un objectif",
+        "body": "Sur Mon profil, choisissez Mes objectifs. Sous Mon équipe, un objectif proposé comporte Accepter cet objectif. Appuyez dessus, ou modifiez la proposition pour que la personne accepte votre version."
+      },
+      "padr": {
+        "title": "Mener un entretien de développement personnel",
+        "body": "Sur Mon profil, choisissez Mes entretiens de développement. Sous Mon équipe, définissez le début et la fin de l'année à venir pour la personne, puis appuyez sur Ouvrir un entretien. Ajoutez des objectifs et des besoins de développement, indiquez si un échange sur le bien-être a été proposé, et signez tous les deux. La signature fige cette version ; une correction constitue une nouvelle version."
+      },
+      "appraisal": {
+        "title": "Mener une évaluation 360°",
+        "body": "Ouvrez Travailleurs depuis le menu et choisissez la personne. Sous Évaluations 360°, nommez les compétences et appuyez sur Nouvelle 360. Ouvrez-la, désignez au moins trois évaluateurs avec leur relation, puis appuyez sur Lancer la collecte. Quand suffisamment de personnes ont répondu, appuyez sur Partager le rapport ; un groupe de pairs ou de collaborateurs ayant moins de trois réponses n'est pas communiqué."
+      }
+    }
+  },
+  "required": {
+    "link": "Mes formations obligatoires et certifications",
+    "title": "Mes formations obligatoires et certifications",
+    "hint": "Ce que vous devez suivre ou détenir, avec en haut ce qui doit être fait en premier. Chaque ligne indique quoi faire ensuite.",
+    "learningTitle": "Formations à suivre",
+    "certsTitle": "Certifications demandées par votre poste",
+    "allClear": "Rien à faire pour le moment.",
+    "attention": "Demande votre attention",
+    "learningAct": "Mon historique de formation",
+    "learningHow": "Réservez l'une de ses sessions dans le système de formation de votre organisation ; une fois terminée, elle compte ici. Si vous l'avez suivie ailleurs, demandez aux RH d'enregistrer la réalisation.",
+    "certAct": "L'ajouter ou la mettre à jour sur Mon profil",
+    "certMissingHow": "Si vous la détenez, ajoutez-la avec ses dates ; les RH la vérifient ensuite.",
+    "certDeclaredHow": "Les RH ne l'ont pas encore vérifiée. Indiquez aux RH où la preuve est conservée.",
+    "certExpiredHow": "Ajoutez la certification renouvelée avec ses nouvelles dates.",
+    "noExpiry": "N'expire pas"
   }
 }

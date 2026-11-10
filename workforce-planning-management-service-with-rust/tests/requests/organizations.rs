@@ -330,7 +330,7 @@ async fn organization_confederation_round_trip() {
             .await
             .assert_status_ok();
         let claims = claims_for(&person_ref);
-        let mut scope = memberships::caller_scope_refs(&ctx.db, Some(&claims))
+        let mut scope = memberships::caller_scope_refs(&ctx, Some(&claims))
             .await
             .expect("scope expands");
         scope.sort();
@@ -348,7 +348,7 @@ async fn organization_confederation_round_trip() {
             .delete(&format!("/api/organization-confederations/{edge_pid}"))
             .await
             .assert_status_ok();
-        let scope_after = memberships::caller_scope_refs(&ctx.db, Some(&claims))
+        let scope_after = memberships::caller_scope_refs(&ctx, Some(&claims))
             .await
             .expect("scope shrinks");
         assert_eq!(

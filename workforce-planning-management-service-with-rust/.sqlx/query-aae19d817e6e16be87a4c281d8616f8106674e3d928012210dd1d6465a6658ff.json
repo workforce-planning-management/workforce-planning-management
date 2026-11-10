@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t ORDER BY week_start), '[]'::json) AS \"rows!\" FROM time_entry_weeks t WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "aae19d817e6e16be87a4c281d8616f8106674e3d928012210dd1d6465a6658ff"
+}

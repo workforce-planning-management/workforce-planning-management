@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM demand_line_objectives WHERE line_pid = $1 AND EXISTS\n             (SELECT 1 FROM plan_demand_lines WHERE pid = $1 AND plan_pid = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e1be7a4824a8e20ba42214344314139e4bb1d0eeafa3c3078e1a836e304e39b5"
+}

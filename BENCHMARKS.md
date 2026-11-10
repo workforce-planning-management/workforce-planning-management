@@ -73,7 +73,7 @@ What it shows:
 - **The plan views still read every worker of the planned departments**, and above 10,000 of them requests fail
   (`500 … Connection pool timed out`: each request holds the async runtime for about a second). That is why
   `WPM_MAX_ORG_WORKERS` (default **10,000** when this was written; **200,000** since WPM-D95) still guards them and only them.
-- The service does about 50,000 requests/s on a route that touches nothing (`/_ping`); the rest is database and work per request.
+- The service does about 50,000 requests/s on a route that touches nothing (`/_ping` then, `/_health/live` since axa 0.11); the rest is database and work per request.
 
 What it does **not** show: any other route; mixed traffic or writes; more than 8 connections; a database on another
 host or a managed one; sign-in enforcement (a token check adds work to every request); a cold cache; a long run (10 seconds

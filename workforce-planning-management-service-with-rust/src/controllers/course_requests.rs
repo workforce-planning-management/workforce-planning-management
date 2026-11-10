@@ -2,23 +2,31 @@
 //! them for any other. Every route resolves the person from the token. A request names a course and a decision, and holds no reason.
 
 use axa::error::ErrorDetail;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
-use sea_orm::sea_query::Expr;
-use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, SqlErr, TransactionTrait};
+use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
+use sqlx::PgConnection;
 use uuid::Uuid;
 
 use super::individual_goals::{reports_of, subject};
 use super::me::me_worker;
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{course_requests, skill_courses, training_enrollments, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db::{self, is_unique_violation, pool};
+use crate::models::_entities::workers;
 use crate::models::records;
 use crate::need_to_know::is_line_manager;
 use crate::rules::course_request::{self as rules, Route};
+
+/// One request as stored.
+struct CourseRequest {
+    pid: Uuid,
+    worker_pid: Uuid,
+    course_ref: String,
+    status: String,
+    decided_on: Option<NaiveDate>,
+}
 
 /// `POST /api/me/course-requests` body.
 #[derive(Debug, Deserialize)]
@@ -33,45 +41,64 @@ fn conflict(message: &str) -> Error {
     )
 }
 
-async fn catalogue_rows(ctx: &AppContext, course_ref: &str) -> Result<Vec<skill_courses::Model>> {
-    Ok(skill_courses::Entity::find()
-        .filter(skill_courses::Column::CourseRef.eq(course_ref))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?)
+/// One catalogue row for a course.
+struct CatalogueRow {
+    title: String,
+    hours: i32,
+    fee_minor: Option<i64>,
+    fee_currency: Option<String>,
 }
 
-async fn enrolled<C: ConnectionTrait>(db: &C, worker: Uuid, course_ref: &str) -> Result<bool> {
-    Ok(training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.eq(worker))
-        .filter(training_enrollments::Column::CourseRef.eq(course_ref))
-        .filter(training_enrollments::Column::Status.eq("enrolled"))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .one(db)
-        .await?
-        .is_some())
+async fn catalogue_rows(ctx: &AppContext, course_ref: &str) -> Result<Vec<CatalogueRow>> {
+    Ok(sqlx::query_as!(
+        CatalogueRow,
+        "SELECT title, hours, fee_minor, fee_currency FROM skill_courses
+         WHERE course_ref = $1 AND deleted_at IS NULL",
+        course_ref,
+    )
+    .fetch_all(pool(ctx))
+    .await?)
 }
 
-async fn enrol<C: ConnectionTrait>(
-    db: &C,
+async fn enrolled(connection: &mut PgConnection, worker: Uuid, course_ref: &str) -> Result<bool> {
+    let found = sqlx::query_scalar!(
+        "SELECT EXISTS (
+             SELECT 1 FROM training_enrollments
+             WHERE worker_pid = $1 AND course_ref = $2 AND status = 'enrolled' AND deleted_at IS NULL
+         )",
+        worker,
+        course_ref,
+    )
+    .fetch_one(connection)
+    .await?;
+    Ok(found == Some(true))
+}
+
+async fn enrol(
+    connection: &mut PgConnection,
     worker: Uuid,
     course_ref: &str,
     actor: Option<&str>,
 ) -> Result<Uuid> {
-    let row = training_enrollments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker),
-        course_ref: ActiveValue::set(course_ref.to_string()),
-        status: ActiveValue::set("enrolled".to_string()),
-        completed_on: ActiveValue::set(None),
-        certificate_expires_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(db)
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status) VALUES ($1, $2, $3, 'enrolled')",
+        pid,
+        worker,
+        course_ref,
+    )
+    .execute(&mut *connection)
     .await?;
-    Audit::record(db, "training_enrollment", row.pid, "created", actor, None).await?;
-    Ok(row.pid)
+    db::audit(
+        connection,
+        "training_enrollment",
+        pid,
+        "created",
+        actor,
+        None,
+    )
+    .await?;
+    Ok(pid)
 }
 
 /// `POST /api/me/course-requests` — start a course: enrolled at once on a recorded fee of zero, otherwise asked of a manager.
@@ -88,51 +115,52 @@ pub(crate) async fn start(
     let Some(route) = rules::route(&fees) else {
         return Err(unprocessable("that course is not in the catalogue"));
     };
-    if enrolled(&ctx.db, worker.pid, course_ref).await? {
+    let mut tx = pool(&ctx).begin().await?;
+    if enrolled(&mut tx, worker.pid, course_ref).await? {
         return Err(conflict("you are already enrolled on this course"));
     }
-    let txn = ctx.db.begin().await?;
     let answer = if route == Route::Direct {
-        let pid = enrol(&txn, worker.pid, course_ref, caller.actor()).await?;
+        let pid = enrol(&mut tx, worker.pid, course_ref, caller.actor()).await?;
         serde_json::json!({ "outcome": "enrolled", "pid": pid })
     } else {
-        let row = course_requests::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            worker_pid: ActiveValue::set(worker.pid),
-            course_ref: ActiveValue::set(course_ref.to_string()),
-            status: ActiveValue::set("requested".to_string()),
-            ..Default::default()
-        }
-        .insert(&txn)
+        let pid = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO course_requests (pid, worker_pid, course_ref) VALUES ($1, $2, $3)",
+            pid,
+            worker.pid,
+            course_ref,
+        )
+        .execute(&mut *tx)
         .await
-        .map_err(|cause| match cause.sql_err() {
-            Some(SqlErr::UniqueConstraintViolation(_)) => {
+        .map_err(|cause| {
+            if is_unique_violation(&cause) {
                 conflict("you have already asked for this course")
+            } else {
+                cause.into()
             }
-            _ => cause.into(),
         })?;
-        Audit::record(
-            &txn,
+        db::audit(
+            &mut tx,
             "course_request",
-            row.pid,
+            pid,
             "created",
             caller.actor(),
             None,
         )
         .await?;
         if let Some(manager) = worker.manager_pid {
-            Notification::push(
-                &txn,
+            db::notify(
+                &mut tx,
                 manager,
                 "course_requested",
                 "A course request is waiting for your decision.",
-                serde_json::json!({ "course_request_pid": row.pid }),
+                serde_json::json!({ "course_request_pid": pid }),
             )
             .await?;
         }
-        serde_json::json!({ "outcome": "requested", "pid": row.pid })
+        serde_json::json!({ "outcome": "requested", "pid": pid })
     };
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
         "has_manager": worker.manager_pid.is_some(),
         "started": answer,
@@ -143,11 +171,14 @@ pub(crate) async fn start(
 #[debug_handler]
 pub(crate) async fn mine(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
-    let rows = course_requests::Entity::find()
-        .filter(course_requests::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(course_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        CourseRequest,
+        "SELECT pid, worker_pid, course_ref, status, decided_on FROM course_requests
+         WHERE worker_pid = $1 ORDER BY id DESC",
+        worker.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     format::json(serde_json::json!({
         "has_manager": worker.manager_pid.is_some(),
         "requests": rows.iter().map(|row| serde_json::json!({
@@ -166,12 +197,14 @@ pub(crate) async fn team(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     let sub = subject(&caller)?.to_string();
     let mut waiting = Vec::new();
     for worker in reports_of(&ctx, &sub).await? {
-        let rows = course_requests::Entity::find()
-            .filter(course_requests::Column::WorkerPid.eq(worker.pid))
-            .filter(course_requests::Column::Status.eq("requested"))
-            .order_by_asc(course_requests::Column::Id)
-            .all(&ctx.db)
-            .await?;
+        let rows = sqlx::query_as!(
+            CourseRequest,
+            "SELECT pid, worker_pid, course_ref, status, decided_on FROM course_requests
+             WHERE worker_pid = $1 AND status = 'requested' ORDER BY id",
+            worker.pid,
+        )
+        .fetch_all(pool(&ctx))
+        .await?;
         for row in rows {
             let courses = catalogue_rows(&ctx, &row.course_ref).await?;
             let fees: Vec<_> = courses
@@ -194,33 +227,36 @@ pub(crate) async fn team(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     format::json(serde_json::json!({ "waiting": waiting }))
 }
 
-async fn open_request(ctx: &AppContext, pid: &str) -> Result<course_requests::Model> {
-    course_requests::Entity::find()
-        .filter(course_requests::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+async fn open_request(ctx: &AppContext, pid: &str) -> Result<CourseRequest> {
+    sqlx::query_as!(
+        CourseRequest,
+        "SELECT pid, worker_pid, course_ref, status, decided_on FROM course_requests WHERE pid = $1",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// Move a request out of `requested`, for one caller only: whoever gets there second is refused.
-async fn settle<C: ConnectionTrait>(
-    db: &C,
-    row: &course_requests::Model,
+async fn settle(
+    connection: &mut PgConnection,
+    row: &CourseRequest,
     to: &str,
     decided_by: Option<&str>,
 ) -> Result<()> {
-    let moved = course_requests::Entity::update_many()
-        .col_expr(course_requests::Column::Status, Expr::value(to))
-        .col_expr(course_requests::Column::DecidedBy, Expr::value(decided_by))
-        .col_expr(
-            course_requests::Column::DecidedOn,
-            Expr::value(decided_by.map(|_| Utc::now().date_naive())),
-        )
-        .filter(course_requests::Column::Pid.eq(row.pid))
-        .filter(course_requests::Column::Status.eq("requested"))
-        .exec(db)
-        .await?;
-    if moved.rows_affected == 1 {
+    let decided_on = decided_by.map(|_| Utc::now().date_naive());
+    let moved = sqlx::query!(
+        "UPDATE course_requests SET status = $1, decided_by = $2, decided_on = $3
+         WHERE pid = $4 AND status = 'requested'",
+        to,
+        decided_by,
+        decided_on,
+        row.pid,
+    )
+    .execute(connection)
+    .await?;
+    if moved.rows_affected() == 1 {
         Ok(())
     } else {
         Err(conflict("this request has already been settled"))
@@ -231,10 +267,10 @@ async fn settle<C: ConnectionTrait>(
 async fn decidable(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
-    row: &course_requests::Model,
+    row: &CourseRequest,
 ) -> Result<workers::Model> {
     let sub = subject(caller)?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     if is_line_manager(ctx, &worker, sub).await? {
         Ok(worker)
     } else {
@@ -242,13 +278,13 @@ async fn decidable(
     }
 }
 
-async fn tell_person<C: ConnectionTrait>(
-    db: &C,
-    row: &course_requests::Model,
+async fn tell_person(
+    connection: &mut PgConnection,
+    row: &CourseRequest,
     worker: Uuid,
 ) -> Result<()> {
-    Notification::push(
-        db,
+    db::notify(
+        connection,
         worker,
         "course_decided",
         "Your course request has been decided.",
@@ -268,13 +304,13 @@ pub(crate) async fn approve(
 ) -> Result<Response> {
     let row = open_request(&ctx, &pid).await?;
     let worker = decidable(&ctx, &caller, &row).await?;
-    let txn = ctx.db.begin().await?;
-    settle(&txn, &row, "approved", Some(subject(&caller)?)).await?;
-    if !enrolled(&txn, worker.pid, &row.course_ref).await? {
-        enrol(&txn, worker.pid, &row.course_ref, caller.actor()).await?;
+    let mut tx = pool(&ctx).begin().await?;
+    settle(&mut tx, &row, "approved", Some(subject(&caller)?)).await?;
+    if !enrolled(&mut tx, worker.pid, &row.course_ref).await? {
+        enrol(&mut tx, worker.pid, &row.course_ref, caller.actor()).await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "course_request",
         row.pid,
         "approved",
@@ -282,8 +318,8 @@ pub(crate) async fn approve(
         None,
     )
     .await?;
-    tell_person(&txn, &row, worker.pid).await?;
-    txn.commit().await?;
+    tell_person(&mut tx, &row, worker.pid).await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -296,10 +332,10 @@ pub(crate) async fn decline(
 ) -> Result<Response> {
     let row = open_request(&ctx, &pid).await?;
     let worker = decidable(&ctx, &caller, &row).await?;
-    let txn = ctx.db.begin().await?;
-    settle(&txn, &row, "declined", Some(subject(&caller)?)).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    settle(&mut tx, &row, "declined", Some(subject(&caller)?)).await?;
+    db::audit(
+        &mut tx,
         "course_request",
         row.pid,
         "declined",
@@ -307,8 +343,8 @@ pub(crate) async fn decline(
         None,
     )
     .await?;
-    tell_person(&txn, &row, worker.pid).await?;
-    txn.commit().await?;
+    tell_person(&mut tx, &row, worker.pid).await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -324,10 +360,10 @@ pub(crate) async fn withdraw(
     if row.worker_pid != worker.pid {
         return Err(Error::NotFound);
     }
-    let txn = ctx.db.begin().await?;
-    settle(&txn, &row, "withdrawn", None).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    settle(&mut tx, &row, "withdrawn", None).await?;
+    db::audit(
+        &mut tx,
         "course_request",
         row.pid,
         "withdrawn",
@@ -335,6 +371,6 @@ pub(crate) async fn withdraw(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }

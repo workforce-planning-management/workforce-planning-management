@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT skill_pid FROM skill_pool_members WHERE pool_pid = ANY($1) AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_pool_members",
+            "name": "skill_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "0dfdf83866ba777b83339dcc7d5df428a51dbbb1157fde3fc53c7b7f392d5652"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT kind, start_on, end_on FROM leave_requests\n          WHERE worker_pid = $1 AND status = 'approved' AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "start_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "start_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "end_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "end_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "1d9064c9b2dfcb228f8e58c5ad4c729b5ffb8f789767e0d8255061ce2908654c"
+}

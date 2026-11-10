@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO programme_demands (pid, programme_ref, pool_pid, month, fte_centi, status)\n         VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'proposed'))\n         ON CONFLICT (programme_ref, pool_pid, month, source) WHERE deleted_at IS NULL\n         DO UPDATE SET fte_centi = EXCLUDED.fte_centi, status = COALESCE($6, programme_demands.status)\n         RETURNING pid",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Date",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e2658001b98e1b8aecb22c00a600f4f7e11d964b7494745df911b94bbe2efced"
+}

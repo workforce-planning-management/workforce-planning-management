@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE workers SET engagement_ends_on = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7022bc6cdf5f26f76c8e00406422fd3efc814654e400f29633a3fcb705c8b1d"
+}

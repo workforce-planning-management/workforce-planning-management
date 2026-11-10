@@ -6,7 +6,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn plan_with_breaches(request: &axa::TestServer, org: &str) -> String {
+async fn plan_with_breaches(request: &axa_test::TestServer, org: &str) -> String {
     for i in 0..6 {
         request
             .post("/api/workers")
@@ -46,7 +46,7 @@ async fn plan_with_breaches(request: &axa::TestServer, org: &str) -> String {
     pid
 }
 
-async fn view(request: &axa::TestServer, pid: &str) -> Value {
+async fn view(request: &axa_test::TestServer, pid: &str) -> Value {
     request
         .get(&format!("/api/workforce-plans/{pid}/tolerances"))
         .await
@@ -57,9 +57,41 @@ async fn view(request: &axa::TestServer, pid: &str) -> Value {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_breach_is_escalated_up_three_levels_and_decided_with_the_measure_kept() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let pid = plan_with_breaches(&request, &org).await;
+        // An HR administrator of the organization with a worker record, to be told.
+        let admin: Value = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": a_person(), "organization_ref": org, "worker_number": "E-ADMIN",
+                "display_name": "Escalation Admin", "employment_type": "permanent",
+                "department": "people", "job_title": "HR", "hired_on": "2020-01-05",
+            }))
+            .await
+            .json();
+        let admin = uuid::Uuid::parse_str(admin["pid"].as_str().unwrap()).unwrap();
+        let pool = workforce_planning_management::db::pool(&ctx);
+        sqlx::query(
+            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on, worker_pid)
+             VALUES ($1, $2, $3, 'hr_admin', '2020-01-01', $4)",
+        )
+        .bind(uuid::Uuid::new_v4())
+        .bind(a_person())
+        .bind(&org)
+        .bind(admin)
+        .execute(pool)
+        .await
+        .unwrap();
+        let told = || async {
+            sqlx::query_scalar::<_, String>(
+                "SELECT body FROM notifications WHERE worker_pid = $1 AND kind = 'escalation' ORDER BY id",
+            )
+            .bind(admin)
+            .fetch_all(pool)
+            .await
+            .unwrap()
+        };
         let url = format!("/api/workforce-plans/{pid}/escalations");
         let resources = |v: &Value| {
             v["dimensions"]
@@ -222,6 +254,12 @@ async fn a_breach_is_escalated_up_three_levels_and_decided_with_the_measure_kept
         assert_eq!(history.as_array().unwrap().len(), 2);
         assert_eq!(history[0]["pid"], again["pid"], "open first");
         assert_eq!(history[1]["status"], "decided");
+        // The administrator was told of the two raisings and each level, and never of the note.
+        let bodies = told().await;
+        assert_eq!(bodies.len(), 4, "{bodies:?}");
+        assert!(bodies.iter().all(|b| !b.contains("the gap is wider")), "{bodies:?}");
+        assert!(bodies[0].starts_with("An escalation was raised"), "{bodies:?}");
+        assert!(bodies[1].starts_with("An escalation went up a level"), "{bodies:?}");
         let none: Value = request
             .get(&format!("/api/escalations?organization={}", an_org()))
             .await

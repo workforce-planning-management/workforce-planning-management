@@ -1,0 +1,110 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.name, i.item_key, i.note, a.workstation, a.status,\n                w.pid AS worker_pid, w.department, w.display_name\n         FROM ergonomic_items i\n         JOIN ergonomic_assessments a ON a.pid = i.assessment_pid AND a.deleted_at IS NULL\n         JOIN workers w ON w.pid = a.worker_pid AND w.deleted_at IS NULL\n         WHERE i.deleted_at IS NULL AND i.ok = false\n         ORDER BY i.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_items",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "item_key",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_items",
+            "name": "item_key"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_items",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "workstation",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "workstation"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "00707b613145dd0dc85c62859241776221d35ec1b8b8cdc0192eff1baf98f1ac"
+}

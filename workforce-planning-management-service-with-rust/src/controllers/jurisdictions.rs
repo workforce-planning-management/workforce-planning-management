@@ -10,18 +10,18 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::Json;
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ConnectionTrait, DbBackend, Statement, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::workers;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::jurisdiction::{self as rules, Layer, Link, Row, Status};
 
 /// One organization's chain links and parameter rows.
@@ -99,7 +99,7 @@ impl Scope {
     /// # Errors
     ///
     /// A database error.
-    pub async fn for_worker<C: ConnectionTrait>(db: &C, worker: &workers::Model) -> Result<Self> {
+    pub async fn for_worker(db: &PgPool, worker: &workers::Model) -> Result<Self> {
         let organization = worker.organization_ref.clone();
         let profile = profiles_for(db, std::slice::from_ref(&organization))
             .await?
@@ -118,7 +118,7 @@ impl Scope {
     /// # Errors
     ///
     /// A database error.
-    pub async fn for_organization<C: ConnectionTrait>(db: &C, organization: &str) -> Result<Self> {
+    pub async fn for_organization(db: &PgPool, organization: &str) -> Result<Self> {
         let profile = profiles_for(db, &[organization.to_string()])
             .await?
             .remove(organization)
@@ -151,20 +151,14 @@ impl Scope {
 /// # Errors
 ///
 /// A database error.
-pub async fn home_jurisdiction<C: ConnectionTrait>(
-    db: &C,
-    organization: &str,
-) -> Result<Option<String>> {
-    Ok(db
-        .query_one_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT home_jurisdiction FROM organization_settings WHERE organization_ref = $1",
-            [organization.into()],
-        ))
-        .await?
-        .map(|row| row.try_get::<Option<String>>("", "home_jurisdiction"))
-        .transpose()?
-        .flatten())
+pub async fn home_jurisdiction(db: &PgPool, organization: &str) -> Result<Option<String>> {
+    Ok(sqlx::query_scalar!(
+        "SELECT home_jurisdiction FROM organization_settings WHERE organization_ref = $1",
+        organization,
+    )
+    .fetch_optional(db)
+    .await?
+    .flatten())
 }
 
 /// Every organization with a home jurisdiction recorded, by reference.
@@ -172,15 +166,12 @@ pub async fn home_jurisdiction<C: ConnectionTrait>(
 /// # Errors
 ///
 /// A database error.
-pub async fn organizations_with_a_home<C: ConnectionTrait>(db: &C) -> Result<Vec<String>> {
-    db.query_all_raw(Statement::from_string(
-        DbBackend::Postgres,
+pub async fn organizations_with_a_home(db: &PgPool) -> Result<Vec<String>> {
+    Ok(sqlx::query_scalar!(
         "SELECT organization_ref FROM organization_settings WHERE home_jurisdiction IS NOT NULL ORDER BY organization_ref",
-    ))
-    .await?
-    .into_iter()
-    .map(|row| row.try_get::<String>("", "organization_ref").map_err(Into::into))
-    .collect()
+    )
+    .fetch_all(db)
+    .await?)
 }
 
 /// Load the profiles of `organizations` (missing ones are empty).
@@ -188,8 +179,8 @@ pub async fn organizations_with_a_home<C: ConnectionTrait>(db: &C) -> Result<Vec
 /// # Errors
 ///
 /// A database error.
-pub async fn profiles_for<C: ConnectionTrait>(
-    db: &C,
+pub async fn profiles_for(
+    db: &PgPool,
     organizations: &[String],
 ) -> Result<BTreeMap<String, Profile>> {
     let mut out: BTreeMap<String, Profile> = organizations
@@ -199,54 +190,45 @@ pub async fn profiles_for<C: ConnectionTrait>(
     if organizations.is_empty() {
         return Ok(out);
     }
-    let orgs: Vec<sea_orm::Value> = vec![organizations.to_vec().into()];
-    for row in db
-        .query_all_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT organization_ref, code, layer, parent_code FROM jurisdictions WHERE organization_ref = ANY($1)",
-            orgs.clone(),
-        ))
-        .await?
+    for row in sqlx::query!(
+        "SELECT organization_ref, code, layer, parent_code FROM jurisdictions WHERE organization_ref = ANY($1)",
+        organizations,
+    )
+    .fetch_all(db)
+    .await?
     {
-        let org: String = row.try_get("", "organization_ref")?;
-        let layer: String = row.try_get("", "layer")?;
-        if let (Some(profile), Some(layer)) = (out.get_mut(&org), Layer::parse(&layer)) {
+        if let (Some(profile), Some(layer)) = (out.get_mut(&row.organization_ref), Layer::parse(&row.layer)) {
             profile.links.push(Link {
-                code: row.try_get("", "code")?,
+                code: row.code,
                 layer,
-                parent: row.try_get("", "parent_code")?,
+                parent: row.parent_code,
             });
         }
     }
-    for row in db
-        .query_all_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT organization_ref, code, key, value, effective_from, effective_to, source, status, id
-               FROM jurisdiction_parameters WHERE organization_ref = ANY($1) ORDER BY id",
-            orgs,
-        ))
-        .await?
+    for row in sqlx::query!(
+        "SELECT organization_ref, code, key, value, effective_from, effective_to, source, status, id
+           FROM jurisdiction_parameters WHERE organization_ref = ANY($1) ORDER BY id",
+        organizations,
+    )
+    .fetch_all(db)
+    .await?
     {
-        let org: String = row.try_get("", "organization_ref")?;
-        let key: String = row.try_get("", "key")?;
-        let raw: serde_json::Value = row.try_get("", "value")?;
-        let status: String = row.try_get("", "status")?;
         let (Some(profile), Ok(value), Some(status)) = (
-            out.get_mut(&org),
-            rules::validate(&key, &raw),
-            Status::parse(&status),
+            out.get_mut(&row.organization_ref),
+            rules::validate(&row.key, &row.value),
+            Status::parse(&row.status),
         ) else {
             continue;
         };
         profile.rows.push(Row {
-            code: row.try_get("", "code")?,
-            key,
+            code: row.code,
+            key: row.key,
             value,
-            effective_from: row.try_get("", "effective_from")?,
-            effective_to: row.try_get("", "effective_to")?,
-            source: row.try_get("", "source")?,
+            effective_from: row.effective_from,
+            effective_to: row.effective_to,
+            source: row.source,
             status,
-            seq: row.try_get("", "id")?,
+            seq: row.id,
         });
     }
     Ok(out)
@@ -258,26 +240,21 @@ pub async fn profiles_for<C: ConnectionTrait>(
 /// # Errors
 ///
 /// A database error.
-pub async fn deployer_countries<C: ConnectionTrait>(
-    db: &C,
+pub async fn deployer_countries(
+    db: &PgPool,
     organization: &str,
 ) -> Result<Vec<(String, Option<String>)>> {
-    let mut out = Vec::new();
-    for row in db
-        .query_all_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT code, name FROM jurisdictions
-              WHERE organization_ref = $1 AND layer = 'national' AND code ~ '^[A-Z]{2}$' ORDER BY code",
-            [organization.into()],
-        ))
-        .await?
-    {
-        let code: String = row.try_get("", "code")?;
-        if !crate::rules::contact_details::is_iso_country(&code) {
-            out.push((code, row.try_get("", "name")?));
-        }
-    }
-    Ok(out)
+    Ok(sqlx::query!(
+        "SELECT code, name FROM jurisdictions
+          WHERE organization_ref = $1 AND layer = 'national' AND code ~ '^[A-Z]{2}$' ORDER BY code",
+        organization,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .filter(|row| !crate::rules::contact_details::is_iso_country(&row.code))
+    .map(|row| (row.code, row.name))
+    .collect())
 }
 
 /// What a reader needs of a value beyond its registry shape (WPM-T384): refusal reasons are lowercase tokens, and reporting tiers
@@ -332,54 +309,44 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     hr_only(&ctx, &caller, &q.organization).await?;
-    let org: Vec<sea_orm::Value> = vec![q.organization.clone().into()];
-    let codes = ctx
-        .db
-        .query_all_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT code, layer, parent_code, name FROM jurisdictions WHERE organization_ref = $1 ORDER BY code",
-            org.clone(),
-        ))
-        .await?
-        .into_iter()
-        .map(|row| -> Result<serde_json::Value, sea_orm::DbErr> {
-            Ok(json!({
-                "code": row.try_get::<String>("", "code")?,
-                "layer": row.try_get::<String>("", "layer")?,
-                "parent_code": row.try_get::<Option<String>>("", "parent_code")?,
-                "name": row.try_get::<Option<String>>("", "name")?,
-            }))
+    let db = crate::db::pool(&ctx);
+    let codes: Vec<serde_json::Value> = sqlx::query!(
+        "SELECT code, layer, parent_code, name FROM jurisdictions WHERE organization_ref = $1 ORDER BY code",
+        q.organization,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|row| json!({ "code": row.code, "layer": row.layer, "parent_code": row.parent_code, "name": row.name }))
+    .collect();
+    let parameters: Vec<serde_json::Value> = sqlx::query!(
+        "SELECT pid, code, key, value, effective_from, effective_to, source, checked_on, status, created_at
+           FROM jurisdiction_parameters WHERE organization_ref = $1 ORDER BY code, key, effective_from, id",
+        q.organization,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|row| {
+        json!({
+            "pid": row.pid,
+            "code": row.code,
+            "key": row.key,
+            "value": row.value,
+            "effective_from": row.effective_from,
+            "effective_to": row.effective_to,
+            "source": row.source,
+            "checked_on": row.checked_on,
+            "status": row.status,
+            // As the answer gave it before: with a `+00:00` offset, not `Z`.
+            "created_at": row.created_at.fixed_offset(),
         })
-        .collect::<Result<Vec<_>, _>>()?;
-    let parameters = ctx
-        .db
-        .query_all_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
-            "SELECT pid, code, key, value, effective_from, effective_to, source, checked_on, status, created_at
-               FROM jurisdiction_parameters WHERE organization_ref = $1 ORDER BY code, key, effective_from, id",
-            org,
-        ))
-        .await?
-        .into_iter()
-        .map(|row| -> Result<serde_json::Value, sea_orm::DbErr> {
-            Ok(json!({
-                "pid": row.try_get::<Uuid>("", "pid")?,
-                "code": row.try_get::<String>("", "code")?,
-                "key": row.try_get::<String>("", "key")?,
-                "value": row.try_get::<serde_json::Value>("", "value")?,
-                "effective_from": row.try_get::<NaiveDate>("", "effective_from")?,
-                "effective_to": row.try_get::<Option<NaiveDate>>("", "effective_to")?,
-                "source": row.try_get::<String>("", "source")?,
-                "checked_on": row.try_get::<Option<NaiveDate>>("", "checked_on")?,
-                "status": row.try_get::<String>("", "status")?,
-                "created_at": row.try_get::<chrono::DateTime<chrono::FixedOffset>>("", "created_at")?,
-            }))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let home = home_jurisdiction(&ctx.db, &q.organization).await?;
+    })
+    .collect();
+    let home = home_jurisdiction(db, &q.organization).await?;
     format::json(json!({
         "organization_ref": q.organization,
         "home_jurisdiction": home,
@@ -437,10 +404,13 @@ async fn record_code(
     }
     ensure_valid(&problems)?;
     let layer = layer.unwrap_or(Layer::National);
-    let mut profile = profiles_for(&ctx.db, std::slice::from_ref(&p.organization_ref))
-        .await?
-        .remove(&p.organization_ref)
-        .unwrap_or_default();
+    let mut profile = profiles_for(
+        crate::db::pool(&ctx),
+        std::slice::from_ref(&p.organization_ref),
+    )
+    .await?
+    .remove(&p.organization_ref)
+    .unwrap_or_default();
     profile.links.retain(|link| link.code != p.code);
     profile.links.push(Link {
         code: p.code.clone(),
@@ -456,23 +426,21 @@ async fn record_code(
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
-    txn.execute_raw(Statement::from_sql_and_values(
-        DbBackend::Postgres,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
         "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code, name) VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (organization_ref, code)
          DO UPDATE SET layer = EXCLUDED.layer, parent_code = EXCLUDED.parent_code, name = EXCLUDED.name, updated_at = now()",
-        [
-            p.organization_ref.clone().into(),
-            p.code.clone().into(),
-            layer.as_str().into(),
-            p.parent_code.clone().into(),
-            name.map(str::to_string).into(),
-        ],
-    ))
+        p.organization_ref,
+        p.code,
+        layer.as_str(),
+        p.parent_code,
+        name,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "jurisdiction",
         Uuid::new_v4(),
         "jurisdiction_recorded",
@@ -480,7 +448,7 @@ async fn record_code(
         Some(json!({ "code": p.code, "layer": layer.as_str(), "parent_code": p.parent_code })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(
         json!({ "code": p.code, "layer": layer.as_str(), "parent_code": p.parent_code, "name": name }),
     )
@@ -540,28 +508,26 @@ async fn add_parameter(
     let canonical = serde_json::to_value(value.map_err(|m| unprocessable(&m))?)
         .map_err(|e| Error::Message(e.to_string()))?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    txn.execute_raw(Statement::from_sql_and_values(
-        DbBackend::Postgres,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
         "INSERT INTO jurisdiction_parameters
              (pid, organization_ref, code, key, value, effective_from, effective_to, source, checked_on, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-        [
-            pid.into(),
-            p.organization_ref.clone().into(),
-            p.code.clone().into(),
-            p.key.clone().into(),
-            canonical.clone().into(),
-            p.effective_from.into(),
-            p.effective_to.into(),
-            source.to_string().into(),
-            p.checked_on.into(),
-            p.status.clone().into(),
-        ],
-    ))
+        pid,
+        p.organization_ref,
+        p.code,
+        p.key,
+        canonical,
+        p.effective_from,
+        p.effective_to,
+        source,
+        p.checked_on,
+        p.status,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "jurisdiction_parameter",
         pid,
         "jurisdiction_parameter_added",
@@ -569,7 +535,7 @@ async fn add_parameter(
         Some(json!({ "code": p.code, "key": p.key, "effective_from": p.effective_from, "status": p.status })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
         "pid": pid,
         "code": p.code,
@@ -611,27 +577,31 @@ async fn set_home(
                 "home_jurisdiction must be a jurisdiction code (2 or 3 capital letters or digits, optionally - and 1 to 3 more)",
             ));
         }
-        let profile = profiles_for(&ctx.db, std::slice::from_ref(&p.organization_ref))
-            .await?
-            .remove(&p.organization_ref)
-            .unwrap_or_default();
+        let profile = profiles_for(
+            crate::db::pool(&ctx),
+            std::slice::from_ref(&p.organization_ref),
+        )
+        .await?
+        .remove(&p.organization_ref)
+        .unwrap_or_default();
         if let Err(error) = rules::chain(code, &profile.links) {
             return Err(unprocessable(&format!(
                 "the chain from {code} is malformed: {error:?}"
             )));
         }
     }
-    let previous = home_jurisdiction(&ctx.db, &p.organization_ref).await?;
-    let txn = ctx.db.begin().await?;
-    txn.execute_raw(Statement::from_sql_and_values(
-        DbBackend::Postgres,
+    let previous = home_jurisdiction(crate::db::pool(&ctx), &p.organization_ref).await?;
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
         "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)
          ON CONFLICT (organization_ref) DO UPDATE SET home_jurisdiction = EXCLUDED.home_jurisdiction, updated_at = now()",
-        [p.organization_ref.clone().into(), code.clone().into()],
-    ))
+        p.organization_ref,
+        code,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "organization_settings",
         Uuid::new_v4(),
         "home_jurisdiction_set",
@@ -639,7 +609,7 @@ async fn set_home(
         Some(json!({ "organization_ref": p.organization_ref, "from": previous, "to": code })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "organization_ref": p.organization_ref, "home_jurisdiction": code }))
 }
 

@@ -156,21 +156,19 @@ async fn succession_plans_are_restated_and_critical_ones_without_a_ready_now_can
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn expiring_training_lists_certificates_that_lapse_inside_the_horizon() {
     crate::requests::request_open(|request, ctx| async move {
-        use sea_orm::ConnectionTrait;
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let worker = seed_worker!(&request, &org, format!("TX-{tag}-W"), None).await;
         let course = format!("course:{}", uuid::Uuid::new_v4());
         let day = |n: i64| (chrono::Utc::now().date_naive() + chrono::Duration::days(n)).to_string();
         for (n, tail) in [(10_i64, "near"), (200, "far")] {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on) \
                      VALUES ('{}', '{worker}', '{course}-{tail}', 'completed', '{}', '{}')",
                     uuid::Uuid::new_v4(),
                     day(-30),
                     day(n)
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

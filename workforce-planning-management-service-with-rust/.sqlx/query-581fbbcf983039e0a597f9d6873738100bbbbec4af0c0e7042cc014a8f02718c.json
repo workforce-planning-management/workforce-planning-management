@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT framework_slug, ref AS reference, label FROM skill_external_refs WHERE skill_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "framework_slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "framework_slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "label"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "581fbbcf983039e0a597f9d6873738100bbbbec4af0c0e7042cc014a8f02718c"
+}

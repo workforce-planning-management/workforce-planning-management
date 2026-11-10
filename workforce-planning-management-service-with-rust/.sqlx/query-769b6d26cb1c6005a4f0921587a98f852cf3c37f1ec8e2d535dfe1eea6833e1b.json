@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT initiative_pid, skill_pid, direction, note FROM initiative_skill_shifts\n          WHERE ($1::uuid IS NULL OR initiative_pid = $1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "initiative_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "initiative_skill_shifts",
+            "name": "initiative_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "initiative_skill_shifts",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "direction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "initiative_skill_shifts",
+            "name": "direction"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "initiative_skill_shifts",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "769b6d26cb1c6005a4f0921587a98f852cf3c37f1ec8e2d535dfe1eea6833e1b"
+}

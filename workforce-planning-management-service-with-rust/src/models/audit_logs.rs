@@ -1,17 +1,10 @@
-//! `audit_logs` model — record and query the audit trail.
+//! `audit_logs` model — the audit trail's chain report and the guard that keeps each audit row in its change's transaction.
+//! The row is written by [`crate::db::audit`] and the chain is checked by `controllers::audits::verify_chain`.
 //!
 //! Every mutation **and every sensitive read** (salary-bearing worker reads,
 //! payslips, review content, succession plans) writes one row. The `snapshot` JSON carries the action
 //! detail (old/new state, override reasons, the `department` where
 //! relevant — which is what the department-scoped query filters on).
-
-use axa::prelude::*;
-use sea_orm::{ConnectionTrait, QueryOrder, QuerySelect};
-use uuid::Uuid;
-
-pub use super::_entities::audit_logs::{self, ActiveModel, Entity, Model};
-
-impl ActiveModelBehavior for super::_entities::audit_logs::ActiveModel {}
 
 /// The result of checking the audit chain.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
@@ -27,173 +20,8 @@ pub struct ChainReport {
     pub first_break: Option<i64>,
 }
 
-impl Model {
-    /// Record one audit entry. `actor` is the caller's `sub` (user
-    /// `pid`) when a verified token was presented, else `None`.
-    ///
-    /// Generic over [`ConnectionTrait`] so it runs on the handler's
-    /// `&DatabaseTransaction` — the audit row commits **with** the
-    /// mutation it records (family invariant 8), never separately.
-    ///
-    /// # Errors
-    ///
-    /// When the insert fails.
-    pub async fn record<C: ConnectionTrait>(
-        db: &C,
-        entity: &str,
-        entity_pid: Uuid,
-        action: &str,
-        actor: Option<&str>,
-        snapshot: Option<serde_json::Value>,
-    ) -> ModelResult<Self> {
-        let entry = audit_logs::ActiveModel {
-            entity: ActiveValue::set(entity.to_string()),
-            entity_pid: ActiveValue::set(entity_pid),
-            action: ActiveValue::set(action.to_string()),
-            actor: ActiveValue::set(actor.map(ToString::to_string)),
-            snapshot: ActiveValue::set(snapshot),
-            ..Default::default()
-        }
-        .insert(db)
-        .await?;
-        Ok(entry)
-    }
-
-    /// Check the whole chain: every entry's hash is the hash of its content and the entry
-    /// before it, in order. Reports the first place it breaks, the number of entries and the
-    /// head hash to record somewhere the database cannot reach.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn verify_chain(db: &DatabaseConnection) -> ModelResult<ChainReport> {
-        use sea_orm::{DbBackend, Statement};
-        let broken = db
-            .query_one_raw(Statement::from_string(
-                DbBackend::Postgres,
-                "SELECT chain_seq FROM (
-                     SELECT chain_seq, prev_hash, entry_hash,
-                            audit_entry_hash(prev_hash, chain_seq, entity, entity_pid, action, actor, snapshot, created_at) AS recomputed,
-                            lag(entry_hash) OVER (ORDER BY chain_seq) AS previous,
-                            lag(chain_seq) OVER (ORDER BY chain_seq) AS previous_seq
-                     FROM audit_logs
-                 ) t
-                 WHERE entry_hash <> recomputed
-                    OR prev_hash <> COALESCE(previous, repeat('0', 64))
-                    OR chain_seq <> COALESCE(previous_seq, 0) + 1
-                 ORDER BY chain_seq LIMIT 1",
-            ))
-            .await?
-            .map(|row| row.try_get::<i64>("", "chain_seq"))
-            .transpose()?;
-        let head = db
-            .query_one_raw(Statement::from_string(
-                DbBackend::Postgres,
-                "SELECT count(*)::bigint AS entries,
-                        (SELECT entry_hash FROM audit_logs ORDER BY chain_seq DESC LIMIT 1) AS head_hash
-                 FROM audit_logs",
-            ))
-            .await?;
-        let (entries, head_hash) = match head {
-            Some(row) => (
-                row.try_get::<i64>("", "entries")?,
-                row.try_get::<Option<String>>("", "head_hash")?,
-            ),
-            None => (0, None),
-        };
-        Ok(ChainReport {
-            ok: broken.is_none(),
-            entries,
-            head_hash,
-            first_break: broken,
-        })
-    }
-
-    /// Most-recent audit entries, capped at `limit`.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn recent(db: &DatabaseConnection, limit: u64) -> ModelResult<Vec<Self>> {
-        let rows = audit_logs::Entity::find()
-            .order_by_desc(audit_logs::Column::Id)
-            .limit(limit)
-            .all(db)
-            .await?;
-        Ok(rows)
-    }
-
-    /// Entries after `after_seq` in chain order, oldest first, at most `limit`: one page of the export for a
-    /// security monitoring system, which resumes from the last `chain_seq` it saw.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn export_after(
-        db: &DatabaseConnection,
-        after_seq: i64,
-        limit: u64,
-    ) -> ModelResult<Vec<Self>> {
-        let rows = audit_logs::Entity::find()
-            .filter(audit_logs::Column::ChainSeq.gt(after_seq))
-            .order_by_asc(audit_logs::Column::ChainSeq)
-            .limit(limit)
-            .all(db)
-            .await?;
-        Ok(rows)
-    }
-
-    /// Audit entries for one record, most-recent first.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn for_entity(db: &DatabaseConnection, entity_pid: Uuid) -> ModelResult<Vec<Self>> {
-        let rows = audit_logs::Entity::find()
-            .filter(audit_logs::Column::EntityPid.eq(entity_pid))
-            .order_by_desc(audit_logs::Column::Id)
-            .all(db)
-            .await?;
-        Ok(rows)
-    }
-
-    /// The department-scoped query: entries since `since` whose
-    /// snapshot names this `department`, most-recent first, capped at
-    /// `limit`. The filter is applied over the snapshot JSON in Rust
-    /// (cross-backend; the candidate set is already time-bounded).
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn for_department_since(
-        db: &DatabaseConnection,
-        department: &str,
-        since: chrono::DateTime<chrono::FixedOffset>,
-        limit: u64,
-    ) -> ModelResult<Vec<Self>> {
-        let rows = audit_logs::Entity::find()
-            .filter(audit_logs::Column::CreatedAt.gte(since))
-            .order_by_desc(audit_logs::Column::Id)
-            .limit(limit.saturating_mul(10)) // headroom before the in-app filter
-            .all(db)
-            .await?;
-        let rows = rows
-            .into_iter()
-            .filter(|row| {
-                row.snapshot
-                    .as_ref()
-                    .and_then(|s| s.get("department"))
-                    .and_then(serde_json::Value::as_str)
-                    == Some(department)
-            })
-            .take(usize::try_from(limit).unwrap_or(usize::MAX))
-            .collect();
-        Ok(rows)
-    }
-}
-
 /// A source guard (WPM-T250): an audit row commits with the change it records, so every
-/// `Audit::record` outside a transaction must be on [`READ_AUDITS`], the audits of reads.
+/// `db::audit` outside a transaction must be on [`READ_AUDITS`], the audits of reads.
 #[cfg(test)]
 mod tests {
     /// `(file under src/, action)`: audits of a read, which have no write to share a transaction with.
@@ -246,8 +74,11 @@ mod tests {
         ("controllers/payroll.rs", "comparison_read"),
     ];
 
+    /// The audit writer (WPM-D184).
+    const WRITER: &str = "db::audit(";
+
     /// The connection arguments that are, or are handed, a transaction.
-    const IN_TRANSACTION: &[&str] = &["&txn", "txn", "db"];
+    const IN_TRANSACTION: &[&str] = &["&txn", "txn", "db", "&mut tx", "connection"];
 
     /// The top-level arguments of the call that opens at `open` (the index after its `(`).
     fn arguments(source: &str, open: usize) -> Vec<String> {
@@ -313,8 +144,8 @@ mod tests {
                 continue;
             }
             let source = std::fs::read_to_string(&path).unwrap();
-            for (at, _) in source.match_indices("Audit::record(") {
-                let args = arguments(&source, at + "Audit::record(".len());
+            for (at, _) in source.match_indices(WRITER) {
+                let args = arguments(&source, at + WRITER.len());
                 let action = args.get(3).map_or("", |a| a.trim_matches('"')).to_string();
                 if IN_TRANSACTION.contains(&args[0].as_str()) {
                     continue;
@@ -342,10 +173,10 @@ mod tests {
 
     #[test]
     fn arguments_split_at_the_top_level_only() {
-        let source = r#"Audit::record(&ctx.db, "worker", w.pid, "moved, twice", caller.actor(), Some(json!({ "a": [1, 2] }))).await"#;
-        let args = arguments(source, "Audit::record(".len());
+        let source = r#"db::audit(&mut *db::pool(&ctx).acquire().await?, "worker", w.pid, "moved, twice", caller.actor(), Some(json!({ "a": [1, 2] }))).await"#;
+        let args = arguments(source, "db::audit(".len());
         assert_eq!(args.len(), 6);
-        assert_eq!(args[0], "&ctx.db");
+        assert_eq!(args[0], "&mut *db::pool(&ctx).acquire().await?");
         assert_eq!(args[3], "\"moved, twice\"");
         assert_eq!(args[5], r#"Some(json!({ "a": [1, 2] }))"#);
     }

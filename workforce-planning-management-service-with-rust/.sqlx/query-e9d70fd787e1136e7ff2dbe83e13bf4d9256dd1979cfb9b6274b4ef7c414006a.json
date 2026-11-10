@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t), '[]') AS \"rows!\" FROM time_entries t WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e9d70fd787e1136e7ff2dbe83e13bf4d9256dd1979cfb9b6274b4ef7c414006a"
+}

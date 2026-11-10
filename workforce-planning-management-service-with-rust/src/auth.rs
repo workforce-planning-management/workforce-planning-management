@@ -240,13 +240,14 @@ pub fn parse_bool(value: &str) -> bool {
     )
 }
 
-/// Paths that stay public even when enforcement is on: health/ping, the
+/// Paths that stay public even when enforcement is on: the three health probes (axa 0.11, WPM-T482), the
 /// posture probe, and the `OpenAPI` doc + Swagger UI. Everything else,
 /// including `/metrics.prom` (a scraper presents a bearer token), requires a
 /// valid bearer token.
 pub(crate) fn is_public_path(path: &str) -> bool {
-    path == "/_health"
-        || path == "/_ping"
+    path == axa::health::LIVE
+        || path == axa::health::READY
+        || path == axa::health::STARTUP
         || path == "/_posture"
         || path == "/api-docs/openapi.json"
         // A verifier has no account here: the issuer's public key and the revocation list (WPM-R157, WPM-D109).
@@ -437,20 +438,48 @@ fn file_mtime(path: &str) -> Option<std::time::SystemTime> {
 /// `mask` obligation) — entirely as policy, no code change.
 #[must_use]
 pub fn worker_resource_attrs(worker: &workers::Model) -> BTreeMap<String, Vec<String>> {
+    record_attrs(&RecordFacts {
+        person_ref: &worker.person_ref,
+        department: &worker.department,
+        status: &worker.status,
+        organization_ref: &worker.organization_ref,
+        manager_pid: worker.manager_pid,
+    })
+}
+
+/// The worker columns a per-record decision reads, for a query that
+/// selects only them rather than the whole row.
+#[derive(Debug, Clone, Copy)]
+pub struct RecordFacts<'a> {
+    /// `workers.person_ref`, the full `person:` URN.
+    pub person_ref: &'a str,
+    /// `workers.department`.
+    pub department: &'a str,
+    /// `workers.status`.
+    pub status: &'a str,
+    /// `workers.organization_ref`.
+    pub organization_ref: &'a str,
+    /// `workers.manager_pid`.
+    pub manager_pid: Option<uuid::Uuid>,
+}
+
+/// [`worker_resource_attrs`] from the columns alone.
+#[must_use]
+pub fn record_attrs(facts: &RecordFacts<'_>) -> BTreeMap<String, Vec<String>> {
     let mut attrs = BTreeMap::new();
-    let person = worker
+    let person = facts
         .person_ref
         .split_once(':')
-        .map_or(worker.person_ref.as_str(), |(_, id)| id);
+        .map_or(facts.person_ref, |(_, id)| id);
     attrs.insert("person".to_string(), vec![person.to_string()]);
-    attrs.insert("person_ref".to_string(), vec![worker.person_ref.clone()]);
-    attrs.insert("department".to_string(), vec![worker.department.clone()]);
-    attrs.insert("status".to_string(), vec![worker.status.clone()]);
+    attrs.insert("person_ref".to_string(), vec![facts.person_ref.to_string()]);
+    attrs.insert("department".to_string(), vec![facts.department.to_string()]);
+    attrs.insert("status".to_string(), vec![facts.status.to_string()]);
     attrs.insert(
         "organization_ref".to_string(),
-        vec![worker.organization_ref.clone()],
+        vec![facts.organization_ref.to_string()],
     );
-    if let Some(manager_pid) = worker.manager_pid {
+    if let Some(manager_pid) = facts.manager_pid {
         attrs.insert("manager".to_string(), vec![manager_pid.to_string()]);
     }
     attrs

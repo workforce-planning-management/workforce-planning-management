@@ -12,18 +12,18 @@
 //! administrator of the organization.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Datelike;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
 use super::{capacity, ensure_valid, forbidden, governance, key_person, oversight, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::{
     oversight_pack_withdrawals as withdrawals, oversight_packs as packs,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::need_to_know::has_privileged_attrs;
 use crate::validation::Problems;
@@ -53,8 +53,7 @@ pub(crate) async fn ensure_org_administrator(
     }
     if let Some(claims) = caller.claims()
         && (has_privileged_attrs(claims)
-            || memberships::has_role_in(&ctx.db, Some(claims), org, &["hr_admin", "org_admin"])
-                .await?)
+            || memberships::has_role_in(ctx, Some(claims), org, &["hr_admin", "org_admin"]).await?)
     {
         return Ok(());
     }
@@ -91,7 +90,7 @@ fn strip_deciding_body(status: &mut serde_json::Value) {
 /// A database error.
 pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Result<packs::Model> {
     let (month, payload) = pack_payload(ctx, org, today).await?;
-    insert_pack(&ctx.db, org, today, month, payload).await
+    insert_pack(&mut *pool(ctx).acquire().await?, org, today, month, payload).await
 }
 
 /// The month and frozen payload for `org` as of `today`, read before any transaction opens.
@@ -121,31 +120,38 @@ async fn pack_payload(
     Ok((month, payload))
 }
 
-/// Store a frozen pack on `db` (a transaction, when the caller audits it in the same one).
-async fn insert_pack<C: ConnectionTrait>(
-    db: &C,
+/// Store a frozen pack on `connection` (a transaction, when the caller audits it in the same one).
+async fn insert_pack(
+    connection: &mut sqlx::PgConnection,
     org: &str,
     today: chrono::NaiveDate,
     month: chrono::NaiveDate,
     payload: serde_json::Value,
 ) -> Result<packs::Model> {
-    Ok(packs::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(org.to_string()),
-        as_of: ActiveValue::set(today),
-        month: ActiveValue::set(month),
-        payload: ActiveValue::set(payload),
-        ..Default::default()
-    }
-    .insert(db)
+    Ok(sqlx::query_as!(
+        packs::Model,
+        r#"INSERT INTO oversight_packs (pid, organization_ref, as_of, month, payload)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, as_of, month, payload"#,
+        Uuid::new_v4(),
+        org,
+        today,
+        month,
+        payload,
+    )
+    .fetch_one(connection)
     .await?)
 }
 
 async fn withdrawal_of(ctx: &AppContext, pack: Uuid) -> Result<Option<withdrawals::Model>> {
-    Ok(withdrawals::Entity::find()
-        .filter(withdrawals::Column::PackPid.eq(pack))
-        .one(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        withdrawals::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pack_pid, withdrawn_on, reason
+           FROM oversight_pack_withdrawals WHERE pack_pid = $1"#,
+        pack,
+    )
+    .fetch_optional(pool(ctx))
+    .await?)
 }
 
 fn withdrawn_json(w: Option<&withdrawals::Model>) -> serde_json::Value {
@@ -173,10 +179,10 @@ async fn create(
     ensure_may_freeze(&ctx, &caller, &p.organization_ref).await?;
     let today = chrono::Utc::now().date_naive();
     let (month, payload) = pack_payload(&ctx, &p.organization_ref, today).await?;
-    let txn = ctx.db.begin().await?;
-    let row = insert_pack(&txn, &p.organization_ref, today, month, payload).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let row = insert_pack(&mut tx, &p.organization_ref, today, month, payload).await?;
+    db::audit(
+        &mut tx,
         "oversight_pack",
         row.pid,
         "frozen",
@@ -184,7 +190,7 @@ async fn create(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(pack_json(&row, None))
 }
 
@@ -199,22 +205,28 @@ pub struct OrgQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
+    page: super::Page,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let org = q
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let select = packs::Entity::find()
-        .filter(packs::Column::OrganizationRef.eq(&org))
-        .order_by_desc(packs::Column::Id);
-    let total = sea_orm::PaginatorTrait::count(select.clone(), &ctx.db).await?;
-    let (limit, offset) = window;
-    let rows = sea_orm::QuerySelect::offset(sea_orm::QuerySelect::limit(select, limit), offset)
-        .all(&ctx.db)
-        .await?;
+    let (limit, offset) = window.bounds();
+    let rows = sqlx::query!(
+        "SELECT pid, as_of, month FROM oversight_packs
+         WHERE organization_ref = $1
+         ORDER BY id DESC
+         LIMIT $2 OFFSET $3",
+        org,
+        limit,
+        offset,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    // The body is an object, so the page is cut here and the next page's `Link` set by hand.
+    let (rows, more) = window.split(rows);
     let mut out = Vec::new();
     for p in &rows {
         let w = withdrawal_of(&ctx, p.pid).await?;
@@ -222,11 +234,10 @@ async fn list(
             "pid": p.pid, "as_of": p.as_of, "month": p.month, "withdrawn": withdrawn_json(w.as_ref()),
         }));
     }
-    Ok(super::with_page_headers(
-        format::json(json!({ "organization_ref": org, "packs": out }))?,
-        total,
-        limit,
-        offset,
+    Ok(super::with_next(
+        axum::Json(json!({ "organization_ref": org, "packs": out })).into_response(),
+        &window,
+        more,
     ))
 }
 
@@ -236,11 +247,15 @@ async fn pack_in_scope(
     pid: &str,
 ) -> Result<packs::Model> {
     let pid = records::parse_pid(pid)?;
-    let row = packs::Entity::find()
-        .filter(packs::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        packs::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, as_of, month, payload
+           FROM oversight_packs WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -280,18 +295,21 @@ async fn withdraw(
     if withdrawal_of(&ctx, row.pid).await?.is_some() {
         return Err(unprocessable("this pack is already withdrawn"));
     }
-    let txn = ctx.db.begin().await?;
-    let w = withdrawals::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        pack_pid: ActiveValue::set(row.pid),
-        withdrawn_on: ActiveValue::set(chrono::Utc::now().date_naive()),
-        reason: ActiveValue::set(p.reason),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let w = sqlx::query_as!(
+        withdrawals::Model,
+        r#"INSERT INTO oversight_pack_withdrawals (pid, pack_pid, withdrawn_on, reason)
+           VALUES ($1, $2, $3, $4)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pack_pid, withdrawn_on, reason"#,
+        Uuid::new_v4(),
+        row.pid,
+        chrono::Utc::now().date_naive(),
+        p.reason,
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "oversight_pack",
         row.pid,
         "withdrawn",
@@ -299,7 +317,7 @@ async fn withdraw(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(pack_json(&row, Some(&w)))
 }
 

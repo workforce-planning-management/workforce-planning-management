@@ -1,0 +1,176 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_backups SET priority = $2, starts_on = $3, ends_on = $4, note = $5\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, backup_pid, priority,\n                  starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "backup_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "backup_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "priority",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "on_behalf"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Date",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "05afcbea8f1b580fa39c3cd4cfa7939d86d41f43017046474377ef0498df31fc"
+}

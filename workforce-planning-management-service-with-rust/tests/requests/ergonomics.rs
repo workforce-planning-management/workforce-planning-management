@@ -2,7 +2,6 @@
 //! checklist instantiates, completion is gated on every answer, a
 //! completed assessment freezes, and issues surface by department.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -117,11 +116,10 @@ async fn ergonomics_round_trip() {
         // A row written before keys existed, holding a default sentence and no key, is shown by that
         // sentence's key; one holding other words stays keyless.
         let old_pid = custom["pid"].as_str().unwrap();
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO ergonomic_items (pid, assessment_pid, name, created_at, updated_at) VALUES \
                  (gen_random_uuid(), '{old_pid}', 'Leg room clear; feet supported', now(), now())"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .expect("an old-style row");
         let listed: Value = request

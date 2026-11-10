@@ -11,16 +11,15 @@
 use std::collections::BTreeMap;
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{appraisal_nominations, appraisal_responses, appraisals, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db;
+use crate::models::_entities::appraisals;
 use crate::models::records;
 use crate::rules::appraisal as rules;
 use crate::rules::notify;
@@ -64,32 +63,38 @@ async fn create_appraisal(
         problems.push("competencies must be unique");
     }
     ensure_valid(&problems.into_vec())?;
-    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
-    let row = appraisals::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(subject.pid),
-        competencies: ActiveValue::set(serde_json::json!(payload.competencies)),
-        status: ActiveValue::set("draft".to_string()),
-        shared_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let subject = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let appraisal_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO appraisals (pid, worker_pid, competencies, status, shared_on, deleted_at)
+         VALUES ($1, $2, $3, 'draft', NULL, NULL)",
+        appraisal_pid,
+        subject.pid,
+        serde_json::json!(payload.competencies),
+    )
+    .execute(&mut *tx)
     .await?;
-    appraisal_nominations::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        appraisal_pid: ActiveValue::set(row.pid),
-        rater_pid: ActiveValue::set(subject.pid),
-        rater_group: ActiveValue::set("self".to_string()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    sqlx::query!(
+        "INSERT INTO appraisal_nominations (pid, appraisal_pid, rater_pid, rater_group) VALUES ($1, $2, $3, 'self')",
+        Uuid::new_v4(),
+        appraisal_pid,
+        subject.pid,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "appraisal", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "appraisal",
+        appraisal_pid,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: appraisal_pid.to_string(),
     })
 }
 
@@ -101,40 +106,37 @@ async fn list_appraisals(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let subject = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let subject = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
         &auth::worker_resource_attrs(&subject),
     )
     .map_err(record_rejection)?;
-    let rows = appraisals::Entity::find()
-        .filter(appraisals::Column::WorkerPid.eq(subject.pid))
-        .filter(appraisals::Column::DeletedAt.is_null())
-        .order_by_desc(appraisals::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let mut view = Vec::new();
-    for appraisal in &rows {
-        let nominated = appraisal_nominations::Entity::find()
-            .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-            .all(&ctx.db)
-            .await?
-            .len();
-        let responded = appraisal_responses::Entity::find()
-            .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-            .all(&ctx.db)
-            .await?
-            .len();
-        view.push(serde_json::json!({
-            "pid": appraisal.pid,
-            "status": appraisal.status,
-            "competencies": appraisal.competencies,
-            "shared_on": appraisal.shared_on,
-            "nominated": nominated,
-            "responded": responded,
-        }));
-    }
+    let rows = sqlx::query!(
+        r#"SELECT a.pid, a.status, a.competencies, a.shared_on,
+                  (SELECT COUNT(*) FROM appraisal_nominations n WHERE n.appraisal_pid = a.pid) AS "nominated!",
+                  (SELECT COUNT(*) FROM appraisal_responses r WHERE r.appraisal_pid = a.pid) AS "responded!"
+             FROM appraisals a
+            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL
+            ORDER BY a.id DESC"#,
+        subject.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let view: Vec<_> = rows
+        .iter()
+        .map(|appraisal| {
+            serde_json::json!({
+                "pid": appraisal.pid,
+                "status": appraisal.status,
+                "competencies": appraisal.competencies,
+                "shared_on": appraisal.shared_on,
+                "nominated": appraisal.nominated,
+                "responded": appraisal.responded,
+            })
+        })
+        .collect();
     format::json(view)
 }
 
@@ -165,42 +167,45 @@ async fn nominate(
     if appraisal.status != "draft" {
         return Err(unprocessable("nominations are frozen once collecting"));
     }
-    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
+    let rater = records::worker_by_pid(&ctx, payload.rater_pid).await?;
     if rater.pid == appraisal.worker_pid {
         return Err(unprocessable("the subject rates only as `self`"));
     }
-    let existing = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
-        .await?;
-    if existing.iter().any(|n| n.rater_pid == rater.pid) {
+    let existing = sqlx::query_scalar!(
+        "SELECT rater_pid FROM appraisal_nominations WHERE appraisal_pid = $1",
+        appraisal.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    if existing.contains(&rater.pid) {
         return Err(unprocessable("this rater is already nominated"));
     }
     if existing.len() >= rules::MAX_RATERS {
         return Err(unprocessable("at most 12 raters"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = appraisal_nominations::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        appraisal_pid: ActiveValue::set(appraisal.pid),
-        rater_pid: ActiveValue::set(rater.pid),
-        rater_group: ActiveValue::set(payload.group.clone()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let nomination_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO appraisal_nominations (pid, appraisal_pid, rater_pid, rater_group) VALUES ($1, $2, $3, $4)",
+        nomination_pid,
+        appraisal.pid,
+        rater.pid,
+        payload.group,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "appraisal_nomination",
-        row.pid,
+        nomination_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: nomination_pid.to_string(),
     })
 }
 
@@ -223,12 +228,13 @@ async fn appraisal_status(
     let appraisal = find_appraisal(&ctx, &pid).await?;
     rules::transition(&appraisal.status, &payload.to).map_err(|reason| unprocessable(&reason))?;
     if payload.to == "collecting" {
-        let non_self = appraisal_nominations::Entity::find()
-            .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-            .filter(appraisal_nominations::Column::RaterGroup.ne("self"))
-            .all(&ctx.db)
-            .await?
-            .len();
+        let non_self = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) AS "count!" FROM appraisal_nominations WHERE appraisal_pid = $1 AND rater_group <> 'self'"#,
+            appraisal.pid,
+        )
+        .fetch_one(db::pool(&ctx))
+        .await?;
+        let non_self = usize::try_from(non_self).unwrap_or(0);
         if non_self < rules::MIN_NON_SELF_RATERS {
             return Err(unprocessable(&format!(
                 "collecting requires at least {} non-self raters, have {non_self}",
@@ -238,28 +244,36 @@ async fn appraisal_status(
     }
     let from = appraisal.status.clone();
     let row_pid = appraisal.pid;
-    let mut active: appraisals::ActiveModel = appraisal.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if payload.to == "shared" {
-        active.shared_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    }
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
+    let shared_on = (payload.to == "shared").then(|| chrono::Utc::now().date_naive());
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        appraisals::Model,
+        r#"UPDATE appraisals SET status = $2, shared_on = COALESCE($3, shared_on)
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, competencies,
+                  status, shared_on, deleted_at AS "deleted_at: _""#,
+        appraisal.id,
+        payload.to,
+        shared_on,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     // Fan out the in-app notifications (WPM-R31): collecting tells
     // every rater; shared tells the subject. Reference-only bodies —
     // never scores or comments (WPM-D23).
-    let rater_pids: Vec<Uuid> = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::AppraisalPid.eq(row_pid))
-        .all(&txn)
-        .await?
-        .iter()
-        .map(|n| n.rater_pid)
-        .collect();
-    let subject = workers::Entity::find()
-        .filter(workers::Column::Pid.eq(updated.worker_pid))
-        .one(&txn)
-        .await?;
-    let subject_name = subject.map_or_else(String::new, |s| s.display_name);
+    let rater_pids: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT rater_pid FROM appraisal_nominations WHERE appraisal_pid = $1",
+        row_pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    let subject_name = sqlx::query_scalar!(
+        "SELECT display_name FROM workers WHERE pid = $1 LIMIT 1",
+        updated.worker_pid,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .unwrap_or_default();
     for (recipient, kind) in
         notify::appraisal_recipients(&payload.to, updated.worker_pid, &rater_pids)
     {
@@ -268,8 +282,8 @@ async fn appraisal_status(
         } else {
             format!("360\u{b0} feedback requested for {subject_name}")
         };
-        Notification::push(
-            &txn,
+        db::notify(
+            &mut tx,
             recipient,
             kind,
             &body,
@@ -277,8 +291,8 @@ async fn appraisal_status(
         )
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "appraisal",
         row_pid,
         "status_changed",
@@ -286,7 +300,7 @@ async fn appraisal_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -296,31 +310,32 @@ async fn appraisal_status(
 #[debug_handler]
 async fn get_appraisal(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let appraisal = find_appraisal(&ctx, &pid).await?;
-    let nominations = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-        .order_by_asc(appraisal_nominations::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let responses = appraisal_responses::Entity::find()
-        .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
-        .await?;
-    let responded: std::collections::HashSet<Uuid> =
-        responses.iter().map(|r| r.nomination_pid).collect();
-    let mut nomination_view = Vec::new();
-    for nomination in &nominations {
-        let rater = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(nomination.rater_pid))
-            .one(&ctx.db)
-            .await?;
-        nomination_view.push(serde_json::json!({
-            "pid": nomination.pid,
-            "rater_pid": nomination.rater_pid,
-            "display_name": rater.map(|r| r.display_name),
-            "group": nomination.rater_group,
-            "responded": responded.contains(&nomination.pid),
-        }));
-    }
+    // A rater's name is the first worker row with that pid; responded is whether a response of this appraisal names the
+    // nomination.
+    let nominations = sqlx::query!(
+        r#"SELECT n.pid, n.rater_pid, n.rater_group,
+                  (SELECT w.display_name FROM workers w WHERE w.pid = n.rater_pid ORDER BY w.id LIMIT 1) AS display_name,
+                  EXISTS (SELECT 1 FROM appraisal_responses r
+                           WHERE r.appraisal_pid = n.appraisal_pid AND r.nomination_pid = n.pid) AS "responded!"
+             FROM appraisal_nominations n
+            WHERE n.appraisal_pid = $1
+            ORDER BY n.id"#,
+        appraisal.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let nomination_view: Vec<_> = nominations
+        .iter()
+        .map(|nomination| {
+            serde_json::json!({
+                "pid": nomination.pid,
+                "rater_pid": nomination.rater_pid,
+                "display_name": nomination.display_name,
+                "group": nomination.rater_group,
+                "responded": nomination.responded,
+            })
+        })
+        .collect();
     format::json(serde_json::json!({
         "pid": appraisal.pid,
         "worker_pid": appraisal.worker_pid,
@@ -365,48 +380,54 @@ async fn respond(
     let declared: Vec<String> =
         serde_json::from_value(appraisal.competencies.clone()).unwrap_or_default();
     rules::check_scores(&declared, &payload.scores).map_err(|reason| unprocessable(&reason))?;
-    let rater = records::find_worker(&ctx.db, payload.rater_pid).await?;
+    let rater = records::worker_by_pid(&ctx, payload.rater_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
         &auth::worker_resource_attrs(&rater),
     )
     .map_err(record_rejection)?;
-    let nomination = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-        .filter(appraisal_nominations::Column::RaterPid.eq(rater.pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or_else(|| unprocessable("this worker is not a nominated rater"))?;
-    let already = appraisal_responses::Entity::find()
-        .filter(appraisal_responses::Column::NominationPid.eq(nomination.pid))
-        .one(&ctx.db)
-        .await?;
+    let nomination = sqlx::query!(
+        "SELECT pid, rater_group FROM appraisal_nominations WHERE appraisal_pid = $1 AND rater_pid = $2 LIMIT 1",
+        appraisal.pid,
+        rater.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or_else(|| unprocessable("this worker is not a nominated rater"))?;
+    let already = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM appraisal_responses WHERE nomination_pid = $1 LIMIT 1"#,
+        nomination.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     if already.is_some() {
         return Err(unprocessable("this rater has already responded"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = appraisal_responses::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        appraisal_pid: ActiveValue::set(appraisal.pid),
-        nomination_pid: ActiveValue::set(nomination.pid),
-        rater_group: ActiveValue::set(nomination.rater_group.clone()),
-        scores: ActiveValue::set(serde_json::json!(payload.scores)),
-        comment: ActiveValue::set(payload.comment.clone()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let response_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO appraisal_responses (pid, appraisal_pid, nomination_pid, rater_group, scores, comment)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        response_pid,
+        appraisal.pid,
+        nomination.pid,
+        nomination.rater_group,
+        serde_json::json!(payload.scores),
+        payload.comment,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "appraisal_response",
-        row.pid,
+        response_pid,
         "submitted",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "submitted": true }))
 }
 
@@ -426,7 +447,7 @@ async fn report(
     if appraisal.status != "shared" {
         return Err(unprocessable("the report is readable once shared"));
     }
-    let subject = records::find_worker(&ctx.db, appraisal.worker_pid).await?;
+    let subject = records::worker_by_pid(&ctx, appraisal.worker_pid).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -438,13 +459,15 @@ async fn report(
     let comments_masked = obligations.iter().any(|o| o == "mask");
     let declared: Vec<String> =
         serde_json::from_value(appraisal.competencies.clone()).unwrap_or_default();
-    let responses = appraisal_responses::Entity::find()
-        .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
-        .await?;
+    let responses = sqlx::query!(
+        "SELECT rater_group, scores, comment FROM appraisal_responses WHERE appraisal_pid = $1",
+        appraisal.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut groups = Vec::new();
     for group in rules::GROUPS {
-        let group_responses: Vec<&appraisal_responses::Model> = responses
+        let group_responses: Vec<_> = responses
             .iter()
             .filter(|r| r.rater_group == *group)
             .collect();
@@ -486,8 +509,8 @@ async fn report(
             "comments_withheld": comments_masked,
         }));
     }
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "appraisal",
         appraisal.pid,
         "report_read",
@@ -522,58 +545,53 @@ async fn rater_requests(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let rater = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let rater = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
         &auth::worker_resource_attrs(&rater),
     )
     .map_err(record_rejection)?;
-    let nominations = appraisal_nominations::Entity::find()
-        .filter(appraisal_nominations::Column::RaterPid.eq(rater.pid))
-        .order_by_asc(appraisal_nominations::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let mut requests = Vec::new();
-    for nomination in &nominations {
-        let appraisal = appraisals::Entity::find()
-            .filter(appraisals::Column::Pid.eq(nomination.appraisal_pid))
-            .filter(appraisals::Column::DeletedAt.is_null())
-            .filter(appraisals::Column::Status.eq("collecting"))
-            .one(&ctx.db)
-            .await?;
-        let Some(appraisal) = appraisal else { continue };
-        let responded = appraisal_responses::Entity::find()
-            .filter(appraisal_responses::Column::NominationPid.eq(nomination.pid))
-            .one(&ctx.db)
-            .await?
-            .is_some();
-        if responded {
-            continue;
-        }
-        let subject = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(appraisal.worker_pid))
-            .one(&ctx.db)
-            .await?;
-        requests.push(serde_json::json!({
-            "appraisal_pid": appraisal.pid,
-            "subject_pid": appraisal.worker_pid,
-            "subject": subject.map(|s| s.display_name),
-            "group": nomination.rater_group,
-            "competencies": appraisal.competencies,
-        }));
-    }
+    // Per nomination, oldest first: its live collecting appraisal (a pid is unique), unless the nomination has a response.
+    let rows = sqlx::query!(
+        r#"SELECT a.pid, a.worker_pid, a.competencies, n.rater_group,
+                  (SELECT w.display_name FROM workers w WHERE w.pid = a.worker_pid ORDER BY w.id LIMIT 1) AS subject
+             FROM appraisal_nominations n
+             JOIN appraisals a ON a.pid = n.appraisal_pid AND a.deleted_at IS NULL AND a.status = 'collecting'
+            WHERE n.rater_pid = $1
+              AND NOT EXISTS (SELECT 1 FROM appraisal_responses r WHERE r.nomination_pid = n.pid)
+            ORDER BY n.id"#,
+        rater.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let requests: Vec<_> = rows
+        .iter()
+        .map(|row| {
+            serde_json::json!({
+                "appraisal_pid": row.pid,
+                "subject_pid": row.worker_pid,
+                "subject": row.subject,
+                "group": row.rater_group,
+                "competencies": row.competencies,
+            })
+        })
+        .collect();
     format::json(requests)
 }
 
 /// Find one live appraisal by pid, or 404.
 async fn find_appraisal(ctx: &AppContext, pid: &str) -> Result<appraisals::Model> {
-    appraisals::Entity::find()
-        .filter(appraisals::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(appraisals::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        appraisals::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, competencies, status,
+                  shared_on, deleted_at AS "deleted_at: _"
+             FROM appraisals WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// The appraisal routes.

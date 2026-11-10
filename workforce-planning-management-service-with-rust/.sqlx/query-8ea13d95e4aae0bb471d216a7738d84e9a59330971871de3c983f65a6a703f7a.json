@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid, requisition_pid FROM mobility_interests WHERE deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mobility_interests",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "requisition_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mobility_interests",
+            "name": "requisition_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "8ea13d95e4aae0bb471d216a7738d84e9a59330971871de3c983f65a6a703f7a"
+}

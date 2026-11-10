@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT region, observed_on FROM holidays WHERE organization_ref = $1 AND observed_on >= $2 AND observed_on <= $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "region",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "holidays",
+            "name": "region"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "observed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "holidays",
+            "name": "observed_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a55432b5e7050b1910d3fbffa04bf6dd1ea07ef59c729f34630955aa4d8984fd"
+}

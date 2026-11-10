@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, \"ref\", label, version)\n                           VALUES ($1, $2, $3, $4, $4, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b22bb3f9199f55b2374b593fe58f44be86b2eafe8a9c037f8fb8726dc46a3d4b"
+}

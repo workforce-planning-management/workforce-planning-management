@@ -5,7 +5,7 @@
 //! escalation's own rule: anyone who may write to the plan can say a breach needs a decision, but only an
 //! administrator of the plan's organization decides it, and a caller outside the organization cannot see the plan.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -81,7 +81,6 @@ fn policy_with_deciders() -> String {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_escalations -- --ignored`"]
 async fn anyone_who_writes_may_raise_but_only_an_administrator_decides() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -113,11 +112,11 @@ async fn anyone_who_writes_may_raise_but_only_an_administrator_decides() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (&ctx.db, organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::pool(&ctx), organization.to_string());
             async move {
-                db.execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
-                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(db).await.unwrap();
             }
         };
         grant("svc-user".to_string(), &org, "org_admin").await;

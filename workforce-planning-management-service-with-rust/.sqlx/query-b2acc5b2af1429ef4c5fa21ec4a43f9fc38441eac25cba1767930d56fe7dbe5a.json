@@ -1,0 +1,94 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oversight_readings (pid, measure_pid, period_on, value, evidence, source_document, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7)\n         ON CONFLICT (measure_pid, period_on)\n         DO UPDATE SET value = EXCLUDED.value, evidence = EXCLUDED.evidence, source_document = EXCLUDED.source_document,\n                       recorded_by = EXCLUDED.recorded_by\n         RETURNING pid, measure_pid, period_on, value, evidence, source_document",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "measure_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "measure_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "period_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "period_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "value",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "value"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "evidence",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "evidence"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "source_document",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_readings",
+            "name": "source_document"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "b2acc5b2af1429ef4c5fa21ec4a43f9fc38441eac25cba1767930d56fe7dbe5a"
+}

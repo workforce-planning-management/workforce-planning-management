@@ -1,11 +1,11 @@
 //! Pay transparency (WPM-R144, WPM-D99): categories of workers, and the pay gap report that is an aggregate, names no
 //! one and withholds a small cell. The auth-on rules are in `tests/enforcement_pay_gap.rs`.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 /// Switch equality monitoring on for the length of a test, and off again however it ends. The setting is read from
 /// the environment on every request, and these tests run one at a time.
@@ -39,7 +39,7 @@ const BASIS: &str = "Same skills, effort, responsibility and working conditions.
 
 /// Hire `n` workers with a title, a sex answer and a salary; returns their pids.
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     title: &str,
@@ -62,10 +62,9 @@ async fn hire(
             .json();
         let pid = created["pid"].as_str().expect("pid").to_string();
         if let Some(sex) = sex {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"
-                ))
+                ))).execute(workforce_planning_management::db::pool(ctx))
                 .await
                 .unwrap();
         }
@@ -74,7 +73,7 @@ async fn hire(
     pids
 }
 
-async fn category(request: &axa::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
+async fn category(request: &axa_test::TestServer, org: &str, name: &str, titles: &[&str]) -> Value {
     request
         .post("/api/pay-categories")
         .json(
@@ -310,18 +309,13 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
         }
 
         // Audited: the day and how many categories, no figure.
-        let rows = ctx
-            .db
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity = 'pay_gap_report' ORDER BY id".to_string(),
-            ))
+        let rows = sqlx::query("SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity = 'pay_gap_report' ORDER BY id").fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        let actions: Vec<String> = rows.iter().map(|r| r.try_get("", "action").unwrap()).collect();
+        let actions: Vec<String> = rows.iter().map(|r| r.try_get("action").unwrap()).collect();
         assert!(actions.contains(&"pay_gap_report_read".to_string()) && actions.contains(&"pay_gap_report_exported".to_string()), "{actions:?}");
         for row in &rows {
-            let snapshot: String = row.try_get("", "snapshot").unwrap();
+            let snapshot: String = row.try_get("snapshot").unwrap();
             assert!(snapshot.contains("categories") && !snapshot.contains("9000000") && !snapshot.contains("gap_bp"), "{snapshot}");
         }
     })

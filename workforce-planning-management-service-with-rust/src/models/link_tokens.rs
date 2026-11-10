@@ -5,11 +5,10 @@
 //! told only whether it worked; the reason for a refusal goes to the audit trail, and the token never does.
 
 use chrono::{DateTime, Utc};
-use sea_orm::{ConnectionTrait, DatabaseBackend, QueryFilter, Statement};
+use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::_entities::link_tokens;
-use super::audit_logs::Model as Audit;
+use crate::db;
 use crate::rules::link_token as rules;
 use axa::prelude::*;
 
@@ -34,8 +33,8 @@ fn random_bytes() -> [u8; rules::TOKEN_BYTES] {
 /// # Errors
 ///
 /// A refusal for a bad purpose or life, or a database error.
-pub async fn issue<C: ConnectionTrait>(
-    db: &C,
+pub async fn issue(
+    connection: &mut PgConnection,
     purpose: &str,
     subject_pid: Option<Uuid>,
     ttl_minutes: i64,
@@ -53,15 +52,15 @@ pub async fn issue<C: ConnectionTrait>(
         return Err(Error::string(&problems.join("; ")));
     };
     let token = rules::encode(random_bytes());
-    link_tokens::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        token_hash: ActiveValue::set(rules::hash(&token)),
-        purpose: ActiveValue::set(purpose.to_string()),
-        subject_pid: ActiveValue::set(subject_pid),
-        expires_at: ActiveValue::set(expires.into()),
-        ..Default::default()
-    }
-    .insert(db)
+    sqlx::query!(
+        "INSERT INTO link_tokens (pid, token_hash, purpose, subject_pid, expires_at) VALUES ($1, $2, $3, $4, $5)",
+        Uuid::new_v4(),
+        rules::hash(&token),
+        purpose,
+        subject_pid,
+        expires,
+    )
+    .execute(connection)
     .await?;
     Ok(token)
 }
@@ -72,15 +71,15 @@ pub async fn issue<C: ConnectionTrait>(
 /// # Errors
 ///
 /// A database error.
-pub async fn consume<C: ConnectionTrait>(
-    db: &C,
+pub async fn consume(
+    connection: &mut PgConnection,
     purpose: &str,
     token: &str,
     now: DateTime<Utc>,
 ) -> Result<Option<Consumed>> {
     if !rules::well_formed(token) {
-        Audit::record(
-            db,
+        db::audit(
+            connection,
             "link_token",
             Uuid::new_v4(),
             "link_token_refused",
@@ -91,40 +90,43 @@ pub async fn consume<C: ConnectionTrait>(
         return Ok(None);
     }
     let hash = rules::hash(token);
-    let row = db
-        .query_one_raw(Statement::from_sql_and_values(
-            DatabaseBackend::Postgres,
-            "UPDATE link_tokens SET used_at = $3, updated_at = $3
-              WHERE token_hash = $1 AND purpose = $2 AND used_at IS NULL AND expires_at > $3
-              RETURNING pid, subject_pid",
-            [hash.clone().into(), purpose.into(), now.into()],
-        ))
-        .await?;
-    if let Some(row) = row {
-        let pid: Uuid = row.try_get("", "pid")?;
-        let subject_pid: Option<Uuid> = row.try_get("", "subject_pid")?;
-        Audit::record(
-            db,
+    let used = sqlx::query!(
+        "UPDATE link_tokens SET used_at = $3, updated_at = $3
+          WHERE token_hash = $1 AND purpose = $2 AND used_at IS NULL AND expires_at > $3
+          RETURNING pid, subject_pid",
+        hash,
+        purpose,
+        now,
+    )
+    .fetch_optional(&mut *connection)
+    .await?;
+    if let Some(used) = used {
+        db::audit(
+            connection,
             "link_token",
-            pid,
+            used.pid,
             "link_token_consumed",
             None,
             Some(serde_json::json!({ "purpose": purpose })),
         )
         .await?;
-        return Ok(Some(Consumed { subject_pid }));
+        return Ok(Some(Consumed {
+            subject_pid: used.subject_pid,
+        }));
     }
-    let stored = link_tokens::Entity::find()
-        .filter(link_tokens::Column::TokenHash.eq(hash))
-        .one(db)
-        .await?;
+    let stored = sqlx::query!(
+        "SELECT pid, purpose, expires_at, used_at FROM link_tokens WHERE token_hash = $1",
+        hash,
+    )
+    .fetch_optional(&mut *connection)
+    .await?;
     let reason = rules::check(
         stored
             .as_ref()
             .map(|r| rules::Stored {
                 purpose: r.purpose.clone(),
-                expires_at: r.expires_at.into(),
-                used_at: r.used_at.map(Into::into),
+                expires_at: r.expires_at,
+                used_at: r.used_at,
             })
             .as_ref(),
         purpose,
@@ -132,8 +134,8 @@ pub async fn consume<C: ConnectionTrait>(
     )
     .err()
     .map_or("unknown", rules::Refusal::token);
-    Audit::record(
-        db,
+    db::audit(
+        connection,
         "link_token",
         stored.map_or_else(Uuid::new_v4, |r| r.pid),
         "link_token_refused",
@@ -149,13 +151,9 @@ pub async fn consume<C: ConnectionTrait>(
 /// # Errors
 ///
 /// A database error.
-pub async fn purge_expired<C: ConnectionTrait>(db: &C, before: DateTime<Utc>) -> Result<u64> {
-    let done = db
-        .execute_raw(Statement::from_sql_and_values(
-            DatabaseBackend::Postgres,
-            "DELETE FROM link_tokens WHERE expires_at < $1",
-            [before.into()],
-        ))
+pub async fn purge_expired(connection: &mut PgConnection, before: DateTime<Utc>) -> Result<u64> {
+    let done = sqlx::query!("DELETE FROM link_tokens WHERE expires_at < $1", before)
+        .execute(connection)
         .await?;
     Ok(done.rows_affected())
 }

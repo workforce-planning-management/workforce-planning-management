@@ -95,12 +95,22 @@ async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
         assert_eq!(all.len(), 5);
         assert!(statuses.contains(&"scheduled") && statuses.contains(&"expired"));
 
-        // Paging reports the total.
-        let page = request.get(&feed("&limit=2&offset=1")).await;
-        assert_eq!(page.header("x-total-count"), "3");
+        // Paging follows the cursor, and the limit may change between pages (WPM-T478).
+        let first = request.get(&feed("&limit=1")).await;
+        assert!(first.headers().get("x-total-count").is_none());
+        let link = first.header("link");
+        let link = link.to_str().unwrap();
+        let cursor = &link[link.find("cursor=").unwrap() + 7..link.find('>').unwrap()];
+        let page = request
+            .get(&feed(&format!("&limit=2&cursor={cursor}")))
+            .await;
         let rows: Vec<Value> = page.json();
         assert_eq!(rows.len(), 2);
         assert_eq!(rows[0]["title"], "Newer");
+        assert!(
+            page.headers().get("link").is_none(),
+            "three live posts: the last page"
+        );
 
         // Edit: unpin, and clear a later-set expiry.
         let pinned_pid = pinned["pid"].as_str().unwrap();

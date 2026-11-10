@@ -12,8 +12,6 @@ use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
 
-use crate::models::_entities::{notifications, worker_pay_positions, workers};
-use crate::models::notifications::Model as Notification;
 use crate::rules::metrics as metric_rules;
 use crate::rules::pay_position as rules;
 use crate::rules::pay_scale as scale_rules;
@@ -63,7 +61,11 @@ impl Task for PayProgressionReminders {
 /// A database error.
 pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) -> Result<usize> {
     let mut sent = 0;
-    let positions = worker_pay_positions::Entity::find().all(&ctx.db).await?;
+    let positions = sqlx::query!(
+        "SELECT worker_pid, scale_id, band, step, step_since FROM worker_pay_positions"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     for row in positions {
         let Some(scale) = scale_rules::find(&row.scale_id) else {
             continue;
@@ -79,29 +81,31 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
             continue;
         }
         // Only someone still employed on the day, and not erased.
-        let Some(worker) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(row.worker_pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
+        let Some(worker) = sqlx::query!(
+            "SELECT hired_on, terminated_on FROM workers WHERE pid = $1 AND deleted_at IS NULL",
+            row.worker_pid,
+        )
+        .fetch_optional(crate::db::pool(ctx))
+        .await?
         else {
             continue;
         };
         if !metric_rules::is_employed_on(on, worker.hired_on, worker.terminated_on) {
             continue;
         }
-        let already = notifications::Entity::find()
-            .filter(notifications::Column::WorkerPid.eq(row.worker_pid))
-            .filter(notifications::Column::Kind.eq("pay_step_due"))
-            .all(&ctx.db)
-            .await?
-            .iter()
-            .any(|n| n.data["eligible_on"] == serde_json::json!(on));
+        let already = sqlx::query_scalar!(
+            "SELECT data FROM notifications WHERE worker_pid = $1 AND kind = 'pay_step_due'",
+            row.worker_pid,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?
+        .iter()
+        .any(|data| data["eligible_on"] == serde_json::json!(on));
         if already {
             continue;
         }
-        Notification::push(
-            &ctx.db,
+        crate::db::notify(
+            &mut *crate::db::pool(ctx).acquire().await?,
             row.worker_pid,
             "pay_step_due",
             &format!("You become eligible to move up a pay step on {on}."),

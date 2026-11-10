@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT as_of, headcount, fte_percent_total, contractor_fte_percent_total, fixed_term_fte_percent_total\n         FROM headcount_snapshots WHERE organization_ref = $1 ORDER BY as_of",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "as_of",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "headcount"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "fte_percent_total",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "fte_percent_total"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "contractor_fte_percent_total",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "contractor_fte_percent_total"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "fixed_term_fte_percent_total",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "fixed_term_fte_percent_total"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "6389539fb0ce20959264352ad6bdb4000f8e2dfcadc8c35c70f9d6b20e323643"
+}

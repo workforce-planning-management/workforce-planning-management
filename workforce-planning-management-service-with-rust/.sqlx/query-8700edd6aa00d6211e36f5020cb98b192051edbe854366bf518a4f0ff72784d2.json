@@ -1,0 +1,116 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oversight_packs (pid, organization_ref, as_of, month, payload)\n           VALUES ($1, $2, $3, $4, $5)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, as_of, month, payload",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "as_of",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "payload",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "oversight_packs",
+            "name": "payload"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8700edd6aa00d6211e36f5020cb98b192051edbe854366bf518a4f0ff72784d2"
+}

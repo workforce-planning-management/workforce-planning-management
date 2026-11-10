@@ -2,33 +2,36 @@
 //! rule agree on the same rows; a change of the place of work re-derives the E.164 form; HR searches by digits, never by
 //! the typed text, and the answer names no number.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::rules::phone;
 
 use super::{an_org, seed_worker};
+use sqlx::Row;
 
 /// Insert a worker's contact details as an old row would be: typed values only, no derived forms.
 async fn insert_raw(
-    db: &impl ConnectionTrait,
+    db: &sqlx::PgPool,
     worker: &str,
     country: Option<&str>,
     mobile: &str,
     home: &str,
 ) {
     let country = country.map_or_else(|| "NULL".to_string(), |c| format!("'{c}'"));
-    db.execute_unprepared(&format!(
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
         "INSERT INTO worker_contact_details (worker_pid, country, phone_mobile, phone_home, on_behalf)
          VALUES ('{worker}', {country}, '{mobile}', '{home}', false)"
-    ))
+    ))).execute(db)
     .await
     .expect("insert contact details");
 }
 
-async fn backfill(db: &impl ConnectionTrait) {
-    for sql in migration::m20261031_000114_phone_forms::backfill() {
-        db.execute_unprepared(&sql).await.expect("backfill");
+async fn backfill(db: &sqlx::PgPool) {
+    for sql in workforce_planning_management::migrations::phone_backfill() {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+            .execute(db)
+            .await
+            .expect("backfill");
     }
 }
 
@@ -53,34 +56,28 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
             if let Some(place) = place {
                 request.put(&format!("/api/workers/{pid}")).json(&json!({ "work_jurisdiction": place })).await.assert_status_ok();
             }
-            insert_raw(&ctx.db, &pid, *country, mobile, home).await;
+            insert_raw(workforce_planning_management::db::pool(&ctx), &pid, *country, mobile, home).await;
             pids.push(pid);
         }
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO emergency_contacts (pid, worker_pid, name, relationship, phone, alt_phone, priority)
                  VALUES ('{}', '{}', 'Test Contact', 'sibling', '+٩٦٦ ٥٠ ١٢٣ ٤٥٦٧', '01632 960001', 1)",
                 uuid::Uuid::new_v4(),
                 pids[0]
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .expect("insert contact");
-        backfill(&ctx.db).await;
+        backfill(workforce_planning_management::db::pool(&ctx)).await;
 
         for ((country, place, mobile, home), pid) in cases.iter().zip(&pids) {
-            let row = ctx
-                .db
-                .query_one_raw(sea_orm::Statement::from_string(
-                    sea_orm::DbBackend::Postgres,
-                    format!(
+            let row = sqlx::query(sqlx::AssertSqlSafe(format!(
                         "SELECT phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164
                            FROM worker_contact_details WHERE worker_pid = '{pid}'"
-                    ),
-                ))
+                    ))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .expect("read")
                 .expect("a row");
-            let get = |c: &str| row.try_get::<Option<String>>("", c).expect(c);
+            let get = |c: &str| row.try_get::<Option<String>, _>(c).expect(c);
             let read_in = phone::country_for(*country, *place);
             let (m, h) = (phone::forms(Some(mobile), read_in), phone::forms(Some(home), read_in));
             assert_eq!((get("phone_mobile_digits"), get("phone_mobile_e164")), (m.digits, m.e164), "{mobile} in {read_in:?}");
@@ -103,7 +100,7 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
         assert_eq!(contacts[0]["alt_phone_digits"], "01632960001");
         assert_eq!(contacts[0]["alt_phone_e164"], Value::Null, "a contact's number is not read in the worker's country");
         // Running it again changes nothing.
-        backfill(&ctx.db).await;
+        backfill(workforce_planning_management::db::pool(&ctx)).await;
         let again: Value = request.get(&format!("/api/workers/{}/contact-details", pids[0])).await.json();
         assert_eq!(again, one);
 
@@ -129,17 +126,31 @@ async fn hr_finds_workers_by_digits_and_the_answer_names_no_number() {
         let w1 = seed_worker!(&request, org.clone(), format!("PS-{tag}-1"), None).await;
         let w2 = seed_worker!(&request, org.clone(), format!("PS-{tag}-2"), None).await;
         let elsewhere = seed_worker!(&request, other.clone(), format!("PS-{tag}-3"), None).await;
-        insert_raw(&ctx.db, &w1, Some("KR"), "٠١٠-١٢٣٤-٥٦٧٨", "02 555 0100").await;
-        insert_raw(&ctx.db, &w2, None, "07700 900123", "07700 900124").await;
         insert_raw(
-            &ctx.db,
+            workforce_planning_management::db::pool(&ctx),
+            &w1,
+            Some("KR"),
+            "٠١٠-١٢٣٤-٥٦٧٨",
+            "02 555 0100",
+        )
+        .await;
+        insert_raw(
+            workforce_planning_management::db::pool(&ctx),
+            &w2,
+            None,
+            "07700 900123",
+            "07700 900124",
+        )
+        .await;
+        insert_raw(
+            workforce_planning_management::db::pool(&ctx),
             &elsewhere,
             Some("KR"),
             "010-1234-5678",
             "02 555 0100",
         )
         .await;
-        backfill(&ctx.db).await;
+        backfill(workforce_planning_management::db::pool(&ctx)).await;
 
         let search = |organization: String, phone: &'static str| {
             let request = &request;

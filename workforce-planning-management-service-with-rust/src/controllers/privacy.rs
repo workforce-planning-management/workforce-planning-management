@@ -5,8 +5,8 @@
 //! store only: what the upstream identity services hold is the
 //! deployment's coordination duty, stated in the payloads.
 
+use axa::extract::Path;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, ConnectionTrait};
 use uuid::Uuid;
 
 use super::statutory_defaults::{self as statutory, InForce};
@@ -30,9 +30,8 @@ use crate::models::_entities::{
     separation_records, shift_assignments, time_entries, training_enrollments, worker_aspirations,
     worker_backups, worker_contact_details, worker_contractor_details, worker_framework_roles,
     worker_goals, worker_health_records, worker_job_levels, worker_pay_positions,
-    worker_skill_history, worker_skills, workers,
+    worker_skill_history, worker_skills,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::privacy as rules;
 
@@ -43,32 +42,40 @@ const TOMBSTONE_PERSON: &str = "person:00000000-0000-0000-0000-000000000000";
 /// The scrub placeholder for erased free text and names.
 const ERASED: &str = "[erased]";
 
-/// Rows keyed by one worker in `module` (helper macro: filter on the
-/// given column, return the models as JSON).
+/// Rows keyed by one subject in `module` (helper macro: run the given statement, which aggregates the table's rows as JSON, on
+/// `tx`, and return them as that table's models, so the export has the model's shape, field order and formats).
 macro_rules! rows_for {
-    ($db:expr, $module:ident, $column:ident, $pid:expr) => {
-        serde_json::json!(
-            $module::Entity::find()
-                .filter($module::Column::$column.eq($pid))
-                .all($db)
-                .await?
-        )
+    ($tx:ident, $module:ident, $sql:tt, $pid:expr) => {
+        serde_json::json!(as_models::<$module::Model>(
+            sqlx::query_scalar!($sql, $pid).fetch_one(&mut *$tx).await?
+        )?)
     };
 }
 
-/// The worker's weekly time totals, as a JSON array. The table has no entity (it is a derived summary keyed by worker and week).
-async fn weekly_time<C: ConnectionTrait>(db: &C, worker: Uuid) -> Result<serde_json::Value> {
-    let row = db
-        .query_one_raw(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!(
-                "SELECT COALESCE(json_agg(t ORDER BY week_start), '[]'::json) AS rows FROM time_entry_weeks t WHERE worker_pid = '{worker}'"
-            ),
-        ))
+/// Read a JSON array of a table's rows as its models.
+fn as_models<T: serde::de::DeserializeOwned>(rows: serde_json::Value) -> Result<Vec<T>> {
+    serde_json::from_value(rows).map_err(|_| super::internal("a row does not read as its model"))
+}
+
+/// A read transaction whose times are in UTC: the rows are aggregated as JSON in the database, and a time read through a model
+/// is in UTC, so the export's times keep the offset they had when each row was read as a model.
+async fn utc_reader(ctx: &AppContext) -> Result<sqlx::Transaction<'static, sqlx::Postgres>> {
+    let mut tx = crate::db::pool(ctx).begin().await?;
+    sqlx::raw_sql("SET LOCAL TIME ZONE 'UTC'")
+        .execute(&mut *tx)
         .await?;
-    Ok(row
-        .and_then(|r| r.try_get::<serde_json::Value>("", "rows").ok())
-        .unwrap_or_else(|| serde_json::json!([])))
+    Ok(tx)
+}
+
+/// The worker's weekly time totals, as a JSON array. The table has no entity (it is a derived summary keyed by worker and week),
+/// so its rows are sent as the database writes them, in the session's own time zone.
+async fn weekly_time(ctx: &AppContext, worker: Uuid) -> Result<serde_json::Value> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT COALESCE(json_agg(t ORDER BY week_start), '[]'::json) AS "rows!" FROM time_entry_weeks t WHERE worker_pid = $1"#,
+        worker,
+    )
+    .fetch_one(crate::db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/subject-access` — everything WPM holds
@@ -83,7 +90,7 @@ async fn subject_access(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -100,124 +107,130 @@ async fn subject_access(
              salary and payslips; masked callers cannot receive it)",
         ));
     }
-    let db = &ctx.db;
     let epid = worker.pid;
+    let weeks = weekly_time(&ctx, epid).await?;
+    let mut db = utc_reader(&ctx).await?;
     // 360°: appraisals about them, nominations naming them as rater,
     // and only the responses THEY authored.
-    let their_nominations = rows_for!(db, appraisal_nominations, RaterPid, epid);
+    let their_nominations = rows_for!(
+        db,
+        appraisal_nominations,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM appraisal_nominations t WHERE rater_pid = $1"#,
+        epid
+    );
     let nomination_pids: Vec<Uuid> = their_nominations
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(|n| n["pid"].as_str()?.parse().ok())
         .collect();
-    let authored_responses = appraisal_responses::Entity::find()
-        .filter(appraisal_responses::Column::NominationPid.is_in(nomination_pids))
-        .all(db)
-        .await?;
-    let mentorship_rows = mentorships::Entity::find()
-        .filter(
-            sea_orm::Condition::any()
-                .add(mentorships::Column::MentorPid.eq(epid))
-                .add(mentorships::Column::MenteePid.eq(epid)),
-        )
-        .all(db)
-        .await?;
+    let authored_responses = rows_for!(
+        db,
+        appraisal_responses,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM appraisal_responses t WHERE nomination_pid = ANY($1)"#,
+        &nomination_pids
+    );
+    let mentorship_rows = rows_for!(
+        db,
+        mentorships,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM mentorships t WHERE mentor_pid = $1 OR mentee_pid = $1"#,
+        epid
+    );
     let export = serde_json::json!({
         "as_of": chrono::Utc::now(),
         "worker": worker,
-        "time_entries": rows_for!(db, time_entries, WorkerPid, epid),
-        "leave_entitlements": rows_for!(db, leave_entitlements, WorkerPid, epid),
-        "leave_requests": rows_for!(db, leave_requests, WorkerPid, epid),
-        "shift_assignments": rows_for!(db, shift_assignments, WorkerPid, epid),
-        "benefit_enrollments": rows_for!(db, benefit_enrollments, WorkerPid, epid),
-        "reviews": rows_for!(db, reviews, WorkerPid, epid),
-        "training_enrollments": rows_for!(db, training_enrollments, WorkerPid, epid),
-        "skills": rows_for!(db, worker_skills, WorkerPid, epid),
-        "learning_path_enrollments": rows_for!(db, path_enrollments, WorkerPid, epid),
-        "development_plans": rows_for!(db, development_plans, WorkerPid, epid),
-        "development_plan_benefits": rows_for!(db, development_plan_benefits, WorkerPid, epid),
-        "worker_goals": rows_for!(db, worker_goals, WorkerPid, epid),
-        "padr_versions": rows_for!(db, padr_versions, WorkerPid, epid),
-        "goal_measures": rows_for!(db, goal_measures, WorkerPid, epid),
-        "goal_check_ins": rows_for!(db, goal_check_ins, WorkerPid, epid),
-        "review_goal_outcomes": rows_for!(db, review_goal_outcomes, WorkerPid, epid),
-        "cpd_entries": rows_for!(db, cpd_entries, WorkerPid, epid),
-        "framework_roles": rows_for!(db, worker_framework_roles, WorkerPid, epid),
-        "skill_history": rows_for!(db, worker_skill_history, WorkerPid, epid),
-        "aspirations": rows_for!(db, worker_aspirations, WorkerPid, epid),
-        "emergency_contacts": rows_for!(db, emergency_contacts, WorkerPid, epid),
-        "job_level": rows_for!(db, worker_job_levels, WorkerPid, epid),
-        "pay_position": rows_for!(db, worker_pay_positions, WorkerPid, epid),
-        "contact_details": rows_for!(db, worker_contact_details, WorkerPid, epid),
-        "resignations": rows_for!(db, resignations, WorkerPid, epid),
-        "conversion_plans": rows_for!(db, conversion_plans, WorkerPid, epid),
-        "post_funding": rows_for!(db, post_fundings, WorkerPid, epid),
-        "engagement_decisions": rows_for!(db, engagement_decisions, WorkerPid, epid),
-        "engagement_reminders": rows_for!(db, engagement_reminders, WorkerPid, epid),
+        "time_entries": rows_for!(db, time_entries, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM time_entries t WHERE worker_pid = $1"#, epid),
+        "leave_entitlements": rows_for!(db, leave_entitlements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM leave_entitlements t WHERE worker_pid = $1"#, epid),
+        "leave_requests": rows_for!(db, leave_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM leave_requests t WHERE worker_pid = $1"#, epid),
+        "shift_assignments": rows_for!(db, shift_assignments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM shift_assignments t WHERE worker_pid = $1"#, epid),
+        "benefit_enrollments": rows_for!(db, benefit_enrollments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM benefit_enrollments t WHERE worker_pid = $1"#, epid),
+        "reviews": rows_for!(db, reviews, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM reviews t WHERE worker_pid = $1"#, epid),
+        "training_enrollments": rows_for!(db, training_enrollments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM training_enrollments t WHERE worker_pid = $1"#, epid),
+        "skills": rows_for!(db, worker_skills, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_skills t WHERE worker_pid = $1"#, epid),
+        "learning_path_enrollments": rows_for!(db, path_enrollments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM path_enrollments t WHERE worker_pid = $1"#, epid),
+        "development_plans": rows_for!(db, development_plans, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM development_plans t WHERE worker_pid = $1"#, epid),
+        "development_plan_benefits": rows_for!(db, development_plan_benefits, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM development_plan_benefits t WHERE worker_pid = $1"#, epid),
+        "worker_goals": rows_for!(db, worker_goals, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_goals t WHERE worker_pid = $1"#, epid),
+        "padr_versions": rows_for!(db, padr_versions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM padr_versions t WHERE worker_pid = $1"#, epid),
+        "goal_measures": rows_for!(db, goal_measures, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM goal_measures t WHERE worker_pid = $1"#, epid),
+        "goal_check_ins": rows_for!(db, goal_check_ins, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM goal_check_ins t WHERE worker_pid = $1"#, epid),
+        "review_goal_outcomes": rows_for!(db, review_goal_outcomes, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM review_goal_outcomes t WHERE worker_pid = $1"#, epid),
+        "cpd_entries": rows_for!(db, cpd_entries, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM cpd_entries t WHERE worker_pid = $1"#, epid),
+        "framework_roles": rows_for!(db, worker_framework_roles, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_framework_roles t WHERE worker_pid = $1"#, epid),
+        "skill_history": rows_for!(db, worker_skill_history, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_skill_history t WHERE worker_pid = $1"#, epid),
+        "aspirations": rows_for!(db, worker_aspirations, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_aspirations t WHERE worker_pid = $1"#, epid),
+        "emergency_contacts": rows_for!(db, emergency_contacts, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM emergency_contacts t WHERE worker_pid = $1"#, epid),
+        "job_level": rows_for!(db, worker_job_levels, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_job_levels t WHERE worker_pid = $1"#, epid),
+        "pay_position": rows_for!(db, worker_pay_positions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_pay_positions t WHERE worker_pid = $1"#, epid),
+        "contact_details": rows_for!(db, worker_contact_details, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_contact_details t WHERE worker_pid = $1"#, epid),
+        "resignations": rows_for!(db, resignations, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM resignations t WHERE worker_pid = $1"#, epid),
+        "conversion_plans": rows_for!(db, conversion_plans, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM conversion_plans t WHERE worker_pid = $1"#, epid),
+        "post_funding": rows_for!(db, post_fundings, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM post_fundings t WHERE worker_pid = $1"#, epid),
+        "engagement_decisions": rows_for!(db, engagement_decisions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_decisions t WHERE worker_pid = $1"#, epid),
+        "engagement_reminders": rows_for!(db, engagement_reminders, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_reminders t WHERE worker_pid = $1"#, epid),
         // Health data readable by the worker and occupational health only (WPM-D75): anyone else
         // running the export gets a note.
         "workplace_health_records": if auth::acting_for_other(&caller, &worker.person_ref) {
             serde_json::json!("withheld: only the worker can export their own workplace health records")
         } else {
-            rows_for!(db, worker_health_records, WorkerPid, epid)
+            rows_for!(db, worker_health_records, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_health_records t WHERE worker_pid = $1"#, epid)
         },
         // Special-category data readable by the worker only (WPM-D74): anyone else running the
         // export gets a note, not the answers.
         "equality_monitoring": if auth::acting_for_other(&caller, &worker.person_ref) {
             serde_json::json!("withheld: only the worker can export their own equality monitoring answers")
         } else {
-            rows_for!(db, equality_declarations, WorkerPid, epid)
+            rows_for!(db, equality_declarations, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM equality_declarations t WHERE worker_pid = $1"#, epid)
         },
-        "flexible_working_requests": rows_for!(db, flexible_working_requests, WorkerPid, epid),
-        "pay_information_requests": rows_for!(db, pay_information_requests, WorkerPid, epid),
-        "scim_pushes": rows_for!(db, scim_pushes, WorkerPid, epid),
-        "asset_issues": rows_for!(db, asset_issues, WorkerPid, epid),
-        "assignments": rows_for!(db, assignments, WorkerPid, epid),
-        "learning_completions": rows_for!(db, learning_completions, WorkerPid, epid),
-        "qualifications": rows_for!(db, qualifications, WorkerPid, epid),
-        "qualification_reminders": rows_for!(db, qualification_reminders, WorkerPid, epid),
-        "policy_acknowledgements": rows_for!(db, policy_acknowledgements, WorkerPid, epid),
-        "credential_issuances": rows_for!(db, credential_issuances, WorkerPid, epid),
-        "positions_held": rows_for!(db, positions, HolderWorkerPid, epid),
-        "engagement_extensions": rows_for!(db, engagement_extensions, WorkerPid, epid),
-        "contractor_details": rows_for!(db, worker_contractor_details, WorkerPid, epid),
-        "employment_status_assessments": rows_for!(db, engagement_status_assessments, WorkerPid, epid),
-        "expense_claims": rows_for!(db, expense_claims, WorkerPid, epid),
-        "expense_items": rows_for!(db, expense_items, WorkerPid, epid),
-        "backups": rows_for!(db, worker_backups, WorkerPid, epid),
-        "named_as_backup_by": rows_for!(db, worker_backups, BackupPid, epid),
-        "on_call_rota_memberships": rows_for!(db, rota_members, WorkerPid, epid),
-        "on_call_swaps": rows_for!(db, rota_overrides, WorkerPid, epid),
-        "announcements_read": rows_for!(db, announcement_reads, WorkerPid, epid),
-        "joiner_leaver_records": rows_for!(db, movements, WorkerPid, epid),
-        "separation_records": rows_for!(db, separation_records, WorkerPid, epid),
-        "course_requests": rows_for!(db, course_requests, WorkerPid, epid),
-        "injury_records": rows_for!(db, injury_records, WorkerPid, epid),
-        "handover_actions_from": rows_for!(db, handover_actions, FromWorker, epid),
-        "handover_actions_to": rows_for!(db, handover_actions, ToWorker, epid),
-        "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, RequesterPid, epid),
-        "on_call_swap_requests_received": rows_for!(db, rota_swap_requests, TakerPid, epid),
-        "group_memberships": rows_for!(db, group_members, WorkerPid, epid),
-        "dotted_line_as_report": rows_for!(db, dotted_line_reports, ReportPid, epid),
-        "dotted_line_as_manager": rows_for!(db, dotted_line_reports, ManagerPid, epid),
-        "mobility_interests": rows_for!(db, mobility_interests, WorkerPid, epid),
-        "professional_registrations": rows_for!(db, professional_registrations, WorkerPid, epid),
-        "program_placements": rows_for!(db, program_placements, WorkerPid, epid),
-        "payslips": rows_for!(db, payslips, WorkerPid, epid),
-        "payslip_queries": rows_for!(db, payslip_queries, WorkerPid, epid),
-        "onboarding_items": rows_for!(db, onboarding_items, WorkerPid, epid),
-        "organization_memberships": rows_for!(db, organization_memberships, WorkerPid, epid),
-        "time_entry_weeks": weekly_time(db, epid).await?,
+        "flexible_working_requests": rows_for!(db, flexible_working_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM flexible_working_requests t WHERE worker_pid = $1"#, epid),
+        "pay_information_requests": rows_for!(db, pay_information_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM pay_information_requests t WHERE worker_pid = $1"#, epid),
+        "scim_pushes": rows_for!(db, scim_pushes, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM scim_pushes t WHERE worker_pid = $1"#, epid),
+        "asset_issues": rows_for!(db, asset_issues, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM asset_issues t WHERE worker_pid = $1"#, epid),
+        "assignments": rows_for!(db, assignments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM assignments t WHERE worker_pid = $1"#, epid),
+        "learning_completions": rows_for!(db, learning_completions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM learning_completions t WHERE worker_pid = $1"#, epid),
+        "qualifications": rows_for!(db, qualifications, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM qualifications t WHERE worker_pid = $1"#, epid),
+        "qualification_reminders": rows_for!(db, qualification_reminders, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM qualification_reminders t WHERE worker_pid = $1"#, epid),
+        "policy_acknowledgements": rows_for!(db, policy_acknowledgements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM policy_acknowledgements t WHERE worker_pid = $1"#, epid),
+        "credential_issuances": rows_for!(db, credential_issuances, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM credential_issuances t WHERE worker_pid = $1"#, epid),
+        "positions_held": rows_for!(db, positions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM positions t WHERE holder_worker_pid = $1"#, epid),
+        "engagement_extensions": rows_for!(db, engagement_extensions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_extensions t WHERE worker_pid = $1"#, epid),
+        "contractor_details": rows_for!(db, worker_contractor_details, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_contractor_details t WHERE worker_pid = $1"#, epid),
+        "employment_status_assessments": rows_for!(db, engagement_status_assessments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_status_assessments t WHERE worker_pid = $1"#, epid),
+        "expense_claims": rows_for!(db, expense_claims, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM expense_claims t WHERE worker_pid = $1"#, epid),
+        "expense_items": rows_for!(db, expense_items, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM expense_items t WHERE worker_pid = $1"#, epid),
+        "backups": rows_for!(db, worker_backups, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_backups t WHERE worker_pid = $1"#, epid),
+        "named_as_backup_by": rows_for!(db, worker_backups, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_backups t WHERE backup_pid = $1"#, epid),
+        "on_call_rota_memberships": rows_for!(db, rota_members, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM rota_members t WHERE worker_pid = $1"#, epid),
+        "on_call_swaps": rows_for!(db, rota_overrides, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM rota_overrides t WHERE worker_pid = $1"#, epid),
+        "announcements_read": rows_for!(db, announcement_reads, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM announcement_reads t WHERE worker_pid = $1"#, epid),
+        "joiner_leaver_records": rows_for!(db, movements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM movements t WHERE worker_pid = $1"#, epid),
+        "separation_records": rows_for!(db, separation_records, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM separation_records t WHERE worker_pid = $1"#, epid),
+        "course_requests": rows_for!(db, course_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM course_requests t WHERE worker_pid = $1"#, epid),
+        "injury_records": rows_for!(db, injury_records, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM injury_records t WHERE worker_pid = $1"#, epid),
+        "handover_actions_from": rows_for!(db, handover_actions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM handover_actions t WHERE from_worker = $1"#, epid),
+        "handover_actions_to": rows_for!(db, handover_actions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM handover_actions t WHERE to_worker = $1"#, epid),
+        "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM rota_swap_requests t WHERE requester_pid = $1"#, epid),
+        "on_call_swap_requests_received": rows_for!(db, rota_swap_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM rota_swap_requests t WHERE taker_pid = $1"#, epid),
+        "group_memberships": rows_for!(db, group_members, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM group_members t WHERE worker_pid = $1"#, epid),
+        "dotted_line_as_report": rows_for!(db, dotted_line_reports, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM dotted_line_reports t WHERE report_pid = $1"#, epid),
+        "dotted_line_as_manager": rows_for!(db, dotted_line_reports, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM dotted_line_reports t WHERE manager_pid = $1"#, epid),
+        "mobility_interests": rows_for!(db, mobility_interests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM mobility_interests t WHERE worker_pid = $1"#, epid),
+        "professional_registrations": rows_for!(db, professional_registrations, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM professional_registrations t WHERE worker_pid = $1"#, epid),
+        "program_placements": rows_for!(db, program_placements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM program_placements t WHERE worker_pid = $1"#, epid),
+        "payslips": rows_for!(db, payslips, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM payslips t WHERE worker_pid = $1"#, epid),
+        "payslip_queries": rows_for!(db, payslip_queries, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM payslip_queries t WHERE worker_pid = $1"#, epid),
+        "onboarding_items": rows_for!(db, onboarding_items, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM onboarding_items t WHERE worker_pid = $1"#, epid),
+        "organization_memberships": rows_for!(db, organization_memberships, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM organization_memberships t WHERE worker_pid = $1"#, epid),
+        "time_entry_weeks": weeks,
         "wellbeing_acknowledgements":
-            rows_for!(db, entitlement_acknowledgements, WorkerPid, epid),
-        "notifications": rows_for!(db, notifications, WorkerPid, epid),
-        "ergonomic_assessments": rows_for!(db, ergonomic_assessments, WorkerPid, epid),
-        "adjustment_requests": rows_for!(db, adjustment_requests, WorkerPid, epid),
-        "assessments": rows_for!(db, assessments, SubjectPid, epid),
-        "pipeline_memberships": rows_for!(db, pipeline_members, SubjectPid, epid),
+            rows_for!(db, entitlement_acknowledgements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM entitlement_acknowledgements t WHERE worker_pid = $1"#, epid),
+        "notifications": rows_for!(db, notifications, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM notifications t WHERE worker_pid = $1"#, epid),
+        "ergonomic_assessments": rows_for!(db, ergonomic_assessments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM ergonomic_assessments t WHERE worker_pid = $1"#, epid),
+        "adjustment_requests": rows_for!(db, adjustment_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM adjustment_requests t WHERE worker_pid = $1"#, epid),
+        "assessments": rows_for!(db, assessments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM assessments t WHERE subject_pid = $1"#, epid),
+        "pipeline_memberships": rows_for!(db, pipeline_members, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM pipeline_members t WHERE subject_pid = $1"#, epid),
         "mentorships": mentorship_rows,
-        "appraisals_as_subject": rows_for!(db, appraisals, WorkerPid, epid),
+        "appraisals_as_subject": rows_for!(db, appraisals, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM appraisals t WHERE worker_pid = $1"#, epid),
         "appraisal_nominations_as_rater": their_nominations,
         "appraisal_responses_authored": authored_responses,
         "exclusions": [
@@ -228,8 +241,10 @@ async fn subject_access(
              not WPM — coordinate subject access there too (WPM-D22)",
         ],
     });
-    Audit::record(
-        &ctx.db,
+    db.commit().await?;
+    let mut connection = crate::db::pool(&ctx).acquire().await?;
+    crate::db::audit(
+        &mut connection,
         "worker",
         epid,
         "subject_access_exported",
@@ -251,31 +266,50 @@ async fn candidate_subject_access(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let candidate = records::find_candidate(&ctx.db, records::parse_pid(&pid)?).await?;
-    let db = &ctx.db;
-    let apps = rows_for!(db, applications, CandidatePid, candidate.pid);
+    let candidate_pid = sqlx::query_scalar!(
+        "SELECT pid FROM candidates WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(crate::db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut db = utc_reader(&ctx).await?;
+    let apps = rows_for!(
+        db,
+        applications,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM applications t WHERE candidate_pid = $1"#,
+        candidate_pid
+    );
     let app_pids: Vec<Uuid> = apps
         .as_array()
         .into_iter()
         .flatten()
         .filter_map(|a| a["pid"].as_str()?.parse().ok())
         .collect();
-    let their_interviews = interviews::Entity::find()
-        .filter(interviews::Column::ApplicationPid.is_in(app_pids))
-        .all(db)
-        .await?;
-    let their_assessments = assessments::Entity::find()
-        .filter(assessments::Column::SubjectPid.eq(candidate.pid))
-        .all(db)
-        .await?;
+    let their_interviews = rows_for!(
+        db,
+        interviews,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM interviews t WHERE application_pid = ANY($1)"#,
+        &app_pids
+    );
+    let their_assessments: Vec<assessments::Model> = as_models(
+        sqlx::query_scalar!(
+            r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM assessments t WHERE subject_pid = $1"#,
+            candidate_pid,
+        )
+        .fetch_one(&mut *db)
+        .await?,
+    )?;
     let assessment_pids: Vec<Uuid> = their_assessments.iter().map(|a| a.pid).collect();
-    let results = assessment_results::Entity::find()
-        .filter(assessment_results::Column::AssessmentPid.is_in(assessment_pids))
-        .all(db)
-        .await?;
+    let results = rows_for!(
+        db,
+        assessment_results,
+        r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM assessment_results t WHERE assessment_pid = ANY($1)"#,
+        &assessment_pids
+    );
     let export = serde_json::json!({
         "as_of": chrono::Utc::now(),
-        "candidate": rows_for!(db, candidates, Pid, candidate.pid),
+        "candidate": rows_for!(db, candidates, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM candidates t WHERE pid = $1"#, candidate_pid),
         "applications": apps,
         "interviews": their_interviews,
         "assessments": their_assessments,
@@ -287,17 +321,18 @@ async fn candidate_subject_access(
             "upstream person records: held by the identity services, not WPM",
         ],
     });
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    db.commit().await?;
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    crate::db::audit(
+        &mut tx,
         "candidate",
-        candidate.pid,
+        candidate_pid,
         "subject_access_exported",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(export)
 }
 
@@ -431,12 +466,22 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
 }
 
 /// Record an erasure in the ledger (WPM-D63): the pid and the time, nothing else.
-async fn record_erasure<C: ConnectionTrait>(db: &C, epid: Uuid) -> Result<()> {
-    db.execute_unprepared(&format!(
-        "INSERT INTO erasure_ledger (worker_pid) VALUES ('{epid}') ON CONFLICT DO NOTHING"
-    ))
+async fn record_erasure(tx: &mut sqlx::PgConnection, epid: Uuid) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO erasure_ledger (worker_pid) VALUES ($1) ON CONFLICT DO NOTHING",
+        epid
+    )
+    .execute(tx)
     .await?;
     Ok(())
+}
+
+/// Run one of [`erasure_statements`]: a fixed statement with the worker's pid in it, and the rows it touched.
+async fn run_statement(tx: &mut sqlx::PgConnection, statement: String) -> Result<u64> {
+    Ok(sqlx::raw_sql(sqlx::AssertSqlSafe(statement))
+        .execute(tx)
+        .await?
+        .rows_affected())
 }
 
 /// What a replay did.
@@ -459,42 +504,40 @@ pub struct ReplayReport {
 ///
 /// A database error; nothing is applied for the entry that failed.
 pub async fn replay_erasures(
-    db: &sea_orm::DatabaseConnection,
+    pool: &sqlx::PgPool,
     since: Option<chrono::NaiveDate>,
 ) -> Result<ReplayReport> {
-    use sea_orm::TransactionTrait;
-    let filter = since.map_or_else(String::new, |d| format!("WHERE erased_at >= '{d}'"));
-    let rows = db
-        .query_all_raw(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT worker_pid FROM erasure_ledger {filter} ORDER BY erased_at"),
-        ))
-        .await?;
+    let rows = sqlx::query_scalar!(
+        "SELECT worker_pid FROM erasure_ledger WHERE ($1::date IS NULL OR erased_at >= $1) ORDER BY erased_at",
+        since,
+    )
+    .fetch_all(pool)
+    .await?;
     let mut report = ReplayReport::default();
-    for row in rows {
-        let Ok(epid) = row.try_get::<Uuid>("", "worker_pid") else {
-            continue;
-        };
+    for epid in rows {
         report.considered += 1;
-        let txn = db.begin().await?;
-        let found = txn
-            .execute_unprepared(&format!(
-                "UPDATE workers SET display_name = '{ERASED}', person_ref = '{TOMBSTONE_PERSON}', \
-                 upstream_worker_ref = NULL, salary_minor = NULL, salary_currency = NULL, \
-                 deleted_at = COALESCE(deleted_at, now()) WHERE pid = '{epid}'"
-            ))
-            .await?
-            .rows_affected();
+        let mut tx = pool.begin().await?;
+        let found = sqlx::query!(
+            "UPDATE workers SET display_name = $2, person_ref = $3, upstream_worker_ref = NULL, salary_minor = NULL,
+                                salary_currency = NULL, deleted_at = COALESCE(deleted_at, now())
+              WHERE pid = $1",
+            epid,
+            ERASED,
+            TOMBSTONE_PERSON,
+        )
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
         if found == 0 {
             report.missing += 1;
-            txn.commit().await?;
+            tx.commit().await?;
             continue;
         }
         for statement in erasure_statements(epid) {
-            txn.execute_unprepared(&statement).await?;
+            run_statement(&mut tx, statement).await?;
         }
-        Audit::record(
-            &txn,
+        crate::db::audit(
+            &mut tx,
             "worker",
             epid,
             "erasure_replayed",
@@ -502,7 +545,7 @@ pub async fn replay_erasures(
             None,
         )
         .await?;
-        txn.commit().await?;
+        tx.commit().await?;
         report.reapplied += 1;
     }
     Ok(report)
@@ -522,7 +565,7 @@ async fn erase(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Destructive,
@@ -536,26 +579,26 @@ async fn erase(
         ));
     }
     let epid = worker.pid;
-    let txn = ctx.db.begin().await?;
+    let mut tx = crate::db::pool(&ctx).begin().await?;
     // Identity fields scrubbed in place; the row soft-deleted.
-    let mut scrubbed: workers::ActiveModel = worker.into();
-    scrubbed.display_name = ActiveValue::set(ERASED.to_string());
-    scrubbed.person_ref = ActiveValue::set(TOMBSTONE_PERSON.to_string());
-    scrubbed.upstream_worker_ref = ActiveValue::set(None);
-    scrubbed.salary_minor = ActiveValue::set(None);
-    scrubbed.salary_currency = ActiveValue::set(None);
-    scrubbed.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    scrubbed.update(&txn).await?;
+    sqlx::query!(
+        "UPDATE workers SET display_name = $2, person_ref = $3, upstream_worker_ref = NULL, salary_minor = NULL,
+                            salary_currency = NULL, deleted_at = now()
+          WHERE id = $1",
+        worker.id,
+        ERASED,
+        TOMBSTONE_PERSON,
+    )
+    .execute(&mut *tx)
+    .await?;
     // Free text they authored, and rows that are about them only.
-    let statements = erasure_statements(epid);
     let mut affected = Vec::new();
-    for statement in &statements {
-        let result = txn.execute_unprepared(statement).await?;
-        affected.push(result.rows_affected());
+    for statement in erasure_statements(epid) {
+        affected.push(run_statement(&mut tx, statement).await?);
     }
-    record_erasure(&txn, epid).await?;
-    Audit::record(
-        &txn,
+    record_erasure(&mut tx, epid).await?;
+    crate::db::audit(
+        &mut tx,
         "worker",
         epid,
         "erased",
@@ -599,7 +642,7 @@ async fn erase(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
         "erased": epid,
         "note": "anonymised, not deleted: payroll/financial rows remain under statutory \
@@ -653,8 +696,12 @@ async fn sweep_horizons(
 ) -> Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>> {
     let as_of = chrono::Utc::now().date_naive();
     let mut all = horizons(None, as_of);
-    for organization in super::jurisdictions::organizations_with_a_home(&ctx.db).await? {
-        let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &organization).await?;
+    for organization in
+        super::jurisdictions::organizations_with_a_home(crate::db::pool(ctx)).await?
+    {
+        let scope =
+            super::jurisdictions::Scope::for_organization(crate::db::pool(ctx), &organization)
+                .await?;
         for (kind, found) in horizons(Some(&scope), as_of) {
             if found.value.source != rules::HorizonSource::Profile {
                 continue;
@@ -711,14 +758,14 @@ struct ScheduleQuery {
 async fn retention_schedule(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ScheduleQuery>,
+    axa::extract::Query(q): axa::extract::Query<ScheduleQuery>,
 ) -> Result<Response> {
     let as_of = chrono::Utc::now().date_naive();
     let scope = match &q.organization {
         Some(org) => {
             super::ensure_valid(&super::pay_transparency::organization_problems(org))?;
             super::ensure_org_in_scope(&ctx, &caller, org).await?;
-            Some(super::jurisdictions::Scope::for_organization(&ctx.db, org).await?)
+            Some(super::jurisdictions::Scope::for_organization(crate::db::pool(&ctx), org).await?)
         }
         None => None,
     };
@@ -767,31 +814,24 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
     let mut tables = serde_json::Map::new();
     for table in rules::SOFT_DELETED_TABLES {
         let days = days_for(table, &all);
-        let count = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
-                    "SELECT COUNT(*) AS n FROM {table} \
-                     WHERE deleted_at IS NOT NULL AND deleted_at < now() - interval '{days} days'"
-                ),
-            ))
-            .await?
-            .and_then(|row| row.try_get::<i64>("", "n").ok())
-            .unwrap_or(0);
+        // The table comes from the fixed list of soft-deleting tables, never from the request.
+        let count: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+            "SELECT COUNT(*) AS n FROM {table} \
+             WHERE deleted_at IS NOT NULL AND deleted_at < now() - interval '{days} days'"
+        )))
+        .fetch_one(crate::db::pool(&ctx))
+        .await?;
         if count > 0 {
             tables.insert((*table).to_string(), serde_json::json!(count));
         }
     }
     let recruitment_days = days_for("candidates", &all);
-    let expired_candidates = candidates::Entity::find()
-        .filter(candidates::Column::DeletedAt.is_null())
-        .filter(
-            candidates::Column::ConsentUntil
-                .lt(chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days)),
-        )
-        .count(&ctx.db)
-        .await?;
+    let expired_candidates = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "n!" FROM candidates WHERE deleted_at IS NULL AND consent_until < $1"#,
+        chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days),
+    )
+    .fetch_one(crate::db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
         "horizons": horizon_map(&all),
@@ -814,50 +854,51 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
 async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let all = sweep_horizons(&ctx).await?;
     let recruitment_days = days_for("candidates", &all);
-    let txn = ctx.db.begin().await?;
+    let mut tx = crate::db::pool(&ctx).begin().await?;
     let mut deleted = serde_json::Map::new();
     let mut total: u64 = 0;
     // An appraisal's invitations and answers live and die with it: the sweep removes them first, or they would outlive
     // the appraisal for good (a rater's pid and scores with nothing left to attach to).
     let appraisal_days = days_for("appraisals", &all);
+    // Each table comes from a fixed list and each horizon is a number, never from the request.
     for table in ["appraisal_responses", "appraisal_nominations"] {
-        let result = txn
-            .execute_unprepared(&format!(
+        let affected = run_statement(
+            &mut tx,
+            format!(
                 "DELETE FROM {table} WHERE appraisal_pid IN (SELECT pid FROM appraisals \
                  WHERE deleted_at < now() - interval '{appraisal_days} days')"
-            ))
-            .await?;
-        if result.rows_affected() > 0 {
-            deleted.insert(table.to_string(), serde_json::json!(result.rows_affected()));
-            total += result.rows_affected();
+            ),
+        )
+        .await?;
+        if affected > 0 {
+            deleted.insert(table.to_string(), serde_json::json!(affected));
+            total += affected;
         }
     }
     for table in rules::SOFT_DELETED_TABLES {
         let days = days_for(table, &all);
-        let result = txn
-            .execute_unprepared(&format!(
-                "DELETE FROM {table} WHERE deleted_at < now() - interval '{days} days'"
-            ))
-            .await?;
-        if result.rows_affected() > 0 {
-            deleted.insert(
-                (*table).to_string(),
-                serde_json::json!(result.rows_affected()),
-            );
-            total += result.rows_affected();
+        let affected = run_statement(
+            &mut tx,
+            format!("DELETE FROM {table} WHERE deleted_at < now() - interval '{days} days'"),
+        )
+        .await?;
+        if affected > 0 {
+            deleted.insert((*table).to_string(), serde_json::json!(affected));
+            total += affected;
         }
     }
-    let scrubbed = txn
-        .execute_unprepared(&format!(
+    let scrubbed = run_statement(
+        &mut tx,
+        format!(
             "UPDATE candidates SET display_name = '{ERASED}', email = '{ERASED}', \
              person_ref = NULL, deleted_at = now() \
              WHERE deleted_at IS NULL \
              AND consent_until < CURRENT_DATE - interval '{recruitment_days} days'"
-        ))
-        .await?
-        .rows_affected();
-    Audit::record(
-        &txn,
+        ),
+    )
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "retention",
         Uuid::nil(),
         "retention_swept",
@@ -869,7 +910,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
         "horizons": horizon_map(&all),
         "deleted": deleted,

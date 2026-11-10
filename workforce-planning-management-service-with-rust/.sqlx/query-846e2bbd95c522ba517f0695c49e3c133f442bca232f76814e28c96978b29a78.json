@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM oversight_packs WHERE organization_ref = $1 AND month = $2) AS \"have!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "have!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "846e2bbd95c522ba517f0695c49e3c133f442bca232f76814e28c96978b29a78"
+}

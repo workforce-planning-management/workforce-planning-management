@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.pid, COALESCE(g.name, '') AS \"name!\"\n             FROM group_members m\n             LEFT JOIN groups g ON g.pid = m.group_pid\n            WHERE m.worker_pid = $1 AND m.role = 'lead' AND m.left_at IS NULL\n            ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "group_members",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "738f6639d08129cfab6a204b891242ca6d917663310543be03d0b774c6f2a49e"
+}

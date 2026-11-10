@@ -6,7 +6,7 @@ use serial_test::serial;
 
 use super::{a_person, an_org};
 
-async fn hire(request: &axa::TestServer, org: &str, number: &str, name: &str) -> String {
+async fn hire(request: &axa_test::TestServer, org: &str, number: &str, name: &str) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({

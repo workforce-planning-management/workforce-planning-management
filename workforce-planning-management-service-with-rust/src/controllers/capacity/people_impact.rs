@@ -7,7 +7,6 @@ use super::*;
 
 use std::collections::BTreeSet;
 
-use crate::models::_entities::post_fundings;
 use crate::rules::people_impact::{self as impact, Sub};
 
 /// Query for `GET /api/capacity/people-impact`.
@@ -29,7 +28,7 @@ pub(super) struct PeopleImpactQuery {
 pub(super) async fn people_impact(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PeopleImpactQuery>,
+    axa::extract::Query(query): axa::extract::Query<PeopleImpactQuery>,
 ) -> Result<Response> {
     let mut problems = Problems::new();
     problems.require_ref("programme", entity_ref::EntityType::Thing, &query.programme);
@@ -45,10 +44,12 @@ pub(super) async fn people_impact(
     };
 
     // The people the programme funds, employed today, in scope (WPM-D59).
-    let funded = post_fundings::Entity::find()
-        .filter(post_fundings::Column::ProgrammeRef.eq(&query.programme))
-        .all(&ctx.db)
-        .await?;
+    let funded = sqlx::query!(
+        "SELECT worker_pid, ends_on FROM post_fundings WHERE programme_ref = $1",
+        query.programme,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     let funded_pids: Vec<Uuid> = funded
         .iter()
         .filter(|f| f.ends_on.is_none_or(|e| e >= today))
@@ -61,23 +62,17 @@ pub(super) async fn people_impact(
             .await?;
 
     // The pools the programme holds a claim on, in scope.
-    let demand_rows = programme_demands::Entity::find()
-        .filter(programme_demands::Column::ProgrammeRef.eq(&query.programme))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let claimed_pools = skill_pools::Entity::find()
-        .filter(
-            skill_pools::Column::Pid
-                .is_in(demand_rows.iter().map(|d| d.pool_pid).collect::<Vec<_>>()),
-        )
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let demand_rows = demands_of_programme(&ctx, &query.programme, false, None).await?;
+    let claimed_pools = sqlx::query_scalar!(
+        "SELECT organization_ref FROM skill_pools WHERE pid = ANY($1) AND deleted_at IS NULL",
+        &demand_rows.iter().map(|d| d.pool_pid).collect::<Vec<_>>(),
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     let orgs: BTreeSet<String> = staff
         .values()
         .map(|w| w.organization_ref.clone())
-        .chain(claimed_pools.iter().map(|p| p.organization_ref.clone()))
+        .chain(claimed_pools.iter().cloned())
         .filter(|o| in_scope(o))
         .collect();
 
@@ -93,9 +88,9 @@ pub(super) async fn people_impact(
         impact::contingent_ending(&committed, &pool_keys, today, query.ends_on, impact::FLOOR);
     let over = impact::over_committed(&claimed);
 
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    crate::db::audit(
+        &mut tx,
         "capacity",
         Uuid::new_v4(),
         "people_impact_asked",
@@ -107,7 +102,7 @@ pub(super) async fn people_impact(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
 
     let (workers_json, ending_json, over_json) =
         parts_json(&committed_counts, &ending, &over, &names);
@@ -139,7 +134,7 @@ struct Gathered {
 async fn gather(
     ctx: &AppContext,
     orgs: &BTreeSet<String>,
-    staff: &std::collections::HashMap<Uuid, crate::models::_entities::workers::Model>,
+    staff: &std::collections::HashMap<Uuid, crate::controllers::funding::Employed>,
     demand_rows: &[programme_demands::Model],
     today: NaiveDate,
     months_asked: u32,
@@ -257,25 +252,24 @@ async fn members_among(
     members: &[rules::Member],
     among: &[Uuid],
 ) -> Result<Vec<Uuid>> {
-    let list = among
-        .iter()
-        .map(|p| format!("'{p}'"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    let sql = format!(
-        "SELECT w.pid AS pid FROM workers w
-         WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.pid IN ({list}) AND ({})",
-        holds_sql(members)
-    );
-    let rows = ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            sql,
-            [org.into()],
-        ))
-        .await?;
-    rows.iter()
-        .map(|r| r.try_get::<Uuid>("", "pid").map_err(Into::into))
-        .collect()
+    let held = held_by(members);
+    Ok(sqlx::query_scalar!(
+        "SELECT w.pid FROM workers w
+          WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.pid = ANY($2)
+            AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
+                           AND r.ended_at IS NULL AND r.role_profile_pid = ANY($3::uuid[]))
+                 OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p
+                                                  WHERE p.pid = ANY($3::uuid[]) AND p.deleted_at IS NULL)
+                 OR EXISTS (SELECT 1 FROM worker_skills k
+                              JOIN unnest($4::uuid[], $5::int[]) AS need(skill, least_level)
+                                ON k.skill_pid = need.skill AND k.proficiency >= need.least_level
+                             WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))",
+        org,
+        among,
+        &held.roles,
+        &held.skills,
+        &held.minimums,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }

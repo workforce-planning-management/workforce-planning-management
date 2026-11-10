@@ -1,6 +1,6 @@
 # Backend (Rust, Axum and axa)
 
-`workforce-planning-management-service-with-rust` — Axum + SeaORM + PostgreSQL,
+`workforce-planning-management-service-with-rust` — Axum + PostgreSQL, with queries moving from SeaORM to `sqlx` (WPM-D184, WPM-T466),
 `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`. Stack-level agreements:
 [the service's AGENTS.md](../workforce-planning-management-service-with-rust/AGENTS.md).
 
@@ -10,9 +10,10 @@
    DB-free, clock-free (dates are arguments), `serde` only for output types, unit
    tests alongside. Test the edges: ties, empty, "nobody", "unknown", windows,
    completion gating. Make orderings total (tie-break by id) so pages are stable.
-2. **Migration** `migration/src/m<YYYYMMDD>_<seq>_<name>.rs` — explicit SQL
-   (`CREATE TABLE IF NOT EXISTS …`, constraints and `CHECK`s in the schema), add to
-   `migration/src/lib.rs` in order. Plural table names. `pid UUID` public id.
+2. **Migration** `migrations/<YYYYMMDD><seq>_<name>.sql` (the next number after the
+   last file) — explicit SQL (`CREATE TABLE IF NOT EXISTS …`, constraints and `CHECK`s in
+   the schema), forward only, headed by `--` comments saying what it does (WPM-D193).
+   Never edit an applied file: `sqlx` checks its checksum. Plural table names. `pid UUID` public id.
 3. **Entity** `src/models/_entities/<table>.rs` + `mod.rs` + `prelude.rs` (hand
    written, same shape as the others).
 4. **Controller** `src/controllers/<area>.rs` + `pub mod` in
@@ -42,11 +43,19 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
 
 - Validation errors: `unprocessable("message")` (422). Unknown pid / out of
   scope: `Error::NotFound` (404). `records::find_worker(db, pid)` etc. return 404.
+  Keep returning `axa::Error`: `src/problem.rs` turns every error into RFC 9457 problem details (WPM-D186).
 - Multi-step writes in one transaction (`ctx.db.begin()`); put the audit row and
   any notification in it. **No audit, no write** (WPM-D107): if the audit row cannot be written the
   transaction rolls back and the request fails; never audit after the commit or ignore the audit error.
-- Lists: `Page { limit, offset }`, `check_offset()`, `with_page_headers(...)`
-  (`x-total-count`).
+- Lists: take `page: super::Page` (the request's URI), then `super::window(&page)?` or `super::resolve(&page, default)?` for the
+  `Window` (`axa::cursor_pagination::CursorPage`), `window.bounds()` for `LIMIT` (one more than the page) and `OFFSET`, and
+  `window.respond(rows)` for a bare array with `Link: rel="next"`. A body that is not a bare array, or a list that acts on each row it
+  sends (a salary audit), calls `window.split(rows)` first and answers with `super::with_next`. No totals (WPM-R241, WPM-D189).
+- New and changed queries are `sqlx::query!` on `crate::db::pool(ctx)` (WPM-D184): one fixed statement, with varying
+  conditions as nullable parameters or arrays (`$1::text[] IS NULL OR col = ANY($1)`), never SQL built as text. After adding one,
+  build with `SQLX_OFFLINE=false DATABASE_URL=…` and run `cargo sqlx prepare -- --all-targets`; CI fails on a stale `.sqlx/`.
+  A handler moves whole: a transaction belongs to one library.
+- Read a request with `axa::extract::{Json, Path, Query}`, never Axum's from `axa::prelude` (WPM-T475); a unit test checks.
 - Never put a sensitive detail in an audit snapshot or a notification body.
 
 ## Gotchas learned the hard way

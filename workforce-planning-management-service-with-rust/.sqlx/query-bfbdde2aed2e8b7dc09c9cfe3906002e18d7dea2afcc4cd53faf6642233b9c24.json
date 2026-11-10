@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE padr_versions SET reviewee_comment = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bfbdde2aed2e8b7dc09c9cfe3906002e18d7dea2afcc4cd53faf6642233b9c24"
+}

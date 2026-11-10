@@ -122,6 +122,15 @@ async fn learning_round_trip() {
         let member = &progress["members"][0];
         assert_eq!(member["completed_steps"], 1);
         assert_eq!(member["total_steps"], 2);
+        // The steps keep the order given, from position 0, and the list counts them.
+        let steps: Vec<(String, i64)> = progress["steps"].as_array().unwrap().iter()
+            .map(|s| (s["title"].as_str().unwrap().to_string(), s["position"].as_i64().unwrap()))
+            .collect();
+        assert_eq!(steps, [("Intro".to_string(), 0), ("Advanced".to_string(), 1)]);
+        let listed: Vec<Value> = request.get("/api/learning-paths").await.json();
+        let this = listed.iter().find(|p| p["pid"] == path["pid"]).unwrap();
+        assert_eq!(this["steps"], 2);
+        assert_eq!(member["display_name"], "Test Worker E-2");
 
         // ── Training analytics: engineering completion 1/1.
         let analytics: Value = request.get("/api/learning/training-analytics").await.json();
@@ -179,6 +188,19 @@ async fn learning_round_trip() {
             .assert_status_ok();
         let detail: Value = request.get(&format!("/api/mentorships/{m_pid}")).await.json();
         assert_eq!(detail["sessions"].as_array().unwrap().len(), 1);
+        assert!(activated["ended_on"].is_null());
+        // Completing stamps the end and keeps the start (a second pairing, so the overview below is unchanged).
+        let second: Value = request
+            .post("/api/mentorships")
+            .json(&json!({ "mentor_pid": mentee, "mentee_pid": mentor, "focus": "reverse" }))
+            .await
+            .json();
+        let second = format!("/api/mentorships/{}/status", second["pid"].as_str().unwrap());
+        let started: Value = request.post(&second).json(&json!({ "to": "active" })).await.json();
+        let completed: Value = request.post(&second).json(&json!({ "to": "completed" })).await.json();
+        assert_eq!(completed["status"], "completed");
+        assert_eq!(completed["started_on"], started["started_on"]);
+        assert!(completed["ended_on"].is_string());
 
         let overview: Value = request
             .get("/api/learning/mentorship-overview?days=3650")
@@ -381,7 +403,7 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
             .get(&format!("/api/directory?q=dir-{tag}"))
             .await;
         assert_eq!(response.status_code(), 200);
-        assert_eq!(response.header("x-total-count"), "1");
+        assert!(response.headers().get("link").is_none());
         let rows: Vec<Value> = response.json();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["pid"], stay.as_str());
@@ -547,12 +569,14 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         activate!(&request, &a).await;
 
         let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
-        let written = run_snapshot(&ctx.db, first_day)
+        let written = run_snapshot(workforce_planning_management::db::pool(&ctx), first_day)
             .await
             .expect("first snapshot");
         assert!(written >= 1, "the seeded worker's department is recorded");
         assert_eq!(
-            run_snapshot(&ctx.db, first_day).await.expect("re-run"),
+            run_snapshot(workforce_planning_management::db::pool(&ctx), first_day)
+                .await
+                .expect("re-run"),
             0,
             "a re-run for the same date writes nothing"
         );
@@ -577,7 +601,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
 
         // A later snapshot measures starters/leavers from the earlier one.
         run_snapshot(
-            &ctx.db,
+            workforce_planning_management::db::pool(&ctx),
             chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
         )
         .await
@@ -930,6 +954,9 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
             422
         );
         assert_eq!(interest(json!({})).await.status_code(), 422);
+        // A different role is a different interest, not a duplicate.
+        let other: Value = interest(json!({ "role_profile_pid": roles[1] })).await.json();
+        request.delete(&format!("/api/mobility-interests/{}", other["pid"].as_str().unwrap())).await.assert_status_ok();
 
         // Others see counts, never who.
         let summary: Value = request.get("/api/mobility/interest-summary").await.json();
@@ -947,6 +974,7 @@ async fn internal_mobility_matches_own_skills_and_keeps_interest_private() {
 
         let pid = created["pid"].as_str().unwrap();
         request.delete(&format!("/api/mobility-interests/{pid}")).await.assert_status_ok();
+        assert_eq!(request.delete(&format!("/api/mobility-interests/{pid}")).await.status_code(), 404, "withdrawn once");
         let after: Value = request.get(&format!("/api/workers/{worker}/mobility-interests")).await.json();
         assert!(after.as_array().unwrap().is_empty());
     })
@@ -1246,6 +1274,15 @@ async fn workforce_plan_forecasts_gaps_and_alignment() {
             422,
             "objectives must belong to the plan"
         );
+        // The plan shows which objectives each line serves, and the list counts its lines.
+        let detail: Value = request.get(&format!("/api/workforce-plans/{plan_pid}")).await.json();
+        let lines = detail["demand_lines"].as_array().unwrap();
+        assert_eq!(lines[0]["objective_pids"], json!([served["pid"]]));
+        assert_eq!(lines[1]["objective_pids"], json!([]));
+        assert_eq!(detail["objectives"].as_array().unwrap().len(), 2);
+        let listed: Vec<Value> = request.get("/api/workforce-plans").await.json();
+        let this = listed.iter().find(|p| p["pid"] == detail["pid"]).unwrap();
+        assert_eq!(this["demand_lines"], 2);
         let view: Value = request.get(&format!("/api/workforce-plans/{plan_pid}/alignment")).await.json();
         assert_eq!(view["planned_headcount"], 9);
         assert_eq!(view["aligned_share"]["numerator"], 5);
@@ -1376,9 +1413,14 @@ async fn capability_framework_import_and_progression() {
     crate::requests::request_open(|request, ctx| async move {
         let fixture =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
-        let report = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("import");
+        let report = import_pcf(
+            workforce_planning_management::db::pool(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("import");
         assert_eq!(report.levels_read, 4);
         assert_eq!(report.retired_skipped, 1);
         assert_eq!(report.profiles_created, 3);
@@ -1392,9 +1434,14 @@ async fn capability_framework_import_and_progression() {
         );
 
         // Idempotent: a second run creates nothing and refreshes everything.
-        let again = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import");
+        let again = import_pcf(
+            workforce_planning_management::db::pool(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import");
         assert_eq!(again.profiles_created, 0);
         assert_eq!(again.profiles_updated, 3);
         assert_eq!(again.requirements_created, 0);
@@ -1474,9 +1521,14 @@ async fn capability_framework_import_and_progression() {
             )
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import");
+        import_pcf(
+            workforce_planning_management::db::pool(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import");
         let kept: Value = request
             .get(&format!(
                 "/api/role-profiles/{}",
@@ -1494,9 +1546,14 @@ async fn capability_framework_import_and_progression() {
             kept_a["min_proficiency"], 5,
             "the planner's level is not overwritten"
         );
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, true)
-            .await
-            .expect("overwrite");
+        import_pcf(
+            workforce_planning_management::db::pool(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            true,
+        )
+        .await
+        .expect("overwrite");
         let reset: Value = request
             .get(&format!(
                 "/api/role-profiles/{}",
@@ -1521,9 +1578,14 @@ async fn capability_framework_import_and_progression() {
             .json(&json!({ "name": "Renamed skill A" }))
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import after rename");
+        import_pcf(
+            workforce_planning_management::db::pool(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import after rename");
         let catalogue: Value = request.get("/api/skills").await.json();
         let names: Vec<&str> = catalogue
             .as_array()
@@ -1653,12 +1715,12 @@ async fn esco_import_search_and_seeding() {
                 .assert_status_ok();
         }
         let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/esco-mini");
-        let report = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("import");
+        let report = import_esco(workforce_planning_management::db::pool(&ctx), &fixture, "en", "v-test").await.expect("import");
         assert_eq!((report.skills, report.occupations, report.relations), (5, 2, 4));
         assert_eq!(report.relations_dangling, 1, "the relation to a skill not in the file");
         assert_eq!(report.catalogue_linked, 2, "exact normalised labels, one match each");
         assert_eq!(report.catalogue_ambiguous, 1, "two ESCO skills share the label: not guessed");
-        let again = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("re-import");
+        let again = import_esco(workforce_planning_management::db::pool(&ctx), &fixture, "en", "v-test").await.expect("re-import");
         assert_eq!((again.skills, again.relations), (5, 4), "replaced, not duplicated");
         assert_eq!(again.catalogue_linked, 0, "already linked");
 
@@ -1845,8 +1907,8 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(workforce_planning_management::db::pool(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(workforce_planning_management::db::pool(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
 
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
@@ -1955,8 +2017,8 @@ async fn career_history_and_aspirations() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(workforce_planning_management::db::pool(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(workforce_planning_management::db::pool(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &me).await;
@@ -2073,7 +2135,6 @@ async fn career_history_and_aspirations() {
 #[ignore = "needs Postgres"]
 async fn reporting_lines_stop_at_a_manager_who_has_left() {
     crate::requests::request_open(|request, ctx| async move {
-        use sea_orm::ConnectionTrait;
         let org = an_org();
         let mut pids = Vec::new();
         for n in ["L-1", "L-2", "L-3", "L-4"] {
@@ -2099,12 +2160,12 @@ async fn reporting_lines_stop_at_a_manager_who_has_left() {
             .json();
         assert_eq!(down["summary"]["total"], 3);
 
-        ctx.db
-            .execute_unprepared(&format!(
-                "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
-            ))
-            .await
-            .unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         let up: Value = request
             .get(&format!("/api/workers/{low}/upline"))
             .await
@@ -2301,7 +2362,7 @@ async fn reporting_lines_downline_aspirations_and_groups() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn confederation_groups_and_transfers() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let (parent, child_a, child_b, outsider) = (an_org(), an_org(), an_org(), an_org());
         for child in [&child_a, &child_b] {
             request.post("/api/organization-confederations")
@@ -2340,6 +2401,15 @@ async fn confederation_groups_and_transfers() {
         let t: Value = request.post(&format!("/api/workers/{in_a}/transfer")).json(&json!({ "organization_ref": child_b })).await.json();
         assert_eq!(t["to"], child_b.as_str());
         assert_eq!(t["ended_group_memberships"], json!(["A-only club"]));
+        let ended: i64 = sqlx::query_scalar(
+            "SELECT (snapshot->>'group_memberships_ended')::bigint FROM audit_logs
+             WHERE entity_pid = $1::text::uuid AND action = 'transferred'",
+        )
+        .bind(&in_a)
+        .fetch_one(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert_eq!(ended, 1, "the audit entry keeps what the move ended");
         let now: Value = request.get(&format!("/api/workers/{in_a}/groups")).await.json();
         let current: Vec<&str> = now["groups"].as_array().unwrap().iter().map(|g| g["name"].as_str().unwrap()).collect();
         assert_eq!(current, ["Federation guild"]);
@@ -2357,7 +2427,7 @@ async fn confederation_groups_and_transfers() {
     .await;
 }
 
-async fn capability_view(request: &axa::TestServer) -> Value {
+async fn capability_view(request: &axa_test::TestServer) -> Value {
     request
         .get("/api/workforce-intelligence/capability")
         .await
@@ -2371,7 +2441,6 @@ async fn capability_view(request: &axa::TestServer) -> Value {
 // own target, the people with a gap and how many of them have an active plan, completed sittings per category.
 // Read as the difference from before, since the test database holds other people.
 async fn capability_counts_targets_plans_and_completed_sittings() {
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {
         let org = super::an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -2403,11 +2472,10 @@ async fn capability_counts_targets_plans_and_completed_sittings() {
             }))
             .await
             .assert_status_ok();
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE development_plans SET status = 'active' WHERE worker_pid = '{}'",
                 people[1]
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         // The first person completed an aptitude sitting; the third only scheduled one.
@@ -2462,6 +2530,34 @@ async fn capability_counts_targets_plans_and_completed_sittings() {
                 .unwrap()
         };
         assert_eq!(assessed(&after), assessed(&before) + 1, "a scheduled sitting does not count");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_group_is_renamed_recast_and_redescribed() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let make = |name: &str| request.post("/api/groups").json(&json!({ "organization_ref": org, "name": name, "kind": "interest", "description": "old" }));
+        let group: Value = make("Book club").await.json();
+        let other: Value = make("Film club").await.json();
+        let (group, other) = (group["pid"].as_str().unwrap(), other["pid"].as_str().unwrap());
+        let rename = |pid: &str, name: &str| {
+            request.put(&format!("/api/groups/{pid}")).json(&json!({ "name": name, "kind": "practice", "description": "new" }))
+        };
+        let answer: Value = rename(group, "  Reading circle ").await.json();
+        assert_eq!(answer["pid"], group);
+        let listed: Value = request.get(&format!("/api/groups?organization_ref={org}")).await.json();
+        let shown = listed.as_array().unwrap().iter().find(|g| g["pid"] == group).unwrap().clone();
+        assert_eq!((&shown["name"], &shown["kind"], &shown["description"]), (&json!("Reading circle"), &json!("practice"), &json!("new")));
+        assert_eq!(rename(group, "film CLUB").await.status_code(), 422, "another group's name, ignoring case");
+        rename(group, "READING circle").await.assert_status_ok();
+        let again: Value = request.get(&format!("/api/groups?organization_ref={org}")).await.json();
+        assert_eq!(again.as_array().unwrap().iter().find(|g| g["pid"] == group).unwrap()["name"], "READING circle", "its own name, recased");
+        let untouched = again.as_array().unwrap().iter().find(|g| g["pid"] == other).unwrap().clone();
+        assert_eq!((&untouched["name"], &untouched["kind"], &untouched["description"]), (&json!("Film club"), &json!("interest"), &json!("old")));
     })
     .await;
 }

@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `POST /api/workforce-plans` body.
 #[derive(Debug, Deserialize)]
@@ -78,36 +79,37 @@ pub(super) async fn create_plan(
     )
     .map_err(|e| unprocessable(&e))?;
     validate_finance(&payload).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let row = workforce_plans::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        horizon_start: ActiveValue::set(payload.horizon_start),
-        horizon_end: ActiveValue::set(payload.horizon_end),
-        rationale: ActiveValue::set(payload.rationale.clone()),
-        attrition_bp: ActiveValue::set(payload.attrition_bp),
-        budget_minor: ActiveValue::set(payload.budget_minor),
-        budget_currency: ActiveValue::set(payload.budget_currency.clone()),
-        on_cost_bp: ActiveValue::set(payload.on_cost_bp),
-        status: ActiveValue::set("draft".to_string()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO workforce_plans (pid, name, organization_ref, horizon_start, horizon_end, rationale, attrition_bp,
+                                      budget_minor, budget_currency, on_cost_bp, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft')",
+        pid,
+        payload.name.trim(),
+        payload.organization_ref,
+        payload.horizon_start,
+        payload.horizon_end,
+        payload.rationale,
+        payload.attrition_bp,
+        payload.budget_minor,
+        payload.budget_currency,
+        payload.on_cost_bp,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "workforce_plan",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -123,36 +125,36 @@ pub(super) struct PlanListQuery {
 pub(super) async fn list_plans(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PlanListQuery>,
+    axa::extract::Query(query): axa::extract::Query<PlanListQuery>,
 ) -> Result<Response> {
-    let mut select =
-        workforce_plans::Entity::find().filter(workforce_plans::Column::DeletedAt.is_null());
-    if let Some(org) = &query.organization {
-        select = select.filter(workforce_plans::Column::OrganizationRef.eq(org));
-    }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        select = select.filter(workforce_plans::Column::OrganizationRef.is_in(refs));
-    }
-    let plans = select
-        .order_by_desc(workforce_plans::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let lines = plan_demand_lines::Entity::find().all(&ctx.db).await?;
-    let out: Vec<serde_json::Value> = plans
-        .iter()
-        .map(|p| {
-            serde_json::json!({
-                "pid": p.pid,
-                "name": p.name,
-                "organization_ref": p.organization_ref,
-                "horizon_start": p.horizon_start,
-                "horizon_end": p.horizon_end,
-                "status": p.status,
-                "attrition_bp": p.attrition_bp,
-                "demand_lines": lines.iter().filter(|l| l.plan_pid == p.pid).count(),
-            })
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    // Each plan with its line count, counted by the database, where every line of every plan was read.
+    let out: Vec<serde_json::Value> = sqlx::query!(
+        r#"SELECT p.pid, p.name, p.organization_ref, p.horizon_start, p.horizon_end, p.status, p.attrition_bp,
+                  (SELECT COUNT(*) FROM plan_demand_lines l WHERE l.plan_pid = p.pid) AS "demand_lines!"
+             FROM workforce_plans p
+            WHERE p.deleted_at IS NULL AND ($1::text IS NULL OR p.organization_ref = $1)
+              AND ($2::text[] IS NULL OR p.organization_ref = ANY($2))
+            ORDER BY p.id DESC"#,
+        query.organization,
+        scope.as_deref(),
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|p| {
+        serde_json::json!({
+            "pid": p.pid,
+            "name": p.name,
+            "organization_ref": p.organization_ref,
+            "horizon_start": p.horizon_start,
+            "horizon_end": p.horizon_end,
+            "status": p.status,
+            "attrition_bp": p.attrition_bp,
+            "demand_lines": p.demand_lines,
         })
-        .collect();
+    })
+    .collect();
     format::json(out)
 }
 
@@ -163,12 +165,17 @@ pub(super) async fn scoped_plan(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<workforce_plans::Model> {
-    let plan = workforce_plans::Entity::find()
-        .filter(workforce_plans::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(workforce_plans::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let plan = sqlx::query_as!(
+        workforce_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, organization_ref, horizon_start,
+                  horizon_end, rationale, attrition_bp, budget_minor, budget_currency, on_cost_bp, status,
+                  deleted_at AS "deleted_at: _"
+             FROM workforce_plans WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &plan.organization_ref).await?;
     Ok(plan)
 }
@@ -200,8 +207,8 @@ pub(super) fn line_json(
 }
 
 pub(super) async fn role_titles(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
-    Ok(role_profiles::Entity::find()
-        .all(&ctx.db)
+    Ok(sqlx::query!("SELECT pid, job_title FROM role_profiles")
+        .fetch_all(crate::db::pool(ctx))
         .await?
         .into_iter()
         .map(|p| (p.pid, p.job_title))
@@ -219,12 +226,20 @@ pub(super) async fn get_plan(
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let titles = role_titles(&ctx).await?;
     let demand = plan_lines(&ctx, plan.pid).await?;
-    let objectives = plan_objectives::Entity::find()
-        .filter(plan_objectives::Column::PlanPid.eq(plan.pid))
-        .order_by_asc(plan_objectives::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let link_rows = demand_line_objectives::Entity::find().all(&ctx.db).await?;
+    let objectives = sqlx::query!(
+        "SELECT pid, title, owner FROM plan_objectives WHERE plan_pid = $1 ORDER BY id",
+        plan.pid,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
+    // Only the links of this plan's lines, where every link was read.
+    let line_pids: Vec<Uuid> = demand.iter().map(|l| l.pid).collect();
+    let link_rows = sqlx::query!(
+        "SELECT line_pid, objective_pid FROM demand_line_objectives WHERE line_pid = ANY($1) ORDER BY id",
+        &line_pids,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     let lines_out: Vec<serde_json::Value> = demand
         .iter()
         .map(|l| {
@@ -262,12 +277,16 @@ pub(super) async fn plan_lines(
     ctx: &AppContext,
     plan_pid: Uuid,
 ) -> Result<Vec<plan_demand_lines::Model>> {
-    Ok(plan_demand_lines::Entity::find()
-        .filter(plan_demand_lines::Column::PlanPid.eq(plan_pid))
-        .order_by_asc(plan_demand_lines::Column::TargetOn)
-        .order_by_asc(plan_demand_lines::Column::Department)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        plan_demand_lines::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, department,
+                  role_profile_pid, target_on, target_headcount, note, programme_ref, target_fte_percent, basis,
+                  expected_ends_on
+             FROM plan_demand_lines WHERE plan_pid = $1 ORDER BY target_on, department"#,
+        plan_pid,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }
 
 /// `POST /api/workforce-plans/{pid}/status` body.
@@ -291,35 +310,38 @@ pub(super) async fn set_status(
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     rules::check_transition(&plan.status, &payload.to).map_err(|e| unprocessable(&e))?;
     if payload.to == "active" {
-        let other_active = workforce_plans::Entity::find()
-            .filter(workforce_plans::Column::OrganizationRef.eq(&plan.organization_ref))
-            .filter(workforce_plans::Column::Status.eq("active"))
-            .filter(workforce_plans::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .is_some();
+        let other_active = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM workforce_plans
+                               WHERE organization_ref = $1 AND status = 'active' AND deleted_at IS NULL) AS "exists!""#,
+            plan.organization_ref,
+        )
+        .fetch_one(crate::db::pool(&ctx))
+        .await?;
         if other_active {
             return Err(unprocessable(
                 "this organization already has an active plan; archive it first",
             ));
         }
     }
-    let from = plan.status.clone();
-    let mut active: workforce_plans::ActiveModel = plan.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE workforce_plans SET status = $2 WHERE id = $1",
+        plan.id,
+        payload.to
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "workforce_plan",
-        row.pid,
+        plan.pid,
         "status_changed",
         caller.actor(),
-        Some(serde_json::json!({ "from": from, "to": payload.to })),
+        Some(serde_json::json!({ "from": plan.status, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: plan.pid.to_string(),
     })
 }

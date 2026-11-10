@@ -1,7 +1,7 @@
 # Workforce Planning Management (WPM)
 
 > An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,
-> in Rust (Loco, Axum, SeaORM, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17
+> in Rust (Axum, axa, SeaORM, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17
 > locales. **Demo software — not a production HR or payroll system; synthetic
 > data only.** WPM owns the employment relationship and references identities
 > (person, worker, organization, course services) by EntityRef URN.
@@ -10,7 +10,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 133 migrations, 96 controllers, 66 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 133 migrations, 96 controllers, 69 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
@@ -94,6 +94,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/statutory-pay-protections.md](spec/statutory-pay-protections.md): WPM-R218–R223 and WPM-D154–D162 (decisions confirmed 2026-11-01): minimum wage, overtime, workers' compensation and unemployment insurance: the research with its confidence, what WPM holds today, and the advice (check and record, never decide or file)
 - [spec/injury-and-separation-duties.md](spec/injury-and-separation-duties.md): WPM-T412: what an employer must report when someone is hurt and hand over when someone leaves, in the eleven jurisdictions, with sources; the fields of the injury record
 - [spec/learning-economics.md](spec/learning-economics.md): WPM-R227–R230, WPM-D172–D174 and WPM-T446–T453: what learning costs and returns: a course fee, the cost of the hours, train or hire, a stated benefit with payback and net present value; unknown is never zero
+- [spec/help-and-learning.md](spec/help-and-learning.md): WPM-R243–R245, WPM-D191–D192 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean
 - [spec/local-ci-cd.md](spec/local-ci-cd.md): WPM-D171 and WPM-T436–T445 (proposed): local-first CI/CD: the options assessed (a shared entry point, a pre-push gate, an attestation and commit status, self-managed runners, act, Dagger, Forgejo), the risks, and the order to do them in
 - [spec/individual-goals.md](spec/individual-goals.md): WPM-R224–R226, WPM-R232 and WPM-D163–D166, WPM-D177: individual goals with measures and check-ins, tied to the PADR and performance reviews; a signed review keeps a snapshot; no score; team and company OKRs referenced, never held
 - [spec/human-capital-reporting.md](spec/human-capital-reporting.md): WPM-R147 and WPM-D100: a dated read-only report mapped to ISO 30414:2025 and the revised ESRS S1 requirement numbers, a mapping and never a copy

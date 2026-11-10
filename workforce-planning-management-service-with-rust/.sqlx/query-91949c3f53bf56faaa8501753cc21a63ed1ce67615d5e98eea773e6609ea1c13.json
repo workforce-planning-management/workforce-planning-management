@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, display_name FROM candidates WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "candidates",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "candidates",
+            "name": "display_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "91949c3f53bf56faaa8501753cc21a63ed1ce67615d5e98eea773e6609ea1c13"
+}

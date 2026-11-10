@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT name, basis, job_titles FROM pay_categories\n          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pay_categories",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "basis",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "pay_categories",
+            "name": "basis"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "job_titles",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "pay_categories",
+            "name": "job_titles"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8e318e6ac32ed9e55852ba8e5673adbe2da26338ebca9f2fb1c3bce4f397894e"
+}

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b717d52fcb4a23fc640b5eab13bb912a82721a8d4756b96a34dea883e4177d51"
+}

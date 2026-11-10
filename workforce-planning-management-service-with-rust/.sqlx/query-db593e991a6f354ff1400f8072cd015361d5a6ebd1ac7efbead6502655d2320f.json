@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM decision_gates WHERE organization_ref = $1 AND change_kind = $2 AND body_pid = $3\n           ) AS \"clash!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "clash!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "db593e991a6f354ff1400f8072cd015361d5a6ebd1ac7efbead6502655d2320f"
+}

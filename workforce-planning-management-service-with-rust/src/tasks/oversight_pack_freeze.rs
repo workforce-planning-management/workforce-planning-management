@@ -10,7 +10,6 @@ use axa::task::{TaskInfo, Vars};
 use chrono::{Datelike, NaiveDate};
 
 use crate::controllers::oversight_packs::freeze;
-use crate::models::_entities::{oversight_packs, oversight_positions};
 
 /// The freeze task.
 pub struct OversightPackFreeze;
@@ -50,20 +49,21 @@ pub async fn freeze_all(ctx: &AppContext, as_of: NaiveDate) -> Result<usize> {
     let month = this_month
         .checked_sub_months(chrono::Months::new(1))
         .unwrap_or(this_month);
-    let orgs: BTreeSet<String> = oversight_positions::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| p.organization_ref)
-        .collect();
+    let orgs: BTreeSet<String> =
+        sqlx::query_scalar!("SELECT organization_ref FROM oversight_positions")
+            .fetch_all(crate::db::pool(ctx))
+            .await?
+            .into_iter()
+            .collect();
     let mut frozen = 0;
     for org in &orgs {
-        let have = oversight_packs::Entity::find()
-            .filter(oversight_packs::Column::OrganizationRef.eq(org))
-            .filter(oversight_packs::Column::Month.eq(month))
-            .one(&ctx.db)
-            .await?
-            .is_some();
+        let have = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM oversight_packs WHERE organization_ref = $1 AND month = $2) AS "have!""#,
+            org,
+            month,
+        )
+        .fetch_one(crate::db::pool(ctx))
+        .await?;
         if have {
             tracing::info!(%org, %month, "oversight pack already frozen; skipped");
             continue;

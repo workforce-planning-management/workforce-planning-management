@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid FROM leave_requests\n         WHERE worker_pid = ANY($1)\n           AND status = 'approved'\n           AND deleted_at IS NULL\n           AND start_on <= $2\n           AND end_on >= $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ceee2b31b2281a481d74e01e9734efc5788576bfca71b722d83deb8f6a2f73fd"
+}

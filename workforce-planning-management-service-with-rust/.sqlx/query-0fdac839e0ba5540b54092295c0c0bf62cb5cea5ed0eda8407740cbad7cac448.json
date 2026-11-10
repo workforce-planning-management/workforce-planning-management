@@ -1,0 +1,78 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.pid, a.status, a.competencies, a.shared_on,\n                  (SELECT COUNT(*) FROM appraisal_nominations n WHERE n.appraisal_pid = a.pid) AS \"nominated!\",\n                  (SELECT COUNT(*) FROM appraisal_responses r WHERE r.appraisal_pid = a.pid) AS \"responded!\"\n             FROM appraisals a\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "competencies",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "competencies"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "shared_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "shared_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "nominated!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "responded!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "0fdac839e0ba5540b54092295c0c0bf62cb5cea5ed0eda8407740cbad7cac448"
+}

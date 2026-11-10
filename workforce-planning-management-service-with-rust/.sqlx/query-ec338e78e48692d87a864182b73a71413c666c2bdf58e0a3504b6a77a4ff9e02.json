@@ -1,0 +1,244 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, entry_date, activity,\n                  category, unit, amount_hundredths, evidence_note, evidence_url, source, external_ref, course_ref,\n                  verified_on, verified_by, skill_pid, deleted_at AS \"deleted_at: _\"\n             FROM cpd_entries WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "entry_date",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "entry_date"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "activity",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "activity"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "unit",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "unit"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "amount_hundredths",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "amount_hundredths"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "evidence_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "evidence_note"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "evidence_url",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "evidence_url"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "external_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "external_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "verified_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "verified_on"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "verified_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "verified_by"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "ec338e78e48692d87a864182b73a71413c666c2bdf58e0a3504b6a77a4ff9e02"
+}

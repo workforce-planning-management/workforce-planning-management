@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code, name FROM jurisdictions\n          WHERE organization_ref = $1 AND layer = 'national' AND code ~ '^[A-Z]{2}$' ORDER BY code",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "0541d57c5fb87ae50ff89469210b1464561533d6eb0fdb4ad5d4163681b01d75"
+}

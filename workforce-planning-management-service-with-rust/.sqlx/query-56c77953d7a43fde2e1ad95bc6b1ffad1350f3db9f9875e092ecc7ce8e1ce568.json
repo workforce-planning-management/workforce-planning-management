@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_job_levels (worker_pid, framework, level_number, effective_on, recorded_by, on_behalf)\n         VALUES ($1, $2, $3, $4, $5, $6)\n         ON CONFLICT (worker_pid) DO UPDATE SET framework = EXCLUDED.framework, level_number = EXCLUDED.level_number,\n             effective_on = EXCLUDED.effective_on, recorded_by = EXCLUDED.recorded_by, on_behalf = EXCLUDED.on_behalf",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Date",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "56c77953d7a43fde2e1ad95bc6b1ffad1350f3db9f9875e092ecc7ce8e1ce568"
+}

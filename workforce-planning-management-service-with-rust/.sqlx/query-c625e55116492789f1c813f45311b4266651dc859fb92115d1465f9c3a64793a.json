@@ -1,0 +1,125 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ergonomic_assessments SET status = 'completed', assessed_on = $2 WHERE pid = $1\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, worker_pid, workstation, status, assessed_on, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "workstation",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "workstation"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "assessed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "assessed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "ergonomic_assessments",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c625e55116492789f1c813f45311b4266651dc859fb92115d1465f9c3a64793a"
+}

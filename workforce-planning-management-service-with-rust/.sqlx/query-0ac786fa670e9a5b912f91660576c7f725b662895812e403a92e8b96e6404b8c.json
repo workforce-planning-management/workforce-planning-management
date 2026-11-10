@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM cutover_roles WHERE cutover_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0ac786fa670e9a5b912f91660576c7f725b662895812e403a92e8b96e6404b8c"
+}

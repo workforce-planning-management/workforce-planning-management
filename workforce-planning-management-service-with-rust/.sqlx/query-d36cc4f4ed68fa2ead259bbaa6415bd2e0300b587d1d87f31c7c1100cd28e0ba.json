@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO initiative_skill_shifts (pid, initiative_pid, skill_pid, direction, note)\n         VALUES ($1, $2, $3, $4, $5)\n         ON CONFLICT (initiative_pid, skill_pid)\n         DO UPDATE SET direction = EXCLUDED.direction, note = EXCLUDED.note",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d36cc4f4ed68fa2ead259bbaa6415bd2e0300b587d1d87f31c7c1100cd28e0ba"
+}

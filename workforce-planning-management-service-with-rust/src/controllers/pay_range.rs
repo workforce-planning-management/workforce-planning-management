@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::QueryOrder;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -16,8 +15,7 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{worker_job_levels, worker_pay_positions, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::rules::cost as cost_rules;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::metrics::is_employed_on;
@@ -37,7 +35,18 @@ pub(crate) struct Query {
     currency: Option<String>,
 }
 
-fn most_common_currency(staff: &[&workers::Model]) -> Option<String> {
+/// What the analysis reads of a worker.
+struct Staff {
+    pid: Uuid,
+    hired_on: NaiveDate,
+    terminated_on: Option<NaiveDate>,
+    salary_minor: Option<i64>,
+    salary_currency: Option<String>,
+    department: String,
+    location: Option<String>,
+}
+
+fn most_common_currency(staff: &[&Staff]) -> Option<String> {
     let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
     for w in staff {
         if w.salary_minor.is_some()
@@ -58,7 +67,7 @@ fn most_common_currency(staff: &[&workers::Model]) -> Option<String> {
 async fn pay_range(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<Query>,
+    axa::extract::Query(query): axa::extract::Query<Query>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -85,30 +94,33 @@ async fn pay_range(
             rules::check_cutoff(points.saturating_mul(100)).map_err(|e| unprocessable(&e))?
         }
     };
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
-        .collect();
-    let positions: BTreeMap<Uuid, worker_pay_positions::Model> =
-        worker_pay_positions::Entity::find()
-            .all(&ctx.db)
+    let staff: Vec<Staff> = sqlx::query_as!(
+        Staff,
+        "SELECT pid, hired_on, terminated_on, salary_minor, salary_currency, department, location FROM workers
+         WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+        query.organization,
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
+    .collect();
+    let positions: BTreeMap<Uuid, _> =
+        sqlx::query!("SELECT worker_pid, scale_id, band FROM worker_pay_positions")
+            .fetch_all(pool(&ctx))
             .await?
             .into_iter()
             .map(|p| (p.worker_pid, p))
             .collect();
-    let levels: BTreeMap<Uuid, String> = worker_job_levels::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|l| (l.worker_pid, format!("{}:{}", l.framework, l.level_number)))
-        .collect();
+    let levels: BTreeMap<Uuid, String> =
+        sqlx::query!("SELECT worker_pid, framework, level_number FROM worker_job_levels")
+            .fetch_all(pool(&ctx))
+            .await?
+            .into_iter()
+            .map(|l| (l.worker_pid, format!("{}:{}", l.framework, l.level_number)))
+            .collect();
     // Only workers with a recorded band can be placed in one; the others are counted as having none.
-    let with_band: Vec<&workers::Model> = staff
+    let with_band: Vec<&Staff> = staff
         .iter()
         .filter(|w| positions.contains_key(&w.pid))
         .collect();
@@ -145,8 +157,8 @@ async fn pay_range(
         })
         .collect();
     let report = rules::analyse(&entries, DEFAULT_FLOOR, cutoff_bp);
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "pay_range_report",
         Uuid::nil(),
         "pay_range_report_read",

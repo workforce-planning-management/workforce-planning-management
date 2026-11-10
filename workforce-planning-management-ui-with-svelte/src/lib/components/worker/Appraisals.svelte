@@ -52,6 +52,15 @@
   let raterPid = $state("");
   let raterScores = $state<Record<string, number>>({});
   let raterComment = $state("");
+  // The competencies a new 360 asks about (WPM-T485): the person running it names them, up to twelve; the three the button
+  // used to fix are the starting text.
+  let competencies = $state("communication, collaboration, delivery");
+  const competencyList = $derived(
+    competencies
+      .split(",")
+      .map((c) => c.trim())
+      .filter((c) => c !== ""),
+  );
 
   async function toggleAppraisal(appraisalPid: string, keepOpen = false) {
     onfail(null);
@@ -93,7 +102,7 @@
   <ErrorNote testid="panel-error-requests" prefixed message={requestsError} />
 {/if}
 {#if requests.length}
-  <h2>{t("ap.requests")}</h2>
+  <h2 id="appraisal-requests">{t("ap.requests")}</h2>
   <ul class="panel" data-testid="appraisal-requests">
     {#each requests as request (request.appraisal_pid)}
       <li>
@@ -131,10 +140,19 @@
   </ul>
 {/if}
 
-<h2>{t("ap.title")}</h2>
+<h2 id="appraisals">{t("ap.title")}</h2>
 {#if appraisalsError}<ErrorNote testid="panel-error-appraisals" prefixed message={appraisalsError} />{/if}
 <div class="panel" data-testid="appraisals">
-  <button onclick={() => void act(() => createAppraisal(pid, ["communication", "collaboration", "delivery"]))}>
+  <p class="muted">{t("ap.hint")}</p>
+  <label>
+    {t("ap.competencies")}
+    <input bind:value={competencies} maxlength="400" data-testid="appraisal-competencies" />
+  </label>
+  <button
+    data-testid="appraisal-new"
+    disabled={competencyList.length === 0 || competencyList.length > 12}
+    onclick={() => void act(() => createAppraisal(pid, competencyList))}
+  >
     {t("ap.new")}
   </button>
   {#each appraisals as appraisal (appraisal.pid)}

@@ -1,0 +1,122 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid,\n                  parent_organization_ref, child_organization_ref, starts_on, ends_on,\n                  deleted_at AS \"deleted_at: _\"\n             FROM organization_confederations\n            WHERE deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "parent_organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "parent_organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "child_organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "child_organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "organization_confederations",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "146e40468b5c7523d70b1edf86a579b5277a6278ed642a456cd00b3aa79a13bb"
+}

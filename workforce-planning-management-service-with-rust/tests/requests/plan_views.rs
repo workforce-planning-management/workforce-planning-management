@@ -1,7 +1,6 @@
 //! The plan forecast and cost views count the employed workforce in groups (WPM-D95): the answers for a
 //! department with every kind of person in it, pinned so that how they are counted can change.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -66,13 +65,13 @@ async fn plan_views_count_every_kind_of_person_once() {
             }
             who.push(pid);
         }
-        ctx.db.execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "UPDATE workers SET terminated_on = '2026-06-30' WHERE pid = '{}';
              INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status)
                VALUES (gen_random_uuid(), '{}', 'convert', '2027-01-31', 'proposed');
              INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status)
                VALUES (gen_random_uuid(), '{}', 'convert', '2027-01-31', 'approved');",
-            who[6], who[3], who[4])).await.unwrap();
+            who[6], who[3], who[4]))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
 
         let plan: Value = request
             .post("/api/workforce-plans")

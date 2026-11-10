@@ -6,13 +6,13 @@
 //! the answer names no one the directory would not. The comparison itself is
 //! [`crate::rules::duplicates`].
 
+use axa::extract::Json;
 use axa::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use serde::Deserialize;
 
 use super::{ensure_valid, forbidden};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::workers;
+use crate::db;
 use crate::models::memberships;
 use crate::rules::duplicates::{self as rules, Known, Query};
 use crate::validation::Problems;
@@ -42,25 +42,33 @@ async fn possible_duplicates(
     );
     ensure_valid(&problems.into_vec())?;
 
-    let mut query = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        if !refs.contains(&payload.organization_ref) {
-            return Err(forbidden(
-                "organization_ref is outside the organizations you can read",
-            ));
-        }
-        query = query.filter(workers::Column::OrganizationRef.is_in(refs));
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    if let Some(refs) = &scope
+        && !refs.contains(&payload.organization_ref)
+    {
+        return Err(forbidden(
+            "organization_ref is outside the organizations you can read",
+        ));
     }
+    let rows = sqlx::query!(
+        "SELECT pid, display_name, organization_ref, worker_number, person_ref, department, status, manager_pid
+           FROM workers
+          WHERE deleted_at IS NULL AND ($1::text[] IS NULL OR organization_ref = ANY($1))",
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut known = Vec::new();
-    for worker in query.all(&ctx.db).await? {
+    for worker in rows {
         // a worker the caller may not read is not a candidate: their existence is not disclosed
-        if auth::authorize_record(
-            &caller,
-            authentication_verifier::Action::Read,
-            &auth::worker_resource_attrs(&worker),
-        )
-        .is_err()
-        {
+        let attrs = auth::record_attrs(&auth::RecordFacts {
+            person_ref: &worker.person_ref,
+            department: &worker.department,
+            status: &worker.status,
+            organization_ref: &worker.organization_ref,
+            manager_pid: worker.manager_pid,
+        });
+        if auth::authorize_record(&caller, authentication_verifier::Action::Read, &attrs).is_err() {
             continue;
         }
         known.push(Known {

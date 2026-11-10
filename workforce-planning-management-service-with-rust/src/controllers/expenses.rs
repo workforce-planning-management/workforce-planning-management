@@ -13,9 +13,9 @@
 //! notifications name no amount, title or description. Items are exported and the
 //! free text scrubbed on erasure; the amounts stay (financial records).
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::{BTreeSet, HashMap};
@@ -23,9 +23,8 @@ use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{expense_claims, expense_items, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
 use crate::models::{memberships, records};
 use crate::rules::career;
 use crate::rules::expenses::{self as rules, Standing};
@@ -63,21 +62,17 @@ async fn gate(ctx: &AppContext, caller: &MaybeAuthUser, claimant: &workers::Mode
     };
     let is_claimant = career::is_self(&claims.sub, &claimant.person_ref);
     let manager = match claimant.manager_pid {
-        Some(pid) => workers::Entity::find()
-            .filter(workers::Column::Pid.eq(pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .is_some_and(|m| career::is_self(&claims.sub, &m.person_ref)),
+        Some(pid) => sqlx::query_scalar!(
+            "SELECT person_ref FROM workers WHERE pid = $1 AND deleted_at IS NULL",
+            pid
+        )
+        .fetch_optional(db::pool(ctx))
+        .await?
+        .is_some_and(|person_ref| career::is_self(&claims.sub, &person_ref)),
         None => false,
     };
-    let hr = memberships::has_role_in(
-        &ctx.db,
-        caller.claims(),
-        &claimant.organization_ref,
-        HR_ROLES,
-    )
-    .await?;
+    let hr = memberships::has_role_in(ctx, caller.claims(), &claimant.organization_ref, HR_ROLES)
+        .await?;
     Ok(Gate(Some(Standing {
         claimant: is_claimant,
         manager,
@@ -90,25 +85,39 @@ fn denied() -> Error {
 }
 
 async fn find_claim(ctx: &AppContext, pid: &str) -> Result<expense_claims::Model> {
-    expense_claims::Entity::find()
-        .filter(expense_claims::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+    live_claim(ctx, records::parse_pid(pid)?)
         .await?
         .ok_or(Error::NotFound)
 }
 
+/// The live claim with this pid, if any.
+async fn live_claim(ctx: &AppContext, pid: Uuid) -> Result<Option<expense_claims::Model>> {
+    Ok(sqlx::query_as!(
+        expense_claims::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, title, description,
+                  currency, status, submitted_at AS "submitted_at: _", decided_by, decided_at AS "decided_at: _",
+                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM expense_claims WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
+}
+
 async fn claimant_of(ctx: &AppContext, claim: &expense_claims::Model) -> Result<workers::Model> {
-    records::find_worker(&ctx.db, claim.worker_pid).await
+    records::worker_by_pid(ctx, claim.worker_pid).await
 }
 
 async fn items_of(ctx: &AppContext, claim_pid: Uuid) -> Result<Vec<expense_items::Model>> {
-    Ok(expense_items::Entity::find()
-        .filter(expense_items::Column::ClaimPid.eq(claim_pid))
-        .order_by_asc(expense_items::Column::IncurredOn)
-        .order_by_asc(expense_items::Column::Id)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        expense_items::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, claim_pid, worker_pid, incurred_on,
+                  category, amount_minor, description, receipt_ref
+             FROM expense_items WHERE claim_pid = $1 ORDER BY incurred_on, id"#,
+        claim_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 fn total(items: &[expense_items::Model]) -> Result<i64> {
@@ -153,7 +162,7 @@ async fn create_claim(
     Path(pid): Path<String>,
     Json(payload): Json<ClaimPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if !gate(&ctx, &caller, &worker).await?.edit() {
         return Err(denied());
     }
@@ -165,28 +174,29 @@ async fn create_claim(
         problems.push(e);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = expense_claims::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        title: ActiveValue::set(payload.title.trim().to_string()),
-        description: ActiveValue::set(
-            payload
-                .description
-                .map(|d| d.trim().to_string())
-                .filter(|d| !d.is_empty()),
-        ),
-        currency: ActiveValue::set(payload.currency.clone()),
-        status: ActiveValue::set("draft".to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        expense_claims::Model,
+        r#"INSERT INTO expense_claims (pid, worker_pid, title, description, currency, status, recorded_by, on_behalf)
+           VALUES ($1, $2, $3, $4, $5, 'draft', $6, $7)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, title, description,
+                     currency, status, submitted_at AS "submitted_at: _", decided_by, decided_at AS "decided_at: _",
+                     decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _""#,
+        Uuid::new_v4(),
+        worker.pid,
+        payload.title.trim(),
+        payload
+            .description
+            .map(|d| d.trim().to_string())
+            .filter(|d| !d.is_empty()),
+        payload.currency,
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "expense_claim",
         row.pid,
         "expense_claim_created",
@@ -194,7 +204,7 @@ async fn create_claim(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(claim_row(&row, 0, 0))
 }
 
@@ -206,16 +216,20 @@ async fn list_claims(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     if !gate(&ctx, &caller, &worker).await?.view() {
         return Err(denied());
     }
-    let claims = expense_claims::Entity::find()
-        .filter(expense_claims::Column::WorkerPid.eq(worker.pid))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .order_by_desc(expense_claims::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let claims = sqlx::query_as!(
+        expense_claims::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, title, description,
+                  currency, status, submitted_at AS "submitted_at: _", decided_by, decided_at AS "decided_at: _",
+                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM expense_claims WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id DESC"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut out = Vec::with_capacity(claims.len());
     for c in &claims {
         let items = items_of(&ctx, c.pid).await?;
@@ -284,26 +298,21 @@ async fn other_keys(
     ctx: &AppContext,
     claim: &expense_claims::Model,
 ) -> Result<Vec<(NaiveDate, String, i64)>> {
-    let other_claims: Vec<Uuid> = expense_claims::Entity::find()
-        .filter(expense_claims::Column::WorkerPid.eq(claim.worker_pid))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .filter(expense_claims::Column::Pid.ne(claim.pid))
-        .filter(expense_claims::Column::Status.is_not_in(["cancelled", "rejected"]))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|c| c.pid)
-        .collect();
-    if other_claims.is_empty() {
-        return Ok(Vec::new());
-    }
-    Ok(expense_items::Entity::find()
-        .filter(expense_items::Column::ClaimPid.is_in(other_claims))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|i| (i.incurred_on, i.category, i.amount_minor))
-        .collect())
+    Ok(sqlx::query!(
+        "SELECT i.incurred_on, i.category, i.amount_minor
+           FROM expense_items i
+          WHERE i.claim_pid IN (SELECT c.pid FROM expense_claims c
+                                 WHERE c.worker_pid = $1 AND c.deleted_at IS NULL AND c.pid <> $2
+                                   AND c.status NOT IN ('cancelled', 'rejected'))
+          ORDER BY i.id",
+        claim.worker_pid,
+        claim.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|i| (i.incurred_on, i.category, i.amount_minor))
+    .collect())
 }
 
 // ─── Items ──────────────────────────────────────────────────────────────────
@@ -360,20 +369,22 @@ async fn add_item(
     amounts.push(payload.amount_minor);
     rules::total_minor(&amounts).map_err(|e| unprocessable(&e))?;
     let clean = |v: Option<String>| v.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
-    let row = expense_items::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        claim_pid: ActiveValue::set(claim.pid),
-        worker_pid: ActiveValue::set(claim.worker_pid),
-        incurred_on: ActiveValue::set(payload.incurred_on),
-        category: ActiveValue::set(payload.category.clone()),
-        amount_minor: ActiveValue::set(payload.amount_minor),
-        description: ActiveValue::set(clean(payload.description)),
-        receipt_ref: ActiveValue::set(clean(payload.receipt_ref)),
-        ..Default::default()
-    }
-    .insert(&ctx.db)
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO expense_items (pid, claim_pid, worker_pid, incurred_on, category, amount_minor, description, receipt_ref)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        pid,
+        claim.pid,
+        claim.worker_pid,
+        payload.incurred_on,
+        payload.category,
+        payload.amount_minor,
+        clean(payload.description),
+        clean(payload.receipt_ref),
+    )
+    .execute(db::pool(&ctx))
     .await?;
-    format::json(json!({ "pid": row.pid }))
+    format::json(json!({ "pid": pid }))
 }
 
 /// `DELETE /api/expense-items/{pid}` — remove an item from a draft claim.
@@ -383,15 +394,14 @@ async fn remove_item(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let item = expense_items::Entity::find()
-        .filter(expense_items::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let claim = expense_claims::Entity::find()
-        .filter(expense_claims::Column::Pid.eq(item.claim_pid))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+    let item = sqlx::query!(
+        "SELECT id, claim_pid FROM expense_items WHERE pid = $1",
+        records::parse_pid(&pid)?
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let claim = live_claim(&ctx, item.claim_pid)
         .await?
         .ok_or(Error::NotFound)?;
     let worker = claimant_of(&ctx, &claim).await?;
@@ -403,8 +413,8 @@ async fn remove_item(
             "items can only be changed while the claim is a draft",
         ));
     }
-    expense_items::Entity::delete_by_id(item.id)
-        .exec(&ctx.db)
+    sqlx::query!("DELETE FROM expense_items WHERE id = $1", item.id)
+        .execute(db::pool(&ctx))
         .await?;
     format::empty()
 }
@@ -429,8 +439,8 @@ struct MoveBody {
 
 /// Tell the right person about a move: the manager when a claim is submitted, the
 /// claimant when it is decided. The text names no amount, title or description.
-async fn notify_move<C: sea_orm::ConnectionTrait>(
-    db: &C,
+async fn notify_move(
+    tx: &mut sqlx::PgConnection,
     to: &str,
     worker: &workers::Model,
     row: &expense_claims::Model,
@@ -438,8 +448,8 @@ async fn notify_move<C: sea_orm::ConnectionTrait>(
     match to {
         "submitted" => {
             if let Some(manager) = worker.manager_pid {
-                Notification::push(
-                    db,
+                db::notify(
+                    tx,
                     manager,
                     "expense_submitted",
                     &format!(
@@ -452,8 +462,8 @@ async fn notify_move<C: sea_orm::ConnectionTrait>(
             }
         }
         "approved" | "rejected" | "reimbursed" => {
-            Notification::push(
-                db,
+            db::notify(
+                tx,
                 worker.pid,
                 "expense_decided",
                 &format!("Your expense claim was {to}."),
@@ -467,6 +477,7 @@ async fn notify_move<C: sea_orm::ConnectionTrait>(
 }
 
 /// One status move, serialized on the locked claim row.
+#[allow(clippy::too_many_lines)] // the audit is written out once per move
 async fn transition(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -476,12 +487,7 @@ async fn transition(
     body: MoveBody,
 ) -> Result<Response> {
     let pid = records::parse_pid(pid)?;
-    let peek = expense_claims::Entity::find()
-        .filter(expense_claims::Column::Pid.eq(pid))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let peek = live_claim(ctx, pid).await?.ok_or(Error::NotFound)?;
     let worker = claimant_of(ctx, &peek).await?;
     let gate = gate(ctx, caller, &worker).await?;
     if !gate.view() {
@@ -509,51 +515,126 @@ async fn transition(
         return Err(unprocessable("reimbursed_on cannot be in the future"));
     }
 
-    let txn = ctx.db.begin().await?;
-    let claim = expense_claims::Entity::find()
-        .filter(expense_claims::Column::Pid.eq(pid))
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .lock_exclusive()
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(ctx).begin().await?;
+    let claim = sqlx::query!(
+        "SELECT id, pid, status FROM expense_claims WHERE pid = $1 AND deleted_at IS NULL FOR UPDATE",
+        pid,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
     rules::check_transition(&claim.status, to).map_err(|e| unprocessable(&e))?;
     if to == "submitted" {
-        let count = expense_items::Entity::find()
-            .filter(expense_items::Column::ClaimPid.eq(claim.pid))
-            .all(&txn)
-            .await?
-            .len();
-        rules::can_submit(count).map_err(|e| unprocessable(&e))?;
+        let count = sqlx::query_scalar!(
+            r#"SELECT count(*) AS "n!" FROM expense_items WHERE claim_pid = $1"#,
+            claim.pid
+        )
+        .fetch_one(&mut *tx)
+        .await?;
+        rules::can_submit(usize::try_from(count).unwrap_or(usize::MAX))
+            .map_err(|e| unprocessable(&e))?;
     }
-    let mut active: expense_claims::ActiveModel = claim.into();
-    active.status = ActiveValue::set(to.to_string());
+    let now: chrono::DateTime<chrono::FixedOffset> = Utc::now().into();
+    let decided = matches!(to, "approved" | "rejected");
+    let reimbursed = to == "reimbursed";
+    let row = sqlx::query_as!(
+        expense_claims::Model,
+        r#"UPDATE expense_claims
+              SET status = $2,
+                  submitted_at = CASE WHEN $3 THEN $4::timestamptz ELSE submitted_at END,
+                  decided_by = CASE WHEN $5 THEN $6::text ELSE decided_by END,
+                  decided_at = CASE WHEN $5 THEN $4::timestamptz ELSE decided_at END,
+                  decision_note = CASE WHEN $5 THEN $7::text ELSE decision_note END,
+                  reimbursed_on = CASE WHEN $8 THEN $9::date ELSE reimbursed_on END,
+                  reimbursed_by = CASE WHEN $8 THEN $6::text ELSE reimbursed_by END
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, title, description,
+                  currency, status, submitted_at AS "submitted_at: _", decided_by, decided_at AS "decided_at: _",
+                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _""#,
+        claim.id,
+        to,
+        to == "submitted",
+        now,
+        decided,
+        caller.actor(),
+        note,
+        reimbursed,
+        body.reimbursed_on.unwrap_or(today),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    // The audit entry and notifications name no amount, title or description. One literal action per move.
     match to {
-        "submitted" => active.submitted_at = ActiveValue::set(Some(Utc::now().into())),
-        "approved" | "rejected" => {
-            active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-            active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-            active.decision_note = ActiveValue::set(note);
+        "submitted" => {
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_submitted",
+                caller.actor(),
+                None,
+            )
+            .await?;
+        }
+        "draft" => {
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_draft",
+                caller.actor(),
+                None,
+            )
+            .await?;
+        }
+        "cancelled" => {
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_cancelled",
+                caller.actor(),
+                None,
+            )
+            .await?;
+        }
+        "approved" => {
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_approved",
+                caller.actor(),
+                None,
+            )
+            .await?;
+        }
+        "rejected" => {
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_rejected",
+                caller.actor(),
+                None,
+            )
+            .await?;
         }
         "reimbursed" => {
-            active.reimbursed_on = ActiveValue::set(Some(body.reimbursed_on.unwrap_or(today)));
-            active.reimbursed_by = ActiveValue::set(caller.actor().map(ToString::to_string));
+            db::audit(
+                &mut tx,
+                "expense_claim",
+                row.pid,
+                "expense_claim_reimbursed",
+                caller.actor(),
+                None,
+            )
+            .await?;
         }
-        _ => {}
+        other => return Err(super::internal(&format!("no audit action for {other}"))),
     }
-    let row = active.update(&txn).await?;
-    // The audit entry and notifications name no amount, title or description.
-    Audit::record(
-        &txn,
-        "expense_claim",
-        row.pid,
-        &format!("expense_claim_{to}"),
-        caller.actor(),
-        None,
-    )
-    .await?;
-    notify_move(&txn, to, &worker, &row).await?;
-    txn.commit().await?;
+    notify_move(&mut tx, to, &worker, &row).await?;
+    tx.commit().await?;
     let items = items_of(ctx, row.pid).await?;
     format::json(claim_row(&row, total(&items)?, items.len()))
 }
@@ -602,10 +683,10 @@ struct QueueParams {
 async fn queue(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(params): axum::extract::Query<QueueParams>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(params): axa::extract::Query<QueueParams>,
+    page: super::Page,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let status = params.status.unwrap_or_else(|| "submitted".to_string());
     if !rules::STATUSES.contains(&status.as_str()) {
         return Err(unprocessable(&format!(
@@ -613,35 +694,31 @@ async fn queue(
             rules::STATUSES.join(", ")
         )));
     }
-    let mut query = expense_claims::Entity::find()
-        .filter(expense_claims::Column::DeletedAt.is_null())
-        .filter(expense_claims::Column::Status.eq(&status));
+    // With sign-in off, everyone's claims; with it on, only the ones the caller may decide.
+    let mut only: Option<Vec<Uuid>> = None;
     if auth::require_auth() {
         let Some(claims) = caller.claims() else {
             return format::json(Vec::<serde_json::Value>::new());
         };
         let person_ref = format!("person:{}", claims.sub);
-        let mine: Vec<Uuid> = workers::Entity::find()
-            .filter(workers::Column::PersonRef.eq(&person_ref))
-            .filter(workers::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|w| w.pid)
-            .collect();
+        let mine: Vec<Uuid> = sqlx::query_scalar!(
+            "SELECT pid FROM workers WHERE person_ref = $1 AND deleted_at IS NULL",
+            person_ref,
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?;
         let mut deciding: BTreeSet<Uuid> = BTreeSet::new();
         if !mine.is_empty() {
             deciding.extend(
-                workers::Entity::find()
-                    .filter(workers::Column::ManagerPid.is_in(mine.clone()))
-                    .filter(workers::Column::DeletedAt.is_null())
-                    .all(&ctx.db)
-                    .await?
-                    .into_iter()
-                    .map(|w| w.pid),
+                sqlx::query_scalar!(
+                    "SELECT pid FROM workers WHERE manager_pid = ANY($1) AND deleted_at IS NULL",
+                    &mine,
+                )
+                .fetch_all(db::pool(&ctx))
+                .await?,
             );
         }
-        let hr_orgs: Vec<String> = memberships::caller_memberships(&ctx.db, caller.claims())
+        let hr_orgs: Vec<String> = memberships::caller_memberships(&ctx, caller.claims())
             .await?
             .into_iter()
             .filter(|m| HR_ROLES.contains(&m.role.as_str()))
@@ -649,34 +726,43 @@ async fn queue(
             .collect();
         if !hr_orgs.is_empty() {
             deciding.extend(
-                workers::Entity::find()
-                    .filter(workers::Column::OrganizationRef.is_in(hr_orgs))
-                    .filter(workers::Column::DeletedAt.is_null())
-                    .all(&ctx.db)
-                    .await?
-                    .into_iter()
-                    .map(|w| w.pid),
+                sqlx::query_scalar!(
+                    "SELECT pid FROM workers WHERE organization_ref = ANY($1) AND deleted_at IS NULL",
+                    &hr_orgs,
+                )
+                .fetch_all(db::pool(&ctx))
+                .await?,
             );
         }
         // Never your own claim, whatever your role.
         for pid in &mine {
             deciding.remove(pid);
         }
-        query = query.filter(expense_claims::Column::WorkerPid.is_in(deciding));
+        only = Some(deciding.into_iter().collect());
     }
-    let claims = query
-        .order_by_asc(expense_claims::Column::SubmittedAt)
-        .order_by_asc(expense_claims::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let claims = sqlx::query_as!(
+        expense_claims::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, title, description,
+                  currency, status, submitted_at AS "submitted_at: _", decided_by, decided_at AS "decided_at: _",
+                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM expense_claims
+            WHERE deleted_at IS NULL AND status = $1 AND ($2::uuid[] IS NULL OR worker_pid = ANY($2))
+            ORDER BY submitted_at, id"#,
+        status,
+        only.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let pids: Vec<Uuid> = claims.iter().map(|c| c.worker_pid).collect();
-    let names: HashMap<Uuid, String> = workers::Entity::find()
-        .filter(workers::Column::Pid.is_in(pids))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w.display_name))
-        .collect();
+    let names: HashMap<Uuid, String> = sqlx::query!(
+        "SELECT pid, display_name FROM workers WHERE pid = ANY($1)",
+        &pids
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w.display_name))
+    .collect();
     let mut out = Vec::with_capacity(claims.len());
     for c in &claims {
         let items = items_of(&ctx, c.pid).await?;
@@ -684,7 +770,7 @@ async fn queue(
         row["worker_name"] = json!(names.get(&c.worker_pid));
         out.push(row);
     }
-    super::paged_vec(out, window)
+    Ok(super::paged_vec(out, &window))
 }
 
 /// The expense-claim routes.

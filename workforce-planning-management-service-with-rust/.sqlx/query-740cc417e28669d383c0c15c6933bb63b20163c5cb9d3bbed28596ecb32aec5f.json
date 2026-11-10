@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE positions SET state = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "740cc417e28669d383c0c15c6933bb63b20163c5cb9d3bbed28596ecb32aec5f"
+}

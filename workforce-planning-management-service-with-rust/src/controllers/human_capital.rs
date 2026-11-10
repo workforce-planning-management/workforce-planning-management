@@ -5,8 +5,6 @@
 
 use axa::prelude::*;
 use chrono::{Months, NaiveDate, Utc};
-use sea_orm::{ColumnTrait, QueryFilter};
-use sea_orm::{DatabaseBackend, FromQueryResult, Statement};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -16,8 +14,8 @@ use super::pay_transparency::organization_problems;
 use super::payroll::check_minimum_wage;
 use super::{ensure_org_in_scope, ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::payroll_runs;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::human_capital::{self as rules, Inputs, Plan, TypeCount, WageRun};
 use crate::rules::metrics::time_to_fill_days;
@@ -28,56 +26,8 @@ pub(crate) struct ReportQuery {
     as_of: Option<NaiveDate>,
 }
 
-#[derive(Debug, FromQueryResult)]
-struct TypeRow {
-    employment_type: String,
-    workers: i64,
-    fte_percent_total: i64,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct Counts {
-    opening: i64,
-    closing: i64,
-    starters: i64,
-    leavers: i64,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct Training {
-    enrolments: i64,
-    completed: i64,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct PlanRow {
-    criticality: i32,
-    ready_now: bool,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct Unplaced {
-    unplaced: i64,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct InjuryRow {
-    class: String,
-    in_period: bool,
-}
-
-#[derive(Debug, FromQueryResult)]
-struct FillRow {
-    opened_on: Option<NaiveDate>,
-    filled_on: Option<NaiveDate>,
-}
-
 fn n(v: i64) -> usize {
     usize::try_from(v).unwrap_or(0)
-}
-
-fn stmt(sql: &str, values: Vec<sea_orm::Value>) -> Statement {
-    Statement::from_sql_and_values(DatabaseBackend::Postgres, sql, values)
 }
 
 /// Read what the report is made of, for one organization.
@@ -87,65 +37,60 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
         .and_then(|d| d.succ_opt())
         .unwrap_or(as_of);
     let opening_date = from.pred_opt().unwrap_or(from);
-    let employed = "w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2 AND (w.terminated_on IS NULL OR w.terminated_on > $2)";
-    let by_type = TypeRow::find_by_statement(stmt(
-        &format!("SELECT w.employment_type, count(*) AS workers, COALESCE(sum(w.fte_percent), 0)::bigint AS fte_percent_total FROM workers w WHERE {employed} GROUP BY w.employment_type"),
-        vec![organization.into(), as_of.into()],
-    ))
-    .all(&ctx.db)
+    // "Employed on the date" is written out in each statement, because each is checked as it stands.
+    let by_type = sqlx::query!(
+        r#"SELECT w.employment_type,
+                  count(*) AS "workers!",
+                  COALESCE(sum(w.fte_percent), 0)::bigint AS "fte_percent_total!"
+           FROM workers w
+           WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
+             AND (w.terminated_on IS NULL OR w.terminated_on > $2)
+           GROUP BY w.employment_type"#,
+        organization,
+        as_of,
+    )
+    .fetch_all(pool(ctx))
     .await?;
-    let counts = Counts::find_by_statement(stmt(
-        "SELECT count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS opening,
-                count(*) FILTER (WHERE hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)) AS closing,
-                count(*) FILTER (WHERE hired_on >= $4 AND hired_on <= $3) AS starters,
-                count(*) FILTER (WHERE terminated_on >= $4 AND terminated_on <= $3) AS leavers
-           FROM workers WHERE deleted_at IS NULL AND organization_ref = $1",
-        vec![
-            organization.into(),
-            opening_date.into(),
-            as_of.into(),
-            from.into(),
-        ],
-    ))
-    .one(&ctx.db)
-    .await?
-    .ok_or_else(|| super::internal("the headcount query returned no row"))?;
-    let fill_days = FillRow::find_by_statement(stmt(
-        "SELECT opened_on, filled_on FROM requisitions WHERE deleted_at IS NULL AND organization_ref = $1 AND filled_on >= $2 AND filled_on <= $3",
-        vec![organization.into(), from.into(), as_of.into()],
-    ))
-    .all(&ctx.db)
+    let counts = sqlx::query!(
+        r#"SELECT
+             count(*) FILTER (WHERE hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)) AS "opening!",
+             count(*) FILTER (WHERE hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)) AS "closing!",
+             count(*) FILTER (WHERE hired_on >= $4 AND hired_on <= $3) AS "starters!",
+             count(*) FILTER (WHERE terminated_on >= $4 AND terminated_on <= $3) AS "leavers!"
+           FROM workers WHERE deleted_at IS NULL AND organization_ref = $1"#,
+        organization,
+        opening_date,
+        as_of,
+        from,
+    )
+    .fetch_one(pool(ctx))
+    .await?;
+    let fill_days = sqlx::query!(
+        r#"SELECT opened_on AS "opened_on?", filled_on AS "filled_on?"
+           FROM requisitions
+           WHERE deleted_at IS NULL AND organization_ref = $1 AND filled_on >= $2 AND filled_on <= $3"#,
+        organization,
+        from,
+        as_of,
+    )
+    .fetch_all(pool(ctx))
     .await?
     .iter()
     .filter_map(|r| time_to_fill_days(r.opened_on, r.filled_on))
     .collect();
-    let training = Training::find_by_statement(stmt(
-        &format!("SELECT count(*) AS enrolments, count(*) FILTER (WHERE e.status = 'completed' AND e.completed_on <= $2) AS completed
-                    FROM training_enrollments e JOIN workers w ON w.pid = e.worker_pid
-                   WHERE e.deleted_at IS NULL AND {employed}"),
-        vec![organization.into(), as_of.into()],
-    ))
-    .one(&ctx.db)
-    .await?
-    .ok_or_else(|| super::internal("the training query returned no row"))?;
-    let plans = PlanRow::find_by_statement(stmt(
-        &format!("SELECT p.criticality,
-                         EXISTS (SELECT 1 FROM succession_candidates c WHERE c.plan_pid = p.pid AND c.deleted_at IS NULL AND c.readiness = 'ready_now') AS ready_now
-                    FROM succession_plans p JOIN workers w ON w.pid = p.incumbent_pid
-                   WHERE p.deleted_at IS NULL AND {employed}"),
-        vec![organization.into(), as_of.into()],
-    ))
-    .all(&ctx.db)
+    let training = sqlx::query!(
+        r#"SELECT count(*) AS "enrolments!",
+                  count(*) FILTER (WHERE e.status = 'completed' AND e.completed_on <= $2) AS "completed!"
+           FROM training_enrollments e JOIN workers w ON w.pid = e.worker_pid
+           WHERE e.deleted_at IS NULL
+             AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
+             AND (w.terminated_on IS NULL OR w.terminated_on > $2)"#,
+        organization,
+        as_of,
+    )
+    .fetch_one(pool(ctx))
     .await?;
-    // Plans that name nobody employed here cannot be placed in this organization, whoever they belong to.
-    let unplaced = Unplaced::find_by_statement(stmt(
-        &format!("SELECT count(*) AS unplaced FROM succession_plans p
-                   WHERE p.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM workers w WHERE w.pid = p.incumbent_pid AND {employed})"),
-        vec![organization.into(), as_of.into()],
-    ))
-    .one(&ctx.db)
-    .await?
-    .ok_or_else(|| super::internal("the succession query returned no row"))?;
+    let (plans, plans_unplaced) = succession(ctx, organization, as_of).await?;
     let (injury_classes, injuries_ever) = injuries(ctx, organization, from, as_of).await?;
     let wage_runs = wage_runs(ctx, organization, from, as_of).await?;
     Ok(Inputs {
@@ -166,18 +111,57 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
         fill_days,
         enrolments: n(training.enrolments),
         completed: n(training.completed),
-        plans: plans
-            .into_iter()
-            .map(|p| Plan {
-                criticality: p.criticality,
-                covered_now: p.ready_now,
-            })
-            .collect(),
-        plans_unplaced: n(unplaced.unplaced),
+        plans,
+        plans_unplaced,
         injury_classes,
         injuries_ever,
         wage_runs,
     })
+}
+
+/// The succession plans for people employed here, and how many plans name nobody employed here.
+async fn succession(
+    ctx: &AppContext,
+    organization: &str,
+    as_of: NaiveDate,
+) -> Result<(Vec<Plan>, usize)> {
+    let plans = sqlx::query!(
+        r#"SELECT p.criticality,
+                  EXISTS (
+                      SELECT 1 FROM succession_candidates c
+                      WHERE c.plan_pid = p.pid AND c.deleted_at IS NULL AND c.readiness = 'ready_now'
+                  ) AS "ready_now!"
+           FROM succession_plans p JOIN workers w ON w.pid = p.incumbent_pid
+           WHERE p.deleted_at IS NULL
+             AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
+             AND (w.terminated_on IS NULL OR w.terminated_on > $2)"#,
+        organization,
+        as_of,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
+    // Plans that name nobody employed here cannot be placed in this organization, whoever they belong to.
+    let unplaced = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "unplaced!" FROM succession_plans p
+           WHERE p.deleted_at IS NULL AND NOT EXISTS (
+               SELECT 1 FROM workers w
+               WHERE w.pid = p.incumbent_pid
+                 AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
+                 AND (w.terminated_on IS NULL OR w.terminated_on > $2)
+           )"#,
+        organization,
+        as_of,
+    )
+    .fetch_one(pool(ctx))
+    .await?;
+    let plans = plans
+        .into_iter()
+        .map(|p| Plan {
+            criticality: p.criticality,
+            covered_now: p.ready_now,
+        })
+        .collect();
+    Ok((plans, n(unplaced)))
 }
 
 /// The class of each incident in the period, and how many this organization has ever recorded.
@@ -187,12 +171,14 @@ async fn injuries(
     from: NaiveDate,
     as_of: NaiveDate,
 ) -> Result<(Vec<String>, usize)> {
-    let rows = InjuryRow::find_by_statement(stmt(
-        "SELECT class, (occurred_at AT TIME ZONE 'UTC')::date BETWEEN $2 AND $3 AS in_period
-           FROM injury_records WHERE organization_ref = $1",
-        vec![organization.into(), from.into(), as_of.into()],
-    ))
-    .all(&ctx.db)
+    let rows = sqlx::query!(
+        r#"SELECT class, (occurred_at AT TIME ZONE 'UTC')::date BETWEEN $2 AND $3 AS "in_period!"
+           FROM injury_records WHERE organization_ref = $1"#,
+        organization,
+        from,
+        as_of,
+    )
+    .fetch_all(pool(ctx))
     .await?;
     let ever = rows.len();
     let classes = rows
@@ -211,14 +197,23 @@ async fn wage_runs(
     from: NaiveDate,
     as_of: NaiveDate,
 ) -> Result<Vec<WageRun>> {
-    let runs = payroll_runs::Entity::find()
-        .filter(payroll_runs::Column::OrganizationRef.eq(organization))
-        .filter(payroll_runs::Column::DeletedAt.is_null())
-        .filter(payroll_runs::Column::Status.is_in(["approved", "paid"]))
-        .filter(payroll_runs::Column::PeriodEnd.gte(from))
-        .filter(payroll_runs::Column::PeriodEnd.lte(as_of))
-        .all(&ctx.db)
-        .await?;
+    let runs = sqlx::query_as!(
+        payroll_runs::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, period_start, period_end, status, approved_by, notes,
+                  deleted_at AS "deleted_at: _"
+           FROM payroll_runs
+           WHERE organization_ref = $1
+             AND deleted_at IS NULL
+             AND status IN ('approved', 'paid')
+             AND period_end >= $2
+             AND period_end <= $3"#,
+        organization,
+        from,
+        as_of,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut known_births = BTreeMap::new();
     let mut out = Vec::with_capacity(runs.len());
     for run in &runs {
@@ -242,7 +237,7 @@ async fn wage_runs(
 async fn human_capital(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -252,8 +247,8 @@ async fn human_capital(
     }
     let inputs = read(&ctx, &query.organization, as_of).await?;
     let report = rules::report(&inputs, DEFAULT_FLOOR);
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "human_capital_report",
         Uuid::nil(),
         "human_capital_report_read",

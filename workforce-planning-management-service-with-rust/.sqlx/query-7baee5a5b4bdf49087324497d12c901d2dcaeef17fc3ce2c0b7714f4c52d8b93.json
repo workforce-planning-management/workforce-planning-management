@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE role_skill_requirements\n                    SET source_framework = $3, source_level = $4, source_scale_max = $5, note = $6,\n                        min_proficiency = CASE WHEN $7 THEN $8 ELSE min_proficiency END\n                  WHERE role_profile_pid = $1 AND skill_pid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Bool",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7baee5a5b4bdf49087324497d12c901d2dcaeef17fc3ce2c0b7714f4c52d8b93"
+}

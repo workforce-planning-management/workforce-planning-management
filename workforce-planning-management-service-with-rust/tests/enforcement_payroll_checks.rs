@@ -5,7 +5,7 @@
 //! payroll caller who holds no seat in the run's organization is told the run does not exist. (The run's own routes are not
 //! scoped by membership: an HR or payroll attribute in a token is deployment-wide, as the personas test in `enforcement.rs` has it.) the answer for one who may read names no age.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -75,7 +75,6 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_payroll_checks -- --ignored`"]
 async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -117,9 +116,9 @@ async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() 
         }
         // Payroll in each organization holds a seat there; the plain caller holds none.
         for (person, home, w) in [(payroll_p, &org, &workers[1]), (outsider_p, &other, &workers[2])] {
-            ctx.db.execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-                 VALUES ('{}', 'person:{person}', '{home}', '{w}', 'payroll_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                 VALUES ('{}', 'person:{person}', '{home}', '{w}', 'payroll_admin', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let run: Value = request.post("/api/payroll-runs").add_header("authorization", payroll.clone())
             .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" })).await.json();

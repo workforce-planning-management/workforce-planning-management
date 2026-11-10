@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid FROM erasure_ledger WHERE ($1::date IS NULL OR erased_at >= $1) ORDER BY erased_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "erasure_ledger",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "817bea6c8fc18bea6815c9f2f970da37c0f2cc12f5461d59a3744182c2f61b52"
+}

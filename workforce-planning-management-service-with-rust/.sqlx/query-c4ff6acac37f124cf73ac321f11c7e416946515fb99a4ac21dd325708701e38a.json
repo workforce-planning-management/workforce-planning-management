@@ -1,0 +1,146 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, role_title, department, criticality,\n                  incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS \"deleted_at: _\"\n             FROM succession_plans WHERE deleted_at IS NULL\n            ORDER BY id LIMIT 500",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "role_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "role_title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "criticality",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "criticality"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "incumbent_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "incumbent_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "risk_of_loss",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "risk_of_loss"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "vacancy_expected_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "vacancy_expected_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_plans",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c4ff6acac37f124cf73ac321f11c7e416946515fb99a4ac21dd325708701e38a"
+}

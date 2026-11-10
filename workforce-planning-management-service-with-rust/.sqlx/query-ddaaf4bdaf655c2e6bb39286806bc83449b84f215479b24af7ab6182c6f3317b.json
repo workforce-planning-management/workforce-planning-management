@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, partner_ref, pool_pid, month, fte_centi, status FROM partner_commitments\n          WHERE deleted_at IS NULL AND pool_pid = ANY($1) AND ($2::uuid IS NULL OR pool_pid = $2)\n            AND ($3::text IS NULL OR partner_ref = $3)\n          ORDER BY month, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "partner_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "partner_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "fte_centi",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "fte_centi"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "partner_commitments",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ddaaf4bdaf655c2e6bb39286806bc83449b84f215479b24af7ab6182c6f3317b"
+}

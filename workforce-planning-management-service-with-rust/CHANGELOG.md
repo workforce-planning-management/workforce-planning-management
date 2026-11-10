@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the migrations are SQL files that `sqlx` runs (WPM-D193, WPM-T466)
+
+The 133 migrations are `migrations/*.sql`, statement for statement the same. A database a `SeaORM` release migrated is adopted on
+its first `db migrate`: its history is recorded and only newer migrations run. **`db down` is refused:** the migrations are
+forward only, so roll back by restoring a backup. The `workforce-planning-management-migration` crate is no longer built.
+
+### Changed — axa 0.11 (WPM-T482)
+
+`axa` 0.10.0 to 0.11.0. **An operator must act before deploying:** the health probes moved to `/_health/live` (liveness), `/_health/ready` (readiness) and `/_health/startup`; `/_health`, `/_ping` and `/_readiness` answer `404`, so move every probe, load balancer and uptime check first. The database is `DB_URL`; `DATABASE_URL` still works when `DB_URL` is unset. **A client may notice:** a database that cannot serve answers `503` with `Retry-After`, not `500`, and every response carries `cross-origin-opener-policy`, `cross-origin-resource-policy` and `permissions-policy`.
+
+### Changed — axa 0.10 (WPM-T481)
+
+`axa` 0.7.0 to 0.10.0. The request-level test helpers are the new `axa-test` dev-dependency, in place of `axa`'s `testing` feature. Nothing a client or an operator sees changes: WPM runs no `axa` outbox, queue or idempotency, and pages by cursor already.
+
+### Added — a failed sign-in lockout, off by default (WPM-R242, WPM-D190, WPM-T479)
+
+Set `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` to the number of `401`s one client address may earn in 15 minutes; at that count every request from it is a `429` until they end. Unset or `0` is off; a value that is not a whole number stops the start. Behind a proxy, set `TRUSTED_PROXIES`, or one client's expired tokens lock out everyone behind it.
+
+### Changed — lists page by a signed cursor, with no total (WPM-R241, WPM-D189, WPM-T478)
+
+**Breaking for every client that pages.** A list answers a bare array and, while more rows follow, `Link: <...>; rel="next"`; follow it to the end. `X-Total-Count`, `X-Limit` and `X-Offset` are gone. `?offset=` is a `422`, and so is a `limit` that is zero, not a number or over 500, which used to be clamped or defaulted. A cursor fits only the list and filters it came from. **An operator must act** when more than one instance runs: set `WPM_CURSOR_KEY` (base64url, at least 32 bytes) to the same value on each. **CRM's teams import fails** with `422` until CRM follows `Link`.
+
+### Changed — axa 0.7 (WPM-T477)
+
+`axa` 0.6.1 to 0.7.0. **A client may notice:** a write that breaks a check or not-null constraint answers `422` with `code: unprocessable_entity`, not `500`; a client that has stopped reading a response is dropped after `SEND_STALL_TIMEOUT_SECONDS` (60).
+
+### Changed — lists page with `axa::pagination` (WPM-T476)
+
+**A client may notice:** a `limit` or `offset` that is not a number is the default (`limit` the endpoint's, `offset` `0`), where it was a `400`. An offset past 10,000 is still a `400` with `code: offset_too_large`, and `X-Total-Count`, `X-Limit` and `X-Offset` are as before.
+
+### Security — a request that cannot be read is refused without quoting it (WPM-T475)
+
+**A client may notice:** a malformed body, path or query value answers the same status with a fixed `detail` ("The request body is not valid JSON", "The request body does not fit this route", "A value in the URL is not valid", "A query parameter is not valid"). It no longer names the field or repeats the value, which could have been a token or a name pasted by mistake.
+
+### Security — the seed runs only in development or test (WPM-R240, WPM-T474)
+
+**An operator must act** to seed a demo database: run `task seed` with `APP_ENV=development` for that one command. Under production, `demo` or any other environment it is refused and writes nothing.
+
+### Changed — the rate limit is counted by `axa::ratelimit` (WPM-D188, WPM-T473)
+
+**A client may notice:** a `429` says `code: too_many_requests` and has no `detail`, where it said "rate limit exceeded; retry later"; it and every counted response carry `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`. The settings, the two classes, `0` to disable a class and `Retry-After` are as before, and `/_readiness` is never limited. The caller is held as a keyed hash, and at most 100,000 callers are held. Counts start afresh each time the router is built.
+
+### Changed — axa 0.6 (WPM-T472)
+
+`axa` 0.5.0 to 0.6.1. Its own errors are RFC 9457 problems now, so they pass through WPM's problem layer untouched, and the bodies a client sees are as before. **A client may notice:** a violated unique or foreign key that no handler maps answers `409`, not `500`; a rejected JSON body's `code` is `bad_request`, `payload_too_large`, `unsupported_media_type` or `unprocessable_entity` by status; a `408` and a failing `/_readiness` are problems. An idle connection now closes after `KEEP_ALIVE_TIMEOUT_SECONDS` (75), not at the header read limit, and a slow client's response is no longer cut off at that limit.
+
+### Security — the rate limit keys on the address `axa` resolves (WPM-R239, WPM-D187, WPM-T471)
+
+**An operator must act.** Behind a proxy, including the UI's own, list it in `TRUSTED_PROXIES`, or every caller shares the proxy's bucket. `WPM_TRUST_FORWARDED` took the first `X-Forwarded-For` entry, which the caller writes unless the proxy overwrites it, so a proxy that appended gave each forged value a fresh limit. It does nothing now; boot logs a warning if it is set and carries on. The header is believed only from a listed peer and is read from the right. IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. `RateLimiter::check` no longer lets one key's sensitive count fall in the neighbouring key's ordinary slot.
+
+### Changed — errors are RFC 9457 problem details (WPM-T470)
+
+**A client must change.** Every `4xx` and `5xx` is now `application/problem+json`, in place of `{"error", "description"}` from handlers and plain text from the layers. `description` is now `detail`, and `error` is now `code`. Statuses and headers do not change. JSON-RPC errors on `/mcp` do not change.
+
+### Changed — axa 0.5 (WPM-T469)
+
+`axa` 0.4.0 to 0.5.0. `cli::parse` refuses `db down`, `db reset` and `db truncate`, which replaces WPM's own check. The server speaks HTTP/1 only.
+
+### Changed — axa 0.4 (WPM-T468)
+
+`axa` 0.1 to 0.4.0. **A deployment should run `check` first.** Production now refuses a `DATABASE_URL` with no `sslmode` on a remote host, so a
+plaintext path needs `DB_ALLOW_INSECURE=true` as well as `WPM_ALLOW_PLAINTEXT_DATABASE=1`, and refuses a setting that does not parse.
+`DB_CONNECT_TIMEOUT` is 5 seconds and `DB_IDLE_TIMEOUT` 10 minutes by default, up from 500 ms each. Shutdown stops waiting after 25 seconds
+(`SHUTDOWN_TIMEOUT_SECONDS`). The default local database user is `postgres`. `db down`, `db reset` and `db truncate` need `AXA_DESTROY_DATA=true`.
+
 ### Changed — from Loco to axa (WPM-T465)
 
 `axa` replaces `loco-rs`; see the repository changelog (WPM-D183).

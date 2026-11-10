@@ -8,6 +8,7 @@
 //! asks about a *worker's* salary has already read it through the audited,
 //! maskable `GET /api/workers/{pid}`.)
 
+use axa::extract::Path;
 use axa::prelude::*;
 use serde::Deserialize;
 use serde_json::json;
@@ -62,7 +63,7 @@ pub struct PositionParams {
 #[debug_handler]
 async fn position(
     Path(id): Path<String>,
-    axum::extract::Query(params): axum::extract::Query<PositionParams>,
+    axa::extract::Query(params): axa::extract::Query<PositionParams>,
 ) -> Result<Response> {
     let scale = rules::find(&id).ok_or(Error::NotFound)?;
     let code = params

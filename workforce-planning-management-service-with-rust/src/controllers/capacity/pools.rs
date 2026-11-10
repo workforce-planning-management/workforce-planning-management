@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `POST /api/skill-pools` and `PUT /api/skill-pools/{pid}` body.
 #[derive(Debug, Deserialize)]
@@ -38,10 +39,7 @@ pub(super) async fn pool_name_taken(
     except: Option<Uuid>,
 ) -> Result<bool> {
     let wanted = name.trim().to_lowercase();
-    Ok(skill_pools::Entity::find()
-        .filter(skill_pools::Column::OrganizationRef.eq(org))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+    Ok(pools_of(ctx, org)
         .await?
         .iter()
         .any(|p| p.name.trim().to_lowercase() == wanted && Some(p.pid) != except))
@@ -69,21 +67,22 @@ pub(super) async fn create_pool(
     if pool_name_taken(&ctx, &org, &payload.name, None).await? {
         return Err(unprocessable("a pool with that name already exists"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = skill_pools::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(org),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        description: ActiveValue::set(payload.description.clone()),
-        operations_reservation_bp: ActiveValue::set(payload.operations_reservation_bp.unwrap_or(0)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO skill_pools (pid, organization_ref, name, description, operations_reservation_bp)
+         VALUES ($1, $2, $3, $4, $5)",
+        pid,
+        org,
+        payload.name.trim(),
+        payload.description,
+        payload.operations_reservation_bp.unwrap_or(0),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "skill_pool", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    crate::db::audit(&mut tx, "skill_pool", pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(pid_ref(pid))
 }
 
 /// `PUT /api/skill-pools/{pid}` — rename or change the reservation.
@@ -99,16 +98,27 @@ pub(super) async fn update_pool(
     if pool_name_taken(&ctx, &pool.organization_ref, &payload.name, Some(pool.pid)).await? {
         return Err(unprocessable("a pool with that name already exists"));
     }
-    let mut active = pool.into_active_model();
-    active.name = ActiveValue::set(payload.name.trim().to_string());
-    active.description = ActiveValue::set(payload.description.clone());
-    active.operations_reservation_bp =
-        ActiveValue::set(payload.operations_reservation_bp.unwrap_or(0));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "skill_pool", row.pid, "updated", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE skill_pools SET name = $2, description = $3, operations_reservation_bp = $4 WHERE id = $1",
+        pool.id,
+        payload.name.trim(),
+        payload.description,
+        payload.operations_reservation_bp.unwrap_or(0),
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
+        "skill_pool",
+        pool.pid,
+        "updated",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(pid_ref(pool.pid))
 }
 
 /// `DELETE /api/skill-pools/{pid}` — soft delete. The pool leaves every view; its
@@ -120,25 +130,32 @@ pub(super) async fn delete_pool(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let pool = live_pool(&ctx, &caller, &pid).await?;
-    let mut active = pool.into_active_model();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "skill_pool", row.pid, "deleted", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE skill_pools SET deleted_at = $2 WHERE id = $1",
+        pool.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
+        "skill_pool",
+        pool.pid,
+        "deleted",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(pid_ref(pool.pid))
 }
 
 pub(super) async fn members_of(
     ctx: &AppContext,
     pool_pid: Uuid,
 ) -> Result<Vec<skill_pool_members::Model>> {
-    Ok(skill_pool_members::Entity::find()
-        .filter(skill_pool_members::Column::PoolPid.eq(pool_pid))
-        .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .order_by_asc(skill_pool_members::Column::Id)
-        .all(&ctx.db)
-        .await?)
+    members_in(ctx, &[pool_pid]).await
 }
 
 pub(super) fn pool_json(
@@ -173,23 +190,35 @@ pub(super) struct OrgQuery {
 pub(super) async fn list_pools(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(query): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
-    let mut select = skill_pools::Entity::find().filter(skill_pools::Column::DeletedAt.is_null());
-    if let Some(org) = &query.organization {
-        select = select.filter(skill_pools::Column::OrganizationRef.eq(org));
-    }
-    if let Some(refs) = scope(&ctx, &caller).await? {
-        select = select.filter(skill_pools::Column::OrganizationRef.is_in(refs));
-    }
-    let pools = select
-        .order_by_asc(skill_pools::Column::Name)
-        .all(&ctx.db)
-        .await?;
-    let mut out = Vec::with_capacity(pools.len());
-    for pool in &pools {
-        out.push(pool_json(pool, &members_of(&ctx, pool.pid).await?));
-    }
+    let refs = scope(&ctx, &caller).await?;
+    let pools = sqlx::query_as!(
+        skill_pools::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name,
+                  description, operations_reservation_bp, peer_pool_ref, deleted_at AS "deleted_at: _"
+             FROM skill_pools
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR organization_ref = $1)
+              AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+            ORDER BY name"#,
+        query.organization,
+        refs.as_deref(),
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
+    // Every pool's members in one read, where it was one read per pool.
+    let members = members_in(&ctx, &pools.iter().map(|p| p.pid).collect::<Vec<_>>()).await?;
+    let out: Vec<serde_json::Value> = pools
+        .iter()
+        .map(|pool| {
+            let mine: Vec<skill_pool_members::Model> = members
+                .iter()
+                .filter(|m| m.pool_pid == pool.pid)
+                .cloned()
+                .collect();
+            pool_json(pool, &mine)
+        })
+        .collect();
     format::json(out)
 }
 
@@ -230,21 +259,24 @@ pub(super) async fn add_member(
         payload.min_proficiency,
     )
     .map_err(|e| unprocessable(&e))?;
+    let db = crate::db::pool(&ctx);
     if let Some(role) = payload.role_profile_pid {
-        role_profiles::Entity::find()
-            .filter(role_profiles::Column::Pid.eq(role))
-            .filter(role_profiles::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .ok_or_else(|| unprocessable("role_profile_pid does not name a role profile"))?;
+        sqlx::query_scalar!(
+            "SELECT id FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+            role
+        )
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| unprocessable("role_profile_pid does not name a role profile"))?;
     }
     if let Some(skill) = payload.skill_pid {
-        skills::Entity::find()
-            .filter(skills::Column::Pid.eq(skill))
-            .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .ok_or_else(|| unprocessable("skill_pid does not name a skill"))?;
+        sqlx::query_scalar!(
+            "SELECT id FROM skills WHERE pid = $1 AND deleted_at IS NULL",
+            skill
+        )
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| unprocessable("skill_pid does not name a skill"))?;
     }
     let existing = members_of(&ctx, pool.pid).await?;
     if existing.iter().any(|m| {
@@ -254,20 +286,21 @@ pub(super) async fn add_member(
     }) {
         return Err(unprocessable("that member is already in the pool"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = skill_pool_members::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        pool_pid: ActiveValue::set(pool.pid),
-        role_profile_pid: ActiveValue::set(payload.role_profile_pid),
-        skill_pid: ActiveValue::set(payload.skill_pid),
-        min_proficiency: ActiveValue::set(payload.min_proficiency),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let member = Uuid::new_v4();
+    let mut tx = db.begin().await?;
+    sqlx::query!(
+        "INSERT INTO skill_pool_members (pid, pool_pid, role_profile_pid, skill_pid, min_proficiency)
+         VALUES ($1, $2, $3, $4, $5)",
+        member,
+        pool.pid,
+        payload.role_profile_pid,
+        payload.skill_pid,
+        payload.min_proficiency,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    crate::db::audit(
+        &mut tx,
         "skill_pool",
         pool.pid,
         "member_added",
@@ -275,8 +308,8 @@ pub(super) async fn add_member(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    tx.commit().await?;
+    format::json(pid_ref(member))
 }
 
 /// `DELETE /api/skill-pools/{pid}/members/{member_pid}` — soft delete.
@@ -287,19 +320,19 @@ pub(super) async fn remove_member(
     Path((pid, member_pid)): Path<(String, String)>,
 ) -> Result<Response> {
     let pool = live_pool(&ctx, &caller, &pid).await?;
-    let member = skill_pool_members::Entity::find()
-        .filter(skill_pool_members::Column::Pid.eq(records::parse_pid(&member_pid)?))
-        .filter(skill_pool_members::Column::PoolPid.eq(pool.pid))
-        .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active = member.into_active_model();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    let member = sqlx::query_scalar!(
+        "UPDATE skill_pool_members SET deleted_at = $3 WHERE pid = $1 AND pool_pid = $2 AND deleted_at IS NULL
+         RETURNING pid",
+        records::parse_pid(&member_pid)?,
+        pool.pid,
+        Utc::now(),
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    crate::db::audit(
+        &mut tx,
         "skill_pool",
         pool.pid,
         "member_removed",
@@ -307,6 +340,6 @@ pub(super) async fn remove_member(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    tx.commit().await?;
+    format::json(pid_ref(member))
 }

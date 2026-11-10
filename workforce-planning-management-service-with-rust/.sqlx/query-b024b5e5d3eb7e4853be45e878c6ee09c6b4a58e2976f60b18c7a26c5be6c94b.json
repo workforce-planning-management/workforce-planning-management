@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ergonomic_items (pid, assessment_pid, name, item_key)\n             VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b024b5e5d3eb7e4853be45e878c6ee09c6b4a58e2976f60b18c7a26c5be6c94b"
+}

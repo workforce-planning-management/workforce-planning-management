@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE group_members SET role = 'lead' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "573fe9e1c1380a0e26bd16c73786862ee9e4001c1b33c3cc589c08c3c345a6d4"
+}

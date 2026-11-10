@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, status FROM worker_goals WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_goals",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_goals",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e177cf7bbeb854cc86e7d5f9f31bd781f66cd6d430efc9bd59fb830d09abe5ec"
+}

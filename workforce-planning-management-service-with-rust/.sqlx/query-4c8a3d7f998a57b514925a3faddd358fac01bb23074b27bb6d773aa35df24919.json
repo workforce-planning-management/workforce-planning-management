@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rotas SET name = $2, description = $3, period_days = $4, starts_on = $5 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4c8a3d7f998a57b514925a3faddd358fac01bb23074b27bb6d773aa35df24919"
+}

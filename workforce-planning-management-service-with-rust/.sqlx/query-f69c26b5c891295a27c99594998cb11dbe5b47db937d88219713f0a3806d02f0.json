@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.category, COUNT(DISTINCT a.subject_pid) AS \"assessed!\"\n             FROM assessments a JOIN assessment_instruments i ON i.pid = a.instrument_pid\n            WHERE a.deleted_at IS NULL AND a.subject_kind = 'worker' AND a.status = 'completed'\n            GROUP BY i.category",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_instruments",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "assessed!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "f69c26b5c891295a27c99594998cb11dbe5b47db937d88219713f0a3806d02f0"
+}

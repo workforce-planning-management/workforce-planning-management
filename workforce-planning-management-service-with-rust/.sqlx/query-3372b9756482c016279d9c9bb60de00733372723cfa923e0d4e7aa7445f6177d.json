@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE programme_demands SET status = 'active' WHERE id = ANY($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3372b9756482c016279d9c9bb60de00733372723cfa923e0d4e7aa7445f6177d"
+}

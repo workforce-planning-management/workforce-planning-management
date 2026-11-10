@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT display_name FROM workers WHERE pid = $1 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b638dd30739c8dd4e0a6bc367680327bed1c2a1616ff8416efa474aba0555b88"
+}

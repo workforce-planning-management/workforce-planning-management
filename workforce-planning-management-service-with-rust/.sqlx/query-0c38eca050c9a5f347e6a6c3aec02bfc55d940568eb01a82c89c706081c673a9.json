@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE workforce_plans SET status = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0c38eca050c9a5f347e6a6c3aec02bfc55d940568eb01a82c89c706081c673a9"
+}

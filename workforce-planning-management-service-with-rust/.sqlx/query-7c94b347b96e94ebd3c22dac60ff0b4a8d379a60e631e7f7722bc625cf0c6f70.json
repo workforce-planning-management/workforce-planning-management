@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT organization_ref AS \"organization_ref!\" FROM skill_pools WHERE deleted_at IS NULL\n               UNION SELECT organization_ref FROM oversight_positions",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "organization_ref!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "7c94b347b96e94ebd3c22dac60ff0b4a8d379a60e631e7f7722bc625cf0c6f70"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE skills SET hours_per_level = $2 WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9b8a01e0d818952466520d7aad5570c1a79ed3d678958fe9d5c79a1c542dec18"
+}

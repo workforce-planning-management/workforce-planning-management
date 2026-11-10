@@ -6,7 +6,7 @@
 
 | Perhatian | Yang ada | Baca |
 | --- | --- | --- |
-| Tumpukan teknologi | Rust dengan Loco (Axum, SeaORM) dan PostgreSQL 18 untuk API; SvelteKit 2 dengan Svelte 5 dan TypeScript untuk klien | [architecture.md](../../../../spec/architecture.md) |
+| Tumpukan teknologi | Rust dengan Axum (axa, SeaORM) dan PostgreSQL 18 untuk API; SvelteKit 2 dengan Svelte 5 dan TypeScript untuk klien | [architecture.md](../../../../spec/architecture.md) |
 | Aturan rancangan | Inti murni: aturan bebas basis data dan bebas jam, diuji tuntas, baru kemudian dihubungkan ke pengendali | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | Spesifikasi lebih dulu | Satu perubahan adalah persyaratan, keputusan, tugas, kode, dan pengujian bersama; setiap entri tugas menyatakan apa yang **tidak** diverifikasi | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | Pengujian | Uji unit atas aturan, uji permintaan berbasis basis data, biner penegakan yang dijalankan dengan masuk akun aktif, uji unit front-end, dan uji peramban. Pemeriksaan mutasi: merusak kode dengan sengaja dan memastikan suatu pengujian gagal | [testing.md](../../../../spec/testing.md) |

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT wip_limit FROM capacity_settings WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "wip_limit",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "capacity_settings",
+            "name": "wip_limit"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "30bac6e7c9116d5303dc2815e949b853d2aa57871a6af435b8435a7941bb2f95"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE movement_items SET assignee_pid = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "39a866b3a957a6d6dc51b409899f3649fd5f6c26d1af34769658765551e66ed1"
+}

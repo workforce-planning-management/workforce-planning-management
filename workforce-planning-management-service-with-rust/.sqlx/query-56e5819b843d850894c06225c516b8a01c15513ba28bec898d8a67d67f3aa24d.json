@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE consultations SET outcome = $2, ended_on = $3, agreement_pid = $4 WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "56e5819b843d850894c06225c516b8a01c15513ba28bec898d8a67d67f3aa24d"
+}

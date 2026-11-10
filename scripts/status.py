@@ -69,7 +69,7 @@ def build():
         ("Tasks done in `spec/tasks.md`", done),
         ("Tasks not done (open or proposed)", pending),
         ("Highest task number marked done", f"WPM-T{last_done}"),
-        ("Database migrations", len(paths(f"{API}/migration/src/m2*.rs"))),
+        ("Database migrations", len(paths(f"{API}/migrations/2*.sql"))),
         ("Controllers", len(paths(f"{API}/src/controllers/*.rs")) - 1),
         ("Pure rule modules", len(paths(f"{API}/src/rules/*.rs")) - 1),
         ("OpenAPI paths", count_in(f"{API}/src/openapi.rs", r'^\s*"/[^"]*":\s*\{', re.M)),

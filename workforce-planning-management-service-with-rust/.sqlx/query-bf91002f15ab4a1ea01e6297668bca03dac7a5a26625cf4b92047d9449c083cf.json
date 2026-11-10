@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, name, question, active_from, active_until FROM pulse_surveys\n          WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pulse_surveys",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pulse_surveys",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "question",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pulse_surveys",
+            "name": "question"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "active_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pulse_surveys",
+            "name": "active_from"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "active_until",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pulse_surveys",
+            "name": "active_until"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "bf91002f15ab4a1ea01e6297668bca03dac7a5a26625cf4b92047d9449c083cf"
+}

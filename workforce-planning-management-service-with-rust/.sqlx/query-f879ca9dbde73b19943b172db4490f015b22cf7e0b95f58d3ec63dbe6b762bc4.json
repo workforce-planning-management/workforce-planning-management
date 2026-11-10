@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT announcement_pid, COUNT(*) AS \"reads!\" FROM announcement_reads\n            WHERE announcement_pid = ANY($1) GROUP BY announcement_pid",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "announcement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "announcement_reads",
+            "name": "announcement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "reads!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "f879ca9dbde73b19943b172db4490f015b22cf7e0b95f58d3ec63dbe6b762bc4"
+}

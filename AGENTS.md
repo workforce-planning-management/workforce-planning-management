@@ -4,7 +4,7 @@ Working agreements for humans and AI agents on this repository. This file is
 the short entry point; the detail is in [`AGENTS/`](AGENTS/). Each subproject
 also has its own [API](workforce-planning-management-service-with-rust/AGENTS.md)
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
-stack-level detail. (Updated 2026-10-30, through WPM-T398; the site, WPM-T392.)
+stack-level detail. (Updated 2026-11-09, through WPM-T479; the site, WPM-T392.)
 
 > ⚠️ **Demo software.** Not a production HR or payroll system; synthetic data
 > only. See [spec/regulatory.md](spec/regulatory.md).
@@ -42,7 +42,7 @@ stack-level detail. (Updated 2026-10-30, through WPM-T398; the site, WPM-T392.)
 
 - `spec/` — requirements (`WPM-R*`), decisions (`WPM-D*`), tasks (`WPM-T*`), topic files;
   [`spec/implementation-status.md`](spec/implementation-status.md) holds the counts (generated, never edited).
-- `workforce-planning-management-service-with-rust/` — Loco JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`,
+- `workforce-planning-management-service-with-rust/` — Axum JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`,
   `crates/entity-ref` vendored).
 - `workforce-planning-management-ui-with-svelte/` — SvelteKit client (`src/routes/`, `src/lib/`, `content/locales/`, `tests/`).
 - `workforce-planning-management-matcher-with-rust/` — the worker-record matcher crate, published to crates.io; the service

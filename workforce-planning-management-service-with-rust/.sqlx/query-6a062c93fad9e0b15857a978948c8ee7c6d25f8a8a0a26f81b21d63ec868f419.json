@@ -1,0 +1,236 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE requisitions\n              SET status = $2,\n                  opened_on = CASE WHEN $4 THEN $3::date ELSE opened_on END,\n                  filled_on = CASE WHEN $5 THEN $3::date ELSE filled_on END\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, department,\n                  job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on, filled_on,\n                  deleted_at AS \"deleted_at: _\", programme_ref, basis, expected_duration_months",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "headcount"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "salary_min_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "salary_min_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "salary_max_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "salary_max_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "salary_currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "salary_currency"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "opened_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "opened_on"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "filled_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "filled_on"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "deleted_at"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "basis",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "basis"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "expected_duration_months",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "expected_duration_months"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Date",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "6a062c93fad9e0b15857a978948c8ee7c6d25f8a8a0a26f81b21d63ec868f419"
+}

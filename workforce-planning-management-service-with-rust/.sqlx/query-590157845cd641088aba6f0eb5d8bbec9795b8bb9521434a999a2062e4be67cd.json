@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_goals SET proposed_by = $2, title = $3, description = $4, period_start = $5, period_end = $6,\n                skill_pid = $7, skill_target_level = $8, plan_item_pid = $9, aligns_to = $10\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Date",
+        "Uuid",
+        "Int4",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "590157845cd641088aba6f0eb5d8bbec9795b8bb9521434a999a2062e4be67cd"
+}

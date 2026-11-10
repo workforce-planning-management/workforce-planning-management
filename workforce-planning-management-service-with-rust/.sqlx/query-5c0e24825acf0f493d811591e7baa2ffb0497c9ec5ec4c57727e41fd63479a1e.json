@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, course_ref, status,\n                  completed_on, certificate_expires_on, deleted_at AS \"deleted_at: _\"\n             FROM training_enrollments\n            WHERE deleted_at IS NULL AND certificate_expires_on IS NOT NULL AND certificate_expires_on <= $1\n            ORDER BY certificate_expires_on, id LIMIT 500",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "completed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "completed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "certificate_expires_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "certificate_expires_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5c0e24825acf0f493d811591e7baa2ffb0497c9ec5ec4c57727e41fd63479a1e"
+}

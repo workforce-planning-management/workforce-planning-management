@@ -1,0 +1,208 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, organization_ref, jurisdiction, kind, worker_pid,\n                  occurred_at AS \"occurred_at: _\", learned_at AS \"learned_at: _\", class,\n                  absence_days, people_affected, statutory_record_ref, keep_until, recorded_by\n           FROM injury_records\n           WHERE organization_ref = $1\n           ORDER BY occurred_at DESC, id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "jurisdiction"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "occurred_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "occurred_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "learned_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "learned_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "class",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "class"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "absence_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "absence_days"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "people_affected",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "people_affected"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "statutory_record_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "statutory_record_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "keep_until",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "keep_until"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_records",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "a6ffbecf090e2b78cecbb7dffda2e8266e69c6d12e4627975514c5d56ab7aa6c"
+}

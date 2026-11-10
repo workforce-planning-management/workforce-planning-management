@@ -79,18 +79,21 @@ import type {
 
 type FetchLike = { fetch?: typeof fetch };
 
-/** The query string of a paged list: the filters that are set, then `limit` and `offset` (the first page sends no offset). */
+/**
+ * The query string of a paged list: the filters that are set, then `limit` and the `cursor` the last page gave (the first
+ * page sends none). The cursor is signed over the path and these filters, so the next page must send the same filters.
+ */
 function pageQuery(
   filters: Record<string, string | undefined>,
   limit?: number,
-  offset?: number,
+  cursor?: string | null,
 ): string {
   const query = new URLSearchParams();
   for (const [name, value] of Object.entries(filters)) {
     if (value) query.set(name, value);
   }
   if (limit !== undefined) query.set("limit", String(limit));
-  if (offset) query.set("offset", String(offset));
+  if (cursor) query.set("cursor", cursor);
   const qs = query.toString();
   return qs ? `?${qs}` : "";
 }
@@ -214,15 +217,15 @@ export function createExpenseClaim(
   return api(`/workers/${workerPid}/expense-claims`, { method: "POST", body });
 }
 
-/** One page of the claims the caller may decide, with the total. */
+/** One page of the claims the caller may decide; `cursor` is the last page's `next`. */
 export function expenseQueuePage(
   status: string | undefined,
   limit: number,
-  offset: number,
+  cursor: string | null,
   init?: FetchLike,
 ): Promise<Page<ExpenseClaimSummary>> {
   return apiPage(
-    `/expense-claims${pageQuery({ status }, limit, offset)}`,
+    `/expense-claims${pageQuery({ status }, limit, cursor)}`,
     init,
   );
 }
@@ -389,13 +392,13 @@ export function listRequisitions(
   return api(`/requisitions${status ? `?status=${status}` : ""}`, init);
 }
 
-/** One page of requisitions, with the total (the service serves 500 at most per call). */
+/** One page of requisitions (the service serves 500 at most per call); `cursor` is the last page's `next`. */
 export function listRequisitionsPage(
-  opts: { status?: string; limit?: number; offset?: number } = {},
+  opts: { status?: string; limit?: number; cursor?: string | null } = {},
   init?: FetchLike,
 ): Promise<Page<Requisition>> {
   return apiPage(
-    `/requisitions${pageQuery({ status: opts.status }, opts.limit, opts.offset)}`,
+    `/requisitions${pageQuery({ status: opts.status }, opts.limit, opts.cursor)}`,
     init,
   );
 }
@@ -543,13 +546,13 @@ export function successionGaps(
   return api("/succession-plans/gaps", init);
 }
 
-/** One page of payroll runs, with the total. */
+/** One page of payroll runs; `cursor` is the last page's `next`. */
 export function listRunsPage(
   limit: number,
-  offset: number,
+  cursor: string | null,
   init?: FetchLike,
 ): Promise<Page<PayrollRun>> {
-  return apiPage(`/payroll-runs${pageQuery({}, limit, offset)}`, init);
+  return apiPage(`/payroll-runs${pageQuery({}, limit, cursor)}`, init);
 }
 
 /** Payroll runs. */
@@ -2166,14 +2169,14 @@ export function setSkillTrainingHours(
   });
 }
 
-/** One page of joiner and leaver records, with the total. */
+/** One page of joiner and leaver records; `cursor` is the last page's `next`. */
 export function listMovementsPage(
   options: { kind?: "joiner" | "leaver"; status?: string } | undefined,
   limit: number,
-  offset: number,
+  cursor: string | null,
   init?: FetchLike,
 ): Promise<Page<Movement>> {
-  return apiPage(`/movements${pageQuery({ ...options }, limit, offset)}`, init);
+  return apiPage(`/movements${pageQuery({ ...options }, limit, cursor)}`, init);
 }
 
 /** Joiner and leaver records (default open), soonest first. */
@@ -4041,15 +4044,15 @@ export function openConversionPlans(
   return api(`/conversion-plans${qs}`, init);
 }
 
-/** One page of the same, with the total. Each page read is audited. */
+/** One page of the same; `cursor` is the last page's `next`. Each page read is audited. */
 export function openConversionPlansPage(
   organization: string | undefined,
   limit: number,
-  offset: number,
+  cursor: string | null,
   init?: FetchLike,
 ): Promise<Page<OpenConversionRow>> {
   return apiPage(
-    `/conversion-plans${pageQuery({ organization }, limit, offset)}`,
+    `/conversion-plans${pageQuery({ organization }, limit, cursor)}`,
     init,
   );
 }

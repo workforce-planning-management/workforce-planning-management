@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.pid, COALESCE(w.display_name, '') AS \"name!\"\n             FROM dotted_line_reports d\n             LEFT JOIN workers w ON w.pid = d.report_pid AND w.deleted_at IS NULL\n            WHERE d.manager_pid = $1 AND d.ended_at IS NULL\n            ORDER BY d.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "b0be961b67e84e0f6f0b2937da942cc2393c536409a93b406ee87d8cb502868b"
+}

@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE link_tokens SET used_at = $3, updated_at = $3\n          WHERE token_hash = $1 AND purpose = $2 AND used_at IS NULL AND expires_at > $3\n          RETURNING pid, subject_pid",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "subject_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "a86c73bb97d1668ffcb8a4ea8b7b943b0f5c47d91e5f1682868ae371e5d2d0ff"
+}

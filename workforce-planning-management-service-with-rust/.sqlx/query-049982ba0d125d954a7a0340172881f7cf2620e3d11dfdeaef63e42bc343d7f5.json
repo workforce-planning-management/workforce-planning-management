@@ -1,0 +1,84 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.worker_pid, a.fte_percent, a.starts_on, a.ends_on, a.is_primary,\n                CASE $2 WHEN 'staff_group' THEN a.staff_group WHEN 'job_role' THEN a.job_role ELSE a.area_of_work END\n                    AS category\n           FROM assignments a JOIN workers w ON w.pid = a.worker_pid\n          WHERE w.organization_ref = $1 AND w.deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "is_primary",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "is_primary"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "049982ba0d125d954a7a0340172881f7cf2620e3d11dfdeaef63e42bc343d7f5"
+}

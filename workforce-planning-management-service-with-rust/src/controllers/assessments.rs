@@ -23,22 +23,93 @@
 //! payload names its derivation.
 
 use super::row_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    assessment_instruments, assessment_results, assessments, candidates,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{assessment_instruments, assessment_results, assessments};
 use crate::models::records;
 use crate::rules::assessment as rules;
 use crate::streaming;
 use crate::validation::Problems;
+
+/// The live instrument with this pid, else `404`.
+async fn find_instrument(ctx: &AppContext, pid: Uuid) -> Result<assessment_instruments::Model> {
+    sqlx::query_as!(
+        assessment_instruments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, category, provider, scales,
+                  duration_minutes, validity_months, deleted_at AS "deleted_at: _"
+             FROM assessment_instruments WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// Every instrument, withdrawn ones too (a sitting keeps its instrument).
+async fn all_instruments(ctx: &AppContext) -> Result<Vec<assessment_instruments::Model>> {
+    Ok(sqlx::query_as!(
+        assessment_instruments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, category, provider, scales,
+                  duration_minutes, validity_months, deleted_at AS "deleted_at: _"
+             FROM assessment_instruments ORDER BY id"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The live assessment with this pid, else `404`.
+async fn find_assessment(ctx: &AppContext, pid: Uuid) -> Result<assessments::Model> {
+    sqlx::query_as!(
+        assessments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, instrument_pid, subject_kind,
+                  subject_pid, application_pid, status, scheduled_on, completed_on, expires_on, administered_by, notes,
+                  deleted_at AS "deleted_at: _"
+             FROM assessments WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// A sitting's results, by scale.
+async fn results_of(ctx: &AppContext, assessment: Uuid) -> Result<Vec<assessment_results::Model>> {
+    Ok(sqlx::query_as!(
+        assessment_results::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, assessment_pid, scale, raw_score,
+                  max_score, percentile, band, narrative
+             FROM assessment_results WHERE assessment_pid = $1 ORDER BY scale"#,
+        assessment,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// What the assessment views read of a live application.
+struct Application {
+    pid: Uuid,
+    candidate_pid: Uuid,
+    stage: String,
+}
+
+/// The live application with this pid, else `404`.
+async fn find_application(ctx: &AppContext, pid: Uuid) -> Result<Application> {
+    sqlx::query_as!(
+        Application,
+        "SELECT pid, candidate_pid, stage FROM applications WHERE pid = $1 AND deleted_at IS NULL",
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
 
 /// A `{pid}` reference response.
 #[derive(serde::Serialize)]
@@ -109,31 +180,32 @@ async fn create_instrument(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = ctx.db.begin().await?;
-    let row = assessment_instruments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        category: ActiveValue::set(payload.category.clone()),
-        provider: ActiveValue::set(payload.provider.clone()),
-        scales: ActiveValue::set(serde_json::json!(payload.scales)),
-        duration_minutes: ActiveValue::set(payload.duration_minutes),
-        validity_months: ActiveValue::set(payload.validity_months),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO assessment_instruments (pid, name, category, provider, scales, duration_minutes, validity_months)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        pid,
+        payload.name,
+        payload.category,
+        payload.provider,
+        serde_json::json!(payload.scales),
+        payload.duration_minutes,
+        payload.validity_months,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "assessment_instrument",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(pid))
 }
 
 /// Query for the instrument catalog.
@@ -145,7 +217,7 @@ struct InstrumentQuery {
 /// `GET /api/assessment-instruments?category=` — the catalog.
 #[debug_handler]
 async fn list_instruments(
-    axum::extract::Query(query): axum::extract::Query<InstrumentQuery>,
+    axa::extract::Query(query): axa::extract::Query<InstrumentQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     if let Some(category) = &query.category
@@ -156,15 +228,17 @@ async fn list_instruments(
             rules::ASSESSMENT_CATEGORIES
         )));
     }
-    let mut find = assessment_instruments::Entity::find()
-        .filter(assessment_instruments::Column::DeletedAt.is_null());
-    if let Some(category) = &query.category {
-        find = find.filter(assessment_instruments::Column::Category.eq(category.clone()));
-    }
-    let rows = find
-        .order_by_asc(assessment_instruments::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        assessment_instruments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, category, provider, scales,
+                  duration_minutes, validity_months, deleted_at AS "deleted_at: _"
+             FROM assessment_instruments
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR category = $1)
+            ORDER BY name"#,
+        query.category,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
@@ -209,12 +283,12 @@ async fn create_assessment(
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
 
-    let instrument = records::find_assessment_instrument(&ctx.db, payload.instrument_pid).await?;
+    let instrument = find_instrument(&ctx, payload.instrument_pid).await?;
     let subject_name =
         subject_display_name(&ctx, &payload.subject_kind, payload.subject_pid, &caller).await?;
 
     if let Some(application_pid) = payload.application_pid {
-        let application = records::find_application(&ctx.db, application_pid).await?;
+        let application = find_application(&ctx, application_pid).await?;
         if payload.subject_kind != "candidate" {
             return Err(unprocessable(
                 "only a candidate assessment can belong to an application",
@@ -227,28 +301,27 @@ async fn create_assessment(
         }
     }
 
-    let txn = ctx.db.begin().await?;
-    let row = assessments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        instrument_pid: ActiveValue::set(instrument.pid),
-        subject_kind: ActiveValue::set(payload.subject_kind.clone()),
-        subject_pid: ActiveValue::set(payload.subject_pid),
-        application_pid: ActiveValue::set(payload.application_pid),
-        status: ActiveValue::set("scheduled".to_string()),
-        scheduled_on: ActiveValue::set(payload.scheduled_on),
-        completed_on: ActiveValue::set(None),
-        expires_on: ActiveValue::set(None),
-        administered_by: ActiveValue::set(payload.administered_by.clone()),
-        notes: ActiveValue::set(payload.notes.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO assessments (pid, instrument_pid, subject_kind, subject_pid, application_pid, status, scheduled_on,
+                                  administered_by, notes)
+         VALUES ($1, $2, $3, $4, $5, 'scheduled', $6, $7, $8)",
+        pid,
+        instrument.pid,
+        payload.subject_kind,
+        payload.subject_pid,
+        payload.application_pid,
+        payload.scheduled_on,
+        payload.administered_by,
+        payload.notes,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "assessment",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({
@@ -258,19 +331,19 @@ async fn create_assessment(
         })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "assessment",
         "created",
-        &row.pid.to_string(),
+        &pid.to_string(),
         &instrument.name,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     tracing::debug!(subject = %subject_name, "assessment scheduled");
-    format::json(PidRef::of(row.pid))
+    format::json(PidRef::of(pid))
 }
 
 /// `POST /api/assessments/{pid}/status` body.
@@ -294,39 +367,56 @@ async fn assessment_status(
     Path(pid): Path<String>,
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
-    let row = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
+    let row = find_assessment(&ctx, records::parse_pid(&pid)?).await?;
     rules::assessment_transition(&row.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
 
     let today = chrono::Utc::now().date_naive();
-    let instrument = records::find_assessment_instrument(&ctx.db, row.instrument_pid).await?;
+    let instrument = find_instrument(&ctx, row.instrument_pid).await?;
     let from = row.status.clone();
     let row_pid = row.pid;
 
     if payload.to == "completed" {
-        let scored = assessment_results::Entity::find()
-            .filter(assessment_results::Column::AssessmentPid.eq(row_pid))
-            .all(&ctx.db)
-            .await?;
-        if scored.is_empty() {
+        let scored = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM assessment_results WHERE assessment_pid = $1 LIMIT 1"#,
+            row_pid
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?;
+        if scored.is_none() {
             return Err(unprocessable(
                 "record at least one result before completing the assessment",
             ));
         }
     }
 
-    let txn = ctx.db.begin().await?;
-    let mut active: assessments::ActiveModel = row.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if payload.to == "completed" {
-        active.completed_on = ActiveValue::set(Some(today));
-        if let Some(months) = instrument.validity_months {
-            active.expires_on = ActiveValue::set(expiry_from(today, months));
-        }
-    }
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    // Completing stamps the day and, when the instrument has a validity, the expiry; other moves change only the status.
+    let completing = payload.to == "completed";
+    let expires = instrument
+        .validity_months
+        .map(|months| expiry_from(today, months));
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        assessments::Model,
+        r#"UPDATE assessments
+              SET status = $2,
+                  completed_on = CASE WHEN $3 THEN $4::date ELSE completed_on END,
+                  expires_on = CASE WHEN $3 AND $5 THEN $6::date ELSE expires_on END
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, instrument_pid, subject_kind,
+                  subject_pid, application_pid, status, scheduled_on, completed_on, expires_on, administered_by, notes,
+                  deleted_at AS "deleted_at: _""#,
+        row.id,
+        payload.to,
+        completing,
+        today,
+        expires.is_some(),
+        expires.flatten(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "assessment",
         row_pid,
         "status_changed",
@@ -334,8 +424,8 @@ async fn assessment_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "assessment",
         &format!("assessment_{}", payload.to),
         &row_pid.to_string(),
@@ -344,7 +434,7 @@ async fn assessment_status(
         Some(serde_json::json!({ "from": from })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -389,9 +479,8 @@ async fn record_result(
     Path(pid): Path<String>,
     Json(payload): Json<ResultPayload>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+    let assessment = find_assessment(&ctx, records::parse_pid(&pid)?).await?;
+    let instrument = find_instrument(&ctx, assessment.instrument_pid).await?;
 
     let mut problems = Problems::new();
     problems.require_token("scale", rules::ASSESSMENT_SCALES, &payload.scale);
@@ -440,50 +529,58 @@ async fn record_result(
             .map(|p| rules::band_for_percentile(p).to_string())
     });
 
-    let existing = assessment_results::Entity::find()
-        .filter(assessment_results::Column::AssessmentPid.eq(assessment.pid))
-        .filter(assessment_results::Column::Scale.eq(payload.scale.clone()))
-        .one(&ctx.db)
+    let existing = sqlx::query!(
+        "SELECT id, pid FROM assessment_results WHERE assessment_pid = $1 AND scale = $2 LIMIT 1",
+        assessment.pid,
+        payload.scale,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let result_pid = if let Some(found) = existing {
+        sqlx::query!(
+            "UPDATE assessment_results SET raw_score = $2, max_score = $3, percentile = $4, band = $5, narrative = $6
+              WHERE id = $1",
+            found.id,
+            payload.raw_score,
+            payload.max_score,
+            payload.percentile,
+            band,
+            payload.narrative,
+        )
+        .execute(&mut *tx)
         .await?;
-    let txn = ctx.db.begin().await?;
-    let row = match existing {
-        Some(found) => {
-            let mut active: assessment_results::ActiveModel = found.into();
-            active.raw_score = ActiveValue::set(payload.raw_score);
-            active.max_score = ActiveValue::set(payload.max_score);
-            active.percentile = ActiveValue::set(payload.percentile);
-            active.band = ActiveValue::set(band);
-            active.narrative = ActiveValue::set(payload.narrative.clone());
-            active.update(&txn).await?
-        }
-        None => {
-            assessment_results::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                assessment_pid: ActiveValue::set(assessment.pid),
-                scale: ActiveValue::set(payload.scale.clone()),
-                raw_score: ActiveValue::set(payload.raw_score),
-                max_score: ActiveValue::set(payload.max_score),
-                percentile: ActiveValue::set(payload.percentile),
-                band: ActiveValue::set(band),
-                narrative: ActiveValue::set(payload.narrative.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?
-        }
+        found.pid
+    } else {
+        let pid = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO assessment_results (pid, assessment_pid, scale, raw_score, max_score, percentile, band, narrative)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            pid,
+            assessment.pid,
+            payload.scale,
+            payload.raw_score,
+            payload.max_score,
+            payload.percentile,
+            band,
+            payload.narrative,
+        )
+        .execute(&mut *tx)
+        .await?;
+        pid
     };
     // The scale is recorded; the score itself never enters the trail.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "assessment_result",
-        row.pid,
+        result_pid,
         "recorded",
         caller.actor(),
         Some(serde_json::json!({ "assessment": assessment.pid, "scale": payload.scale })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(result_pid))
 }
 
 /// `GET /api/assessments/{pid}` — one assessment with its instrument
@@ -498,9 +595,8 @@ async fn get_assessment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+    let assessment = find_assessment(&ctx, records::parse_pid(&pid)?).await?;
+    let instrument = find_instrument(&ctx, assessment.instrument_pid).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -509,14 +605,12 @@ async fn get_assessment(
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
 
-    let rows = assessment_results::Entity::find()
-        .filter(assessment_results::Column::AssessmentPid.eq(assessment.pid))
-        .order_by_asc(assessment_results::Column::Scale)
-        .all(&ctx.db)
-        .await?;
+    let rows = results_of(&ctx, assessment.pid).await?;
     if !masked && !rows.is_empty() {
-        Audit::record(
-            &ctx.db,
+        // A read, audited on its own connection: nothing changed, so there is no transaction to join.
+        let mut connection = db::pool(&ctx).acquire().await?;
+        db::audit(
+            &mut connection,
             "assessment",
             assessment.pid,
             "results_read",
@@ -549,9 +643,8 @@ async fn delete_assessment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+    let assessment = find_assessment(&ctx, records::parse_pid(&pid)?).await?;
+    let instrument = find_instrument(&ctx, assessment.instrument_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Delete,
@@ -560,13 +653,25 @@ async fn delete_assessment(
     .map_err(record_rejection)?;
 
     let row_pid = assessment.pid;
-    let txn = ctx.db.begin().await?;
-    let mut active: assessments::ActiveModel = assessment.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(&txn, "assessment", row_pid, "deleted", caller.actor(), None).await?;
-    streaming::emit_on(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE assessments SET deleted_at = $2 WHERE id = $1",
+        assessment.id,
+        chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "assessment",
+        row_pid,
+        "deleted",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    streaming::emit_in(
+        &mut tx,
         "assessment",
         "deleted",
         &row_pid.to_string(),
@@ -575,7 +680,7 @@ async fn delete_assessment(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": row_pid, "deleted": true }))
 }
 
@@ -592,12 +697,12 @@ struct ProfileQuery {
 /// profile (see [`subject_profile`]).
 #[debug_handler]
 async fn candidate_profile(
-    axum::extract::Query(query): axum::extract::Query<ProfileQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let candidate = records::find_candidate(&ctx.db, records::parse_pid(&pid)?).await?;
+    let candidate = live_candidate(&ctx, records::parse_pid(&pid)?).await?;
     subject_profile(&ctx, &caller, "candidate", candidate.pid, query.as_of).await
 }
 
@@ -607,12 +712,12 @@ async fn candidate_profile(
 /// record-level policy.
 #[debug_handler]
 async fn worker_profile(
-    axum::extract::Query(query): axum::extract::Query<ProfileQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileQuery>,
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -662,13 +767,18 @@ async fn build_profile(
     masked: bool,
 ) -> Result<Response> {
     let as_of = as_of.unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let sittings = assessments::Entity::find()
-        .filter(assessments::Column::SubjectKind.eq(subject_kind.to_string()))
-        .filter(assessments::Column::SubjectPid.eq(subject_pid))
-        .filter(assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let instruments = assessment_instruments::Entity::find().all(&ctx.db).await?;
+    let sittings = sqlx::query_as!(
+        assessments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, instrument_pid, subject_kind,
+                  subject_pid, application_pid, status, scheduled_on, completed_on, expires_on, administered_by, notes,
+                  deleted_at AS "deleted_at: _"
+             FROM assessments WHERE subject_kind = $1 AND subject_pid = $2 AND deleted_at IS NULL ORDER BY id"#,
+        subject_kind,
+        subject_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
+    let instruments = all_instruments(ctx).await?;
     let instrument_of: BTreeMap<Uuid, &assessment_instruments::Model> =
         instruments.iter().map(|i| (i.pid, i)).collect();
 
@@ -694,11 +804,7 @@ async fn build_profile(
         let mut latest: BTreeMap<String, (&assessments::Model, assessment_results::Model)> =
             BTreeMap::new();
         for sitting in &current {
-            let rows = assessment_results::Entity::find()
-                .filter(assessment_results::Column::AssessmentPid.eq(sitting.pid))
-                .all(&ctx.db)
-                .await?;
-            for row in rows {
+            for row in results_of(ctx, sitting.pid).await? {
                 let replace = latest.get(&row.scale).is_none_or(|(held, _)| {
                     (sitting.completed_on, sitting.id) > (held.completed_on, held.id)
                 });
@@ -770,7 +876,7 @@ async fn application_assessments(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application = find_application(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -782,21 +888,17 @@ async fn application_assessments(
     .map_err(record_rejection)?;
     let masked = obligations.iter().any(|o| o == "mask");
 
-    let sittings = assessments::Entity::find()
-        .filter(assessments::Column::ApplicationPid.eq(application.pid))
-        .filter(assessments::Column::DeletedAt.is_null())
-        .order_by_asc(assessments::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let sittings = sqlx::query!(
+        "SELECT pid, instrument_pid, status, scheduled_on, completed_on FROM assessments
+          WHERE application_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        application.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut view = Vec::with_capacity(sittings.len());
     for sitting in &sittings {
-        let instrument =
-            records::find_assessment_instrument(&ctx.db, sitting.instrument_pid).await?;
-        let rows = assessment_results::Entity::find()
-            .filter(assessment_results::Column::AssessmentPid.eq(sitting.pid))
-            .order_by_asc(assessment_results::Column::Scale)
-            .all(&ctx.db)
-            .await?;
+        let instrument = find_instrument(&ctx, sitting.instrument_pid).await?;
+        let rows = results_of(&ctx, sitting.pid).await?;
         let results: Vec<assessment_results::Model> = if masked {
             rows.into_iter().map(mask_result).collect()
         } else {
@@ -834,11 +936,12 @@ async fn application_assessments(
 /// the whole population identifies no one).
 #[debug_handler]
 async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
-    let sittings = assessments::Entity::find()
-        .filter(assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let instruments = assessment_instruments::Entity::find().all(&ctx.db).await?;
+    let sittings = sqlx::query!(
+        "SELECT instrument_pid, status FROM assessments WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let instruments = all_instruments(&ctx).await?;
     let category_of: BTreeMap<Uuid, &str> = instruments
         .iter()
         .map(|i| (i.pid, i.category.as_str()))
@@ -858,16 +961,18 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
     }
 
     // scale → band → count, over every recorded result.
-    let results = assessment_results::Entity::find().all(&ctx.db).await?;
+    let results = sqlx::query!(
+        r#"SELECT scale, band AS "band!" FROM assessment_results WHERE band IS NOT NULL ORDER BY id"#
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut bands: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
-    for row in &results {
-        if let Some(band) = &row.band {
-            *bands
-                .entry(row.scale.clone())
-                .or_default()
-                .entry(band.clone())
-                .or_default() += 1;
-        }
+    for row in results {
+        *bands
+            .entry(row.scale)
+            .or_default()
+            .entry(row.band)
+            .or_default() += 1;
     }
 
     let categories: Vec<serde_json::Value> = by_category
@@ -952,7 +1057,7 @@ async fn subject_display_name(
     caller: &MaybeAuthUser,
 ) -> Result<String> {
     if subject_kind == "worker" {
-        let worker = records::find_worker(&ctx.db, subject_pid).await?;
+        let worker = records::worker_by_pid(ctx, subject_pid).await?;
         auth::authorize_record(
             caller,
             authentication_verifier::Action::Write,
@@ -961,13 +1066,25 @@ async fn subject_display_name(
         .map_err(record_rejection)?;
         return Ok(worker.display_name);
     }
-    let candidate = candidates::Entity::find()
-        .filter(candidates::Column::Pid.eq(subject_pid))
-        .filter(candidates::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    Ok(candidate.display_name)
+    Ok(live_candidate(ctx, subject_pid).await?.display_name)
+}
+
+/// What the assessment views read of a live candidate.
+struct Candidate {
+    pid: Uuid,
+    display_name: String,
+}
+
+/// The live candidate with this pid, else `404`.
+async fn live_candidate(ctx: &AppContext, pid: Uuid) -> Result<Candidate> {
+    sqlx::query_as!(
+        Candidate,
+        "SELECT pid, display_name FROM candidates WHERE pid = $1 AND deleted_at IS NULL",
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// The assessment routes.

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid, course_ref, required_headcount FROM cutover_roles WHERE cutover_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cutover_roles",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cutover_roles",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "required_headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "cutover_roles",
+            "name": "required_headcount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "794f3fb5be069b9b6950e50eb253c6c63380ec52407691264c1f196671582c6f"
+}

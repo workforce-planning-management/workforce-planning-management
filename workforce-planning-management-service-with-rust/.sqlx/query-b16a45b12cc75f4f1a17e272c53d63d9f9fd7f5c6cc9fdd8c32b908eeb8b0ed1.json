@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM cutover_pools WHERE cutover_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b16a45b12cc75f4f1a17e272c53d63d9f9fd7f5c6cc9fdd8c32b908eeb8b0ed1"
+}

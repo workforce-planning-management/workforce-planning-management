@@ -1,0 +1,196 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, unit_pid, title, version,\n                  effective_from, effective_to, source, pay_scale_id, max_weekly_hours, notice_weeks, consultation_days,\n                  recorded_by\n             FROM collective_agreements WHERE unit_pid = ANY($1)\n            ORDER BY title, version, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "unit_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "unit_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "effective_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "effective_from"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "effective_to",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "effective_to"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "pay_scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "pay_scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "max_weekly_hours",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "max_weekly_hours"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "notice_weeks",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "notice_weeks"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "consultation_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "consultation_days"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "collective_agreements",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "cb80485d82ad91b65dcaf2548e550c6bf74fc166b770ee02a09a680a00753b5c"
+}

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT b.pid, COALESCE(w.display_name, '') AS \"name!\"\n             FROM worker_backups b\n             LEFT JOIN workers w ON w.pid = b.worker_pid AND w.deleted_at IS NULL\n            WHERE b.backup_pid = $1 AND b.deleted_at IS NULL\n            ORDER BY b.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "1e3ba4de32365cc5dbcf424cdd5ba1b18557de135b882ea30378869f35c61736"
+}

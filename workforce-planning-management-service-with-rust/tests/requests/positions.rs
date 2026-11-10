@@ -1,13 +1,13 @@
 //! Positions (WPM-R152, WPM-D104): seats with a budget, moves that need their facts, links that copy nothing, and an establishment
 //! that never nets an over-establishment against a vacancy.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
-async fn worker(request: &axa::TestServer, org: &str, number: &str, fte: i32) -> String {
+async fn worker(request: &axa_test::TestServer, org: &str, number: &str, fte: i32) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -20,7 +20,7 @@ async fn worker(request: &axa::TestServer, org: &str, number: &str, fte: i32) ->
     created["pid"].as_str().unwrap().to_string()
 }
 
-async fn seat(request: &axa::TestServer, org: &str, cost_centre: &str, budget: i32) -> String {
+async fn seat(request: &axa_test::TestServer, org: &str, cost_centre: &str, budget: i32) -> String {
     let made = request
         .post("/api/positions")
         .json(&json!({ "organization_ref": org, "cost_centre": cost_centre, "title": "Engineer", "budget_fte_percent": budget, "funding_kind": "core" }))
@@ -29,7 +29,7 @@ async fn seat(request: &axa::TestServer, org: &str, cost_centre: &str, budget: i
     made.json::<Value>()["pid"].as_str().unwrap().to_string()
 }
 
-async fn go(request: &axa::TestServer, pid: &str, to: &str) -> (u16, String) {
+async fn go(request: &axa_test::TestServer, pid: &str, to: &str) -> (u16, String) {
     let r = request
         .post(&format!("/api/positions/{pid}/status"))
         .json(&json!({ "to": to }))
@@ -148,17 +148,16 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
         assert_eq!(hold(&a, Some(&w)).await, 422, "an ended seat has no holder");
 
         // An unknown holder (the worker's record is gone) makes the figures unknown, not zero.
-        ctx.db.execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w2}'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w2}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let body: Value = request.get(&format!("/api/positions/establishment?organization={org}")).await.json();
         assert_eq!(centre(&body, "CC-1")["held"], json!({ "status": "unknown" }));
         assert_eq!(centre(&body, "CC-1")["budgeted"], json!({ "status": "known", "percent": 50 }));
 
         // Every change is audited with a state and no worker.
-        let rows = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT snapshot::text AS s FROM audit_logs WHERE action LIKE 'position_%'".to_string())).await.unwrap();
+        let rows = sqlx::query("SELECT snapshot::text AS s FROM audit_logs WHERE action LIKE 'position_%'").fetch_all(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         assert!(rows.len() >= 10);
         for row in rows {
-            let s: Option<String> = row.try_get("", "s").unwrap();
+            let s: Option<String> = row.try_get("s").unwrap();
             assert!(!s.unwrap_or_default().contains(&w), "no worker in an audit snapshot");
         }
 
@@ -219,6 +218,50 @@ async fn overtime_status_starts_unknown_is_recorded_by_a_person_and_a_stray_valu
         let keep = request.put(&format!("/api/positions/{pid}")).json(&body(json!({ "title": "Senior engineer" }))).await;
         assert_eq!(keep.status_code(), 200, "{}", keep.text());
         assert_eq!(read().await["overtime_status"], "exempt");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_number_names_one_position_and_an_update_without_it_keeps_it() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let body = |cost_centre: &str, number: Option<&str>| {
+            let mut b = json!({ "organization_ref": org, "cost_centre": cost_centre, "title": "Engineer",
+                                "budget_fte_percent": 100, "funding_kind": "core" });
+            if let Some(n) = number {
+                b["number"] = json!(n);
+            }
+            b
+        };
+        let created = request.post("/api/positions").json(&body("CC-A", Some(" P-1 "))).await;
+        assert_eq!(created.status_code(), 200, "{}", created.text());
+        let pid = created.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let again = request.post("/api/positions").json(&body("CC-B", Some("P-1"))).await;
+        assert_eq!(again.status_code(), 422, "a second use in the organization is refused");
+        let elsewhere = request
+            .post("/api/positions")
+            .json(&json!({ "organization_ref": an_org(), "cost_centre": "CC-A", "title": "Engineer",
+                           "budget_fte_percent": 100, "funding_kind": "core", "number": "P-1" }))
+            .await;
+        assert_eq!(elsewhere.status_code(), 200, "another organization may use it");
+        let other = request.post("/api/positions").json(&body("CC-B", None)).await;
+        assert_eq!(other.status_code(), 200);
+
+        // Its own number is no clash, and an update that leaves it out keeps it.
+        let url = format!("/api/positions/{pid}");
+        request.put(&url).json(&body("CC-A", Some("P-1"))).await.assert_status_ok();
+        request.put(&url).json(&body("CC-A", None)).await.assert_status_ok();
+        let listed: Value = request
+            .get(&format!("/api/positions?organization={org}&cost_centre=CC-A"))
+            .await
+            .json();
+        let positions = listed["positions"].as_array().unwrap();
+        assert_eq!(positions.len(), 1, "the cost centre filters: {listed}");
+        assert_eq!(positions[0]["pid"], pid.as_str());
+        assert_eq!(positions[0]["number"], "P-1", "trimmed, and kept");
     })
     .await;
 }

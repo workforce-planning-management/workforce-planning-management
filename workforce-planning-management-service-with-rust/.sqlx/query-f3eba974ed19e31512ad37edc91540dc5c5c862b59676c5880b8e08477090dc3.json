@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO review_goal_outcomes (pid, review_pid, goal_pid, worker_pid, snapshot)\n             VALUES ($1, $2, $3, $4, $5)\n             ON CONFLICT (review_pid, goal_pid) DO UPDATE SET snapshot = EXCLUDED.snapshot",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f3eba974ed19e31512ad37edc91540dc5c5c862b59676c5880b8e08477090dc3"
+}

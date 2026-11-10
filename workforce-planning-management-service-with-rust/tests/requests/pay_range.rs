@@ -1,7 +1,6 @@
 //! Pay position analysis (WPM-R154, WPM-D108): compa-ratio and range penetration per group, small groups withheld,
 //! a total held back when it would give a withheld group away, nothing named.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -9,7 +8,7 @@ use super::{a_person, an_org};
 
 /// Hire `n` workers in `department`, all on band 6 and paid `salary` minor units (a currency of GBP).
 async fn staff(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     department: &str,
@@ -31,10 +30,9 @@ async fn staff(
         let created: Value = response.json();
         let pid = created["pid"].as_str().expect("pid");
         if let Some(pay) = salary {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "UPDATE workers SET salary_minor = {pay}, salary_currency = 'GBP' WHERE pid = '{pid}'"
-                ))
+                ))).execute(workforce_planning_management::db::pool(ctx))
                 .await
                 .unwrap();
         }

@@ -4,10 +4,9 @@
 
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::QueryOrder;
 
 use super::capacity;
-use crate::models::_entities::{early_warnings, headcount_snapshots, workers};
+use crate::db::pool;
 use crate::rules::derived as rules;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::funding::SplitRow;
@@ -58,17 +57,13 @@ pub(super) async fn readings(
 }
 
 async fn turnover(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<Option<i64>>> {
-    let tenures: Vec<Tenure> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(org))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| Tenure {
-            hired_on: w.hired_on,
-            terminated_on: w.terminated_on,
-        })
-        .collect();
+    let tenures: Vec<Tenure> = sqlx::query_as!(
+        Tenure,
+        "SELECT hired_on, terminated_on FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL",
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     Ok(periods
         .iter()
         .map(|p| {
@@ -87,20 +82,22 @@ async fn turnover(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<Op
 }
 
 async fn contingent(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<Option<i64>>> {
-    let rows: Vec<SplitRow> = headcount_snapshots::Entity::find()
-        .filter(headcount_snapshots::Column::OrganizationRef.eq(org))
-        .order_by_asc(headcount_snapshots::Column::AsOf)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|r| SplitRow {
-            as_of: r.as_of,
-            headcount: i64::from(r.headcount),
-            fte: r.fte_percent_total,
-            contractor_fte: r.contractor_fte_percent_total,
-            fixed_term_fte: r.fixed_term_fte_percent_total,
-        })
-        .collect();
+    let rows: Vec<SplitRow> = sqlx::query!(
+        "SELECT as_of, headcount, fte_percent_total, contractor_fte_percent_total, fixed_term_fte_percent_total
+         FROM headcount_snapshots WHERE organization_ref = $1 ORDER BY as_of",
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    .into_iter()
+    .map(|r| SplitRow {
+        as_of: r.as_of,
+        headcount: i64::from(r.headcount),
+        fte: r.fte_percent_total,
+        contractor_fte: r.contractor_fte_percent_total,
+        fixed_term_fte: r.fixed_term_fte_percent_total,
+    })
+    .collect();
     Ok(periods
         .iter()
         .map(|p| {
@@ -145,13 +142,15 @@ async fn overcommitted(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<V
 }
 
 async fn time_to_report(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<Option<i64>>> {
-    let rows: Vec<(NaiveDate, Option<NaiveDate>)> = early_warnings::Entity::find()
-        .filter(early_warnings::Column::OrganizationRef.eq(org))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.first_true_on, w.acknowledged_on))
-        .collect();
+    let rows: Vec<(NaiveDate, Option<NaiveDate>)> = sqlx::query!(
+        "SELECT first_true_on, acknowledged_on FROM early_warnings WHERE organization_ref = $1",
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.first_true_on, w.acknowledged_on))
+    .collect();
     Ok(periods
         .iter()
         .map(|p| {

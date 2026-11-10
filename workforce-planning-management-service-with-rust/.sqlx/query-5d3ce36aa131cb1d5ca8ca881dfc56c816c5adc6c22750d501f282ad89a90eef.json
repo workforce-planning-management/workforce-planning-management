@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO wellbeing_entitlements (pid, name, kind, benefit_plan_pid, description, info_url, min_age, max_age,\n                                             departments, job_titles, doses, active_from, active_until, deleted_at)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Jsonb",
+        "Jsonb",
+        "Int4",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5d3ce36aa131cb1d5ca8ca881dfc56c816c5adc6c22750d501f282ad89a90eef"
+}

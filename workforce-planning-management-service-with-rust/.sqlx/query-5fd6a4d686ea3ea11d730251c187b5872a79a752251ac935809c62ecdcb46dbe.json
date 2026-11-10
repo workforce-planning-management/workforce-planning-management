@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM role_profiles WHERE job_title = $1 AND deleted_at IS NULL) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5fd6a4d686ea3ea11d730251c187b5872a79a752251ac935809c62ecdcb46dbe"
+}

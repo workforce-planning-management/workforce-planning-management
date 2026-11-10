@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 AS \"one!\" FROM engagement_decisions WHERE worker_pid = $1 AND ends_on = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b329d6cc0b29e8b8c1c583f86739864ccfa8f9dd2adf693924c4191a49b01871"
+}

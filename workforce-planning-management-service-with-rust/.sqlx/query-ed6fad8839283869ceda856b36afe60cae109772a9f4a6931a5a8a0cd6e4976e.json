@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, worker_number, display_name FROM workers WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ed6fad8839283869ceda856b36afe60cae109772a9f4a6931a5a8a0cd6e4976e"
+}

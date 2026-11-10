@@ -6,20 +6,17 @@
 
 use std::collections::HashMap;
 
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
-use super::{ensure_org_in_scope, ensure_scale, ensure_valid, forbidden, writable_worker};
+use super::{ensure_org_in_scope, ensure_valid, ensure_within_ceiling, forbidden, writable_worker};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    assignments, learning_completions, learning_requirements, positions, training_enrollments,
-    workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{learning_requirements, workers};
 use crate::models::records;
 use crate::rules::mandatory_learning as rules;
 
@@ -122,12 +119,14 @@ fn status_name(s: rules::Status) -> &'static str {
 /// position is not held.
 async fn position_numbers(ctx: &AppContext, pids: &[Uuid]) -> Result<HashMap<Uuid, String>> {
     let mut held: HashMap<Uuid, Vec<String>> = HashMap::new();
-    for p in positions::Entity::find()
-        .filter(positions::Column::HolderWorkerPid.is_in(pids.to_vec()))
-        .filter(positions::Column::State.ne("abolished"))
-        .filter(positions::Column::Number.is_not_null())
-        .all(&ctx.db)
-        .await?
+    for p in sqlx::query!(
+        "SELECT holder_worker_pid, number FROM positions
+          WHERE holder_worker_pid = ANY($1) AND state <> 'abolished' AND number IS NOT NULL
+          ORDER BY id",
+        pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         if let (Some(holder), Some(number)) = (p.holder_worker_pid, p.number) {
             held.entry(holder).or_default().push(number);
@@ -147,10 +146,13 @@ async fn categories_of(
 ) -> Result<HashMap<Uuid, Vec<rules::Categories>>> {
     let mut out: HashMap<Uuid, Vec<rules::Categories>> = HashMap::new();
     let numbers = position_numbers(ctx, pids).await?;
-    for a in assignments::Entity::find()
-        .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
-        .all(&ctx.db)
-        .await?
+    for a in sqlx::query!(
+        "SELECT worker_pid, staff_group, job_role, area_of_work, starts_on, ends_on
+           FROM assignments WHERE worker_pid = ANY($1) ORDER BY id",
+        pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         if a.starts_on <= today && a.ends_on.is_none_or(|e| e >= today) {
             out.entry(a.worker_pid)
@@ -178,10 +180,13 @@ async fn completions_of(
         .map(|w| (w.pid, w.organization_ref.as_str()))
         .collect();
     let mut out: HashMap<(Uuid, Uuid), Vec<rules::Completion>> = HashMap::new();
-    for c in learning_completions::Entity::find()
-        .filter(learning_completions::Column::WorkerPid.is_in(pids.clone()))
-        .all(&ctx.db)
-        .await?
+    for c in sqlx::query!(
+        "SELECT worker_pid, requirement_pid, completed_on, source_organization
+           FROM learning_completions WHERE worker_pid = ANY($1) ORDER BY id",
+        &pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         let transferred = c
             .source_organization
@@ -194,12 +199,14 @@ async fn completions_of(
                 transferred,
             });
     }
-    let enrolments = training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.is_in(pids))
-        .filter(training_enrollments::Column::Status.eq("completed"))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let enrolments = sqlx::query!(
+        "SELECT worker_pid, course_ref, completed_on FROM training_enrollments
+          WHERE worker_pid = ANY($1) AND status = 'completed' AND deleted_at IS NULL
+          ORDER BY id",
+        &pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     for e in enrolments {
         let Some(on) = e.completed_on else { continue };
         for r in reqs {
@@ -221,14 +228,59 @@ async fn live_requirements(
     organization: &str,
     today: NaiveDate,
 ) -> Result<Vec<learning_requirements::Model>> {
-    Ok(learning_requirements::Entity::find()
-        .filter(learning_requirements::Column::OrganizationRef.eq(organization))
-        .order_by_asc(learning_requirements::Column::Subject)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
+    Ok(sqlx::query_as!(
+        learning_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, subject, basis, source,
+                  refresher_months, courses, audience, accepts_transferred, retired_on, due_soon_days, recorded_by
+             FROM learning_requirements
+            WHERE organization_ref = $1
+            ORDER BY subject"#,
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
         .filter(|r| r.retired_on.is_none_or(|d| d > today))
         .collect())
+}
+
+/// The requirement with this pid.
+async fn requirement(ctx: &AppContext, pid: Uuid) -> Result<learning_requirements::Model> {
+    sqlx::query_as!(
+        learning_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, subject, basis, source,
+                  refresher_months, courses, audience, accepts_transferred, retired_on, due_soon_days, recorded_by
+             FROM learning_requirements WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live, not terminated workers of an organization, refused past the deployment's ceiling.
+async fn current_staff(ctx: &AppContext, organization: &str) -> Result<Vec<workers::Model>> {
+    let count = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "n!" FROM workers
+            WHERE organization_ref = $1 AND deleted_at IS NULL AND terminated_on IS NULL"#,
+        organization,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?;
+    ensure_within_ceiling(count.unsigned_abs())?;
+    Ok(sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers
+            WHERE organization_ref = $1 AND deleted_at IS NULL AND terminated_on IS NULL
+            ORDER BY id"#,
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 #[derive(Debug, Deserialize)]
@@ -323,25 +375,27 @@ async fn create(
     });
     ensure_valid(&problems)?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    learning_requirements::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization.clone()),
-        subject: ActiveValue::set(subject),
-        basis: ActiveValue::set(p.basis.clone()),
-        source: ActiveValue::set(source),
-        refresher_months: ActiveValue::set(p.refresher_months.and_then(|m| i32::try_from(m).ok())),
-        courses: ActiveValue::set(json!(courses)),
-        audience: ActiveValue::set(audience),
-        accepts_transferred: ActiveValue::set(p.accepts_transferred.unwrap_or(true)),
-        due_soon_days: ActiveValue::set(p.due_soon_days.and_then(|d| i32::try_from(d).ok())),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO learning_requirements (pid, organization_ref, subject, basis, source, refresher_months, courses, audience,
+                                            accepts_transferred, due_soon_days, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+        pid,
+        p.organization,
+        subject,
+        p.basis,
+        source,
+        p.refresher_months.and_then(|m| i32::try_from(m).ok()),
+        json!(courses),
+        audience,
+        p.accepts_transferred.unwrap_or(true),
+        p.due_soon_days.and_then(|d| i32::try_from(d).ok()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "learning_requirement",
         pid,
         "learning_requirement_added",
@@ -349,7 +403,7 @@ async fn create(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -370,13 +424,9 @@ async fn record_completion(
     Path(pid): Path<Uuid>,
     Json(p): Json<CompletionPayload>,
 ) -> Result<Response> {
-    let req = learning_requirements::Entity::find()
-        .filter(learning_requirements::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let req = requirement(&ctx, pid).await?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
-    let worker = records::find_worker(&ctx.db, p.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, p.worker_pid).await?;
     if worker.organization_ref != req.organization_ref {
         return Err(Error::NotFound);
     }
@@ -395,25 +445,25 @@ async fn record_completion(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    learning_completions::ActiveModel {
-        pid: ActiveValue::set(id),
-        requirement_pid: ActiveValue::set(req.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        completed_on: ActiveValue::set(p.completed_on),
-        source: ActiveValue::set(source),
-        source_organization: ActiveValue::set(
-            p.source_organization
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty()),
-        ),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO learning_completions (pid, requirement_pid, worker_pid, completed_on, source, source_organization, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        id,
+        req.pid,
+        worker.pid,
+        p.completed_on,
+        source,
+        p.source_organization
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "learning_completion",
         id,
         "learning_completion_recorded",
@@ -421,7 +471,7 @@ async fn record_completion(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": id }))
 }
 
@@ -491,10 +541,13 @@ async fn groups_of(
     by: &str,
 ) -> Result<HashMap<Uuid, Vec<Option<String>>>> {
     let mut out: HashMap<Uuid, Vec<Option<String>>> = HashMap::new();
-    for a in assignments::Entity::find()
-        .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
-        .all(&ctx.db)
-        .await?
+    for a in sqlx::query!(
+        "SELECT worker_pid, department, staff_group, starts_on, ends_on
+           FROM assignments WHERE worker_pid = ANY($1) ORDER BY id",
+        pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         if a.starts_on <= today && a.ends_on.is_none_or(|e| e >= today) {
             let g = if by == "department" {
@@ -532,12 +585,7 @@ async fn rollup(
         }
     };
     let today = Utc::now().date_naive();
-    let in_org = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&q.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null());
-    ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&ctx.db).await?;
+    let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let reqs = live_requirements(&ctx, &q.organization, today).await?;
     let cats = categories_of(&ctx, &pids, today).await?;
@@ -615,7 +663,7 @@ async fn team(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &manager.organization_ref).await?;
     if crate::auth::acting_for_other(&caller, &manager.person_ref)
         && !super::policies::privileged(&ctx, &caller, &manager.organization_ref).await?
@@ -623,12 +671,7 @@ async fn team(
         return Err(forbidden("a team's learning is for that team's manager"));
     }
     let today = Utc::now().date_naive();
-    let staff = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&manager.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null());
-    ensure_scale(&ctx, staff.clone()).await?;
-    let staff = staff.all(&ctx.db).await?;
+    let staff = current_staff(&ctx, &manager.organization_ref).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
     for w in &staff {
@@ -682,20 +725,20 @@ async fn retire(
     caller: MaybeAuthUser,
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
-    let req = learning_requirements::Entity::find()
-        .filter(learning_requirements::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let req = requirement(&ctx, pid).await?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
     let on = req.retired_on.unwrap_or_else(|| Utc::now().date_naive());
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     if req.retired_on.is_none() {
-        let mut row: learning_requirements::ActiveModel = req.clone().into();
-        row.retired_on = ActiveValue::set(Some(on));
-        row.update(&txn).await?;
-        Audit::record(
-            &txn,
+        sqlx::query!(
+            "UPDATE learning_requirements SET retired_on = $2 WHERE id = $1",
+            req.id,
+            on,
+        )
+        .execute(&mut *tx)
+        .await?;
+        db::audit(
+            &mut tx,
             "learning_requirement",
             req.pid,
             "learning_requirement_retired",
@@ -704,7 +747,7 @@ async fn retire(
         )
         .await?;
     }
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": req.pid, "retired_on": on }))
 }
 

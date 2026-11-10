@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n             SELECT 1 FROM training_enrollments\n             WHERE worker_pid = $1 AND course_ref = $2 AND status = 'enrolled' AND deleted_at IS NULL\n         )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c05f573ff3301fc60ba42278ee0645990ff2e3f86f06c0a912f0f46237f19e8c"
+}

@@ -133,7 +133,7 @@ test.describe("Pay information", () => {
     );
     await page.route(
       "**/api/proxy/pay-information-requests/r1/answer",
-      (route) => route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      (route) => route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/pay-information");
     await page.getByTestId("pay-info-work-out").click();

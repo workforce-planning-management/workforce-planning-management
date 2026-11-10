@@ -2,12 +2,11 @@
 //! see it, what a masked reader is told, train or hire, a stated benefit, and spend against a budget. Its own test binary,
 //! because the auth flag and policy are cached in process-wide `OnceLock`s.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
@@ -73,19 +72,19 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
-        .execute_unprepared(&format!(
-            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
-            uuid::Uuid::new_v4()
-        ))
-        .await
-        .unwrap();
+        uuid::Uuid::new_v4()
+    )))
+    .execute(workforce_planning_management::db::pool(ctx))
+    .await
+    .unwrap();
 }
 
 /// Create an active worker with a place of work.
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -121,7 +120,7 @@ async fn worker(
 }
 
 /// One dated row of a jurisdiction profile, through the API so the registry's checks apply.
-async fn parameter(request: &axa::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
+async fn parameter(request: &axa_test::TestServer, svc: &str, org: &str, key: &str, value: &Value) {
     request
         .post("/api/jurisdiction-parameters")
         .add_header("authorization", svc.to_string())
@@ -131,7 +130,7 @@ async fn parameter(request: &axa::TestServer, svc: &str, org: &str, key: &str, v
         .assert_status_ok();
 }
 
-async fn a_skill(request: &axa::TestServer, svc: &str) -> String {
+async fn a_skill(request: &axa_test::TestServer, svc: &str) -> String {
     let skill: Value = request
         .post("/api/skills")
         .add_header("authorization", svc.to_string())
@@ -169,10 +168,9 @@ async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
         let mine = worker(&request, &svc, &org, &p1.to_string(), "EC-1", Some(3_600_000)).await;
         worker(&request, &svc, &org, &p2.to_string(), "EC-2", Some(4_000_000)).await;
         let boss_pid = worker(&request, &svc, &org, &boss.to_string(), "EC-3", Some(5_000_000)).await;
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE workers SET manager_pid = '{boss_pid}' WHERE pid = '{mine}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let skill = a_skill(&request, &svc).await;
@@ -420,7 +418,7 @@ async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
             format!("INSERT INTO benchmarks (pid, job_title, currency, min_minor, median_minor, max_minor, source, as_of) VALUES ('{}', '{title}', 'GBP', 3000000, 3650000, 4000000, 'test', '2026-01-01')", uuid::Uuid::new_v4()),
             format!("INSERT INTO requisitions (pid, organization_ref, job_title, department, status, basis, opened_on, filled_on, headcount) VALUES ('{}', '{org}', 'Filled', 'engineering', 'filled', 'permanent', '2026-01-01', '2026-03-02', 1)", uuid::Uuid::new_v4()),
         ] {
-            ctx.db.execute_unprepared(&statement).await.unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(&*statement)).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         for (key, value) in [
             ("learning.on_cost_bp", json!(0)),
@@ -454,22 +452,16 @@ async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
         assert_eq!(masked["hire"]["pay_difference_minor"], Value::Null);
         assert_eq!(masked["train"]["fees_minor"], 100_000);
 
-        let audits: i64 = sea_orm::FromQueryResult::find_by_statement(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'salary_read' AND entity_pid = '{candidate}'::uuid"),
-        ))
-        .one(&ctx.db)
+        let audits: i64 = sqlx::query_scalar(
+            "SELECT count(*) AS n FROM audit_logs WHERE action = 'salary_read' AND entity_pid = $1::uuid",
+        )
+        .bind(candidate.to_string())
+        .fetch_one(workforce_planning_management::db::pool(&ctx))
         .await
-        .map(|row: Option<Count>| row.map_or(0, |c| c.n))
         .unwrap();
         assert_eq!(audits, 2, "each unmasked answer is a salary read, the masked one is not");
     })
     .await;
-}
-
-#[derive(sea_orm::FromQueryResult)]
-struct Count {
-    n: i64,
 }
 
 #[tokio::test]
@@ -500,12 +492,11 @@ async fn spend_is_recorded_fees_against_a_budget_per_currency() {
             ("NOT-IN-CATALOGUE".to_string(), "2026-06-01"),
             (format!("B-{org}"), "2025-06-01"),
         ] {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on) \
                      VALUES ('{}', '{one}', '{course}', 'completed', '{on}')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

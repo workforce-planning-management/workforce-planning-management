@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid FROM engagement_extensions WHERE worker_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "engagement_extensions",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ff0958d99d4203cb61db9febe69d5052f2b55b32e14e2a014421cd8ad606f7f1"
+}

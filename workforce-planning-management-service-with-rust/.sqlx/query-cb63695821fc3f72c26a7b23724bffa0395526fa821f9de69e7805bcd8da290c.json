@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worked_on, kind, minutes FROM time_entries\n              WHERE worker_pid = $1 AND status = 'approved' AND worked_on >= $2 AND worked_on <= $3 AND deleted_at IS NULL\n              ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "worked_on"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "minutes",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "minutes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cb63695821fc3f72c26a7b23724bffa0395526fa821f9de69e7805bcd8da290c"
+}

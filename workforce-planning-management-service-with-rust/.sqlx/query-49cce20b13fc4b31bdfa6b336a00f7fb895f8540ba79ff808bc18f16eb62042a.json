@@ -1,0 +1,113 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,\n                w.pid AS worker_pid, w.worker_number, w.department\n           FROM resignations r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL\n          WHERE r.status = $1 AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))\n          ORDER BY r.proposed_last_day, r.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "logged_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "logged_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "proposed_last_day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "proposed_last_day"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "agreed_last_day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "agreed_last_day"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "49cce20b13fc4b31bdfa6b336a00f7fb895f8540ba79ff808bc18f16eb62042a"
+}

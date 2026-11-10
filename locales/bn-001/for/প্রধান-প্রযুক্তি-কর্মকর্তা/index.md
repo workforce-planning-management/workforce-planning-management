@@ -6,7 +6,7 @@
 
 | উদ্বেগ | যা আছে | পড়ুন |
 | --- | --- | --- |
-| স্ট্যাক | API-র জন্য Rust, Loco (Axum, SeaORM) ও PostgreSQL 18; ক্লায়েন্টের জন্য SvelteKit 2, Svelte 5 ও TypeScript | [architecture.md](../../../../spec/architecture.md) |
+| স্ট্যাক | API-র জন্য Rust, Axum (axa, SeaORM) ও PostgreSQL 18; ক্লায়েন্টের জন্য SvelteKit 2, Svelte 5 ও TypeScript | [architecture.md](../../../../spec/architecture.md) |
 | নকশার নিয়ম | খাঁটি কেন্দ্র: নিয়ম ডেটাবেস-মুক্ত ও ঘড়ি-মুক্ত, সম্পূর্ণভাবে পরীক্ষিত, তারপরই কন্ট্রোলারের সঙ্গে যুক্ত | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | আগে বিনির্দেশ | একটি পরিবর্তন হলো প্রয়োজন, সিদ্ধান্ত, কাজ, কোড ও পরীক্ষা একসঙ্গে; প্রতিটি কাজের এন্ট্রি বলে কী যাচাই **হয়নি** | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | পরীক্ষা | নিয়মের ইউনিট পরীক্ষা, ডেটাবেস-নির্ভর অনুরোধ পরীক্ষা, সাইন-ইন চালু রেখে চালানো প্রয়োগ বাইনারি, ফ্রন্ট-এন্ড ইউনিট ও ব্রাউজার পরীক্ষা। মিউটেশন পরীক্ষা: ইচ্ছে করে কোড ভেঙে নিশ্চিত করা যে একটি পরীক্ষা ব্যর্থ হয় | [testing.md](../../../../spec/testing.md) |

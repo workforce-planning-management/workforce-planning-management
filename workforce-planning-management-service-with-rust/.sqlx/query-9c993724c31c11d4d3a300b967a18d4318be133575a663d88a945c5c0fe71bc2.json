@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO cutover_pools (pid, cutover_pid, pool_pid) VALUES ($1, $2, $3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c993724c31c11d4d3a300b967a18d4318be133575a663d88a945c5c0fe71bc2"
+}

@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, kind, subject_pid FROM early_warnings\n         WHERE organization_ref = $1 AND cleared_on IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "early_warnings",
+            "name": "subject_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "fd5ce20d5fb2d39f9f8188012882aa540b22b8992b6b1ae95264d2ee2cdd19f9"
+}

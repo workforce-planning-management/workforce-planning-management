@@ -195,7 +195,7 @@ CRM's teams import needs three fields of each active worker. It names them, and
 gets those and no others:
 
 ```sh
-curl -s "$API/workers?status=active&fields=pid,department,person_ref&limit=200&offset=0" | jq -c '.[0]'
+curl -s "$API/workers?status=active&fields=pid,department,person_ref&limit=200" | jq -c '.[0]'
 # {"department":"tutorial","person_ref":"person:…","pid":"…"}
 curl -s -o /dev/null -w '%{http_code}\n' "$API/workers?fields=pid,nmae"   # an unknown name: 422
 ```

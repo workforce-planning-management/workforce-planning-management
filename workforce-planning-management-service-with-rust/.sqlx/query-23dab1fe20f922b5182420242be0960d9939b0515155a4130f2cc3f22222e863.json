@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM role_profiles WHERE deleted_at IS NULL AND framework_slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "23dab1fe20f922b5182420242be0960d9939b0515155a4130f2cc3f22222e863"
+}

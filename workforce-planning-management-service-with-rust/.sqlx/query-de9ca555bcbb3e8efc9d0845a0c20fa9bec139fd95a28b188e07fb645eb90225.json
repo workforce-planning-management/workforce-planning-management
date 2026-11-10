@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT initiative_pid, role_profile_pid, impact, timeframe, note FROM initiative_role_impacts\n          WHERE ($1::uuid IS NULL OR initiative_pid = $1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "initiative_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "initiative_role_impacts",
+            "name": "initiative_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "initiative_role_impacts",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "impact",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "initiative_role_impacts",
+            "name": "impact"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "timeframe",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "initiative_role_impacts",
+            "name": "timeframe"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "initiative_role_impacts",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "de9ca555bcbb3e8efc9d0845a0c20fa9bec139fd95a28b188e07fb645eb90225"
+}

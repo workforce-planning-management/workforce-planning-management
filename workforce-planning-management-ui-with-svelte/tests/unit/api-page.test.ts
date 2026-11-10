@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiPage } from "../../src/lib/api/client";
+import { apiPage, nextCursor } from "../../src/lib/api/client";
 
 const answering = (body: unknown, headers: Record<string, string>) =>
   (async () =>
@@ -9,26 +9,48 @@ const answering = (body: unknown, headers: Record<string, string>) =>
     })) as unknown as typeof fetch;
 
 describe("apiPage", () => {
-  it("reads the rows and what the service said about the whole list", async () => {
+  it("reads the rows and the next page's cursor from the Link header", async () => {
     const page = await apiPage<number>("/x", {
       fetch: answering([1, 2], {
-        "x-total-count": "7",
-        "x-limit": "2",
-        "x-offset": "4",
+        link: '</api/x?status=open&limit=2&cursor=AbC-_9>; rel="next"',
       }),
     });
-    expect(page).toEqual({ items: [1, 2], total: 7, limit: 2, offset: 4 });
+    expect(page).toEqual({ items: [1, 2], next: "AbC-_9" });
   });
 
-  it("says nothing is known when a header is missing, never zero", async () => {
-    const page = await apiPage<number>("/x", { fetch: answering([], {}) });
-    expect(page).toEqual({ items: [], total: null, limit: null, offset: 0 });
-  });
-
-  it("treats a header that is not a number as unknown", async () => {
-    const page = await apiPage<number>("/x", {
-      fetch: answering([], { "x-total-count": "many" }),
+  it("is the last page when there is no Link", async () => {
+    expect(await apiPage<number>("/x", { fetch: answering([], {}) })).toEqual({
+      items: [],
+      next: null,
     });
-    expect(page.total).toBeNull();
+  });
+
+  it("ignores totals: the service sends none, and one sent is not believed", async () => {
+    const page = await apiPage<number>("/x", {
+      fetch: answering([1], { "x-total-count": "7" }),
+    });
+    expect(page).toEqual({ items: [1], next: null });
+  });
+});
+
+describe("nextCursor", () => {
+  it("takes only rel=next, among several links", () => {
+    expect(
+      nextCursor('</a?cursor=p>; rel="prev", </a?cursor=n>; rel="next"'),
+    ).toBe("n");
+    expect(nextCursor('</a?cursor=p>; rel="prev"')).toBeNull();
+    expect(nextCursor('</a?cursor=n>; rel="nextish"')).toBeNull();
+  });
+
+  it("keeps a target whose query holds a comma", () => {
+    expect(
+      nextCursor('</api/workers?fields=pid,display_name&cursor=k>; rel="next"'),
+    ).toBe("k");
+  });
+
+  it("is null for a next link with no cursor, or no header", () => {
+    expect(nextCursor('</a?limit=2>; rel="next"')).toBeNull();
+    expect(nextCursor(null)).toBeNull();
+    expect(nextCursor("")).toBeNull();
   });
 });

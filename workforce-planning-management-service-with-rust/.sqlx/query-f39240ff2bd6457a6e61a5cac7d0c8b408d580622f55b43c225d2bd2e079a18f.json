@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO appraisal_responses (pid, appraisal_pid, nomination_pid, rater_group, scores, comment)\n         VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Jsonb",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f39240ff2bd6457a6e61a5cac7d0c8b408d580622f55b43c225d2bd2e079a18f"
+}

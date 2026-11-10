@@ -1,0 +1,196 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, subject, basis, source,\n                  refresher_months, courses, audience, accepts_transferred, retired_on, due_soon_days, recorded_by\n             FROM learning_requirements WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "subject",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "subject"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "basis",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "basis"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "refresher_months",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "refresher_months"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "courses",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "courses"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "audience",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "audience"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "accepts_transferred",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "accepts_transferred"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "retired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "retired_on"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "due_soon_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "due_soon_days"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_requirements",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "43949aa85d07ad2e03303c90942618bfc6b21c3953a0bf5ad5ba88d18f2e92e9"
+}

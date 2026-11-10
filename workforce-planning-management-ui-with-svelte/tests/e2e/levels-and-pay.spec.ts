@@ -180,7 +180,7 @@ test.describe("Job levels, pay bands and pay scales", () => {
   }) => {
     for (const path of ["job-level", "pay-position"]) {
       await page.route(`**/api/proxy/workers/${WORKER.pid}/${path}`, (route) =>
-        route.fulfill({ status: 403, json: { error: "forbidden" } }),
+        route.fulfill({ status: 403, json: { code: "forbidden" } }),
       );
     }
     await page.goto("/me");

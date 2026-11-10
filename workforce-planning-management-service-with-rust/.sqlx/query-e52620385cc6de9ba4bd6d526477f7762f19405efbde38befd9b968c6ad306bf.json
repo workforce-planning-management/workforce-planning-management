@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM engagement_reminders\n                               WHERE worker_pid = $1 AND ends_on = $2 AND kind = $3) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e52620385cc6de9ba4bd6d526477f7762f19405efbde38befd9b968c6ad306bf"
+}

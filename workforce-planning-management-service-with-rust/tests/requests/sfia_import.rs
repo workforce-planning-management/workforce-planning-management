@@ -1,14 +1,37 @@
 //! `import_sfia` (WPM-R109, WPM-R113): refuses a file with no recorded licence check, records the framework as
 //! internal-only, is idempotent, retires what a newer version drops, and links by exact name only. The text is invented.
 
-use sea_orm::{ConnectionTrait, EntityTrait, PaginatorTrait};
 use serde_json::{Value, json};
 use serial_test::serial;
-use workforce_planning_management::models::_entities::{sfia_skill_levels, sfia_skills};
 use workforce_planning_management::tasks::import_sfia::{Licence, import_sfia, import_sfia_levels};
 use workforce_planning_management::tasks::import_sfiaplus::import_sfiaplus;
 
 use super::{activate, an_org, seed_worker};
+
+/// How many SFIA skills there are.
+async fn skills(ctx: &axa::AppContext) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM sfia_skills")
+        .fetch_one(workforce_planning_management::db::pool(ctx))
+        .await
+        .unwrap()
+}
+
+/// One SFIA level, as the checks read it.
+#[derive(sqlx::FromRow)]
+struct Level {
+    code: String,
+    level: i32,
+    description: String,
+    retired_in: Option<String>,
+}
+
+/// Every SFIA level.
+async fn all_levels(ctx: &axa::AppContext) -> Vec<Level> {
+    sqlx::query_as("SELECT code, level, description, retired_in FROM sfia_skill_levels")
+        .fetch_all(workforce_planning_management::db::pool(ctx))
+        .await
+        .unwrap()
+}
 
 const HEAD: &str =
     "skill_code,skill_name,category,subcategory,description,level,level_description,attributes\n";
@@ -37,31 +60,44 @@ async fn the_import_needs_a_licence_check_records_internal_only_retires_and_link
 
         // No licence check recorded, or no version: refused, and nothing is written.
         assert!(
-            import_sfia(&ctx.db, &file, &licence("9", ""))
-                .await
-                .is_err()
+            import_sfia(
+                workforce_planning_management::db::pool(&ctx),
+                &file,
+                &licence("9", "")
+            )
+            .await
+            .is_err()
         );
         assert!(
-            import_sfia(&ctx.db, &file, &licence("9", "yesterday"))
-                .await
-                .is_err()
+            import_sfia(
+                workforce_planning_management::db::pool(&ctx),
+                &file,
+                &licence("9", "yesterday")
+            )
+            .await
+            .is_err()
         );
         assert!(
-            import_sfia(&ctx.db, &file, &licence(" ", "2026-10-27"))
-                .await
-                .is_err()
+            import_sfia(
+                workforce_planning_management::db::pool(&ctx),
+                &file,
+                &licence(" ", "2026-10-27")
+            )
+            .await
+            .is_err()
         );
-        let before = sfia_skills::Entity::find().count(&ctx.db).await.unwrap();
+        let before = skills(&ctx).await;
         assert!(
-            import_sfia(&ctx.db, "code,name\nA,B\n", &licence("9", "2026-10-27"))
-                .await
-                .is_err(),
+            import_sfia(
+                workforce_planning_management::db::pool(&ctx),
+                "code,name\nA,B\n",
+                &licence("9", "2026-10-27")
+            )
+            .await
+            .is_err(),
             "a wrong header"
         );
-        assert_eq!(
-            sfia_skills::Entity::find().count(&ctx.db).await.unwrap(),
-            before
-        );
+        assert_eq!(skills(&ctx).await, before);
 
         // A catalogue skill with the same name (any case) links; one without does not.
         let linked: Value = request
@@ -75,16 +111,24 @@ async fn the_import_needs_a_licence_check_records_internal_only_retires_and_link
             .await
             .assert_status_ok();
 
-        let report = import_sfia(&ctx.db, &file, &licence("9", "2026-10-27"))
-            .await
-            .expect("import");
+        let report = import_sfia(
+            workforce_planning_management::db::pool(&ctx),
+            &file,
+            &licence("9", "2026-10-27"),
+        )
+        .await
+        .expect("import");
         assert_eq!(
             (report.skills, report.levels, report.catalogue_linked),
             (2, 3, 1)
         );
-        let again = import_sfia(&ctx.db, &file, &licence("9", "2026-10-27"))
-            .await
-            .expect("re-import");
+        let again = import_sfia(
+            workforce_planning_management::db::pool(&ctx),
+            &file,
+            &licence("9", "2026-10-27"),
+        )
+        .await
+        .expect("re-import");
         assert_eq!(
             (
                 again.skills_retired,
@@ -125,33 +169,26 @@ async fn the_import_needs_a_licence_check_records_internal_only_retires_and_link
 
         // A newer version without skill B and without A's level 3: kept, marked retired, never deleted.
         let newer = format!("{HEAD}{a},{name_a},Cat,Sub,Invented A,2,x2,\n");
-        let report = import_sfia(&ctx.db, &newer, &licence("10", "2026-10-28"))
-            .await
-            .expect("newer");
+        let report = import_sfia(
+            workforce_planning_management::db::pool(&ctx),
+            &newer,
+            &licence("10", "2026-10-28"),
+        )
+        .await
+        .expect("newer");
         assert_eq!(
             (report.skills_retired, report.levels_retired),
             (1, 2),
             "B and its level 4, and A level 3"
         );
-        let skill_b = sfia_skills::Entity::find_by_id(
-            sfia_skills::Entity::find()
-                .all(&ctx.db)
+        let skill_b_retired_in: Option<String> =
+            sqlx::query_scalar("SELECT retired_in FROM sfia_skills WHERE code = $1")
+                .bind(&b)
+                .fetch_one(workforce_planning_management::db::pool(&ctx))
                 .await
-                .unwrap()
-                .into_iter()
-                .find(|s| s.code == b)
-                .unwrap()
-                .id,
-        )
-        .one(&ctx.db)
-        .await
-        .unwrap()
-        .unwrap();
-        assert_eq!(skill_b.retired_in.as_deref(), Some("10"));
-        let levels = sfia_skill_levels::Entity::find()
-            .all(&ctx.db)
-            .await
-            .unwrap();
+                .unwrap();
+        assert_eq!(skill_b_retired_in.as_deref(), Some("10"));
+        let levels = all_levels(&ctx).await;
         let l3 = levels
             .iter()
             .find(|l| l.code == a && l.level == 3)
@@ -165,13 +202,14 @@ async fn the_import_needs_a_licence_check_records_internal_only_retires_and_link
         );
 
         // A skill that comes back is restored.
-        import_sfia(&ctx.db, &file, &licence("11", "2026-10-29"))
-            .await
-            .expect("back");
-        let levels = sfia_skill_levels::Entity::find()
-            .all(&ctx.db)
-            .await
-            .unwrap();
+        import_sfia(
+            workforce_planning_management::db::pool(&ctx),
+            &file,
+            &licence("11", "2026-10-29"),
+        )
+        .await
+        .expect("back");
+        let levels = all_levels(&ctx).await;
         assert!(
             levels
                 .iter()
@@ -189,15 +227,23 @@ async fn the_levels_of_responsibility_are_a_job_level_framework_like_the_coded_o
     crate::requests::request_open(|request, ctx| async move {
         let levels = include_str!("../fixtures/sfia-synthetic/levels.csv");
         assert!(
-            import_sfia_levels(&ctx.db, levels, &licence("9", ""))
-                .await
-                .is_err(),
+            import_sfia_levels(
+                workforce_planning_management::db::pool(&ctx),
+                levels,
+                &licence("9", "")
+            )
+            .await
+            .is_err(),
             "no licence check"
         );
         assert!(
-            import_sfia_levels(&ctx.db, "level,title\n1,a\n", &licence("9", "2026-10-27"))
-                .await
-                .is_err()
+            import_sfia_levels(
+                workforce_planning_management::db::pool(&ctx),
+                "level,title\n1,a\n",
+                &licence("9", "2026-10-27")
+            )
+            .await
+            .is_err()
         );
         let none: Value = request.get("/api/job-levels").await.json();
         assert!(
@@ -209,15 +255,23 @@ async fn the_levels_of_responsibility_are_a_job_level_framework_like_the_coded_o
         );
 
         assert_eq!(
-            import_sfia_levels(&ctx.db, levels, &licence("9", "2026-10-27"))
-                .await
-                .unwrap(),
+            import_sfia_levels(
+                workforce_planning_management::db::pool(&ctx),
+                levels,
+                &licence("9", "2026-10-27")
+            )
+            .await
+            .unwrap(),
             7
         );
         assert_eq!(
-            import_sfia_levels(&ctx.db, levels, &licence("9", "2026-10-27"))
-                .await
-                .unwrap(),
+            import_sfia_levels(
+                workforce_planning_management::db::pool(&ctx),
+                levels,
+                &licence("9", "2026-10-27")
+            )
+            .await
+            .unwrap(),
             7,
             "idempotent"
         );
@@ -297,7 +351,7 @@ async fn a_native_level_is_kept_mapped_shown_and_never_invented() {
         );
         let skill: Value = request.post("/api/skills").json(&json!({ "name": name_a, "category": "technical" })).await.json();
         let skill = skill["pid"].as_str().unwrap().to_string();
-        import_sfia(&ctx.db, &file, &licence("9", "2026-10-27")).await.expect("import");
+        import_sfia(workforce_planning_management::db::pool(&ctx), &file, &licence("9", "2026-10-27")).await.expect("import");
 
         // Search and show: the wording comes from the deployer's own import.
         let found: Value = request.get(&format!("/api/sfia/skills?q={}", a.to_lowercase())).await.json();
@@ -414,15 +468,15 @@ async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothi
         let rhead = "skill_code,level,kind,title,provider,url\n";
         let skill: Value = request.post("/api/skills").json(&json!({ "name": name_a, "category": "technical" })).await.json();
         let skill = skill["pid"].as_str().unwrap().to_string();
-        import_sfia(&ctx.db, &skills_csv, &licence("9", "2026-10-27")).await.expect("skills");
+        import_sfia(workforce_planning_management::db::pool(&ctx), &skills_csv, &licence("9", "2026-10-27")).await.expect("skills");
 
         // Refusals write nothing: no licence check, a skill not in the catalogue, a level SFIA does not define for it.
         let good = format!("{rhead}{a},5,certification,Invented certificate {tag},Invented Body,https://example.invalid/c\n");
-        assert!(import_sfiaplus(&ctx.db, &good, &licence("1", "")).await.is_err());
+        assert!(import_sfiaplus(workforce_planning_management::db::pool(&ctx), &good, &licence("1", "")).await.is_err());
         let unknown = format!("{rhead}NOPE{tag},2,training,t,,\n");
-        assert!(import_sfiaplus(&ctx.db, &unknown, &licence("1", "2026-10-27")).await.unwrap_err().to_string().contains("not in the imported catalogue"));
+        assert!(import_sfiaplus(workforce_planning_management::db::pool(&ctx), &unknown, &licence("1", "2026-10-27")).await.unwrap_err().to_string().contains("not in the imported catalogue"));
         let undefined = format!("{rhead}{a},4,training,t,,\n");
-        assert!(import_sfiaplus(&ctx.db, &undefined, &licence("1", "2026-10-27")).await.unwrap_err().to_string().contains("not defined at level 4"));
+        assert!(import_sfiaplus(workforce_planning_management::db::pool(&ctx), &undefined, &licence("1", "2026-10-27")).await.unwrap_err().to_string().contains("not defined at level 4"));
         let frameworks: Value = request.get("/api/capability-frameworks").await.json();
         assert!(frameworks.as_array().unwrap().iter().all(|f| f["slug"] != "sfiaplus"), "no licence record from a refused file");
 
@@ -430,9 +484,9 @@ async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothi
             "{rhead}{a},5,certification,Invented certificate {tag},Invented Body,https://example.invalid/c\n\
              {a},5,training,Invented course {tag},,\n{a},3,membership,Invented society {tag},,\n"
         );
-        let report = import_sfiaplus(&ctx.db, &file, &licence("1", "2026-10-27")).await.expect("sfiaplus");
+        let report = import_sfiaplus(workforce_planning_management::db::pool(&ctx), &file, &licence("1", "2026-10-27")).await.expect("sfiaplus");
         assert_eq!((report.resources, report.retired), (3, 0));
-        let again = import_sfiaplus(&ctx.db, &file, &licence("1", "2026-10-27")).await.expect("again");
+        let again = import_sfiaplus(workforce_planning_management::db::pool(&ctx), &file, &licence("1", "2026-10-27")).await.expect("again");
         assert_eq!((again.resources, again.retired), (3, 0), "idempotent");
         let frameworks: Value = request.get("/api/capability-frameworks").await.json();
         let plus = frameworks.as_array().unwrap().iter().find(|f| f["slug"] == "sfiaplus").unwrap();
@@ -454,12 +508,11 @@ async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothi
             .json(&json!({ "skill_pid": skill, "importance": "critical", "framework": "sfia", "framework_level": 5 }))
             .await
             .assert_status_ok();
-        ctx.db.execute_unprepared(&format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'")).await.unwrap();
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
                  VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'SP role', CURRENT_DATE, now(), false)"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         request.put(&format!("/api/workers/{w}/skills")).json(&json!({ "skill_pid": skill, "proficiency": 2 })).await.assert_status_ok();
@@ -475,7 +528,7 @@ async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothi
 
         // A newer file without the membership and the course: kept, marked retired, and no longer pointed at.
         let newer = format!("{rhead}{a},5,certification,Invented certificate {tag},Invented Body,https://example.invalid/c\n");
-        let report = import_sfiaplus(&ctx.db, &newer, &licence("2", "2026-10-28")).await.expect("newer");
+        let report = import_sfiaplus(workforce_planning_management::db::pool(&ctx), &newer, &licence("2", "2026-10-28")).await.expect("newer");
         assert_eq!((report.resources, report.retired), (1, 2));
         let plan: Value = request.get(&format!("/api/workers/{w}/training-plan")).await.json();
         assert_eq!(plan["plan"][0]["sfiaplus_pointers"].as_array().unwrap().len(), 1);

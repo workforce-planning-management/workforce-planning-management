@@ -3,22 +3,65 @@
 //! application creates the Worker in one transaction (WPM-D9).
 
 use super::row_json;
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    applications, candidates, interviews, onboarding_items, requisitions, workers,
+    applications, candidates, interviews, onboarding_items, requisitions,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::{engagement, lifecycle, planning, tokens};
 use crate::streaming;
 use crate::validation::Problems;
+
+/// The live requisition with this pid, else `404`.
+async fn find_requisition(ctx: &AppContext, pid: Uuid) -> Result<requisitions::Model> {
+    sqlx::query_as!(
+        requisitions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, department,
+                  job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on, filled_on,
+                  deleted_at AS "deleted_at: _", programme_ref, basis, expected_duration_months
+             FROM requisitions WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live candidate with this pid, else `404`.
+async fn find_candidate(ctx: &AppContext, pid: Uuid) -> Result<candidates::Model> {
+    sqlx::query_as!(
+        candidates::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref, display_name, email,
+                  source, consent_until, deleted_at AS "deleted_at: _"
+             FROM candidates WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live application with this pid, else `404`.
+async fn find_application(ctx: &AppContext, pid: Uuid) -> Result<applications::Model> {
+    sqlx::query_as!(
+        applications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, requisition_pid, candidate_pid,
+                  stage, notes, deleted_at AS "deleted_at: _"
+             FROM applications WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
 
 /// `POST /api/requisitions` body.
 #[derive(Debug, Deserialize)]
@@ -181,48 +224,40 @@ async fn create_requisition(
         problems.push(message);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = requisitions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        department: ActiveValue::set(payload.department.clone()),
-        job_title: ActiveValue::set(payload.job_title.clone()),
-        headcount: ActiveValue::set(payload.headcount),
-        salary_min_minor: ActiveValue::set(payload.salary_min_minor),
-        salary_max_minor: ActiveValue::set(payload.salary_max_minor),
-        salary_currency: ActiveValue::set(payload.salary_currency.clone()),
-        status: ActiveValue::set("draft".to_string()),
-        opened_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-        basis: ActiveValue::set(payload.basis.clone()),
-        expected_duration_months: ActiveValue::set(payload.expected_duration_months),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO requisitions (pid, organization_ref, department, job_title, headcount, salary_min_minor, salary_max_minor,
+                                   salary_currency, status, programme_ref, basis, expected_duration_months)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft', $9, $10, $11)",
+        pid,
+        payload.organization_ref,
+        payload.department,
+        payload.job_title,
+        payload.headcount,
+        payload.salary_min_minor,
+        payload.salary_max_minor,
+        payload.salary_currency,
+        payload.programme_ref,
+        payload.basis,
+        payload.expected_duration_months,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(&mut tx, "requisition", pid, "created", caller.actor(), None).await?;
+    streaming::emit_in(
+        &mut tx,
         "requisition",
-        row.pid,
         "created",
+        &pid.to_string(),
+        &payload.job_title,
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
-        "requisition",
-        "created",
-        &row.pid.to_string(),
-        &row.job_title,
-        caller.actor(),
-        None,
-    )
-    .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -238,23 +273,30 @@ async fn list_requisitions(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Query(params): Query<RequisitionListParams>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
-    let window = super::window(page)?;
-    let mut query = requisitions::Entity::find().filter(requisitions::Column::DeletedAt.is_null());
-    if let Some(status) = &params.status {
-        query = query.filter(requisitions::Column::Status.eq(status));
-    }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(requisitions::Column::OrganizationRef.is_in(refs));
-    }
-    super::paged_select(
-        &ctx,
-        query.order_by_asc(requisitions::Column::Id),
-        window,
-        row_json,
+    let window = super::window(&page)?;
+    let refs = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    let (limit, offset) = window.bounds();
+    let rows = sqlx::query_as!(
+        requisitions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, department,
+                  job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on, filled_on,
+                  deleted_at AS "deleted_at: _", programme_ref, basis, expected_duration_months
+             FROM requisitions
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR status = $1)
+              AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+            ORDER BY id
+            LIMIT $3 OFFSET $4"#,
+        params.status,
+        refs.as_deref(),
+        limit,
+        offset,
     )
-    .await
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let shown = rows.iter().map(row_json).collect::<Result<Vec<_>>>()?;
+    Ok(window.respond(shown))
 }
 
 /// `GET /api/requisitions/{pid}`.
@@ -263,7 +305,7 @@ async fn get_requisition(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    format::json(records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?)
+    format::json(find_requisition(&ctx, records::parse_pid(&pid)?).await?)
 }
 
 /// `POST /api/requisitions/{pid}/status` — one pipeline transition.
@@ -273,6 +315,7 @@ struct RequisitionStatusPayload {
     to: String,
 }
 
+#[allow(clippy::too_many_lines)] // the audit is written out once per kind of move
 #[debug_handler]
 async fn requisition_status(
     State(ctx): State<AppContext>,
@@ -283,7 +326,7 @@ async fn requisition_status(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::REQUISITION_STATUSES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
+    let requisition = find_requisition(&ctx, records::parse_pid(&pid)?).await?;
     lifecycle::check(
         "requisition",
         lifecycle::REQUISITION,
@@ -295,9 +338,11 @@ async fn requisition_status(
     // vacancy states it before it is opened.
     // Over the organization's home jurisdiction's chain (WPM-D153), else the setting, else on.
     let pay_range_required = if payload.to == "open" {
-        let scope =
-            super::jurisdictions::Scope::for_organization(&ctx.db, &requisition.organization_ref)
-                .await?;
+        let scope = super::jurisdictions::Scope::for_organization(
+            crate::db::pool(&ctx),
+            &requisition.organization_ref,
+        )
+        .await?;
         super::pay_information::pay_range_required(Some(&scope), chrono::Utc::now().date_naive())
             .value
     } else {
@@ -311,47 +356,84 @@ async fn requisition_status(
         .map_err(|e| unprocessable(&e))?;
     }
     if payload.to == "filled" {
-        let hired = applications::Entity::find()
-            .filter(applications::Column::RequisitionPid.eq(requisition.pid))
-            .filter(applications::Column::DeletedAt.is_null())
-            .filter(applications::Column::Stage.eq("hired"))
-            .count(&ctx.db)
-            .await?;
-        if hired < u64::try_from(requisition.headcount).unwrap_or(u64::MAX) {
+        let hired = sqlx::query_scalar!(
+            r#"SELECT count(*) AS "n!" FROM applications
+                WHERE requisition_pid = $1 AND deleted_at IS NULL AND stage = 'hired'"#,
+            requisition.pid,
+        )
+        .fetch_one(db::pool(&ctx))
+        .await?;
+        if hired < i64::from(requisition.headcount) {
             return Err(unprocessable(&format!(
                 "cannot fill: {hired} hired of headcount {}",
                 requisition.headcount
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
     let from = requisition.status.clone();
     let title = requisition.job_title.clone();
-    let mut active: requisitions::ActiveModel = requisition.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if payload.to == "open" {
-        active.opened_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    }
-    if payload.to == "filled" {
-        active.filled_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    }
-    let row = active.update(&txn).await?;
-    let kind = match payload.to.as_str() {
-        "open" => "requisition_opened",
-        "filled" => "requisition_filled",
-        _ => "requisition_status_changed",
-    };
-    Audit::record(
-        &txn,
-        "requisition",
-        row.pid,
-        kind,
-        caller.actor(),
-        Some(serde_json::json!({ "from": from, "to": payload.to })),
+    let today = chrono::Utc::now().date_naive();
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        requisitions::Model,
+        r#"UPDATE requisitions
+              SET status = $2,
+                  opened_on = CASE WHEN $4 THEN $3::date ELSE opened_on END,
+                  filled_on = CASE WHEN $5 THEN $3::date ELSE filled_on END
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, department,
+                  job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on, filled_on,
+                  deleted_at AS "deleted_at: _", programme_ref, basis, expected_duration_months"#,
+        requisition.id,
+        payload.to,
+        today,
+        payload.to == "open",
+        payload.to == "filled",
     )
+    .fetch_one(&mut *tx)
     .await?;
-    streaming::emit_on(
-        &txn,
+    let snapshot = Some(serde_json::json!({ "from": from, "to": payload.to }));
+    // One literal action per kind of move.
+    let kind = match payload.to.as_str() {
+        "open" => {
+            db::audit(
+                &mut tx,
+                "requisition",
+                row.pid,
+                "requisition_opened",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+            "requisition_opened"
+        }
+        "filled" => {
+            db::audit(
+                &mut tx,
+                "requisition",
+                row.pid,
+                "requisition_filled",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+            "requisition_filled"
+        }
+        _ => {
+            db::audit(
+                &mut tx,
+                "requisition",
+                row.pid,
+                "requisition_status_changed",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+            "requisition_status_changed"
+        }
+    };
+    streaming::emit_in(
+        &mut tx,
         "requisition",
         kind,
         &row.pid.to_string(),
@@ -360,7 +442,7 @@ async fn requisition_status(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -384,33 +466,33 @@ async fn create_candidate(
         payload.person_ref.as_deref(),
     );
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = candidates::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        person_ref: ActiveValue::set(payload.person_ref.clone()),
-        display_name: ActiveValue::set(payload.display_name.clone()),
-        email: ActiveValue::set(payload.email.clone()),
-        source: ActiveValue::set(payload.source.clone()),
-        consent_until: ActiveValue::set(payload.consent_until),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO candidates (pid, person_ref, display_name, email, source, consent_until) VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        payload.person_ref,
+        payload.display_name,
+        payload.email,
+        payload.source,
+        payload.consent_until,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "candidate", row.pid, "created", caller.actor(), None).await?;
-    streaming::emit_on(
-        &txn,
+    db::audit(&mut tx, "candidate", pid, "created", caller.actor(), None).await?;
+    streaming::emit_in(
+        &mut tx,
         "candidate",
         "created",
-        &row.pid.to_string(),
-        &row.display_name,
+        &pid.to_string(),
+        &payload.display_name,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -428,12 +510,14 @@ async fn list_candidates(
     Query(params): Query<CandidateListParams>,
 ) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let rows = candidates::Entity::find()
-        .filter(candidates::Column::DeletedAt.is_null())
-        .order_by_asc(candidates::Column::Id)
-        .limit(1000)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        candidates::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref, display_name, email,
+                  source, consent_until, deleted_at AS "deleted_at: _"
+             FROM candidates WHERE deleted_at IS NULL ORDER BY id LIMIT 1000"#,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let expired_only = params
         .expired
         .as_deref()
@@ -456,8 +540,8 @@ async fn create_application(
     Path(pid): Path<String>,
     Json(payload): Json<ApplicationPayload>,
 ) -> Result<Response> {
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
-    let candidate = records::find_candidate(&ctx.db, payload.candidate_pid).await?;
+    let requisition = find_requisition(&ctx, records::parse_pid(&pid)?).await?;
+    let candidate = find_candidate(&ctx, payload.candidate_pid).await?;
     if requisition.status == "draft"
         || requisition.status == "cancelled"
         || requisition.status == "filled"
@@ -474,40 +558,39 @@ async fn create_application(
     let mut problems = Problems::new();
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = applications::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        requisition_pid: ActiveValue::set(requisition.pid),
-        candidate_pid: ActiveValue::set(candidate.pid),
-        stage: ActiveValue::set("received".to_string()),
-        notes: ActiveValue::set(payload.notes.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let app_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO applications (pid, requisition_pid, candidate_pid, stage, notes) VALUES ($1, $2, $3, 'received', $4)",
+        app_pid,
+        requisition.pid,
+        candidate.pid,
+        payload.notes,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "application",
-        row.pid,
+        app_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "application",
         "created",
-        &row.pid.to_string(),
+        &app_pid.to_string(),
         &candidate.display_name,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: app_pid.to_string(),
     })
 }
 
@@ -517,13 +600,16 @@ async fn list_applications(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = applications::Entity::find()
-        .filter(applications::Column::RequisitionPid.eq(requisition.pid))
-        .filter(applications::Column::DeletedAt.is_null())
-        .order_by_asc(applications::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let requisition = find_requisition(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        applications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, requisition_pid, candidate_pid,
+                  stage, notes, deleted_at AS "deleted_at: _"
+             FROM applications WHERE requisition_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        requisition.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
@@ -541,7 +627,7 @@ async fn application_stage(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::APPLICATION_STAGES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application = find_application(&ctx, records::parse_pid(&pid)?).await?;
     lifecycle::check(
         "application",
         lifecycle::APPLICATION,
@@ -549,28 +635,32 @@ async fn application_stage(
         &payload.to,
     )
     .map_err(|e| unprocessable(&e))?;
-    let requisition = records::find_requisition(&ctx.db, application.requisition_pid).await?;
-    let candidate = records::find_candidate(&ctx.db, application.candidate_pid).await?;
+    let requisition = find_requisition(&ctx, application.requisition_pid).await?;
+    let candidate = find_candidate(&ctx, application.candidate_pid).await?;
 
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let from = application.stage.clone();
-    let mut active: applications::ActiveModel = application.clone().into();
-    active.stage = ActiveValue::set(payload.to.clone());
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let stage = sqlx::query_scalar!(
+        "UPDATE applications SET stage = $2 WHERE id = $1 RETURNING stage",
+        application.id,
+        payload.to,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "application",
-        row.pid,
+        application.pid,
         "application_staged",
         caller.actor(),
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "application",
         "application_staged",
-        &row.pid.to_string(),
+        &application.pid.to_string(),
         &candidate.display_name,
         caller.actor(),
         Some(serde_json::json!({ "from": from, "to": payload.to })),
@@ -619,62 +709,60 @@ async fn application_stage(
         }
         problems.currency_opt("salary_currency", payload.salary_currency.as_deref());
         ensure_valid(&problems.into_vec())?;
-        let worker = workers::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            person_ref: ActiveValue::set(person_ref),
-            upstream_worker_ref: ActiveValue::set(None),
-            organization_ref: ActiveValue::set(requisition.organization_ref.clone()),
-            worker_number: ActiveValue::set(worker_number),
-            display_name: ActiveValue::set(candidate.display_name.clone()),
-            status: ActiveValue::set("onboarding".to_string()),
-            employment_type: ActiveValue::set(employment_type),
-            fte_percent: ActiveValue::set(payload.fte_percent.unwrap_or(100)),
-            department: ActiveValue::set(requisition.department.clone()),
-            job_title: ActiveValue::set(requisition.job_title.clone()),
-            manager_pid: ActiveValue::set(None),
-            salary_minor: ActiveValue::set(payload.salary_minor),
-            salary_currency: ActiveValue::set(payload.salary_currency.clone()),
-            hired_on: ActiveValue::set(hired_on),
-            terminated_on: ActiveValue::set(None),
-            engagement_ends_on: ActiveValue::set(engagement_ends_on),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(&txn)
+        let hire = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO workers (pid, person_ref, organization_ref, worker_number, display_name, status, employment_type,
+                                  fte_percent, department, job_title, salary_minor, salary_currency, hired_on, engagement_ends_on)
+             VALUES ($1, $2, $3, $4, $5, 'onboarding', $6, $7, $8, $9, $10, $11, $12, $13)",
+            hire,
+            person_ref,
+            requisition.organization_ref,
+            worker_number,
+            candidate.display_name,
+            employment_type,
+            payload.fte_percent.unwrap_or(100),
+            requisition.department,
+            requisition.job_title,
+            payload.salary_minor,
+            payload.salary_currency,
+            hired_on,
+            engagement_ends_on,
+        )
+        .execute(&mut *tx)
         .await?;
-        Audit::record(
-            &txn,
+        db::audit(
+            &mut tx,
             "worker",
-            worker.pid,
+            hire,
             "worker_hired",
             caller.actor(),
             Some(serde_json::json!({
-                "application_pid": row.pid, "department": worker.department,
+                "application_pid": application.pid, "department": requisition.department,
             })),
         )
         .await?;
-        streaming::emit_on(
-            &txn,
+        streaming::emit_in(
+            &mut tx,
             "worker",
             "worker_hired",
-            &worker.pid.to_string(),
-            &worker.worker_number,
+            &hire.to_string(),
+            &worker_number,
             caller.actor(),
             Some(crate::rules::bridge::handoff_data(
-                &worker.person_ref,
-                &worker.organization_ref,
-                worker.hired_on,
+                &person_ref,
+                &requisition.organization_ref,
+                hired_on,
             )),
         )
         .await?;
-        worker_pid = Some(worker.pid);
+        worker_pid = Some(hire);
     }
-    txn.commit().await?;
+    tx.commit().await?;
     if worker_pid.is_some() {
         Metrics::global().worker_hired_total.inc();
     }
     format::json(serde_json::json!({
-        "pid": row.pid, "stage": row.stage, "worker_pid": worker_pid,
+        "pid": application.pid, "stage": stage, "worker_pid": worker_pid,
     }))
 }
 
@@ -686,7 +774,7 @@ async fn create_interview(
     Path(pid): Path<String>,
     Json(payload): Json<InterviewPayload>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application = find_application(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_ref(
         "interviewer_ref",
@@ -695,23 +783,31 @@ async fn create_interview(
     );
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = interviews::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        application_pid: ActiveValue::set(application.pid),
-        scheduled_at: ActiveValue::set(payload.scheduled_at),
-        interviewer_ref: ActiveValue::set(payload.interviewer_ref.clone()),
-        outcome: ActiveValue::set("pending".to_string()),
-        notes: ActiveValue::set(payload.notes.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let interview = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO interviews (pid, application_pid, scheduled_at, interviewer_ref, outcome, notes)
+         VALUES ($1, $2, $3, $4, 'pending', $5)",
+        interview,
+        application.pid,
+        payload.scheduled_at,
+        payload.interviewer_ref,
+        payload.notes,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "interview", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "interview",
+        interview,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: interview.to_string(),
     })
 }
 
@@ -721,13 +817,16 @@ async fn list_interviews(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = interviews::Entity::find()
-        .filter(interviews::Column::ApplicationPid.eq(application.pid))
-        .filter(interviews::Column::DeletedAt.is_null())
-        .order_by_asc(interviews::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let application = find_application(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        interviews::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, application_pid,
+                  scheduled_at AS "scheduled_at: _", interviewer_ref, outcome, notes, deleted_at AS "deleted_at: _"
+             FROM interviews WHERE application_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        application.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
@@ -744,21 +843,28 @@ async fn interview_outcome(
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
     let pid = records::parse_pid(&pid)?;
-    let row = interviews::Entity::find()
-        .filter(interviews::Column::Pid.eq(pid))
-        .filter(interviews::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    let mut active: interviews::ActiveModel = row.into();
-    active.outcome = ActiveValue::set(payload.outcome.clone());
-    if let Some(notes) = payload.notes {
-        active.notes = ActiveValue::set(Some(notes));
-    }
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let id = sqlx::query_scalar!(
+        "SELECT id FROM interviews WHERE pid = $1 AND deleted_at IS NULL",
+        pid
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    // Notes left out stay as recorded.
+    let row = sqlx::query_as!(
+        interviews::Model,
+        r#"UPDATE interviews SET outcome = $2, notes = COALESCE($3, notes) WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, application_pid,
+                     scheduled_at AS "scheduled_at: _", interviewer_ref, outcome, notes, deleted_at AS "deleted_at: _""#,
+        id,
+        payload.outcome,
+        payload.notes,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "interview",
         row.pid,
         "updated",
@@ -766,7 +872,7 @@ async fn interview_outcome(
         Some(serde_json::json!({ "outcome": row.outcome })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -778,7 +884,7 @@ async fn add_onboarding(
     Path(pid): Path<String>,
     Json(payload): Json<OnboardingPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if payload.items.is_empty() {
         problems.push("items must be non-empty".to_string());
@@ -790,26 +896,23 @@ async fn add_onboarding(
         problems.require_text("items[].name", &item.name);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let mut pids = Vec::with_capacity(payload.items.len());
     for item in &payload.items {
-        let row = onboarding_items::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            worker_pid: ActiveValue::set(worker.pid),
-            name: ActiveValue::set(item.name.clone()),
-            mandatory: ActiveValue::set(item.mandatory),
-            status: ActiveValue::set("pending".to_string()),
-            waived_reason: ActiveValue::set(None),
-            completed_at: ActiveValue::set(None),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(&txn)
+        let pid = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO onboarding_items (pid, worker_pid, name, mandatory, status) VALUES ($1, $2, $3, $4, 'pending')",
+            pid,
+            worker.pid,
+            item.name,
+            item.mandatory,
+        )
+        .execute(&mut *tx)
         .await?;
-        pids.push(row.pid.to_string());
+        pids.push(pid.to_string());
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "onboarding_items_added",
@@ -817,8 +920,21 @@ async fn add_onboarding(
         Some(serde_json::json!({ "count": pids.len() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pids": pids }))
+}
+
+/// Every column of an onboarding item, for loading into its model.
+async fn onboarding_of(ctx: &AppContext, worker: Uuid) -> Result<Vec<onboarding_items::Model>> {
+    Ok(sqlx::query_as!(
+        onboarding_items::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, mandatory, status,
+                  waived_reason, completed_at AS "completed_at: _", deleted_at AS "deleted_at: _"
+             FROM onboarding_items WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        worker,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/onboarding`.
@@ -827,14 +943,8 @@ async fn list_onboarding(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = onboarding_items::Entity::find()
-        .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
-        .filter(onboarding_items::Column::DeletedAt.is_null())
-        .order_by_asc(onboarding_items::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    format::json(rows)
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    format::json(onboarding_of(&ctx, worker.pid).await?)
 }
 
 /// Shared item-transition body for complete/waive.
@@ -845,27 +955,54 @@ async fn finish_item(
     status: &str,
     reason: Option<String>,
 ) -> Result<Response> {
-    let item = records::find_onboarding_item(&ctx.db, records::parse_pid(pid)?).await?;
+    let item = sqlx::query!(
+        "SELECT id, status FROM onboarding_items WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if item.status != "pending" {
         return Err(unprocessable(&format!("item is already {}", item.status)));
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: onboarding_items::ActiveModel = item.into();
-    active.status = ActiveValue::set(status.to_string());
-    active.waived_reason = ActiveValue::set(reason.clone());
-    active.completed_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
-        "onboarding_item",
-        row.pid,
-        &format!("onboarding_item_{status}"),
-        caller.actor(),
-        reason.map(|r| serde_json::json!({ "reason": r })),
+    let mut tx = db::pool(ctx).begin().await?;
+    let row = sqlx::query_as!(
+        onboarding_items::Model,
+        r#"UPDATE onboarding_items SET status = $2, waived_reason = $3, completed_at = $4 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, mandatory,
+                     status, waived_reason, completed_at AS "completed_at: _", deleted_at AS "deleted_at: _""#,
+        item.id,
+        status,
+        reason,
+        chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
     )
+    .fetch_one(&mut *tx)
     .await?;
-    streaming::emit_on(
-        &txn,
+    let snapshot = reason.map(|r| serde_json::json!({ "reason": r }));
+    // One literal action per way an item is finished.
+    if status == "waived" {
+        db::audit(
+            &mut tx,
+            "onboarding_item",
+            row.pid,
+            "onboarding_item_waived",
+            caller.actor(),
+            snapshot,
+        )
+        .await?;
+    } else {
+        db::audit(
+            &mut tx,
+            "onboarding_item",
+            row.pid,
+            "onboarding_item_complete",
+            caller.actor(),
+            snapshot,
+        )
+        .await?;
+    }
+    streaming::emit_in(
+        &mut tx,
         "onboarding_item",
         "onboarding_item_completed",
         &row.pid.to_string(),
@@ -874,7 +1011,7 @@ async fn finish_item(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 

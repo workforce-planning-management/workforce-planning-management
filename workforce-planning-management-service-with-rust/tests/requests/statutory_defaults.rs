@@ -1,7 +1,6 @@
 //! Whose each default is (WPM-T384): `GET /api/statutory-defaults` names, for every listed `WPM_*`
 //! setting, the value in force, whether the deployer set it, the default and whose it is.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -9,7 +8,7 @@ use super::{an_org, seed_worker};
 
 /// Record `code` (with `layer` and `parent`) in `org`, and append one `example` row of `key` at it.
 async fn profile_row(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     (code, layer, parent): (&str, &str, Option<&str>),
     key: &str,
@@ -29,7 +28,7 @@ async fn profile_row(
 }
 
 /// Set `org`'s home jurisdiction (`null` clears it).
-async fn set_home(request: &axa::TestServer, org: &str, code: Value) {
+async fn set_home(request: &axa_test::TestServer, org: &str, code: Value) {
     request
         .put("/api/home-jurisdiction")
         .json(&json!({ "organization_ref": org, "home_jurisdiction": code }))
@@ -173,11 +172,10 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
             let ctx = &ctx;
             async move {
                 let pid = uuid::Uuid::new_v4();
-                ctx.db
-                    .execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                         "INSERT INTO flexible_working_requests (pid, worker_pid, kind, requested_on, proposed_start, decide_by) \
                          VALUES ('{pid}', '{worker}', 'hours', CURRENT_DATE, CURRENT_DATE + 30, CURRENT_DATE + 60)"
-                    ))
+                    ))).execute(workforce_planning_management::db::pool(ctx))
                     .await
                     .unwrap();
                 pid.to_string()

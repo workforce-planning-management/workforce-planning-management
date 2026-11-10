@@ -21,14 +21,10 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use uuid::Uuid;
 
-use crate::models::_entities::{
-    capability_frameworks, role_profiles, role_skill_requirements, skill_external_refs, skills,
-};
 use crate::rules::framework as rules;
 
 /// The framework slug this task writes.
@@ -57,7 +53,13 @@ impl Task for ImportFramework {
             Err(_) => rules::LevelMapping::default(),
         };
         let overwrite_levels = vars.cli_arg("overwrite_levels").is_ok_and(|v| v == "true");
-        let report = import_pcf(&ctx.db, Path::new(dir), mapping, overwrite_levels).await?;
+        let report = import_pcf(
+            crate::db::pool(ctx),
+            Path::new(dir),
+            mapping,
+            overwrite_levels,
+        )
+        .await?;
         tracing::info!(?report, "framework import finished");
         println!("{report:#?}");
         Ok(())
@@ -123,13 +125,23 @@ fn slug_of(root: &Path, file: &Path) -> Option<String> {
     Some(rel.to_string_lossy().replace('\\', "/"))
 }
 
+/// Whether a live role profile already has `title`.
+async fn title_in_use(tx: &mut sqlx::PgConnection, title: &str) -> Result<bool> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM role_profiles WHERE job_title = $1 AND deleted_at IS NULL) AS "e!""#,
+        title,
+    )
+    .fetch_one(tx)
+    .await?)
+}
+
 /// Import the PCF from the clone at `dir`.
 ///
 /// # Errors
 /// A filesystem or database error.
 #[allow(clippy::too_many_lines)] // read → plan titles → upsert framework → upsert levels
 pub async fn import_pcf(
-    db: &DatabaseConnection,
+    pool: &sqlx::PgPool,
     dir: &Path,
     mapping: rules::LevelMapping,
     overwrite_levels: bool,
@@ -184,45 +196,27 @@ pub async fn import_pcf(
     let framework_note = "Role structure and wording: the official framework role summaries. \
                           Required levels: baselines from the community competency assessments \
                           (AI-assisted, human-reviewed) — a draft for a human to edit.";
-    let existing = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(PCF_SLUG))
-        .one(db)
-        .await?;
-    match existing {
-        Some(row) => {
-            let mut active: capability_frameworks::ActiveModel = row.into();
-            active.imported_on = ActiveValue::set(today);
-            active.update(db).await?;
-        }
-        None => {
-            capability_frameworks::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                slug: ActiveValue::set(PCF_SLUG.to_string()),
-                name: ActiveValue::set(
-                    "UK Government Digital and Data Profession Capability Framework".to_string(),
-                ),
-                source_url: ActiveValue::set(Some(
-                    "https://ddat-capability-framework.service.gov.uk/".to_string(),
-                )),
-                licence: ActiveValue::set(Some("Open Government Licence v3.0".to_string())),
-                attribution: ActiveValue::set(Some(
-                    "Contains public sector information licensed under the Open Government \
-                     Licence v3.0. © Crown copyright. Adapted from the Government Digital and \
-                     Data Profession Capability Framework."
-                        .to_string(),
-                )),
-                scale_max: ActiveValue::set(rules::PCF_SCALE_MAX),
-                scale_labels: ActiveValue::set(Some(
-                    "1 Awareness; 2 Working; 3 Practitioner; 4 Expert".to_string(),
-                )),
-                imported_on: ActiveValue::set(today),
-                note: ActiveValue::set(Some(framework_note.to_string())),
-                ..Default::default()
-            }
-            .insert(db)
-            .await?;
-        }
-    }
+    // A later import changes only the day.
+    sqlx::query!(
+        "INSERT INTO capability_frameworks
+             (pid, slug, name, source_url, licence, attribution, scale_max, scale_labels, imported_on, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (slug) DO UPDATE SET imported_on = EXCLUDED.imported_on",
+        Uuid::new_v4(),
+        PCF_SLUG,
+        "UK Government Digital and Data Profession Capability Framework",
+        "https://ddat-capability-framework.service.gov.uk/",
+        "Open Government Licence v3.0",
+        "Contains public sector information licensed under the Open Government \
+         Licence v3.0. © Crown copyright. Adapted from the Government Digital and \
+         Data Profession Capability Framework.",
+        rules::PCF_SCALE_MAX,
+        "1 Awareness; 2 Working; 3 Practitioner; 4 Expert",
+        today,
+        framework_note,
+    )
+    .execute(pool)
+    .await?;
 
     let mut no_baseline: BTreeSet<String> = BTreeSet::new();
     for item in &items {
@@ -243,68 +237,65 @@ pub async fn import_pcf(
         .collect::<Vec<_>>()
         .join("\n\n");
 
-        let txn = db.begin().await?;
+        let mut tx = pool.begin().await?;
         // The profile: by framework reference first, else claim an unused title.
-        let by_ref = role_profiles::Entity::find()
-            .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .filter(role_profiles::Column::ExternalRef.eq(&item.slug))
-            .filter(role_profiles::Column::DeletedAt.is_null())
-            .one(&txn)
-            .await?;
+        let by_ref = sqlx::query!(
+            "SELECT pid, job_title FROM role_profiles
+              WHERE framework_slug = $1 AND external_ref = $2 AND deleted_at IS NULL LIMIT 1",
+            PCF_SLUG,
+            item.slug,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
         let profile_pid = if let Some(row) = by_ref {
-            let pid = row.pid;
-            let title_free = row.job_title == title
-                || role_profiles::Entity::find()
-                    .filter(role_profiles::Column::JobTitle.eq(&title))
-                    .filter(role_profiles::Column::DeletedAt.is_null())
-                    .one(&txn)
-                    .await?
-                    .is_none();
-            let mut active: role_profiles::ActiveModel = row.into();
-            if title_free {
-                active.job_title = ActiveValue::set(title.clone());
-            }
-            active.description = ActiveValue::set(Some(description));
-            active.profession = ActiveValue::set(Some(item.parsed.profession_label.clone()));
-            active.role_name = ActiveValue::set(Some(item.parsed.role.clone()));
-            active.level_name = ActiveValue::set(Some(item.parsed.level.clone()));
-            active.level_order = ActiveValue::set(item.parts.order);
-            active.management_track =
-                ActiveValue::set(rules::is_management_track(&item.parsed.level));
-            active.update(&txn).await?;
+            let title_free = row.job_title == title || !title_in_use(&mut tx, &title).await?;
+            sqlx::query!(
+                "UPDATE role_profiles
+                    SET job_title = CASE WHEN $2 THEN $3 ELSE job_title END, description = $4, profession = $5,
+                        role_name = $6, level_name = $7, level_order = $8, management_track = $9
+                  WHERE pid = $1",
+                row.pid,
+                title_free,
+                title,
+                description,
+                item.parsed.profession_label,
+                item.parsed.role,
+                item.parsed.level,
+                item.parts.order,
+                rules::is_management_track(&item.parsed.level),
+            )
+            .execute(&mut *tx)
+            .await?;
             report.profiles_updated += 1;
-            pid
+            row.pid
         } else {
-            let taken = role_profiles::Entity::find()
-                .filter(role_profiles::Column::JobTitle.eq(&title))
-                .filter(role_profiles::Column::DeletedAt.is_null())
-                .one(&txn)
-                .await?
-                .is_some();
-            if taken {
+            if title_in_use(&mut tx, &title).await? {
                 report.title_taken_skipped += 1;
-                txn.rollback().await?;
+                tx.rollback().await?;
                 continue;
             }
-            let row = role_profiles::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                job_title: ActiveValue::set(title),
-                description: ActiveValue::set(Some(description)),
-                source_ref: ActiveValue::set(Some(format!("{PCF_SLUG}:{}", item.slug))),
-                framework_slug: ActiveValue::set(Some(PCF_SLUG.to_string())),
-                external_ref: ActiveValue::set(Some(item.slug.clone())),
-                profession: ActiveValue::set(Some(item.parsed.profession_label.clone())),
-                role_name: ActiveValue::set(Some(item.parsed.role.clone())),
-                level_name: ActiveValue::set(Some(item.parsed.level.clone())),
-                level_order: ActiveValue::set(item.parts.order),
-                management_track: ActiveValue::set(rules::is_management_track(&item.parsed.level)),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(&txn)
+            let pid = Uuid::new_v4();
+            sqlx::query!(
+                "INSERT INTO role_profiles
+                     (pid, job_title, description, source_ref, framework_slug, external_ref, profession, role_name,
+                      level_name, level_order, management_track)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+                pid,
+                title,
+                description,
+                format!("{PCF_SLUG}:{}", item.slug),
+                PCF_SLUG,
+                item.slug,
+                item.parsed.profession_label,
+                item.parsed.role,
+                item.parsed.level,
+                item.parts.order,
+                rules::is_management_track(&item.parsed.level),
+            )
+            .execute(&mut *tx)
             .await?;
             report.profiles_created += 1;
-            row.pid
+            pid
         };
 
         for skill in &item.parsed.skills {
@@ -326,105 +317,114 @@ pub async fn import_pcf(
             // The skill: reuse by exact name (undeleting if needed), else create.
             // Match by the framework reference first (so a planner's rename
             // survives), then by exact name; record the reference.
-            let by_ref = skill_external_refs::Entity::find()
-                .filter(skill_external_refs::Column::FrameworkSlug.eq(PCF_SLUG))
-                .filter(skill_external_refs::Column::Reference.eq(&skill.name))
-                .one(&txn)
-                .await?;
-            let skill_row = match &by_ref {
-                Some(r) => {
-                    skills::Entity::find()
-                        .filter(skills::Column::Pid.eq(r.skill_pid))
-                        .one(&txn)
-                        .await?
+            let by_ref = sqlx::query_scalar!(
+                r#"SELECT skill_pid FROM skill_external_refs WHERE framework_slug = $1 AND "ref" = $2 LIMIT 1"#,
+                PCF_SLUG,
+                skill.name,
+            )
+            .fetch_optional(&mut *tx)
+            .await?;
+            let skill_row = match by_ref {
+                Some(skill_pid) => {
+                    sqlx::query!(
+                        r#"SELECT pid, deleted_at IS NOT NULL AS "deleted!" FROM skills WHERE pid = $1 LIMIT 1"#,
+                        skill_pid,
+                    )
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    .map(|r| (r.pid, r.deleted))
                 }
-                None => {
-                    skills::Entity::find()
-                        .filter(skills::Column::Name.eq(&skill.name))
-                        .one(&txn)
-                        .await?
-                }
+                None => sqlx::query!(
+                    r#"SELECT pid, deleted_at IS NOT NULL AS "deleted!" FROM skills WHERE name = $1 LIMIT 1"#,
+                    skill.name,
+                )
+                .fetch_optional(&mut *tx)
+                .await?
+                .map(|r| (r.pid, r.deleted)),
             };
-            let skill_pid = if let Some(row) = skill_row {
-                let pid = row.pid;
-                if row.deleted_at.is_some() {
-                    let mut active: skills::ActiveModel = row.into();
-                    active.deleted_at = ActiveValue::set(None);
-                    active.update(&txn).await?;
+            let skill_pid = if let Some((pid, deleted)) = skill_row {
+                if deleted {
+                    sqlx::query!("UPDATE skills SET deleted_at = NULL WHERE pid = $1", pid,)
+                        .execute(&mut *tx)
+                        .await?;
                 }
                 report.skills_reused += 1;
                 pid
             } else {
-                let row = skills::ActiveModel {
-                    pid: ActiveValue::set(Uuid::new_v4()),
-                    name: ActiveValue::set(skill.name.clone()),
-                    category: ActiveValue::set("other".to_string()),
-                    deleted_at: ActiveValue::set(None),
-                    ..Default::default()
-                }
-                .insert(&txn)
+                let pid = Uuid::new_v4();
+                sqlx::query!(
+                    "INSERT INTO skills (pid, name, category) VALUES ($1, $2, 'other')",
+                    pid,
+                    skill.name,
+                )
+                .execute(&mut *tx)
                 .await?;
                 report.skills_created += 1;
-                row.pid
+                pid
             };
             if by_ref.is_none() {
-                let has_other_ref = skill_external_refs::Entity::find()
-                    .filter(skill_external_refs::Column::SkillPid.eq(skill_pid))
-                    .filter(skill_external_refs::Column::FrameworkSlug.eq(PCF_SLUG))
-                    .one(&txn)
-                    .await?
-                    .is_some();
+                let has_other_ref = sqlx::query_scalar!(
+                    r#"SELECT EXISTS (SELECT 1 FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2) AS "e!""#,
+                    skill_pid,
+                    PCF_SLUG,
+                )
+                .fetch_one(&mut *tx)
+                .await?;
                 if !has_other_ref {
-                    skill_external_refs::ActiveModel {
-                        pid: ActiveValue::set(Uuid::new_v4()),
-                        skill_pid: ActiveValue::set(skill_pid),
-                        framework_slug: ActiveValue::set(PCF_SLUG.to_string()),
-                        reference: ActiveValue::set(skill.name.clone()),
-                        label: ActiveValue::set(Some(skill.name.clone())),
-                        version: ActiveValue::set(None),
-                        ..Default::default()
-                    }
-                    .insert(&txn)
+                    sqlx::query!(
+                        r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version)
+                           VALUES ($1, $2, $3, $4, $4, NULL)"#,
+                        Uuid::new_v4(),
+                        skill_pid,
+                        PCF_SLUG,
+                        skill.name,
+                    )
+                    .execute(&mut *tx)
                     .await?;
                 }
             }
             let wording = skill.statements.join("\n");
-            let existing = role_skill_requirements::Entity::find()
-                .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile_pid))
-                .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
-                .one(&txn)
-                .await?;
-            if let Some(row) = existing {
-                // Refresh provenance and wording only: the planner owns the level.
-                let mut active: role_skill_requirements::ActiveModel = row.into();
-                active.source_framework = ActiveValue::set(Some(PCF_SLUG.to_string()));
-                active.source_level = ActiveValue::set(Some(baseline));
-                active.source_scale_max = ActiveValue::set(Some(rules::PCF_SCALE_MAX));
-                active.note = ActiveValue::set(Some(wording));
-                if overwrite_levels {
-                    active.min_proficiency = ActiveValue::set(mapped);
-                }
-                active.update(&txn).await?;
+            // A known requirement refreshes provenance and wording only: the planner owns the level.
+            let refreshed = sqlx::query!(
+                "UPDATE role_skill_requirements
+                    SET source_framework = $3, source_level = $4, source_scale_max = $5, note = $6,
+                        min_proficiency = CASE WHEN $7 THEN $8 ELSE min_proficiency END
+                  WHERE role_profile_pid = $1 AND skill_pid = $2",
+                profile_pid,
+                skill_pid,
+                PCF_SLUG,
+                baseline,
+                rules::PCF_SCALE_MAX,
+                wording,
+                overwrite_levels,
+                mapped,
+            )
+            .execute(&mut *tx)
+            .await?
+            .rows_affected();
+            if refreshed > 0 {
                 report.requirements_refreshed += 1;
             } else {
-                role_skill_requirements::ActiveModel {
-                    pid: ActiveValue::set(Uuid::new_v4()),
-                    role_profile_pid: ActiveValue::set(profile_pid),
-                    skill_pid: ActiveValue::set(skill_pid),
-                    min_proficiency: ActiveValue::set(mapped),
-                    importance: ActiveValue::set("important".to_string()),
-                    note: ActiveValue::set(Some(wording)),
-                    source_framework: ActiveValue::set(Some(PCF_SLUG.to_string())),
-                    source_level: ActiveValue::set(Some(baseline)),
-                    source_scale_max: ActiveValue::set(Some(rules::PCF_SCALE_MAX)),
-                    ..Default::default()
-                }
-                .insert(&txn)
+                sqlx::query!(
+                    "INSERT INTO role_skill_requirements
+                         (pid, role_profile_pid, skill_pid, min_proficiency, importance, note, source_framework,
+                          source_level, source_scale_max)
+                     VALUES ($1, $2, $3, $4, 'important', $5, $6, $7, $8)",
+                    Uuid::new_v4(),
+                    profile_pid,
+                    skill_pid,
+                    mapped,
+                    wording,
+                    PCF_SLUG,
+                    baseline,
+                    rules::PCF_SCALE_MAX,
+                )
+                .execute(&mut *tx)
                 .await?;
                 report.requirements_created += 1;
             }
         }
-        txn.commit().await?;
+        tx.commit().await?;
     }
     // Names that never had a baseline on any level they appear in.
     let with_baseline: BTreeSet<&str> = items

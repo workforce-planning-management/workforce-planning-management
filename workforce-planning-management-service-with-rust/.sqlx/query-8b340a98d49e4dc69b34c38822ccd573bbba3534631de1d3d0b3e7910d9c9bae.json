@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, worker_pid, supplier_ref,\n                  supplier_contact_ref, route, rate_minor, rate_currency, rate_basis, recorded_by\n             FROM worker_contractor_details WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "supplier_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "supplier_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "supplier_contact_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "supplier_contact_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "route",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "route"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "rate_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "rate_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rate_currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "rate_currency"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "rate_basis",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "rate_basis"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contractor_details",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "8b340a98d49e4dc69b34c38822ccd573bbba3534631de1d3d0b3e7910d9c9bae"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code, level FROM sfia_skill_levels WHERE retired_in IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f7e7f2401b6fad507c4762fa21e43138f1f8ecc6d17dd7485f905714ae45016b"
+}

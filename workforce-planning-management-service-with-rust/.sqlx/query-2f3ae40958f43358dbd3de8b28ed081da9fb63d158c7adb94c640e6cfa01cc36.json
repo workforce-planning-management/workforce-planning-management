@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO announcement_reads (announcement_pid, worker_pid, read_at) VALUES ($1, $2, $3)\n         ON CONFLICT (announcement_pid, worker_pid) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2f3ae40958f43358dbd3de8b28ed081da9fb63d158c7adb94c640e6cfa01cc36"
+}

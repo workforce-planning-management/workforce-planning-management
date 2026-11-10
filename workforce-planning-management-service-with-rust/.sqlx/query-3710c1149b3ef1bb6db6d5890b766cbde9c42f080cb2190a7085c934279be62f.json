@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT course_ref, title, position FROM learning_path_steps WHERE path_pid = $1 ORDER BY position, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_path_steps",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_path_steps",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "position",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "learning_path_steps",
+            "name": "position"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3710c1149b3ef1bb6db6d5890b766cbde9c42f080cb2190a7085c934279be62f"
+}

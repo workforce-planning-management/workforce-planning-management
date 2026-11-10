@@ -4,7 +4,8 @@
 
 - **Migrations only go forward.** `down` exists for the early ones but is not a rollback
   plan; some migrations rewrite data (for example `m20261009_000050_generic_pay_scale_id`
-  moves stored ids and its `down` does nothing). **The way back is a restore.**
+  moves stored ids and its `down` does nothing). **The way back is a restore.** `db down`,
+  `db reset` and `db truncate` are refused in production (WPM-R237).
 - **Back up first, every time.** Run `scripts/backup.sh`, check it, then migrate.
 - **Production does not migrate on start** (`auto_migrate: false`). Migrating is a step
   you take on purpose.
@@ -16,7 +17,10 @@
 1. Read the release notes and `CHANGELOG.md` for **BREAKING** entries. For example, in
    the 2026-10 changes: sign-in enforcement became **on by default**; `/metrics.prom`
    now needs a token; `GET /api/retention` returns `horizons` per record kind in place of
-   `horizon_days`; the pay scale id became `national-2026-27`.
+   `horizon_days`; the pay scale id became `national-2026-27`. In the 2026-11 changes:
+   **behind a proxy, `TRUSTED_PROXIES` must be set before you upgrade**, or every caller
+   shares the proxy's rate-limit bucket. `WPM_TRUST_FORWARDED` does nothing now, so remove
+   it (WPM-R239).
 2. Take and verify a backup: `scripts/backup.sh` (the `.sha256` file is checked on
    restore). Start the next restore drill on a copy if you can.
 3. Stop traffic (or put the proxy in maintenance) if the release says migrations lock
@@ -24,9 +28,9 @@
    yours.
 4. Deploy the new binary or image **without** starting traffic, then
    `workforce-planning-management db migrate`.
-5. Start it. Check `GET /_health`, `GET /_posture` (`auth_enforced: true`), and a read.
-6. Watch the logs for `WARN` lines: the service warns when sign-in is off and when it is
-   on with no key source.
+5. Start it. Check `GET /_health/ready`, `GET /_posture` (`auth_enforced: true`), and a read.
+6. Watch the logs for `WARN` lines: the service warns when sign-in is off, when it is
+   on with no key source, and when `WPM_TRUST_FORWARDED` is still set.
 7. Keep the previous image and the backup until the new version has run a full
    scheduled-task cycle.
 
@@ -45,6 +49,12 @@ what would be lost (the audit log shows what changed) before restoring.
 | `…_000051_erasure_ledger` | Adds the erasure ledger | Drop the table (nothing depends on it before replay) |
 
 New data-changing migrations add a row here in the change that introduces them.
+
+**From a `SeaORM` release to the first `sqlx` one (WPM-D193).** Nothing to do by hand: the first `db migrate` (or start, outside
+production) reads `seaql_migrations`, records those migrations as applied in `_sqlx_migrations`, and runs only the newer ones.
+It refuses a history with a gap or a name it does not know, naming it; migrate with the release that wrote that history first.
+`seaql_migrations` is left in place. `db down` is refused from this release on: the migrations have no down steps, so roll back by
+restoring the backup taken before the upgrade.
 
 ## Compatibility
 

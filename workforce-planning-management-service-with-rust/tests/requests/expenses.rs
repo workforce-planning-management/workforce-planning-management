@@ -4,11 +4,11 @@
 //! amounts stay. (Who may do what under enforcement is in `tests/enforcement.rs`.)
 
 use chrono::{Duration, Utc};
-use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -361,8 +361,7 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
         let query = |sql: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
-                    .query_one_raw(Statement::from_string(ctx.db.get_database_backend(), sql))
+                sqlx::query(sqlx::AssertSqlSafe(&*sql)).fetch_optional(workforce_planning_management::db::pool(ctx))
                     .await
                     .unwrap()
                     .unwrap()
@@ -373,19 +372,19 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
             "SELECT amount_minor, description, receipt_ref FROM expense_items WHERE claim_pid = '{pid}'"
         ))
         .await;
-        assert_eq!(item.try_get_by_index::<i64>(0).unwrap(), 12_345);
-        assert_eq!(item.try_get_by_index::<Option<String>>(1).unwrap(), None);
-        assert_eq!(item.try_get_by_index::<Option<String>>(2).unwrap(), None);
+        assert_eq!(item.try_get::<i64, _>(0).unwrap(), 12_345);
+        assert_eq!(item.try_get::<Option<String>, _>(1).unwrap(), None);
+        assert_eq!(item.try_get::<Option<String>, _>(2).unwrap(), None);
         let claim = query(format!(
             "SELECT title, description, status FROM expense_claims WHERE pid = '{pid}'"
         ))
         .await;
-        assert_eq!(claim.try_get_by_index::<String>(0).unwrap(), "erased");
-        assert_eq!(claim.try_get_by_index::<Option<String>>(1).unwrap(), None);
-        assert_eq!(claim.try_get_by_index::<String>(2).unwrap(), "reimbursed");
+        assert_eq!(claim.try_get::<String, _>(0).unwrap(), "erased");
+        assert_eq!(claim.try_get::<Option<String>, _>(1).unwrap(), None);
+        assert_eq!(claim.try_get::<String, _>(2).unwrap(), "reimbursed");
         // The unfinished draft is closed, not left dangling.
         let closed = query(format!("SELECT status FROM expense_claims WHERE pid = '{draft_pid}'")).await;
-        assert_eq!(closed.try_get_by_index::<String>(0).unwrap(), "cancelled");
+        assert_eq!(closed.try_get::<String, _>(0).unwrap(), "cancelled");
     })
     .await;
 }

@@ -1,0 +1,240 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE expense_claims\n              SET status = $2,\n                  submitted_at = CASE WHEN $3 THEN $4::timestamptz ELSE submitted_at END,\n                  decided_by = CASE WHEN $5 THEN $6::text ELSE decided_by END,\n                  decided_at = CASE WHEN $5 THEN $4::timestamptz ELSE decided_at END,\n                  decision_note = CASE WHEN $5 THEN $7::text ELSE decision_note END,\n                  reimbursed_on = CASE WHEN $8 THEN $9::date ELSE reimbursed_on END,\n                  reimbursed_by = CASE WHEN $8 THEN $6::text ELSE reimbursed_by END\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, title, description,\n                  currency, status, submitted_at AS \"submitted_at: _\", decided_by, decided_at AS \"decided_at: _\",\n                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "submitted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "submitted_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decided_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "decided_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decided_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "decision_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decision_note"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "reimbursed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "reimbursed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "reimbursed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "reimbursed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "on_behalf"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Bool",
+        "Timestamptz",
+        "Bool",
+        "Text",
+        "Text",
+        "Bool",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "dbfaf40decd7ea96610d6a8c405b0beb5c14c009e7f9e03fb0defee1db6f3ef8"
+}

@@ -9,6 +9,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — an employee's mandatory training and certifications in one place (WPM-R245, WPM-D192, WPM-T487, 2026-11-10)
+
+`/me/required`, first on My profile: what is mandatory, what is due or overdue, which certifications the role requires and when
+they expire, each with a link to act.
+
+### Added — walkthroughs for learning WPM (WPM-R244, WPM-T486, 2026-11-10)
+
+Task-by-task walkthroughs for an employee, a manager and HR, reached from the tour and the help page.
+
+### Added — getting help (WPM-R243, WPM-D191, WPM-T484, 2026-11-10)
+
+A Help link in every header of the app, a help page, and every error saying what to try with a link to help. `README.md`, the
+documentation index and the site's English landing page have a Getting help section pointing to the issue tracker.
+
+### Security — a caller can no longer name its own rate-limit bucket (WPM-R239, WPM-D187, WPM-T471, 2026-11-07)
+
+**An operator must act.** Behind a proxy, set `TRUSTED_PROXIES`, or every caller shares the proxy's bucket. `WPM_TRUST_FORWARDED` does nothing now, and boot warns if it is set.
+
 ### Changed — from Loco to axa (WPM-D183, WPM-T465, 2026-11-05)
 
 The service runs on Axum and axa. Settings are environment variables, `APP_ENV` names the environment, and the scheduler is `workforce-planning-management scheduler`. Automatic ETags are gone, and `JWT_SECRET` and `SMTP_*` are no longer read.

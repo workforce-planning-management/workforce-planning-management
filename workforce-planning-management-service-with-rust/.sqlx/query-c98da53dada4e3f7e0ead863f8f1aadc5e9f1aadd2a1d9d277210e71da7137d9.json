@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT earliest_termination_on, dismissals FROM consultations\n         WHERE organization_ref = $1 AND establishment = $2 AND pid <> $3 AND outcome <> 'withdrawn'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "earliest_termination_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "consultations",
+            "name": "earliest_termination_on"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "dismissals",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "consultations",
+            "name": "dismissals"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c98da53dada4e3f7e0ead863f8f1aadc5e9f1aadd2a1d9d277210e71da7137d9"
+}

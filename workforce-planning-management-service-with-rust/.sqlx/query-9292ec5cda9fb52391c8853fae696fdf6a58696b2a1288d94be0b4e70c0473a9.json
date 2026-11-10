@@ -1,0 +1,103 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oversight_pack_withdrawals (pid, pack_pid, withdrawn_on, reason)\n           VALUES ($1, $2, $3, $4)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, pack_pid, withdrawn_on, reason",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pack_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "pack_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "withdrawn_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "withdrawn_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "reason"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "9292ec5cda9fb52391c8853fae696fdf6a58696b2a1288d94be0b4e70c0473a9"
+}

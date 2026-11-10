@@ -1,0 +1,151 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE onboarding_items SET status = $2, waived_reason = $3, completed_at = $4 WHERE id = $1\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, name, mandatory,\n                     status, waived_reason, completed_at AS \"completed_at: _\", deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "mandatory",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "mandatory"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "waived_reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "waived_reason"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "completed_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "completed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "onboarding_items",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "d6a58cd93e7e0fe4fbadd3bb2e7e90665cbc36985c5777acd7417e9b6eab934c"
+}

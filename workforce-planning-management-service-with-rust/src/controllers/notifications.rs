@@ -2,13 +2,13 @@
 //! list (unread first) and the mark-read action. Reference-only rows;
 //! the write side lives in the handlers that make the change.
 
-use super::row_json;
+use axa::extract::Path;
 use axa::prelude::*;
-use sea_orm::sea_query::ExprTrait;
-use sea_orm::{ActiveValue, QueryOrder};
+use chrono::Utc;
 
-use super::record_rejection;
+use super::{record_rejection, row_json};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db::pool;
 use crate::models::_entities::notifications;
 use crate::models::records;
 
@@ -19,10 +19,11 @@ async fn list_notifications(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    page: super::Page,
 ) -> Result<Response> {
-    let window = super::window(page)?;
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let window = super::window(&page)?;
+    let (limit, offset) = window.bounds();
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -30,11 +31,21 @@ async fn list_notifications(
     )
     .map_err(record_rejection)?;
     // Unread first, then newest first.
-    let select = notifications::Entity::find()
-        .filter(notifications::Column::WorkerPid.eq(worker.pid))
-        .order_by_asc(sea_orm::sea_query::Expr::col(notifications::Column::ReadAt).is_not_null())
-        .order_by_desc(notifications::Column::Id);
-    super::paged_select(&ctx, select, window, row_json).await
+    let rows = sqlx::query_as!(
+        notifications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, body, data,
+                  read_at AS "read_at: _"
+           FROM notifications WHERE worker_pid = $1
+           ORDER BY read_at IS NOT NULL, id DESC
+           LIMIT $2 OFFSET $3"#,
+        worker.pid,
+        limit,
+        offset,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
+    let shown = rows.iter().map(row_json).collect::<Result<Vec<_>>>()?;
+    Ok(window.respond(shown))
 }
 
 /// `POST /api/notifications/{pid}/read` — mark one notification read.
@@ -46,21 +57,30 @@ async fn mark_read(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let notification = notifications::Entity::find()
-        .filter(notifications::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let owner = records::find_worker(&ctx.db, notification.worker_pid).await?;
+    let notification = sqlx::query!(
+        "SELECT pid, worker_pid FROM notifications WHERE pid = $1",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let owner = records::worker_by_pid(&ctx, notification.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
         &auth::worker_resource_attrs(&owner),
     )
     .map_err(record_rejection)?;
-    let mut active: notifications::ActiveModel = notification.into();
-    active.read_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let updated = active.update(&ctx.db).await?;
+    let updated = sqlx::query_as!(
+        notifications::Model,
+        r#"UPDATE notifications SET read_at = $1 WHERE pid = $2
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, body, data,
+                     read_at AS "read_at: _""#,
+        Utc::now(),
+        notification.pid,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
     format::json(row_json(&updated)?)
 }
 

@@ -1,7 +1,7 @@
 # Documentation index
 
 Workforce Planning Management — SvelteKit edition. Browser client for
-the Loco JSON API sibling.
+the JSON API sibling.
 
 ## Start here
 

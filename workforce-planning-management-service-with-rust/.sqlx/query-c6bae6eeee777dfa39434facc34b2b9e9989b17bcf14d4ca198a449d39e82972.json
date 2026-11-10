@@ -1,0 +1,296 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, person_ref,\n                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,\n                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,\n                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS \"deleted_at: _\"\n             FROM workers\n            WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1) AND ($2::text IS NULL OR status = $2)\n              AND ($3::text[] IS NULL OR organization_ref = ANY($3))\n            ORDER BY id\n            LIMIT $4 OFFSET $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "person_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "person_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "upstream_worker_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "upstream_worker_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "employment_type",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "employment_type"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "location",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "location"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "work_jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "work_jurisdiction"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "manager_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "manager_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "salary_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "salary_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "salary_currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "salary_currency"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "hired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "hired_on"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "terminated_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "terminated_on"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "engagement_ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "engagement_ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "TextArray",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c6bae6eeee777dfa39434facc34b2b9e9989b17bcf14d4ca198a449d39e82972"
+}

@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, organization_ref, kind, tag, owner_role, recorded_by\n           FROM assets WHERE organization_ref = $1 ORDER BY tag",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "tag",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "tag"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "owner_role",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "owner_role"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assets",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "05749701ba750c630b86243aea77f1bb2121bb2db1545e682de7910cdcaba328"
+}

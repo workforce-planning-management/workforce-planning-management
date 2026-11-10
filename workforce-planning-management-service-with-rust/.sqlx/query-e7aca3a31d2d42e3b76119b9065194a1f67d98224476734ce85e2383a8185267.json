@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, job_title FROM role_profiles\n          WHERE pid = $1 AND deleted_at IS NULL AND framework_slug = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_title"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e7aca3a31d2d42e3b76119b9065194a1f67d98224476734ce85e2383a8185267"
+}

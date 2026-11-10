@@ -9,7 +9,7 @@ use super::an_org;
 
 const KEY: &str = "0123456789abcdef-test-key";
 
-async fn count(request: &axa::TestServer, org: &str, title: &str) -> usize {
+async fn count(request: &axa_test::TestServer, org: &str, title: &str) -> usize {
     let feed: Value = request
         .get(&format!("/api/announcements?organization={org}"))
         .await
@@ -21,16 +21,11 @@ async fn count(request: &axa::TestServer, org: &str, title: &str) -> usize {
         .count()
 }
 
-fn sql(text: &str) -> sea_orm::Statement {
-    sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres, text.to_string())
-}
-
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() {
-    use sea_orm::ConnectionTrait;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -109,14 +104,11 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
             .json(&bad_body)
             .await;
         assert_eq!(failed.status_code(), 422);
-        let kept: i64 = ctx
-            .db
-            .query_one_raw(sql("SELECT count(*) AS n FROM idempotency_keys WHERE idem_key = 'retry-after-a-failure-0001'"))
-            .await
-            .unwrap()
-            .unwrap()
-            .try_get("", "n")
-            .unwrap();
+        let kept: i64 =
+            sqlx::query_scalar("SELECT count(*) AS n FROM idempotency_keys WHERE idem_key = 'retry-after-a-failure-0001'")
+                .fetch_one(workforce_planning_management::db::pool(&ctx))
+                .await
+                .unwrap();
         assert_eq!(kept, 0, "a failure leaves no claim behind");
         // A request that differs but is valid now runs under that key.
         let fixed = request
@@ -133,8 +125,8 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
             "/api/announcements",
             body.to_string().as_bytes(),
         );
-        ctx.db
-            .execute_raw(sql(&format!("INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ('anonymous', 'stuck-request-key-00001', '{fingerprint}')")))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ('anonymous', 'stuck-request-key-00001', '{fingerprint}')")))
+            .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let busy = request
@@ -145,8 +137,8 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(busy.status_code(), 409, "{}", busy.text());
         assert_eq!(busy.header("retry-after"), "1");
         assert_eq!(count(&request, &org, &title).await, 4, "and it did not run");
-        ctx.db
-            .execute_raw(sql("UPDATE idempotency_keys SET created_at = now() - interval '10 minutes' WHERE idem_key = 'stuck-request-key-00001'"))
+        sqlx::raw_sql("UPDATE idempotency_keys SET created_at = now() - interval '10 minutes' WHERE idem_key = 'stuck-request-key-00001'")
+            .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let taken = request
@@ -158,8 +150,9 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(count(&request, &org, &title).await, 5, "an abandoned claim is taken over");
 
         // Expiry: a stored response older than the keep period is gone, so the same key runs again.
-        ctx.db
-            .execute_raw(sql("UPDATE idempotency_keys SET created_at = now() - interval '2 days' WHERE idem_key = '0123456789abcdef-test-key'"))
+        sqlx::query("UPDATE idempotency_keys SET created_at = now() - interval '2 days' WHERE idem_key = $1")
+            .bind("0123456789abcdef-test-key")
+            .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let after = request

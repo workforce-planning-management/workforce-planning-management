@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::Path;
 
 /// The departments a plan's demand lines name.
 pub(super) fn departments_of(lines: &[plan_demand_lines::Model]) -> BTreeSet<String> {
@@ -18,10 +19,12 @@ pub(super) async fn resolve_attrition(
     if let Some(bp) = plan.attrition_bp {
         return Ok((Some(bp), "plan_assumption"));
     }
-    let rows = headcount_snapshots::Entity::find()
-        .filter(headcount_snapshots::Column::OrganizationRef.eq(&plan.organization_ref))
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT as_of, headcount, leavers FROM headcount_snapshots WHERE organization_ref = $1 ORDER BY id",
+        plan.organization_ref,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     let mut by_date: BTreeMap<chrono::NaiveDate, (i64, Option<i64>)> = BTreeMap::new();
     for row in &rows {
         let entry = by_date.entry(row.as_of).or_insert((0, Some(0)));
@@ -103,9 +106,13 @@ pub(super) async fn forecast_value(
     let people_in =
         people_by_department(ctx, &plan.organization_ref, &departments_named, today).await?;
     let titles = role_titles(ctx).await?;
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
-    let skill_names: BTreeMap<Uuid, String> = crate::models::_entities::skills::Entity::find()
-        .all(&ctx.db)
+    let requirements = sqlx::query!(
+        "SELECT role_profile_pid, skill_pid, importance, min_proficiency FROM role_skill_requirements ORDER BY id"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
+    let skill_names: BTreeMap<Uuid, String> = sqlx::query!("SELECT pid, name FROM skills")
+        .fetch_all(crate::db::pool(ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))

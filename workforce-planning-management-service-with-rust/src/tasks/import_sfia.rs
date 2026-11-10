@@ -11,15 +11,10 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use uuid::Uuid;
 
-use crate::models::_entities::{
-    capability_frameworks, job_level_frameworks, job_level_levels, sfia_skill_levels, sfia_skills,
-    skill_external_refs, skills,
-};
 use crate::rules::esco::normalise_label;
 use crate::rules::framework::Redistribution;
 use crate::rules::job_levels::Attribute;
@@ -65,12 +60,12 @@ impl Task for ImportSfia {
             std::fs::read_to_string(Path::new(f)).map_err(|e| Error::string(&format!("{f}: {e}")))
         };
         if let Some(f) = file {
-            let report = import_sfia(&ctx.db, &read(f)?, &licence).await?;
+            let report = import_sfia(crate::db::pool(ctx), &read(f)?, &licence).await?;
             tracing::info!(?report, "SFIA skills import finished");
             println!("{report:#?}");
         }
         if let Some(f) = levels_file {
-            let n = import_sfia_levels(&ctx.db, &read(f)?, &licence).await?;
+            let n = import_sfia_levels(crate::db::pool(ctx), &read(f)?, &licence).await?;
             tracing::info!(levels = n, "SFIA levels import finished");
             println!("levels of responsibility: {n}");
         }
@@ -127,39 +122,30 @@ pub const SFIA_LEVELS_SLUG: &str = "sfia-levels";
 /// # Errors
 /// A refusal naming the licence field or the file row, or a database error.
 pub async fn import_sfia_levels(
-    db: &DatabaseConnection,
+    pool: &sqlx::PgPool,
     text: &str,
     licence: &Licence,
 ) -> Result<usize> {
     check_licence(licence)?;
     let levels = rules::parse_levels(text).map_err(|e| Error::string(&e))?;
     let version = licence.version.trim();
-    let txn = db.begin().await?;
-    let existing = job_level_frameworks::Entity::find()
-        .filter(job_level_frameworks::Column::Slug.eq(SFIA_LEVELS_SLUG))
-        .one(&txn)
-        .await?;
-    let mut a: job_level_frameworks::ActiveModel = match existing {
-        Some(row) => row.into(),
-        None => job_level_frameworks::ActiveModel {
-            slug: ActiveValue::set(SFIA_LEVELS_SLUG.to_string()),
-            ..Default::default()
-        },
-    };
-    a.name = ActiveValue::set("SFIA levels of responsibility".to_string());
-    a.organization = ActiveValue::set("SFIA Foundation".to_string());
-    a.track = ActiveValue::set("skills".to_string());
-    a.source = ActiveValue::set(
-        "Loaded by the licensee from their own SFIA download; not for publication or redistribution."
-            .to_string(),
-    );
-    a.version = ActiveValue::set(Some(version.to_string()));
-    a.redistribution = ActiveValue::set(Redistribution::InternalOnly.token().to_string());
-    if a.id.is_not_set() {
-        a.insert(&txn).await?;
-    } else {
-        a.update(&txn).await?;
-    }
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        "INSERT INTO job_level_frameworks (slug, name, organization, track, source, version, redistribution)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (slug) DO UPDATE
+            SET name = EXCLUDED.name, organization = EXCLUDED.organization, track = EXCLUDED.track,
+                source = EXCLUDED.source, version = EXCLUDED.version, redistribution = EXCLUDED.redistribution",
+        SFIA_LEVELS_SLUG,
+        "SFIA levels of responsibility",
+        "SFIA Foundation",
+        "skills",
+        "Loaded by the licensee from their own SFIA download; not for publication or redistribution.",
+        version,
+        Redistribution::InternalOnly.token(),
+    )
+    .execute(&mut *tx)
+    .await?;
     for l in &levels {
         let attributes: Vec<Attribute> = l
             .attributes
@@ -171,31 +157,23 @@ pub async fn import_sfia_levels(
             .collect();
         let attributes =
             serde_json::to_string(&attributes).map_err(|e| Error::string(&e.to_string()))?;
-        let code = format!("L{}", l.level);
-        let row = job_level_levels::Entity::find()
-            .filter(job_level_levels::Column::Framework.eq(SFIA_LEVELS_SLUG))
-            .filter(job_level_levels::Column::Number.eq(l.level))
-            .one(&txn)
-            .await?;
-        let mut a: job_level_levels::ActiveModel = match row {
-            Some(r) => r.into(),
-            None => job_level_levels::ActiveModel {
-                framework: ActiveValue::set(SFIA_LEVELS_SLUG.to_string()),
-                number: ActiveValue::set(l.level),
-                ..Default::default()
-            },
-        };
-        a.code = ActiveValue::set(code);
-        a.title = ActiveValue::set(l.title.clone());
-        a.summary = ActiveValue::set(l.essence.clone());
-        a.attributes = ActiveValue::set(Some(attributes));
-        if a.id.is_not_set() {
-            a.insert(&txn).await?;
-        } else {
-            a.update(&txn).await?;
-        }
+        sqlx::query!(
+            "INSERT INTO job_level_levels (framework, number, code, title, summary, attributes)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (framework, number) DO UPDATE
+                SET code = EXCLUDED.code, title = EXCLUDED.title, summary = EXCLUDED.summary,
+                    attributes = EXCLUDED.attributes",
+            SFIA_LEVELS_SLUG,
+            l.level,
+            format!("L{}", l.level),
+            l.title,
+            l.essence,
+            attributes,
+        )
+        .execute(&mut *tx)
+        .await?;
     }
-    txn.commit().await?;
+    tx.commit().await?;
     Ok(levels.len())
 }
 
@@ -204,7 +182,7 @@ pub async fn import_sfia_levels(
 /// # Errors
 /// A refusal naming the licence field or the file row, or a database error.
 #[allow(clippy::too_many_lines)] // validate → upsert → retire → link, linearly
-pub async fn import_sfia(db: &DatabaseConnection, text: &str, licence: &Licence) -> Result<Report> {
+pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> Result<Report> {
     let checked_on = check_licence(licence)?;
     let parsed: Vec<Skill> = rules::parse_skills(text).map_err(|e| Error::string(&e))?;
     if parsed.is_empty() {
@@ -217,143 +195,130 @@ pub async fn import_sfia(db: &DatabaseConnection, text: &str, licence: &Licence)
         ..Report::default()
     };
 
-    let txn = db.begin().await?;
-    let known: BTreeMap<String, sfia_skills::Model> = sfia_skills::Entity::find()
-        .all(&txn)
-        .await?
-        .into_iter()
-        .map(|s| (s.code.clone(), s))
-        .collect();
-    let known_levels: BTreeMap<(String, i32), sfia_skill_levels::Model> =
-        sfia_skill_levels::Entity::find()
-            .all(&txn)
+    let mut tx = pool.begin().await?;
+    let known: BTreeMap<String, Option<String>> =
+        sqlx::query!("SELECT code, retired_in FROM sfia_skills")
+            .fetch_all(&mut *tx)
             .await?
             .into_iter()
-            .map(|l| ((l.code.clone(), l.level), l))
+            .map(|s| (s.code, s.retired_in))
+            .collect();
+    let known_levels: BTreeMap<(String, i32), Option<String>> =
+        sqlx::query!("SELECT code, level, retired_in FROM sfia_skill_levels")
+            .fetch_all(&mut *tx)
+            .await?
+            .into_iter()
+            .map(|l| ((l.code, l.level), l.retired_in))
             .collect();
     let mut seen_skills: BTreeSet<&str> = BTreeSet::new();
     let mut seen_levels: BTreeSet<(&str, i32)> = BTreeSet::new();
     for skill in &parsed {
         seen_skills.insert(&skill.code);
-        let fields = (
-            ActiveValue::set(skill.name.clone()),
-            ActiveValue::set(skill.category.clone()),
-            ActiveValue::set(skill.subcategory.clone()),
-            ActiveValue::set(skill.description.clone()),
-            ActiveValue::set(None::<String>),
-        );
-        if let Some(row) = known.get(&skill.code) {
-            let mut a: sfia_skills::ActiveModel = row.clone().into();
-            (
-                a.name,
-                a.category,
-                a.subcategory,
-                a.description,
-                a.retired_in,
-            ) = fields;
-            a.update(&txn).await?;
-        } else {
-            sfia_skills::ActiveModel {
-                code: ActiveValue::set(skill.code.clone()),
-                name: fields.0,
-                category: fields.1,
-                subcategory: fields.2,
-                description: fields.3,
-                retired_in: fields.4,
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-        }
+        // A known skill is refreshed and brought back; a new one is added.
+        sqlx::query!(
+            "INSERT INTO sfia_skills (code, name, category, subcategory, description) VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (code) DO UPDATE
+                SET name = EXCLUDED.name, category = EXCLUDED.category, subcategory = EXCLUDED.subcategory,
+                    description = EXCLUDED.description, retired_in = NULL",
+            skill.code,
+            skill.name,
+            skill.category,
+            skill.subcategory,
+            skill.description,
+        )
+        .execute(&mut *tx)
+        .await?;
         for level in &skill.levels {
             seen_levels.insert((&skill.code, level.level));
-            if let Some(row) = known_levels.get(&(skill.code.clone(), level.level)) {
-                let mut a: sfia_skill_levels::ActiveModel = row.clone().into();
-                a.description = ActiveValue::set(level.description.clone());
-                a.attributes = ActiveValue::set(level.attributes.clone());
-                a.retired_in = ActiveValue::set(None);
-                a.update(&txn).await?;
-            } else {
-                sfia_skill_levels::ActiveModel {
-                    code: ActiveValue::set(skill.code.clone()),
-                    level: ActiveValue::set(level.level),
-                    description: ActiveValue::set(level.description.clone()),
-                    attributes: ActiveValue::set(level.attributes.clone()),
-                    ..Default::default()
-                }
-                .insert(&txn)
-                .await?;
-            }
+            sqlx::query!(
+                "INSERT INTO sfia_skill_levels (code, level, description, attributes) VALUES ($1, $2, $3, $4)
+                 ON CONFLICT (code, level) DO UPDATE
+                    SET description = EXCLUDED.description, attributes = EXCLUDED.attributes, retired_in = NULL",
+                skill.code,
+                level.level,
+                level.description,
+                level.attributes,
+            )
+            .execute(&mut *tx)
+            .await?;
         }
     }
     // What a newer version drops stays, marked, so declared skills never dangle.
-    for (code, row) in &known {
-        if !seen_skills.contains(code.as_str()) && row.retired_in.is_none() {
-            let mut a: sfia_skills::ActiveModel = row.clone().into();
-            a.retired_in = ActiveValue::set(Some(version.to_string()));
-            a.update(&txn).await?;
+    for (code, retired_in) in &known {
+        if !seen_skills.contains(code.as_str()) && retired_in.is_none() {
+            sqlx::query!(
+                "UPDATE sfia_skills SET retired_in = $2 WHERE code = $1",
+                code,
+                version,
+            )
+            .execute(&mut *tx)
+            .await?;
             report.skills_retired += 1;
         }
     }
-    for ((code, level), row) in &known_levels {
-        if !seen_levels.contains(&(code.as_str(), *level)) && row.retired_in.is_none() {
-            let mut a: sfia_skill_levels::ActiveModel = row.clone().into();
-            a.retired_in = ActiveValue::set(Some(version.to_string()));
-            a.update(&txn).await?;
+    for ((code, level), retired_in) in &known_levels {
+        if !seen_levels.contains(&(code.as_str(), *level)) && retired_in.is_none() {
+            sqlx::query!(
+                "UPDATE sfia_skill_levels SET retired_in = $3 WHERE code = $1 AND level = $2",
+                code,
+                level,
+                version,
+            )
+            .execute(&mut *tx)
+            .await?;
             report.levels_retired += 1;
         }
     }
 
     // The framework row: internal use only, whatever it said before.
-    let existing = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(SFIA_SLUG))
-        .one(&txn)
-        .await?;
     let today = chrono::Utc::now().date_naive();
     let note = "Loaded by the licensee from their own download. WPM ships no SFIA content; \
                 it must not be published or redistributed.";
-    let mut a: capability_frameworks::ActiveModel = match existing {
-        Some(row) => row.into(),
-        None => capability_frameworks::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            slug: ActiveValue::set(SFIA_SLUG.to_string()),
-            ..Default::default()
-        },
-    };
-    a.name = ActiveValue::set("SFIA — Skills Framework for the Information Age".to_string());
-    a.source_url = ActiveValue::set(Some("https://sfia-online.org/".to_string()));
-    a.licence = ActiveValue::set(Some(
-        "SFIA Foundation corporate licence (internal use)".to_string(),
-    ));
-    a.scale_max = ActiveValue::set(rules::SFIA_SCALE_MAX);
-    a.imported_on = ActiveValue::set(today);
-    a.note = ActiveValue::set(Some(note.to_string()));
-    a.version = ActiveValue::set(Some(version.to_string()));
-    a.redistribution = ActiveValue::set(Redistribution::InternalOnly.token().to_string());
-    a.licence_holder = ActiveValue::set(licence.holder.clone());
-    a.licence_reference = ActiveValue::set(licence.reference.clone());
-    a.licence_checked_on = ActiveValue::set(Some(checked_on));
-    if a.id.is_not_set() {
-        a.insert(&txn).await?;
-    } else {
-        a.update(&txn).await?;
-    }
+    sqlx::query!(
+        "INSERT INTO capability_frameworks
+             (pid, slug, name, source_url, licence, scale_max, imported_on, note, version, redistribution, licence_holder,
+              licence_reference, licence_checked_on)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         ON CONFLICT (slug) DO UPDATE
+            SET name = EXCLUDED.name, source_url = EXCLUDED.source_url, licence = EXCLUDED.licence,
+                scale_max = EXCLUDED.scale_max, imported_on = EXCLUDED.imported_on, note = EXCLUDED.note,
+                version = EXCLUDED.version, redistribution = EXCLUDED.redistribution,
+                licence_holder = EXCLUDED.licence_holder, licence_reference = EXCLUDED.licence_reference,
+                licence_checked_on = EXCLUDED.licence_checked_on",
+        Uuid::new_v4(),
+        SFIA_SLUG,
+        "SFIA — Skills Framework for the Information Age",
+        "https://sfia-online.org/",
+        "SFIA Foundation corporate licence (internal use)",
+        rules::SFIA_SCALE_MAX,
+        today,
+        note,
+        version,
+        Redistribution::InternalOnly.token(),
+        licence.holder,
+        licence.reference,
+        checked_on,
+    )
+    .execute(&mut *tx)
+    .await?;
 
     // Link by exact normalised name; one reference per skill and per code.
     let mut by_name: BTreeMap<String, Vec<&Skill>> = BTreeMap::new();
     for s in &parsed {
         by_name.entry(normalise_label(&s.name)).or_default().push(s);
     }
-    let refs = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-        .all(&txn)
-        .await?;
+    let refs = sqlx::query!(
+        r#"SELECT ref AS "reference", skill_pid FROM skill_external_refs WHERE framework_slug = $1"#,
+        SFIA_SLUG,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     let mut taken: BTreeSet<String> = refs.iter().map(|r| r.reference.clone()).collect();
     let linked: BTreeSet<Uuid> = refs.iter().map(|r| r.skill_pid).collect();
-    let catalogue = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(&txn)
-        .await?;
+    let catalogue =
+        sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL ORDER BY id")
+            .fetch_all(&mut *tx)
+            .await?;
     for skill in &catalogue {
         if linked.contains(&skill.pid) {
             continue;
@@ -363,20 +328,21 @@ pub async fn import_sfia(db: &DatabaseConnection, text: &str, licence: &Licence)
             .map(Vec::as_slice)
             && taken.insert(only.code.clone())
         {
-            skill_external_refs::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                skill_pid: ActiveValue::set(skill.pid),
-                framework_slug: ActiveValue::set(SFIA_SLUG.to_string()),
-                reference: ActiveValue::set(only.code.clone()),
-                label: ActiveValue::set(Some(only.name.clone())),
-                version: ActiveValue::set(Some(version.to_string())),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query!(
+                r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version)
+                   VALUES ($1, $2, $3, $4, $5, $6)"#,
+                Uuid::new_v4(),
+                skill.pid,
+                SFIA_SLUG,
+                only.code,
+                only.name,
+                version,
+            )
+            .execute(&mut *tx)
             .await?;
             report.catalogue_linked += 1;
         }
     }
-    txn.commit().await?;
+    tx.commit().await?;
     Ok(report)
 }

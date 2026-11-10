@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE skill_pools SET peer_pool_ref = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ed0130c628c8bd82e9796fb36b86b9fd351fa7149748178a7d2b2d5119cd1d7d"
+}

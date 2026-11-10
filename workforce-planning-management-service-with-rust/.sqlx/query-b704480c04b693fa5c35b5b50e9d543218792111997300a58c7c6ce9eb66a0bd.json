@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rota_overrides SET worker_pid = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b704480c04b693fa5c35b5b50e9d543218792111997300a58c7c6ce9eb66a0bd"
+}

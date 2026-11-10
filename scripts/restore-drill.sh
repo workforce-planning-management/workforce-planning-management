@@ -71,7 +71,7 @@ start_service() { # url
     "$WPM_BIN" start > "$work/service.log" 2>&1 &
   pid=$!
   for _ in $(seq 1 60); do
-    curl -fs "http://localhost:$port/_health" >/dev/null 2>&1 && return 0
+    curl -fs "http://localhost:$port/_health/live" >/dev/null 2>&1 && return 0
     kill -0 "$pid" 2>/dev/null || { cat "$work/service.log" >&2; fail "service exited"; }
     sleep 1
   done
@@ -84,7 +84,8 @@ step "1. migrate and seed the source database ($src)"
 psql "$ADMIN_DATABASE_URL" -qc "CREATE DATABASE $src"
 export APP_ENV=demo
 DATABASE_URL="$SRC_URL" "$WPM_BIN" db migrate >/dev/null
-DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
+# The seed loads made-up records, so it runs only in development or test (WPM-R240).
+APP_ENV=development DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
 src_workers="$(psql "$SRC_URL" -Atc 'select count(*) from workers where deleted_at is null')"
 [ "$src_workers" -gt 0 ] || fail "the seed produced no workers"
 # The seed writes no audit entries; add a few through the database's own chain trigger, so the
@@ -127,8 +128,8 @@ step "5. the restored database matches the backup"
 checksums "$DST_URL" > "$work/after.sums"
 if ! diff -u "$work/before.sums" "$work/after.sums" >&2; then fail "a restored table differs from the backup"; fi
 echo "all $tables tables match (row checksums)" >&2
-applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from seaql_migrations')"
-applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from seaql_migrations')"
+applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from _sqlx_migrations')"
+applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from _sqlx_migrations')"
 [ "$applied_src" = "$applied_dst" ] || fail "migrations differ: $applied_src vs $applied_dst"
 echo "$applied_dst migrations recorded" >&2
 chain_after="$(DATABASE_URL="$DST_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)" \

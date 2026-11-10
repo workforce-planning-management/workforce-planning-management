@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO consultations\n             (pid, organization_ref, body_pid, plan_pid, establishment, profile, establishment_size, dismissals,\n              earliest_termination_on, topics, document_ref, outcome, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open', $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5bc02998aae713c4e575559fe4aae3256609eec9e1ec4e66a6004d5226e9a485"
+}

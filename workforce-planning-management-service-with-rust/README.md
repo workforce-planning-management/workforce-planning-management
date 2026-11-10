@@ -19,8 +19,8 @@ the **on-call rota** (swaps, swap requests, reminders), **announcements**, the
 data behind a **CEO dashboard**, workforce **metrics and insights**, **skills gap
 analysis** with **training time recommendations**, and **joiners and leavers**
 with a last-day handover.
-Implemented in Rust on Axum and [axa](https://crates.io/crates/axa) (SeaORM +
-PostgreSQL). No built-in UI — the
+Implemented in Rust on Axum and [axa](https://crates.io/crates/axa) (PostgreSQL, through
+`sqlx` and, until WPM-T466 is done, SeaORM). No built-in UI — the
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 provides the HR, manager, and worker self-service client.
 
@@ -146,8 +146,8 @@ the default and is unaffected either way.
 ## Quick start
 
 ```bash
-# Postgres 18 with a `loco` database user, then:
-export DATABASE_URL=postgres://loco:loco@localhost:5432/workforce_planning_management_development
+# Postgres 18, then:
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/workforce_planning_management_development
 cargo run -- db migrate       # create the schema
 cargo run -- task seed        # synthetic demo org (40 workers)
 cargo run -- start            # serve on :5150

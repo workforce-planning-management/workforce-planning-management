@@ -75,7 +75,7 @@ test.describe("Payroll runs", () => {
     await expect(page.getByTestId("error")).toHaveCount(0);
   });
 
-  test("more runs than a page are said so, and the next page is asked for, a failure of it keeping the first", async ({
+  test("more runs than a page show a button, which follows the cursor, a failure of it keeping the first", async ({
     page,
   }) => {
     const run = (n: number) => ({
@@ -84,19 +84,16 @@ test.describe("Payroll runs", () => {
       period_start: `2020-01-${String((n % 28) + 1).padStart(2, "0")}`,
     });
     let failNext = true;
+    const seen: string[] = [];
     await page.route(/\/api\/proxy\/payroll-runs\?/, (route) => {
-      const offset = Number(
-        new URL(route.request().url()).searchParams.get("offset") ?? 0,
-      );
-      const headers = {
-        "x-total-count": "501",
-        "x-limit": "500",
-        "x-offset": String(offset),
-      };
-      if (offset === 0)
+      const url = new URL(route.request().url());
+      seen.push(url.search);
+      if (!url.searchParams.has("cursor"))
         return route.fulfill({
           json: Array.from({ length: 500 }, (_, i) => run(i)),
-          headers,
+          headers: {
+            link: '</api/payroll-runs?limit=500&cursor=SIGNED>; rel="next"',
+          },
         });
       if (failNext) {
         failNext = false;
@@ -105,20 +102,23 @@ test.describe("Payroll runs", () => {
           json: { description: "try again" },
         });
       }
-      return route.fulfill({ json: [run(500)], headers });
+      return route.fulfill({ json: [run(500)] });
     });
     await page.goto("/payroll");
-    await expect(page.getByTestId("load-more-count")).toHaveText(
-      "Showing 500 of 501",
-    );
+    await expect(page.getByTestId("load-more-button")).toBeVisible();
+    // No total is made up: the service sends none.
+    await expect(page.getByTestId("load-more")).not.toContainText("of");
     await page.getByTestId("load-more-button").click();
     await expect(page.getByTestId("more-error")).toBeVisible();
     await expect(page.getByTestId("runs")).toBeVisible();
-    await expect(page.getByTestId("load-more-count")).toHaveText(
-      "Showing 500 of 501",
-    );
+    await expect(page.getByTestId("load-more-button")).toBeVisible();
     await page.getByTestId("load-more-button").click();
     await expect(page.getByTestId("load-more")).toHaveCount(0);
+    expect(seen).toEqual([
+      "?limit=500",
+      "?limit=500&cursor=SIGNED",
+      "?limit=500&cursor=SIGNED",
+    ]);
   });
 });
 

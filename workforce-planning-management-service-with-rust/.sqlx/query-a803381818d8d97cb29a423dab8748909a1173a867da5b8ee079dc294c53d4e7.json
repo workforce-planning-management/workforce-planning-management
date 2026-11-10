@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT framework, number, code, title, summary, attributes FROM job_level_levels ORDER BY number",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "framework",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "framework"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "number"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "summary",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "summary"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "attributes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_levels",
+            "name": "attributes"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a803381818d8d97cb29a423dab8748909a1173a867da5b8ee079dc294c53d4e7"
+}

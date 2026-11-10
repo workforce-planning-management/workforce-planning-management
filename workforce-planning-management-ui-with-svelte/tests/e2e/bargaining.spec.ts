@@ -182,7 +182,7 @@ test.describe("Bargaining", () => {
 
   test("a refusal is shown in the service's words", async ({ page }) => {
     await page.route("**/api/proxy/recognised-bodies?*", (route) =>
-      route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/bargaining");
     await expect(page.getByTestId("error")).toContainText(

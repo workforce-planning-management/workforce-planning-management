@@ -1,0 +1,122 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, period_start, period_end, status,\n                  deleted_at AS \"deleted_at: _\"\n             FROM review_cycles WHERE deleted_at IS NULL\n            ORDER BY id LIMIT 200",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "period_start",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "period_end",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "review_cycles",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "10711eca90f420d439743030e25a5880c893865da0847b46b6e6b272e6f998c3"
+}

@@ -17,15 +17,14 @@
 
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
 
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{equality_declarations, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::workers;
 use crate::models::memberships;
 use crate::rules::equality_monitoring::{self as rules, Config, Gate};
 
@@ -62,13 +61,13 @@ async fn own_declarations(
     ctx: &AppContext,
     worker: &workers::Model,
 ) -> Result<BTreeMap<String, String>> {
-    Ok(equality_declarations::Entity::find()
-        .filter(equality_declarations::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| (d.category, d.value))
-        .collect())
+    let rows = sqlx::query!(
+        "SELECT category, value FROM equality_declarations WHERE worker_pid = $1",
+        worker.pid,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
+    Ok(rows.into_iter().map(|d| (d.category, d.value)).collect())
 }
 
 /// What the worker sees. When monitoring is off they are told so and nothing else.
@@ -116,31 +115,21 @@ pub(crate) async fn declare_for(
             .validate(category, value)
             .map_err(|e| unprocessable(&e))?;
     }
-    let txn = ctx.db.begin().await?;
+    let mut tx = pool(ctx).begin().await?;
     for (category, value) in &payload.declarations {
-        let existing = equality_declarations::Entity::find()
-            .filter(equality_declarations::Column::WorkerPid.eq(worker.pid))
-            .filter(equality_declarations::Column::Category.eq(category))
-            .one(&txn)
-            .await?;
-        if let Some(row) = existing {
-            let mut active: equality_declarations::ActiveModel = row.into();
-            active.value = ActiveValue::set(value.clone());
-            active.update(&txn).await?;
-        } else {
-            equality_declarations::ActiveModel {
-                worker_pid: ActiveValue::set(worker.pid),
-                category: ActiveValue::set(category.clone()),
-                value: ActiveValue::set(value.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-        }
+        sqlx::query!(
+            "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ($1, $2, $3)
+             ON CONFLICT (worker_pid, category) DO UPDATE SET value = EXCLUDED.value",
+            worker.pid,
+            category,
+            value,
+        )
+        .execute(&mut *tx)
+        .await?;
     }
     // The audit entry says that declarations changed, never which categories or what values.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "equality_monitoring_declared",
@@ -148,7 +137,7 @@ pub(crate) async fn declare_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     view_for(ctx, worker).await
 }
 
@@ -160,18 +149,21 @@ pub(crate) async fn withdraw_for(
     category: Option<&str>,
 ) -> Result<Response> {
     on()?;
-    let mut delete = equality_declarations::Entity::delete_many()
-        .filter(equality_declarations::Column::WorkerPid.eq(worker.pid));
-    if let Some(c) = category {
-        delete = delete.filter(equality_declarations::Column::Category.eq(c));
-    }
-    let txn = ctx.db.begin().await?;
-    let removed = delete.exec(&txn).await?.rows_affected;
+    let mut tx = pool(ctx).begin().await?;
+    let removed = sqlx::query!(
+        "DELETE FROM equality_declarations
+         WHERE worker_pid = $1 AND ($2::text IS NULL OR category = $2)",
+        worker.pid,
+        category,
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
     if removed == 0 {
         return Err(Error::NotFound);
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "equality_monitoring_withdrawn",
@@ -179,7 +171,7 @@ pub(crate) async fn withdraw_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     view_for(ctx, worker).await
 }
 
@@ -197,7 +189,7 @@ struct SummaryQuery {
 async fn summary(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<SummaryQuery>,
+    axa::extract::Query(query): axa::extract::Query<SummaryQuery>,
 ) -> Result<Response> {
     let (_, config, floor) = on()?;
     if !config.has_category(&query.category) {
@@ -205,38 +197,41 @@ async fn summary(
             "that category is not monitored on this deployment",
         ));
     }
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
-        .filter(|w| {
-            scope
-                .as_ref()
-                .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
-        })
-        .collect();
+    let staff: Vec<_> = sqlx::query!(
+        "SELECT pid, organization_ref, department, hired_on, terminated_on
+         FROM workers WHERE deleted_at IS NULL ORDER BY id",
+    )
+    .fetch_all(pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| {
+        scope
+            .as_ref()
+            .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
+    })
+    .collect();
     let mut headcount: BTreeMap<String, usize> = BTreeMap::new();
     let mut department_of: BTreeMap<uuid::Uuid, String> = BTreeMap::new();
     for w in &staff {
         *headcount.entry(w.department.clone()).or_insert(0) += 1;
         department_of.insert(w.pid, w.department.clone());
     }
-    let answers = equality_declarations::Entity::find()
-        .filter(equality_declarations::Column::Category.eq(&query.category))
-        .all(&ctx.db)
-        .await?;
+    let answers = sqlx::query!(
+        "SELECT worker_pid, value FROM equality_declarations WHERE category = $1",
+        query.category,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let rows: Vec<(String, String)> = answers
         .into_iter()
         .filter_map(|a| Some((department_of.get(&a.worker_pid)?.clone(), a.value)))
         .collect();
     let result = rules::summarise(&rows, &headcount, floor);
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "equality_monitoring",
         uuid::Uuid::nil(),
         "equality_monitoring_summary_read",

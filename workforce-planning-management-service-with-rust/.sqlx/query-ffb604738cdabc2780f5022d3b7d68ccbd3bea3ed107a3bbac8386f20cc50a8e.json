@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM organization_memberships\n                           WHERE person_ref = $1 AND organization_ref = $2 AND role = $3 AND deleted_at IS NULL)\n             AS \"exists!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "ffb604738cdabc2780f5022d3b7d68ccbd3bea3ed107a3bbac8386f20cc50a8e"
+}

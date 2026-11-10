@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM credential_issuances\n               WHERE kind = 'cpd_entry' AND source_pid = $1 AND revoked_at IS NULL\n           ) AS \"live!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "live!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "bcfebefea3c1a80e50e42357cdbad41ce26d735898db24e1d4906f9fe5991b3a"
+}

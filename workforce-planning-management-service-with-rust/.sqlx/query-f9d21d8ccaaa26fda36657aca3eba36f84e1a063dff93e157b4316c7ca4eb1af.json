@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE cpd_entries SET deleted_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f9d21d8ccaaa26fda36657aca3eba36f84e1a063dff93e157b4316c7ca4eb1af"
+}

@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, title FROM plan_objectives WHERE plan_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "plan_objectives",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_objectives",
+            "name": "title"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "06dcc0aa3753fd7fe21da07cdcd42c55963c37a25758f3d81896fe26c012bc89"
+}

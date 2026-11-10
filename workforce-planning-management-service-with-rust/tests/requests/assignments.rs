@@ -2,22 +2,19 @@
 //! another and writes through, the worker-row triggers, and the subject export and erasure.
 
 use chrono::{Duration, Utc};
-use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 async fn scalar(ctx: &axa::AppContext, sql: String) -> i64 {
-    ctx.db
-        .query_one_raw(Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            sql,
-        ))
+    sqlx::query(sqlx::AssertSqlSafe(&*sql))
+        .fetch_optional(workforce_planning_management::db::pool(ctx))
         .await
         .unwrap()
         .unwrap()
-        .try_get("", "n")
+        .try_get("n")
         .unwrap()
 }
 
@@ -105,17 +102,12 @@ async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_anot
         assert_eq!(opens, 1, "exactly one open primary");
 
         // The worker-row trigger: an older writer correcting the department corrects the open primary in place.
-        ctx.db.execute_unprepared(&format!("UPDATE workers SET department = 'cardiology' WHERE pid = '{w}'")).await.unwrap();
-        let dept = ctx
-            .db
-            .query_one_raw(Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT department AS d FROM assignments WHERE worker_pid = '{w}' AND is_primary AND ends_on IS NULL"),
-            ))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET department = 'cardiology' WHERE pid = '{w}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        let dept = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT department AS d FROM assignments WHERE worker_pid = '{w}' AND is_primary AND ends_on IS NULL"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get::<String>("", "d")
+            .try_get::<String, _>("d")
             .unwrap();
         assert_eq!(dept, "cardiology");
         assert_eq!(scalar(&ctx, format!("SELECT count(*) AS n FROM assignments WHERE worker_pid = '{w}'")).await, 3, "no history is made by a correction");
@@ -223,11 +215,11 @@ async fn the_breakdown_by_category_shows_nothing_under_the_floor_and_gives_no_to
             workers.push(w);
         }
         // All ten are clinical; three also sit in one area of work.
-        ctx.db.execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "UPDATE assignments SET staff_group = 'clinical' WHERE worker_pid IN (SELECT pid FROM workers WHERE organization_ref = '{org}')"
-        )).await.unwrap();
+        ))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         for w in &workers[..3] {
-            ctx.db.execute_unprepared(&format!("UPDATE assignments SET area_of_work = 'ward' WHERE worker_pid = '{w}'")).await.unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE assignments SET area_of_work = 'ward' WHERE worker_pid = '{w}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let get = |by: &'static str| {
             let request = &request;
@@ -309,12 +301,12 @@ async fn an_assignment_names_a_cost_centre_that_is_open_and_unmatched_position_v
         assert!(rows["assignments"].as_array().unwrap().iter().any(|a| a["cost_centre"] == "unknown"));
 
         // Position cost centres that match nothing are listed, not matched. A position needs its own fields; seed through SQL.
-        ctx.db.execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state)
              VALUES (gen_random_uuid(), '{org}', 'ward-4 (old)', 'Nurse', 100, 'core', 'planned'),
                     (gen_random_uuid(), '{org}', 'ward-4 (old)', 'Nurse', 100, 'core', 'planned'),
                     (gen_random_uuid(), '{org}', 'TOP', 'Chief', 100, 'core', 'planned')"
-        )).await.unwrap();
+        ))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let un: Value = request.get(&format!("/api/cost-centres/unmatched?organization={org}")).await.json();
         assert_eq!(un["unmatched"], json!([{ "value": "ward-4 (old)", "positions": 2 }]), "{un}");
     })
@@ -462,8 +454,8 @@ async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_h
         assert_eq!(request.post("/api/holidays").json(&json!({ "organization_ref": org, "region": "GB-ENG", "name": " ", "on": "2026-06-12" })).await.status_code(), 422);
 
         // A hand-edited generated row is rewritten, a manual row of the same name and date is not.
-        ctx.db.execute_unprepared(&format!("UPDATE holidays SET observed_on = '2026-12-29' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'Boxing Day'")).await.unwrap();
-        ctx.db.execute_unprepared(&format!("UPDATE holidays SET source = 'manual', observed_on = '2026-01-02' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'New Year''s Day'")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE holidays SET observed_on = '2026-12-29' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'Boxing Day'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE holidays SET source = 'manual', observed_on = '2026-01-02' WHERE organization_ref = '{org}' AND region = 'GB-ENG' AND name = 'New Year''s Day'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let fixed: Value = generate(&org, "GB-ENG", 2026).await.json();
         assert_eq!((fixed["updated"].as_i64(), fixed["kept_manual"].as_i64(), fixed["unchanged"].as_i64()), (Some(1), Some(1), Some(6)), "{fixed}");
         let after: Value = request.get(&format!("/api/holidays?organization={org}&region=GB-ENG&year=2026")).await.json();
@@ -481,17 +473,18 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
     use chrono::Duration as D;
     use workforce_planning_management::models::link_tokens::{consume, issue, purge_expired};
     crate::requests::request_open(|_request, ctx| async move {
+        let db = workforce_planning_management::db::pool(&ctx);
         let now = Utc::now();
         let subject = uuid::Uuid::new_v4();
 
         // A bad purpose or life is refused; nothing is stored.
-        assert!(issue(&ctx.db, "Bad Purpose", None, 30, now).await.is_err());
-        assert!(issue(&ctx.db, "confirm", None, 0, now).await.is_err());
-        assert!(issue(&ctx.db, "confirm", None, 7 * 24 * 60 + 1, now).await.is_err());
+        assert!(issue(&mut db.acquire().await.unwrap(), "Bad Purpose", None, 30, now).await.is_err());
+        assert!(issue(&mut db.acquire().await.unwrap(), "confirm", None, 0, now).await.is_err());
+        assert!(issue(&mut db.acquire().await.unwrap(), "confirm", None, 7 * 24 * 60 + 1, now).await.is_err());
 
-        let token = issue(&ctx.db, "confirm", Some(subject), 30, now).await.unwrap();
+        let token = issue(&mut db.acquire().await.unwrap(), "confirm", Some(subject), 30, now).await.unwrap();
         assert_eq!(token.len(), 43);
-        let other = issue(&ctx.db, "confirm", None, 30, now).await.unwrap();
+        let other = issue(&mut db.acquire().await.unwrap(), "confirm", None, 30, now).await.unwrap();
         assert_ne!(token, other, "tokens are random");
 
         // Only the hash is stored: no column can hold a token, and the token text is nowhere in the table.
@@ -503,25 +496,25 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
         assert_eq!(scalar(&ctx, format!("SELECT count(*) AS n FROM link_tokens WHERE token_hash = '{hash}'")).await, 1);
 
         // The wrong purpose does not use it up, and does not work.
-        assert_eq!(consume(&ctx.db, "reset", &token, now + D::minutes(1)).await.unwrap(), None);
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "reset", &token, now + D::minutes(1)).await.unwrap(), None);
         // Malformed input never reaches the table.
-        assert_eq!(consume(&ctx.db, "confirm", "short", now).await.unwrap(), None);
-        assert_eq!(consume(&ctx.db, "confirm", &format!("{}!", &token[..42]), now).await.unwrap(), None);
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", "short", now).await.unwrap(), None);
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &format!("{}!", &token[..42]), now).await.unwrap(), None);
 
         // The right purpose works exactly once.
-        let first = consume(&ctx.db, "confirm", &token, now + D::minutes(2)).await.unwrap();
+        let first = consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + D::minutes(2)).await.unwrap();
         assert_eq!(first.map(|c| c.subject_pid), Some(Some(subject)));
-        assert_eq!(consume(&ctx.db, "confirm", &token, now + D::minutes(3)).await.unwrap(), None, "used");
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + D::minutes(3)).await.unwrap(), None, "used");
 
         // A used token cannot be made usable again, even by an UPDATE.
-        let reuse = ctx.db.execute_unprepared(&format!("UPDATE link_tokens SET used_at = NULL WHERE token_hash = '{hash}'")).await;
+        let reuse = sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE link_tokens SET used_at = NULL WHERE token_hash = '{hash}'"))).execute(workforce_planning_management::db::pool(&ctx)).await;
         assert!(reuse.is_err(), "used_at is written once");
 
         // Expiry is exclusive and an expired token is refused.
-        let brief = issue(&ctx.db, "confirm", None, 1, now).await.unwrap();
-        assert_eq!(consume(&ctx.db, "confirm", &brief, now + D::minutes(1)).await.unwrap(), None, "expired at the minute");
-        let live = issue(&ctx.db, "confirm", None, 5, now).await.unwrap();
-        assert!(consume(&ctx.db, "confirm", &live, now + D::minutes(4)).await.unwrap().is_some());
+        let brief = issue(&mut db.acquire().await.unwrap(), "confirm", None, 1, now).await.unwrap();
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &brief, now + D::minutes(1)).await.unwrap(), None, "expired at the minute");
+        let live = issue(&mut db.acquire().await.unwrap(), "confirm", None, 5, now).await.unwrap();
+        assert!(consume(&mut db.acquire().await.unwrap(), "confirm", &live, now + D::minutes(4)).await.unwrap().is_some());
 
         // The audit trail has the reasons and never the token.
         let reasons = |r: &str| scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE entity = 'link_token' AND action = 'link_token_refused' AND snapshot->>'reason' = '{r}'"));
@@ -530,7 +523,7 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
         assert_eq!(in_audit, 0, "a token is never written to the audit trail");
 
         // Old tokens are purged.
-        let removed = purge_expired(&ctx.db, now + D::hours(1)).await.unwrap();
+        let removed = purge_expired(&mut db.acquire().await.unwrap(), now + D::hours(1)).await.unwrap();
         assert!(removed >= 4, "{removed}");
         assert_eq!(scalar(&ctx, "SELECT count(*) AS n FROM link_tokens".to_string()).await, 0);
     })
@@ -546,16 +539,11 @@ async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let w = seed_worker!(&request, &org, format!("INV-{tag}"), None).await;
         activate!(&request, &w).await;
-        let person: String = ctx
-            .db
-            .query_one_raw(Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT person_ref AS p FROM workers WHERE pid = '{w}'"),
-            ))
+        let person: String = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT person_ref AS p FROM workers WHERE pid = '{w}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get("", "p")
+            .try_get("p")
             .unwrap();
         for sql in [
             format!("INSERT INTO onboarding_items (pid, worker_pid, name, mandatory, status, waived_reason) VALUES (gen_random_uuid(), '{w}', 'Laptop', true, 'waived', 'has their own')"),
@@ -563,7 +551,7 @@ async fn the_tables_found_by_the_inventory_are_exported_and_erased() {
             format!("INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) VALUES (gen_random_uuid(), '{person}', '{org}', '{w}', 'member', '2026-01-05')"),
             format!("INSERT INTO succession_candidates (pid, plan_pid, worker_pid, readiness, rank) VALUES (gen_random_uuid(), gen_random_uuid(), '{w}', 'ready_now', 1)"),
         ] {
-            ctx.db.execute_unprepared(&sql).await.unwrap();
+            sqlx::raw_sql(sqlx::AssertSqlSafe(&*sql)).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let count = |table: &'static str| {
             let ctx = &ctx;

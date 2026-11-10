@@ -481,7 +481,7 @@ mod tests {
         }
     }
 
-    /// Enforcement on ⇒ the public paths (health/ping, `OpenAPI`,
+    /// Enforcement on ⇒ the public paths (the health probes, `OpenAPI`,
     /// Swagger UI, Prometheus metrics) still pass without a token.
     #[test]
     fn enforce_on_allows_public_paths() {
@@ -489,8 +489,9 @@ mod tests {
         let verifier = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let policy = policy();
         for path in [
-            "/_health",
-            "/_ping",
+            "/_health/live",
+            "/_health/ready",
+            "/_health/startup",
             "/api-docs/openapi.json",
             "/swagger-ui",
             "/swagger-ui/index.html",
@@ -508,6 +509,10 @@ mod tests {
                 .is_ok(),
                 "{path} should be public"
             );
+        }
+        // The probes before axa 0.11 are no longer served, so they are not public either (WPM-T482).
+        for path in ["/_health", "/_ping", "/_readiness"] {
+            assert!(!is_public_path(path), "{path} should not be public");
         }
     }
 

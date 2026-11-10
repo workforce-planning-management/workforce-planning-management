@@ -4,9 +4,9 @@
 //! The issuer's public key and the status list are public by necessity (a verifier has no account here) and hold no personal data.
 //! Spec: `spec/skills-and-training.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{DateTime, SecondsFormat, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -14,8 +14,8 @@ use uuid::Uuid;
 use super::me::me_worker;
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{cpd_entries, credential_issuances, skill_external_refs};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::credential_issuances;
 use crate::rules::credential as rules;
 use crate::rules::webhook::check_url;
 
@@ -77,44 +77,49 @@ pub(crate) async fn issue(
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let issuer = issuer()?;
-    let entry = cpd_entries::Entity::find()
-        .filter(cpd_entries::Column::Pid.eq(payload.cpd_entry_pid))
-        .filter(cpd_entries::Column::WorkerPid.eq(worker.pid))
-        .filter(cpd_entries::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let entry = sqlx::query!(
+        "SELECT pid, verified_on, category, skill_pid, activity FROM cpd_entries
+         WHERE pid = $1 AND worker_pid = $2 AND deleted_at IS NULL",
+        payload.cpd_entry_pid,
+        worker.pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let Some(verified_on) = entry.verified_on else {
         return Err(unprocessable(
             "only a verified CPD entry can be issued as a credential",
         ));
     };
-    let live = credential_issuances::Entity::find()
-        .filter(credential_issuances::Column::Kind.eq("cpd_entry"))
-        .filter(credential_issuances::Column::SourcePid.eq(entry.pid))
-        .filter(credential_issuances::Column::RevokedAt.is_null())
-        .count(&ctx.db)
-        .await?;
-    if live > 0 {
+    let live = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM credential_issuances
+               WHERE kind = 'cpd_entry' AND source_pid = $1 AND revoked_at IS NULL
+           ) AS "live!""#,
+        entry.pid,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if live {
         return Err(unprocessable(
             "a credential for this entry is already live; revoke it to issue another",
         ));
     }
     let now = Utc::now();
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    let created = credential_issuances::ActiveModel {
-        pid: ActiveValue::set(pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set("cpd_entry".to_string()),
-        source_pid: ActiveValue::set(entry.pid),
-        issued_at: ActiveValue::set(now.into()),
-        sha256: ActiveValue::set("0".repeat(64)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    let id = sqlx::query_scalar!(
+        "INSERT INTO credential_issuances (pid, worker_pid, kind, source_pid, issued_at, sha256)
+         VALUES ($1, $2, 'cpd_entry', $3, $4, $5) RETURNING id",
+        pid,
+        worker.pid,
+        entry.pid,
+        now,
+        "0".repeat(64),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    let index = usize::try_from(created.id - 1).unwrap_or(usize::MAX);
+    let index = usize::try_from(id - 1).unwrap_or(usize::MAX);
     if index >= rules::STATUS_BITS {
         return Err(unprocessable(
             "the revocation list is full; a new list is needed before more can be issued",
@@ -127,15 +132,12 @@ pub(crate) async fn issue(
     let criteria = format!("Recorded by the person and verified by the employer on {verified_on}.");
     // (Read through the open transaction: with a pool of one connection a second one would wait for it for ever.)
     // The skill the entry names, if it names one, with every reference the catalogue holds for it (ESCO first, then SFIA, then the rest).
-    let mut refs = match entry.skill_pid {
-        Some(skill) => {
-            skill_external_refs::Entity::find()
-                .filter(skill_external_refs::Column::SkillPid.eq(skill))
-                .all(&txn)
-                .await?
-        }
-        None => Vec::new(),
-    };
+    let mut refs = sqlx::query!(
+        "SELECT framework_slug, ref AS reference, label FROM skill_external_refs WHERE skill_pid = $1",
+        entry.skill_pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     refs.sort_by_key(|r| {
         (
             match r.framework_slug.as_str() {
@@ -147,14 +149,9 @@ pub(crate) async fn issue(
             r.reference.clone(),
         )
     });
-    let skill_name = match entry.skill_pid {
-        Some(skill) => crate::models::_entities::skills::Entity::find()
-            .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
-            .one(&txn)
-            .await?
-            .map(|s| s.name),
-        None => None,
-    };
+    let skill_name = sqlx::query_scalar!("SELECT name FROM skills WHERE pid = $1", entry.skill_pid)
+        .fetch_optional(&mut *tx)
+        .await?;
     let names: Vec<String> = refs
         .iter()
         .map(|r| rules::framework_name(&r.framework_slug))
@@ -185,11 +182,15 @@ pub(crate) async fn issue(
         alignments: &alignments,
     });
     let token = rules::sign(&issuer.seed, &issuer.kid, &credential);
-    let mut active: credential_issuances::ActiveModel = created.into();
-    active.sha256 = ActiveValue::set(rules::sha256_hex(&token));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    sqlx::query!(
+        "UPDATE credential_issuances SET sha256 = $2 WHERE id = $1",
+        id,
+        rules::sha256_hex(&token),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "credential",
         pid,
         "credential_issued",
@@ -197,7 +198,7 @@ pub(crate) async fn issue(
         Some(json!({ "kind": "cpd_entry" })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(
         json!({ "pid": pid, "status_index": index, "format": "vc+jwt", "credential": token }),
     )
@@ -207,11 +208,15 @@ pub(crate) async fn issue(
 #[debug_handler]
 pub(crate) async fn mine(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
-    let rows = credential_issuances::Entity::find()
-        .filter(credential_issuances::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(credential_issuances::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        credential_issuances::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, source_pid,
+                  issued_at AS "issued_at: _", revoked_at AS "revoked_at: _", revoked_by, sha256
+           FROM credential_issuances WHERE worker_pid = $1 ORDER BY id DESC"#,
+        worker.pid,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     format::json(json!({ "credentials": rows.iter().map(row).collect::<Vec<_>>() }))
 }
 
@@ -224,13 +229,17 @@ async fn revoke_row(
         return Err(unprocessable("this credential is already revoked"));
     }
     let pid = found.pid;
-    let txn = ctx.db.begin().await?;
-    let mut active: credential_issuances::ActiveModel = found.into();
-    active.revoked_at = ActiveValue::set(Some(Utc::now().into()));
-    active.revoked_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE credential_issuances SET revoked_at = $2, revoked_by = $3 WHERE id = $1",
+        found.id,
+        Utc::now(),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "credential",
         pid,
         "credential_revoked",
@@ -238,16 +247,21 @@ async fn revoke_row(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "revoked": true }))
 }
 
 async fn find(ctx: &AppContext, pid: Uuid) -> Result<credential_issuances::Model> {
-    credential_issuances::Entity::find()
-        .filter(credential_issuances::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        credential_issuances::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, source_pid,
+                  issued_at AS "issued_at: _", revoked_at AS "revoked_at: _", revoked_by, sha256
+           FROM credential_issuances WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `POST /api/me/credentials/{pid}/revoke` — the worker withdraws one of their own credentials.
@@ -292,13 +306,13 @@ async fn issuer_key() -> Result<Response> {
 #[debug_handler]
 async fn status_list(State(ctx): State<AppContext>) -> Result<Response> {
     let issuer = issuer()?;
-    let revoked: Vec<usize> = credential_issuances::Entity::find()
-        .filter(credential_issuances::Column::RevokedAt.is_not_null())
-        .all(&ctx.db)
-        .await?
-        .iter()
-        .filter_map(|i| usize::try_from(i.id - 1).ok())
-        .collect();
+    let revoked: Vec<usize> =
+        sqlx::query_scalar!("SELECT id FROM credential_issuances WHERE revoked_at IS NOT NULL")
+            .fetch_all(pool(&ctx))
+            .await?
+            .into_iter()
+            .filter_map(|id| usize::try_from(id - 1).ok())
+            .collect();
     let encoded = rules::encoded_list(&revoked).map_err(|e| unprocessable(&e))?;
     let credential = rules::status_list(&issuer.id, &issuer.list_url, &stamp(Utc::now()), &encoded);
     let token = rules::sign(&issuer.seed, &issuer.kid, &credential);

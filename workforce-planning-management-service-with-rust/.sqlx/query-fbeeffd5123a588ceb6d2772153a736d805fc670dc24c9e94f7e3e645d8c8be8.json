@@ -1,0 +1,57 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.pid, p.name, p.summary,\n                  (SELECT COUNT(*) FROM learning_path_steps s WHERE s.path_pid = p.pid) AS \"steps!\"\n             FROM learning_paths p WHERE p.deleted_at IS NULL ORDER BY p.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "learning_paths",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_paths",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "summary",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_paths",
+            "name": "summary"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "steps!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null
+    ]
+  },
+  "hash": "fbeeffd5123a588ceb6d2772153a736d805fc670dc24c9e94f7e3e645d8c8be8"
+}

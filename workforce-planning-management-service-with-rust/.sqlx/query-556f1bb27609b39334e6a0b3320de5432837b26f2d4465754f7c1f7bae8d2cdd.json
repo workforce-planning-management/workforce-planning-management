@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, outcome, assessed_on, reviewed_by FROM engagement_status_assessments\n          WHERE worker_pid = $1 ORDER BY id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "engagement_status_assessments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "engagement_status_assessments",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "assessed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "engagement_status_assessments",
+            "name": "assessed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "reviewed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "engagement_status_assessments",
+            "name": "reviewed_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "556f1bb27609b39334e6a0b3320de5432837b26f2d4465754f7c1f7bae8d2cdd"
+}

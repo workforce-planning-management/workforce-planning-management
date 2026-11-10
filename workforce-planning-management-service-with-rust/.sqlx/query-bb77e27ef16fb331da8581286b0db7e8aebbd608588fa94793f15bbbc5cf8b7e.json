@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, starts_on, ends_on FROM assignments WHERE is_primary AND worker_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "bb77e27ef16fb331da8581286b0db7e8aebbd608588fa94793f15bbbc5cf8b7e"
+}

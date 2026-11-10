@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT slug, name, organization, track, source FROM job_level_frameworks ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_frameworks",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_frameworks",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "organization",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_frameworks",
+            "name": "organization"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "track",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_frameworks",
+            "name": "track"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "job_level_frameworks",
+            "name": "source"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "838e9cb9ef8fe95abbfe63effabbc74037f8acff6455e7c63e005d427aed1cc7"
+}

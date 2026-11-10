@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH RECURSIVE staff AS (\n               SELECT pid, display_name, job_title, department, manager_pid FROM workers\n                WHERE deleted_at IS NULL AND hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)\n                  AND ($3::text[] IS NULL OR organization_ref = ANY($3))),\n           down AS (\n               SELECT s.* FROM staff s WHERE s.manager_pid = $1\n               UNION\n               SELECT s.* FROM staff s JOIN down d ON s.manager_pid = d.pid)\n           SELECT pid AS \"pid!\", display_name AS \"display_name!\", job_title AS \"job_title!\", department AS \"department!\",\n                  manager_pid\n             FROM down WHERE pid <> $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "job_title!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "department!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "manager_pid",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "85e9e6f0ae27ec6a4c34524a19ffff032e140cf8319b855cb3fdcd3dc2c90887"
+}

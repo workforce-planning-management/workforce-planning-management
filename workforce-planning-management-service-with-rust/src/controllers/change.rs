@@ -8,19 +8,16 @@
 //! affected role, and no individual is named or ranked.
 
 use super::ratio_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    change_initiatives, development_plans, initiative_role_impacts, initiative_skill_shifts,
-    role_profiles, skills, worker_skills, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::change_initiatives;
 use crate::models::records;
 use crate::rules::change as rules;
 use crate::rules::metrics::is_employed_on;
@@ -60,45 +57,109 @@ async fn create_initiative(
         problems.cap_text("description", text);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = change_initiatives::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        description: ActiveValue::set(payload.description.clone()),
-        kind: ActiveValue::set(payload.kind.clone()),
-        status: ActiveValue::set("draft".to_string()),
-        starts_on: ActiveValue::set(payload.starts_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO change_initiatives (pid, name, description, kind, status, starts_on, deleted_at)
+         VALUES ($1, $2, $3, $4, 'draft', $5, NULL)",
+        pid,
+        payload.name.trim(),
+        payload.description,
+        payload.kind,
+        payload.starts_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "change_initiative",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
+}
+
+/// One role an initiative touches.
+struct RoleImpact {
+    initiative_pid: Uuid,
+    role_profile_pid: Uuid,
+    impact: String,
+    timeframe: String,
+    note: Option<String>,
+}
+
+/// One skill whose demand an initiative moves.
+struct SkillShift {
+    initiative_pid: Uuid,
+    skill_pid: Uuid,
+    direction: String,
+    note: Option<String>,
+}
+
+/// The role impacts of one initiative, or of all of them.
+async fn role_impacts(ctx: &AppContext, initiative: Option<Uuid>) -> Result<Vec<RoleImpact>> {
+    Ok(sqlx::query_as!(
+        RoleImpact,
+        "SELECT initiative_pid, role_profile_pid, impact, timeframe, note FROM initiative_role_impacts
+          WHERE ($1::uuid IS NULL OR initiative_pid = $1) ORDER BY id",
+        initiative,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The skill shifts of one initiative, or of all of them.
+async fn skill_shifts(ctx: &AppContext, initiative: Option<Uuid>) -> Result<Vec<SkillShift>> {
+    Ok(sqlx::query_as!(
+        SkillShift,
+        "SELECT initiative_pid, skill_pid, direction, note FROM initiative_skill_shifts
+          WHERE ($1::uuid IS NULL OR initiative_pid = $1) ORDER BY id",
+        initiative,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// Every role profile's job title, by pid (soft-deleted ones too, as an impact may still name one).
+async fn role_titles(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
+    Ok(sqlx::query!("SELECT pid, job_title FROM role_profiles")
+        .fetch_all(db::pool(ctx))
+        .await?
+        .into_iter()
+        .map(|p| (p.pid, p.job_title))
+        .collect())
+}
+
+/// Every skill's name, by pid (soft-deleted ones too, as a shift may still name one).
+async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
+    Ok(sqlx::query!("SELECT pid, name FROM skills")
+        .fetch_all(db::pool(ctx))
+        .await?
+        .into_iter()
+        .map(|s| (s.pid, s.name))
+        .collect())
 }
 
 /// `GET /api/change-initiatives` — live initiatives, newest first, with
 /// how many roles and skills each touches.
 #[debug_handler]
 async fn list_initiatives(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = change_initiatives::Entity::find()
-        .filter(change_initiatives::Column::DeletedAt.is_null())
-        .order_by_desc(change_initiatives::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let impacts = initiative_role_impacts::Entity::find().all(&ctx.db).await?;
-    let shifts = initiative_skill_shifts::Entity::find().all(&ctx.db).await?;
+    let rows = sqlx::query_as!(
+        change_initiatives::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, kind, status,
+                  starts_on, deleted_at AS "deleted_at: _"
+             FROM change_initiatives WHERE deleted_at IS NULL ORDER BY id DESC"#
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let impacts = role_impacts(&ctx, None).await?;
+    let shifts = skill_shifts(&ctx, None).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {
@@ -117,12 +178,16 @@ async fn list_initiatives(State(ctx): State<AppContext>) -> Result<Response> {
 }
 
 async fn find_initiative(ctx: &AppContext, pid: &str) -> Result<change_initiatives::Model> {
-    change_initiatives::Entity::find()
-        .filter(change_initiatives::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(change_initiatives::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        change_initiatives::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, kind, status,
+                  starts_on, deleted_at AS "deleted_at: _"
+             FROM change_initiatives WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `GET /api/change-initiatives/{pid}` — an initiative with its role
@@ -133,21 +198,9 @@ async fn get_initiative(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let initiative = find_initiative(&ctx, &pid).await?;
-    let titles: BTreeMap<Uuid, String> = role_profiles::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| (p.pid, p.job_title))
-        .collect();
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
-    let role_impacts: Vec<serde_json::Value> = initiative_role_impacts::Entity::find()
-        .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+    let titles = role_titles(&ctx).await?;
+    let names = skill_names(&ctx).await?;
+    let role_impacts: Vec<serde_json::Value> = role_impacts(&ctx, Some(initiative.pid))
         .await?
         .iter()
         .map(|i| {
@@ -160,9 +213,7 @@ async fn get_initiative(
             })
         })
         .collect();
-    let skill_shifts: Vec<serde_json::Value> = initiative_skill_shifts::Entity::find()
-        .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+    let skill_shifts: Vec<serde_json::Value> = skill_shifts(&ctx, Some(initiative.pid))
         .await?
         .iter()
         .map(|s| {
@@ -207,22 +258,26 @@ async fn set_status(
     let initiative = find_initiative(&ctx, &pid).await?;
     rules::check_transition(&initiative.status, &payload.to).map_err(|e| unprocessable(&e))?;
     let from = initiative.status.clone();
-    let mut active: change_initiatives::ActiveModel = initiative.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE change_initiatives SET status = $2 WHERE id = $1",
+        initiative.id,
+        payload.to,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "change_initiative",
-        row.pid,
+        initiative.pid,
         "status_changed",
         caller.actor(),
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: initiative.pid.to_string(),
     })
 }
 
@@ -262,42 +317,31 @@ async fn set_role_impact(
     ensure_valid(&problems.into_vec())?;
     let initiative = find_initiative(&ctx, &pid).await?;
     ensure_editable(&initiative)?;
-    role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(payload.role_profile_pid))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let existing = initiative_role_impacts::Entity::find()
-        .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .filter(initiative_role_impacts::Column::RoleProfilePid.eq(payload.role_profile_pid))
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    match existing {
-        Some(row) => {
-            let mut active: initiative_role_impacts::ActiveModel = row.into();
-            active.impact = ActiveValue::set(payload.impact.clone());
-            active.timeframe = ActiveValue::set(payload.timeframe.clone());
-            active.note = ActiveValue::set(payload.note.clone());
-            active.update(&txn).await?;
-        }
-        None => {
-            initiative_role_impacts::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                initiative_pid: ActiveValue::set(initiative.pid),
-                role_profile_pid: ActiveValue::set(payload.role_profile_pid),
-                impact: ActiveValue::set(payload.impact.clone()),
-                timeframe: ActiveValue::set(payload.timeframe.clone()),
-                note: ActiveValue::set(payload.note.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-        }
-    }
-    Audit::record(
-        &txn,
+    sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL"#,
+        payload.role_profile_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One impact per role: a second one replaces the first.
+    sqlx::query!(
+        "INSERT INTO initiative_role_impacts (pid, initiative_pid, role_profile_pid, impact, timeframe, note)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (initiative_pid, role_profile_pid)
+         DO UPDATE SET impact = EXCLUDED.impact, timeframe = EXCLUDED.timeframe, note = EXCLUDED.note",
+        Uuid::new_v4(),
+        initiative.pid,
+        payload.role_profile_pid,
+        payload.impact,
+        payload.timeframe,
+        payload.note,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "change_initiative",
         initiative.pid,
         "role_impact_set",
@@ -305,7 +349,7 @@ async fn set_role_impact(
         Some(serde_json::json!({ "role_profile_pid": payload.role_profile_pid, "impact": payload.impact })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -319,16 +363,17 @@ async fn remove_role_impact(
     let initiative = find_initiative(&ctx, &pid).await?;
     ensure_editable(&initiative)?;
     let role = records::parse_pid(&role)?;
-    let row = initiative_role_impacts::Entity::find()
-        .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .filter(initiative_role_impacts::Column::RoleProfilePid.eq(role))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query_scalar!(
+        "DELETE FROM initiative_role_impacts WHERE initiative_pid = $1 AND role_profile_pid = $2 RETURNING id",
+        initiative.pid,
+        role,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "change_initiative",
         initiative.pid,
         "role_impact_removed",
@@ -336,7 +381,7 @@ async fn remove_role_impact(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -366,40 +411,30 @@ async fn set_skill_shift(
     ensure_valid(&problems.into_vec())?;
     let initiative = find_initiative(&ctx, &pid).await?;
     ensure_editable(&initiative)?;
-    skills::Entity::find()
-        .filter(skills::Column::Pid.eq(payload.skill_pid))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let existing = initiative_skill_shifts::Entity::find()
-        .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .filter(initiative_skill_shifts::Column::SkillPid.eq(payload.skill_pid))
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    match existing {
-        Some(row) => {
-            let mut active: initiative_skill_shifts::ActiveModel = row.into();
-            active.direction = ActiveValue::set(payload.direction.clone());
-            active.note = ActiveValue::set(payload.note.clone());
-            active.update(&txn).await?;
-        }
-        None => {
-            initiative_skill_shifts::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                initiative_pid: ActiveValue::set(initiative.pid),
-                skill_pid: ActiveValue::set(payload.skill_pid),
-                direction: ActiveValue::set(payload.direction.clone()),
-                note: ActiveValue::set(payload.note.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?;
-        }
-    }
-    Audit::record(
-        &txn,
+    sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM skills WHERE pid = $1 AND deleted_at IS NULL"#,
+        payload.skill_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One shift per skill: a second one replaces the first.
+    sqlx::query!(
+        "INSERT INTO initiative_skill_shifts (pid, initiative_pid, skill_pid, direction, note)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (initiative_pid, skill_pid)
+         DO UPDATE SET direction = EXCLUDED.direction, note = EXCLUDED.note",
+        Uuid::new_v4(),
+        initiative.pid,
+        payload.skill_pid,
+        payload.direction,
+        payload.note,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "change_initiative",
         initiative.pid,
         "skill_shift_set",
@@ -407,7 +442,7 @@ async fn set_skill_shift(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -421,16 +456,17 @@ async fn remove_skill_shift(
     let initiative = find_initiative(&ctx, &pid).await?;
     ensure_editable(&initiative)?;
     let skill = records::parse_pid(&skill)?;
-    let row = initiative_skill_shifts::Entity::find()
-        .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .filter(initiative_skill_shifts::Column::SkillPid.eq(skill))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query_scalar!(
+        "DELETE FROM initiative_skill_shifts WHERE initiative_pid = $1 AND skill_pid = $2 RETURNING id",
+        initiative.pid,
+        skill,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "change_initiative",
         initiative.pid,
         "skill_shift_removed",
@@ -438,8 +474,16 @@ async fn remove_skill_shift(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
+}
+
+/// What the readiness view reads of a worker: who, in which role, and whether employed.
+struct Holder {
+    pid: Uuid,
+    job_title: String,
+    hired_on: chrono::NaiveDate,
+    terminated_on: Option<chrono::NaiveDate>,
 }
 
 /// Query for the readiness view.
@@ -459,7 +503,7 @@ struct ReadinessQuery {
 async fn readiness(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<ReadinessQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReadinessQuery>,
 ) -> Result<Response> {
     let bar = query
         .min_proficiency
@@ -469,39 +513,32 @@ async fn readiness(
     }
     let initiative = find_initiative(&ctx, &pid).await?;
     let today = chrono::Utc::now().date_naive();
-    let employed: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .collect();
-    let with_reskill_plan: BTreeSet<Uuid> = development_plans::Entity::find()
-        .filter(development_plans::Column::DeletedAt.is_null())
-        .filter(development_plans::Column::Kind.eq("reskill"))
-        .filter(development_plans::Column::Status.eq("active"))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| p.worker_pid)
-        .collect();
-    let titles: BTreeMap<Uuid, String> = role_profiles::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| (p.pid, p.job_title))
-        .collect();
-    let impacts = initiative_role_impacts::Entity::find()
-        .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
-        .await?;
+    let employed: Vec<Holder> = sqlx::query_as!(
+        Holder,
+        "SELECT pid, job_title, hired_on, terminated_on FROM workers WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .collect();
+    let with_reskill_plan: BTreeSet<Uuid> = sqlx::query_scalar!(
+        "SELECT worker_pid FROM development_plans
+          WHERE deleted_at IS NULL AND kind = 'reskill' AND status = 'active'"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .collect();
+    let titles = role_titles(&ctx).await?;
+    let impacts = role_impacts(&ctx, Some(initiative.pid)).await?;
 
     let mut affected: BTreeSet<Uuid> = BTreeSet::new();
     let roles: Vec<serde_json::Value> = impacts
         .iter()
         .map(|i| {
             let title = titles.get(&i.role_profile_pid).cloned().unwrap_or_default();
-            let holders: Vec<&workers::Model> = employed
+            let holders: Vec<&Holder> = employed
                 .iter()
                 .filter(|w| same_title(&w.job_title, &title))
                 .collect();
@@ -527,24 +564,17 @@ async fn readiness(
         })
         .collect();
 
-    let shifts = initiative_skill_shifts::Entity::find()
-        .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
-        .await?;
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
-    let declarations = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let declared: BTreeMap<(Uuid, Uuid), i32> = declarations
-        .iter()
-        .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
-        .collect();
+    let shifts = skill_shifts(&ctx, Some(initiative.pid)).await?;
+    let names = skill_names(&ctx).await?;
+    // In id order, so a later declaration of the same skill wins, as it did when read in table order.
+    let declared: BTreeMap<(Uuid, Uuid), i32> = sqlx::query!(
+        "SELECT worker_pid, skill_pid, proficiency FROM worker_skills WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
+    .collect();
     let rising: Vec<serde_json::Value> = shifts
         .iter()
         .filter(|s| s.direction == "rising")

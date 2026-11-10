@@ -6,7 +6,7 @@
 //! themself, a stranger and a manager outside the chain are refused, only HR reads, nobody
 //! approves their own proposal, and marking a conversion done changes the worker in one step.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -88,7 +88,6 @@ fn policy_with_deciders() -> String {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_conversion -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read_by_hr() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -145,9 +144,9 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
         let w_nb = make(neighbour_p, "CV-N", "permanent", None).await;
         let w_hr = make(hr_p, "CV-H", "permanent", None).await;
         for (person, wp, role) in [(worker_p, &w, "member"), (mgr_p, &w_mgr, "member"), (other_mgr_p, &w_other, "member"), (neighbour_p, &w_nb, "member"), (hr_p, &w_hr, "hr_admin")] {
-            ctx.db.execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
-                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
         let post = |path: String, token: String, body: Value| {
             let request = &request;

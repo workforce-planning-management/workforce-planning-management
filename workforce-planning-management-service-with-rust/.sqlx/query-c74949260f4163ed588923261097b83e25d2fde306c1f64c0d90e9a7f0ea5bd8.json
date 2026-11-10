@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, application_pid,\n                  scheduled_at AS \"scheduled_at: _\", interviewer_ref, outcome, notes, deleted_at AS \"deleted_at: _\"\n             FROM interviews WHERE application_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "application_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "application_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "scheduled_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "scheduled_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "interviewer_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "interviewer_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "interviews",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c74949260f4163ed588923261097b83e25d2fde306c1f64c0d90e9a7f0ea5bd8"
+}

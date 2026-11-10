@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, change_kind, body_pid, note FROM decision_gates\n         WHERE organization_ref = $1 ORDER BY change_kind",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decision_gates",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "change_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "decision_gates",
+            "name": "change_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "body_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decision_gates",
+            "name": "body_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "decision_gates",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "7e35f946c9514e927798a34ecbe150fe5b9434d43a857bce53a01b2310dd21ac"
+}

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 AS \"one!\" FROM shift_assignments\n                WHERE shift_pid = $1 AND worker_pid = $2 AND deleted_at IS NULL LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5b31295593b44126060a8cc24d2ac00cb885a6b2a52e4c92afd4eb9baff0a673"
+}

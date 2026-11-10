@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, mentor_pid, mentee_pid FROM mentorships\n         WHERE deleted_at IS NULL AND status = 'active'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "mentor_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "mentor_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "mentee_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "mentee_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2c5ba738ea7aa2774ef58f4f7d31840b5b7789d715a09ecfcdf04c0e9216eb93"
+}

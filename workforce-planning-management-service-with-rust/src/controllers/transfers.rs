@@ -4,17 +4,16 @@
 //! memberships that no longer fit end** (kept as past membership, not
 //! deleted).
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{group_members, groups, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::models::{memberships, records};
 use crate::rules::groups as rules;
 use crate::validation::Problems;
@@ -39,7 +38,7 @@ async fn transfer(
     Path(pid): Path<String>,
     Json(payload): Json<TransferPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -56,26 +55,28 @@ async fn transfer(
     if payload.organization_ref == worker.organization_ref {
         return Err(unprocessable("the worker is already in that organization"));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await?
         && !refs.contains(&payload.organization_ref)
     {
         return Err(unprocessable(
             "you cannot move a worker to that organization",
         ));
     }
-    let graph = crate::models::confederations::live_edges(&ctx.db).await?;
-    let txn = ctx.db.begin().await?;
-    let open = group_members::Entity::find()
-        .filter(group_members::Column::WorkerPid.eq(worker.pid))
-        .filter(group_members::Column::LeftAt.is_null())
-        .all(&txn)
-        .await?;
-    let by_group: BTreeMap<Uuid, groups::Model> = groups::Entity::find()
-        .all(&txn)
-        .await?
-        .into_iter()
-        .map(|g| (g.pid, g))
-        .collect();
+    let graph = crate::models::confederations::live_edges(&ctx).await?;
+    let mut tx = pool(&ctx).begin().await?;
+    let open = sqlx::query!(
+        "SELECT pid, group_pid FROM group_members WHERE worker_pid = $1 AND left_at IS NULL",
+        worker.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    let by_group: BTreeMap<Uuid, _> =
+        sqlx::query!("SELECT pid, name, scope, organization_ref FROM groups")
+            .fetch_all(&mut *tx)
+            .await?
+            .into_iter()
+            .map(|g| (g.pid, g))
+            .collect();
     let fits: Vec<(Uuid, &str, &str)> = open
         .iter()
         .filter_map(|m| {
@@ -86,29 +87,38 @@ async fn transfer(
         .collect();
     let to_end = rules::memberships_to_end(&payload.organization_ref, &fits, &graph);
     let mut ended = Vec::new();
-    for membership in open.into_iter().filter(|m| to_end.contains(&m.pid)) {
-        let name = by_group.get(&membership.group_pid).map(|g| g.name.clone());
-        let mut active: group_members::ActiveModel = membership.into();
-        active.left_at = ActiveValue::set(Some(Utc::now().into()));
-        active.update(&txn).await?;
-        ended.push(name);
+    for membership in open.iter().filter(|m| to_end.contains(&m.pid)) {
+        sqlx::query!(
+            "UPDATE group_members SET left_at = $1 WHERE pid = $2",
+            Utc::now(),
+            membership.pid,
+        )
+        .execute(&mut *tx)
+        .await?;
+        ended.push(by_group.get(&membership.group_pid).map(|g| g.name.clone()));
     }
     let manager_elsewhere = match worker.manager_pid {
-        Some(manager) => workers::Entity::find()
-            .filter(workers::Column::Pid.eq(manager))
-            .one(&txn)
-            .await?
-            .is_some_and(|m| m.organization_ref != payload.organization_ref),
+        Some(manager) => sqlx::query_scalar!(
+            "SELECT organization_ref FROM workers WHERE pid = $1",
+            manager,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some_and(|organization| organization != payload.organization_ref),
         None => false,
     };
-    let previous = worker.organization_ref.clone();
-    let mut active: workers::ActiveModel = worker.into();
-    active.organization_ref = ActiveValue::set(payload.organization_ref.clone());
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let previous = worker.organization_ref;
+    sqlx::query!(
+        "UPDATE workers SET organization_ref = $1 WHERE pid = $2",
+        payload.organization_ref,
+        worker.pid,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
-        row.pid,
+        worker.pid,
         "transferred",
         caller.actor(),
         Some(serde_json::json!({
@@ -118,11 +128,11 @@ async fn transfer(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
-        "worker_pid": row.pid,
+        "worker_pid": worker.pid,
         "from": previous,
-        "to": row.organization_ref,
+        "to": payload.organization_ref,
         "ended_group_memberships": ended,
         "manager_in_other_organization": manager_elsewhere,
     }))

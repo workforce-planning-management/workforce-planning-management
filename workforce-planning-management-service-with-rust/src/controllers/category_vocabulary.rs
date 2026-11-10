@@ -2,8 +2,8 @@
 //! group and occupation code, with the national standard each comes from. Configuration, imported by the deployer; none is shipped.
 //! Reading is open to a signed-in caller; adding is HR's. Spec: `spec/staff-records-and-pay.md`.
 
+use axa::extract::Json;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -11,8 +11,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db::{self, pool};
 use crate::models::_entities::category_vocabulary;
-use crate::models::audit_logs::Model as Audit;
 use crate::rules::assignment as rules;
 
 /// The staff group the vocabulary gives a job role: `None` where the role is not listed or says none.
@@ -21,13 +21,15 @@ pub(crate) async fn staff_group_of_role(
     organization: &str,
     role: &str,
 ) -> Result<Option<String>> {
-    Ok(category_vocabulary::Entity::find()
-        .filter(category_vocabulary::Column::OrganizationRef.eq(organization))
-        .filter(category_vocabulary::Column::Kind.eq("job_role"))
-        .filter(category_vocabulary::Column::Code.eq(role))
-        .one(&ctx.db)
-        .await?
-        .and_then(|e| e.staff_group))
+    Ok(sqlx::query_scalar!(
+        "SELECT staff_group FROM category_vocabulary
+         WHERE organization_ref = $1 AND kind = 'job_role' AND code = $2 LIMIT 1",
+        organization,
+        role,
+    )
+    .fetch_optional(pool(ctx))
+    .await?
+    .flatten())
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,21 +43,25 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<ListQuery>,
+    axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&q.organization))?;
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
-    let mut find = category_vocabulary::Entity::find()
-        .filter(category_vocabulary::Column::OrganizationRef.eq(&q.organization));
     if let Some(kind) = &q.kind {
         ensure_valid(&rules::entry_problems(kind, "x", "x", None, None, None))?;
-        find = find.filter(category_vocabulary::Column::Kind.eq(kind));
     }
-    let rows = find
-        .order_by_asc(category_vocabulary::Column::Kind)
-        .order_by_asc(category_vocabulary::Column::Code)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        category_vocabulary::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, kind, code, label,
+                  standard, standard_code, staff_group, recorded_by
+           FROM category_vocabulary
+           WHERE organization_ref = $1 AND ($2::text IS NULL OR kind = $2)
+           ORDER BY kind, code"#,
+        q.organization,
+        q.kind,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let mut out = Vec::new();
     for row in &rows {
         let mut v = row_json(row)?;
@@ -99,34 +105,40 @@ async fn create(
         p.staff_group.as_deref(),
     ))?;
     let code = p.code.trim().to_string();
-    let clash = category_vocabulary::Entity::find()
-        .filter(category_vocabulary::Column::OrganizationRef.eq(&p.organization_ref))
-        .filter(category_vocabulary::Column::Kind.eq(&p.kind))
-        .filter(category_vocabulary::Column::Code.eq(&code))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM category_vocabulary WHERE organization_ref = $1 AND kind = $2 AND code = $3
+           ) AS "clash!""#,
+        p.organization_ref,
+        p.kind,
+        code,
+    )
+    .fetch_one(pool(&ctx))
+    .await?;
+    if clash {
         return Err(unprocessable("that code is already in this vocabulary"));
     }
     let trim = |v: Option<String>| v.map(|s| s.trim().to_string());
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    category_vocabulary::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        kind: ActiveValue::set(p.kind.clone()),
-        code: ActiveValue::set(code),
-        label: ActiveValue::set(p.label.trim().to_string()),
-        standard: ActiveValue::set(trim(p.standard)),
-        standard_code: ActiveValue::set(trim(p.standard_code)),
-        staff_group: ActiveValue::set(trim(p.staff_group)),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO category_vocabulary
+             (pid, organization_ref, kind, code, label, standard, standard_code, staff_group, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        pid,
+        p.organization_ref,
+        p.kind,
+        code,
+        p.label.trim(),
+        trim(p.standard),
+        trim(p.standard_code),
+        trim(p.staff_group),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "category_vocabulary",
         pid,
         "vocabulary_entry_added",
@@ -134,7 +146,7 @@ async fn create(
         Some(json!({ "kind": p.kind })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 

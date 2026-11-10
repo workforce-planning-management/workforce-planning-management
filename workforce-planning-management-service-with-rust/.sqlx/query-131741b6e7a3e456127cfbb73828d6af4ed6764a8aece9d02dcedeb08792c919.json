@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.pid, r.name\n           FROM rota_members m\n           JOIN rotas r ON r.pid = m.rota_pid AND r.deleted_at IS NULL\n          WHERE m.worker_pid = $1\n          ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "131741b6e7a3e456127cfbb73828d6af4ed6764a8aece9d02dcedeb08792c919"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO rota_members (rota_pid, worker_pid, position)\n         SELECT $1, member.worker_pid, (member.n - 1)::int FROM unnest($2::uuid[]) WITH ORDINALITY AS member(worker_pid, n)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf9fa1c7b614fbe04ff2ae4ab1589271fd999b471de181933c7b93d29c295387"
+}

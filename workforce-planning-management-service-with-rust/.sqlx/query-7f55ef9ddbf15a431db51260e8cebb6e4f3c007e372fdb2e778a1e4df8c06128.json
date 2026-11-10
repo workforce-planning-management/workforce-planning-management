@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO role_profiles (pid, job_title, description, source_ref, framework_slug, external_ref, profession,\n                                    role_name, management_track)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7f55ef9ddbf15a431db51260e8cebb6e4f3c007e372fdb2e778a1e4df8c06128"
+}

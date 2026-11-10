@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO learning_requirements (pid, organization_ref, subject, basis, source, refresher_months, courses, audience,\n                                            accepts_transferred, due_soon_days, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Jsonb",
+        "Jsonb",
+        "Bool",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b7b4c4b4db5ecb02004ab1eba0bc8333ce106ecc60f1f65f1c706ea660d0d8eb"
+}

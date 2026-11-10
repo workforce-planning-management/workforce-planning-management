@@ -14,17 +14,17 @@
 //! it, never who.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
-use super::{Page, forbidden, record_rejection, unprocessable, with_page_headers};
+use super::{Page, forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{announcement_reads, announcements, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{announcements, workers};
 use crate::models::{memberships, records};
 use crate::rules::announcements as rules;
 
@@ -37,7 +37,7 @@ async fn can_edit(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result
     if !auth::require_auth() {
         return Ok(true);
     }
-    memberships::has_role_in(&ctx.db, caller.claims(), org, rules::EDITOR_ROLES).await
+    memberships::has_role_in(ctx, caller.claims(), org, rules::EDITOR_ROLES).await
 }
 
 async fn require_editor(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
@@ -52,12 +52,16 @@ async fn require_editor(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> 
 
 /// An announcement, if it exists and its organization is readable by the caller.
 async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<announcements::Model> {
-    let row = announcements::Entity::find()
-        .filter(announcements::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(announcements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        announcements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, title, body, pinned,
+                  publish_on, expires_on, department, links, author, deleted_at AS "deleted_at: _"
+             FROM announcements WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -77,14 +81,12 @@ async fn reader_departments(
     };
     let person_ref = format!("person:{}", claims.sub.trim().to_ascii_lowercase());
     Ok(Some(
-        workers::Entity::find()
-            .filter(workers::Column::PersonRef.eq(person_ref))
-            .filter(workers::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|w| w.department)
-            .collect(),
+        sqlx::query_scalar!(
+            "SELECT department FROM workers WHERE person_ref = $1 AND deleted_at IS NULL ORDER BY id",
+            person_ref,
+        )
+        .fetch_all(db::pool(ctx))
+        .await?,
     ))
 }
 
@@ -145,41 +147,35 @@ struct FeedParams {
     /// `all`: also scheduled and expired posts — editors only.
     #[serde(default)]
     include: Option<String>,
-    #[serde(default)]
-    limit: Option<u64>,
-    #[serde(default)]
-    offset: Option<u64>,
 }
 
-/// `GET /api/announcements?organization=&include=all&limit=&offset=` — the
+/// `GET /api/announcements?organization=&include=all&limit=&cursor=` — the
 /// feed for the caller's organizations: live posts, pinned first then newest,
-/// with `x-total-count`. `include=all` adds scheduled and expired posts, for
+/// a page at a time with a `Link` to the next (WPM-T478). `include=all` adds scheduled and expired posts, for
 /// the organizations the caller edits.
 #[debug_handler]
 async fn feed(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(params): axum::extract::Query<FeedParams>,
+    axa::extract::Query(params): axa::extract::Query<FeedParams>,
+    page: Page,
 ) -> Result<Response> {
-    let page = Page {
-        limit: params.limit,
-        offset: params.offset,
-    };
-    page.check_offset()?;
-    let (limit, offset) = page.resolve(FEED_DEFAULT_LIMIT);
-    let mut query =
-        announcements::Entity::find().filter(announcements::Column::DeletedAt.is_null());
-    if let Some(org) = &params.organization {
-        query = query.filter(announcements::Column::OrganizationRef.eq(org));
-    }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(announcements::Column::OrganizationRef.is_in(refs));
-    }
+    let window = super::resolve(&page, FEED_DEFAULT_LIMIT)?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
-    let mut rows = query
-        .order_by_desc(announcements::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let mut rows = sqlx::query_as!(
+        announcements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, title, body, pinned,
+                  publish_on, expires_on, department, links, author, deleted_at AS "deleted_at: _"
+             FROM announcements
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR organization_ref = $1)
+              AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+            ORDER BY id DESC"#,
+        params.organization,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let all = params.include.as_deref() == Some("all");
     let readers = reader_departments(&ctx, &caller).await?;
     let mut allowed: HashMap<String, bool> = HashMap::new();
@@ -218,22 +214,28 @@ async fn feed(
             (b.pinned, b.publish_on, b.id),
         )
     });
-    let total = kept.len() as u64;
-    let page_rows: Vec<&announcements::Model> = kept
-        .iter()
-        .skip(usize::try_from(offset).unwrap_or(usize::MAX))
-        .take(usize::try_from(limit).unwrap_or(usize::MAX))
-        .collect();
+    let (page_rows, more) = window.split(
+        kept.iter()
+            .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
+            .take(
+                usize::try_from(window.limit())
+                    .unwrap_or(usize::MAX)
+                    .saturating_add(1),
+            )
+            .collect::<Vec<&announcements::Model>>(),
+    );
     // Editors see how many have read each post — a count, never who.
     let ids: Vec<Uuid> = page_rows.iter().map(|a| a.pid).collect();
-    let mut counts: HashMap<Uuid, usize> = HashMap::new();
-    for r in announcement_reads::Entity::find()
-        .filter(announcement_reads::Column::AnnouncementPid.is_in(ids))
-        .all(&ctx.db)
-        .await?
-    {
-        *counts.entry(r.announcement_pid).or_default() += 1;
-    }
+    let counts: HashMap<Uuid, usize> = sqlx::query!(
+        r#"SELECT announcement_pid, COUNT(*) AS "reads!" FROM announcement_reads
+            WHERE announcement_pid = ANY($1) GROUP BY announcement_pid"#,
+        &ids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|r| (r.announcement_pid, usize::try_from(r.reads).unwrap_or(0)))
+    .collect();
     let slice: Vec<serde_json::Value> = page_rows
         .iter()
         .map(|a| {
@@ -244,11 +246,10 @@ async fn feed(
             json
         })
         .collect();
-    Ok(with_page_headers(
-        format::json(slice)?,
-        total,
-        limit,
-        offset,
+    Ok(super::with_next(
+        axum::Json(slice).into_response(),
+        &window,
+        more,
     ))
 }
 
@@ -310,39 +311,30 @@ async fn create(
     )
     .map_err(|e| unprocessable(&e))?;
     validate_links_payload(&payload.links)?;
-    let txn = ctx.db.begin().await?;
-    let row = announcements::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        title: ActiveValue::set(payload.title.trim().to_string()),
-        body: ActiveValue::set(payload.body.trim().to_string()),
-        pinned: ActiveValue::set(payload.pinned.unwrap_or(false)),
-        publish_on: ActiveValue::set(publish_on),
-        expires_on: ActiveValue::set(payload.expires_on),
-        department: ActiveValue::set(
-            payload
-                .department
-                .map(|d| d.trim().to_string())
-                .filter(|d| !d.is_empty()),
-        ),
-        links: ActiveValue::set(links_json(&payload.links)),
-        author: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
-    .await?;
-    Audit::record(
-        &txn,
-        "announcement",
-        row.pid,
-        "posted",
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO announcements (pid, organization_ref, title, body, pinned, publish_on, expires_on, department, links, author)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        pid,
+        payload.organization_ref,
+        payload.title.trim(),
+        payload.body.trim(),
+        payload.pinned.unwrap_or(false),
+        publish_on,
+        payload.expires_on,
+        payload
+            .department
+            .map(|d| d.trim().to_string())
+            .filter(|d| !d.is_empty()),
+        links_json(&payload.links),
         caller.actor(),
-        None,
     )
+    .execute(&mut *tx)
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    db::audit(&mut tx, "announcement", pid, "posted", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// `PUT /api/announcements/{pid}` body — any of these may change.
@@ -407,18 +399,27 @@ async fn update(
         }
         None => row.links.clone(),
     };
-    let mut active: announcements::ActiveModel = row.into();
-    active.department = ActiveValue::set(department);
-    active.links = ActiveValue::set(links);
-    active.title = ActiveValue::set(title.trim().to_string());
-    active.body = ActiveValue::set(body.trim().to_string());
-    active.pinned = ActiveValue::set(pinned);
-    active.publish_on = ActiveValue::set(publish_on);
-    active.expires_on = ActiveValue::set(expires_on);
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        announcements::Model,
+        r#"UPDATE announcements SET department = $2, links = $3, title = $4, body = $5, pinned = $6, publish_on = $7,
+                  expires_on = $8
+            WHERE id = $1
+            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, title, body, pinned,
+                  publish_on, expires_on, department, links, author, deleted_at AS "deleted_at: _""#,
+        row.id,
+        department,
+        links,
+        title.trim(),
+        body.trim(),
+        pinned,
+        publish_on,
+        expires_on,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "announcement",
         updated.pid,
         "edited",
@@ -426,7 +427,7 @@ async fn update(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated, Utc::now().date_naive()))
 }
 
@@ -439,13 +440,24 @@ async fn retire(
 ) -> Result<Response> {
     let row = find(&ctx, &caller, &pid).await?;
     require_editor(&ctx, &caller, &row.organization_ref).await?;
-    let pid = row.pid;
-    let mut active: announcements::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    active.update(&txn).await?;
-    Audit::record(&txn, "announcement", pid, "retired", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE announcements SET deleted_at = $2 WHERE id = $1",
+        row.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "announcement",
+        row.pid,
+        "retired",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -458,7 +470,7 @@ struct ReadPayload {
 
 /// A worker, authorized for a write to their record: themself, or HR.
 async fn own_worker(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, pid).await?;
+    let worker = records::worker_by_pid(ctx, pid).await?;
     auth::authorize_record(
         caller,
         authentication_verifier::Action::Write,
@@ -489,22 +501,16 @@ async fn mark_read(
     {
         return Err(Error::NotFound);
     }
-    let already = announcement_reads::Entity::find()
-        .filter(announcement_reads::Column::AnnouncementPid.eq(row.pid))
-        .filter(announcement_reads::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
-        .await?
-        .is_some();
-    if !already {
-        announcement_reads::ActiveModel {
-            announcement_pid: ActiveValue::set(row.pid),
-            worker_pid: ActiveValue::set(worker.pid),
-            read_at: ActiveValue::set(Utc::now().into()),
-            ..Default::default()
-        }
-        .insert(&ctx.db)
-        .await?;
-    }
+    // The first read is kept: one insert on the unique pair, which a second read leaves alone.
+    sqlx::query!(
+        "INSERT INTO announcement_reads (announcement_pid, worker_pid, read_at) VALUES ($1, $2, $3)
+         ON CONFLICT (announcement_pid, worker_pid) DO NOTHING",
+        row.pid,
+        worker.pid,
+        Utc::now(),
+    )
+    .execute(db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({ "read": true }))
 }
 
@@ -517,13 +523,14 @@ async fn my_reads(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = own_worker(&ctx, &caller, records::parse_pid(&pid)?).await?;
-    let read: HashSet<Uuid> = announcement_reads::Entity::find()
-        .filter(announcement_reads::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|r| r.announcement_pid)
-        .collect();
+    let read: HashSet<Uuid> = sqlx::query_scalar!(
+        "SELECT announcement_pid FROM announcement_reads WHERE worker_pid = $1",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .collect();
     format::json(read.into_iter().collect::<Vec<_>>())
 }
 

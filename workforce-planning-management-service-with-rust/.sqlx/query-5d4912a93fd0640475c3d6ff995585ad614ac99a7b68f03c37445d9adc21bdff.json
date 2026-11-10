@@ -1,0 +1,143 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.pid, p.job_title, p.description, p.source_ref, p.framework_slug, p.profession, p.role_name,\n                  p.level_name, p.level_order, p.management_track,\n                  (SELECT COUNT(*) FROM role_skill_requirements r WHERE r.role_profile_pid = p.pid) AS \"requirement_count!\"\n             FROM role_profiles p\n            WHERE p.deleted_at IS NULL AND ($1::text IS NULL OR p.framework_slug = $1)\n            ORDER BY p.job_title, p.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "source_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "source_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "framework_slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "framework_slug"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "profession",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "profession"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "role_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "role_name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "level_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "level_name"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "level_order",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "level_order"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "management_track",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "management_track"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "requirement_count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "5d4912a93fd0640475c3d6ff995585ad614ac99a7b68f03c37445d9adc21bdff"
+}

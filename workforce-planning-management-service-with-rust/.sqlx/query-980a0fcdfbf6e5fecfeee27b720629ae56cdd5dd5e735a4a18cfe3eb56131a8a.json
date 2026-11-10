@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, verified_on, category, skill_pid, activity FROM cpd_entries\n         WHERE pid = $1 AND worker_pid = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "verified_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "verified_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "activity",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "cpd_entries",
+            "name": "activity"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "980a0fcdfbf6e5fecfeee27b720629ae56cdd5dd5e735a4a18cfe3eb56131a8a"
+}

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, backup_pid, priority, starts_on, ends_on\n             FROM worker_backups\n             WHERE worker_pid = ANY($1) AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "backup_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "backup_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "priority",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_backups",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "19e26939d29e4c6de09552142d2e5b0fd1e064d1ddf767b76020f806340504ba"
+}

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"n!\" FROM policies WHERE organization_ref = $1 AND name = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "911973b16f9d23313d1c1fa43987dae853e73f87ae9d22ae26b0fbbea5a6e863"
+}

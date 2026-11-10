@@ -2,11 +2,11 @@
 //! while equipment is out, the subject export, and erasure (the asset stays).
 
 use chrono::{Duration, Utc};
-use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{activate, an_org, seed_worker};
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -89,17 +89,12 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
             request.post(&format!("/api/workers/{a}/status")).json(&json!({ "to": to })).await.assert_status_ok();
         }
         request.post(&format!("/api/workers/{a}/erase")).await.assert_status_ok();
-        let row = ctx
-            .db
-            .query_one_raw(Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT (SELECT count(*) FROM asset_issues WHERE worker_pid = '{a}') AS issues, (SELECT count(*) FROM assets WHERE pid = '{laptop}'::uuid) AS assets"),
-            ))
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT (SELECT count(*) FROM asset_issues WHERE worker_pid = '{a}') AS issues, (SELECT count(*) FROM assets WHERE pid = '{laptop}'::uuid) AS assets"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap();
-        let issues: i64 = row.try_get("", "issues").unwrap();
-        let assets: i64 = row.try_get("", "assets").unwrap();
+        let issues: i64 = row.try_get("issues").unwrap();
+        let assets: i64 = row.try_get("assets").unwrap();
         assert_eq!((issues, assets), (0, 1), "the issues are erased and the asset stays");
     })
     .await;
@@ -202,12 +197,10 @@ async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floo
             .await
             .assert_status_ok();
         assert_eq!(count(lead.clone()).await["count"], json!({ "kind": "shown", "holding": 1, "none": 11 }));
-        ctx.db
-            .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", crew[1]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", crew[1]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        ctx.db
-            .execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", crew[2]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", crew[2]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         assert_eq!(count(lead).await["count"], json!({ "kind": "shown", "holding": 1, "none": 9 }));

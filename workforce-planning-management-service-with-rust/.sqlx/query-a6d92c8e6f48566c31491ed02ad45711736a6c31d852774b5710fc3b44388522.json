@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT record_pid, recipient FROM injury_reports WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "record_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "record_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "recipient",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "injury_reports",
+            "name": "recipient"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a6d92c8e6f48566c31491ed02ad45711736a6c31d852774b5710fc3b44388522"
+}

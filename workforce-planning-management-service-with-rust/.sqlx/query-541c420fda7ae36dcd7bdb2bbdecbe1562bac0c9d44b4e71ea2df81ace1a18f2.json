@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, candidate_pid, stage FROM applications WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "candidate_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "candidate_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "stage"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "541c420fda7ae36dcd7bdb2bbdecbe1562bac0c9d44b4e71ea2df81ace1a18f2"
+}

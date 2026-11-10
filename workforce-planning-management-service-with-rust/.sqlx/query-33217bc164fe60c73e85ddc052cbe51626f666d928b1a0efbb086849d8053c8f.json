@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT proficiency FROM worker_skill_history WHERE worker_pid = $1 AND skill_pid = $2 AND ended_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skill_history",
+            "name": "proficiency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "33217bc164fe60c73e85ddc052cbe51626f666d928b1a0efbb086849d8053c8f"
+}

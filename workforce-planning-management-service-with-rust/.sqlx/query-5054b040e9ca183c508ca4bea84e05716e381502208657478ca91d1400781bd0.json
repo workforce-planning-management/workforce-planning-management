@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT organization_ref, code, key, value, effective_from, effective_to, source, status, id\n           FROM jurisdiction_parameters WHERE organization_ref = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "key",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "key"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "value",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "value"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "effective_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "effective_from"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "effective_to",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "effective_to"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "id",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "jurisdiction_parameters",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5054b040e9ca183c508ca4bea84e05716e381502208657478ca91d1400781bd0"
+}

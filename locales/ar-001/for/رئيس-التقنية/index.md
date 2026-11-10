@@ -6,7 +6,7 @@
 
 | الاهتمام | ما هو موجود | اقرأ |
 | --- | --- | --- |
-| المكدّس التقني | Rust مع Loco (Axum وSeaORM) وPostgreSQL 18 لواجهة API؛ وSvelteKit 2 مع Svelte 5 وTypeScript للعميل | [architecture.md](../../../../spec/architecture.md) |
+| المكدّس التقني | Rust مع Axum (axa وSeaORM) وPostgreSQL 18 لواجهة API؛ وSvelteKit 2 مع Svelte 5 وTypeScript للعميل | [architecture.md](../../../../spec/architecture.md) |
 | قاعدة التصميم | نواة نقية: القواعد خالية من قاعدة البيانات والساعة، تُختبر اختبارًا شاملًا، ثم تُوصَل بالمتحكّمات | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | المواصفات أولًا | التغيير متطلب وقرار ومهمة وشيفرة واختبارات معًا؛ وكل بند مهمة يذكر ما **لم** يُتحقَّق منه | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | الاختبارات | اختبارات وحدة للقواعد، واختبارات طلبات مدعومة بقاعدة بيانات، وثنائيات إنفاذ تعمل مع تفعيل تسجيل الدخول، واختبارات وحدة للواجهة الأمامية واختبارات متصفح. فحوص الطفرات: كسر الشيفرة عمدًا والتأكد من فشل اختبار | [testing.md](../../../../spec/testing.md) |

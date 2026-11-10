@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status, review_on FROM conversion_plans\n          WHERE worker_pid = $1 AND status IN ('proposed', 'approved') ORDER BY id LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "review_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "review_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "31d7f77d94150129201b5a2cce4f0a54dc811c1fa7b67c5058407d52d990fc10"
+}

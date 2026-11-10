@@ -342,6 +342,11 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
    `GET /api/workers?status=active&fields=pid,department,person_ref&limit=200&offset=` and receive those three fields of each worker
    and nothing else, under the same policy and scope; and a list that carries an unmasked salary now audits a `salary_read` for each
    such worker. **Whether and when CRM asks for the lean list is CRM's change**; nothing here has been run from CRM.
+   **Breaking for CRM's import from 2026-11-07 (WPM-R241, WPM-D189, WPM-T478):** `GET /api/workers` pages by a signed cursor and
+   answers `?offset=` with `422`. CRM's `active_workers` (`src/clients.rs`, read on 2026-11-07) still sends `&offset=` on every page,
+   so the import fails on its first page with "the worker service answered 422" until CRM asks for the first page with no offset and
+   then follows each answer's `Link: <...>; rel="next"` to the end; a page with no `Link` is the last. The owner chose this over
+   keeping offsets on the one route. **CRM's change, not made here.**
 3. **PPM's code was not found at first.** On 2026-10-28 it was at `~/git/project-porfolio-management/project-porfolio-management`
    (the directory then spelled `porfolio`); as of 2026-10-30 it is at `~/git/project-portfolio-management/project-portfolio-management`,
    spelled as the crate and docs spell it. PPM itself was read next (below).
@@ -352,7 +357,7 @@ CRM's source is on the same machine (`contact-relationship-management-service-wi
 `upstream_worker_ref`, `organization_ref`, `worker_number`, `display_name`, `status`, `employment_type`, `fte_percent`, `department`,
 `job_title`, `location`, `manager_pid`, `salary_minor`, `salary_currency`, `hired_on`, `terminated_on`, `engagement_ends_on`,
 `created_at`, `updated_at`); each row then holds those fields and no others. An unknown name, an empty list or an empty name is `422`
-with the allowed names; the serial `id` and `deleted_at` are not offered. Filters, paging (`x-total-count`), the policy, the
+with the allowed names; the serial `id` and `deleted_at` are not offered. Filters, paging (a signed cursor, WPM-R241), the policy, the
 organization scope and the per-row salary mask are unchanged: a salary asked for by a caller the policy masks is `null`.
 
 - **WPM-D147 A list is a salary read whenever it carries a salary, and is audited as the single read is.** For each listed worker whose

@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT opened_on AS \"opened_on?\", filled_on AS \"filled_on?\"\n           FROM requisitions\n           WHERE deleted_at IS NULL AND organization_ref = $1 AND filled_on >= $2 AND filled_on <= $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "opened_on?",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "opened_on"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "filled_on?",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "filled_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "6edc01c3b904213fc5a8e2f4ff6f0158d06ff1b2cef7a3050ea4cd47e1848e2d"
+}

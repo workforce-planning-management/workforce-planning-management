@@ -1,0 +1,208 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, jurisdiction, kind,\n                  insurer, policy_reference, minimum_cover_minor, currency, valid_from, valid_to, certificate_ref, recorded_by,\n                  retired_on\n           FROM coverage_evidence WHERE organization_ref = $1 ORDER BY jurisdiction, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "jurisdiction"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "insurer",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "insurer"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "policy_reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "policy_reference"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "minimum_cover_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "minimum_cover_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "valid_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "valid_from"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "valid_to",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "valid_to"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "certificate_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "certificate_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "retired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "coverage_evidence",
+            "name": "retired_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6036fe7d728cefd80b77777163c160d0e4764536094ed47ae10ab8a3d620c393"
+}

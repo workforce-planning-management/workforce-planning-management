@@ -6,7 +6,7 @@
 
 | चिंता | क्या मौजूद है | पढ़ें |
 | --- | --- | --- |
-| स्टैक | API के लिए Rust, Loco (Axum, SeaORM) और PostgreSQL 18; क्लाइंट के लिए SvelteKit 2, Svelte 5 और TypeScript | [architecture.md](../../../../spec/architecture.md) |
+| स्टैक | API के लिए Rust, Axum (axa, SeaORM) और PostgreSQL 18; क्लाइंट के लिए SvelteKit 2, Svelte 5 और TypeScript | [architecture.md](../../../../spec/architecture.md) |
 | डिज़ाइन नियम | शुद्ध कोर: नियम डेटाबेस-मुक्त और घड़ी-मुक्त हैं, पूरी तरह परखे गए हैं, फिर कंट्रोलरों से जोड़े जाते हैं | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | पहले विनिर्देश | एक बदलाव है: आवश्यकता, निर्णय, कार्य, कोड और परीक्षण एक साथ; हर कार्य-प्रविष्टि बताती है कि क्या सत्यापित **नहीं** हुआ | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | परीक्षण | नियमों पर यूनिट परीक्षण, डेटाबेस-आधारित अनुरोध परीक्षण, साइन-इन चालू रखकर चलने वाले प्रवर्तन बाइनरी, फ़्रंट-एंड यूनिट और ब्राउज़र परीक्षण। म्यूटेशन जाँच: कोड जानबूझकर तोड़ें और पुष्टि करें कि कोई परीक्षण विफल होता है | [testing.md](../../../../spec/testing.md) |

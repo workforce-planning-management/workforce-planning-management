@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM plan_demand_lines WHERE pid = $1 AND plan_pid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "56ec18a0b02e18a10704542e2eabc5fcf943f9799477abb06e36688bb333a864"
+}

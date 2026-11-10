@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE reviews SET status = 'shared' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9429c26a2ad8039825ee07cc8abdac29bbf42230a88ab3af3b9303ce59ac18f9"
+}

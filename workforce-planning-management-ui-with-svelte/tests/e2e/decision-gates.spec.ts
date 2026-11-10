@@ -84,7 +84,7 @@ test.describe("Decision gates", () => {
       route.fulfill({ json: { bodies: [body] } }),
     );
     await page.route("**/api/proxy/decision-gates?*", (route) =>
-      route.fulfill({ status: 403, json: { error: "forbidden" } }),
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
     );
     await page.goto("/decision-gates");
     await expect(page.getByTestId("error")).toContainText(

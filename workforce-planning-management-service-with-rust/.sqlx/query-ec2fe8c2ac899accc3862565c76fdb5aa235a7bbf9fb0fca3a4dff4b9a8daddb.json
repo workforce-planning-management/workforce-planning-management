@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT w.department, k.skill_pid, k.proficiency, count(*) AS \"n!\"\n           FROM worker_skills k JOIN workers w ON w.pid = k.worker_pid\n           WHERE k.deleted_at IS NULL AND k.skill_pid = ANY($1)\n             AND w.deleted_at IS NULL AND w.organization_ref = $2 AND w.department = ANY($3)\n             AND w.hired_on <= $4 AND (w.terminated_on IS NULL OR w.terminated_on > $4)\n           GROUP BY w.department, k.skill_pid, k.proficiency",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "proficiency"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Text",
+        "TextArray",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "ec2fe8c2ac899accc3862565c76fdb5aa235a7bbf9fb0fca3a4dff4b9a8daddb"
+}

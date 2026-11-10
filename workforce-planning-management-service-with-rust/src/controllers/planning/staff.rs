@@ -9,29 +9,10 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 
-use sea_orm::{FromQueryResult, QuerySelect};
-
-/// Employed workers of the organization in the departments, today: the query every function here
-/// narrows (the rule [`is_employed_on`], in SQL).
-fn employed_in(
-    org: &str,
-    departments: &BTreeSet<String>,
-    today: chrono::NaiveDate,
-) -> sea_orm::Select<workers::Entity> {
-    workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::OrganizationRef.eq(org))
-        .filter(workers::Column::Department.is_in(departments.iter().cloned()))
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        )
-}
+use crate::db::pool;
 
 /// One group of employed workers who look the same to the projection.
-#[derive(Debug, FromQueryResult)]
+#[derive(Debug)]
 struct PersonGroup {
     department: String,
     employment_type: String,
@@ -41,29 +22,38 @@ struct PersonGroup {
 }
 
 /// The employed people of each department, as the projection sees them. Refused over the deployer's
-/// ceiling (`WPM_MAX_ORG_WORKERS`, WPM-D90).
+/// ceiling (`WPM_MAX_ORG_WORKERS`, WPM-D90). "Employed" is the rule [`is_employed_on`], in SQL.
 pub(super) async fn people_by_department(
     ctx: &AppContext,
     org: &str,
     departments: &BTreeSet<String>,
     today: chrono::NaiveDate,
 ) -> Result<BTreeMap<String, Vec<rules::Person>>> {
-    let scope = employed_in(org, departments, today);
-    crate::controllers::ensure_scale(ctx, scope.clone()).await?;
-    let groups = scope
-        .select_only()
-        .column(workers::Column::Department)
-        .column(workers::Column::EmploymentType)
-        .column(workers::Column::FtePercent)
-        .column(workers::Column::EngagementEndsOn)
-        .column_as(workers::Column::Id.count(), "people")
-        .group_by(workers::Column::Department)
-        .group_by(workers::Column::EmploymentType)
-        .group_by(workers::Column::FtePercent)
-        .group_by(workers::Column::EngagementEndsOn)
-        .into_model::<PersonGroup>()
-        .all(&ctx.db)
-        .await?;
+    let wanted: Vec<String> = departments.iter().cloned().collect();
+    let count = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "count!" FROM workers
+           WHERE deleted_at IS NULL AND organization_ref = $1 AND department = ANY($2)
+             AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)"#,
+        org,
+        &wanted,
+        today,
+    )
+    .fetch_one(pool(ctx))
+    .await?;
+    crate::controllers::ensure_within_ceiling(count.unsigned_abs())?;
+    let groups = sqlx::query_as!(
+        PersonGroup,
+        r#"SELECT department, employment_type, fte_percent, engagement_ends_on, count(*) AS "people!"
+           FROM workers
+           WHERE deleted_at IS NULL AND organization_ref = $1 AND department = ANY($2)
+             AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)
+           GROUP BY department, employment_type, fte_percent, engagement_ends_on"#,
+        org,
+        &wanted,
+        today,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut out: BTreeMap<String, Vec<rules::Person>> = BTreeMap::new();
     for g in groups {
         let person = rules::Person {
@@ -93,40 +83,25 @@ pub(super) async fn skill_levels_by_department(
     if skills.is_empty() {
         return Ok(BTreeMap::new());
     }
-    let rows = ctx
-        .db
-        .query_all_raw(sea_orm::Statement::from_sql_and_values(
-            sea_orm::DbBackend::Postgres,
-            "SELECT w.department, k.skill_pid, k.proficiency, count(*) AS n
-             FROM worker_skills k JOIN workers w ON w.pid = k.worker_pid
-             WHERE k.deleted_at IS NULL AND k.skill_pid = ANY($1)
-               AND w.deleted_at IS NULL AND w.organization_ref = $2 AND w.department = ANY($3)
-               AND w.hired_on <= $4 AND (w.terminated_on IS NULL OR w.terminated_on > $4)
-             GROUP BY w.department, k.skill_pid, k.proficiency",
-            [
-                skills.iter().copied().collect::<Vec<Uuid>>().into(),
-                org.into(),
-                departments.iter().cloned().collect::<Vec<String>>().into(),
-                today.into(),
-            ],
-        ))
-        .await?;
-    let rows: Vec<(String, Uuid, i32, i64)> = rows
-        .into_iter()
-        .map(|r| {
-            Ok((
-                r.try_get("", "department")?,
-                r.try_get("", "skill_pid")?,
-                r.try_get("", "proficiency")?,
-                r.try_get("", "n")?,
-            ))
-        })
-        .collect::<std::result::Result<_, sea_orm::DbErr>>()?;
+    let rows = sqlx::query!(
+        r#"SELECT w.department, k.skill_pid, k.proficiency, count(*) AS "n!"
+           FROM worker_skills k JOIN workers w ON w.pid = k.worker_pid
+           WHERE k.deleted_at IS NULL AND k.skill_pid = ANY($1)
+             AND w.deleted_at IS NULL AND w.organization_ref = $2 AND w.department = ANY($3)
+             AND w.hired_on <= $4 AND (w.terminated_on IS NULL OR w.terminated_on > $4)
+           GROUP BY w.department, k.skill_pid, k.proficiency"#,
+        &skills.iter().copied().collect::<Vec<Uuid>>(),
+        org,
+        &departments.iter().cloned().collect::<Vec<String>>(),
+        today,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut out: BTreeMap<(String, Uuid), Vec<(i32, usize)>> = BTreeMap::new();
-    for (department, skill, level, n) in rows {
-        out.entry((department, skill))
+    for r in rows {
+        out.entry((r.department, r.skill_pid))
             .or_default()
-            .push((level, usize::try_from(n).unwrap_or(0)));
+            .push((r.proficiency, usize::try_from(r.n).unwrap_or(0)));
     }
     Ok(out)
 }
@@ -139,34 +114,32 @@ pub(super) async fn converting_by_department(
     departments: &BTreeSet<String>,
     today: chrono::NaiveDate,
 ) -> Result<BTreeMap<String, Vec<(String, i32)>>> {
-    let open: BTreeMap<Uuid, String> = conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::Intent.eq("convert"))
-        .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|c| (c.worker_pid, c.status))
-        .collect();
-    let pids: Vec<Uuid> = open.keys().copied().collect();
+    let open: BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT worker_pid, status FROM conversion_plans
+         WHERE intent = 'convert' AND status IN ('proposed', 'approved')"
+    )
+    .fetch_all(pool(ctx))
+    .await?
+    .into_iter()
+    .map(|c| (c.worker_pid, c.status))
+    .collect();
+    let rows = sqlx::query!(
+        "SELECT pid, department, fte_percent FROM workers
+         WHERE deleted_at IS NULL AND organization_ref = $1 AND department = ANY($2)
+           AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3) AND pid = ANY($4)",
+        org,
+        &departments.iter().cloned().collect::<Vec<String>>(),
+        today,
+        &open.keys().copied().collect::<Vec<Uuid>>(),
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut out: BTreeMap<String, Vec<(String, i32)>> = BTreeMap::new();
-    for chunk in pids.chunks(5_000) {
-        let rows: Vec<(Uuid, String, i32)> = employed_in(org, departments, today)
-            .select_only()
-            .columns([
-                workers::Column::Pid,
-                workers::Column::Department,
-                workers::Column::FtePercent,
-            ])
-            .filter(workers::Column::Pid.is_in(chunk.to_vec()))
-            .into_tuple()
-            .all(&ctx.db)
-            .await?;
-        for (pid, department, fte) in rows {
-            if let Some(status) = open.get(&pid) {
-                out.entry(department)
-                    .or_default()
-                    .push((status.clone(), fte));
-            }
+    for r in rows {
+        if let Some(status) = open.get(&r.pid) {
+            out.entry(r.department)
+                .or_default()
+                .push((status.clone(), r.fte_percent));
         }
     }
     Ok(out)
@@ -180,17 +153,21 @@ pub(super) async fn salaries_by_department(
     currency: &str,
     today: chrono::NaiveDate,
 ) -> Result<BTreeMap<String, Vec<i64>>> {
-    let rows: Vec<(String, i64)> = employed_in(org, departments, today)
-        .select_only()
-        .columns([workers::Column::Department, workers::Column::SalaryMinor])
-        .filter(workers::Column::SalaryCurrency.eq(currency))
-        .filter(workers::Column::SalaryMinor.is_not_null())
-        .into_tuple()
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        r#"SELECT department, salary_minor AS "salary_minor!" FROM workers
+           WHERE deleted_at IS NULL AND organization_ref = $1 AND department = ANY($2)
+             AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)
+             AND salary_currency = $4 AND salary_minor IS NOT NULL"#,
+        org,
+        &departments.iter().cloned().collect::<Vec<String>>(),
+        today,
+        currency,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let mut out: BTreeMap<String, Vec<i64>> = BTreeMap::new();
-    for (department, salary) in rows {
-        out.entry(department).or_default().push(salary);
+    for r in rows {
+        out.entry(r.department).or_default().push(r.salary_minor);
     }
     Ok(out)
 }

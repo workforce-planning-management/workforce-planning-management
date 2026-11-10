@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO sfia_skill_levels (code, level, description, attributes) VALUES ($1, $2, $3, $4)\n                 ON CONFLICT (code, level) DO UPDATE\n                    SET description = EXCLUDED.description, attributes = EXCLUDED.attributes, retired_in = NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8332a75c42c5a5ee040c925d65683cf8fef52c037fd0569e470cc74a8dcc5aec"
+}

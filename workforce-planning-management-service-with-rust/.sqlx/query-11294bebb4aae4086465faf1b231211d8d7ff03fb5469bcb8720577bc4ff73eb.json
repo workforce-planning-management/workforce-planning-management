@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT instrument_pid, status FROM assessments WHERE deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "instrument_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "instrument_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "11294bebb4aae4086465faf1b231211d8d7ff03fb5469bcb8720577bc4ff73eb"
+}

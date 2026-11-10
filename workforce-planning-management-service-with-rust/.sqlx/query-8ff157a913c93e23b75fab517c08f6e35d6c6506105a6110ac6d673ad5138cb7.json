@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_skill_history SET ended_at = now()\n              WHERE worker_pid = $1 AND skill_pid = $2 AND ended_at IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8ff157a913c93e23b75fab517c08f6e35d6c6506105a6110ac6d673ad5138cb7"
+}

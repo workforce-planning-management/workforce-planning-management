@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT data FROM notifications WHERE worker_pid = $1 AND kind = 'on_call_reminder'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "data",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "notifications",
+            "name": "data"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4000ec7279df2fe42aa38c09780a9348911e0806f8c18535d7d472e7fbc0e934"
+}

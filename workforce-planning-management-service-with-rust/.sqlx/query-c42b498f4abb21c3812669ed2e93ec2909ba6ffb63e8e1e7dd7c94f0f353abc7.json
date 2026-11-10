@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM coverage_reminders WHERE coverage_pid = $1 AND valid_to = $2 AND kind = $3) AS \"e!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "e!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c42b498f4abb21c3812669ed2e93ec2909ba6ffb63e8e1e7dd7c94f0f353abc7"
+}

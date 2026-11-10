@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE review_goal_outcomes\n                SET reviewer_outcome = COALESCE($2, reviewer_outcome), reviewee_outcome = COALESCE($3, reviewee_outcome)\n              WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8c0cad139bd6e111f394668667a12b1e85b32f2176b4df4c5433231a8972d7fb"
+}

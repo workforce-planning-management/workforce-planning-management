@@ -115,7 +115,7 @@ on it; this repository does not.
 
 1. Replay erasures (above), before traffic.
 2. Check `GET /_posture` says `auth_enforced: true` in production.
-3. Check `GET /_health`, then a read of a known record.
+3. Check `GET /_health/ready`, then a read of a known record.
 4. Run the scheduled tasks' next cycle (`snapshot_headcount` cannot be backfilled: a
    missed day is a gap in the headcount history, which the forecast reports as
    `insufficient_history` rather than guessing).

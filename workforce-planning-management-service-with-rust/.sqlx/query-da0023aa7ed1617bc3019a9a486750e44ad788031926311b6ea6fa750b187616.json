@@ -1,0 +1,172 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, rota_pid, requester_pid, taker_pid,\n                  starts_on, ends_on, note, status, decided_at AS \"decided_at: _\", created_by\n             FROM rota_swap_requests\n            WHERE status = 'requested' AND (requester_pid = $1 OR taker_pid = $1)\n            ORDER BY starts_on, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "rota_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "rota_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "requester_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "requester_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "taker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "taker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "decided_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "decided_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "created_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rota_swap_requests",
+            "name": "created_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "da0023aa7ed1617bc3019a9a486750e44ad788031926311b6ea6fa750b187616"
+}

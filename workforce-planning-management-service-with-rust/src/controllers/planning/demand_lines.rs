@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `PUT /api/workforce-plans/{pid}/demand-lines` body.
 #[derive(Debug, Deserialize)]
@@ -71,60 +72,44 @@ pub(super) async fn set_line(
         payload.target_fte_percent,
     )
     .map_err(|e| unprocessable(&e))?;
+    let db = crate::db::pool(&ctx);
     if let Some(role) = payload.role_profile_pid {
-        role_profiles::Entity::find()
-            .filter(role_profiles::Column::Pid.eq(role))
-            .filter(role_profiles::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .ok_or(Error::NotFound)?;
+        sqlx::query_scalar!(
+            "SELECT id FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+            role
+        )
+        .fetch_optional(db)
+        .await?
+        .ok_or(Error::NotFound)?;
     }
-    let department = payload.department.trim().to_string();
-    let mut existing = plan_demand_lines::Entity::find()
-        .filter(plan_demand_lines::Column::PlanPid.eq(plan.pid))
-        .filter(plan_demand_lines::Column::Department.eq(&department))
-        .filter(plan_demand_lines::Column::TargetOn.eq(payload.target_on))
-        .filter(plan_demand_lines::Column::Basis.eq(&payload.basis));
-    existing = match payload.programme_ref.as_deref() {
-        Some(programme) => existing.filter(plan_demand_lines::Column::ProgrammeRef.eq(programme)),
-        None => existing.filter(plan_demand_lines::Column::ProgrammeRef.is_null()),
-    };
-    existing = match payload.role_profile_pid {
-        Some(role) => existing.filter(plan_demand_lines::Column::RoleProfilePid.eq(role)),
-        None => existing.filter(plan_demand_lines::Column::RoleProfilePid.is_null()),
-    };
-    let existing = existing.one(&ctx.db).await?;
-    let txn = ctx.db.begin().await?;
-    let row = match existing {
-        Some(row) => {
-            let mut active: plan_demand_lines::ActiveModel = row.into();
-            active.target_headcount = ActiveValue::set(payload.target_headcount);
-            active.target_fte_percent = ActiveValue::set(payload.target_fte_percent);
-            active.expected_ends_on = ActiveValue::set(payload.expected_ends_on);
-            active.note = ActiveValue::set(payload.note.clone());
-            active.update(&txn).await?
-        }
-        None => {
-            plan_demand_lines::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                plan_pid: ActiveValue::set(plan.pid),
-                department: ActiveValue::set(department),
-                role_profile_pid: ActiveValue::set(payload.role_profile_pid),
-                target_on: ActiveValue::set(payload.target_on),
-                target_headcount: ActiveValue::set(payload.target_headcount),
-                target_fte_percent: ActiveValue::set(payload.target_fte_percent),
-                basis: ActiveValue::set(payload.basis.clone()),
-                expected_ends_on: ActiveValue::set(payload.expected_ends_on),
-                programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-                note: ActiveValue::set(payload.note.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
-            .await?
-        }
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db.begin().await?;
+    // One upsert on the line's key, the unique index over the plan, department, role, day, basis and programme (no role
+    // and no programme count as one value each), where it was a read and then an insert or an update.
+    let line = sqlx::query_scalar!(
+        "INSERT INTO plan_demand_lines (pid, plan_pid, department, role_profile_pid, target_on, target_headcount,
+                                        target_fte_percent, basis, expected_ends_on, programme_ref, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         ON CONFLICT (plan_pid, department, COALESCE(role_profile_pid, '00000000-0000-0000-0000-000000000000'::uuid),
+                      target_on, basis, COALESCE(programme_ref, ''::character varying))
+         DO UPDATE SET target_headcount = EXCLUDED.target_headcount, target_fte_percent = EXCLUDED.target_fte_percent,
+                       expected_ends_on = EXCLUDED.expected_ends_on, note = EXCLUDED.note
+         RETURNING pid",
+        Uuid::new_v4(),
+        plan.pid,
+        payload.department.trim(),
+        payload.role_profile_pid,
+        payload.target_on,
+        payload.target_headcount,
+        payload.target_fte_percent,
+        payload.basis,
+        payload.expected_ends_on,
+        payload.programme_ref,
+        payload.note,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "workforce_plan",
         plan.pid,
         "demand_line_set",
@@ -132,9 +117,9 @@ pub(super) async fn set_line(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: line.to_string(),
     })
 }
 
@@ -148,20 +133,27 @@ pub(super) async fn remove_line(
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     ensure_editable(&plan)?;
     let line_pid = records::parse_pid(&line_pid)?;
-    let row = plan_demand_lines::Entity::find()
-        .filter(plan_demand_lines::Column::PlanPid.eq(plan.pid))
-        .filter(plan_demand_lines::Column::Pid.eq(line_pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    demand_line_objectives::Entity::delete_many()
-        .filter(demand_line_objectives::Column::LinePid.eq(line_pid))
-        .exec(&txn)
-        .await?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "DELETE FROM demand_line_objectives WHERE line_pid = $1 AND EXISTS
+             (SELECT 1 FROM plan_demand_lines WHERE pid = $1 AND plan_pid = $2)",
+        line_pid,
+        plan.pid,
+    )
+    .execute(&mut *tx)
+    .await?;
+    let removed = sqlx::query!(
+        "DELETE FROM plan_demand_lines WHERE pid = $1 AND plan_pid = $2",
+        line_pid,
+        plan.pid,
+    )
+    .execute(&mut *tx)
+    .await?;
+    if removed.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    crate::db::audit(
+        &mut tx,
         "workforce_plan",
         plan.pid,
         "demand_line_removed",
@@ -169,6 +161,6 @@ pub(super) async fn remove_line(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }

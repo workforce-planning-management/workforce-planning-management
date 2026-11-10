@@ -1,0 +1,134 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, description, kind, status,\n                  starts_on, deleted_at AS \"deleted_at: _\"\n             FROM change_initiatives WHERE deleted_at IS NULL ORDER BY id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "change_initiatives",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "06990bfc98efb514edeaf81cb8018b6f5304bc397c69d12baa063134ab357991"
+}

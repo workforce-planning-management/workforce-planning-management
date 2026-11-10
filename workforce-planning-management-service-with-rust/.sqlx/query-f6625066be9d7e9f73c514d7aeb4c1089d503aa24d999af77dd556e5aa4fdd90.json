@@ -1,0 +1,45 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT kind, status, COUNT(*) AS \"total!\" FROM development_plans\n            WHERE deleted_at IS NULL GROUP BY kind, status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "f6625066be9d7e9f73c514d7aeb4c1089d503aa24d999af77dd556e5aa4fdd90"
+}

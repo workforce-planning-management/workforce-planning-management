@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM esco_skills",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "355fa62b1e21389e77aaeccb5ca6a89cfaabad8e7f667fad47b494c246e4b0e0"
+}

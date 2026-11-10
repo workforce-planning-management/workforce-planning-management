@@ -1,6 +1,6 @@
 # Documentation index
 
-Workforce Planning Management — Loco edition. JSON-only back-end API
+Workforce Planning Management — Axum edition. JSON-only back-end API
 for the employment lifecycle: hiring, workforce (incl. working-time
 guardrails), HR core (incl. wellbeing, pulse, ergonomics,
 adjustments, notifications, subject rights), talent development

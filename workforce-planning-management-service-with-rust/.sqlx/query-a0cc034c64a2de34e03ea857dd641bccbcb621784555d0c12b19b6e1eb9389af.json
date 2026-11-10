@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid, skill_pid, min_proficiency, importance FROM role_skill_requirements\n          WHERE role_profile_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "min_proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "min_proficiency"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "importance",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "importance"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a0cc034c64a2de34e03ea857dd641bccbcb621784555d0c12b19b6e1eb9389af"
+}

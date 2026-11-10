@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, scale_id, band FROM worker_pay_positions",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "band"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6068c05c841fd910900fa8430ef3165ef1fce0854b149d60b208719d31826b6e"
+}

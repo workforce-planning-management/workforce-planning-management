@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COALESCE(json_agg(t), '[]') AS \"rows!\" FROM assessment_results t WHERE assessment_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rows!",
+        "type_info": "Json",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "63c1b96e996125e569841eb3dc81fe8cc87ad2f5121d294a368f4881e9a1e920"
+}

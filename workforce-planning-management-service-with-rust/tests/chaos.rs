@@ -18,15 +18,13 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::time::{Duration, Instant};
 
-use axa::testing::prelude::*;
-use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
+use axa_test::prelude::*;
 use serde_json::{Value, json};
 use serial_test::serial;
 use tokio::io::copy_bidirectional;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast;
 use workforce_planning_management::app::App;
-use workforce_planning_management::models::_entities::{audit_logs, workers};
 
 const PASS: u8 = 0;
 const RESET: u8 = 1;
@@ -160,7 +158,9 @@ async fn the_service_fails_cleanly_and_heals() {
     let (chaos, port) = start_proxy(upstream_address()).await;
     // `set_var` is `unsafe` in edition 2024; set before the app boots and reads it.
     unsafe {
+        // Both names: the service reads `DB_URL` first, so setting only `DATABASE_URL` would go round the proxy (WPM-T482).
         std::env::set_var("DATABASE_URL", through_proxy(port));
+        std::env::set_var("DB_URL", through_proxy(port));
         std::env::set_var("WPM_REQUIRE_AUTH", "0");
         std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
         std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
@@ -209,10 +209,10 @@ async fn the_service_fails_cleanly_and_heals() {
                 assert_no_leak(&write.text());
             }
             chaos.set(PASS);
-            heal(&request, &ctx.db).await;
-            let leftover = workers::Entity::find()
-                .filter(workers::Column::WorkerNumber.eq(number.as_str()))
-                .count(&ctx.db)
+            heal(&request, workforce_planning_management::db::pool(&ctx)).await;
+            let leftover: i64 = sqlx::query_scalar("SELECT count(*) FROM workers WHERE worker_number = $1")
+                .bind(number.as_str())
+                .fetch_one(workforce_planning_management::db::pool(&ctx))
                 .await
                 .expect("count");
             assert_eq!(leftover, 0, "{name}: a refused write left a worker behind");
@@ -227,7 +227,7 @@ async fn the_service_fails_cleanly_and_heals() {
             assert_no_leak(&slow.text());
         }
         chaos.set(PASS);
-        heal(&request, &ctx.db).await;
+        heal(&request, workforce_planning_management::db::pool(&ctx)).await;
 
         // The monkey: random faults between and during writes (one after another: the test server is not shared across tasks).
         let mut rng = Seeded(seed);
@@ -261,32 +261,33 @@ async fn the_service_fails_cleanly_and_heals() {
             }
         }
         chaos.set(PASS);
-        heal(&request, &ctx.db).await;
+        heal(&request, workforce_planning_management::db::pool(&ctx)).await;
 
         // All or nothing: a cut can lose the reply to a write that committed, so there may be more
         // workers than `201`s, never fewer, never more than were tried, and none without its audit row.
-        let monkeys = workers::Entity::find()
-            .filter(workers::Column::OrganizationRef.eq(org.as_str()))
-            .filter(workers::Column::WorkerNumber.starts_with("monkey-"))
-            .all(&ctx.db)
-            .await
-            .expect("workers");
+        let monkeys: Vec<(uuid::Uuid, String)> = sqlx::query_as(
+            "SELECT pid, worker_number FROM workers WHERE organization_ref = $1 AND worker_number LIKE 'monkey-%'",
+        )
+        .bind(org.as_str())
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .expect("workers");
         assert!(monkeys.len() >= created, "a 200 was lost (seed {seed})");
         assert!(
             monkeys.len() <= attempted,
             "a write happened twice (seed {seed})"
         );
-        for worker in &monkeys {
-            let audits = audit_logs::Entity::find()
-                .filter(audit_logs::Column::EntityPid.eq(worker.pid))
-                .filter(audit_logs::Column::Action.eq("created"))
-                .count(&ctx.db)
-                .await
-                .expect("audits");
+        for (pid, worker_number) in &monkeys {
+            let audits: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM audit_logs WHERE entity_pid = $1 AND action = 'created'",
+            )
+            .bind(pid)
+            .fetch_one(workforce_planning_management::db::pool(&ctx))
+            .await
+            .expect("audits");
             assert_eq!(
                 audits, 1,
-                "worker {} has {audits} audit rows: half-written (seed {seed})",
-                worker.worker_number
+                "worker {worker_number} has {audits} audit rows: half-written (seed {seed})"
             );
         }
         println!(
@@ -298,7 +299,7 @@ async fn the_service_fails_cleanly_and_heals() {
 }
 
 /// The service must answer `200` again within a few seconds of the database returning.
-async fn heal(request: &axa::TestServer, db: &sea_orm::DatabaseConnection) {
+async fn heal(request: &axa_test::TestServer, db: &sqlx::PgPool) {
     let deadline = Instant::now() + Duration::from_secs(15);
     loop {
         let response = request.get("/api/workers").await;
@@ -310,7 +311,7 @@ async fn heal(request: &axa::TestServer, db: &sea_orm::DatabaseConnection) {
             "the service did not recover: {} {} (ping: {:?})",
             response.status_code(),
             response.text(),
-            db.ping().await
+            sqlx::query("SELECT 1").execute(db).await.map(|_| ())
         );
         tokio::time::sleep(Duration::from_millis(250)).await;
     }

@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT line_pid, objective_pid FROM demand_line_objectives WHERE line_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "line_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "demand_line_objectives",
+            "name": "line_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "objective_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "demand_line_objectives",
+            "name": "objective_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f95ce2c6f59094a8ae6fec0c0adbf1491b4d9ec7f1af24197829dd8e1c61904a"
+}

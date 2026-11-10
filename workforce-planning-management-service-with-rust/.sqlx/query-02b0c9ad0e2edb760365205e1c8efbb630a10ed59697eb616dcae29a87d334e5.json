@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, requisition_pid, candidate_pid,\n                  stage, notes, deleted_at AS \"deleted_at: _\"\n             FROM applications WHERE requisition_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "requisition_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "requisition_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "candidate_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "candidate_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "stage"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "02b0c9ad0e2edb760365205e1c8efbb630a10ed59697eb616dcae29a87d334e5"
+}

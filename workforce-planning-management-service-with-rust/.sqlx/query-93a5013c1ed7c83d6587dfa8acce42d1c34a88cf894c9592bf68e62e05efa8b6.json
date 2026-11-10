@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE coverage_evidence SET retired_on = $2 WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "93a5013c1ed7c83d6587dfa8acce42d1c34a88cf894c9592bf68e62e05efa8b6"
+}

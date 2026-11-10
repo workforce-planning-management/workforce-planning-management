@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, run_pid FROM payslips\n         WHERE pid = $1 AND worker_pid = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "run_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "run_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0d0649435f2f494746b5edd0d54a837d8eefe5e8d611eefd425fca52d26771fd"
+}

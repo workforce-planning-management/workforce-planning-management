@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT cost_centre FROM positions WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cost_centre",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "cost_centre"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5e63a06d53d2fe67e4680a8bf23ab86413859da1f7cba9d42ba347110a237b24"
+}

@@ -1,0 +1,274 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE plan_escalations SET status = 'decided', decision = $2, decided_by = $3, decided_on = $4,\n                  decision_note = $5, rag_at_decision = $6, deviation_at_decision = $7\n            WHERE id = $1\n            RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, plan_pid, dimension, level, status,\n                  raised_by, raised_on, level_raised_on, note, rag_at_raise, deviation_at_raise, limit_at_raise, decision,\n                  decided_by, decided_on, decision_note, rag_at_decision, deviation_at_decision",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "plan_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "plan_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "dimension",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "dimension"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "raised_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "raised_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "raised_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "raised_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "level_raised_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "level_raised_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "rag_at_raise",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "rag_at_raise"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "deviation_at_raise",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "deviation_at_raise"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "limit_at_raise",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "limit_at_raise"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "decision",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "decision"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "decided_by"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "decided_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "decided_on"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "decision_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "decision_note"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "rag_at_decision",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "rag_at_decision"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "deviation_at_decision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "plan_escalations",
+            "name": "deviation_at_decision"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "8ff806cd4f7b5b2fdb23bf961dc9b8db3844d76d95d6a1652393d7a6fef60882"
+}

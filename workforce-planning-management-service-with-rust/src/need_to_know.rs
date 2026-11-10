@@ -16,11 +16,10 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{reviews, workers};
+use crate::models::_entities::workers;
 use crate::models::{confederations, memberships};
 use crate::rules::access::{self, Audience, Facts, MAX_MANAGER_DEPTH, Relation};
 use crate::rules::org_access;
@@ -62,7 +61,7 @@ pub(crate) async fn privileged_by_membership(
     claims: &Claims,
     organization_ref: Option<&str>,
 ) -> Result<bool> {
-    let held = memberships::caller_memberships(&ctx.db, Some(claims)).await?;
+    let held = memberships::caller_memberships(ctx, Some(claims)).await?;
     let held: Vec<_> = held
         .into_iter()
         .filter(|m| PRIVILEGED_ROLES.contains(&m.role.as_str()))
@@ -73,7 +72,7 @@ pub(crate) async fn privileged_by_membership(
     if held.is_empty() {
         return Ok(false);
     }
-    let edges = confederations::live_edges(&ctx.db).await?;
+    let edges = confederations::live_edges(ctx).await?;
     Ok(held.iter().any(|m| {
         m.organization_ref == target
             || org_access::descendants_of(&edges, &m.organization_ref)
@@ -98,11 +97,12 @@ pub(crate) async fn is_line_manager(
         let Some(pid) = next else {
             return Ok(false);
         };
-        let Some(manager) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
+        let Some(manager) = sqlx::query!(
+            "SELECT person_ref, manager_pid FROM workers WHERE pid = $1 AND deleted_at IS NULL",
+            pid,
+        )
+        .fetch_optional(crate::db::pool(ctx))
+        .await?
         else {
             return Ok(false);
         };
@@ -137,7 +137,7 @@ pub(crate) async fn facts_for(
     }
     let relation = if is_line_manager(ctx, worker, &claims.sub).await? {
         Relation::Manager
-    } else if memberships::caller_scope_refs(&ctx.db, Some(claims))
+    } else if memberships::caller_scope_refs(ctx, Some(claims))
         .await?
         .iter()
         .any(|r| r == &worker.organization_ref)
@@ -153,11 +153,11 @@ pub(crate) async fn facts_for(
 }
 
 async fn live_worker(ctx: &AppContext, pid: Uuid) -> Result<Option<workers::Model>> {
-    Ok(workers::Entity::find()
-        .filter(workers::Column::Pid.eq(pid))
-        .filter(workers::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?)
+    match crate::models::records::worker_by_pid(ctx, pid).await {
+        Ok(worker) => Ok(Some(worker)),
+        Err(Error::NotFound) => Ok(None),
+        Err(e) => Err(e),
+    }
 }
 
 /// The decision for one request: `Ok(true)` to let it through.
@@ -201,9 +201,8 @@ async fn allowed(
             else {
                 return Ok(true);
             };
-            let Some(review) = reviews::Entity::find()
-                .filter(reviews::Column::Pid.eq(pid))
-                .one(&ctx.db)
+            let Some(review) = sqlx::query!("SELECT worker_pid FROM reviews WHERE pid = $1", pid)
+                .fetch_optional(crate::db::pool(ctx))
                 .await?
             else {
                 return Ok(true);
@@ -236,7 +235,7 @@ pub async fn need_to_know_mw(
     if path.starts_with("/api/")
         && let Some(claims) = caller.claims()
     {
-        match memberships::caller_memberships(&ctx.db, Some(claims)).await {
+        match memberships::caller_memberships(&ctx, Some(claims)).await {
             Ok(held) => {
                 let roles: Vec<&str> = held.iter().map(|m| m.role.as_str()).collect();
                 if access::is_partner_only(&roles) && !access::partner_may(is_read, &path) {

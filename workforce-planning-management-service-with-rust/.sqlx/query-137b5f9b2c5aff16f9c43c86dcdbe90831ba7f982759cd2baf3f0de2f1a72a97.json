@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, organization_ref, work_jurisdiction FROM workers\n          WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "work_jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "work_jurisdiction"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "137b5f9b2c5aff16f9c43c86dcdbe90831ba7f982759cd2baf3f0de2f1a72a97"
+}

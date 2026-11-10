@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, job_title, location, hired_on, terminated_on FROM workers\n          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "location",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "location"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "hired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "hired_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "terminated_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "terminated_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "3f63bd77a7f2fc30a4328d26bcd422a263674fb0122f430d9f30cc25265dd7ec"
+}

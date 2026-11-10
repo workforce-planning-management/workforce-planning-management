@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sfia_skill_levels SET retired_in = $3 WHERE code = $1 AND level = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "80cdfc9f67cbf54e7a1a3c0dbd136a10e8609db44f1f39264223ba22bdaec242"
+}

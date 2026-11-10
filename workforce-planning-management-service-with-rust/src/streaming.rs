@@ -22,7 +22,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 
-use sea_orm::ConnectionTrait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -163,16 +162,19 @@ pub fn transport() -> EventTransport {
     })
 }
 
-/// Emit one event **on the given connection** under the active
-/// transport: `outbox` inserts the `event_outbox` row on `conn` (pass
-/// the mutation's transaction — one commit boundary); `memory` pushes
-/// to the in-process ring buffer.
+/// Emit one event **on the given connection** under the active transport: `outbox` inserts the `event_outbox` row on
+/// `connection` (pass the mutation's transaction: one commit boundary); `memory` pushes to the in-process ring buffer.
+///
+/// Either way, a delivery is queued for every active subscription that asked for this event, on the same connection, so a
+/// change that rolls back tells nobody and a change that commits is never missed. Only the event id, the kind and the URN of
+/// the record are written, and for a hire or an ending the handoff references and date the event carried
+/// (`rules::webhook::delivery_data`): no body and no name (WPM-D106, proposed WPM-D145).
 ///
 /// # Errors
 ///
-/// When the outbox insert fails (the `memory` path is infallible).
-pub async fn emit_on<C: ConnectionTrait>(
-    conn: &C,
+/// When an insert fails (the `memory` path is infallible).
+pub async fn emit_in(
+    connection: &mut sqlx::PgConnection,
     entity: &str,
     kind: &str,
     pid: &str,
@@ -182,11 +184,23 @@ pub async fn emit_on<C: ConnectionTrait>(
 ) -> axa::Result<()> {
     let env = envelope(entity, kind, pid, name, actor, data);
     if transport().is_outbox() {
-        OutboxInsert::from_envelope(&env, chrono::Utc::now().into())
-            .map_err(axa::Error::Model)?
-            .insert_on(conn)
-            .await
+        let row = OutboxInsert::from_envelope(&env, chrono::Utc::now().into())
             .map_err(axa::Error::Model)?;
+        sqlx::query!(
+            "INSERT INTO event_outbox (event_id, entity, entity_pid, kind, occurred_at, actor, schema_version, payload)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            row.event_id,
+            row.entity,
+            row.entity_pid,
+            row.kind,
+            row.occurred_at,
+            row.actor,
+            row.schema_version,
+            row.payload,
+        )
+        .execute(&mut *connection)
+        .await
+        .map_err(|e| axa::Error::Message(e.to_string()))?;
     } else {
         let mut events = publisher()
             .events
@@ -197,35 +211,21 @@ pub async fn emit_on<C: ConnectionTrait>(
         }
         events.push(env.clone());
     }
-    enqueue_webhooks(conn, &env).await?;
-    Ok(())
-}
-
-/// Queue a delivery for every active subscription that asked for this event, **on the same connection** (the mutation's
-/// transaction), so a change that rolls back tells nobody and a change that commits is never missed. Only the event id, the
-/// kind and the URN of the record are written, and for a hire or an ending the handoff references and date the event carried
-/// (`rules::webhook::delivery_data`): no body and no name (WPM-D106, proposed WPM-D145).
-async fn enqueue_webhooks<C: ConnectionTrait>(conn: &C, env: &Envelope) -> axa::Result<()> {
-    if !crate::rules::webhook::offered(&env.entity, &env.kind) {
-        return Ok(());
+    if crate::rules::webhook::offered(&env.entity, &env.kind) {
+        sqlx::query!(
+            "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
+             SELECT gen_random_uuid(), s.pid, $1, $2::text, $3, $4, now(), now()
+               FROM webhook_subscriptions s WHERE s.active AND $2::text = ANY (s.kinds)
+             ON CONFLICT (subscription_pid, event_id) DO NOTHING",
+            env.event_id,
+            env.kind,
+            crate::rules::webhook::subject(&env.entity, &env.pid),
+            crate::rules::webhook::delivery_data(&env.kind, env.data.as_ref()),
+        )
+        .execute(&mut *connection)
+        .await
+        .map_err(|e| axa::Error::Message(e.to_string()))?;
     }
-    conn.execute_raw(sea_orm::Statement::from_sql_and_values(
-        sea_orm::DatabaseBackend::Postgres,
-        "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
-         SELECT gen_random_uuid(), s.pid, $1, $2, $3, $4, now(), now()
-           FROM webhook_subscriptions s WHERE s.active AND $2 = ANY (s.kinds)
-         ON CONFLICT (subscription_pid, event_id) DO NOTHING",
-        [
-            env.event_id.into(),
-            env.kind.clone().into(),
-            crate::rules::webhook::subject(&env.entity, &env.pid).into(),
-            sea_orm::Value::Json(
-                crate::rules::webhook::delivery_data(&env.kind, env.data.as_ref()).map(Box::new),
-            ),
-        ],
-    ))
-    .await
-    .map_err(|e| axa::Error::Model(e.into()))?;
     Ok(())
 }
 

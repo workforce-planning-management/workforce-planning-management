@@ -11,9 +11,9 @@
 
 use std::collections::BTreeMap;
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -23,8 +23,8 @@ use super::{
     unprocessable,
 };
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{equality_declarations, pay_categories, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::pay_categories;
 use crate::rules::cost as cost_rules;
 use crate::rules::csv as csv_rules;
 use crate::rules::metrics::is_employed_on;
@@ -82,12 +82,15 @@ async fn live_categories(
     ctx: &AppContext,
     organization: &str,
 ) -> Result<Vec<pay_categories::Model>> {
-    Ok(pay_categories::Entity::find()
-        .filter(pay_categories::Column::OrganizationRef.eq(organization))
-        .filter(pay_categories::Column::DeletedAt.is_null())
-        .order_by_asc(pay_categories::Column::Name)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        pay_categories::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, basis,
+                  job_titles, set_by, deleted_at AS "deleted_at: _"
+             FROM pay_categories WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY name"#,
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 fn titles_of(row: &pay_categories::Model) -> Vec<String> {
@@ -133,7 +136,7 @@ async fn checked(
 pub(crate) async fn list_categories(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
@@ -155,20 +158,20 @@ pub(crate) async fn create_category(
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
     let titles = checked(&ctx, &payload, None).await?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    pay_categories::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        basis: ActiveValue::set(payload.basis.trim().to_string()),
-        job_titles: ActiveValue::set(json!(titles)),
-        set_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO pay_categories (pid, organization_ref, name, basis, job_titles, set_by) VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        payload.organization_ref,
+        payload.name.trim(),
+        payload.basis.trim(),
+        json!(titles),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "pay_category",
         pid,
         "pay_category_set",
@@ -176,18 +179,22 @@ pub(crate) async fn create_category(
         Some(json!({ "titles": titles.len() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
 async fn find_category(ctx: &AppContext, pid: &str) -> Result<pay_categories::Model> {
     let pid = Uuid::parse_str(pid).map_err(|_| Error::NotFound)?;
-    pay_categories::Entity::find()
-        .filter(pay_categories::Column::Pid.eq(pid))
-        .filter(pay_categories::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        pay_categories::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, basis,
+                  job_titles, set_by, deleted_at AS "deleted_at: _"
+             FROM pay_categories WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/pay-categories/{pid}` — replace a category's name, basis and job titles. The organization stays.
@@ -207,15 +214,19 @@ pub(crate) async fn change_category(
     }
     let titles = checked(&ctx, &payload, Some(row.pid)).await?;
     let row_pid = row.pid;
-    let txn = ctx.db.begin().await?;
-    let mut active: pay_categories::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name.trim().to_string());
-    active.basis = ActiveValue::set(payload.basis.trim().to_string());
-    active.job_titles = ActiveValue::set(json!(titles));
-    active.set_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE pay_categories SET name = $2, basis = $3, job_titles = $4, set_by = $5 WHERE id = $1",
+        row.id,
+        payload.name.trim(),
+        payload.basis.trim(),
+        json!(titles),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "pay_category",
         row_pid,
         "pay_category_changed",
@@ -223,7 +234,7 @@ pub(crate) async fn change_category(
         Some(json!({ "titles": titles.len() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": row_pid }))
 }
 
@@ -238,12 +249,16 @@ pub(crate) async fn remove_category(
     let row = find_category(&ctx, &pid).await?;
     ensure_org_in_scope(&ctx, &caller, &row.organization_ref).await?;
     let row_pid = row.pid;
-    let txn = ctx.db.begin().await?;
-    let mut active: pay_categories::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE pay_categories SET deleted_at = $2 WHERE id = $1",
+        row.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "pay_category",
         row_pid,
         "pay_category_removed",
@@ -251,7 +266,7 @@ pub(crate) async fn remove_category(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -313,22 +328,8 @@ pub(crate) async fn build(
         ));
     }
     let as_of = query.as_of.unwrap_or_else(|| Utc::now().date_naive());
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
-        .collect();
-    let answers: BTreeMap<Uuid, String> = equality_declarations::Entity::find()
-        .filter(equality_declarations::Column::Category.eq(&sex_category))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|a| (a.worker_pid, a.value))
-        .collect();
+    let (staff, answers) =
+        staff_and_answers(ctx, &query.organization, as_of, &sex_category).await?;
     let categories = live_categories(ctx, &query.organization).await?;
     let held: Vec<(String, Vec<String>)> = categories
         .iter()
@@ -381,7 +382,47 @@ pub(crate) async fn build(
     })
 }
 
-fn most_common_currency(staff: &[workers::Model]) -> Option<String> {
+/// The workers of `organization` employed on `as_of`, in id order, and each worker's declared answer in `sex_category`.
+async fn staff_and_answers(
+    ctx: &AppContext,
+    organization: &str,
+    as_of: NaiveDate,
+    sex_category: &str,
+) -> Result<(Vec<Paid>, BTreeMap<Uuid, String>)> {
+    let staff: Vec<Paid> = sqlx::query_as!(
+        Paid,
+        "SELECT pid, job_title, salary_minor, salary_currency, hired_on, terminated_on FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
+    .collect();
+    let answers: BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT worker_pid, value FROM equality_declarations WHERE category = $1",
+        sex_category,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|a| (a.worker_pid, a.value))
+    .collect();
+    Ok((staff, answers))
+}
+
+/// What the report reads of a worker.
+struct Paid {
+    pid: Uuid,
+    job_title: String,
+    salary_minor: Option<i64>,
+    salary_currency: Option<String>,
+    hired_on: NaiveDate,
+    terminated_on: Option<NaiveDate>,
+}
+
+fn most_common_currency(staff: &[Paid]) -> Option<String> {
     let mut counts: BTreeMap<&str, usize> = BTreeMap::new();
     for w in staff {
         if w.salary_minor.is_some()
@@ -404,9 +445,11 @@ async fn audit_read(
     exported: bool,
 ) -> Result<()> {
     let snapshot = Some(json!({ "as_of": built.as_of, "categories": built.category_count }));
+    // Each action written out, so the audit guard reads it.
+    let mut connection = db::pool(ctx).acquire().await?;
     if exported {
-        Audit::record(
-            &ctx.db,
+        db::audit(
+            &mut connection,
             "pay_gap_report",
             Uuid::nil(),
             "pay_gap_report_exported",
@@ -415,8 +458,8 @@ async fn audit_read(
         )
         .await?;
     } else {
-        Audit::record(
-            &ctx.db,
+        db::audit(
+            &mut connection,
             "pay_gap_report",
             Uuid::nil(),
             "pay_gap_report_read",
@@ -472,11 +515,13 @@ pub(crate) fn reporting_tiers(
 pub(crate) async fn gap_report(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, false).await?;
-    let scope = super::jurisdictions::Scope::for_organization(&ctx.db, &built.organization).await?;
+    let scope =
+        super::jurisdictions::Scope::for_organization(crate::db::pool(&ctx), &built.organization)
+            .await?;
     let tiers = reporting_tiers(Some(&scope), built.as_of);
     let tier = pay_gap::tier_for(built.headcount, &tiers.value);
     format::json(json!({
@@ -707,7 +752,7 @@ fn to_csv(built: &Built) -> String {
 pub(crate) async fn gap_report_csv(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ReportQuery>,
+    axa::extract::Query(query): axa::extract::Query<ReportQuery>,
 ) -> Result<Response> {
     let built = build(&ctx, &caller, &query).await?;
     audit_read(&ctx, &caller, &built, true).await?;

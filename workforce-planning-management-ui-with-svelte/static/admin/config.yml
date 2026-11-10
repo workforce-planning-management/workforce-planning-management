@@ -89,6 +89,7 @@ collections:
               - { name: "coverageEvidence", label: "Coverage Evidence", widget: string, required: false, i18n: true }
               - { name: "qualifications", label: "Qualifications", widget: string, required: false, i18n: true }
               - { name: "injuryRecords", label: "Injury Records", widget: string, required: false, i18n: true }
+              - { name: "help", label: "Help", widget: string, required: false, i18n: true }
           - name: "pr"
             label: "Pr"
             widget: object
@@ -168,6 +169,9 @@ collections:
               - { name: "report", label: "Report", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
               - { name: "requests", label: "Requests", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "competencies", label: "Competencies", widget: string, required: false, i18n: true }
+              - { name: "recordLink", label: "Record Link", widget: string, required: false, i18n: true }
           - name: "notif"
             label: "Notif"
             widget: object
@@ -705,6 +709,25 @@ collections:
                   - { name: "title", label: "Title", widget: string, required: false, i18n: true }
                   - { name: "body", label: "Body", widget: text, required: false, i18n: true }
                   - { name: "button", label: "Button", widget: string, required: false, i18n: true }
+              - name: "help"
+                label: "Help"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - name: "learn"
+                label: "Learn"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "body", label: "Body", widget: text, required: false, i18n: true }
           - name: "insights"
             label: "Insights"
             widget: object
@@ -2319,6 +2342,9 @@ collections:
               - { name: "myGoals", label: "My Goals", widget: string, required: false, i18n: true }
               - { name: "myPadrs", label: "My Padrs", widget: string, required: false, i18n: true }
               - { name: "padr", label: "Padr", widget: string, required: false, i18n: true }
+              - { name: "help", label: "Help", widget: string, required: false, i18n: true }
+              - { name: "guides", label: "Guides", widget: string, required: false, i18n: true }
+              - { name: "required", label: "Required", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -3346,6 +3372,17 @@ collections:
               - { name: "invalid", label: "Invalid", widget: string, required: false, i18n: true }
               - { name: "server", label: "Server", widget: text, required: false, i18n: true }
               - { name: "generic", label: "Generic", widget: string, required: false, i18n: true }
+              - name: "next"
+                label: "Next"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "retry", label: "Retry", widget: string, required: false, i18n: true }
+                  - { name: "access", label: "Access", widget: string, required: false, i18n: true }
+                  - { name: "input", label: "Input", widget: text, required: false, i18n: true }
+              - { name: "getHelp", label: "Get Help", widget: string, required: false, i18n: true }
           - name: "labels"
             label: "Labels"
             widget: object
@@ -3679,7 +3716,6 @@ collections:
             required: false
             i18n: true
             fields:
-              - { name: "showing", label: "Showing", widget: string, required: false, i18n: true }
               - { name: "more", label: "More", widget: string, required: false, i18n: true }
           - name: "bargaining"
             label: "Bargaining"
@@ -4405,3 +4441,234 @@ collections:
               - { name: "from", label: "From", widget: string, required: false, i18n: true }
               - { name: "to", label: "To", widget: string, required: false, i18n: true }
               - { name: "download", label: "Download", widget: string, required: false, i18n: true }
+          - name: "help"
+            label: "Help"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+              - { name: "bugTitle", label: "Bug Title", widget: string, required: false, i18n: true }
+              - { name: "bugBody", label: "Bug Body", widget: text, required: false, i18n: true }
+              - { name: "bugLink", label: "Bug Link", widget: string, required: false, i18n: true }
+              - { name: "securityBody", label: "Security Body", widget: string, required: false, i18n: true }
+              - { name: "securityLink", label: "Security Link", widget: string, required: false, i18n: true }
+              - { name: "questionTitle", label: "Question Title", widget: string, required: false, i18n: true }
+              - { name: "questionBody", label: "Question Body", widget: text, required: false, i18n: true }
+              - { name: "questionLink", label: "Question Link", widget: string, required: false, i18n: true }
+              - { name: "learnTitle", label: "Learn Title", widget: string, required: false, i18n: true }
+              - { name: "learnBody", label: "Learn Body", widget: text, required: false, i18n: true }
+              - { name: "tourLink", label: "Tour Link", widget: string, required: false, i18n: true }
+              - { name: "docsLink", label: "Docs Link", widget: string, required: false, i18n: true }
+              - { name: "errorTitle", label: "Error Title", widget: string, required: false, i18n: true }
+              - { name: "errorBody", label: "Error Body", widget: text, required: false, i18n: true }
+              - { name: "deployerNote", label: "Deployer Note", widget: text, required: false, i18n: true }
+          - name: "errorPage"
+            label: "Error Page"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "notFound", label: "Not Found", widget: string, required: false, i18n: true }
+              - { name: "failed", label: "Failed", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "home", label: "Home", widget: string, required: false, i18n: true }
+          - name: "guides"
+            label: "Guides"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "intro", label: "Intro", widget: string, required: false, i18n: true }
+              - { name: "open", label: "Open", widget: string, required: false, i18n: true }
+              - { name: "others", label: "Others", widget: string, required: false, i18n: true }
+              - { name: "signin", label: "Signin", widget: text, required: false, i18n: true }
+              - name: "employee"
+                label: "Employee"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+                  - name: "waiting"
+                    label: "Waiting"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "goal"
+                    label: "Goal"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "qualification"
+                    label: "Qualification"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "payslips"
+                    label: "Payslips"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "feedback"
+                    label: "Feedback"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "required"
+                    label: "Required"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+              - name: "manager"
+                label: "Manager"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+                  - name: "team"
+                    label: "Team"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "goals"
+                    label: "Goals"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "padr"
+                    label: "Padr"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "appraisal"
+                    label: "Appraisal"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+              - name: "hr"
+                label: "Hr"
+                widget: object
+                collapsed: true
+                required: false
+                i18n: true
+                fields:
+                  - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                  - { name: "intro", label: "Intro", widget: text, required: false, i18n: true }
+                  - name: "requirement"
+                    label: "Requirement"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "completion"
+                    label: "Completion"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "verify"
+                    label: "Verify"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "vacancy"
+                    label: "Vacancy"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "movement"
+                    label: "Movement"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - { name: "chooseOrg", label: "Choose Org", widget: text, required: false, i18n: true }
+          - name: "required"
+            label: "Required"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "learningTitle", label: "Learning Title", widget: string, required: false, i18n: true }
+              - { name: "certsTitle", label: "Certs Title", widget: string, required: false, i18n: true }
+              - { name: "allClear", label: "All Clear", widget: string, required: false, i18n: true }
+              - { name: "attention", label: "Attention", widget: string, required: false, i18n: true }
+              - { name: "learningAct", label: "Learning Act", widget: string, required: false, i18n: true }
+              - { name: "learningHow", label: "Learning How", widget: text, required: false, i18n: true }
+              - { name: "certAct", label: "Cert Act", widget: string, required: false, i18n: true }
+              - { name: "certMissingHow", label: "Cert Missing How", widget: string, required: false, i18n: true }
+              - { name: "certDeclaredHow", label: "Cert Declared How", widget: string, required: false, i18n: true }
+              - { name: "certExpiredHow", label: "Cert Expired How", widget: string, required: false, i18n: true }
+              - { name: "noExpiry", label: "No Expiry", widget: string, required: false, i18n: true }

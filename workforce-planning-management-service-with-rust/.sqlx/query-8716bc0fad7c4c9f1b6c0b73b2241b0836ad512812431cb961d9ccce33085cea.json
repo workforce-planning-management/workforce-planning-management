@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT home_jurisdiction FROM organization_settings WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "home_jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "organization_settings",
+            "name": "home_jurisdiction"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "8716bc0fad7c4c9f1b6c0b73b2241b0836ad512812431cb961d9ccce33085cea"
+}

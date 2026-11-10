@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, purpose, expires_at, used_at FROM link_tokens WHERE token_hash = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "purpose",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "purpose"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "used_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "link_tokens",
+            "name": "used_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "076bf2627ddd0b0d9b5fcc7e5422c65443779996c215a3d3ad8b76f576343c38"
+}

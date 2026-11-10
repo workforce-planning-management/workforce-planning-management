@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## Step 2: Start the service
 
-The service reads `DATABASE_URL`. Its default is `postgres://loco:loco@localhost:5432/workforce_planning_management_development`; set the variable if your database has another name, user or port. Prepare the empty database and start the API. Sign-in is turned off for this instance only, and the rate limit is raised for the tour.
+The service reads `DATABASE_URL`. Its default is `postgres://postgres:postgres@localhost:5432/workforce_planning_management_development`; set the variable if your database has another name, user or port. Prepare the empty database and start the API. Sign-in is turned off for this instance only, and the rate limit is raised for the tour.
 
 ```sh
 cd workforce-planning-management-service-with-rust

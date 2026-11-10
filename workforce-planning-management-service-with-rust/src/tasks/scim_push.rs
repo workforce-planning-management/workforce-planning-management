@@ -14,7 +14,6 @@ use std::collections::{BTreeMap, HashMap};
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::{DateTime, Duration, NaiveDate, Utc};
-use sea_orm::ActiveValue;
 use serde::Serialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -159,37 +158,45 @@ type Saved = (
     Option<String>,
 );
 
-async fn save(
-    ctx: &AppContext,
-    worker: Uuid,
-    held: Option<scim_pushes::Model>,
-    saved: Saved,
-) -> Result<scim_pushes::Model> {
+async fn save(ctx: &AppContext, worker: Uuid, saved: Saved) -> Result<scim_pushes::Model> {
     let (scim_id, body_hash, pushed_at, attempts, next_attempt_at, last_error) = saved;
-    Ok(if let Some(old) = held {
-        let mut active: scim_pushes::ActiveModel = old.into();
-        active.scim_id = ActiveValue::set(scim_id);
-        active.body_hash = ActiveValue::set(body_hash);
-        active.pushed_at = ActiveValue::set(pushed_at);
-        active.attempts = ActiveValue::set(attempts);
-        active.next_attempt_at = ActiveValue::set(next_attempt_at);
-        active.last_error = ActiveValue::set(last_error);
-        active.update(&ctx.db).await?
-    } else {
-        scim_pushes::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            worker_pid: ActiveValue::set(worker),
-            scim_id: ActiveValue::set(scim_id),
-            body_hash: ActiveValue::set(body_hash),
-            pushed_at: ActiveValue::set(pushed_at),
-            attempts: ActiveValue::set(attempts),
-            next_attempt_at: ActiveValue::set(next_attempt_at),
-            last_error: ActiveValue::set(last_error),
-            ..Default::default()
-        }
-        .insert(&ctx.db)
-        .await?
-    })
+    // One row per worker (`worker_pid` is unique): the first push inserts it, every later one updates it in place.
+    Ok(sqlx::query_as!(
+        scim_pushes::Model,
+        r#"INSERT INTO scim_pushes (pid, worker_pid, scim_id, body_hash, pushed_at, attempts, next_attempt_at, last_error)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (worker_pid) DO UPDATE
+              SET scim_id = EXCLUDED.scim_id, body_hash = EXCLUDED.body_hash, pushed_at = EXCLUDED.pushed_at,
+                  attempts = EXCLUDED.attempts, next_attempt_at = EXCLUDED.next_attempt_at,
+                  last_error = EXCLUDED.last_error
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, scim_id, body_hash,
+                     pushed_at AS "pushed_at: _", attempts, next_attempt_at AS "next_attempt_at: _", last_error"#,
+        Uuid::new_v4(),
+        worker,
+        scim_id,
+        body_hash,
+        pushed_at,
+        attempts,
+        next_attempt_at,
+        last_error,
+    )
+    .fetch_one(crate::db::pool(ctx))
+    .await?)
+}
+
+/// Every worker, or an organization's, soft-deleted ones too: a deleted record is deprovisioned.
+async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<workers::Model>> {
+    Ok(sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE ($1::text IS NULL OR organization_ref = $1)"#,
+        organization,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }
 
 /// One reconciliation. `today` is the date employment is judged on and `now` stamps the state.
@@ -203,19 +210,20 @@ pub async fn run(
     today: NaiveDate,
     now: DateTime<Utc>,
 ) -> Result<Summary> {
-    let mut query = workers::Entity::find();
-    if let Some(org) = &cfg.organization {
-        query = query.filter(workers::Column::OrganizationRef.eq(org));
-    }
-    let everyone = query.all(&ctx.db).await?;
+    let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
         everyone.iter().map(|w| (w.pid, w.manager_pid)).collect();
     let mut ordered: Vec<&workers::Model> = everyone.iter().collect();
     ordered.sort_by_key(|w| (depth(w.pid, &manager_of), w.id));
 
-    let mut state: BTreeMap<Uuid, scim_pushes::Model> = scim_pushes::Entity::find()
-        .all(&ctx.db)
-        .await?
+    let mut state: BTreeMap<Uuid, scim_pushes::Model> = sqlx::query_as!(
+        scim_pushes::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, scim_id, body_hash,
+                  pushed_at AS "pushed_at: _", attempts, next_attempt_at AS "next_attempt_at: _", last_error
+             FROM scim_pushes"#
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?
         .into_iter()
         .map(|p| (p.worker_pid, p))
         .collect();
@@ -298,7 +306,7 @@ pub async fn run(
                 )
             }
         };
-        let row = save(ctx, w.pid, held, saved).await?;
+        let row = save(ctx, w.pid, saved).await?;
         state.insert(w.pid, row);
     }
     Ok(summary)

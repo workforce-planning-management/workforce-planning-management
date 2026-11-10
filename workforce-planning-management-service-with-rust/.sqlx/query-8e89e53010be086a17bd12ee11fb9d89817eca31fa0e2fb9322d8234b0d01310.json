@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid FROM plan_demand_lines WHERE pid = $1 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "plan_demand_lines",
+            "name": "role_profile_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "8e89e53010be086a17bd12ee11fb9d89817eca31fa0e2fb9322d8234b0d01310"
+}

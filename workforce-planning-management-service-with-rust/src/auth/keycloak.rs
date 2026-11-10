@@ -961,7 +961,7 @@ mod tests {
             enforce(
                 true,
                 &Method::GET,
-                "/_health",
+                "/_health/live",
                 &HeaderMap::new(),
                 &material,
                 &policy

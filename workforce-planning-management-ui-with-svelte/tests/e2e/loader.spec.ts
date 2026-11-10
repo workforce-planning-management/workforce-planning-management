@@ -81,7 +81,7 @@ test.describe("a worker's page loads panel by panel (WPM-T260)", () => {
     await page.route(`**/api/proxy/workers/${WORKER.pid}/payslips`, (route) =>
       route.fulfill({
         status: 500,
-        json: { error: "internal", description: "payslips are down" },
+        json: { code: "internal", detail: "payslips are down" },
       }),
     );
     await page.goto(`/workers/${WORKER.pid}`);
@@ -99,7 +99,7 @@ test.describe("a worker's page loads panel by panel (WPM-T260)", () => {
     await page.route(`**/api/proxy/workers/${WORKER.pid}`, (route) =>
       route.fulfill({
         status: 500,
-        json: { error: "internal", description: "down" },
+        json: { code: "internal", detail: "down" },
       }),
     );
     await page.goto(`/workers/${WORKER.pid}`);

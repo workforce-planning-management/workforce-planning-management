@@ -7,6 +7,7 @@
 //! Scoped to the caller's organizations like the org chart: a worker outside
 //! the caller's scope is `404`, and people outside it never appear.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -14,69 +15,89 @@ use uuid::Uuid;
 
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{dotted_line_reports, workers};
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::metrics::is_employed_on;
 use crate::rules::org::{self, ReportKind};
-use sea_orm::{ActiveValue, QueryOrder};
 
-/// The workers employed today that the caller may see (none of them read yet).
-async fn staff_select(
-    ctx: &AppContext,
-    caller: &MaybeAuthUser,
-) -> Result<sea_orm::Select<workers::Entity>> {
-    let today = chrono::Utc::now().date_naive();
-    let mut select = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::HiredOn.lte(today))
-        .filter(
-            sea_orm::Condition::any()
-                .add(workers::Column::TerminatedOn.is_null())
-                .add(workers::Column::TerminatedOn.gt(today)),
-        );
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        select = select.filter(workers::Column::OrganizationRef.is_in(refs));
-    }
-    Ok(select)
+/// A person on a reporting line, as these views show them.
+struct Person {
+    pid: Uuid,
+    display_name: String,
+    job_title: String,
+    department: String,
+    manager_pid: Option<Uuid>,
 }
 
-/// Those of `pids` who are employed and visible, by pid. Reads only them (WPM-R142): the staff of an
+impl From<&workers::Model> for Person {
+    fn from(w: &workers::Model) -> Self {
+        Self {
+            pid: w.pid,
+            display_name: w.display_name.clone(),
+            job_title: w.job_title.clone(),
+            department: w.department.clone(),
+            manager_pid: w.manager_pid,
+        }
+    }
+}
+
+/// Those of `pids` who are employed today and visible, by pid. Reads only them (WPM-R142): the staff of an
 /// organization of 200,000 are never loaded to answer for a handful.
 async fn staff_among(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pids: &[Uuid],
-) -> Result<BTreeMap<Uuid, workers::Model>> {
-    let select = staff_select(ctx, caller).await?;
-    Ok(super::find_in(ctx, select, workers::Column::Pid, pids)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect())
+) -> Result<BTreeMap<Uuid, Person>> {
+    let today = chrono::Utc::now().date_naive();
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
+    Ok(sqlx::query_as!(
+        Person,
+        "SELECT pid, display_name, job_title, department, manager_pid FROM workers
+          WHERE pid = ANY($1) AND deleted_at IS NULL AND hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)
+            AND ($3::text[] IS NULL OR organization_ref = ANY($3))",
+        pids,
+        today,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect())
 }
 
-/// Everyone below `manager` who is employed and visible, level by level (a cycle revisits no one).
+/// Everyone below `manager` who is employed today and visible, in one recursive statement, where it was one read per
+/// level; `UNION` keeps each person once, so a cycle revisits no one.
 async fn staff_below(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     manager: Uuid,
-) -> Result<BTreeMap<Uuid, workers::Model>> {
-    let select = staff_select(ctx, caller).await?;
-    let mut found: BTreeMap<Uuid, workers::Model> = BTreeMap::new();
-    let mut frontier = vec![manager];
-    while !frontier.is_empty() {
-        let level =
-            super::find_in(ctx, select.clone(), workers::Column::ManagerPid, &frontier).await?;
-        frontier = Vec::new();
-        for w in level {
-            if w.pid != manager && !found.contains_key(&w.pid) {
-                frontier.push(w.pid);
-                found.insert(w.pid, w);
-            }
-        }
-    }
-    Ok(found)
+) -> Result<BTreeMap<Uuid, Person>> {
+    let today = chrono::Utc::now().date_naive();
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
+    Ok(sqlx::query_as!(
+        Person,
+        r#"WITH RECURSIVE staff AS (
+               SELECT pid, display_name, job_title, department, manager_pid FROM workers
+                WHERE deleted_at IS NULL AND hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)
+                  AND ($3::text[] IS NULL OR organization_ref = ANY($3))),
+           down AS (
+               SELECT s.* FROM staff s WHERE s.manager_pid = $1
+               UNION
+               SELECT s.* FROM staff s JOIN down d ON s.manager_pid = d.pid)
+           SELECT pid AS "pid!", display_name AS "display_name!", job_title AS "job_title!", department AS "department!",
+                  manager_pid
+             FROM down WHERE pid <> $1"#,
+        manager,
+        today,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect())
 }
 
 /// The worker, required to be visible to the caller (a worker who is not, or no longer, employed is
@@ -86,15 +107,15 @@ async fn visible_worker(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<workers::Model> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let worker = records::worker_by_pid(ctx, records::parse_pid(pid)?).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     if scope.is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
         return Err(Error::NotFound);
     }
     Ok(worker)
 }
 
-fn person_json(w: &workers::Model) -> serde_json::Value {
+fn person_json(w: &Person) -> serde_json::Value {
     serde_json::json!({
         "pid": w.pid,
         "display_name": w.display_name,
@@ -131,7 +152,7 @@ async fn upline(
         manager = boss.manager_pid;
     }
     format::json(serde_json::json!({
-        "worker": person_json(&worker),
+        "worker": person_json(&Person::from(&worker)),
         "upline": chain,
     }))
 }
@@ -160,7 +181,7 @@ fn list_limit(asked: Option<usize>) -> usize {
 }
 
 /// The downline of a manager: `(worker, depth)` for everyone below.
-fn below(manager: Uuid, staff: &BTreeMap<Uuid, workers::Model>) -> Vec<(&workers::Model, usize)> {
+fn below(manager: Uuid, staff: &BTreeMap<Uuid, Person>) -> Vec<(&Person, usize)> {
     let mut reports_of: BTreeMap<Uuid, Vec<Uuid>> = BTreeMap::new();
     for w in staff.values() {
         if let Some(boss) = w.manager_pid {
@@ -173,7 +194,7 @@ fn below(manager: Uuid, staff: &BTreeMap<Uuid, workers::Model>) -> Vec<(&workers
         .collect()
 }
 
-fn report_json(w: &workers::Model, depth: usize) -> serde_json::Value {
+fn report_json(w: &Person, depth: usize) -> serde_json::Value {
     let mut json = person_json(w);
     json["depth"] = serde_json::json!(depth);
     json["report_kind"] = serde_json::json!(org::report_kind(depth).map(ReportKind::as_str));
@@ -189,7 +210,7 @@ async fn downline(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<LimitQuery>,
+    axa::extract::Query(query): axa::extract::Query<LimitQuery>,
 ) -> Result<Response> {
     let limit = list_limit(query.limit);
     let manager = visible_worker(&ctx, &caller, &pid).await?;
@@ -197,7 +218,7 @@ async fn downline(
     let team = below(manager.pid, &staff);
     let direct = team.iter().filter(|(_, d)| *d == 1).count();
     format::json(serde_json::json!({
-        "manager": person_json(&manager),
+        "manager": person_json(&Person::from(&manager)),
         "summary": { "direct": direct, "indirect": team.len() - direct, "total": team.len() },
         "downline": team.iter().take(limit).map(|(w, d)| report_json(w, *d)).collect::<Vec<_>>(),
         "truncated": team.len() > limit,
@@ -211,7 +232,7 @@ async fn reports(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<KindQuery>,
+    axa::extract::Query(query): axa::extract::Query<KindQuery>,
 ) -> Result<Response> {
     let wanted = match query.kind.as_deref() {
         None => None,
@@ -222,7 +243,7 @@ async fn reports(
     let manager = visible_worker(&ctx, &caller, &pid).await?;
     let staff = staff_below(&ctx, &caller, manager.pid).await?;
     let limit = list_limit(query.limit);
-    let matching: Vec<(&workers::Model, usize)> = below(manager.pid, &staff)
+    let matching: Vec<(&Person, usize)> = below(manager.pid, &staff)
         .into_iter()
         .filter(|(_, d)| wanted.is_none_or(|k| org::report_kind(*d) == Some(k)))
         .collect();
@@ -232,7 +253,7 @@ async fn reports(
         .map(|(w, d)| report_json(w, *d))
         .collect();
     format::json(serde_json::json!({
-        "manager": person_json(&manager),
+        "manager": person_json(&Person::from(&manager)),
         "kind": query.kind,
         "reports": team,
         "total": matching.len(),
@@ -240,10 +261,7 @@ async fn reports(
     }))
 }
 
-fn dotted_json(
-    d: &dotted_line_reports::Model,
-    person: Option<&workers::Model>,
-) -> serde_json::Value {
+fn dotted_json(d: &dotted_line_reports::Model, person: Option<&Person>) -> serde_json::Value {
     let mut json = person.map_or_else(|| serde_json::json!({}), person_json);
     json["note"] = serde_json::json!(d.note);
     json["started_at"] = serde_json::json!(d.started_at);
@@ -263,22 +281,21 @@ async fn dotted_line(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<PastQuery>,
+    axa::extract::Query(query): axa::extract::Query<PastQuery>,
 ) -> Result<Response> {
     let worker = visible_worker(&ctx, &caller, &pid).await?;
-    let mut select = dotted_line_reports::Entity::find();
-    if !query.include_past {
-        select = select.filter(dotted_line_reports::Column::EndedAt.is_null());
-    }
-    let rows = select
-        .filter(
-            sea_orm::Condition::any()
-                .add(dotted_line_reports::Column::ReportPid.eq(worker.pid))
-                .add(dotted_line_reports::Column::ManagerPid.eq(worker.pid)),
-        )
-        .order_by_desc(dotted_line_reports::Column::StartedAt)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        dotted_line_reports::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, report_pid, manager_pid, note,
+                  started_at AS "started_at: _", ended_at AS "ended_at: _", recorded_by, on_behalf
+             FROM dotted_line_reports
+            WHERE (report_pid = $1 OR manager_pid = $1) AND ($2 OR ended_at IS NULL)
+            ORDER BY started_at DESC"#,
+        worker.pid,
+        query.include_past,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let others: Vec<Uuid> = rows
         .iter()
         .map(|d| {
@@ -301,7 +318,7 @@ async fn dotted_line(
         .filter_map(|d| staff.get(&d.report_pid).map(|r| dotted_json(d, Some(r))))
         .collect();
     format::json(serde_json::json!({
-        "worker": person_json(&worker),
+        "worker": person_json(&Person::from(&worker)),
         "dotted_line_managers": managers,
         "dotted_line_reports": reports,
     }))
@@ -334,7 +351,7 @@ async fn add_dotted_manager(
     Path(pid): Path<String>,
     Json(payload): Json<DottedPayload>,
 ) -> Result<Response> {
-    let report = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let report = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -355,34 +372,28 @@ async fn add_dotted_manager(
             "the dotted-line manager must be an employed worker you can see",
         ));
     }
-    let current = dotted_line_reports::Entity::find()
-        .filter(dotted_line_reports::Column::ReportPid.eq(report.pid))
-        .filter(dotted_line_reports::Column::ManagerPid.eq(payload.manager_pid))
-        .filter(dotted_line_reports::Column::EndedAt.is_null())
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    let row = if let Some(existing) = current {
-        let mut active: dotted_line_reports::ActiveModel = existing.into();
-        active.note = ActiveValue::set(payload.note);
-        active.update(&txn).await?
-    } else {
-        dotted_line_reports::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            report_pid: ActiveValue::set(report.pid),
-            manager_pid: ActiveValue::set(payload.manager_pid),
-            note: ActiveValue::set(payload.note),
-            started_at: ActiveValue::set(chrono::Utc::now().into()),
-            ended_at: ActiveValue::set(None),
-            recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-            on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &report.person_ref)),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One current line per report and manager: one upsert on that partial index. Choosing one already there changes
+    // only its note.
+    let row = sqlx::query_as!(
+        dotted_line_reports::Model,
+        r#"INSERT INTO dotted_line_reports (pid, report_pid, manager_pid, note, started_at, recorded_by, on_behalf)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (report_pid, manager_pid) WHERE ended_at IS NULL DO UPDATE SET note = EXCLUDED.note
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, report_pid, manager_pid, note,
+                  started_at AS "started_at: _", ended_at AS "ended_at: _", recorded_by, on_behalf"#,
+        Uuid::new_v4(),
+        report.pid,
+        payload.manager_pid,
+        payload.note,
+        chrono::Utc::now(),
+        caller.actor(),
+        auth::acting_for_other(&caller, &report.person_ref),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         report.pid,
         "dotted_line_added",
@@ -390,7 +401,7 @@ async fn add_dotted_manager(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(dotted_json(&row, staff.get(&row.manager_pid)))
 }
 
@@ -402,26 +413,27 @@ async fn end_dotted_manager(
     caller: MaybeAuthUser,
     Path((pid, manager_pid)): Path<(String, String)>,
 ) -> Result<Response> {
-    let report = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let report = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
         &auth::worker_resource_attrs(&report),
     )
     .map_err(record_rejection)?;
-    let current = dotted_line_reports::Entity::find()
-        .filter(dotted_line_reports::Column::ReportPid.eq(report.pid))
-        .filter(dotted_line_reports::Column::ManagerPid.eq(records::parse_pid(&manager_pid)?))
-        .filter(dotted_line_reports::Column::EndedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active: dotted_line_reports::ActiveModel = current.into();
-    active.ended_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let ended = sqlx::query!(
+        "UPDATE dotted_line_reports SET ended_at = $3 WHERE report_pid = $1 AND manager_pid = $2 AND ended_at IS NULL",
+        report.pid,
+        records::parse_pid(&manager_pid)?,
+        chrono::Utc::now(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    if ended.rows_affected() == 0 {
+        return Err(Error::NotFound);
+    }
+    db::audit(
+        &mut tx,
         "worker",
         report.pid,
         "dotted_line_ended",
@@ -429,7 +441,7 @@ async fn end_dotted_manager(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 

@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT uri, label, skill_type, reuse_level FROM esco_skills\n           WHERE lower(label) LIKE $1 ESCAPE '\\'\n           ORDER BY label LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "skill_type",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "skill_type"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "reuse_level",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "reuse_level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b334c4c5bcd51374488760ee62d3e3563f2838f03cf4494dae29c915d4182582"
+}

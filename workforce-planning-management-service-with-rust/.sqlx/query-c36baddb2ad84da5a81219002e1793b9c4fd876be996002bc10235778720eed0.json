@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, goal_pid, worker_pid, checked_on,\n                  status, note, recorded_by\n             FROM goal_check_ins WHERE goal_pid = ANY($1) ORDER BY id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "goal_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "goal_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "checked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "checked_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "goal_check_ins",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c36baddb2ad84da5a81219002e1793b9c4fd876be996002bc10235778720eed0"
+}

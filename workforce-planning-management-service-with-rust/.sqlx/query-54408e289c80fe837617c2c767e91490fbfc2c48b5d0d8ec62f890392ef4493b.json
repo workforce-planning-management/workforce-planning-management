@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE role_skill_requirements SET skill_pid = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "54408e289c80fe837617c2c767e91490fbfc2c48b5d0d8ec62f890392ef4493b"
+}

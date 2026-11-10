@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version_pid, acknowledged_on FROM policy_acknowledgements WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "policy_acknowledgements",
+            "name": "version_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "acknowledged_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "policy_acknowledgements",
+            "name": "acknowledged_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "74acc59b0ae2532b57767f3f3559ed129c8fad2942fcc958e32b589c3182cc61"
+}

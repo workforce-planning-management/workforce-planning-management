@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO engagement_reminders (worker_pid, ends_on, kind, reminded_on) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7653f920ee975baa77f42cedc7f0941cd46e40bd1590163bf2ca141b93fe525b"
+}

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*)::bigint AS \"entries!\",\n                  (SELECT entry_hash FROM audit_logs ORDER BY chain_seq DESC LIMIT 1) AS head_hash\n             FROM audit_logs",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entries!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "head_hash",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "b5a10889e7ab34e78021e3aa15faee7dbabf42fdfb1a6c8773a51909a246b5c8"
+}

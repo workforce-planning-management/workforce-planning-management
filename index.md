@@ -20,6 +20,15 @@ documentation page of the website
   steps with `curl` through the bridges to the sibling project-portfolio-management
   and contact-relationship-management apps.
 
+## Getting help
+
+- **A bug or a question:** open an issue in the
+  [issue tracker](https://github.com/workforce-planning-management/workforce-planning-management/issues), and say whether it is
+  a bug or a question. Never paste real personal data.
+- **A security problem:** by email, as [SECURITY.md](SECURITY.md) says, not in a public issue.
+- **How to do a task in the app:** the **Help** link in the app's header opens the help page and the walkthroughs for an employee,
+  a manager and HR; every error message links there too.
+
 ## The specification
 
 - **[spec/index.md](spec/index.md)**: the single source of truth, its topic

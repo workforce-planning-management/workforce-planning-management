@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid FROM development_plans\n          WHERE deleted_at IS NULL AND kind = 'reskill' AND status = 'active'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3bf8797b38ce0686ed3fb09de39c5186afae81b87c9b3b7a3a0c1d232a42bd17"
+}

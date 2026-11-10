@@ -8,7 +8,6 @@ use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::post;
 use chrono::{Duration, Utc};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::rules::webhook::{
@@ -18,6 +17,7 @@ use workforce_planning_management::rules::webhook::{
 use workforce_planning_management::tasks::webhook_deliver::{Summary, run};
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 #[derive(Default)]
 struct Stub {
@@ -38,7 +38,7 @@ async fn serve(stub: Arc<Stub>) -> String {
     url
 }
 
-async fn worker(request: &axa::TestServer, number: &str) -> String {
+async fn worker(request: &axa_test::TestServer, number: &str) -> String {
     let created: Value = request
         .post("/api/workers")
         .json(&json!({
@@ -51,7 +51,7 @@ async fn worker(request: &axa::TestServer, number: &str) -> String {
     created["pid"].as_str().unwrap().to_string()
 }
 
-async fn status(request: &axa::TestServer, pid: &str, to: &str) {
+async fn status(request: &axa_test::TestServer, pid: &str, to: &str) {
     request
         .post(&format!("/api/workers/{pid}/status"))
         .json(&json!({ "to": to }))
@@ -102,9 +102,8 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         // An activation is not what this subscription asked for; a termination is.
         let w = worker(&request, "WH-SECRET-NUMBER").await;
         status(&request, &w, "active").await;
-        let queued = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT count(*) AS n FROM webhook_deliveries".to_string())).await.unwrap().unwrap();
-        assert_eq!(queued.try_get::<i64>("", "n").unwrap(), 0, "nothing asked for, and the inactive one gets nothing");
+        let queued = sqlx::query("SELECT count(*) AS n FROM webhook_deliveries").fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(queued.try_get::<i64, _>("n").unwrap(), 0, "nothing asked for, and the inactive one gets nothing");
         status(&request, &w, "offboarding").await;
         status(&request, &w, "terminated").await;
         let log: Value = request.get(&format!("/api/webhook-subscriptions/{pid}/deliveries")).await.json();
@@ -184,18 +183,15 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         assert!(!names.to_string().contains("Never"), "nothing was kept");
 
         // A change that rolls back queues nothing: the delivery is written on the change's own transaction.
-        let queued = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT count(*) AS n FROM webhook_deliveries".to_string())).await.unwrap().unwrap();
-        let before = queued.try_get::<i64>("", "n").unwrap();
+        let queued = sqlx::query("SELECT count(*) AS n FROM webhook_deliveries").fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        let before = queued.try_get::<i64, _>("n").unwrap();
         {
-            use sea_orm::TransactionTrait;
-            let txn = ctx.db.begin().await.unwrap();
-            workforce_planning_management::streaming::emit_on(&txn, "worker", "worker_terminated", &uuid::Uuid::new_v4().to_string(), "x", None, None).await.unwrap();
+            let mut txn = workforce_planning_management::db::pool(&ctx).begin().await.unwrap();
+            workforce_planning_management::streaming::emit_in(&mut txn, "worker", "worker_terminated", &uuid::Uuid::new_v4().to_string(), "x", None, None).await.unwrap();
             txn.rollback().await.unwrap();
         }
-        let queued = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            "SELECT count(*) AS n FROM webhook_deliveries".to_string())).await.unwrap().unwrap();
-        assert_eq!(queued.try_get::<i64>("", "n").unwrap(), before);
+        let queued = sqlx::query("SELECT count(*) AS n FROM webhook_deliveries").fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(queued.try_get::<i64, _>("n").unwrap(), before);
 
         // A subscription can be renamed and switched off, and then it is told nothing.
         let renamed = request
@@ -256,17 +252,16 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         let log: Value = request.get(&format!("/api/webhook-subscriptions/{hires_pid}/deliveries")).await.json();
         assert!(log.as_array().unwrap().iter().all(|row| row.get("data").is_none() && !row.to_string().contains("person:")), "{log}");
         // The schema refuses data on a kind that carries none.
-        let refused = ctx.db.execute_unprepared(&format!(
+        let refused = sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)
              VALUES (gen_random_uuid(), '{hires_pid}', gen_random_uuid(), 'leave_approved', 'leave_request:x', '{{}}'::jsonb, now(), now())"
-        )).await;
+        ))).execute(workforce_planning_management::db::pool(&ctx)).await;
         assert!(refused.is_err(), "data on leave_approved is refused by the schema");
 
         // Removing the subscription removes its log.
         request.delete(&format!("/api/webhook-subscriptions/{pid}")).await.assert_status_ok();
-        let gone = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
-            format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subscription_pid = '{pid}'"))).await.unwrap().unwrap();
-        assert_eq!(gone.try_get::<i64>("", "n").unwrap(), 0);
+        let gone = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subscription_pid = '{pid}'"))).fetch_optional(workforce_planning_management::db::pool(&ctx)).await.unwrap().unwrap();
+        assert_eq!(gone.try_get::<i64, _>("n").unwrap(), 0);
     })
     .await;
     unsafe { std::env::remove_var("WPM_WEBHOOK_SECRET_TEST") };

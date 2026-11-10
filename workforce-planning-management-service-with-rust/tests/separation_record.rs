@@ -1,15 +1,15 @@
 //! The separation record under enforcement (WPM-R222), against the shipped reference policy: built from the leaver record, HR only,
 //! audited with no content, and an export with a row for every leaver in the period.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -62,18 +62,18 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
-        .execute_unprepared(&format!(
-            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
-            uuid::Uuid::new_v4()
-        ))
-        .await
-        .unwrap();
+        uuid::Uuid::new_v4()
+    )))
+    .execute(workforce_planning_management::db::pool(ctx))
+    .await
+    .unwrap();
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -101,7 +101,7 @@ async fn worker(
     pid
 }
 
-async fn leaver(request: &axa::TestServer, token: &str, worker: &str, day: &str) -> String {
+async fn leaver(request: &axa_test::TestServer, token: &str, worker: &str, day: &str) -> String {
     let opened: Value = request
         .post(&format!("/api/workers/{worker}/movements"))
         .add_header("authorization", token.to_string())
@@ -233,34 +233,24 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
         assert!(!text.contains("S-3"), "a cancelled leaver is not in it");
 
         // Audited with no content, and in the person's own export.
-        let audited = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
+        let audited = sqlx::query(sqlx::AssertSqlSafe(format!(
                     "SELECT count(*) FROM audit_logs WHERE entity_pid = '{movement}' AND action = 'separation_read' \
                      AND snapshot IS NULL"
-                ),
-            ))
+                ))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get_by_index::<i64>(0)
+            .try_get::<i64, _>(0)
             .unwrap();
         assert!(audited > 0);
-        let why_read = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
+        let why_read = sqlx::query(sqlx::AssertSqlSafe(format!(
                     "SELECT count(*) FROM audit_logs WHERE entity_pid = '{movement}' AND action = 'movement_why_read' \
                      AND snapshot IS NULL"
-                ),
-            ))
+                ))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get_by_index::<i64>(0)
+            .try_get::<i64, _>(0)
             .unwrap();
         assert_eq!(why_read, 1, "HR's one detail read, and nobody else's");
         let export: Value = request
@@ -284,19 +274,14 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .add_header("authorization", svc.clone())
             .await
             .assert_status_ok();
-        let left = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!(
+        let left = sqlx::query(sqlx::AssertSqlSafe(format!(
                     "SELECT (SELECT count(*) FROM movements WHERE pid = '{movement}' AND reason IS NULL AND notes IS NULL) \
                      + 10 * (SELECT count(*) FROM separation_records WHERE movement_pid = '{movement}')"
-                ),
-            ))
+                ))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap()
-            .try_get_by_index::<i64>(0)
+            .try_get::<i64, _>(0)
             .unwrap();
         assert_eq!(left, 1, "the reason cleared and the separation record gone");
     })

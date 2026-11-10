@@ -1,0 +1,54 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE skills SET name = COALESCE($2, name), category = COALESCE($3, category)\n          WHERE id = $1\n        RETURNING pid, name, category",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "category"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "061dfdc0aa030bfd09906eb4fb5cfb9bee11437db9847e369c3cc6d7bd92b57a"
+}

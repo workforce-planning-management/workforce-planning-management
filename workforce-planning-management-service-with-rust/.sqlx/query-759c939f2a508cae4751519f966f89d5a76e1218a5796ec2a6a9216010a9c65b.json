@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE shift_assignments SET deleted_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "759c939f2a508cae4751519f966f89d5a76e1218a5796ec2a6a9216010a9c65b"
+}

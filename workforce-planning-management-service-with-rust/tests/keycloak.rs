@@ -31,7 +31,7 @@ use testcontainers::runners::AsyncRunner;
 use testcontainers::{ContainerAsync, GenericImage, ImageExt};
 use workforce_planning_management::app::App;
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 
 /// Fully qualified (Podman refuses short names).
 const KEYCLOAK_IMAGE: &str = "quay.io/keycloak/keycloak";
@@ -111,7 +111,7 @@ async fn keycloak_tokens_gate_and_authorise() {
         let bearer = |token: &str| format!("Bearer {token}");
 
         // Public allow-list stays open; protected routes need a token.
-        assert_eq!(request.get("/_health").await.status_code(), 200);
+        assert_eq!(request.get("/_health/live").await.status_code(), 200);
         assert_eq!(request.get("/api/workers").await.status_code(), 401);
         assert_eq!(
             request

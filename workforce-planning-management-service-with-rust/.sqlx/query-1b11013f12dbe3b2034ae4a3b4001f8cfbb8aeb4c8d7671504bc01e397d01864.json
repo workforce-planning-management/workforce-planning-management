@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 AS \"one!\" FROM initiative_skill_shifts WHERE initiative_pid = $1 AND skill_pid = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1b11013f12dbe3b2034ae4a3b4001f8cfbb8aeb4c8d7671504bc01e397d01864"
+}

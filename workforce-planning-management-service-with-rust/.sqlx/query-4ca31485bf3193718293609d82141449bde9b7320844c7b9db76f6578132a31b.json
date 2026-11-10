@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO coverage_evidence\n             (pid, organization_ref, jurisdiction, kind, insurer, policy_reference, minimum_cover_minor, currency,\n              valid_from, valid_to, certificate_ref, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int8",
+        "Varchar",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4ca31485bf3193718293609d82141449bde9b7320844c7b9db76f6578132a31b"
+}

@@ -10,10 +10,10 @@ each subproject's `spec/`.
 title, department, location, manager or rota — and see who is away and who
 covers for them.*
 
-- `GET /api/directory?q=&department=&limit=&offset=`: **employed today**
+- `GET /api/directory?q=&department=&limit=&cursor=`: **employed today**
   ([`is_employed_on`](glossary.md#employed), the one definition) workers in the
   caller's organizations, ordered by name then pid so pages are stable,
-  `x-total-count` set. Every whitespace-separated term of `q` must match
+  paged by a signed cursor with no total (WPM-R241). Every whitespace-separated term of `q` must match
   (case-insensitively) the name, title, department, location, manager's name
   or the name of a rota the person is on call for.
 - **Nothing sensitive**: no salary, employment dates or person reference
@@ -75,7 +75,7 @@ turns, swap them, and be reminded.*
   inside the window become overrides for the colleague.
 - **Notifications** (in-app, reference-only, WPM-D23): `rota_added`,
   `on_call_swap`, `swap_requested`, `swap_decided`, and `on_call_reminder`.
-  The reminder is the loco task `rota_reminders [days_ahead:0–14]
+  The reminder is the task `rota_reminders [days_ahead:0–14]
   [as_of:YYYY-MM-DD]` — idempotent, tells whoever's turn **starts** that day
   (on call then, not the day before); **schedule it daily**.
 - Members must be employed workers of the rota's organization; rotas outside

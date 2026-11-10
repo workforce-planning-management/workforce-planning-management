@@ -1,0 +1,152 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO payslip_queries (pid, payslip_pid, worker_pid, comment, raised_on)\n           VALUES ($1, $2, $3, $4, $5)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\",\n                  id, pid, payslip_pid, worker_pid, comment, raised_on, closed_on, closed_by, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "payslip_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "payslip_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "comment",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "comment"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "raised_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "raised_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "closed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "closed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "closed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "closed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payslip_queries",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "69708bf732b5738c502c6f18451014f62c05a99db10557e536c912e24a30effe"
+}

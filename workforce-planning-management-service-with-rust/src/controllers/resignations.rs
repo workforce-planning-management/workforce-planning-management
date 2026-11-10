@@ -10,18 +10,17 @@
 //! small groups.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
 use super::movements::{MovementPayload, open_in};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{movements, resignations, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db;
+use crate::models::_entities::{resignations, workers};
 use crate::models::{memberships, records};
 use crate::rules::pulse::K_ANONYMITY;
 use crate::rules::resignation::{self as rules, Action, Status};
@@ -54,7 +53,7 @@ pub fn notice_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<i64> {
 
 /// [`notice_days`] for `worker`, over their own chain.
 pub(crate) async fn notice_for(ctx: &AppContext, worker: &workers::Model) -> Result<InForce<i64>> {
-    let scope = Scope::for_worker(&ctx.db, worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     Ok(notice_days(Some(&scope), Utc::now().date_naive()))
 }
 
@@ -63,11 +62,15 @@ pub(crate) async fn latest(
     ctx: &AppContext,
     worker_pid: uuid::Uuid,
 ) -> Result<Option<resignations::Model>> {
-    Ok(resignations::Entity::find()
-        .filter(resignations::Column::WorkerPid.eq(worker_pid))
-        .order_by_desc(resignations::Column::Id)
-        .one(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        resignations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                  proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _"
+             FROM resignations WHERE worker_pid = $1 ORDER BY id DESC LIMIT 1"#,
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 fn status_of(row: &resignations::Model) -> Result<Status> {
@@ -124,20 +127,21 @@ pub(crate) async fn log_for(
     let notice = notice_for(ctx, worker).await?;
     rules::validate_proposal(today, payload.proposed_last_day, notice.value)
         .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let row = resignations::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        logged_on: ActiveValue::set(today),
-        proposed_last_day: ActiveValue::set(payload.proposed_last_day),
-        reason: ActiveValue::set(payload.reason.clone()),
-        status: ActiveValue::set(Status::Logged.as_str().to_string()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = uuid::Uuid::new_v4();
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO resignations (pid, worker_pid, logged_on, proposed_last_day, reason, status) VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        worker.pid,
+        today,
+        payload.proposed_last_day,
+        payload.reason,
+        Status::Logged.as_str(),
+    )
+    .execute(&mut *tx)
     .await
     .map_err(|e| {
-        if e.to_string().contains("resignations_one_open") {
+        if e.as_database_error().and_then(|d| d.constraint()) == Some("resignations_one_open") {
             unprocessable("you have already logged a resignation that is waiting to be accepted")
         } else {
             e.into()
@@ -146,17 +150,17 @@ pub(crate) async fn log_for(
     // The manager is told that it was logged. No reason, no date of leaving beyond what they need
     // to plan: just the fact.
     if let Some(manager) = worker.manager_pid {
-        Notification::push(
-            &txn,
+        db::notify(
+            &mut tx,
             manager,
             "resignation_logged",
             &format!("{} has logged a resignation.", worker.display_name),
-            json!({ "worker_pid": worker.pid, "resignation_pid": row.pid }),
+            json!({ "worker_pid": worker.pid, "resignation_pid": pid }),
         )
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "resignation_logged",
@@ -164,9 +168,9 @@ pub(crate) async fn log_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
-        "pid": row.pid,
+        "pid": pid,
         "earliest_last_day": rules::earliest_last_day(today, notice.value),
         "notice_calendar_days": notice.value,
         "notice_basis": notice.came_from,
@@ -181,12 +185,19 @@ pub(crate) async fn withdraw_for(
 ) -> Result<Response> {
     let row = latest(ctx, worker.pid).await?.ok_or(Error::NotFound)?;
     let to = rules::next(status_of(&row)?, Action::Withdraw).map_err(|e| unprocessable(&e))?;
-    let mut active: resignations::ActiveModel = row.into();
-    active.status = ActiveValue::set(to.as_str().to_string());
-    let txn = ctx.db.begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        resignations::Model,
+        r#"UPDATE resignations SET status = $2 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                     proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _""#,
+        row.id,
+        to.as_str(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "resignation_withdrawn",
@@ -194,7 +205,7 @@ pub(crate) async fn withdraw_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(own_json(&saved, &notice_for(ctx, worker).await?))
 }
 
@@ -203,12 +214,17 @@ async fn resignation_and_worker(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<(resignations::Model, workers::Model)> {
-    let row = resignations::Entity::find()
-        .filter(resignations::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let row = sqlx::query_as!(
+        resignations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                  proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _"
+             FROM resignations WHERE pid = $1"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     ensure_org_in_scope(ctx, caller, &worker.organization_ref).await?;
     auth::authorize_record(
         caller,
@@ -241,9 +257,9 @@ async fn accept(
     let to = rules::next(status_of(&row)?, Action::Accept).map_err(|e| unprocessable(&e))?;
     let agreed = payload.agreed_last_day.unwrap_or(row.proposed_last_day);
     rules::validate_agreed(row.logged_on, agreed).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let movement = open_in(
-        &txn,
+        &mut tx,
         &caller,
         &worker,
         MovementPayload {
@@ -254,23 +270,31 @@ async fn accept(
         },
     )
     .await?;
-    let mut active: resignations::ActiveModel = row.clone().into();
-    active.status = ActiveValue::set(to.as_str().to_string());
-    active.agreed_last_day = ActiveValue::set(Some(agreed));
-    active.movement_pid = ActiveValue::set(Some(movement.pid));
-    active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    let saved = active.update(&txn).await?;
-    Notification::push(
-        &txn,
+    let saved = sqlx::query_as!(
+        resignations::Model,
+        r#"UPDATE resignations SET status = $2, agreed_last_day = $3, movement_pid = $4, decided_by = $5, decided_at = $6
+            WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                     proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _""#,
+        row.id,
+        to.as_str(),
+        agreed,
+        movement.pid,
+        caller.actor(),
+        Utc::now().fixed_offset(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::notify(
+        &mut tx,
         worker.pid,
         "resignation_decided",
         "Your resignation was accepted.",
         json!({ "resignation_pid": saved.pid }),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "resignation_accepted",
@@ -278,7 +302,7 @@ async fn accept(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "resignation": shared_json(&saved), "movement_pid": movement.pid }))
 }
 
@@ -292,33 +316,38 @@ async fn rescind(
 ) -> Result<Response> {
     let (row, worker) = resignation_and_worker(&ctx, &caller, &pid).await?;
     let to = rules::next(status_of(&row)?, Action::Rescind).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    if let Some(movement_pid) = row.movement_pid
-        && let Some(movement) = movements::Entity::find()
-            .filter(movements::Column::Pid.eq(movement_pid))
-            .one(&txn)
-            .await?
-        && movement.status == "open"
-    {
-        let mut m: movements::ActiveModel = movement.into();
-        m.status = ActiveValue::set("cancelled".to_string());
-        m.update(&txn).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    // The leaver record, if still open, is cancelled; a closed one is left as it is.
+    if let Some(movement_pid) = row.movement_pid {
+        sqlx::query!(
+            "UPDATE movements SET status = 'cancelled' WHERE pid = $1 AND status = 'open'",
+            movement_pid
+        )
+        .execute(&mut *tx)
+        .await?;
     }
-    let mut active: resignations::ActiveModel = row.into();
-    active.status = ActiveValue::set(to.as_str().to_string());
-    active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    let saved = active.update(&txn).await?;
-    Notification::push(
-        &txn,
+    let saved = sqlx::query_as!(
+        resignations::Model,
+        r#"UPDATE resignations SET status = $2, decided_by = $3, decided_at = $4 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                     proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _""#,
+        row.id,
+        to.as_str(),
+        caller.actor(),
+        Utc::now(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::notify(
+        &mut tx,
         worker.pid,
         "resignation_decided",
         "Your resignation was set aside.",
         json!({ "resignation_pid": saved.pid }),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "resignation_rescinded",
@@ -326,7 +355,7 @@ async fn rescind(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(shared_json(&saved))
 }
 
@@ -343,73 +372,62 @@ struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
-    axum::extract::Query(page): axum::extract::Query<super::Page>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
+    page: super::Page,
 ) -> Result<Response> {
-    let window = super::window(page)?;
+    let window = super::window(&page)?;
     let status = query.status.unwrap_or_else(|| "logged".to_string());
     if Status::parse(&status).is_none() {
         return Err(unprocessable(
             "status must be logged, withdrawn, accepted or rescinded",
         ));
     }
-    let rows = resignations::Entity::find()
-        .filter(resignations::Column::Status.eq(&status))
-        .order_by_asc(resignations::Column::ProposedLastDay)
-        .all(&ctx.db)
-        .await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let mut out = Vec::new();
-    for row in rows {
-        let Some(worker) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(row.worker_pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-        else {
-            continue;
-        };
-        if scope
-            .as_ref()
-            .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
-        {
-            continue;
-        }
-        let mut item = shared_json(&row);
-        item["worker_pid"] = json!(worker.pid);
-        item["worker_number"] = json!(worker.worker_number);
-        item["department"] = json!(worker.department);
-        out.push(item);
-    }
-    super::paged_vec(out, window)
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    // One read with its workers, in the caller's organizations; a removed worker's is left out.
+    let out: Vec<serde_json::Value> = sqlx::query!(
+        "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,
+                w.pid AS worker_pid, w.worker_number, w.department
+           FROM resignations r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL
+          WHERE r.status = $1 AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))
+          ORDER BY r.proposed_last_day, r.id",
+        status,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|r| {
+        json!({
+            "pid": r.pid,
+            "status": r.status,
+            "logged_on": r.logged_on,
+            "proposed_last_day": r.proposed_last_day,
+            "agreed_last_day": r.agreed_last_day,
+            "worker_pid": r.worker_pid,
+            "worker_number": r.worker_number,
+            "department": r.department,
+        })
+    })
+    .collect();
+    Ok(super::paged_vec(out, &window))
 }
 
 /// `GET /api/resignations/summary` — resignations by department and, where every cell is large
 /// enough, by reason. Groups below the floor are withheld. Privileged callers only.
 #[debug_handler]
 async fn summary(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let rows = resignations::Entity::find()
-        .filter(resignations::Column::Status.is_in(["logged", "accepted"]))
-        .all(&ctx.db)
-        .await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let mut counted: Vec<(String, Option<String>)> = Vec::new();
-    for row in rows {
-        let Some(worker) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(row.worker_pid))
-            .one(&ctx.db)
-            .await?
-        else {
-            continue;
-        };
-        if scope
-            .as_ref()
-            .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
-        {
-            continue;
-        }
-        counted.push((worker.department, row.reason));
-    }
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    let counted: Vec<(String, Option<String>)> = sqlx::query!(
+        "SELECT w.department, r.reason
+           FROM resignations r JOIN workers w ON w.pid = r.worker_pid
+          WHERE r.status IN ('logged', 'accepted') AND ($1::text[] IS NULL OR w.organization_ref = ANY($1))",
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|r| (r.department, r.reason))
+    .collect();
     let departments: Vec<serde_json::Value> = rules::summarise(&counted, K_ANONYMITY)
         .into_iter()
         .map(|d| json!({ "department": d.department, "count": d.count, "reasons": d.reasons }))
@@ -429,7 +447,7 @@ async fn worker_resignation(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let row = latest(&ctx, worker.pid).await?;
     format::json(json!({ "resignation": row.as_ref().map(shared_json) }))
 }

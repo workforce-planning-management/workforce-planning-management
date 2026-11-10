@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT announcement_pid FROM announcement_reads WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "announcement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "announcement_reads",
+            "name": "announcement_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "bf8dd202d404a7f8ec3afd22781bd92dc208f2a696a878d196e6629d5b181ee3"
+}

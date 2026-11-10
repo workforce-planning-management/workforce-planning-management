@@ -1,0 +1,244 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, job_title, department,\n                  location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,\n                  starts_on, ends_on, recorded_by\n             FROM assignments WHERE worker_pid = $1 ORDER BY starts_on DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "location",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "location"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "site",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "site"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "area_of_work",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "area_of_work"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "job_role",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "job_role"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "staff_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "staff_group"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "occupation_code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "occupation_code"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "cost_centre",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "cost_centre"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "is_primary",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "is_primary"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c50fd72633c01911fa71355607289bad9a2a10230ff9a3a0112a35041e64e996"
+}

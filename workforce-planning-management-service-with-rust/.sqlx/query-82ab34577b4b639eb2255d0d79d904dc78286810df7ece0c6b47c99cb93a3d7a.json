@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n             (SELECT COUNT(*) FROM worker_skills WHERE skill_pid = $1 AND deleted_at IS NULL) AS \"declared_by!\",\n             (SELECT COUNT(*) FROM role_skill_requirements WHERE skill_pid = $1) AS \"required_by_profiles!\",\n             (SELECT COUNT(*) FROM development_plan_items WHERE skill_pid = $1) AS \"in_development_plans!\",\n             (SELECT COUNT(*) FROM initiative_skill_shifts WHERE skill_pid = $1) AS \"in_initiatives!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "declared_by!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "required_by_profiles!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "in_development_plans!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "in_initiatives!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "82ab34577b4b639eb2255d0d79d904dc78286810df7ece0c6b47c99cb93a3d7a"
+}

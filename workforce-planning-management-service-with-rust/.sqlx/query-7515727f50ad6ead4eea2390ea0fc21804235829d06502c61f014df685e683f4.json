@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pay_assessment_records\n             SET category = $2, justified = $3, justification = $4, remedied_on = $5,\n                 assessed_on = $6, outcome = $7, representatives = $8, recorded_by = $9\n             WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Bool",
+        "Text",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7515727f50ad6ead4eea2390ea0fc21804235829d06502c61f014df685e683f4"
+}

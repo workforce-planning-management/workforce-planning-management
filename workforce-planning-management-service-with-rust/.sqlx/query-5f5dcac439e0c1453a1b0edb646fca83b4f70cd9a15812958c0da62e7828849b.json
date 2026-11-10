@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT uri, label, isco_code FROM esco_occupations\n           WHERE lower(label) LIKE $1 ESCAPE '\\'\n           ORDER BY label LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupations",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupations",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "isco_code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupations",
+            "name": "isco_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "5f5dcac439e0c1453a1b0edb646fca83b4f70cd9a15812958c0da62e7828849b"
+}

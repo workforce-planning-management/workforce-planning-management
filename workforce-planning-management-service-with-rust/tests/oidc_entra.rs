@@ -24,7 +24,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use axum::extract::{Form, Path, Query, State};
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Redirect};
@@ -33,10 +33,10 @@ use axum::{Json, Router};
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const TENANT: &str = "99999999-9999-4999-8999-999999999999";
@@ -430,16 +430,13 @@ async fn entra_sign_in_gates_and_authorises() {
         assert_eq!(status(Some("not.a.jwt"), "/api/workers").await, 401);
 
         // The audit actor is the tenant-wide object id (`oid`), not the per-application `sub`.
-        let actor = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT actor FROM audit_logs WHERE actor IS NOT NULL ORDER BY id DESC LIMIT 1"
-                    .to_string(),
-            ))
-            .await
-            .unwrap()
-            .and_then(|row| row.try_get::<String>("", "actor").ok());
+        let actor = sqlx::query(
+            "SELECT actor FROM audit_logs WHERE actor IS NOT NULL ORDER BY id DESC LIMIT 1",
+        )
+        .fetch_optional(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap()
+        .and_then(|row| row.try_get::<String, _>("actor").ok());
         if let Some(actor) = actor {
             assert!(
                 !actor.starts_with("pairwise-"),

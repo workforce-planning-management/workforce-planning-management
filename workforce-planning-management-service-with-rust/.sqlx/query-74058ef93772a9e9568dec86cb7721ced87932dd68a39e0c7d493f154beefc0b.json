@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"n!\" FROM policy_acknowledgements WHERE version_pid = $1 AND worker_pid = ANY($2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "74058ef93772a9e9568dec86cb7721ced87932dd68a39e0c7d493f154beefc0b"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE credential_issuances SET revoked_at = $2, revoked_by = $3 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "254e1ddb09c06f960e1c0d6d664f50150a672dfa783456763d3bda018877e1f0"
+}

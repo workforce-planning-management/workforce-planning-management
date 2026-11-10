@@ -1,15 +1,15 @@
 //! The PADR record under enforcement (WPM-R172, WPM-R225, WPM-R232, WPM-D176), against the shipped reference policy: who opens,
 //! reads and signs, the objectives as goals and their frozen snapshot, a correction, the due date, the roll-up and what is told.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
 use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payload, Public, V4};
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn worker(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     svc: &str,
     org: &str,
     person: &str,
@@ -99,27 +99,23 @@ fn set_env(keys: &Value) {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
-        .execute_unprepared(&format!(
-            "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
-            uuid::Uuid::new_v4()
-        ))
-        .await
-        .unwrap();
+        uuid::Uuid::new_v4()
+    )))
+    .execute(workforce_planning_management::db::pool(ctx))
+    .await
+    .unwrap();
 }
 
 async fn count(ctx: &axa::AppContext, sql: String) -> i64 {
-    let row = ctx
-        .db
-        .query_one_raw(sea_orm::Statement::from_string(
-            sea_orm::DatabaseBackend::Postgres,
-            sql,
-        ))
+    let row = sqlx::query(sqlx::AssertSqlSafe(&*sql))
+        .fetch_optional(workforce_planning_management::db::pool(ctx))
         .await
         .unwrap()
         .unwrap();
-    row.try_get_by_index::<i64>(0).unwrap()
+    row.try_get::<i64, _>(0).unwrap()
 }
 
 #[tokio::test]

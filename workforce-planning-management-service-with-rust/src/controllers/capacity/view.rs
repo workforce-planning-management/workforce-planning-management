@@ -50,12 +50,43 @@ pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules:
         .collect()
 }
 
+/// What makes a worker count towards a pool, as the arrays a fixed statement takes (WPM-D184): the role profiles held
+/// (chosen, or by job title), and the skills with the minimum level of each. A worker counts if any one holds.
+pub(super) struct Held {
+    pub(super) roles: Vec<Uuid>,
+    pub(super) skills: Vec<Uuid>,
+    pub(super) minimums: Vec<i32>,
+}
+
+/// The pool's members as [`Held`].
+pub(super) fn held_by(members: &[rules::Member]) -> Held {
+    let mut held = Held {
+        roles: Vec::new(),
+        skills: Vec::new(),
+        minimums: Vec::new(),
+    };
+    for member in members {
+        match member {
+            rules::Member::RoleProfile(role) => held.roles.push(*role),
+            rules::Member::Skill {
+                skill,
+                min_proficiency,
+            } => {
+                held.skills.push(*skill);
+                held.minimums.push(*min_proficiency);
+            }
+        }
+    }
+    held
+}
+
 /// For each pool and month, the summed [`rules::pool_weighted_days`] over the organization's workers,
 /// worked out by the database (WPM-D95): one query per pool returns a row per month, so neither the
 /// time nor the memory of the view depends on how many workers there are. The definitions are the
 /// rules': a worker counts if they hold one of the pool's role profiles (chosen, or by job title) or
 /// a skill at its minimum; the days are the employed days of the month less the merged approved
 /// leave, clipped to employment (`rules::available_days`, which the test walking every day pins).
+/// One fixed statement (WPM-D184): the months and the pool's members are arrays.
 async fn weighted_days(
     ctx: &AppContext,
     org: &str,
@@ -64,6 +95,17 @@ async fn weighted_days(
 ) -> Result<(Vec<Vec<i64>>, Vec<Vec<usize>>)> {
     let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
     let mut heads = vec![vec![0_usize; months.len()]; members_by_pool.len()];
+    let firsts: Vec<NaiveDate> = months.iter().map(|m| rules::month_start(*m)).collect();
+    let lasts: Vec<NaiveDate> = firsts
+        .iter()
+        .map(|first| {
+            first
+                .checked_add_days(chrono::Days::new(
+                    u64::try_from(rules::days_in_month(*first) - 1).unwrap_or(30),
+                ))
+                .unwrap_or(*first)
+        })
+        .collect();
     for ((members, sums), counts) in members_by_pool
         .iter()
         .zip(weighted.iter_mut())
@@ -72,94 +114,57 @@ async fn weighted_days(
         if members.is_empty() || months.is_empty() {
             continue;
         }
-        let rows = ctx
-            .db
-            .query_all_raw(sea_orm::Statement::from_sql_and_values(
-                sea_orm::DbBackend::Postgres,
-                pool_supply_sql(members, months),
-                [org.into()],
-            ))
-            .await?;
+        let held = held_by(members);
+        let rows = sqlx::query!(
+            r#"WITH m(first, last) AS (SELECT * FROM unnest($2::date[], $3::date[])),
+             span AS (
+               SELECT w.pid, greatest(w.fte_percent, 0) AS fte, m.first,
+                      greatest(m.first, w.hired_on) AS f,
+                      least(m.last, coalesce(w.terminated_on - 1, m.last)) AS t
+               FROM workers w CROSS JOIN m
+               WHERE w.deleted_at IS NULL AND w.organization_ref = $1
+                 AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
+                                AND r.ended_at IS NULL AND r.role_profile_pid = ANY($4::uuid[]))
+                      OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p
+                                                       WHERE p.pid = ANY($4::uuid[]) AND p.deleted_at IS NULL)
+                      OR EXISTS (SELECT 1 FROM worker_skills k
+                                   JOIN unnest($5::uuid[], $6::int[]) AS need(skill, least_level)
+                                     ON k.skill_pid = need.skill AND k.proficiency >= need.least_level
+                                  WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))
+                 AND greatest(m.first, w.hired_on) <= least(m.last, coalesce(w.terminated_on - 1, m.last))),
+             clipped AS (
+               SELECT s.pid, s.first, s.f, greatest(l.start_on, s.f) AS ls, least(l.end_on, s.t) AS le
+               FROM span s JOIN leave_requests l
+                 ON l.worker_pid = s.pid AND l.status = 'approved' AND l.deleted_at IS NULL
+                AND l.start_on <= s.t AND l.end_on >= s.f),
+             away AS (
+               SELECT pid, first, sum(greatest(0, le - greatest(ls, coalesce(covered, f - 1) + 1) + 1)) AS days
+               FROM (SELECT c.*, max(le) OVER (PARTITION BY pid, first ORDER BY ls, le
+                                               ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS covered
+                     FROM clipped c) c
+               GROUP BY pid, first)
+             SELECT s.first AS "first!",
+                    coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS "total!",
+                    count(DISTINCT s.pid)::bigint AS "workers!"
+             FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first
+             GROUP BY s.first"#,
+            org,
+            &firsts,
+            &lasts,
+            &held.roles,
+            &held.skills,
+            &held.minimums,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?;
         for row in rows {
-            let first: NaiveDate = row.try_get("", "first")?;
-            let total: i64 = row.try_get("", "total")?;
-            let workers: i64 = row.try_get("", "workers")?;
-            if let Some(i) = months.iter().position(|m| *m == first) {
-                sums[i] = total;
-                counts[i] = usize::try_from(workers).unwrap_or(0);
+            if let Some(i) = months.iter().position(|m| *m == row.first) {
+                sums[i] = row.total;
+                counts[i] = usize::try_from(row.workers).unwrap_or(0);
             }
         }
     }
     Ok((weighted, heads))
-}
-
-/// The SQL condition (on `workers w`) that a worker counts towards a pool: one of its role profiles or skills. Only UUIDs and integers
-/// from typed values are written into it.
-pub(super) fn holds_sql(members: &[rules::Member]) -> String {
-    members
-        .iter()
-        .map(|member| match member {
-            rules::Member::RoleProfile(role) => format!(
-                "EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid
-                         AND r.ended_at IS NULL AND r.role_profile_pid = '{role}')
-                 OR lower(btrim(w.job_title)) = (SELECT lower(btrim(p.job_title)) FROM role_profiles p
-                                                 WHERE p.pid = '{role}' AND p.deleted_at IS NULL)"
-            ),
-            rules::Member::Skill {
-                skill,
-                min_proficiency,
-            } => format!(
-                "EXISTS (SELECT 1 FROM worker_skills k WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL
-                         AND k.skill_pid = '{skill}' AND k.proficiency >= {min_proficiency})"
-            ),
-        })
-        .collect::<Vec<_>>()
-        .join(" OR ")
-}
-
-/// The SQL of [`weighted_days`] for one pool. Only dates, UUIDs and integers are written into it (all
-/// from typed values, never from text); the organization is a bound parameter.
-fn pool_supply_sql(members: &[rules::Member], months: &[NaiveDate]) -> String {
-    let month_rows = months
-        .iter()
-        .map(|m| {
-            let first = rules::month_start(*m);
-            let last = first
-                .checked_add_days(chrono::Days::new(
-                    u64::try_from(rules::days_in_month(first) - 1).unwrap_or(30),
-                ))
-                .unwrap_or(first);
-            format!("(DATE '{first}', DATE '{last}')")
-        })
-        .collect::<Vec<_>>()
-        .join(", ");
-    let holds = holds_sql(members);
-    format!(
-        "WITH m(first, last) AS (VALUES {month_rows}),
-         span AS (
-           SELECT w.pid, greatest(w.fte_percent, 0) AS fte, m.first,
-                  greatest(m.first, w.hired_on) AS f,
-                  least(m.last, coalesce(w.terminated_on - 1, m.last)) AS t
-           FROM workers w CROSS JOIN m
-           WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND ({holds})
-             AND greatest(m.first, w.hired_on) <= least(m.last, coalesce(w.terminated_on - 1, m.last))),
-         clipped AS (
-           SELECT s.pid, s.first, s.f, greatest(l.start_on, s.f) AS ls, least(l.end_on, s.t) AS le
-           FROM span s JOIN leave_requests l
-             ON l.worker_pid = s.pid AND l.status = 'approved' AND l.deleted_at IS NULL
-            AND l.start_on <= s.t AND l.end_on >= s.f),
-         away AS (
-           SELECT pid, first, sum(greatest(0, le - greatest(ls, coalesce(covered, f - 1) + 1) + 1)) AS days
-           FROM (SELECT c.*, max(le) OVER (PARTITION BY pid, first ORDER BY ls, le
-                                           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS covered
-                 FROM clipped c) c
-           GROUP BY pid, first)
-         SELECT s.first AS first,
-                coalesce(sum(s.fte::bigint * ((s.t - s.f + 1) - coalesce(a.days, 0))), 0)::bigint AS total,
-                count(DISTINCT s.pid)::bigint AS workers
-         FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first
-         GROUP BY s.first"
-    )
 }
 
 pub(crate) async fn load_org_capacity(
@@ -169,28 +174,11 @@ pub(crate) async fn load_org_capacity(
     count: u32,
 ) -> Result<OrgCapacity> {
     let months = rules::months(from, count).map_err(|e| unprocessable(&e))?;
-    let pools = skill_pools::Entity::find()
-        .filter(skill_pools::Column::OrganizationRef.eq(org))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .order_by_asc(skill_pools::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let pools = pools_of(ctx, org).await?;
     let pool_pids: Vec<Uuid> = pools.iter().map(|p| p.pid).collect();
-    let member_rows = skill_pool_members::Entity::find()
-        .filter(skill_pool_members::Column::PoolPid.is_in(pool_pids.clone()))
-        .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let demand_rows = programme_demands::Entity::find()
-        .filter(programme_demands::Column::PoolPid.is_in(pool_pids.clone()))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let commitment_rows = partner_commitments::Entity::find()
-        .filter(partner_commitments::Column::PoolPid.is_in(pool_pids))
-        .filter(partner_commitments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let member_rows = members_in(ctx, &pool_pids).await?;
+    let demand_rows = demands_on(ctx, &pool_pids).await?;
+    let commitment_rows = commitments_to(ctx, &pool_pids).await?;
     let members_by_pool: Vec<Vec<rules::Member>> = pools
         .iter()
         .map(|pool| {
@@ -345,7 +333,7 @@ pub(crate) async fn pack_view(
 pub(super) async fn capacity_view(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ViewQuery>,
+    axa::extract::Query(query): axa::extract::Query<ViewQuery>,
 ) -> Result<Response> {
     let org = query
         .organization

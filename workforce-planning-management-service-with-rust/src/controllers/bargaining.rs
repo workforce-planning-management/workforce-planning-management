@@ -5,9 +5,9 @@
 //! versioned reference data; which agreements apply to a worker is derived from the unit rules, for HR and payroll only (WPM-R103).
 //! Spec: `spec/worker-unions.md`.
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -15,11 +15,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    bargaining_units, collective_agreements, facility_time_periods, recognised_bodies,
-    requisitions, worker_pay_positions, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{bargaining_units, collective_agreements, recognised_bodies};
 use crate::models::records;
 use crate::rules::agreement as agreement_rules;
 use crate::rules::bargaining as rules;
@@ -38,21 +35,32 @@ pub(crate) struct ListQuery {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<ListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let bodies = recognised_bodies::Entity::find()
-        .filter(recognised_bodies::Column::OrganizationRef.eq(&query.organization))
-        .order_by_asc(recognised_bodies::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let bodies = sqlx::query_as!(
+        recognised_bodies::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, kind,
+                  basis, recognised_on, contact_role, recorded_by
+             FROM recognised_bodies WHERE organization_ref = $1 ORDER BY name, id"#,
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let pids: Vec<Uuid> = bodies.iter().map(|b| b.pid).collect();
+    let counts: std::collections::HashMap<Uuid, i64> = sqlx::query!(
+        r#"SELECT body_pid, COUNT(*) AS "units!" FROM bargaining_units WHERE body_pid = ANY($1) GROUP BY body_pid"#,
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|r| (r.body_pid, r.units))
+    .collect();
     let mut out = Vec::new();
     for body in &bodies {
-        let units = bargaining_units::Entity::find()
-            .filter(bargaining_units::Column::BodyPid.eq(body.pid))
-            .count(&ctx.db)
-            .await?;
+        let units = counts.get(&body.pid).copied().unwrap_or(0);
         let mut v = row_json(body)?;
         if let Some(o) = v.as_object_mut() {
             o.remove("recorded_by");
@@ -89,34 +97,37 @@ async fn create(
         &payload.contact_role,
     ))?;
     let name = payload.name.trim().to_string();
-    let clash = recognised_bodies::Entity::find()
-        .filter(recognised_bodies::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(recognised_bodies::Column::Name.eq(&name))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM recognised_bodies WHERE organization_ref = $1 AND name = $2 LIMIT 1"#,
+        payload.organization_ref,
+        name,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    if clash.is_some() {
         return Err(unprocessable(
             "another body in this organization has that name",
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    recognised_bodies::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        name: ActiveValue::set(name),
-        kind: ActiveValue::set(payload.kind.clone()),
-        basis: ActiveValue::set(payload.basis),
-        recognised_on: ActiveValue::set(payload.recognised_on),
-        contact_role: ActiveValue::set(payload.contact_role.trim().to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO recognised_bodies (pid, organization_ref, name, kind, basis, recognised_on, contact_role, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        pid,
+        payload.organization_ref,
+        name,
+        payload.kind,
+        payload.basis,
+        payload.recognised_on,
+        payload.contact_role.trim(),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
     // The audit entry says a body was recorded and of what kind: not its name.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "recognised_body",
         pid,
         "recognised_body_created",
@@ -124,7 +135,7 @@ async fn create(
         Some(json!({ "kind": payload.kind })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -133,11 +144,16 @@ pub(super) async fn find_body(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<recognised_bodies::Model> {
-    let row = recognised_bodies::Entity::find()
-        .filter(recognised_bodies::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        recognised_bodies::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, kind,
+                  basis, recognised_on, contact_role, recorded_by
+             FROM recognised_bodies WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -172,32 +188,35 @@ async fn add_unit(
     let body = find_body(&ctx, &caller, pid).await?;
     ensure_valid(&rules::unit_problems(&payload.name, &rule_of(&payload)))?;
     let name = payload.name.trim().to_string();
-    let clash = bargaining_units::Entity::find()
-        .filter(bargaining_units::Column::BodyPid.eq(body.pid))
-        .filter(bargaining_units::Column::Name.eq(&name))
-        .count(&ctx.db)
-        .await?;
-    if clash > 0 {
+    let clash = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM bargaining_units WHERE body_pid = $1 AND name = $2 LIMIT 1"#,
+        body.pid,
+        name,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    if clash.is_some() {
         return Err(unprocessable("another unit of this body has that name"));
     }
     let trimmed = |v: &Option<String>| v.as_ref().map(|s| s.trim().to_string());
     let unit_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    bargaining_units::ActiveModel {
-        pid: ActiveValue::set(unit_pid),
-        body_pid: ActiveValue::set(body.pid),
-        name: ActiveValue::set(name),
-        department: ActiveValue::set(trimmed(&payload.department)),
-        location: ActiveValue::set(trimmed(&payload.location)),
-        employment_type: ActiveValue::set(trimmed(&payload.employment_type)),
-        job_title: ActiveValue::set(trimmed(&payload.job_title)),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO bargaining_units (pid, body_pid, name, department, location, employment_type, job_title, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        unit_pid,
+        body.pid,
+        name,
+        trimmed(&payload.department),
+        trimmed(&payload.location),
+        trimmed(&payload.employment_type),
+        trimmed(&payload.job_title),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "bargaining_unit",
         unit_pid,
         "bargaining_unit_created",
@@ -205,7 +224,7 @@ async fn add_unit(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": unit_pid }))
 }
 
@@ -219,38 +238,19 @@ async fn units(
 ) -> Result<Response> {
     let body = find_body(&ctx, &caller, pid).await?;
     let today = Utc::now().date_naive();
-    let rows = bargaining_units::Entity::find()
-        .filter(bargaining_units::Column::BodyPid.eq(body.pid))
-        .order_by_asc(bargaining_units::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let rows = units_of(&ctx, &[body.pid], true).await?;
     // Only the four facts a unit is defined over, for the workers in work today: nothing that names anyone is read.
-    let facts: Vec<(String, Option<String>, String, String)> = workers::Entity::find()
-        .select_only()
-        .column(workers::Column::Department)
-        .column(workers::Column::Location)
-        .column(workers::Column::EmploymentType)
-        .column(workers::Column::JobTitle)
-        .column(workers::Column::HiredOn)
-        .column(workers::Column::TerminatedOn)
-        .filter(workers::Column::OrganizationRef.eq(&body.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .into_tuple::<(
-            String,
-            Option<String>,
-            String,
-            String,
-            NaiveDate,
-            Option<NaiveDate>,
-        )>()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|(_, _, _, _, hired, ended)| is_employed_on(today, *hired, *ended))
-        .map(|(department, location, employment_type, job_title, _, _)| {
-            (department, location, employment_type, job_title)
-        })
-        .collect();
+    let facts: Vec<(String, Option<String>, String, String)> = sqlx::query!(
+        "SELECT department, location, employment_type, job_title, hired_on, terminated_on FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL",
+        body.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .map(|w| (w.department, w.location, w.employment_type, w.job_title))
+    .collect();
     let mut out = Vec::new();
     for unit in &rows {
         let rule = rules::UnitRule {
@@ -291,16 +291,58 @@ async fn units(
     }))
 }
 
+/// The units of these bodies, by name when `by_name`.
+async fn units_of(
+    ctx: &AppContext,
+    bodies: &[Uuid],
+    by_name: bool,
+) -> Result<Vec<bargaining_units::Model>> {
+    Ok(sqlx::query_as!(
+        bargaining_units::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, body_pid, name, department,
+                  location, employment_type, job_title, recorded_by
+             FROM bargaining_units WHERE body_pid = ANY($1)
+            ORDER BY CASE WHEN $2 THEN name END, id"#,
+        bodies,
+        by_name,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A unit's agreements, or those of several units, by title and then version.
+async fn agreements_of(
+    ctx: &AppContext,
+    units: &[Uuid],
+) -> Result<Vec<collective_agreements::Model>> {
+    Ok(sqlx::query_as!(
+        collective_agreements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, unit_pid, title, version,
+                  effective_from, effective_to, source, pay_scale_id, max_weekly_hours, notice_weeks, consultation_days,
+                  recorded_by
+             FROM collective_agreements WHERE unit_pid = ANY($1)
+            ORDER BY title, version, id"#,
+        units,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
 async fn find_unit(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<(bargaining_units::Model, recognised_bodies::Model)> {
-    let unit = bargaining_units::Entity::find()
-        .filter(bargaining_units::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let unit = sqlx::query_as!(
+        bargaining_units::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, body_pid, name, department,
+                  location, employment_type, job_title, recorded_by
+             FROM bargaining_units WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let body = find_body(ctx, caller, unit.body_pid).await?;
     Ok((unit, body))
 }
@@ -354,38 +396,43 @@ async fn add_agreement(
         |id| crate::rules::pay_scale::find(id).is_some(),
     ))?;
     let title = payload.title.trim().to_string();
-    let newest = collective_agreements::Entity::find()
-        .filter(collective_agreements::Column::UnitPid.eq(unit.pid))
-        .filter(collective_agreements::Column::Title.eq(&title))
-        .order_by_desc(collective_agreements::Column::Version)
-        .one(&ctx.db)
-        .await?;
+    let newest = sqlx::query!(
+        "SELECT version, effective_from FROM collective_agreements WHERE unit_pid = $1 AND title = $2
+          ORDER BY version DESC LIMIT 1",
+        unit.pid,
+        title,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     ensure_valid(&agreement_rules::version_problems(
         payload.effective_from,
         newest.as_ref().map(|n| n.effective_from),
     ))?;
     let version = newest.map_or(1, |n| n.version + 1);
     let new_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    collective_agreements::ActiveModel {
-        pid: ActiveValue::set(new_pid),
-        unit_pid: ActiveValue::set(unit.pid),
-        title: ActiveValue::set(title),
-        version: ActiveValue::set(version),
-        effective_from: ActiveValue::set(payload.effective_from),
-        effective_to: ActiveValue::set(payload.effective_to),
-        source: ActiveValue::set(payload.source.trim().to_string()),
-        pay_scale_id: ActiveValue::set(payload.pay_scale_id.map(|s| s.trim().to_string())),
-        max_weekly_hours: ActiveValue::set(payload.max_weekly_hours),
-        notice_weeks: ActiveValue::set(payload.notice_weeks),
-        consultation_days: ActiveValue::set(payload.consultation_days),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO collective_agreements
+                (pid, unit_pid, title, version, effective_from, effective_to, source, pay_scale_id, max_weekly_hours,
+                 notice_weeks, consultation_days, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+        new_pid,
+        unit.pid,
+        title,
+        version,
+        payload.effective_from,
+        payload.effective_to,
+        payload.source.trim(),
+        payload.pay_scale_id.map(|s| s.trim().to_string()),
+        payload.max_weekly_hours,
+        payload.notice_weeks,
+        payload.consultation_days,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "collective_agreement",
         new_pid,
         "collective_agreement_recorded",
@@ -393,7 +440,7 @@ async fn add_agreement(
         Some(json!({ "version": version })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": new_pid, "version": version }))
 }
 
@@ -406,12 +453,7 @@ async fn unit_agreements(
 ) -> Result<Response> {
     let (unit, _body) = find_unit(&ctx, &caller, pid).await?;
     let today = Utc::now().date_naive();
-    let rows = collective_agreements::Entity::find()
-        .filter(collective_agreements::Column::UnitPid.eq(unit.pid))
-        .order_by_asc(collective_agreements::Column::Title)
-        .order_by_asc(collective_agreements::Column::Version)
-        .all(&ctx.db)
-        .await?;
+    let rows = agreements_of(&ctx, &[unit.pid]).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|a| {
@@ -446,9 +488,9 @@ async fn of_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<OnQuery>,
+    axa::extract::Query(query): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
     let day = query.on.unwrap_or_else(|| Utc::now().date_naive());
     let facts = rules::Facts {
@@ -457,16 +499,13 @@ async fn of_worker(
         employment_type: &worker.employment_type,
         job_title: &worker.job_title,
     };
-    let body_pids: Vec<Uuid> = recognised_bodies::Entity::find()
-        .filter(recognised_bodies::Column::OrganizationRef.eq(&worker.organization_ref))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|b| b.pid)
-        .collect();
-    let covering: Vec<Uuid> = bargaining_units::Entity::find()
-        .filter(bargaining_units::Column::BodyPid.is_in(body_pids))
-        .all(&ctx.db)
+    let body_pids: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT pid FROM recognised_bodies WHERE organization_ref = $1",
+        worker.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let covering: Vec<Uuid> = units_of(&ctx, &body_pids, false)
         .await?
         .into_iter()
         .filter(|u| {
@@ -482,11 +521,7 @@ async fn of_worker(
         })
         .map(|u| u.pid)
         .collect();
-    let rows = collective_agreements::Entity::find()
-        .filter(collective_agreements::Column::UnitPid.is_in(covering))
-        .order_by_asc(collective_agreements::Column::Title)
-        .all(&ctx.db)
-        .await?;
+    let rows = agreements_of(&ctx, &covering).await?;
     let mut out = Vec::new();
     for a in &rows {
         let same: Vec<agreement_rules::Version> = rows
@@ -506,9 +541,9 @@ async fn of_worker(
             out.push(v);
         }
     }
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "collective_agreements_read",
@@ -516,7 +551,7 @@ async fn of_worker(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
         "worker_pid": worker.pid,
         "on": day,
@@ -546,71 +581,47 @@ async fn information_pack(
         job_title: unit.job_title.as_deref(),
     };
     // The facts of every worker of the organization, nothing that names or pays them; who the rules cover is decided here and not kept.
-    let everyone = workers::Entity::find()
-        .select_only()
-        .column(workers::Column::Pid)
-        .column(workers::Column::Department)
-        .column(workers::Column::Location)
-        .column(workers::Column::EmploymentType)
-        .column(workers::Column::JobTitle)
-        .column(workers::Column::FtePercent)
-        .column(workers::Column::HiredOn)
-        .column(workers::Column::TerminatedOn)
-        .filter(workers::Column::OrganizationRef.eq(&body.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .into_tuple::<(
-            Uuid,
-            String,
-            Option<String>,
-            String,
-            String,
-            i32,
-            NaiveDate,
-            Option<NaiveDate>,
-        )>()
-        .all(&ctx.db)
-        .await?;
+    let everyone = sqlx::query!(
+        "SELECT pid, department, location, employment_type, job_title, fte_percent, hired_on, terminated_on FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL",
+        body.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let covered: Vec<_> = everyone
         .into_iter()
-        .filter(
-            |(_, department, location, employment_type, job_title, _, _, _)| {
-                rules::covers(
-                    &rule,
-                    &rules::Facts {
-                        department,
-                        location: location.as_deref(),
-                        employment_type,
-                        job_title,
-                    },
-                )
-            },
-        )
+        .filter(|w| {
+            rules::covers(
+                &rule,
+                &rules::Facts {
+                    department: &w.department,
+                    location: w.location.as_deref(),
+                    employment_type: &w.employment_type,
+                    job_title: &w.job_title,
+                },
+            )
+        })
         .collect();
-    let pids: Vec<Uuid> = covered.iter().map(|c| c.0).collect();
-    let bands: std::collections::BTreeMap<Uuid, String> = super::find_in(
-        &ctx,
-        worker_pay_positions::Entity::find(),
-        worker_pay_positions::Column::WorkerPid,
+    let pids: Vec<Uuid> = covered.iter().map(|c| c.pid).collect();
+    let bands: std::collections::BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT worker_pid, band FROM worker_pay_positions WHERE worker_pid = ANY($1)",
         &pids,
     )
+    .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
     .map(|p| (p.worker_pid, p.band))
     .collect();
     let pack_rows: Vec<pack_rules::Row> = covered
         .into_iter()
-        .map(
-            |(worker, department, _, employment_type, _, fte_percent, hired_on, terminated_on)| {
-                pack_rules::Row {
-                    department,
-                    employment_type,
-                    fte_percent,
-                    band: bands.get(&worker).cloned(),
-                    hired_on,
-                    terminated_on,
-                }
-            },
-        )
+        .map(|w| pack_rules::Row {
+            band: bands.get(&w.pid).cloned(),
+            department: w.department,
+            employment_type: w.employment_type,
+            fte_percent: w.fte_percent,
+            hired_on: w.hired_on,
+            terminated_on: w.terminated_on,
+        })
         .collect();
     let pack = pack_rules::pack(&pack_rows, today, DEFAULT_FLOOR);
     // Vacancies are posts, not people. A requisition carries a department and a job title only, so a unit defined by anything else cannot
@@ -618,12 +629,13 @@ async fn information_pack(
     let vacancies = if unit.location.is_some() || unit.employment_type.is_some() {
         json!({ "kind": "unknown", "reason": "this unit is defined by location or employment type, which a vacancy does not carry" })
     } else {
-        let open = requisitions::Entity::find()
-            .filter(requisitions::Column::OrganizationRef.eq(&body.organization_ref))
-            .filter(requisitions::Column::DeletedAt.is_null())
-            .filter(requisitions::Column::Status.is_in(["open", "interviewing", "offer"]))
-            .all(&ctx.db)
-            .await?;
+        let open = sqlx::query!(
+            "SELECT department, job_title, headcount FROM requisitions
+              WHERE organization_ref = $1 AND deleted_at IS NULL AND status IN ('open', 'interviewing', 'offer')",
+            body.organization_ref,
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?;
         let posts: i64 = open
             .iter()
             .filter(|r| {
@@ -640,9 +652,9 @@ async fn information_pack(
         json!({ "kind": "shown", "open_posts": posts })
     };
     // Reading it is the disclosure: who asked, which unit and when, written with the answer.
-    let txn = ctx.db.begin().await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    db::audit(
+        &mut tx,
         "bargaining_unit",
         unit.pid,
         "information_pack_disclosed",
@@ -650,7 +662,7 @@ async fn information_pack(
         Some(json!({ "as_of": today })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
         "unit_pid": unit.pid,
         "floor": DEFAULT_FLOOR,
@@ -678,13 +690,15 @@ async fn add_facility_time(
     Json(payload): Json<FacilityPayload>,
 ) -> Result<Response> {
     let body = find_body(&ctx, &caller, pid).await?;
-    let held: Vec<(NaiveDate, NaiveDate)> = facility_time_periods::Entity::find()
-        .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| (p.period_start, p.period_end))
-        .collect();
+    let held: Vec<(NaiveDate, NaiveDate)> = sqlx::query!(
+        "SELECT period_start, period_end FROM facility_time_periods WHERE body_pid = $1 ORDER BY id",
+        body.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|p| (p.period_start, p.period_end))
+    .collect();
     ensure_valid(&gate_rules::facility_problems(
         payload.period_start,
         payload.period_end,
@@ -693,21 +707,22 @@ async fn add_facility_time(
         &held,
     ))?;
     let new_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    facility_time_periods::ActiveModel {
-        pid: ActiveValue::set(new_pid),
-        body_pid: ActiveValue::set(body.pid),
-        period_start: ActiveValue::set(payload.period_start),
-        period_end: ActiveValue::set(payload.period_end),
-        minutes: ActiveValue::set(payload.minutes),
-        budget_minutes: ActiveValue::set(payload.budget_minutes),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO facility_time_periods (pid, body_pid, period_start, period_end, minutes, budget_minutes, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        new_pid,
+        body.pid,
+        payload.period_start,
+        payload.period_end,
+        payload.minutes,
+        payload.budget_minutes,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "facility_time",
         new_pid,
         "facility_time_recorded",
@@ -715,7 +730,7 @@ async fn add_facility_time(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": new_pid }))
 }
 
@@ -728,11 +743,13 @@ async fn facility_time(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let body = find_body(&ctx, &caller, pid).await?;
-    let rows = facility_time_periods::Entity::find()
-        .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
-        .order_by_desc(facility_time_periods::Column::PeriodStart)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, period_start, period_end, minutes, budget_minutes FROM facility_time_periods
+          WHERE body_pid = $1 ORDER BY period_start DESC, id DESC",
+        body.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let total: i64 = rows.iter().map(|r| i64::from(r.minutes)).sum();
     format::json(json!({
         "body_pid": body.pid,

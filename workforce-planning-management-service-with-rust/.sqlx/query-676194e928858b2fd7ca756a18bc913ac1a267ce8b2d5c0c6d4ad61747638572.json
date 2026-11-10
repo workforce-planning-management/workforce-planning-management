@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, shift_pid FROM shift_assignments WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "shift_assignments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "shift_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shift_assignments",
+            "name": "shift_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "676194e928858b2fd7ca756a18bc913ac1a267ce8b2d5c0c6d4ad61747638572"
+}

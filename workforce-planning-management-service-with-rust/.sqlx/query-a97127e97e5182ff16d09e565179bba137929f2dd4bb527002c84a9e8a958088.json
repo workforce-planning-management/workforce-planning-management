@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO sfiaplus_resources (code, level, kind, title, provider, url) VALUES ($1, $2, $3, $4, $5, $6)\n             ON CONFLICT (code, level, kind, title) DO UPDATE\n                SET provider = EXCLUDED.provider, url = EXCLUDED.url, retired_in = NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a97127e97e5182ff16d09e565179bba137929f2dd4bb527002c84a9e8a958088"
+}

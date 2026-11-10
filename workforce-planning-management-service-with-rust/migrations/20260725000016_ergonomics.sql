@@ -1,0 +1,31 @@
+-- Migration: ergonomic (DSE) workstation assessments (WPM-R32) — an
+-- assessment per worker + workstation with its checklist items.
+-- About the workstation, never the body (WPM-D24): there is no
+-- symptom or health column, and the note field is for equipment.
+
+CREATE TABLE IF NOT EXISTS ergonomic_assessments (
+                     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     id SERIAL PRIMARY KEY,
+                     pid UUID NOT NULL UNIQUE,
+                     worker_pid UUID NOT NULL,
+                     workstation VARCHAR NOT NULL,
+                     status VARCHAR NOT NULL DEFAULT 'open',
+                     assessed_on DATE NULL,
+                     deleted_at TIMESTAMPTZ NULL
+                 );
+                 CREATE INDEX IF NOT EXISTS ergonomic_assessments_worker
+                     ON ergonomic_assessments (worker_pid);
+                 CREATE TABLE IF NOT EXISTS ergonomic_items (
+                     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+                     id SERIAL PRIMARY KEY,
+                     pid UUID NOT NULL UNIQUE,
+                     assessment_pid UUID NOT NULL,
+                     name VARCHAR NOT NULL,
+                     ok BOOLEAN NULL,
+                     note VARCHAR NULL,
+                     deleted_at TIMESTAMPTZ NULL
+                 );
+                 CREATE INDEX IF NOT EXISTS ergonomic_items_assessment
+                     ON ergonomic_items (assessment_pid);;

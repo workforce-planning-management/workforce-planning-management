@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, job_title, level_order, management_track FROM role_profiles\n          WHERE deleted_at IS NULL AND framework_slug = $1 AND profession = $2 AND role_name = $3\n          ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "level_order",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "level_order"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "management_track",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "management_track"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "71371d8a9cf15860e661e226f8e0a5d795fb5d540748f1e278e5054f2f14883b"
+}

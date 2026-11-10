@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO post_fundings (worker_pid, kind, programme_ref, ends_on, recorded_by) VALUES ($1, $2, $3, $4, $5)\n         ON CONFLICT (worker_pid) DO UPDATE SET kind = EXCLUDED.kind, programme_ref = EXCLUDED.programme_ref,\n             ends_on = EXCLUDED.ends_on, recorded_by = EXCLUDED.recorded_by\n         RETURNING kind, programme_ref, ends_on",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "post_fundings",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "b230bcf4b79ae8e9c38b6211735530742334e92116fd86cfa3ba32977f707924"
+}

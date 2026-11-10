@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO workers (pid, person_ref, organization_ref, worker_number, display_name, status, employment_type,\n                                  fte_percent, department, job_title, salary_minor, salary_currency, hired_on, engagement_ends_on)\n             VALUES ($1, $2, $3, $4, $5, 'onboarding', $6, $7, $8, $9, $10, $11, $12, $13)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Int8",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "82a9c98fa04b165501c50cdacf01da5917c35377011cbfcb83bb1e82506a8c9e"
+}

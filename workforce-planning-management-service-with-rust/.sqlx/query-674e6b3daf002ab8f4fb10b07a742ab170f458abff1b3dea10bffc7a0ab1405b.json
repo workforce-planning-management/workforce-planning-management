@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE skill_pool_members SET deleted_at = $3 WHERE pid = $1 AND pool_pid = $2 AND deleted_at IS NULL\n         RETURNING pid",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_pool_members",
+            "name": "pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "674e6b3daf002ab8f4fb10b07a742ab170f458abff1b3dea10bffc7a0ab1405b"
+}

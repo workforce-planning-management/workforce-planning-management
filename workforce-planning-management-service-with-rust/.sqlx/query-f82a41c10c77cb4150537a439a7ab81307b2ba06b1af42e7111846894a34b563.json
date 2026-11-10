@@ -1,0 +1,103 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT as_of, organization_ref, department, headcount, fte_percent_total, starters, leavers\n           FROM headcount_snapshots\n          WHERE ($1::text IS NULL OR organization_ref = $1) AND ($2::date IS NULL OR as_of >= $2)\n            AND ($3::date IS NULL OR as_of <= $3) AND ($4::text[] IS NULL OR organization_ref = ANY($4))\n          ORDER BY as_of, organization_ref, department",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "as_of",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "headcount"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "fte_percent_total",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "fte_percent_total"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "starters",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "starters"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "leavers",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "leavers"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f82a41c10c77cb4150537a439a7ab81307b2ba06b1af42e7111846894a34b563"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM link_tokens WHERE expires_at < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d82a947307748c7a8524c44d8b9be2695f50d137d55eb1337cb46281f5cfee4a"
+}

@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, competencies, status,\n                  shared_on, deleted_at AS \"deleted_at: _\"\n             FROM appraisals WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "competencies",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "competencies"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "shared_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "shared_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "6dba14cc3fd0e84f3c5546b2d81e76e4b2a83aeeca3b4b26b417f09e326d9262"
+}

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT level_pid FROM oversight_positions WHERE organization_ref = $1 AND effective_on <= $2\n          ORDER BY effective_on DESC, id DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "level_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "level_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "675607fb04621184e9d4d998bb2c09715945763cbc5e7cf6e741310c9311a818"
+}

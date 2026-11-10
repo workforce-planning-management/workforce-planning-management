@@ -7,7 +7,7 @@
 //! write rule (a what-if is a POST) plus the organization's scope; a caller who is only a partner
 //! reads the frozen packs and nothing else.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -124,7 +124,6 @@ fn assert_counts_only(value: &Value, at: &str) {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_what_if -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
-    use sea_orm::ConnectionTrait;
     let (keys, kid) = keys_and_kid();
     unsafe {
         std::env::set_var("WPM_REQUIRE_AUTH", "1");
@@ -156,11 +155,11 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other_org = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (&ctx.db, organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::pool(&ctx), organization.to_string());
             async move {
-                db.execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
-                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
+                     VALUES ('{}', 'person:{person}', '{organization}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(db).await.unwrap();
             }
         };
         grant("svc-user".to_string(), &org, "org_admin").await;
@@ -195,7 +194,7 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
                 .json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": month, "fte_centi": fte })).await;
             assert_eq!(put.status_code(), 200);
         }
-        ctx.db.execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref IN ('{other}', '{mine}')")).await.unwrap();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref IN ('{other}', '{mine}')"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
 
         let path = "/api/capacity/what-if".to_string();
         let ask = json!({ "organization_ref": org, "programme_ref": mine, "programme_new_end": "2027-06-30",

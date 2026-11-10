@@ -12,8 +12,6 @@ use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 
 use crate::controllers::rotas::turns_starting_on;
-use crate::models::_entities::notifications;
-use crate::models::notifications::Model as Notification;
 
 /// The rota-reminder task.
 pub struct RotaReminders;
@@ -59,21 +57,22 @@ impl Task for RotaReminders {
 pub async fn send_reminders(ctx: &AppContext, starts_on: chrono::NaiveDate) -> Result<usize> {
     let mut sent = 0;
     for (rota, worker) in turns_starting_on(ctx, starts_on).await? {
-        let already = notifications::Entity::find()
-            .filter(notifications::Column::WorkerPid.eq(worker))
-            .filter(notifications::Column::Kind.eq("on_call_reminder"))
-            .all(&ctx.db)
-            .await?
-            .iter()
-            .any(|n| {
-                n.data["rota_pid"] == serde_json::json!(rota.pid)
-                    && n.data["starts_on"] == serde_json::json!(starts_on)
-            });
+        let already = sqlx::query_scalar!(
+            "SELECT data FROM notifications WHERE worker_pid = $1 AND kind = 'on_call_reminder'",
+            worker,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?
+        .iter()
+        .any(|data| {
+            data["rota_pid"] == serde_json::json!(rota.pid)
+                && data["starts_on"] == serde_json::json!(starts_on)
+        });
         if already {
             continue;
         }
-        Notification::push(
-            &ctx.db,
+        crate::db::notify(
+            &mut *crate::db::pool(ctx).acquire().await?,
             worker,
             "on_call_reminder",
             &format!("Your on-call turn for {} starts on {starts_on}.", rota.name),

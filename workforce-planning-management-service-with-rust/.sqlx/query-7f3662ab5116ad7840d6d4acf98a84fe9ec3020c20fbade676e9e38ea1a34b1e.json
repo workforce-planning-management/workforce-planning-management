@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, requirement_pid, completed_on, source_organization\n           FROM learning_completions WHERE worker_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "learning_completions",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "requirement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "learning_completions",
+            "name": "requirement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "learning_completions",
+            "name": "completed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "source_organization",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "learning_completions",
+            "name": "source_organization"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "7f3662ab5116ad7840d6d4acf98a84fe9ec3020c20fbade676e9e38ea1a34b1e"
+}

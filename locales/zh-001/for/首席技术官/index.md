@@ -6,7 +6,7 @@
 
 | 关注点 | 现有内容 | 阅读 |
 | --- | --- | --- |
-| 技术栈 | API 使用 Rust、Loco（Axum、SeaORM）和 PostgreSQL 18；客户端使用 SvelteKit 2、Svelte 5 和 TypeScript | [architecture.md](../../../../spec/architecture.md) |
+| 技术栈 | API 使用 Rust、Axum（axa、SeaORM）和 PostgreSQL 18；客户端使用 SvelteKit 2、Svelte 5 和 TypeScript | [architecture.md](../../../../spec/architecture.md) |
 | 设计规则 | 纯内核：规则不依赖数据库和时钟，经过详尽测试，然后才接入控制器 | [AGENTS/backend-rust.md](../../../../AGENTS/backend-rust.md) |
 | 规范优先 | 一次变更包括需求、决定、任务、代码和测试，一并提交；每条任务记录都写明**未**验证的内容 | [AGENTS/spec-driven-delivery.md](../../../../AGENTS/spec-driven-delivery.md) |
 | 测试 | 针对规则的单元测试、依托数据库的请求测试、开启登录后运行的强制执行测试、前端单元测试和浏览器测试。变异检查：故意破坏代码，确认有测试失败 | [testing.md](../../../../spec/testing.md) |

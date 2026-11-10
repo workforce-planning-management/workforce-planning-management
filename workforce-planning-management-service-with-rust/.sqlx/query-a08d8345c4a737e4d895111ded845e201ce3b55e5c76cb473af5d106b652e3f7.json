@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO collective_agreements\n                (pid, unit_pid, title, version, effective_from, effective_to, source, pay_scale_id, max_weekly_hours,\n                 notice_weeks, consultation_days, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Int4",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a08d8345c4a737e4d895111ded845e201ce3b55e5c76cb473af5d106b652e3f7"
+}

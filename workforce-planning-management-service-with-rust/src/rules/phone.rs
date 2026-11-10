@@ -352,17 +352,37 @@ mod tests {
 
     #[test]
     fn the_migration_s_frozen_copies_are_the_rule_s_tables() {
-        use migration::m20261031_000114_phone_forms as frozen;
-        assert_eq!(
-            frozen::DIGIT_ZEROS,
-            super::super::contact_details::DIGIT_ZEROS
-        );
-        let rule: Vec<(&str, &str, Option<&str>)> = plans()
-            .map(|p| (p.country, p.calling_code, p.trunk))
+        let sql = crate::migrations::PHONE_FORMS_SQL;
+        // The digits the backfill translates are the digit sets the rule reads, full width first.
+        let (mut from, mut to) = (String::new(), String::new());
+        for zero in std::iter::once(0xff10).chain(super::super::contact_details::DIGIT_ZEROS) {
+            for d in 0..10 {
+                from.extend(char::from_u32(zero + d));
+                to.extend(char::from_digit(d, 10));
+            }
+        }
+        assert!(sql.contains(&format!("translate(phone_mobile, '{from}', '{to}')")));
+        // The calling plans the backfill read are the table the rule reads, in its order.
+        let values = sql
+            .split_once("WITH plans(country, code, trunk) AS (VALUES ")
+            .and_then(|(_, rest)| rest.split_once(")),"))
+            .map(|(values, _)| values)
+            .expect("the plans");
+        let rule: Vec<String> = plans()
+            .map(|p| {
+                format!(
+                    "('{}', '{}', {})",
+                    p.country,
+                    p.calling_code,
+                    p.trunk
+                        .map_or_else(|| "NULL".to_string(), |t| format!("'{t}'"))
+                )
+            })
             .collect();
+        // The list ends with its last row's `)`, which the split took.
         assert_eq!(
-            frozen::CALLING_CODES,
-            rule.as_slice(),
+            format!("{values})"),
+            rule.join(", "),
             "the backfill read the table the rule reads"
         );
     }

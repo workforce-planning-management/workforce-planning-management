@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE skill_pools SET name = $2, description = $3, operations_reservation_bp = $4 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "45cd1f1a264c64e210de984e3e65ded181f1f4aec43f91d62ef2c668c2e8c44e"
+}

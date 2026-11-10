@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, purpose,\n                  target_job_title, target_department, deleted_at AS \"deleted_at: _\"\n             FROM talent_pipelines WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "purpose",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "purpose"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "target_job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "target_job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "target_department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "target_department"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6a32c669305628b78d6795c5e8572fcdcfca14ac618c4383580d2414dc986b37"
+}

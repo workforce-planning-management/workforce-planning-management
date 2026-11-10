@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, uri, label, skill_type, reuse_level\n             FROM esco_skills WHERE uri = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "uri"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "skill_type",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "skill_type"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "reuse_level",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_skills",
+            "name": "reuse_level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "475dabafaa89beed1deae2de0cfb81f0074cd4e83056eb802a0bafcb4cb592ee"
+}

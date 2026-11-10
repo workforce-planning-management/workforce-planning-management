@@ -1,0 +1,162 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE reviews SET rating = COALESCE($2, rating), content = COALESCE($3, content)\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, cycle_pid, kind, worker_pid,\n                  reviewer_ref, status, rating, content, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "cycle_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "cycle_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "reviewer_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "reviewer_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "rating",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "rating"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "content",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "content"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "reviews",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "47081c0cf8d0ead3036595ac5b4ffa7e72b10ced3b0159c1ab3394709d365a96"
+}

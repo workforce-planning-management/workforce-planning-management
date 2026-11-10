@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO padr_versions (pid, review_pid, worker_pid, version, period_start, period_end, values_summary,\n                                    wellbeing_offered, development_needs)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Date",
+        "Date",
+        "Varchar",
+        "Bool",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "13cea6125da3ce260b5d316243916311c455279a0491d40df215a098ef4689cc"
+}

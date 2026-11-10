@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE movements SET status = 'completed', completed_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "63121dfedd8e0383b6b87d80995238d44f1c86cc9b1632736c0c2571ba66d386"
+}

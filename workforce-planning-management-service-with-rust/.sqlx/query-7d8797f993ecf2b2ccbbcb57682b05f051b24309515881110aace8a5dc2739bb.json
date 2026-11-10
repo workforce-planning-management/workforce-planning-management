@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO link_tokens (pid, token_hash, purpose, subject_pid, expires_at) VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bpchar",
+        "Varchar",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7d8797f993ecf2b2ccbbcb57682b05f051b24309515881110aace8a5dc2739bb"
+}

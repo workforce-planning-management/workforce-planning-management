@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)\n                 ON CONFLICT (organization_ref) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "99578f086ddce746535b45909c2f3fcce3b519a5e9958f1a06c2ce5b43a12cae"
+}

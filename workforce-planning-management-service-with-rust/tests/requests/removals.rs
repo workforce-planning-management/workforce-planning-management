@@ -11,7 +11,7 @@ use super::{a_person, activate, an_org, seed_worker};
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_backup_a_pool_member_a_demand_line_and_a_tolerance_can_each_be_removed_once() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let ghost = uuid::Uuid::new_v4();
@@ -83,6 +83,23 @@ async fn a_backup_a_pool_member_a_demand_line_and_a_tolerance_can_each_be_remove
             .json(&json!({ "limit": 20_000 }))
             .await
             .assert_status_ok();
+        // Set again: one row, changed, and the audit tells the first setting from the change.
+        request
+            .put(&format!("/api/workforce-plans/{plan}/tolerances/cost"))
+            .json(&json!({ "limit": 25_000, "amber_percent": 80 }))
+            .await
+            .assert_status_ok();
+        let listed: Value = request.get(&format!("/api/workforce-plans/{plan}/tolerances")).await.json();
+        let cost = listed["dimensions"].as_array().unwrap().iter().find(|d| d["dimension"] == "cost").unwrap().clone();
+        assert_eq!((cost["limit"].clone(), cost["amber_percent"].clone()), (json!(25_000), json!(80)));
+        let actions: Vec<String> = sqlx::query_scalar(
+            "SELECT action FROM audit_logs WHERE entity_pid = $1::uuid AND action LIKE 'tolerance_%' ORDER BY id",
+        )
+        .bind(&plan)
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert_eq!(actions, ["tolerance_set", "tolerance_changed"]);
         let tolerance = format!("/api/workforce-plans/{plan}/tolerances/cost");
         request.delete(&tolerance).await.assert_status_ok();
         assert_eq!(request.delete(&tolerance).await.status_code(), 404, "none left to remove");

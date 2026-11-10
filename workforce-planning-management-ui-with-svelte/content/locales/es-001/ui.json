@@ -56,7 +56,8 @@
     "mandatoryLearning": "Formación obligatoria",
     "coverageEvidence": "Prueba de cobertura",
     "qualifications": "Cualificaciones",
-    "injuryRecords": "Registros de lesiones"
+    "injuryRecords": "Registros de lesiones",
+    "help": "Ayuda"
   },
   "pr": {
     "retention": "Retención",
@@ -110,7 +111,10 @@
     "respond": "Responder",
     "report": "Informe",
     "withheld": "Retenido por debajo de 3 respuestas",
-    "requests": "Mis solicitudes 360"
+    "requests": "Mis solicitudes 360",
+    "hint": "Una evaluación 360° reúne opiniones de un responsable, compañeros y subordinados, además de la propia persona. Indique las competencias, cree una nueva, nombre al menos tres evaluadores y empiece a recoger respuestas. Un grupo con menos de tres respuestas nunca se muestra.",
+    "competencies": "Competencias (separadas por comas, hasta doce)",
+    "recordLink": "Mi expediente: ausencias, nóminas, evaluaciones y evaluaciones 360°"
   },
   "notif": {
     "markRead": "Marcar leída",
@@ -402,6 +406,15 @@
       "title": "¿Listo para probarlo usted mismo?",
       "body": "Inicie sesión con un enlace mágico y explore con datos reales — sin contraseña, sin compromiso.",
       "button": "Iniciar sesión"
+    },
+    "help": {
+      "title": "¿Atascado o ha encontrado un error?",
+      "body": "La página de ayuda explica cómo informar de un problema, cómo hacer una pregunta y dónde se explica cada tarea.",
+      "link": "Obtener ayuda"
+    },
+    "learn": {
+      "title": "Aprender haciendo",
+      "body": "Guías paso a paso para una persona empleada, un responsable y RR. HH.: cada tarea indica dónde hacer clic y qué se ve."
     }
   },
   "insights": {
@@ -1565,7 +1578,10 @@
     "myDevelopment": "Mis planes de desarrollo — WPM",
     "myGoals": "Mis objetivos — WPM",
     "myPadrs": "Mis evaluaciones de desarrollo — WPM",
-    "padr": "Evaluación de desarrollo — WPM"
+    "padr": "Evaluación de desarrollo — WPM",
+    "help": "Ayuda — WPM",
+    "guides": "Guías paso a paso — WPM",
+    "required": "Mi formación obligatoria y certificaciones — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -2444,7 +2460,13 @@
     "conflict": "Eso entra en conflicto con el estado actual",
     "invalid": "Eso no fue aceptado",
     "server": "Algo salió mal por nuestra parte. Inténtelo de nuevo; si sigue ocurriendo, avise a su administrador.",
-    "generic": "Algo salió mal."
+    "generic": "Algo salió mal.",
+    "next": {
+      "retry": "Inténtelo de nuevo o vuelva a cargar la página. Si sigue ocurriendo, infórmelo.",
+      "access": "Si cree que debería poder hacer esto, pregunte a su responsable o a RR. HH.",
+      "input": "Revise lo que ha escrito, vuelva a cargar la página para ver la versión más reciente e inténtelo de nuevo."
+    },
+    "getHelp": "Obtener ayuda"
   },
   "labels": {
     "nominee": "Compañero que se nominará",
@@ -2700,7 +2722,6 @@
     "consultation_ref": "Registro de consulta para una puntuación nueva o modificada (opcional)"
   },
   "paging": {
-    "showing": "Mostrando {shown} de {total}",
     "more": "Mostrar más"
   },
   "bargaining": {
@@ -3306,5 +3327,126 @@
     "from": "Desde",
     "to": "Hasta",
     "download": "Descargar CSV"
+  },
+  "help": {
+    "title": "Obtener ayuda",
+    "intro": "Qué hacer cuando algo falla o resulta confuso, y dónde se explica cada tarea.",
+    "bugTitle": "Informar de un error",
+    "bugBody": "Si una página muestra un error, una cifra parece incorrecta o un botón no hace nada, abra una incidencia en el gestor de incidencias del proyecto. Indique en qué página estaba (copie su dirección), qué hizo, qué esperaba y qué ocurrió en su lugar. No pegue nunca datos personales reales: WPM es software de demostración y solo contiene datos ficticios.",
+    "bugLink": "Abrir el gestor de incidencias",
+    "securityBody": "Un problema de seguridad se comunica por correo electrónico, no en una incidencia pública.",
+    "securityLink": "Leer la política de seguridad",
+    "questionTitle": "Preguntar cuando algo resulta confuso",
+    "questionBody": "Si una palabra, una cifra o un estado no está claro, lea primero la nota breve bajo el encabezado de la página y la guía paso a paso de su función. Si sigue sin estar claro, pregunte en el gestor de incidencias e indique que es una pregunta. También vale la pena informar de una pantalla confusa.",
+    "questionLink": "Hacer una pregunta",
+    "learnTitle": "Aprender a hacer una tarea",
+    "learnBody": "El recorrido explica qué hace cada parte de WPM. Las guías del sitio web tratan la instalación de WPM, la demostración y la especificación.",
+    "tourLink": "Hacer el recorrido",
+    "docsLink": "Leer las guías en el sitio web",
+    "errorTitle": "Cuando vea un error",
+    "errorBody": "Cada error dice con palabras sencillas qué ha fallado. Inténtelo de nuevo primero y después vuelva a cargar la página. Si se ha cerrado su sesión, inicie sesión otra vez. Si se le dice que no puede ver o cambiar algo y cree que debería poder, pregunte a su responsable o a RR. HH. Si sigue ocurriendo, infórmelo como un error.",
+    "deployerNote": "Estos enlaces llevan al propio proyecto WPM. Una organización que use WPM para su personal haría que esta página apuntara a su propio servicio de soporte."
+  },
+  "errorPage": {
+    "notFound": "Página no encontrada",
+    "failed": "Algo ha fallado",
+    "hint": "Compruebe la dirección o empiece de nuevo desde la página de inicio. Si un enlace dentro de WPM le trajo aquí, infórmelo, por favor.",
+    "home": "Ir a la página de inicio"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "En una página con una lista de organizaciones, elija primero la organización: las listas y los formularios aparecen después.",
+      "title": "Para RR. HH.",
+      "intro": "Las páginas de RR. HH. están en el menú (☰). Cada una indica bajo su encabezado qué muestra y qué deja fuera.",
+      "requirement": {
+        "title": "Establecer un requisito de formación obligatoria",
+        "body": "Abra Formación obligatoria. En Añadir un requisito, indique la materia, si es legal u obligatoria, la periodicidad de actualización en meses y a quién se aplica. La tabla muestra, para cada requisito, cuántas personas están al día; un grupo demasiado pequeño para mostrarse lo indica."
+      },
+      "completion": {
+        "title": "Registrar formación realizada en otro lugar",
+        "body": "En Formación obligatoria, en Registrar una realización, elija la persona y el requisito, el día en que se completó y dónde se realizó, y guarde. El estado de la persona se actualiza a partir de ese día."
+      },
+      "verify": {
+        "title": "Verificar una cualificación",
+        "body": "Abra Cualificaciones. La lista muestra las cualificaciones declaradas que nadie ha verificado aún. Escriba dónde se conserva la prueba y pulse Verificar. En Qué pide cada puesto, elija un puesto para añadir las cualificaciones que exige."
+      },
+      "vacancy": {
+        "title": "Abrir una vacante",
+        "body": "Abra Vacantes. En Abrir una solicitud de contratación, rellene el departamento, el puesto y el número de plazas, y pulse Crear. Cada solicitud es una tarjeta en el tablero, que usted mueve de columna en columna a medida que avanza."
+      },
+      "movement": {
+        "title": "Iniciar un registro de incorporación o salida",
+        "body": "Abra Incorporaciones y salidas y luego Iniciar un registro: elija la persona, incorporación o salida, y el día. La lista de comprobación del registro muestra cada elemento como hecho, vence hoy, vencido o próximo, y el traspaso de una salida enumera lo que la persona aún tiene."
+      }
+    },
+    "title": "Guías paso a paso",
+    "intro": "Las tareas de cada rol, paso a paso: dónde hacer clic y qué se ve.",
+    "open": "Abrir esta página",
+    "others": "Otras guías paso a paso",
+    "signin": "Estas páginas se abren una vez que ha iniciado sesión. En la demo, inicie sesión como example@example.com.",
+    "employee": {
+      "title": "Para una persona empleada",
+      "intro": "Todo aquí empieza en Mi perfil: abra el menú (☰) de la parte superior y elija Mi perfil.",
+      "waiting": {
+        "title": "Ver lo que está pendiente de usted",
+        "body": "En Mi perfil, un panel Pendiente de usted cerca de la parte superior enumera todo lo que requiere su intervención: un objetivo que acordar, una solicitud de curso ya resuelta, una evaluación de desarrollo que firmar. Cada elemento enlaza con el lugar donde actuar, y Marcar leída lo quita."
+      },
+      "goal": {
+        "title": "Proponer un objetivo",
+        "body": "En Mi perfil, elija Mis objetivos. En Proponer un objetivo, indique un título, un inicio y un fin, y pulse Proponer. Queda a la espera de que su responsable lo acuerde; después registre el avance en ¿Cómo va?"
+      },
+      "qualification": {
+        "title": "Añadir una cualificación que tiene",
+        "body": "En Mi perfil, desplácese hasta Cualificaciones. En Añadir una cualificación, elija su tipo, escriba su título y sus fechas, y pulse Guardar. Figura como Declarada hasta que RR. HH. la verifique; solo una verificada cuenta como cumplida en Lo que pide mi puesto."
+      },
+      "payslips": {
+        "title": "Consultar sus nóminas",
+        "body": "En Mi perfil, elija Mis nóminas. Cada periodo de pago tiene su propia sección con sus líneas, y el acumulado del año se suma para cada ejercicio fiscal."
+      },
+      "feedback": {
+        "title": "Responder a una solicitud de feedback 360°",
+        "body": "En Mi perfil, elija Mi expediente: ausencias, nóminas, evaluaciones y evaluaciones 360°. En Mis solicitudes 360, pulse Responder, puntúe cada competencia de 1 a 5, añada un comentario si lo desea y vuelva a pulsar Responder. Las respuestas de compañeros y de subordinados solo se muestran como un grupo de tres o más."
+      },
+      "required": {
+        "title": "Encontrar su formación obligatoria y certificaciones",
+        "body": "En Mi perfil, elija Mi formación obligatoria y certificaciones. Formación que debe completar enumera cada requisito con su estado (Al día, Próximo a vencer, Caducado, Nunca realizado) y cuándo vence; Certificaciones que pide su puesto enumera cada una con su situación y el día en que caduca. Lo que requiere atención aparece arriba, con qué hacer a continuación y un enlace."
+      }
+    },
+    "manager": {
+      "title": "Para un responsable",
+      "intro": "Las tareas de un responsable están en las mismas páginas que las suyas propias, en secciones con el encabezado Mi equipo.",
+      "team": {
+        "title": "Revisar la formación y las cualificaciones de su equipo",
+        "body": "En Mi perfil, los paneles Formación legal y obligatoria de mi equipo y Cualificaciones de mi equipo enumeran a las personas a su cargo que requieren atención, por su nombre, con el estado de cada requisito. Si nadie requiere atención, el panel lo indica."
+      },
+      "goals": {
+        "title": "Acordar un objetivo",
+        "body": "En Mi perfil, elija Mis objetivos. En Mi equipo, un objetivo propuesto tiene Acordar este objetivo. Púlselo, o modifique la propuesta para que la persona acuerde su versión."
+      },
+      "padr": {
+        "title": "Celebrar una evaluación de desarrollo personal",
+        "body": "En Mi perfil, elija Mis evaluaciones de desarrollo. En Mi equipo, fije el inicio y el fin del próximo año para la persona y pulse Abrir una evaluación. Añada objetivos y necesidades de desarrollo, indique si se ofreció una conversación sobre bienestar, y firmen ambos. La firma congela esa versión; una corrección es una nueva versión."
+      },
+      "appraisal": {
+        "title": "Realizar una evaluación 360°",
+        "body": "Abra Trabajadores en el menú y elija a la persona. En Evaluaciones 360°, nombre las competencias y pulse Nueva 360. Ábrala, designe al menos tres evaluadores con su relación y pulse Iniciar recogida. Cuando hayan respondido suficientes, pulse Compartir informe; un grupo de compañeros o de subordinados con menos de tres respuestas se retiene."
+      }
+    }
+  },
+  "required": {
+    "link": "Mi formación obligatoria y certificaciones",
+    "title": "Mi formación obligatoria y certificaciones",
+    "hint": "Lo que debe completar o tener, con lo más urgente arriba. Cada línea indica qué hacer a continuación.",
+    "learningTitle": "Formación que debe completar",
+    "certsTitle": "Certificaciones que pide su puesto",
+    "allClear": "No hay nada que hacer ahora.",
+    "attention": "Requiere atención",
+    "learningAct": "Mi historial de formación",
+    "learningHow": "Reserve uno de sus cursos en el sistema de formación de su organización; cuando lo complete, contará aquí. Si lo realizó en otro lugar, pida a RR. HH. que registre la realización.",
+    "certAct": "Añadirla o actualizarla en Mi perfil",
+    "certMissingHow": "Si la tiene, añádala con sus fechas; después RR. HH. la verifica.",
+    "certDeclaredHow": "RR. HH. aún no la ha verificado. Indique a RR. HH. dónde se conserva la prueba.",
+    "certExpiredHow": "Añada la renovada con sus nuevas fechas.",
+    "noExpiry": "No caduca"
   }
 }

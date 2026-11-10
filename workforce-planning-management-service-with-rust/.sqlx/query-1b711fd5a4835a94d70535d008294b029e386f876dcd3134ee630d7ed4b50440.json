@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_backups (pid, worker_pid, backup_pid, priority, starts_on, ends_on, note, recorded_by, on_behalf,\n                                     deleted_at)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1b711fd5a4835a94d70535d008294b029e386f876dcd3134ee630d7ed4b50440"
+}

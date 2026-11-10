@@ -31,6 +31,7 @@ mod erasure_replay;
 mod ergonomics;
 mod escalations;
 mod expenses;
+mod extractors;
 mod grades;
 mod health_detail;
 mod hr;
@@ -61,11 +62,13 @@ mod plan_views;
 mod policies;
 mod positions;
 mod privacy;
+mod problem;
 mod qualifications;
 mod removals;
 mod rotas;
 mod scale;
 mod scim;
+mod seed_task;
 mod sfia_import;
 mod shared_cache;
 mod skill_gaps;
@@ -85,7 +88,7 @@ pub fn a_person() -> String {
 /// Give `org` a working-time profile under the code `code` (`(weeks, ceiling minutes, rest minutes)`, `example` rows from
 /// 2000-01-01) and record `workers` as working there (WPM-D144, WPM-T380). Returns nothing; each call asserts success.
 pub async fn working_time_profile(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     code: &str,
     (weeks, ceiling, rest): (i64, i64, i64),
@@ -151,7 +154,7 @@ pub fn text_without_ids(value: &serde_json::Value) -> String {
 ///
 /// A macro, not a function: the `request` handed to each test by
 /// loco's `request()` helper is a `loco_rs`-internal-pinned
-/// `axa::TestServer` — a type this crate cannot name directly
+/// `axa_test::TestServer` — a type this crate cannot name directly
 /// without pulling in that exact same `axum-test` version as a direct
 /// dependency (defeating the point of tracking a newer one for the
 /// dev-dependency's own sake). Expanding inline sidesteps naming the
@@ -209,7 +212,7 @@ pub(crate) use activate;
 #[allow(clippy::future_not_send)]
 pub async fn request_open<F, Fut>(callback: F)
 where
-    F: FnOnce(axa::TestServer, axa::AppContext) -> Fut,
+    F: FnOnce(axa_test::TestServer, axa::AppContext) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
     static OPEN: std::sync::Once = std::sync::Once::new();
@@ -224,24 +227,24 @@ where
             std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
         };
     });
-    axa::testing::prelude::request::<workforce_planning_management::app::App, _, _>(callback).await;
+    axa_test::prelude::request::<workforce_planning_management::app::App, _, _>(callback).await;
 }
 
 /// Run set-up DDL for a test (a trigger that refuses audit rows, and its removal). The runtime database role may not change the schema,
 /// so the least-privilege drill (`scripts/verify-db-roles.sh`, WPM-R123) sets `WPM_TEST_DDL_URL` to the schema owner's URL and the DDL
 /// goes through that connection; everywhere else it goes through the test's own connection.
 pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
-    use sea_orm::ConnectionTrait;
     match std::env::var("WPM_TEST_DDL_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
     {
         Some(url) => {
-            let owner = sea_orm::Database::connect(&url)
+            use sqlx::Connection;
+            let mut owner = sqlx::PgConnection::connect(&url)
                 .await
                 .expect("the schema owner's connection");
-            owner
-                .execute_unprepared(sql)
+            sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+                .execute(&mut owner)
                 .await
                 .expect("the DDL runs as the schema owner");
             owner
@@ -250,7 +253,10 @@ pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
                 .expect("the schema owner's connection closes");
         }
         None => {
-            ctx.db.execute_unprepared(sql).await.expect("the DDL runs");
+            sqlx::raw_sql(sqlx::AssertSqlSafe(sql))
+                .execute(workforce_planning_management::db::pool(ctx))
+                .await
+                .expect("the DDL runs");
         }
     }
 }

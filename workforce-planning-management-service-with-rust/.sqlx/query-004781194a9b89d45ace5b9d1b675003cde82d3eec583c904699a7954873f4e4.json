@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM assets WHERE organization_ref = $1 AND tag = $2\n           ) AS \"clash!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "clash!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "004781194a9b89d45ace5b9d1b675003cde82d3eec583c904699a7954873f4e4"
+}

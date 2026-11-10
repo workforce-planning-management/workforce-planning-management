@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE positions SET cost_centre = $2, title = $3, budget_fte_percent = $4, funding_kind = $5, funding_ends_on = $6,\n                programme_ref = $7, overtime_status = COALESCE($8, overtime_status), number = COALESCE($9, number),\n                recorded_by = $10\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "19501c2394f82ee6a5ab35caedfb1f08eabf816030f5e0a4a93eaf1d41a05655"
+}

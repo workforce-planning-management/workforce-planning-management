@@ -2,11 +2,11 @@
 //! that no candidate table has a pay-history column. The worker's own requests are in `tests/enforcement_pay_information.rs`
 //! (they need a token).
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 struct MonitoringOn;
 
@@ -35,7 +35,7 @@ impl Drop for MonitoringOn {
 }
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     ctx: &axa::AppContext,
     org: &str,
     title: &str,
@@ -58,10 +58,9 @@ async fn hire(
             .json();
         let pid = created["pid"].as_str().expect("pid").to_string();
         if let Some(sex) = sex {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"
-                ))
+                ))).execute(workforce_planning_management::db::pool(ctx))
                 .await
                 .unwrap();
         }
@@ -72,10 +71,9 @@ async fn hire(
 
 async fn ask(ctx: &axa::AppContext, worker: &str, asked: &str, due: &str) -> String {
     let pid = uuid::Uuid::new_v4().to_string();
-    ctx.db
-        .execute_unprepared(&format!(
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
             "INSERT INTO pay_information_requests (pid, worker_pid, asked_on, due_on) VALUES ('{pid}', '{worker}', '{asked}', '{due}')"
-        ))
+        ))).execute(workforce_planning_management::db::pool(ctx))
         .await
         .unwrap();
     pid
@@ -150,15 +148,10 @@ async fn hr_answers_with_the_workers_pay_and_their_categorys_average_and_the_fig
         assert_eq!(done.status_code(), 200, "{}", done.text());
         assert_eq!(done.json::<Value>()["standing"], "answered");
         assert_eq!(request.post(&format!("/api/pay-information-requests/{first}/answered")).await.status_code(), 422);
-        let stored = ctx
-            .db
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT row_to_json(r)::text AS t FROM pay_information_requests r WHERE pid = '{first}'"),
-            ))
+        let stored = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT row_to_json(r)::text AS t FROM pay_information_requests r WHERE pid = '{first}'"))).fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        let row: String = stored[0].try_get("", "t").unwrap();
+        let row: String = stored[0].try_get("t").unwrap();
         assert!(!row.contains("9000000") && !row.contains("10000000"), "the figures are not stored: {row}");
         for missing in [format!("/api/pay-information-requests/{}/answer", uuid::Uuid::new_v4()), "/api/pay-information-requests/nope/answer".to_string()] {
             assert_eq!(request.get(&missing).await.status_code(), 404, "{missing}");
@@ -166,18 +159,13 @@ async fn hr_answers_with_the_workers_pay_and_their_categorys_average_and_the_fig
         assert_eq!(request.post(&format!("/api/pay-information-requests/{}/answered", uuid::Uuid::new_v4())).await.status_code(), 404);
 
         // Audited, with no figure.
-        let audits = ctx
-            .db
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity = 'pay_information_request'".to_string(),
-            ))
+        let audits = sqlx::query("SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity = 'pay_information_request'").fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        let actions: Vec<String> = audits.iter().map(|r| r.try_get("", "action").unwrap()).collect();
+        let actions: Vec<String> = audits.iter().map(|r| r.try_get("action").unwrap()).collect();
         assert!(actions.contains(&"pay_information_answer_read".to_string()) && actions.contains(&"pay_information_answered".to_string()), "{actions:?}");
         for r in &audits {
-            let snapshot: Option<String> = r.try_get("", "snapshot").unwrap();
+            let snapshot: Option<String> = r.try_get("snapshot").unwrap();
             assert!(!snapshot.unwrap_or_default().contains("000000"));
         }
     })
@@ -258,23 +246,18 @@ async fn a_vacancy_states_its_pay_range_before_it_is_opened() {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn no_candidate_table_has_a_pay_history_column() {
     crate::requests::request_open(|_request, ctx| async move {
-        let rows = ctx
-            .db
-            .query_all_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                "SELECT table_name, column_name FROM information_schema.columns
+        let rows = sqlx::query("SELECT table_name, column_name FROM information_schema.columns
                   WHERE table_schema = current_schema()
                     AND (table_name LIKE '%candidate%' OR table_name IN ('applications', 'interviews'))
                   ORDER BY table_name, column_name"
-                    .to_string(),
-            ))
+                    ).fetch_all(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         assert!(rows.len() > 5, "the guard reads the candidate tables");
         let words = ["salary", "pay", "wage", "remuneration", "compensation", "earnings", "bonus", "ctc"];
         let offenders: Vec<String> = rows
             .iter()
-            .map(|r| (r.try_get::<String>("", "table_name").unwrap(), r.try_get::<String>("", "column_name").unwrap()))
+            .map(|r| (r.try_get::<String, _>("table_name").unwrap(), r.try_get::<String, _>("column_name").unwrap()))
             .filter(|(_, column)| words.iter().any(|w| column.to_lowercase().contains(w)))
             .map(|(t, c)| format!("{t}.{c}"))
             .collect();

@@ -56,7 +56,8 @@
     "mandatoryLearning": "Pflichtschulungen",
     "coverageEvidence": "Versicherungsnachweise",
     "qualifications": "Qualifikationen",
-    "injuryRecords": "Verletzungsmeldungen"
+    "injuryRecords": "Verletzungsmeldungen",
+    "help": "Hilfe"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -110,7 +111,10 @@
     "respond": "Antworten senden",
     "report": "Bericht",
     "withheld": "Unter 3 Antworten zurückgehalten",
-    "requests": "Meine 360-Anfragen"
+    "requests": "Meine 360-Anfragen",
+    "hint": "Ein 360°-Feedback sammelt Rückmeldungen von Führungskraft, Kolleginnen und Kollegen und Mitarbeitenden sowie von der Person selbst. Nennen Sie die Kompetenzen, legen Sie ein neues an, nominieren Sie mindestens drei Bewertende und starten Sie dann die Sammlung. Eine Gruppe mit weniger als drei Antworten wird nie angezeigt.",
+    "competencies": "Kompetenzen (durch Kommas getrennt, höchstens zwölf)",
+    "recordLink": "Meine Akte: Abwesenheit, Gehaltsabrechnungen, Beurteilungen und 360°-Feedback"
   },
   "notif": {
     "markRead": "Als gelesen markieren",
@@ -402,6 +406,15 @@
       "title": "Bereit, es selbst auszuprobieren?",
       "body": "Melden Sie sich mit einem Magic Link an und erkunden Sie mit echten Daten — kein Passwort, keine Verpflichtung.",
       "button": "Anmelden"
+    },
+    "help": {
+      "title": "Nicht weitergekommen oder einen Fehler gefunden?",
+      "body": "Die Hilfeseite sagt, wie Sie ein Problem melden, wie Sie eine Frage stellen und wo jede Aufgabe erklärt wird.",
+      "link": "Hilfe erhalten"
+    },
+    "learn": {
+      "title": "Lernen durch Tun",
+      "body": "Anleitungen für Beschäftigte, Führungskräfte und HR: Jede Aufgabe sagt, wo Sie klicken und was Sie sehen."
     }
   },
   "insights": {
@@ -1558,7 +1571,10 @@
     "myDevelopment": "Meine Entwicklungspläne — WPM",
     "myGoals": "Meine Ziele — WPM",
     "myPadrs": "Meine Entwicklungsgespräche — WPM",
-    "padr": "Entwicklungsgespräch — WPM"
+    "padr": "Entwicklungsgespräch — WPM",
+    "help": "Hilfe — WPM",
+    "guides": "Anleitungen — WPM",
+    "required": "Meine Pflichtschulungen und Zertifizierungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -2436,7 +2452,13 @@
     "conflict": "Das steht im Widerspruch zum aktuellen Stand",
     "invalid": "Das wurde nicht akzeptiert",
     "server": "Auf unserer Seite ist etwas schiefgelaufen. Versuchen Sie es erneut; wenn es weiter auftritt, informieren Sie Ihre Administration.",
-    "generic": "Etwas ist schiefgelaufen."
+    "generic": "Etwas ist schiefgelaufen.",
+    "next": {
+      "retry": "Versuchen Sie es erneut oder laden Sie die Seite neu. Wenn es weiter passiert, melden Sie es.",
+      "access": "Wenn Sie meinen, dass Sie das tun können sollten, fragen Sie Ihre Führungskraft oder die Personalabteilung.",
+      "input": "Prüfen Sie Ihre Eingabe, laden Sie die Seite neu, um den neuesten Stand zu sehen, und versuchen Sie es erneut."
+    },
+    "getHelp": "Hilfe erhalten"
   },
   "labels": {
     "nominee": "Zu nominierende Kollegin oder Kollege",
@@ -2691,7 +2713,6 @@
     "consultation_ref": "Konsultationseintrag für einen neuen oder geänderten Score (optional)"
   },
   "paging": {
-    "showing": "{shown} von {total} angezeigt",
     "more": "Mehr anzeigen"
   },
   "bargaining": {
@@ -3297,5 +3318,126 @@
     "from": "Von",
     "to": "Bis",
     "download": "CSV herunterladen"
+  },
+  "help": {
+    "title": "Hilfe erhalten",
+    "intro": "Was zu tun ist, wenn etwas schiefgeht oder unklar ist, und wo jede Aufgabe erklärt wird.",
+    "bugTitle": "Einen Fehler melden",
+    "bugBody": "Wenn eine Seite einen Fehler zeigt, eine Zahl falsch aussieht oder eine Schaltfläche nichts tut, eröffnen Sie ein Issue im Issue-Tracker des Projekts. Nennen Sie die Seite (kopieren Sie ihre Adresse), was Sie getan haben, was Sie erwartet haben und was stattdessen geschah. Fügen Sie niemals echte personenbezogene Daten ein: WPM ist Demonstrationssoftware und enthält nur fiktive Daten.",
+    "bugLink": "Issue-Tracker öffnen",
+    "securityBody": "Ein Sicherheitsproblem wird per E-Mail gemeldet, nicht in einem öffentlichen Issue.",
+    "securityLink": "Sicherheitsrichtlinie lesen",
+    "questionTitle": "Fragen, wenn etwas unklar ist",
+    "questionBody": "Wenn ein Wort, eine Zahl oder ein Status nicht klar ist, lesen Sie zuerst den kurzen Hinweis unter der Seitenüberschrift und den Rundgang für Ihre Rolle. Ist es dann noch unklar, fragen Sie im Issue-Tracker und schreiben Sie, dass es eine Frage ist. Auch eine verwirrende Seite ist eine Meldung wert.",
+    "questionLink": "Eine Frage stellen",
+    "learnTitle": "Lernen, wie eine Aufgabe geht",
+    "learnBody": "Die Tour sagt, was jeder Teil von WPM tut. Die Anleitungen auf der Website behandeln die Installation, die Demo und die Spezifikation.",
+    "tourLink": "Die Tour ansehen",
+    "docsLink": "Die Anleitungen auf der Website lesen",
+    "errorTitle": "Wenn Sie einen Fehler sehen",
+    "errorBody": "Jeder Fehler sagt in einfachen Worten, was schiefging. Versuchen Sie es zuerst erneut und laden Sie dann die Seite neu. Wenn Sie abgemeldet wurden, melden Sie sich wieder an. Wenn Ihnen gesagt wird, dass Sie etwas nicht sehen oder ändern dürfen, und Sie meinen, Sie sollten es können, fragen Sie Ihre Führungskraft oder die Personalabteilung. Wenn es weiter passiert, melden Sie es als Fehler.",
+    "deployerNote": "Diese Links führen zum WPM-Projekt selbst. Eine Organisation, die WPM für ihre Beschäftigten betreibt, würde diese Seite auf ihren eigenen Service-Desk verweisen lassen."
+  },
+  "errorPage": {
+    "notFound": "Seite nicht gefunden",
+    "failed": "Etwas ist schiefgegangen",
+    "hint": "Prüfen Sie die Adresse oder beginnen Sie neu auf der Startseite. Wenn ein Link innerhalb von WPM Sie hierher geführt hat, melden Sie ihn bitte.",
+    "home": "Zur Startseite"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Wählen Sie auf einer Seite mit einer Organisationsliste zuerst die Organisation: Listen und Formulare erscheinen erst danach.",
+      "title": "Für HR",
+      "intro": "Die Seiten für HR finden Sie im Menü (☰). Jede sagt unter ihrer Überschrift, was sie zeigt und was sie auslässt.",
+      "requirement": {
+        "title": "Eine Pflichtschulungsanforderung festlegen",
+        "body": "Öffnen Sie Pflichtschulungen. Geben Sie unter Anforderung hinzufügen das Thema an, ob sie gesetzlich vorgeschrieben oder verpflichtend ist, die Auffrischung in Monaten und für wen sie gilt. Die Tabelle zeigt für jede Anforderung, wie viele Personen aktuell sind; eine Gruppe, die zu klein zum Anzeigen ist, wird als solche ausgewiesen."
+      },
+      "completion": {
+        "title": "Anderswo absolvierte Schulungen erfassen",
+        "body": "Wählen Sie auf Pflichtschulungen unter Abschluss erfassen die Person und die Anforderung, den Tag des Abschlusses und wo er erfolgte, und speichern Sie. Der Status der Person wird ab diesem Tag aktualisiert."
+      },
+      "verify": {
+        "title": "Eine Qualifikation prüfen",
+        "body": "Öffnen Sie Qualifikationen. Die Liste zeigt angegebene Qualifikationen, die noch niemand geprüft hat. Tragen Sie ein, wo der Nachweis aufbewahrt wird, und drücken Sie Prüfen. Wählen Sie unter Was jede Rolle verlangt eine Rolle, um die von ihr geforderten Qualifikationen hinzuzufügen."
+      },
+      "vacancy": {
+        "title": "Eine Stelle ausschreiben",
+        "body": "Öffnen Sie Offene Stellen. Füllen Sie unter Stelle ausschreiben Abteilung, Stellenbezeichnung und Anzahl der Stellen aus und drücken Sie Anlegen. Jede Ausschreibung ist eine Karte auf der Tafel, die Sie im Laufe des Verfahrens von Spalte zu Spalte verschieben."
+      },
+      "movement": {
+        "title": "Einen Ein- oder Austrittsvorgang anlegen",
+        "body": "Öffnen Sie Ein- und Austritte, dann Vorgang anlegen: Wählen Sie die Person, Eintritt oder Austritt und den Tag. Die Checkliste des Vorgangs zeigt jeden Punkt als erledigt, heute fällig, überfällig oder anstehend, und die Übergabe bei einem Austritt listet auf, was die Person noch hat."
+      }
+    },
+    "title": "Anleitungen",
+    "intro": "Aufgaben für jede Rolle, Schritt für Schritt: wo Sie klicken und was Sie sehen.",
+    "open": "Diese Seite öffnen",
+    "others": "Weitere Anleitungen",
+    "signin": "Diese Seiten öffnen sich, sobald Sie angemeldet sind. Melden Sie sich in der Demo als example@example.com an.",
+    "employee": {
+      "title": "Für Beschäftigte",
+      "intro": "Alles hier beginnt bei Mein Profil: Öffnen Sie oben das Menü (☰) und wählen Sie Mein Profil.",
+      "waiting": {
+        "title": "Sehen, was auf Sie wartet",
+        "body": "Auf Mein Profil listet ein Bereich Wartet auf Sie weit oben alles auf, was Sie betrifft: ein Ziel, dem Sie zustimmen sollen, ein entschiedener Kursantrag, ein Entwicklungsgespräch, das Sie unterschreiben sollen. Jeder Eintrag verlinkt dorthin, wo Sie handeln, und Als gelesen markieren entfernt ihn."
+      },
+      "goal": {
+        "title": "Ziel vorschlagen",
+        "body": "Wählen Sie auf Mein Profil Meine Ziele. Geben Sie unter Ziel vorschlagen einen Titel, einen Beginn und ein Ende an und drücken Sie Vorschlagen. Das Ziel wartet dann auf die Zustimmung Ihrer Führungskraft; danach erfassen Sie den Fortschritt unter Wie läuft es?"
+      },
+      "qualification": {
+        "title": "Eine eigene Qualifikation hinzufügen",
+        "body": "Scrollen Sie auf Mein Profil zu Qualifikationen. Wählen Sie unter Qualifikation hinzufügen die Art, geben Sie Titel und Daten ein und drücken Sie Speichern. Sie wird als Angegeben geführt, bis HR sie prüft; nur eine geprüfte zählt unter Was meine Rolle verlangt als erfüllt."
+      },
+      "payslips": {
+        "title": "Gehaltsabrechnungen lesen",
+        "body": "Wählen Sie auf Mein Profil Meine Gehaltsabrechnungen. Jeder Abrechnungszeitraum hat einen eigenen Abschnitt mit seinen Positionen, und die Summe seit Jahresbeginn wird für jedes Steuerjahr gebildet."
+      },
+      "feedback": {
+        "title": "Eine Anfrage für 360°-Feedback beantworten",
+        "body": "Wählen Sie auf Mein Profil Meine Akte: Abwesenheit, Gehaltsabrechnungen, Beurteilungen und 360°-Feedback. Drücken Sie unter Meine 360-Anfragen Antworten senden, bewerten Sie jede Kompetenz von 1 bis 5, fügen Sie nach Wunsch einen Kommentar hinzu und drücken Sie erneut Antworten senden. Antworten von Kolleginnen und Kollegen und von unterstellten Personen werden immer nur als Gruppe von drei oder mehr angezeigt."
+      },
+      "required": {
+        "title": "Ihre Pflichtschulungen und Zertifizierungen finden",
+        "body": "Wählen Sie auf Mein Profil Meine Pflichtschulungen und Zertifizierungen. Schulungen, die Sie absolvieren müssen listet jede Anforderung mit ihrem Status (Aktuell, Bald fällig, Abgelaufen, Nie abgeschlossen) und ihrem Ablaufdatum auf; Zertifizierungen, die Ihre Rolle verlangt listet jede mit ihrem Stand und dem Tag ihres Ablaufs auf. Was Aufmerksamkeit braucht, steht zuoberst, mit dem nächsten Schritt und einem Link."
+      }
+    },
+    "manager": {
+      "title": "Für Führungskräfte",
+      "intro": "Die Aufgaben einer Führungskraft stehen auf denselben Seiten wie ihre eigenen, in Abschnitten mit der Überschrift Mein Team.",
+      "team": {
+        "title": "Schulungen und Qualifikationen Ihres Teams prüfen",
+        "body": "Auf Mein Profil listen die Bereiche Vorgeschriebene Schulungen meines Teams und Qualifikationen meines Teams die Ihnen unterstellten Personen auf, die Aufmerksamkeit brauchen, mit Namen und dem Status jeder Anforderung. Braucht niemand Aufmerksamkeit, sagt der Bereich das."
+      },
+      "goals": {
+        "title": "Einem Ziel zustimmen",
+        "body": "Wählen Sie auf Mein Profil Meine Ziele. Unter Mein Team hat ein vorgeschlagenes Ziel die Schaltfläche Diesem Ziel zustimmen. Drücken Sie sie, oder ändern Sie den Vorschlag, damit die Person Ihrer Fassung zustimmt."
+      },
+      "padr": {
+        "title": "Ein persönliches Entwicklungsgespräch führen",
+        "body": "Wählen Sie auf Mein Profil Meine Entwicklungsgespräche. Legen Sie unter Mein Team Beginn und Ende des kommenden Jahres für die Person fest und drücken Sie Gespräch eröffnen. Fügen Sie Ziele und Entwicklungsbedarf hinzu, geben Sie an, ob ein Gespräch über das Wohlbefinden angeboten wurde, und beide unterschreiben. Mit der Unterschrift wird diese Fassung festgeschrieben; eine Korrektur ist eine neue Fassung."
+      },
+      "appraisal": {
+        "title": "Eine 360°-Beurteilung durchführen",
+        "body": "Öffnen Sie Arbeitskräfte im Menü und wählen Sie die Person. Benennen Sie unter 360°-Beurteilungen die Kompetenzen und drücken Sie Neue 360. Öffnen Sie sie, benennen Sie mindestens drei Bewertende mit ihrer Beziehung und drücken Sie Sammlung starten. Wenn genug geantwortet haben, drücken Sie Bericht teilen; eine Gruppe von Kolleginnen und Kollegen oder unterstellten Personen mit weniger als drei Antworten wird zurückgehalten."
+      }
+    }
+  },
+  "required": {
+    "link": "Meine Pflichtschulungen und Zertifizierungen",
+    "title": "Meine Pflichtschulungen und Zertifizierungen",
+    "hint": "Was Sie absolvieren oder besitzen müssen, das Dringendste zuoberst. Jede Zeile sagt, was als Nächstes zu tun ist.",
+    "learningTitle": "Schulungen, die Sie absolvieren müssen",
+    "certsTitle": "Zertifizierungen, die Ihre Rolle verlangt",
+    "allClear": "Derzeit ist nichts zu tun.",
+    "attention": "Braucht Aufmerksamkeit",
+    "learningAct": "Mein Schulungsnachweis",
+    "learningHow": "Buchen Sie einen der zugehörigen Kurse im Lernsystem Ihrer Organisation; sobald Sie ihn abgeschlossen haben, zählt er hier. Haben Sie ihn anderswo absolviert, bitten Sie HR, den Abschluss zu erfassen.",
+    "certAct": "Auf Mein Profil hinzufügen oder aktualisieren",
+    "certMissingHow": "Wenn Sie sie besitzen, fügen Sie sie mit ihren Daten hinzu; HR prüft sie dann.",
+    "certDeclaredHow": "HR hat sie noch nicht geprüft. Teilen Sie HR mit, wo der Nachweis aufbewahrt wird.",
+    "certExpiredHow": "Fügen Sie die erneuerte mit ihren neuen Daten hinzu.",
+    "noExpiry": "Läuft nicht ab"
   }
 }

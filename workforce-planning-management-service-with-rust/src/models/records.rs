@@ -1,15 +1,10 @@
-//! Shared record helpers: `ActiveModelBehavior` impls for every domain
-//! entity plus the per-entity `find_*` finders (active = not
-//! soft-deleted).
+//! Shared record helpers: parsing a path `pid` and reading the active (not soft-deleted) worker, plus the
+//! `ActiveModelBehavior` impls the `SeaORM` entities still need to build; they go with the entities (WPM-T466).
 //!
-//! The finders return the **`axa`** `Result` with `Error::NotFound` on
-//! a missing row (not `ModelError::EntityNotFound`): loco 0.16's
-//! `IntoResponse` catch-all turns an unmapped model error into a 500,
-//! so mapping here keeps every `GET /…/{pid}` contract an honest 404
-//! (family lesson, pinned in the request tests).
+//! Both return the **`axa`** `Result` with `Error::NotFound` for an unparsable pid or a missing row, so every
+//! `GET /…/{pid}` contract is an honest 404 (family lesson, pinned in the request tests).
 
 use axa::prelude::*;
-use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 
 use super::_entities::{
@@ -23,6 +18,8 @@ use super::_entities::{
 };
 
 impl ActiveModelBehavior for workers::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::audit_logs::ActiveModel {}
+impl ActiveModelBehavior for super::_entities::event_outbox::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::payslip_queries::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::development_plan_benefits::ActiveModel {}
 impl ActiveModelBehavior for super::_entities::learning_budgets::ActiveModel {}
@@ -79,67 +76,22 @@ pub fn parse_pid(pid: &str) -> Result<Uuid> {
     Uuid::parse_str(pid).map_err(|_| Error::NotFound)
 }
 
-/// Generate the per-entity `find_*` finder: the row with this `pid`
-/// whose `deleted_at` is null, else `Error::NotFound`.
-macro_rules! find_active_by_pid {
-    ($fn_name:ident, $module:ident) => {
-        /// Find the active (not soft-deleted) row by public id.
-        ///
-        /// # Errors
-        ///
-        /// [`Error::NotFound`] when absent or soft-deleted; any query
-        /// error otherwise.
-        pub async fn $fn_name<C: ConnectionTrait>(db: &C, pid: Uuid) -> Result<$module::Model> {
-            let row = $module::Entity::find()
-                .filter($module::Column::Pid.eq(pid))
-                .filter($module::Column::DeletedAt.is_null())
-                .one(db)
-                .await
-                .map_err(|e| Error::Model(ModelError::from(e)))?;
-            row.ok_or(Error::NotFound)
-        }
-    };
-}
-
-find_active_by_pid!(find_worker, workers);
-find_active_by_pid!(find_requisition, requisitions);
-find_active_by_pid!(find_candidate, candidates);
-find_active_by_pid!(find_application, applications);
-find_active_by_pid!(find_onboarding_item, onboarding_items);
-find_active_by_pid!(find_time_entry, time_entries);
-find_active_by_pid!(find_leave_request, leave_requests);
-find_active_by_pid!(find_shift, shifts);
-find_active_by_pid!(find_shift_assignment, shift_assignments);
-find_active_by_pid!(find_benefit_plan, benefit_plans);
-find_active_by_pid!(find_benefit_enrollment, benefit_enrollments);
-find_active_by_pid!(find_review_cycle, review_cycles);
-
-/// Find a live performance review by public id. A PADR is a review too, and it answers only on its own routes
-/// ([`crate::controllers::padr`]): none of the performance lifecycle applies to it (WPM-D176).
+/// The active (not soft-deleted) worker by public id.
 ///
 /// # Errors
 ///
-/// [`Error::NotFound`] when absent, soft-deleted or a PADR; any query error otherwise.
-pub async fn find_review<C: ConnectionTrait>(db: &C, pid: Uuid) -> Result<reviews::Model> {
-    reviews::Entity::find()
-        .filter(reviews::Column::Pid.eq(pid))
-        .filter(reviews::Column::Kind.eq("performance"))
-        .filter(reviews::Column::DeletedAt.is_null())
-        .one(db)
-        .await
-        .map_err(|e| Error::Model(ModelError::from(e)))?
-        .ok_or(Error::NotFound)
+/// [`Error::NotFound`] when absent or soft-deleted; any query error otherwise.
+pub async fn worker_by_pid(ctx: &AppContext, pid: Uuid) -> Result<workers::Model> {
+    sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
-
-find_active_by_pid!(find_training_enrollment, training_enrollments);
-find_active_by_pid!(find_succession_plan, succession_plans);
-find_active_by_pid!(find_payroll_run, payroll_runs);
-find_active_by_pid!(find_assessment_instrument, assessment_instruments);
-find_active_by_pid!(find_assessment, assessments);
-find_active_by_pid!(find_development_plan, development_plans);
-find_active_by_pid!(find_talent_pipeline, talent_pipelines);
-find_active_by_pid!(find_pipeline_member, pipeline_members);
-find_active_by_pid!(find_early_career_program, early_career_programs);
-find_active_by_pid!(find_program_placement, program_placements);
-find_active_by_pid!(find_organization_membership, organization_memberships);
-find_active_by_pid!(find_organization_confederation, organization_confederations);

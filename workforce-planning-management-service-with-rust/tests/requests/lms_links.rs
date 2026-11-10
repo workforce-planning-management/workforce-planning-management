@@ -27,7 +27,7 @@ impl Drop for Template {
 }
 
 /// The link on the worker's first CPD entry and on their first training enrolment.
-async fn links(request: &axa::TestServer, worker: &str) -> (Value, Value) {
+async fn links(request: &axa_test::TestServer, worker: &str) -> (Value, Value) {
     let entries: Value = request
         .get(&format!("/api/workers/{worker}/cpd-entries"))
         .await

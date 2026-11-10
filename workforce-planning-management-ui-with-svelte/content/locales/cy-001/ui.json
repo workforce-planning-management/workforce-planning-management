@@ -56,7 +56,8 @@
     "mandatoryLearning": "Hyfforddiant gorfodol",
     "coverageEvidence": "Tystiolaeth yswiriant",
     "qualifications": "Cymwysterau",
-    "injuryRecords": "Cofnodion anafiadau"
+    "injuryRecords": "Cofnodion anafiadau",
+    "help": "Cymorth"
   },
   "pr": {
     "retention": "Cadw data",
@@ -110,7 +111,10 @@
     "respond": "Ymateb",
     "report": "Adroddiad",
     "withheld": "Wedi'i atal o dan 3 ymateb",
-    "requests": "Fy ngheisiadau 360"
+    "requests": "Fy ngheisiadau 360",
+    "hint": "Mae 360° yn casglu adborth gan reolwr, cymheiriaid ac adroddiadau yn ogystal â'r person. Enwch y cymwyseddau, dechreuwch un newydd, enwebwch o leiaf dri graddiwr, yna dechreuwch gasglu. Ni ddangosir byth grŵp gyda llai na thri ymateb.",
+    "competencies": "Cymwyseddau (wedi'u gwahanu gan atalnodau, hyd at ddeuddeg)",
+    "recordLink": "Fy nghofnod: absenoldeb, slipiau cyflog, adolygiadau ac arfarniadau 360°"
   },
   "notif": {
     "markRead": "Marcio fel darllenwyd",
@@ -402,6 +406,15 @@
       "title": "Barod i'w drio eich hun?",
       "body": "Mewngofnodwch gyda dolen hud ac archwiliwch gyda data go iawn — dim cyfrinair, dim ymrwymiad.",
       "button": "Mewngofnodi"
+    },
+    "help": {
+      "title": "Yn sownd, neu wedi dod o hyd i nam?",
+      "body": "Mae'r dudalen help yn dweud sut i roi gwybod am broblem, sut i ofyn cwestiwn a ble mae pob tasg wedi'i hesbonio.",
+      "link": "Cael help"
+    },
+    "learn": {
+      "title": "Dysgu drwy wneud",
+      "body": "Canllawiau cam wrth gam ar gyfer cyflogai, rheolwr ac AD: mae pob tasg yn dweud ble i glicio a beth a welwch."
     }
   },
   "insights": {
@@ -1586,7 +1599,10 @@
     "myDevelopment": "Fy nghynlluniau datblygu — WPM",
     "myGoals": "Fy nodau — WPM",
     "myPadrs": "Fy adolygiadau datblygu — WPM",
-    "padr": "Adolygiad datblygu — WPM"
+    "padr": "Adolygiad datblygu — WPM",
+    "help": "Cymorth — WPM",
+    "guides": "Canllawiau cam wrth gam — WPM",
+    "required": "Fy hyfforddiant gorfodol a'm hardystiadau — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -2468,7 +2484,13 @@
     "conflict": "Mae hynny'n gwrthdaro â'r cyflwr presennol",
     "invalid": "Ni dderbyniwyd hynny",
     "server": "Aeth rhywbeth o'i le ar ein hochr ni. Rhowch gynnig arall arni; os digwydd eto, dywedwch wrth eich gweinyddwr.",
-    "generic": "Aeth rhywbeth o'i le."
+    "generic": "Aeth rhywbeth o'i le.",
+    "next": {
+      "retry": "Rhowch gynnig arall arni, neu ail-lwythwch y dudalen. Os yw'n parhau i ddigwydd, rhowch wybod.",
+      "access": "Os ydych yn meddwl y dylech allu gwneud hyn, gofynnwch i'ch rheolwr neu i AD.",
+      "input": "Gwiriwch yr hyn a roesoch, ail-lwythwch y dudalen i weld y fersiwn ddiweddaraf, a rhowch gynnig arall arni."
+    },
+    "getHelp": "Cael help"
   },
   "labels": {
     "nominee": "Cydweithiwr i'w enwebu",
@@ -2727,7 +2749,6 @@
     "consultation_ref": "Cofnod ymgynghori ar gyfer sgôr newydd neu wedi'i newid (dewisol)"
   },
   "paging": {
-    "showing": "Yn dangos {shown} o {total}",
     "more": "Dangos mwy"
   },
   "bargaining": {
@@ -3333,5 +3354,126 @@
     "from": "O",
     "to": "I",
     "download": "Lawrlwytho CSV"
+  },
+  "help": {
+    "title": "Cael help",
+    "intro": "Beth i'w wneud pan aiff rhywbeth o'i le, pan fydd rhywbeth yn ddryslyd, a ble mae pob tasg wedi'i hesbonio.",
+    "bugTitle": "Rhoi gwybod am nam",
+    "bugBody": "Os yw tudalen yn dangos gwall, os yw ffigur yn edrych yn anghywir neu os nad yw botwm yn gwneud dim, agorwch fater yn nhraciwr materion y prosiect. Dywedwch ar ba dudalen yr oeddech (copïwch ei chyfeiriad), beth wnaethoch chi, beth yr oeddech yn ei ddisgwyl a beth ddigwyddodd yn lle hynny. Peidiwch byth â gludo data personol go iawn: meddalwedd arddangos yw WPM ac mae'n dal data ffug yn unig.",
+    "bugLink": "Agor y traciwr materion",
+    "securityBody": "Rhowch wybod am broblem diogelwch drwy e-bost, nid mewn mater cyhoeddus.",
+    "securityLink": "Darllen y polisi diogelwch",
+    "questionTitle": "Gofyn pan fydd rhywbeth yn ddryslyd",
+    "questionBody": "Os nad yw gair, ffigur neu statws yn glir, darllenwch yn gyntaf y nodyn byr o dan bennawd y dudalen a'r daith dywys ar gyfer eich rôl. Os yw'n dal yn aneglur, gofynnwch yn y traciwr materion a dywedwch mai cwestiwn ydyw. Mae'n werth rhoi gwybod am sgrin ddryslyd hefyd.",
+    "questionLink": "Gofyn cwestiwn",
+    "learnTitle": "Dysgu sut i wneud tasg",
+    "learnBody": "Mae'r daith yn dweud beth mae pob rhan o WPM yn ei wneud. Mae'r canllawiau ar y wefan yn ymdrin â gosod WPM, rhedeg y demo a'r fanyleb.",
+    "tourLink": "Mynd ar y daith",
+    "docsLink": "Darllen y canllawiau ar y wefan",
+    "errorTitle": "Pan welwch wall",
+    "errorBody": "Mae pob gwall yn dweud mewn geiriau plaen beth aeth o'i le. Rhowch gynnig arall arni yn gyntaf, yna ail-lwythwch y dudalen. Os cawsoch eich allgofnodi, mewngofnodwch eto. Os dywedir wrthych na chewch weld neu newid rhywbeth a'ch bod yn meddwl y dylech, gofynnwch i'ch rheolwr neu i AD. Os yw'n parhau i ddigwydd, rhowch wybod amdano fel nam.",
+    "deployerNote": "Mae'r dolenni hyn yn mynd at brosiect WPM ei hun. Byddai sefydliad sy'n rhedeg WPM ar gyfer ei staff yn cyfeirio'r dudalen hon at ei ddesg wasanaeth ei hun."
+  },
+  "errorPage": {
+    "notFound": "Heb ddod o hyd i'r dudalen",
+    "failed": "Aeth rhywbeth o'i le",
+    "hint": "Gwiriwch y cyfeiriad, neu dechreuwch eto o'r dudalen gartref. Os daeth dolen o fewn WPM â chi yma, rhowch wybod amdani.",
+    "home": "Mynd i'r dudalen gartref"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Ar dudalen sydd â rhestr Sefydliad, dewiswch y sefydliad yn gyntaf: mae'r rhestrau a'r ffurflenni'n ymddangos ar ôl ei ddewis.",
+      "title": "Ar gyfer AD",
+      "intro": "Mae tudalennau AD yn y ddewislen (☰). Mae pob un yn dweud o dan ei phennawd beth mae'n ei ddangos a beth mae'n ei hepgor.",
+      "requirement": {
+        "title": "Gosod gofyniad hyfforddiant gorfodol",
+        "body": "Agorwch Hyfforddiant gorfodol. O dan Ychwanegu gofyniad, rhowch y pwnc, a yw'n statudol neu'n orfodol, yr adnewyddu mewn misoedd ac i bwy mae'n berthnasol. Mae'r tabl yn dangos, ar gyfer pob gofyniad, faint o bobl sy'n gyfredol; mae grŵp sy'n rhy fach i'w ddangos yn dweud hynny."
+      },
+      "completion": {
+        "title": "Cofnodi hyfforddiant a wnaed yn rhywle arall",
+        "body": "Ar Hyfforddiant gorfodol, o dan Cofnodi cwblhau, dewiswch y person a'r gofyniad, y diwrnod y'i cwblhawyd a ble y'i gwnaed, a chadwch. Mae statws y person yn cael ei ddiweddaru o'r diwrnod hwnnw."
+      },
+      "verify": {
+        "title": "Gwirio cymhwyster",
+        "body": "Agorwch Cymwysterau. Mae'r rhestr yn dangos cymwysterau a ddatganwyd gan bobl nad oes neb wedi'u gwirio eto. Ysgrifennwch ble mae'r prawf yn cael ei gadw a phwyswch Gwirio. O dan Beth mae pob rôl yn ei ofyn, dewiswch rôl i ychwanegu'r cymwysterau sydd eu hangen arni."
+      },
+      "vacancy": {
+        "title": "Agor swydd wag",
+        "body": "Agorwch Swyddi gwag. O dan Agor cais recriwtio, llenwch yr adran, teitl y swydd a nifer y staff a phwyswch Creu. Mae pob cais yn gerdyn ar y bwrdd, ac rydych yn ei symud o golofn i golofn wrth iddo fynd rhagddo."
+      },
+      "movement": {
+        "title": "Cychwyn cofnod newydd-ddyfodiad neu adawr",
+        "body": "Agorwch Newydd-ddyfodiaid a gadawyr, yna Cychwyn cofnod: dewiswch y person, newydd-ddyfodiad neu adawr, a'r diwrnod. Mae rhestr wirio'r cofnod yn dangos pob eitem fel wedi'i gwneud, yn ddyledus heddiw, yn hwyr neu ar ddod, ac mae trosglwyddiad gadawr yn rhestru'r hyn sydd ganddynt o hyd."
+      }
+    },
+    "title": "Canllawiau cam wrth gam",
+    "intro": "Tasgau ar gyfer pob rôl, gam wrth gam: ble i glicio a beth a welwch.",
+    "open": "Agor y dudalen hon",
+    "others": "Canllawiau eraill",
+    "signin": "Mae'r tudalennau hyn yn agor unwaith y byddwch wedi mewngofnodi. Yn y demo, mewngofnodwch fel example@example.com.",
+    "employee": {
+      "title": "Ar gyfer cyflogai",
+      "intro": "Mae popeth yma'n dechrau o Fy mhroffil: agorwch y ddewislen (☰) ar y brig a dewis Fy mhroffil.",
+      "waiting": {
+        "title": "Gweld beth sy'n aros amdanoch",
+        "body": "Ar Fy mhroffil, mae panel Yn aros amdanoch ger y brig yn rhestru unrhyw beth sydd angen eich sylw: nod i gytuno arno, cais am gwrs sydd wedi'i benderfynu, adolygiad datblygu i'w lofnodi. Mae pob eitem yn cysylltu â'r man lle rydych yn gweithredu arni, ac mae Marcio fel darllenwyd yn ei chlirio."
+      },
+      "goal": {
+        "title": "Cynnig nod",
+        "body": "Ar Fy mhroffil, dewiswch Fy nodau. O dan Cynnig nod, rhowch deitl, dyddiad dechrau a dyddiad gorffen iddo, a phwyswch Cynnig. Mae'n aros i'ch rheolwr gytuno arno; yna cofnodwch gynnydd o dan Sut mae'n mynd?"
+      },
+      "qualification": {
+        "title": "Ychwanegu cymhwyster sydd gennych",
+        "body": "Ar Fy mhroffil, sgroliwch i Cymwysterau. O dan Ychwanegu cymhwyster, dewiswch ei fath, teipiwch ei deitl a'i ddyddiadau, a phwyswch Cadw. Caiff ei restru fel Wedi'i ddatgan nes bod AD yn ei wirio; dim ond un wedi'i wirio sy'n cyfrif fel un a fodlonwyd o dan Beth mae fy rôl yn gofyn amdano."
+      },
+      "payslips": {
+        "title": "Darllen eich slipiau cyflog",
+        "body": "Ar Fy mhroffil, dewiswch Fy slipiau cyflog. Mae gan bob cyfnod cyflog ei adran ei hun gyda'i linellau, a chaiff y swm hyd yma ei gyfrif ar gyfer pob blwyddyn dreth."
+      },
+      "feedback": {
+        "title": "Ateb cais am adborth 360°",
+        "body": "Ar Fy mhroffil, dewiswch Fy nghofnod: absenoldeb, slipiau cyflog, adolygiadau ac arfarniadau 360°. O dan Fy ngheisiadau 360, pwyswch Ymateb, sgoriwch bob cymhwysedd o 1 i 5, ychwanegwch sylw os dymunwch, a phwyswch Ymateb eto. Dim ond fel grŵp o dri neu fwy y dangosir atebion gan gymheiriaid ac adroddeion."
+      },
+      "required": {
+        "title": "Dod o hyd i'ch hyfforddiant gorfodol a'ch ardystiadau",
+        "body": "Ar Fy mhroffil, dewiswch Fy hyfforddiant gorfodol a'm hardystiadau. Mae Hyfforddiant y mae'n rhaid i chi ei gwblhau yn rhestru pob gofyniad gyda'i statws (Cyfredol, Yn ddyledus cyn bo hir, Wedi dod i ben, Heb ei gwblhau erioed) a phryd mae'n dod i ben; mae Ardystiadau y mae eich rôl yn gofyn amdanynt yn rhestru pob un gyda'i statws a'r diwrnod y daw i ben. Mae'r hyn sydd angen sylw ar y brig, gyda beth i'w wneud nesaf a dolen."
+      }
+    },
+    "manager": {
+      "title": "Ar gyfer rheolwr",
+      "intro": "Mae tasgau rheolwr ar yr un tudalennau â'u tasgau eu hunain, mewn adrannau â'r pennawd Fy nhîm.",
+      "team": {
+        "title": "Gwirio hyfforddiant a chymwysterau eich tîm",
+        "body": "Ar Fy mhroffil, mae'r paneli Hyfforddiant statudol a gorfodol fy nhîm a Cymwysterau fy nhîm yn rhestru'r bobl oddi tanoch sydd angen sylw, wrth eu henwau, gyda statws pob gofyniad. Os nad oes neb angen sylw, mae'r panel yn dweud hynny."
+      },
+      "goals": {
+        "title": "Cytuno ar nod",
+        "body": "Ar Fy mhroffil, dewiswch Fy nodau. O dan Fy nhîm, mae gan nod a gynigiwyd Cytuno ar y nod hwn. Pwyswch ef, neu newidiwch y cynnig fel bod y person yn cytuno ar eich fersiwn chi."
+      },
+      "padr": {
+        "title": "Cynnal adolygiad datblygu personol",
+        "body": "Ar Fy mhroffil, dewiswch Fy adolygiadau datblygu. O dan Fy nhîm, gosodwch ddechrau a diwedd y flwyddyn i ddod ar gyfer y person a phwyswch Agor adolygiad. Ychwanegwch amcanion ac anghenion datblygu, nodwch a gynigiwyd sgwrs am lesiant, ac mae'r ddau ohonoch yn llofnodi. Mae llofnodi'n rhewi'r fersiwn honno; mae cywiriad yn fersiwn newydd."
+      },
+      "appraisal": {
+        "title": "Cynnal arfarniad 360°",
+        "body": "Agorwch Gweithwyr o'r ddewislen a dewis y person. O dan Arfarniadau 360°, enwch y cymwyseddau a phwyswch 360 newydd. Agorwch ef, enwebwch o leiaf dri sgoriwr gyda'u perthynas, a phwyswch Dechrau casglu. Pan fydd digon wedi ateb, pwyswch Rhannu'r adroddiad; caiff grŵp o gymheiriaid neu adroddeion â llai na thri ateb ei ddal yn ôl."
+      }
+    }
+  },
+  "required": {
+    "link": "Fy hyfforddiant gorfodol a'm hardystiadau",
+    "title": "Fy hyfforddiant gorfodol a'm hardystiadau",
+    "hint": "Yr hyn y mae'n rhaid i chi ei gwblhau neu ei feddu, gyda'r hyn sydd angen ei wneud gyntaf ar y brig. Mae pob llinell yn dweud beth i'w wneud nesaf.",
+    "learningTitle": "Hyfforddiant y mae'n rhaid i chi ei gwblhau",
+    "certsTitle": "Ardystiadau y mae eich rôl yn gofyn amdanynt",
+    "allClear": "Does dim angen gwneud dim ar hyn o bryd.",
+    "attention": "Angen sylw",
+    "learningAct": "Fy nghofnod hyfforddiant",
+    "learningHow": "Archebwch un o'i gyrsiau yn system ddysgu eich sefydliad; unwaith y byddwch yn ei gwblhau, mae'n cyfrif yma. Os gwnaethoch ef yn rhywle arall, gofynnwch i AD gofnodi'r cwblhau.",
+    "certAct": "Ei ychwanegu neu ei ddiweddaru ar Fy mhroffil",
+    "certMissingHow": "Os yw gennych, ychwanegwch ef gyda'i ddyddiadau; yna bydd AD yn ei wirio.",
+    "certDeclaredHow": "Nid yw AD wedi'i wirio eto. Dywedwch wrth AD ble mae'r prawf yn cael ei gadw.",
+    "certExpiredHow": "Ychwanegwch yr un a adnewyddwyd gyda'i ddyddiadau newydd.",
+    "noExpiry": "Nid yw'n dod i ben"
   }
 }

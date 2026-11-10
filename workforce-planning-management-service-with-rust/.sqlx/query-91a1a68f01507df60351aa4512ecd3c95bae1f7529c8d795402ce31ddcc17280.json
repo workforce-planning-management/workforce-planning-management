@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT organization_ref, code, layer, parent_code FROM jurisdictions WHERE organization_ref = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "layer",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "layer"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "parent_code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "jurisdictions",
+            "name": "parent_code"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "91a1a68f01507df60351aa4512ecd3c95bae1f7529c8d795402ce31ddcc17280"
+}

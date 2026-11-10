@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_skills (pid, worker_pid, skill_pid, proficiency, assessed_on) VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee10fb99d52792ec19b9a96a8acd1838f97c8d0499fec0ef580c4bf9559a7ff7"
+}

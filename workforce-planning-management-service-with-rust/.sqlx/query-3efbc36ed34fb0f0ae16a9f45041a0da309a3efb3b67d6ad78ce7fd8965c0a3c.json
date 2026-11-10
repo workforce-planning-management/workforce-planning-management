@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE time_entries SET status = 'approved' WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, worked_on, minutes,\n                  kind, status, notes, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "worked_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "minutes",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "minutes"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "3efbc36ed34fb0f0ae16a9f45041a0da309a3efb3b67d6ad78ce7fd8965c0a3c"
+}

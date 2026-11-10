@@ -1,0 +1,146 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, scim_id, body_hash,\n                  pushed_at AS \"pushed_at: _\", attempts, next_attempt_at AS \"next_attempt_at: _\", last_error\n             FROM scim_pushes",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "scim_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "scim_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "body_hash",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "body_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "pushed_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "pushed_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "attempts",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "attempts"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "next_attempt_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "next_attempt_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "last_error",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "scim_pushes",
+            "name": "last_error"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "3845df9c4646ae8945db9d9826e5a58fefc7b65123283647bd577d61d933f265"
+}

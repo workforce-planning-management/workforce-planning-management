@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, run_pid FROM payslips WHERE pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "run_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "run_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "15187cfbac0410f4bed3f25f7764029411f384a52f8a2bb78f8ee5fd1610a383"
+}

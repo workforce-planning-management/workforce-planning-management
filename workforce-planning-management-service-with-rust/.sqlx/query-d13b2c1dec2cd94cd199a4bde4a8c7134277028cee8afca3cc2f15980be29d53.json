@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 AS \"one!\" FROM role_profiles\n            WHERE deleted_at IS NULL AND (job_title = $1 OR (framework_slug = $2 AND external_ref = $3))\n            LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d13b2c1dec2cd94cd199a4bde4a8c7134277028cee8afca3cc2f15980be29d53"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE asset_issues SET returned_on = $2, outcome = $3, note = $4, recorded_by = $5\n         WHERE pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ec0534088e4d8faf70e1ef882c81f60254249c1eadee512a1009f72920cbd89c"
+}

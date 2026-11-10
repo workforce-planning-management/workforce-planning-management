@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO jurisdiction_parameters (pid, organization_ref, code, key, value, effective_from, source, status)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, 'example')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Jsonb",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8b8a58259f8aea1b08d86c4dbbea0c9cb958cf5f4602b097489234f1acabf547"
+}

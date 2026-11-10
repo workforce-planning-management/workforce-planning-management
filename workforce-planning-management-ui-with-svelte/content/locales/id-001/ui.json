@@ -56,7 +56,8 @@
     "mandatoryLearning": "Pelatihan wajib",
     "coverageEvidence": "Bukti perlindungan",
     "qualifications": "Kualifikasi",
-    "injuryRecords": "Catatan cedera"
+    "injuryRecords": "Catatan cedera",
+    "help": "Bantuan"
   },
   "pr": {
     "retention": "Retensi",
@@ -110,7 +111,10 @@
     "respond": "Tanggapi",
     "report": "Laporan",
     "withheld": "Ditahan di bawah 3 tanggapan",
-    "requests": "Permintaan 360 saya"
+    "requests": "Permintaan 360 saya",
+    "hint": "Penilaian 360° mengumpulkan masukan dari atasan, rekan, dan bawahan, selain dari orang itu sendiri. Sebutkan kompetensinya, buat yang baru, nominasikan setidaknya tiga penilai, lalu mulai mengumpulkan. Kelompok dengan kurang dari tiga tanggapan tidak pernah ditampilkan.",
+    "competencies": "Kompetensi (dipisahkan koma, paling banyak dua belas)",
+    "recordLink": "Catatan saya: cuti, slip gaji, tinjauan, dan penilaian 360°"
   },
   "notif": {
     "markRead": "Tandai dibaca",
@@ -402,6 +406,15 @@
       "title": "Siap mencobanya sendiri?",
       "body": "Masuk dengan tautan ajaib dan jelajahi dengan data nyata — tanpa kata sandi, tanpa komitmen.",
       "button": "Masuk"
+    },
+    "help": {
+      "title": "Buntu, atau menemukan bug?",
+      "body": "Halaman bantuan menjelaskan cara melaporkan masalah, cara bertanya, dan di mana setiap tugas dijelaskan.",
+      "link": "Dapatkan bantuan"
+    },
+    "learn": {
+      "title": "Belajar sambil melakukan",
+      "body": "Panduan langkah demi langkah untuk karyawan, manajer, dan HR: setiap tugas menyebutkan di mana mengeklik dan apa yang Anda lihat."
     }
   },
   "insights": {
@@ -1551,7 +1564,10 @@
     "myDevelopment": "Rencana pengembangan saya — WPM",
     "myGoals": "Tujuan saya — WPM",
     "myPadrs": "Penilaian pengembangan saya — WPM",
-    "padr": "Penilaian pengembangan — WPM"
+    "padr": "Penilaian pengembangan — WPM",
+    "help": "Bantuan — WPM",
+    "guides": "Panduan langkah demi langkah — WPM",
+    "required": "Pelatihan wajib dan sertifikasi saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -2428,7 +2444,13 @@
     "conflict": "Itu bertentangan dengan keadaan saat ini",
     "invalid": "Itu tidak diterima",
     "server": "Terjadi masalah di pihak kami. Coba lagi; jika terus terjadi, beri tahu administrator Anda.",
-    "generic": "Terjadi kesalahan."
+    "generic": "Terjadi kesalahan.",
+    "next": {
+      "retry": "Coba lagi, atau muat ulang halaman. Jika terus terjadi, laporkan.",
+      "access": "Jika menurut Anda seharusnya Anda bisa melakukan ini, tanyakan kepada atasan atau bagian SDM.",
+      "input": "Periksa isian Anda, muat ulang halaman untuk melihat versi terbaru, lalu coba lagi."
+    },
+    "getHelp": "Dapatkan bantuan"
   },
   "labels": {
     "nominee": "Rekan yang akan dinominasikan",
@@ -2682,7 +2704,6 @@
     "consultation_ref": "Catatan konsultasi untuk skor baru atau yang diubah (opsional)"
   },
   "paging": {
-    "showing": "Menampilkan {shown} dari {total}",
     "more": "Tampilkan lebih banyak"
   },
   "bargaining": {
@@ -3288,5 +3309,126 @@
     "from": "Dari",
     "to": "Sampai",
     "download": "Unduh CSV"
+  },
+  "help": {
+    "title": "Dapatkan bantuan",
+    "intro": "Apa yang harus dilakukan saat ada yang salah atau membingungkan, dan di mana setiap tugas dijelaskan.",
+    "bugTitle": "Laporkan bug",
+    "bugBody": "Jika halaman menampilkan galat, angka tampak salah, atau tombol tidak berfungsi, buka isu di pelacak isu proyek. Sebutkan halaman tempat Anda berada (salin alamatnya), apa yang Anda lakukan, apa yang Anda harapkan, dan apa yang terjadi. Jangan pernah menempelkan data pribadi asli: WPM adalah perangkat lunak demonstrasi dan hanya berisi data fiktif.",
+    "bugLink": "Buka pelacak isu",
+    "securityBody": "Masalah keamanan dilaporkan lewat email, bukan di isu publik.",
+    "securityLink": "Baca kebijakan keamanan",
+    "questionTitle": "Bertanya saat ada yang membingungkan",
+    "questionBody": "Jika sebuah kata, angka, atau status tidak jelas, baca dulu catatan singkat di bawah judul halaman dan panduan langkah demi langkah untuk peran Anda. Jika masih belum jelas, tanyakan di pelacak isu dan sebutkan bahwa itu pertanyaan. Layar yang membingungkan juga layak dilaporkan.",
+    "questionLink": "Ajukan pertanyaan",
+    "learnTitle": "Pelajari cara melakukan tugas",
+    "learnBody": "Tur menjelaskan apa yang dilakukan setiap bagian WPM. Panduan di situs web membahas pemasangan WPM, menjalankan demo, dan spesifikasinya.",
+    "tourLink": "Ikuti tur",
+    "docsLink": "Baca panduan di situs web",
+    "errorTitle": "Saat Anda melihat galat",
+    "errorBody": "Setiap galat menjelaskan dengan kata-kata sederhana apa yang salah. Coba lagi dulu, lalu muat ulang halaman. Jika Anda keluar, masuk lagi. Jika Anda diberi tahu tidak boleh melihat atau mengubah sesuatu dan menurut Anda seharusnya boleh, tanyakan kepada atasan atau bagian SDM. Jika terus terjadi, laporkan sebagai bug.",
+    "deployerNote": "Tautan ini menuju proyek WPM itu sendiri. Organisasi yang menjalankan WPM untuk stafnya akan mengarahkan halaman ini ke meja layanannya sendiri."
+  },
+  "errorPage": {
+    "notFound": "Halaman tidak ditemukan",
+    "failed": "Terjadi kesalahan",
+    "hint": "Periksa alamatnya, atau mulai lagi dari beranda. Jika tautan di dalam WPM membawa Anda ke sini, mohon laporkan.",
+    "home": "Ke beranda"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Di halaman dengan daftar Organisasi, pilih organisasinya terlebih dahulu: daftar dan formulir muncul setelah dipilih.",
+      "title": "Untuk HR",
+      "intro": "Halaman HR ada di menu (☰). Setiap halaman menyebutkan di bawah judulnya apa yang ditampilkan dan apa yang tidak.",
+      "requirement": {
+        "title": "Tetapkan persyaratan pelatihan wajib",
+        "body": "Buka Pelatihan wajib. Di bawah Tambah persyaratan, isi subjeknya, apakah bersifat wajib menurut undang-undang atau wajib organisasi, penyegaran dalam bulan, dan kepada siapa berlaku. Tabel menunjukkan, untuk setiap persyaratan, berapa orang yang terkini; kelompok yang terlalu kecil untuk ditampilkan menyebutkannya."
+      },
+      "completion": {
+        "title": "Catat pelatihan yang dilakukan di tempat lain",
+        "body": "Di Pelatihan wajib, di bawah Catat penyelesaian, pilih orang dan persyaratannya, tanggal penyelesaiannya dan tempat pelaksanaannya, lalu simpan. Status orang tersebut diperbarui sejak tanggal itu."
+      },
+      "verify": {
+        "title": "Verifikasi kualifikasi",
+        "body": "Buka Kualifikasi. Daftar menampilkan kualifikasi yang dinyatakan orang dan belum diverifikasi siapa pun. Tulis di mana bukti disimpan dan tekan Verifikasi. Di bawah Apa yang diminta tiap peran, pilih peran untuk menambahkan kualifikasi yang dibutuhkannya."
+      },
+      "vacancy": {
+        "title": "Buka lowongan",
+        "body": "Buka Lowongan. Di bawah Buka permintaan rekrutmen, isi departemen, jabatan, dan jumlah orang, lalu tekan Buat. Setiap permintaan adalah kartu di papan, dan Anda memindahkannya dari kolom ke kolom seiring kemajuannya."
+      },
+      "movement": {
+        "title": "Mulai catatan karyawan masuk atau keluar",
+        "body": "Buka Karyawan masuk dan keluar, lalu Mulai catatan: pilih orangnya, masuk atau keluar, dan tanggalnya. Daftar periksa catatan menampilkan setiap item sebagai selesai, jatuh tempo hari ini, terlambat, atau mendatang, dan serah terima karyawan yang keluar mencantumkan apa yang masih dipegangnya."
+      }
+    },
+    "title": "Panduan langkah demi langkah",
+    "intro": "Tugas untuk setiap peran, langkah demi langkah: di mana mengeklik dan apa yang Anda lihat.",
+    "open": "Buka halaman ini",
+    "others": "Panduan langkah demi langkah lainnya",
+    "signin": "Halaman ini terbuka setelah Anda masuk. Dalam demo, masuk sebagai example@example.com.",
+    "employee": {
+      "title": "Untuk karyawan",
+      "intro": "Semua di sini dimulai dari Profil saya: buka menu (☰) di bagian atas dan pilih Profil saya.",
+      "waiting": {
+        "title": "Lihat apa yang menunggu Anda",
+        "body": "Di Profil saya, panel Menunggu Anda di dekat bagian atas mencantumkan apa pun yang memerlukan Anda: tujuan yang perlu disetujui, permintaan kursus yang sudah diputuskan, penilaian pengembangan yang perlu ditandatangani. Setiap item menautkan ke tempat Anda menindaklanjutinya, dan Tandai dibaca menghapusnya."
+      },
+      "goal": {
+        "title": "Usulkan tujuan",
+        "body": "Di Profil saya, pilih Tujuan saya. Di bawah Usulkan tujuan, beri judul, tanggal mulai, dan tanggal selesai, lalu tekan Usulkan. Tujuan itu menunggu persetujuan manajer Anda; setelah itu catat kemajuan di bawah Bagaimana perkembangannya?"
+      },
+      "qualification": {
+        "title": "Tambahkan kualifikasi yang Anda miliki",
+        "body": "Di Profil saya, gulir ke Kualifikasi. Di bawah Tambah kualifikasi, pilih jenisnya, ketik judul dan tanggalnya, lalu tekan Simpan. Kualifikasi itu tercantum sebagai Dinyatakan sampai HR memverifikasinya; hanya yang sudah diverifikasi yang dihitung terpenuhi di bawah Yang diminta peran saya."
+      },
+      "payslips": {
+        "title": "Baca slip gaji Anda",
+        "body": "Di Profil saya, pilih Slip gaji saya. Setiap periode gaji memiliki bagiannya sendiri beserta baris-barisnya, dan jumlah sejak awal tahun dihitung untuk setiap tahun pajak."
+      },
+      "feedback": {
+        "title": "Jawab permintaan umpan balik 360°",
+        "body": "Di Profil saya, pilih Catatan saya: cuti, slip gaji, tinjauan, dan penilaian 360°. Di bawah Permintaan 360 saya, tekan Tanggapi, beri skor setiap kompetensi dari 1 sampai 5, tambahkan komentar jika mau, lalu tekan Tanggapi lagi. Jawaban dari rekan dan bawahan hanya ditampilkan sebagai kelompok berisi tiga orang atau lebih."
+      },
+      "required": {
+        "title": "Temukan pelatihan wajib dan sertifikasi Anda",
+        "body": "Di Profil saya, pilih Pelatihan wajib dan sertifikasi saya. Pelatihan yang harus Anda selesaikan mencantumkan setiap persyaratan dengan statusnya (Terkini, Segera jatuh tempo, Kedaluwarsa, Belum pernah diselesaikan) dan kapan kedaluwarsa; Sertifikasi yang diminta peran Anda mencantumkan masing-masing dengan kedudukannya dan tanggal kedaluwarsanya. Apa pun yang perlu perhatian ada di bagian atas, dengan langkah berikutnya dan sebuah tautan."
+      }
+    },
+    "manager": {
+      "title": "Untuk manajer",
+      "intro": "Tugas manajer ada di halaman yang sama dengan tugasnya sendiri, di bagian berjudul Tim saya.",
+      "team": {
+        "title": "Periksa pelatihan dan kualifikasi tim Anda",
+        "body": "Di Profil saya, panel Pelatihan wajib tim saya dan Kualifikasi tim saya mencantumkan orang-orang di bawah Anda yang perlu diperhatikan, menurut nama, dengan status setiap persyaratan. Jika tidak ada yang perlu diperhatikan, panel menyebutkannya."
+      },
+      "goals": {
+        "title": "Setujui tujuan",
+        "body": "Di Profil saya, pilih Tujuan saya. Di bawah Tim saya, tujuan yang diusulkan memiliki Setujui tujuan ini. Tekan itu, atau ubah usulannya agar orang tersebut menyetujui versi Anda."
+      },
+      "padr": {
+        "title": "Lakukan penilaian pengembangan pribadi",
+        "body": "Di Profil saya, pilih Penilaian pengembangan saya. Di bawah Tim saya, tetapkan awal dan akhir tahun mendatang untuk orang tersebut dan tekan Buka penilaian. Tambahkan sasaran dan kebutuhan pengembangan, nyatakan apakah percakapan tentang kesejahteraan ditawarkan, lalu kalian berdua menandatangani. Penandatanganan membekukan versi itu; koreksi adalah versi baru."
+      },
+      "appraisal": {
+        "title": "Jalankan penilaian 360°",
+        "body": "Buka Pekerja dari menu dan pilih orangnya. Di bawah Penilaian 360°, sebutkan kompetensinya dan tekan 360 baru. Buka penilaian itu, tunjuk paling sedikit tiga penilai beserta hubungannya, lalu tekan Mulai pengumpulan. Setelah cukup banyak yang menjawab, tekan Bagikan laporan; kelompok rekan atau bawahan dengan kurang dari tiga jawaban tidak ditampilkan."
+      }
+    }
+  },
+  "required": {
+    "link": "Pelatihan wajib dan sertifikasi saya",
+    "title": "Pelatihan wajib dan sertifikasi saya",
+    "hint": "Apa yang harus Anda selesaikan atau miliki, dengan apa pun yang perlu dikerjakan lebih dulu di bagian atas. Setiap baris menyebutkan langkah berikutnya.",
+    "learningTitle": "Pelatihan yang harus Anda selesaikan",
+    "certsTitle": "Sertifikasi yang diminta peran Anda",
+    "allClear": "Tidak ada yang perlu dikerjakan sekarang.",
+    "attention": "Perlu perhatian",
+    "learningAct": "Catatan pelatihan saya",
+    "learningHow": "Pesan salah satu kursusnya di sistem pembelajaran organisasi Anda; setelah Anda menyelesaikannya, kursus itu dihitung di sini. Jika Anda melakukannya di tempat lain, minta HR mencatat penyelesaiannya.",
+    "certAct": "Tambahkan atau perbarui di Profil saya",
+    "certMissingHow": "Jika Anda memilikinya, tambahkan beserta tanggalnya; HR kemudian memverifikasinya.",
+    "certDeclaredHow": "HR belum memverifikasinya. Beri tahu HR di mana bukti disimpan.",
+    "certExpiredHow": "Tambahkan yang sudah diperbarui beserta tanggal barunya.",
+    "noExpiry": "Tidak kedaluwarsa"
   }
 }

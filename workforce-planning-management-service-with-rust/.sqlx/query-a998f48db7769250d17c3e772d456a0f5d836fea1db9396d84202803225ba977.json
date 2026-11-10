@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO pay_assessment_records\n                 (pid, organization_ref, category, reported_on, justified, justification,\n                  remedied_on, assessed_on, outcome, representatives, recorded_by)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Bool",
+        "Text",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a998f48db7769250d17c3e772d456a0f5d836fea1db9396d84202803225ba977"
+}

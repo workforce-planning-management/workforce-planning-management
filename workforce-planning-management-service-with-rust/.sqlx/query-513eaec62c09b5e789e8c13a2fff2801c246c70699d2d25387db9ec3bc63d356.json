@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code, name, category, subcategory, retired_in FROM sfia_skills ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "category",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "category"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "subcategory",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "subcategory"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "retired_in",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "retired_in"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "513eaec62c09b5e789e8c13a2fff2801c246c70699d2d25387db9ec3bc63d356"
+}

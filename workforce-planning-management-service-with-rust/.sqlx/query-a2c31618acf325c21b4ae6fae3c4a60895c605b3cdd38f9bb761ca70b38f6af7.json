@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, url, kinds, secret_ref,\n                      active, created_by\n                 FROM webhook_subscriptions WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "url",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kinds",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "kinds"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "secret_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "secret_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "active",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "active"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "webhook_subscriptions",
+            "name": "created_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a2c31618acf325c21b4ae6fae3c4a60895c605b3cdd38f9bb761ca70b38f6af7"
+}

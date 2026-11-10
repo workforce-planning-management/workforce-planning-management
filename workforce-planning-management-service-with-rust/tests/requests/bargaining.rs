@@ -1,11 +1,11 @@
 //! Recognised bodies and bargaining units (WPM-R102, WPM-D68): the rules over department, location, employment type and job title; the
 //! count with a floor; and that nothing says who is covered or who belongs.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
 use super::an_org;
+use sqlx::Row;
 
 #[tokio::test]
 #[serial]
@@ -92,12 +92,10 @@ async fn a_unit_is_counted_by_its_rules_from_the_floor_and_names_no_one() {
         assert_eq!(cover["Whole department"], json!({ "kind": "shown", "covered": 16 }));
 
         // A leaver is no longer covered; a deleted record is not either.
-        ctx.db
-            .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", leeds[0]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", leeds[0]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        ctx.db
-            .execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", leeds[1]))
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", leeds[1]))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         let cover = read().await;
@@ -245,8 +243,7 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
         }
         // Twelve of the permanent staff sit in band 5.
         for pid in permanent.iter().take(12) {
-            ctx.db
-                .execute_unprepared(&format!("INSERT INTO worker_pay_positions (worker_pid, scale_id, band, step, step_since) VALUES ('{pid}', 'national-2026-27', 'B5', 1, '2024-01-01')"))
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!("INSERT INTO worker_pay_positions (worker_pid, scale_id, band, step, step_since) VALUES ('{pid}', 'national-2026-27', 'B5', 1, '2024-01-01')"))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -303,16 +300,11 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
         }
 
         // Each read is a disclosure, logged against the unit with who and when.
-        let logged = ctx
-            .db
-            .query_one_raw(sea_orm::Statement::from_string(
-                sea_orm::DatabaseBackend::Postgres,
-                format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'information_pack_disclosed' AND entity_pid = '{}'::uuid", whole["pid"].as_str().unwrap()),
-            ))
+        let logged = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'information_pack_disclosed' AND entity_pid = '{}'::uuid", whole["pid"].as_str().unwrap()))).fetch_optional(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(logged.try_get::<i64>("", "n").unwrap(), 1);
+        assert_eq!(logged.try_get::<i64, _>("n").unwrap(), 1);
     })
     .await;
 }

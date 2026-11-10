@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { t, l } from "#lib/i18n.svelte.js";
+  import { t, l, type StringKey } from "#lib/i18n.svelte.js";
+  import { GUIDE_ROLES } from "#lib/guides.js";
 
   // tourpage-* class prefix throughout: the active Lily theme styles a
   // real `.tour` component of its own (an onboarding card), plus
@@ -45,6 +46,22 @@
       <p>{t(bodyKey)}</p>
     </section>
   {/each}
+
+  <section class="tourpage-section" id="learn" data-testid="tour-learn">
+    <h2>{t("tour.learn.title")}</h2>
+    <p>{t("tour.learn.body")}</p>
+    <ul>
+      {#each GUIDE_ROLES as role (role)}
+        <li><a href={l(`/tour/${role}`)} data-testid={`tour-guide-${role}`}>{t(`guides.${role}.title` as StringKey)}</a></li>
+      {/each}
+    </ul>
+  </section>
+
+  <section class="tourpage-section" id="help" data-testid="tour-help">
+    <h2>{t("tour.help.title")}</h2>
+    <p>{t("tour.help.body")}</p>
+    <p><a href={l("/help")} data-testid="tour-help-link">{t("tour.help.link")}</a></p>
+  </section>
 
   <section class="tourpage-cta panel">
     <h2>{t("tour.cta.title")}</h2>

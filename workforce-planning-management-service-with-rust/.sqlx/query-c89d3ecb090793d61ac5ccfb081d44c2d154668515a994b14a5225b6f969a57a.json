@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT movement_pid, due_on, done_on, skipped_reason FROM movement_items\n          WHERE movement_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "movement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "movement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "due_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "due_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "done_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "done_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "skipped_reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "skipped_reason"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "c89d3ecb090793d61ac5ccfb081d44c2d154668515a994b14a5225b6f969a57a"
+}

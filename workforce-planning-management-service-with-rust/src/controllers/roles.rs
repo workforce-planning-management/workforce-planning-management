@@ -6,18 +6,17 @@
 //! competency-gap analysis measures declared proficiency against.
 
 use super::ratio_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
+use super::sfia::{check_defined, framework_names, native_descriptions, resolve_native};
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    capability_frameworks, role_profiles, role_skill_requirements, skills, worker_skills, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{capability_frameworks, role_profiles, role_skill_requirements};
 use crate::models::records;
 use crate::rules::gap as gap_rules;
 use crate::rules::metrics::is_employed_on;
@@ -76,40 +75,41 @@ async fn create_profile(
         problems.cap_text("source_ref", text);
     }
     ensure_valid(&problems.into_vec())?;
-    let taken = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .filter(role_profiles::Column::JobTitle.eq(&title))
-        .one(&ctx.db)
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM role_profiles WHERE deleted_at IS NULL AND job_title = $1 LIMIT 1"#,
+        title,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .is_some();
     if taken {
         return Err(unprocessable(
             "a role profile for this job title already exists",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let row = role_profiles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        job_title: ActiveValue::set(title),
-        description: ActiveValue::set(payload.description.clone()),
-        source_ref: ActiveValue::set(payload.source_ref.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO role_profiles (pid, job_title, description, source_ref) VALUES ($1, $2, $3, $4)",
+        pid,
+        title,
+        payload.description,
+        payload.source_ref,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "role_profile",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -126,22 +126,19 @@ struct ProfileListQuery {
 #[debug_handler]
 async fn list_profiles(
     State(ctx): State<AppContext>,
-    axum::extract::Query(query): axum::extract::Query<ProfileListQuery>,
+    axa::extract::Query(query): axa::extract::Query<ProfileListQuery>,
 ) -> Result<Response> {
-    let mut select =
-        role_profiles::Entity::find().filter(role_profiles::Column::DeletedAt.is_null());
-    if let Some(framework) = &query.framework {
-        select = select.filter(role_profiles::Column::FrameworkSlug.eq(framework));
-    }
-    let profiles = select
-        .order_by_asc(role_profiles::Column::JobTitle)
-        .all(&ctx.db)
-        .await?;
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
-    let mut counts: BTreeMap<Uuid, usize> = BTreeMap::new();
-    for requirement in &requirements {
-        *counts.entry(requirement.role_profile_pid).or_default() += 1;
-    }
+    let profiles = sqlx::query!(
+        r#"SELECT p.pid, p.job_title, p.description, p.source_ref, p.framework_slug, p.profession, p.role_name,
+                  p.level_name, p.level_order, p.management_track,
+                  (SELECT COUNT(*) FROM role_skill_requirements r WHERE r.role_profile_pid = p.pid) AS "requirement_count!"
+             FROM role_profiles p
+            WHERE p.deleted_at IS NULL AND ($1::text IS NULL OR p.framework_slug = $1)
+            ORDER BY p.job_title, p.id"#,
+        query.framework,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let out: Vec<serde_json::Value> = profiles
         .iter()
         .map(|p| {
@@ -150,7 +147,7 @@ async fn list_profiles(
                 "job_title": p.job_title,
                 "description": p.description,
                 "source_ref": p.source_ref,
-                "requirement_count": counts.get(&p.pid).copied().unwrap_or(0),
+                "requirement_count": p.requirement_count,
                 "framework": p.framework_slug,
                 "profession": p.profession,
                 "role_name": p.role_name,
@@ -168,19 +165,25 @@ async fn list_profiles(
 /// and how many profiles each supplied.
 #[debug_handler]
 async fn list_frameworks(State(ctx): State<AppContext>) -> Result<Response> {
-    let frameworks = capability_frameworks::Entity::find()
-        .order_by_asc(capability_frameworks::Column::Name)
-        .all(&ctx.db)
-        .await?;
-    let profiles = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .filter(role_profiles::Column::FrameworkSlug.is_not_null())
-        .all(&ctx.db)
-        .await?;
+    let frameworks = sqlx::query_as!(
+        capability_frameworks::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, slug, name, source_url, licence,
+                  attribution, scale_max, scale_labels, imported_on, note, version, redistribution, licence_holder,
+                  licence_reference, licence_checked_on
+             FROM capability_frameworks ORDER BY name, id"#,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let profiles = sqlx::query!(
+        "SELECT framework_slug, profession, role_name FROM role_profiles
+          WHERE deleted_at IS NULL AND framework_slug IS NOT NULL"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let out: Vec<serde_json::Value> = frameworks
         .iter()
         .map(|f| {
-            let mine: Vec<&role_profiles::Model> = profiles
+            let mine: Vec<_> = profiles
                 .iter()
                 .filter(|p| p.framework_slug.as_deref() == Some(f.slug.as_str()))
                 .collect();
@@ -210,17 +213,45 @@ async fn list_frameworks(State(ctx): State<AppContext>) -> Result<Response> {
     format::json(out)
 }
 
+/// A profile's requirements, in the order they were recorded.
+async fn requirements_of(
+    ctx: &AppContext,
+    profile_pid: Uuid,
+) -> Result<Vec<role_skill_requirements::Model>> {
+    Ok(sqlx::query_as!(
+        role_skill_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_profile_pid, skill_pid,
+                  min_proficiency, importance, note, source_framework, source_level, source_scale_max
+             FROM role_skill_requirements WHERE role_profile_pid = $1 ORDER BY id"#,
+        profile_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// Every skill's name, retired ones too: a requirement or a declaration may still name one.
+async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
+    Ok(sqlx::query!("SELECT pid, name FROM skills")
+        .fetch_all(db::pool(ctx))
+        .await?
+        .into_iter()
+        .map(|s| (s.pid, s.name))
+        .collect())
+}
+
 /// `GET /api/role-profiles/{pid}` — a profile with its requirements,
 /// critical first.
 #[debug_handler]
 async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let profile = find_profile(&ctx, &pid).await?;
-    let mut requirements = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
-        .await?;
-    let skill_rows = skills::Entity::find().all(&ctx.db).await?;
-    let skill_of: BTreeMap<Uuid, &skills::Model> = skill_rows.iter().map(|s| (s.pid, s)).collect();
+    let mut requirements = requirements_of(&ctx, profile.pid).await?;
+    let skill_of: BTreeMap<Uuid, (String, String)> =
+        sqlx::query!("SELECT pid, name, category FROM skills")
+            .fetch_all(db::pool(&ctx))
+            .await?
+            .into_iter()
+            .map(|s| (s.pid, (s.name, s.category)))
+            .collect();
     let rank = |importance: &str| {
         rules::IMPORTANCES
             .iter()
@@ -230,22 +261,22 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
     requirements.sort_by_key(|r| {
         (
             rank(&r.importance),
-            skill_of.get(&r.skill_pid).map(|s| s.name.clone()),
+            skill_of.get(&r.skill_pid).map(|s| s.0.clone()),
         )
     });
     let stated: Vec<_> = requirements
         .iter()
         .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
         .collect();
-    let described = super::sfia::native_descriptions(&ctx.db, &stated).await?;
-    let framework_names = super::sfia::framework_names(&ctx.db).await?;
+    let described = native_descriptions(&ctx, &stated).await?;
+    let framework_names = framework_names(&ctx).await?;
     let out: Vec<serde_json::Value> = requirements
         .iter()
         .map(|r| {
             serde_json::json!({
                 "skill_pid": r.skill_pid,
-                "skill": skill_of.get(&r.skill_pid).map(|s| s.name.clone()),
-                "category": skill_of.get(&r.skill_pid).map(|s| s.category.clone()),
+                "skill": skill_of.get(&r.skill_pid).map(|s| s.0.clone()),
+                "category": skill_of.get(&r.skill_pid).map(|s| s.1.clone()),
                 "min_proficiency": r.min_proficiency,
                 "importance": r.importance,
                 "note": r.note,
@@ -260,10 +291,13 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
         .collect();
     let framework = match &profile.framework_slug {
         Some(slug) => {
-            capability_frameworks::Entity::find()
-                .filter(capability_frameworks::Column::Slug.eq(slug))
-                .one(&ctx.db)
-                .await?
+            sqlx::query!(
+                "SELECT slug, name, licence, attribution, scale_max, scale_labels, note
+                   FROM capability_frameworks WHERE slug = $1",
+                slug,
+            )
+            .fetch_optional(db::pool(&ctx))
+            .await?
         }
         None => None,
     };
@@ -295,12 +329,8 @@ async fn set_requirement(
     Path(pid): Path<String>,
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
-    let native = super::sfia::resolve_native(
-        &ctx.db,
-        payload.framework.as_deref(),
-        payload.framework_level,
-    )
-    .await?;
+    let native =
+        resolve_native(&ctx, payload.framework.as_deref(), payload.framework_level).await?;
     let min_proficiency = payload
         .min_proficiency
         .or_else(|| native.as_ref().map(|n| n.wpm))
@@ -313,54 +343,68 @@ async fn set_requirement(
     }
     ensure_valid(&problems.into_vec())?;
     let profile = find_profile(&ctx, &pid).await?;
-    let skill = skills::Entity::find()
-        .filter(skills::Column::Pid.eq(payload.skill_pid))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let skill = sqlx::query!(
+        "SELECT pid, name FROM skills WHERE pid = $1 AND deleted_at IS NULL",
+        payload.skill_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if let Some(n) = &native {
-        super::sfia::check_defined(&ctx.db, skill.pid, n).await?;
+        check_defined(&ctx, skill.pid, n).await?;
     }
-    let existing = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .filter(role_skill_requirements::Column::SkillPid.eq(skill.pid))
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
+    let existing = sqlx::query_scalar!(
+        "SELECT id FROM role_skill_requirements WHERE role_profile_pid = $1 AND skill_pid = $2",
+        profile.pid,
+        skill.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     match existing {
-        Some(row) => {
-            let mut active: role_skill_requirements::ActiveModel = row.into();
-            active.min_proficiency = ActiveValue::set(min_proficiency);
-            active.importance = ActiveValue::set(payload.importance.clone());
-            active.note = ActiveValue::set(payload.note.clone());
-            if let Some(n) = &native {
-                // Only when a native level is stated: an edit that gives none leaves the imported one as it was.
-                active.source_framework = ActiveValue::set(Some(n.framework.clone()));
-                active.source_level = ActiveValue::set(Some(n.level));
-                active.source_scale_max = ActiveValue::set(Some(n.scale_max));
-            }
-            active.update(&txn).await?;
+        Some(id) => {
+            // The native level only when one is stated: an edit that gives none leaves the imported one as it was.
+            sqlx::query!(
+                "UPDATE role_skill_requirements
+                    SET min_proficiency = $2, importance = $3, note = $4,
+                        source_framework = CASE WHEN $5 THEN $6 ELSE source_framework END,
+                        source_level = CASE WHEN $5 THEN $7 ELSE source_level END,
+                        source_scale_max = CASE WHEN $5 THEN $8 ELSE source_scale_max END
+                  WHERE id = $1",
+                id,
+                min_proficiency,
+                payload.importance,
+                payload.note,
+                native.is_some(),
+                native.as_ref().map(|n| n.framework.clone()),
+                native.as_ref().map(|n| n.level),
+                native.as_ref().map(|n| n.scale_max),
+            )
+            .execute(&mut *tx)
+            .await?;
         }
         None => {
-            role_skill_requirements::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                role_profile_pid: ActiveValue::set(profile.pid),
-                skill_pid: ActiveValue::set(skill.pid),
-                min_proficiency: ActiveValue::set(min_proficiency),
-                importance: ActiveValue::set(payload.importance.clone()),
-                note: ActiveValue::set(payload.note.clone()),
-                source_framework: ActiveValue::set(native.as_ref().map(|n| n.framework.clone())),
-                source_level: ActiveValue::set(native.as_ref().map(|n| n.level)),
-                source_scale_max: ActiveValue::set(native.as_ref().map(|n| n.scale_max)),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query!(
+                "INSERT INTO role_skill_requirements
+                        (pid, role_profile_pid, skill_pid, min_proficiency, importance, note, source_framework, source_level,
+                         source_scale_max)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+                Uuid::new_v4(),
+                profile.pid,
+                skill.pid,
+                min_proficiency,
+                payload.importance,
+                payload.note,
+                native.as_ref().map(|n| n.framework.clone()),
+                native.as_ref().map(|n| n.level),
+                native.as_ref().map(|n| n.scale_max),
+            )
+            .execute(&mut *tx)
             .await?;
         }
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "role_profile",
         profile.pid,
         "requirement_set",
@@ -372,7 +416,7 @@ async fn set_requirement(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -386,16 +430,20 @@ async fn remove_requirement(
 ) -> Result<Response> {
     let profile = find_profile(&ctx, &pid).await?;
     let skill_pid = records::parse_pid(&skill_pid)?;
-    let row = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let id = sqlx::query_scalar!(
+        "SELECT id FROM role_skill_requirements WHERE role_profile_pid = $1 AND skill_pid = $2",
+        profile.pid,
+        skill_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM role_skill_requirements WHERE id = $1", id)
+        .execute(&mut *tx)
+        .await?;
+    db::audit(
+        &mut tx,
         "role_profile",
         profile.pid,
         "requirement_removed",
@@ -403,7 +451,7 @@ async fn remove_requirement(
         Some(serde_json::json!({ "skill_pid": skill_pid })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -424,28 +472,21 @@ struct RoleGapQuery {
 async fn worker_role_gap(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<RoleGapQuery>,
+    axa::extract::Query(query): axa::extract::Query<RoleGapQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let profile = find_profile(&ctx, &query.role_profile_pid.to_string()).await?;
-    let requirements = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
-        .await?;
-    let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| (d.skill_pid, d.proficiency))
-        .collect();
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
+    let requirements = requirements_of(&ctx, profile.pid).await?;
+    let declared: BTreeMap<Uuid, i32> = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|d| (d.skill_pid, d.proficiency))
+    .collect();
+    let names = skill_names(&ctx).await?;
 
     let mut rows = Vec::with_capacity(requirements.len());
     let mut graded: Vec<(String, &'static str)> = Vec::with_capacity(requirements.len());
@@ -486,29 +527,22 @@ async fn worker_role_gap(
 async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let profile = find_profile(&ctx, &pid).await?;
     let today = chrono::Utc::now().date_naive();
-    let employed: Vec<Uuid> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
-        .map(|w| w.pid)
-        .collect();
+    let employed: Vec<Uuid> =
+        sqlx::query!("SELECT pid, hired_on, terminated_on FROM workers WHERE deleted_at IS NULL")
+            .fetch_all(db::pool(&ctx))
+            .await?
+            .into_iter()
+            .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+            .map(|w| w.pid)
+            .collect();
     let headcount = employed.len();
-    let requirements = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
-        .await?;
-    let declarations = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
-        .collect();
+    let requirements = requirements_of(&ctx, profile.pid).await?;
+    let declarations = sqlx::query!(
+        "SELECT worker_pid, skill_pid, proficiency FROM worker_skills WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let names = skill_names(&ctx).await?;
     // (worker, skill) → proficiency, employed workers only.
     let employed_set: std::collections::HashSet<Uuid> = employed.into_iter().collect();
     let have: BTreeMap<(Uuid, Uuid), i32> = declarations
@@ -587,25 +621,36 @@ async fn progression(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
     ) else {
         return format::json(serde_json::json!({ "profile": profile.job_title, "next": [] }));
     };
-    let siblings = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .filter(role_profiles::Column::FrameworkSlug.eq(&framework))
-        .filter(role_profiles::Column::Profession.eq(&profession))
-        .filter(role_profiles::Column::RoleName.eq(&role))
-        .all(&ctx.db)
-        .await?;
+    let siblings = sqlx::query!(
+        "SELECT pid, job_title, level_order, management_track FROM role_profiles
+          WHERE deleted_at IS NULL AND framework_slug = $1 AND profession = $2 AND role_name = $3
+          ORDER BY id",
+        framework,
+        profession,
+        role,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let next_order = siblings
         .iter()
         .filter_map(|p| p.level_order)
         .filter(|o| *o > order)
         .min();
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|s| (s.pid, s.name))
+    let wanted: Vec<Uuid> = siblings
+        .iter()
+        .map(|p| p.pid)
+        .chain(std::iter::once(profile.pid))
         .collect();
+    let requirements = sqlx::query_as!(
+        role_skill_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_profile_pid, skill_pid,
+                  min_proficiency, importance, note, source_framework, source_level, source_scale_max
+             FROM role_skill_requirements WHERE role_profile_pid = ANY($1) ORDER BY id"#,
+        &wanted,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let names = skill_names(&ctx).await?;
     let current = requirement_pairs(&requirements, profile.pid, &names);
     let next: Vec<serde_json::Value> = siblings
         .iter()
@@ -634,12 +679,17 @@ async fn progression(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
 
 /// Find a live profile by pid string.
 async fn find_profile(ctx: &AppContext, pid: &str) -> Result<role_profiles::Model> {
-    role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        role_profiles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, job_title, description, source_ref,
+                  framework_slug, external_ref, profession, role_name, level_name, level_order, management_track,
+                  job_level_framework, job_level, pay_scale_id, pay_band, deleted_at AS "deleted_at: _"
+             FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// The role-profile routes.

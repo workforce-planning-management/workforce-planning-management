@@ -14,10 +14,10 @@ repository = "https://github.com/workforce-planning-management/workforce-plannin
 license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
 keywords = ["wpm", "hr", "payroll", "ats", "workforce"]
 categories = ["development-tools", "rust-patterns"]
-include = ["src/**/*", "config/**/*", "README.md", "CHANGELOG.md"]
+include = ["src/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.1", features = ["sea-orm"] }
+axa = { version = "0.11", features = ["cursor-pagination", "problem", "ratelimit", "sea-orm", "sqlx"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -41,7 +41,7 @@ ed25519-dalek = { version = "3.0.0" }
 base64 = { version = "0.23" }
 axa = { workspace = true }
 # The schedule's cron expressions (`src/scheduler.rs`).
-cron = { version = "0.15" }
+cron = { version = "0.17" }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
@@ -58,11 +58,21 @@ axum = { version = "0.8" }
 tower = { version = "0.5", default-features = false, features = ["util"] }
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-migration = { package = "workforce-planning-management-migration", path = "migration", version = "0.1.3" }
 sea-orm = { version = "2.0", features = [
   "sqlx-postgres",
   "runtime-tokio-rustls",
   "macros",
+] }
+# Plain SQL, checked at build time (WPM-D184). The same `sqlx` as SeaORM's, so both use one pool while SeaORM is retired.
+sqlx = { version = "0.9", default-features = false, features = [
+  "chrono",
+  "json",
+  "macros",
+  "postgres",
+  "runtime-tokio",
+  "sqlx-toml",
+  "tls-rustls-ring-webpki",
+  "uuid",
 ] }
 chrono = { version = "0.4" }
 uuid = { version = "1.29", features = ["v4", "serde"] }
@@ -113,9 +123,10 @@ path = "src/bin/main.rs"
 required-features = []
 
 [dev-dependencies]
-axa = { workspace = true, features = ["testing"] }
-# Name the `TestServer` type in shared request-test helpers (same
-# version axa's testing feature uses).
+axa = { workspace = true }
+axa-test = { version = "0.2" }
+# Name `axum_test::TestResponse` in shared request-test helpers (the same
+# version `axa-test` uses).
 axum-test = { version = "21.1.0" }
 tokio = { version = "1.54", default-features = false, features = [
   "rt-multi-thread",

@@ -29,7 +29,7 @@ pub fn spec() -> Value {
         "paths": {
             "/api/workers": {
                 "post": { "tags": ["hr-core"], "summary": "Create a worker (onboarding status; person/organization URNs; salary minor units)", "responses": created },
-                "get": { "tags": ["hr-core"], "summary": "List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does", "responses": ok("Workers, or the fields asked for of each") }
+                "get": { "tags": ["hr-core"], "summary": "List workers (?department=&status=&limit=&cursor=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does", "responses": ok("Workers, or the fields asked for of each") }
             },
             "/api/workers/{pid}": {
                 "get": { "tags": ["hr-core"], "summary": "Fetch a worker (salary read audited; mask honoured)", "responses": ok("Worker") },
@@ -199,7 +199,7 @@ pub fn spec() -> Value {
             "/api/rota-swap-requests/{pid}/decline": { "post": { "tags": ["workforce"], "summary": "Decline a swap request", "responses": ok("Ok") } },
             "/api/rota-swap-requests/{pid}/cancel": { "post": { "tags": ["workforce"], "summary": "Withdraw an open swap request", "responses": ok("Ok") } },
             "/api/workers/{pid}/swap-requests": { "get": { "tags": ["workforce"], "summary": "A person's open swap requests: incoming (asked of them) and outgoing", "responses": ok("SwapRequests") } },
-            "/api/announcements": { "get": { "tags": ["hr-core"], "summary": "The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&offset=; include=all is for editors)", "responses": ok("Announcements") }, "post": { "tags": ["hr-core"], "summary": "Post an announcement (organization editors): title, plain-text body, optional pin, schedule and expiry", "responses": ok("Pid") } },
+            "/api/announcements": { "get": { "tags": ["hr-core"], "summary": "The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&cursor=; include=all is for editors)", "responses": ok("Announcements") }, "post": { "tags": ["hr-core"], "summary": "Post an announcement (organization editors): title, plain-text body, optional pin, schedule and expiry", "responses": ok("Pid") } },
             "/api/announcements/{pid}": { "get": { "tags": ["hr-core"], "summary": "One announcement", "responses": ok("Announcement") }, "put": { "tags": ["hr-core"], "summary": "Edit an announcement", "responses": ok("Announcement") }, "delete": { "tags": ["hr-core"], "summary": "Retire an announcement", "responses": ok("Ok") } },
             "/api/announcements/{pid}/read": { "post": { "tags": ["hr-core"], "summary": "Mark an announcement read for a worker (themself or HR); idempotent", "responses": ok("Ok") } },
             "/api/workers/{pid}/announcement-reads": { "get": { "tags": ["hr-core"], "summary": "The announcements this person has read (ids); theirs alone", "responses": ok("Pids") } },
@@ -223,7 +223,7 @@ pub fn spec() -> Value {
             "/api/movements/{pid}/handover": { "get": { "tags": ["hr-core"], "summary": "Everything a leaver still holds as of their last day: direct reports, dotted-line reports, group lead, rota seat and swaps, backup roles, mentorships, shifts, tasks, access", "responses": ok("Handover") }, "post": { "tags": ["hr-core"], "summary": "Reassign (or close) one thing the leaver holds; a direct report needs a new manager, access can only be revoked; audited, new holder notified", "responses": ok("Reassigned") } },
             "/api/movements/{pid}/handover/all": { "post": { "tags": ["hr-core"], "summary": "Hand everything that can be handed over to one successor and revoke access; each item audited, failures reported", "responses": ok("HandedOver") } },
             "/api/movements/{pid}/handover/actions": { "get": { "tags": ["hr-core"], "summary": "The audit trail of the handover, oldest first", "responses": ok("HandoverActions") } },
-            "/api/directory": { "get": { "tags": ["hr-core"], "summary": "Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&offset=); no salary or dates", "responses": ok("Directory entries") } },
+            "/api/directory": { "get": { "tags": ["hr-core"], "summary": "Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&cursor=); no salary or dates", "responses": ok("Directory entries") } },
             "/api/workers/{pid}/job-level": { "get": { "tags": ["hr-core"], "summary": "The worker's job level on a reference ladder, or null; readable by the worker and HR only", "responses": ok("JobLevel") }, "put": { "tags": ["hr-core"], "summary": "Set the worker's level (framework, level, optional effective_on not in the future); the audit entry names no level", "responses": ok("JobLevel") }, "delete": { "tags": ["hr-core"], "summary": "Clear the worker's level", "responses": ok("Cleared") } },
             "/api/role-profiles/{pid}/grade": { "get": { "tags": ["roles"], "summary": "A role's job level and pay band (either may be null)", "responses": ok("Grade") }, "put": { "tags": ["roles"], "summary": "Set a role's job level and/or pay band; absent parts are cleared; a link made by the editor, never derived", "responses": ok("Grade") }, "delete": { "tags": ["roles"], "summary": "Clear a role's grade", "responses": ok("Cleared") } },
             "/api/workers/{pid}/pay-position": { "get": { "tags": ["hr-core"], "summary": "The worker's band and step on a reference pay scale, what it pays, and when they become eligible for the next step; the worker and HR only", "responses": ok("PayPosition") }, "put": { "tags": ["hr-core"], "summary": "Set the worker's scale, band and step (and step_since, not in the future); the audit entry names none of them", "responses": ok("PayPosition") }, "delete": { "tags": ["hr-core"], "summary": "Clear the worker's pay position", "responses": ok("Cleared") } },
@@ -1569,6 +1569,17 @@ fn decorate(document: &mut Value) {
         let Some(item) = item.as_object_mut() else {
             continue;
         };
+        for operation in item.values_mut().filter_map(Value::as_object_mut) {
+            if let Some(responses) = operation
+                .get_mut("responses")
+                .and_then(Value::as_object_mut)
+            {
+                responses.insert(
+                    "default".into(),
+                    json!({ "$ref": "#/components/responses/Error" }),
+                );
+            }
+        }
         for method in MUTATING {
             let Some(operation) = item.get_mut(method).and_then(Value::as_object_mut) else {
                 continue;
@@ -1617,18 +1628,32 @@ fn components() -> Value {
             }
         },
         "responses": {
+            "Error": {
+                "description": "An error, as RFC 9457 problem details",
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+            },
             "IdempotencyInProgress": {
                 "description": "A request with this Idempotency-Key is still running; try again after Retry-After seconds",
                 "headers": { "Retry-After": { "schema": { "type": "integer" } } },
-                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
             },
             "IdempotencyRefused": {
                 "description": "Validation failure, or the Idempotency-Key is malformed or was used for a different request",
-                "content": { "text/plain": { "schema": { "$ref": "#/components/schemas/PlainTextError" } } }
+                "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
             }
         },
         "schemas": {
-            "PlainTextError": { "type": "string", "description": "A sentence saying what to change" },
+            "Problem": {
+                "type": "object", "required": ["type", "title", "status"],
+                "description": "An error, as RFC 9457 problem details",
+                "properties": {
+                    "type": { "type": "string", "example": "about:blank" },
+                    "title": { "type": "string", "description": "The status's standard reason", "example": "Unprocessable Entity" },
+                    "status": { "type": "integer", "example": 422 },
+                    "detail": { "type": "string", "description": "A sentence saying what to change", "example": "name is required" },
+                    "code": { "type": "string", "description": "A short reason for code to read, where the refusal has one", "example": "validation" }
+                }
+            },
             "PostFundingKind": { "type": "string", "enum": ["core", "time_limited", "external", "programme"] },
             "PostFundingPayload": {
                 "type": "object", "required": ["kind"],

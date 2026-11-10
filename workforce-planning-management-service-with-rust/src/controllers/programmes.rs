@@ -6,8 +6,7 @@ use axa::prelude::*;
 use serde_json::json;
 
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::post_fundings;
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
 use crate::models::memberships;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::programmes::{OnProgramme, rollup};
@@ -22,11 +21,12 @@ const MONTHS: u32 = 12;
 #[debug_handler]
 async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
-    let funded = post_fundings::Entity::find()
-        .filter(post_fundings::Column::ProgrammeRef.is_not_null())
-        .all(&ctx.db)
-        .await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    let funded = sqlx::query!(
+        "SELECT worker_pid, programme_ref, ends_on FROM post_fundings WHERE programme_ref IS NOT NULL"
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let funded_pids: Vec<uuid::Uuid> = funded
         .iter()
         .map(|f| f.worker_pid)
@@ -49,8 +49,8 @@ async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         .collect();
     let floor = DEFAULT_FLOOR;
     let result = rollup(&rows, today, MONTHS, floor);
-    Audit::record(
-        &ctx.db,
+    db::audit(
+        &mut *pool(&ctx).acquire().await?,
         "contingent_workforce",
         uuid::Uuid::nil(),
         "programme_rollup_read",

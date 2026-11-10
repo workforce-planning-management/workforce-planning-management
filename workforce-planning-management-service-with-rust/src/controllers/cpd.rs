@@ -11,17 +11,15 @@
 
 use super::ratio_json;
 use crate::rules::display;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, QuerySelect, QueryTrait, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    cpd_entries, cpd_requirements, professional_registrations, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{cpd_entries, cpd_requirements, professional_registrations};
 use crate::models::records;
 use crate::rules::cpd as rules;
 use crate::rules::talent::ratio;
@@ -100,42 +98,47 @@ async fn create_requirement(
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
     let (name, required, job_title) = checked_requirement(&payload)?;
-    let txn = ctx.db.begin().await?;
-    let row = cpd_requirements::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(name),
-        unit: ActiveValue::set(payload.unit.clone()),
-        required_hundredths: ActiveValue::set(required),
-        period_start: ActiveValue::set(payload.period_start),
-        period_end: ActiveValue::set(payload.period_end),
-        job_title: ActiveValue::set(job_title),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO cpd_requirements (pid, name, unit, required_hundredths, period_start, period_end, job_title)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        pid,
+        name,
+        payload.unit,
+        required,
+        payload.period_start,
+        payload.period_end,
+        job_title,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "cpd_requirement",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
 async fn find_requirement(ctx: &AppContext, pid: &str) -> Result<cpd_requirements::Model> {
-    cpd_requirements::Entity::find()
-        .filter(cpd_requirements::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(cpd_requirements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        cpd_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, unit, required_hundredths,
+                  period_start, period_end, job_title, deleted_at AS "deleted_at: _"
+             FROM cpd_requirements WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/cpd-requirements/{pid}` — correct a requirement (WPM-R139). The unit stays: entries were
@@ -154,26 +157,31 @@ async fn update_requirement(
         ));
     }
     let (name, required, job_title) = checked_requirement(&payload)?;
-    let mut active: cpd_requirements::ActiveModel = existing.into();
-    active.name = ActiveValue::set(name);
-    active.required_hundredths = ActiveValue::set(required);
-    active.period_start = ActiveValue::set(payload.period_start);
-    active.period_end = ActiveValue::set(payload.period_end);
-    active.job_title = ActiveValue::set(job_title);
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE cpd_requirements SET name = $2, required_hundredths = $3, period_start = $4, period_end = $5, job_title = $6
+          WHERE id = $1",
+        existing.id,
+        name,
+        required,
+        payload.period_start,
+        payload.period_end,
+        job_title,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "cpd_requirement",
-        row.pid,
+        existing.pid,
         "updated",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: existing.pid.to_string(),
     })
 }
 
@@ -185,20 +193,23 @@ async fn delete_requirement(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let existing = find_requirement(&ctx, &pid).await?;
-    let mut active: cpd_requirements::ActiveModel = existing.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE cpd_requirements SET deleted_at = now() WHERE id = $1",
+        existing.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "cpd_requirement",
-        row.pid,
+        existing.pid,
         "withdrawn",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -225,11 +236,14 @@ async fn list_requirements(State(ctx): State<AppContext>) -> Result<Response> {
 }
 
 async fn live_requirements(ctx: &AppContext) -> Result<Vec<cpd_requirements::Model>> {
-    Ok(cpd_requirements::Entity::find()
-        .filter(cpd_requirements::Column::DeletedAt.is_null())
-        .order_by_desc(cpd_requirements::Column::PeriodStart)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        cpd_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, unit, required_hundredths,
+                  period_start, period_end, job_title, deleted_at AS "deleted_at: _"
+             FROM cpd_requirements WHERE deleted_at IS NULL ORDER BY period_start DESC"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 // ─── Entries ────────────────────────────────────────────────────────────────
@@ -260,7 +274,7 @@ async fn create_entry(
     Path(pid): Path<String>,
     Json(payload): Json<EntryPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("activity", &payload.activity);
     problems.cap_text("activity", &payload.activity);
@@ -285,41 +299,39 @@ async fn create_entry(
     )
     .map_err(|e| unprocessable(&e))?;
     if let Some(skill) = payload.skill_pid {
-        let known = crate::models::_entities::skills::Entity::find()
-            .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
-            .filter(crate::models::_entities::skills::Column::DeletedAt.is_null())
-            .count(&ctx.db)
-            .await?;
-        if known == 0 {
+        let known = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM skills WHERE pid = $1 AND deleted_at IS NULL LIMIT 1"#,
+            skill
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?;
+        if known.is_none() {
             return Err(unprocessable("skill_pid is not a skill in the catalogue"));
         }
     }
-    let txn = ctx.db.begin().await?;
-    let row = cpd_entries::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        skill_pid: ActiveValue::set(payload.skill_pid),
-        entry_date: ActiveValue::set(payload.entry_date),
-        activity: ActiveValue::set(payload.activity.trim().to_string()),
-        category: ActiveValue::set(payload.category.clone()),
-        unit: ActiveValue::set(payload.unit.clone()),
-        amount_hundredths: ActiveValue::set(amount),
-        evidence_note: ActiveValue::set(payload.evidence_note.clone()),
-        evidence_url: ActiveValue::set(payload.evidence_url.clone()),
-        source: ActiveValue::set("manual".to_string()),
-        external_ref: ActiveValue::set(None),
-        course_ref: ActiveValue::set(None),
-        verified_on: ActiveValue::set(None),
-        verified_by: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO cpd_entries (pid, worker_pid, skill_pid, entry_date, activity, category, unit, amount_hundredths,
+                                  evidence_note, evidence_url, source)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'manual')",
+        pid,
+        worker.pid,
+        payload.skill_pid,
+        payload.entry_date,
+        payload.activity.trim(),
+        payload.category,
+        payload.unit,
+        amount,
+        payload.evidence_note,
+        payload.evidence_url,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "cpd_entry", row.pid, "recorded", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "cpd_entry", pid, "recorded", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -343,18 +355,22 @@ fn entry_json(e: &cpd_entries::Model) -> serde_json::Value {
 }
 
 async fn worker_entries(ctx: &AppContext, worker_pid: Uuid) -> Result<Vec<cpd_entries::Model>> {
-    Ok(cpd_entries::Entity::find()
-        .filter(cpd_entries::Column::WorkerPid.eq(worker_pid))
-        .filter(cpd_entries::Column::DeletedAt.is_null())
-        .order_by_desc(cpd_entries::Column::EntryDate)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        cpd_entries::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, entry_date, activity,
+                  category, unit, amount_hundredths, evidence_note, evidence_url, source, external_ref, course_ref,
+                  verified_on, verified_by, skill_pid, deleted_at AS "deleted_at: _"
+             FROM cpd_entries WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY entry_date DESC"#,
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/cpd-entries` — a worker's ledger, newest first.
 #[debug_handler]
 async fn list_entries(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = worker_entries(&ctx, worker.pid).await?;
     format::json(rows.iter().map(entry_json).collect::<Vec<_>>())
 }
@@ -371,13 +387,29 @@ async fn verify_entry(
     if entry.verified_on.is_some() {
         return Err(unprocessable("entry is already verified"));
     }
-    let mut active: cpd_entries::ActiveModel = entry.into();
-    active.verified_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
-    active.verified_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "cpd_entry", row.pid, "verified", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        cpd_entries::Model,
+        r#"UPDATE cpd_entries SET verified_on = $2, verified_by = $3 WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, entry_date, activity,
+                     category, unit, amount_hundredths, evidence_note, evidence_url, source, external_ref, course_ref,
+                     verified_on, verified_by, skill_pid, deleted_at AS "deleted_at: _""#,
+        entry.id,
+        chrono::Utc::now().date_naive(),
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "cpd_entry",
+        row.pid,
+        "verified",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(entry_json(&row))
 }
 
@@ -389,30 +421,38 @@ async fn delete_entry(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let entry = find_entry(&ctx, &pid).await?;
-    let mut active: cpd_entries::ActiveModel = entry.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE cpd_entries SET deleted_at = now() WHERE id = $1",
+        entry.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "cpd_entry",
-        row.pid,
+        entry.pid,
         "withdrawn",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
 async fn find_entry(ctx: &AppContext, pid: &str) -> Result<cpd_entries::Model> {
-    cpd_entries::Entity::find()
-        .filter(cpd_entries::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(cpd_entries::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        cpd_entries::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, entry_date, activity,
+                  category, unit, amount_hundredths, evidence_note, evidence_url, source, external_ref, course_ref,
+                  verified_on, verified_by, skill_pid, deleted_at AS "deleted_at: _"
+             FROM cpd_entries WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 // ─── Registrations ──────────────────────────────────────────────────────────
@@ -438,7 +478,7 @@ async fn create_registration(
     Path(pid): Path<String>,
     Json(payload): Json<RegistrationPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("body", &payload.body);
     problems.cap_text("body", &payload.body);
@@ -451,31 +491,32 @@ async fn create_registration(
         problems.push("expires_on must not be before registered_on");
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = professional_registrations::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        body: ActiveValue::set(payload.body.trim().to_string()),
-        reference: ActiveValue::set(payload.reference.clone()),
-        registered_on: ActiveValue::set(payload.registered_on),
-        expires_on: ActiveValue::set(payload.expires_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO professional_registrations (pid, worker_pid, body, reference, registered_on, expires_on)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        worker.pid,
+        payload.body.trim(),
+        payload.reference,
+        payload.registered_on,
+        payload.expires_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "professional_registration",
-        row.pid,
+        pid,
         "recorded",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -483,12 +524,15 @@ async fn worker_registrations(
     ctx: &AppContext,
     worker_pid: Uuid,
 ) -> Result<Vec<professional_registrations::Model>> {
-    Ok(professional_registrations::Entity::find()
-        .filter(professional_registrations::Column::WorkerPid.eq(worker_pid))
-        .filter(professional_registrations::Column::DeletedAt.is_null())
-        .order_by_asc(professional_registrations::Column::ExpiresOn)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        professional_registrations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, body, reference,
+                  registered_on, expires_on, deleted_at AS "deleted_at: _"
+             FROM professional_registrations WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY expires_on"#,
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/registrations` — with each one's expiry status.
@@ -497,7 +541,7 @@ async fn list_registrations(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let today = chrono::Utc::now().date_naive();
     let rows = worker_registrations(&ctx, worker.pid).await?;
     let out: Vec<serde_json::Value> = rows
@@ -524,7 +568,7 @@ async fn list_registrations(
 /// the worker's registrations with expiry status.
 #[debug_handler]
 async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let today = chrono::Utc::now().date_naive();
     let entries = worker_entries(&ctx, worker.pid).await?;
     let requirements: Vec<serde_json::Value> = live_requirements(&ctx)
@@ -590,17 +634,13 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
 #[debug_handler]
 async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let employed = || {
-        workers::Entity::find()
-            .filter(workers::Column::DeletedAt.is_null())
-            .filter(workers::Column::HiredOn.lte(today))
-            .filter(
-                Condition::any()
-                    .add(workers::Column::TerminatedOn.is_null())
-                    .add(workers::Column::TerminatedOn.gt(today)),
-            )
-    };
-    let headcount = employed().count(&ctx.db).await?;
+    let headcount = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM workers
+            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
+        today,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     // One aggregate per requirement, worked out by the database: no worker and no entry is read into memory.
     let mut requirements: Vec<serde_json::Value> = Vec::new();
     for r in live_requirements(&ctx).await? {
@@ -619,21 +659,19 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
     // Only the registrations that need attention are read: expired, or expiring inside the warning window.
     let horizon = today + chrono::Days::new(u64::try_from(rules::DEFAULT_WARN_DAYS).unwrap_or(90));
     let (mut expiring, mut expired) = (0usize, 0usize);
-    for registration in professional_registrations::Entity::find()
-        .filter(professional_registrations::Column::DeletedAt.is_null())
-        .filter(professional_registrations::Column::ExpiresOn.lte(horizon))
-        .filter(
-            professional_registrations::Column::WorkerPid.in_subquery(
-                employed()
-                    .select_only()
-                    .column(workers::Column::Pid)
-                    .into_query(),
-            ),
-        )
-        .all(&ctx.db)
-        .await?
+    for expires_on in sqlx::query_scalar!(
+        "SELECT r.expires_on FROM professional_registrations r
+          WHERE r.deleted_at IS NULL AND r.expires_on <= $1
+            AND r.worker_pid IN (SELECT w.pid FROM workers w
+                                  WHERE w.deleted_at IS NULL AND w.hired_on <= $2
+                                    AND (w.terminated_on IS NULL OR w.terminated_on > $2))",
+        horizon,
+        today,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
     {
-        match rules::registration_status(registration.expires_on, today, rules::DEFAULT_WARN_DAYS) {
+        match rules::registration_status(expires_on, today, rules::DEFAULT_WARN_DAYS) {
             "expiring" => expiring += 1,
             "expired" => expired += 1,
             _ => {}
@@ -657,12 +695,10 @@ async fn requirement_counts(
     r: &cpd_requirements::Model,
     today: chrono::NaiveDate,
 ) -> Result<(usize, usize, usize)> {
-    use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-    let statement = Statement::from_sql_and_values(
-        DatabaseBackend::Postgres,
-        "SELECT count(*) AS applicable,
-                count(*) FILTER (WHERE recorded >= $1) AS met,
-                count(*) FILTER (WHERE verified >= $1) AS met_verified
+    let row = sqlx::query!(
+        r#"SELECT count(*) AS "applicable!",
+                count(*) FILTER (WHERE recorded >= $1::bigint) AS "met!",
+                count(*) FILTER (WHERE verified >= $1::bigint) AS "met_verified!"
            FROM (
              SELECT COALESCE(SUM(e.amount_hundredths), 0) AS recorded,
                     COALESCE(SUM(e.amount_hundredths) FILTER (WHERE e.verified_on IS NOT NULL), 0) AS verified
@@ -674,26 +710,22 @@ async fn requirement_counts(
                 AND (w.terminated_on IS NULL OR w.terminated_on > $5)
                 AND ($6::text IS NULL OR lower(btrim(w.job_title)) = lower(btrim($6::text)))
               GROUP BY w.pid
-           ) per_worker",
-        [
-            r.required_hundredths.into(),
-            r.unit.clone().into(),
-            r.period_start.into(),
-            r.period_end.into(),
-            today.into(),
-            r.job_title.clone().into(),
-        ],
-    );
-    let row = ctx
-        .db
-        .query_one_raw(statement)
-        .await?
-        .ok_or_else(|| super::internal("the requirement count returned no row"))?;
-    let count = |name: &str| -> Result<usize> {
-        let n: i64 = row.try_get("", name)?;
-        Ok(usize::try_from(n).unwrap_or(0))
-    };
-    Ok((count("applicable")?, count("met")?, count("met_verified")?))
+           ) per_worker"#,
+        r.required_hundredths,
+        r.unit,
+        r.period_start,
+        r.period_end,
+        today,
+        r.job_title,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?;
+    let count = |n: i64| usize::try_from(n).unwrap_or(0);
+    Ok((
+        count(row.applicable),
+        count(row.met),
+        count(row.met_verified),
+    ))
 }
 
 /// The CPD routes.

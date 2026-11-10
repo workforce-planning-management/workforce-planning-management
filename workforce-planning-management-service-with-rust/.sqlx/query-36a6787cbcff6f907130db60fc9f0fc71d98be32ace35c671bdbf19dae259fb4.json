@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO reviews (pid, cycle_pid, kind, worker_pid, reviewer_ref, status)\n         VALUES ($1, NULL, 'padr', $2, $3, 'draft')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "36a6787cbcff6f907130db60fc9f0fc71d98be32ace35c671bdbf19dae259fb4"
+}

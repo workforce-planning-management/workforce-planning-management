@@ -8,19 +8,19 @@
 //! here is about one person, so it is exported with the worker and erased with them.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{
-    engagement_decisions, engagement_extensions, engagement_status_assessments,
-    worker_contractor_details, workers,
+    engagement_decisions, engagement_extensions, worker_contractor_details,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::rules::engagement as rules;
 use crate::validation::Problems;
@@ -37,13 +37,17 @@ fn extension_json(row: &engagement_extensions::Model) -> serde_json::Value {
 
 async fn extensions_of(
     ctx: &AppContext,
-    worker_pid: uuid::Uuid,
+    worker_pid: Uuid,
 ) -> Result<Vec<engagement_extensions::Model>> {
-    Ok(engagement_extensions::Entity::find()
-        .filter(engagement_extensions::Column::WorkerPid.eq(worker_pid))
-        .order_by_asc(engagement_extensions::Column::Id)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        engagement_extensions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, previous_end, new_end,
+                  reason, decided_by
+             FROM engagement_extensions WHERE worker_pid = $1 ORDER BY id"#,
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/engagement` — the basis, the end date, where it stands, and the
@@ -90,13 +94,17 @@ async fn get_engagement(
 
 async fn decisions_of(
     ctx: &AppContext,
-    worker_pid: uuid::Uuid,
+    worker_pid: Uuid,
 ) -> Result<Vec<engagement_decisions::Model>> {
-    Ok(engagement_decisions::Entity::find()
-        .filter(engagement_decisions::Column::WorkerPid.eq(worker_pid))
-        .order_by_asc(engagement_decisions::Column::Id)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        engagement_decisions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, ends_on, decision,
+                  decided_by, decided_on
+             FROM engagement_decisions WHERE worker_pid = $1 ORDER BY id"#,
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `POST …/engagement/decision` body.
@@ -118,7 +126,7 @@ async fn decide(
     Path(pid): Path<String>,
     Json(payload): Json<DecisionPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     super::flexible_working::ensure_decider(&ctx, &caller, &worker).await?;
     rules::validate_decision(&payload.decision).map_err(|e| unprocessable(&e))?;
     let ends_on = worker
@@ -127,21 +135,23 @@ async fn decide(
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = engagement_decisions::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        ends_on: ActiveValue::set(ends_on),
-        decision: ActiveValue::set(payload.decision.clone()),
-        decided_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        decided_on: ActiveValue::set(Utc::now().date_naive()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO engagement_decisions (pid, worker_pid, ends_on, decision, decided_by, decided_on)
+         VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        worker.pid,
+        ends_on,
+        payload.decision,
+        caller.actor(),
+        Utc::now().date_naive(),
+    )
+    .execute(&mut *tx)
     .await?;
     // The audit entry names the event, not the decision.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "engagement_decision_recorded",
@@ -149,8 +159,8 @@ async fn decide(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "ends_on": row.ends_on, "decision": row.decision }))
+    tx.commit().await?;
+    format::json(json!({ "pid": pid, "ends_on": ends_on, "decision": payload.decision }))
 }
 
 /// `POST …/engagement/extensions` body.
@@ -182,24 +192,32 @@ async fn extend(
         unprocessable("the engagement has no end date to extend; record one first")
     })?;
     rules::validate_extension(previous, payload.new_end).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let row = engagement_extensions::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        previous_end: ActiveValue::set(previous),
-        new_end: ActiveValue::set(payload.new_end),
-        reason: ActiveValue::set(payload.reason.clone().filter(|r| !r.trim().is_empty())),
-        decided_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        engagement_extensions::Model,
+        r#"INSERT INTO engagement_extensions (pid, worker_pid, previous_end, new_end, reason, decided_by)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, previous_end,
+                     new_end, reason, decided_by"#,
+        Uuid::new_v4(),
+        worker.pid,
+        previous,
+        payload.new_end,
+        payload.reason.clone().filter(|r| !r.trim().is_empty()),
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    let mut active: workers::ActiveModel = worker.clone().into();
-    active.engagement_ends_on = ActiveValue::set(Some(payload.new_end));
-    active.update(&txn).await?;
+    sqlx::query!(
+        "UPDATE workers SET engagement_ends_on = $2 WHERE id = $1",
+        worker.id,
+        payload.new_end,
+    )
+    .execute(&mut *tx)
+    .await?;
     // The audit entry names the event, not the reason text.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "engagement_extended",
@@ -207,7 +225,7 @@ async fn extend(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(extension_json(&row))
 }
 
@@ -234,12 +252,17 @@ struct DetailsPayload {
 
 async fn details_of(
     ctx: &AppContext,
-    worker_pid: uuid::Uuid,
+    worker_pid: Uuid,
 ) -> Result<Option<worker_contractor_details::Model>> {
-    Ok(worker_contractor_details::Entity::find()
-        .filter(worker_contractor_details::Column::WorkerPid.eq(worker_pid))
-        .one(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        worker_contractor_details::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, supplier_ref,
+                  supplier_contact_ref, route, rate_minor, rate_currency, rate_basis, recorded_by
+             FROM worker_contractor_details WHERE worker_pid = $1"#,
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// The details as shown. A masked caller sees that a rate exists, not what it is.
@@ -263,7 +286,7 @@ async fn get_details(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -273,8 +296,8 @@ async fn get_details(
     let masked = obligations.iter().any(|o| o == "mask");
     let row = details_of(&ctx, worker.pid).await?;
     if row.as_ref().is_some_and(|r| r.rate_minor.is_some()) && !masked {
-        Audit::record(
-            &ctx.db,
+        db::audit(
+            &mut *db::pool(&ctx).acquire().await?,
             "worker",
             worker.pid,
             "rate_read",
@@ -330,36 +353,32 @@ async fn set_details(
         payload.rate_basis.as_deref(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let recorded_by = caller.actor().map(ToString::to_string);
-    let existing = details_of(&ctx, worker.pid).await?;
-    let txn = ctx.db.begin().await?;
-    let saved = if let Some(row) = existing {
-        let mut active: worker_contractor_details::ActiveModel = row.into();
-        active.supplier_ref = ActiveValue::set(payload.supplier_ref.clone());
-        active.supplier_contact_ref = ActiveValue::set(payload.supplier_contact_ref.clone());
-        active.route = ActiveValue::set(payload.route.clone());
-        active.rate_minor = ActiveValue::set(payload.rate_minor);
-        active.rate_currency = ActiveValue::set(payload.rate_currency.clone());
-        active.rate_basis = ActiveValue::set(payload.rate_basis.clone());
-        active.recorded_by = ActiveValue::set(recorded_by);
-        active.update(&txn).await?
-    } else {
-        worker_contractor_details::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            supplier_ref: ActiveValue::set(payload.supplier_ref.clone()),
-            supplier_contact_ref: ActiveValue::set(payload.supplier_contact_ref.clone()),
-            route: ActiveValue::set(payload.route.clone()),
-            rate_minor: ActiveValue::set(payload.rate_minor),
-            rate_currency: ActiveValue::set(payload.rate_currency.clone()),
-            rate_basis: ActiveValue::set(payload.rate_basis.clone()),
-            recorded_by: ActiveValue::set(recorded_by),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One row per worker: a second save replaces every field of the first.
+    let saved = sqlx::query_as!(
+        worker_contractor_details::Model,
+        r#"INSERT INTO worker_contractor_details
+                  (worker_pid, supplier_ref, supplier_contact_ref, route, rate_minor, rate_currency, rate_basis, recorded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (worker_pid) DO UPDATE
+              SET supplier_ref = EXCLUDED.supplier_ref, supplier_contact_ref = EXCLUDED.supplier_contact_ref,
+                  route = EXCLUDED.route, rate_minor = EXCLUDED.rate_minor, rate_currency = EXCLUDED.rate_currency,
+                  rate_basis = EXCLUDED.rate_basis, recorded_by = EXCLUDED.recorded_by
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, supplier_ref,
+                     supplier_contact_ref, route, rate_minor, rate_currency, rate_basis, recorded_by"#,
+        worker.pid,
+        payload.supplier_ref,
+        payload.supplier_contact_ref,
+        payload.route,
+        payload.rate_minor,
+        payload.rate_currency,
+        payload.rate_basis,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "contractor_details_set",
@@ -367,7 +386,7 @@ async fn set_details(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "contractor_details": details_json(&saved, true) }))
 }
 
@@ -380,12 +399,15 @@ async fn clear_details(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    worker_contractor_details::Entity::delete_by_id(row.id)
-        .exec(&txn)
-        .await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "DELETE FROM worker_contractor_details WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "contractor_details_cleared",
@@ -393,7 +415,7 @@ async fn clear_details(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 
@@ -432,19 +454,21 @@ async fn record_assessment(
     if on > today {
         return Err(unprocessable("assessed_on must not be in the future"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = engagement_status_assessments::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        outcome: ActiveValue::set(payload.outcome.clone()),
-        assessed_on: ActiveValue::set(on),
-        reviewed_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO engagement_status_assessments (pid, worker_pid, outcome, assessed_on, reviewed_by)
+         VALUES ($1, $2, $3, $4, $5)",
+        pid,
+        worker.pid,
+        payload.outcome,
+        on,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "status_assessed",
@@ -452,8 +476,8 @@ async fn record_assessment(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(json!({ "pid": pid }))
 }
 
 /// `GET /api/workers/{pid}/engagement/status-assessments` — newest first.
@@ -464,11 +488,13 @@ async fn list_assessments(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let rows = engagement_status_assessments::Entity::find()
-        .filter(engagement_status_assessments::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(engagement_status_assessments::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, outcome, assessed_on, reviewed_by FROM engagement_status_assessments
+          WHERE worker_pid = $1 ORDER BY id DESC",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(|r| {
@@ -496,23 +522,21 @@ struct MissingQuery {
 async fn missing_end_date(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<MissingQuery>,
+    axa::extract::Query(query): axa::extract::Query<MissingQuery>,
 ) -> Result<Response> {
-    let mut select = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .filter(workers::Column::EngagementEndsOn.is_null())
-        .filter(workers::Column::EmploymentType.is_in(["fixed_term", "contractor"]));
-    if let Some(org) = &query.organization {
-        select = select.filter(workers::Column::OrganizationRef.eq(org));
-    }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        select = select.filter(workers::Column::OrganizationRef.is_in(refs));
-    }
-    let rows = select
-        .order_by_asc(workers::Column::WorkerNumber)
-        .all(&ctx.db)
-        .await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    let rows = sqlx::query!(
+        "SELECT pid, worker_number, department, employment_type, hired_on FROM workers
+          WHERE deleted_at IS NULL AND terminated_on IS NULL AND engagement_ends_on IS NULL
+            AND employment_type IN ('fixed_term', 'contractor')
+            AND ($1::text IS NULL OR organization_ref = $1)
+            AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+          ORDER BY worker_number, id",
+        query.organization,
+        scope.as_deref(),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(|w| {

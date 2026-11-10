@@ -22,7 +22,7 @@ cd workforce-planning-management
 
 ## चरण 2: सेवा शुरू करें
 
-सेवा `DATABASE_URL` पढ़ती है। इसका डिफ़ॉल्ट मान `postgres://loco:loco@localhost:5432/workforce_planning_management_development` है; यदि आपके डेटाबेस का नाम, उपयोगकर्ता या पोर्ट अलग है तो यह चर सेट करें। खाली डेटाबेस तैयार करें और API शुरू करें। साइन-इन केवल इस इंस्टेंस के लिए बंद रहता है, और टूर के लिए दर सीमा बढ़ाई जाती है।
+सेवा `DATABASE_URL` पढ़ती है। इसका डिफ़ॉल्ट मान `postgres://postgres:postgres@localhost:5432/workforce_planning_management_development` है; यदि आपके डेटाबेस का नाम, उपयोगकर्ता या पोर्ट अलग है तो यह चर सेट करें। खाली डेटाबेस तैयार करें और API शुरू करें। साइन-इन केवल इस इंस्टेंस के लिए बंद रहता है, और टूर के लिए दर सीमा बढ़ाई जाती है।
 
 ```sh
 cd workforce-planning-management-service-with-rust

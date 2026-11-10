@@ -11,17 +11,16 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::ensure_org_in_scope;
+use axa::extract::Path;
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
 
 use super::{capacity, cutover, oversight, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{cutovers, early_warnings as warnings, organization_memberships};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db::{self, pool};
+use crate::models::_entities::{cutovers, early_warnings as warnings};
 use crate::rules::capacity::CellStatus;
 use crate::rules::cutover as cutover_rules;
 use crate::rules::early_warning::{self as rules, Key};
@@ -72,12 +71,19 @@ async fn true_now(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<BTree
         }
     }
     // A cutover whose window has not ended and whose people side is at risk.
-    for c in cutovers::Entity::find()
-        .filter(cutovers::Column::OrganizationRef.eq(org))
-        .filter(cutovers::Column::WindowEnd.gte(today))
-        .all(&ctx.db)
-        .await?
-    {
+    let live = sqlx::query_as!(
+        cutovers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                  id, pid, organization_ref, programme_ref, name, site, window_start, window_end,
+                  rota_pid, site_aliases
+           FROM cutovers
+           WHERE organization_ref = $1 AND window_end >= $2"#,
+        org,
+        today,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
+    for c in live {
         let (trained, cover, risk) = cutover::assess(ctx, &c).await?;
         if cutover_rules::overall(&[&trained, &cover, &risk]) == cutover_rules::Readiness::AtRisk {
             found.insert(
@@ -94,21 +100,17 @@ async fn true_now(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<BTree
 
 /// The workers who hold an `hr_admin` membership in the organization.
 async fn hr_admins(ctx: &AppContext, org: &str) -> Result<Vec<Uuid>> {
-    let mut out: Vec<Uuid> = Vec::new();
-    for m in organization_memberships::Entity::find()
-        .filter(organization_memberships::Column::OrganizationRef.eq(org))
-        .filter(organization_memberships::Column::Role.eq("hr_admin"))
-        .filter(organization_memberships::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-    {
-        if let Some(pid) = m.worker_pid
-            && !out.contains(&pid)
-        {
-            out.push(pid);
-        }
-    }
-    Ok(out)
+    Ok(sqlx::query_scalar!(
+        r#"SELECT DISTINCT worker_pid AS "worker_pid!"
+           FROM organization_memberships
+           WHERE organization_ref = $1
+             AND role = 'hr_admin'
+             AND deleted_at IS NULL
+             AND worker_pid IS NOT NULL"#,
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?)
 }
 
 /// Compare what is true on `today` with what is recorded as open, open and clear warnings, and tell
@@ -119,11 +121,13 @@ async fn hr_admins(ctx: &AppContext, org: &str) -> Result<Vec<Uuid>> {
 /// A database error.
 pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Report> {
     let now = true_now(ctx, org, today).await?;
-    let open_rows = warnings::Entity::find()
-        .filter(warnings::Column::OrganizationRef.eq(org))
-        .filter(warnings::Column::ClearedOn.is_null())
-        .all(&ctx.db)
-        .await?;
+    let open_rows = sqlx::query!(
+        "SELECT pid, kind, subject_pid FROM early_warnings
+         WHERE organization_ref = $1 AND cleared_on IS NULL",
+        org,
+    )
+    .fetch_all(pool(ctx))
+    .await?;
     let open: Vec<Key> = open_rows
         .iter()
         .map(|w| Key {
@@ -139,18 +143,22 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
     } else {
         hr_admins(ctx, org).await?
     };
+    let mut connection = pool(ctx).acquire().await?;
     for key in &plan.opened {
         let name = now.get(key).cloned().unwrap_or_default();
-        let row = warnings::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            organization_ref: ActiveValue::set(org.to_string()),
-            kind: ActiveValue::set(key.kind.clone()),
-            subject_pid: ActiveValue::set(key.subject),
-            subject_name: ActiveValue::set(name.clone()),
-            first_true_on: ActiveValue::set(today),
-            ..Default::default()
-        }
-        .insert(&ctx.db)
+        let warning_pid = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO early_warnings
+                 (pid, organization_ref, kind, subject_pid, subject_name, first_true_on)
+             VALUES ($1, $2, $3, $4, $5, $6)",
+            warning_pid,
+            org,
+            key.kind,
+            key.subject,
+            name,
+            today,
+        )
+        .execute(&mut *connection)
         .await?;
         let what = if key.kind == "pool_over_committed" {
             format!("The skill pool \"{name}\" is over-committed in the coming months.")
@@ -160,12 +168,12 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
             format!("The measure \"{name}\" is in breach for the last complete month.")
         };
         for to in &recipients {
-            Notification::push(
-                &ctx.db,
+            db::notify(
+                &mut connection,
                 *to,
                 "early_warning",
                 &what,
-                json!({ "warning_pid": row.pid, "kind": key.kind, "subject_pid": key.subject }),
+                json!({ "warning_pid": warning_pid, "kind": key.kind, "subject_pid": key.subject }),
             )
             .await?;
             report.told += 1;
@@ -177,9 +185,13 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
             .iter()
             .find(|w| w.kind == key.kind && w.subject_pid == key.subject)
         {
-            let mut a: warnings::ActiveModel = row.clone().into();
-            a.cleared_on = ActiveValue::set(Some(today));
-            a.update(&ctx.db).await?;
+            sqlx::query!(
+                "UPDATE early_warnings SET cleared_on = $2 WHERE pid = $1",
+                row.pid,
+                today,
+            )
+            .execute(&mut *connection)
+            .await?;
             report.cleared += 1;
         }
     }
@@ -205,7 +217,7 @@ async fn org_of(ctx: &AppContext, caller: &MaybeAuthUser, q: OrgQuery) -> Result
 async fn run_sweep(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
     let today = chrono::Utc::now().date_naive();
@@ -231,16 +243,22 @@ fn warning_json(w: &warnings::Model, today: NaiveDate) -> serde_json::Value {
 async fn list(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(q): axum::extract::Query<OrgQuery>,
+    axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
     let today = chrono::Utc::now().date_naive();
-    let rows = warnings::Entity::find()
-        .filter(warnings::Column::OrganizationRef.eq(&org))
-        .order_by_desc(warnings::Column::FirstTrueOn)
-        .order_by_desc(warnings::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        warnings::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                   id, pid, organization_ref, kind, subject_pid, subject_name,
+                   first_true_on, cleared_on, acknowledged_on
+           FROM early_warnings
+           WHERE organization_ref = $1
+           ORDER BY first_true_on DESC, id DESC"#,
+        org,
+    )
+    .fetch_all(pool(&ctx))
+    .await?;
     let pairs: Vec<(NaiveDate, Option<NaiveDate>)> = rows
         .iter()
         .map(|w| (w.first_true_on, w.acknowledged_on))
@@ -265,22 +283,36 @@ async fn acknowledge(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let pid = crate::models::records::parse_pid(&pid)?;
-    let row = warnings::Entity::find()
-        .filter(warnings::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        warnings::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
+                   id, pid, organization_ref, kind, subject_pid, subject_name,
+                   first_true_on, cleared_on, acknowledged_on
+           FROM early_warnings WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(&ctx, &caller, &row.organization_ref).await?;
     if row.acknowledged_on.is_some() {
         return Err(unprocessable("this warning is already acknowledged"));
     }
     let today = chrono::Utc::now().date_naive();
-    let mut a: warnings::ActiveModel = row.into();
-    a.acknowledged_on = ActiveValue::set(Some(today));
-    let txn = ctx.db.begin().await?;
-    let row = a.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        warnings::Model,
+        r#"UPDATE early_warnings SET acknowledged_on = $2 WHERE pid = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _",
+                   id, pid, organization_ref, kind, subject_pid, subject_name,
+                   first_true_on, cleared_on, acknowledged_on"#,
+        row.pid,
+        today,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "early_warning",
         row.pid,
         "acknowledged",
@@ -288,7 +320,7 @@ async fn acknowledge(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(warning_json(&row, today))
 }
 

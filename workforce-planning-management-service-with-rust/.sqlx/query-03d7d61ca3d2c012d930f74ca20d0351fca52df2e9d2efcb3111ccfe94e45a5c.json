@@ -1,0 +1,196 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, organization_ref, horizon_start,\n                  horizon_end, rationale, attrition_bp, budget_minor, budget_currency, on_cost_bp, status,\n                  deleted_at AS \"deleted_at: _\"\n             FROM workforce_plans WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "horizon_start",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "horizon_start"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "horizon_end",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "horizon_end"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rationale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "rationale"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "attrition_bp",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "attrition_bp"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "budget_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "budget_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "budget_currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "budget_currency"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "on_cost_bp",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "on_cost_bp"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "workforce_plans",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "03d7d61ca3d2c012d930f74ca20d0351fca52df2e9d2efcb3111ccfe94e45a5c"
+}

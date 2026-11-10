@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, mentor_pid, mentee_pid, focus, status,\n                  started_on, ended_on, deleted_at AS \"deleted_at: _\"\n             FROM mentorships WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "mentor_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "mentor_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "mentee_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "mentee_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "focus",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "focus"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "started_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "started_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "ended_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "ended_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5d492b3ca0c453f6be600a2b3fa527fda9850c6a58c4db622eb3aaee2f1373ae"
+}

@@ -1,0 +1,103 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO workers (pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status,\n                              employment_type, fte_percent, department, job_title, location, manager_pid, salary_minor,\n                              salary_currency, hired_on, engagement_ends_on)\n         VALUES ($1, $2, $3, $4, $5, $6, 'onboarding', $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n         RETURNING pid, person_ref, organization_ref, worker_number, department, hired_on",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "person_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "person_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "hired_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "hired_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Int8",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "85cacfb9b615bb4c5fb28433cd4a22ae87667a484c3549b358c91a0d7368e02a"
+}

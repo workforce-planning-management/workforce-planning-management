@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n                   SELECT 1 FROM collective_agreements\n                   WHERE pid = $1 AND unit_pid IN (SELECT pid FROM bargaining_units WHERE body_pid = $2)\n               ) AS \"belongs!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "belongs!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "d1d9dd0ec36b2c0a6dfa853a799a9e2f245f4b23ed29af50b475918424c322a9"
+}

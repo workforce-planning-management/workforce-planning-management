@@ -1,0 +1,142 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_pay_positions\n                   SET scale_id = $2, band = $3, step = $4, step_since = $5, recorded_by = $6, on_behalf = $7\n                   WHERE id = $1\n                   RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, worker_pid, scale_id, band, step,\n                             step_since, recorded_by, on_behalf",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "band"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "step",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "step"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "step_since",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "step_since"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "on_behalf"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Date",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "9477d1d65ede03c8998871fa520eb70af9dfcc5bd7f002b371ef36bedff7fe18"
+}

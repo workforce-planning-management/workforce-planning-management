@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — my mandatory training and certifications (WPM-R245, WPM-T487)
+
+`/me/required`, first on `/me`: training that applies and certifications the role asks for, most urgent first, with expiry days and
+a link to act; `tests/e2e/my-required.spec.ts`, `tests/unit/required.test.ts`; 17 strings in 13 locales (AI-written, unreviewed).
+The not-found page no longer takes the title of a page that failed while showing.
+
+### Added — walkthroughs for an employee, a manager and HR (WPM-R244, WPM-T486)
+
+`/tour/employee`, `/tour/manager`, `/tour/hr`, linked from the tour and help; `tests/e2e/guides.spec.ts`, `tests/unit/guides.test.ts`;
+43 strings in 13 locales (AI-written, unreviewed).
+
+### Changed — 360° appraisals easier to find and start (WPM-T485)
+
+`/me` links to the person's own record at its appraisals; "New 360" asks which competencies (up to twelve). 3 strings in 13 locales.
+
+### Added — getting help (WPM-R243, WPM-T484)
+
+A Help link in the header, a public `/help` page, a next step and a help link under every error (`ErrorNote`), and a not-found page
+(`+error.svelte`); `tests/e2e/help.spec.ts`; 30 strings in 13 locales (AI-written, unreviewed).
+
+### Changed — "Show more" follows the service's cursor (WPM-R241, WPM-T478)
+
+The five long lists (payroll runs, requisitions, the expense queue, joiners and leavers, conversion plans) ask for the next page with the
+cursor the service gives in its `Link` header, which the proxy now forwards. "Showing 500 of 1,240" is gone, because the service no
+longer says a total; only the button shows, while more rows follow. `paging.showing` is removed from the 13 locales.
+
 ### Added — starting a course from a goal (WPM-T464)
 
 A recorded fee of zero enrols at once; anything else goes to a manager (WPM-R236).

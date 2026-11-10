@@ -18,7 +18,7 @@
    * the board; the state machine still owns which drags are legal). */
   const COLUMNS = ["draft", "open", "interviewing", "offer", "filled"] as const;
 
-  const list = createPagedLoader<Requisition>(() => (limit, offset) => listRequisitionsPage({ limit, offset }));
+  const list = createPagedLoader<Requisition>(() => (limit, cursor) => listRequisitionsPage({ limit, cursor }));
   const requisitions = $derived(list.items);
   let actionError = $state<string | null>(null);
 
@@ -152,6 +152,6 @@
   <div data-testid="requisition-board">
     <LilyKanban label={t("nav.requisitions")} {columns} {cards} {onMove} />
   </div>
-  <LoadMore shown={requisitions.length} total={list.total} more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
+  <LoadMore more={list.more} loading={list.loadingMore} onmore={() => list.showMore()} />
   {#if list.moreError}<ErrorNote testid="more-error" message={list.moreError} />{/if}
 {/if}

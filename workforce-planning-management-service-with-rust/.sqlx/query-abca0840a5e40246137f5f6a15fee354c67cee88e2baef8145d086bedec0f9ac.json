@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT from_skill_pid, to_skill_pid, confidence FROM skill_mappings",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "from_skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "from_skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "to_skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "to_skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "confidence",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_mappings",
+            "name": "confidence"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "abca0840a5e40246137f5f6a15fee354c67cee88e2baef8145d086bedec0f9ac"
+}

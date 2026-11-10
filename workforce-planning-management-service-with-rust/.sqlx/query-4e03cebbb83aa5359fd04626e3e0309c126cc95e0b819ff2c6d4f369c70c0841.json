@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, worker_pid, course_ref, status, decided_on FROM course_requests WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_requests",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_requests",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "course_requests",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "course_requests",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "decided_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "course_requests",
+            "name": "decided_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "4e03cebbb83aa5359fd04626e3e0309c126cc95e0b819ff2c6d4f369c70c0841"
+}

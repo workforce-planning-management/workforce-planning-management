@@ -10,18 +10,17 @@
 //! own organization.
 
 use super::ensure_org_in_scope;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Duration, NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
 
-use super::{unprocessable, with_page_headers};
+use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{leave_requests, rota_members, rota_overrides, rotas, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
+use crate::db;
+use crate::models::_entities::{rota_overrides, rotas};
 use crate::models::{memberships, records};
 use crate::rules::metrics as metric_rules;
 use crate::rules::notify;
@@ -36,12 +35,16 @@ pub(super) async fn find_rota(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<rotas::Model> {
-    let rota = rotas::Entity::find()
-        .filter(rotas::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(rotas::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let rota = sqlx::query_as!(
+        rotas::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, description,
+                  period_days, starts_on, deleted_at AS "deleted_at: _"
+             FROM rotas WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     require_scope(ctx, caller, &rota.organization_ref).await?;
     Ok(rota)
 }
@@ -56,38 +59,75 @@ pub(super) async fn require_scope(
     Ok(())
 }
 
+/// The live rotas in `scope` (all when `None`), by organization and name.
+async fn rotas_in(ctx: &AppContext, scope: Option<&[String]>) -> Result<Vec<rotas::Model>> {
+    Ok(sqlx::query_as!(
+        rotas::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, description,
+                  period_days, starts_on, deleted_at AS "deleted_at: _"
+             FROM rotas WHERE deleted_at IS NULL AND ($1::text[] IS NULL OR organization_ref = ANY($1))
+            ORDER BY organization_ref, name, id"#,
+        scope,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
 async fn member_pids(ctx: &AppContext, rota: Uuid) -> Result<Vec<Uuid>> {
-    Ok(rota_members::Entity::find()
-        .filter(rota_members::Column::RotaPid.eq(rota))
-        .order_by_asc(rota_members::Column::Position)
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|m| m.worker_pid)
-        .collect())
+    Ok(sqlx::query_scalar!(
+        "SELECT worker_pid FROM rota_members WHERE rota_pid = $1 ORDER BY position",
+        rota
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 async fn override_rows(ctx: &AppContext, rota: Uuid) -> Result<Vec<rota_overrides::Model>> {
-    Ok(rota_overrides::Entity::find()
-        .filter(rota_overrides::Column::RotaPid.eq(rota))
-        .order_by_asc(rota_overrides::Column::Id)
-        .all(&ctx.db)
-        .await?)
+    Ok(sqlx::query_as!(
+        rota_overrides::Model,
+        r#"SELECT created_at AS "created_at: _", id, pid, rota_pid, worker_pid, starts_on, ends_on, note, created_by
+             FROM rota_overrides WHERE rota_pid = $1 ORDER BY id"#,
+        rota,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A person in a rota, as the schedule and its views read them.
+pub(super) struct RotaPerson {
+    pub(super) display_name: String,
+    pub(super) job_title: String,
+    pub(super) organization_ref: String,
+    pub(super) hired_on: NaiveDate,
+    pub(super) terminated_on: Option<NaiveDate>,
 }
 
 /// Live workers by pid, for names and availability.
 pub(super) async fn workers_by_pid(
     ctx: &AppContext,
     pids: Vec<Uuid>,
-) -> Result<HashMap<Uuid, workers::Model>> {
-    Ok(workers::Entity::find()
-        .filter(workers::Column::Pid.is_in(pids))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect())
+) -> Result<HashMap<Uuid, RotaPerson>> {
+    Ok(sqlx::query!(
+        "SELECT pid, display_name, job_title, organization_ref, hired_on, terminated_on FROM workers
+          WHERE pid = ANY($1) AND deleted_at IS NULL",
+        &pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|w| {
+        (
+            w.pid,
+            RotaPerson {
+                display_name: w.display_name,
+                job_title: w.job_title,
+                organization_ref: w.organization_ref,
+                hired_on: w.hired_on,
+                terminated_on: w.terminated_on,
+            },
+        )
+    })
+    .collect())
 }
 
 /// The day-by-day schedule for a rota over `from..=to`, with the workers
@@ -101,7 +141,7 @@ pub(super) async fn compute(
     Vec<Uuid>,
     Vec<rota_overrides::Model>,
     Vec<Assignment>,
-    HashMap<Uuid, workers::Model>,
+    HashMap<Uuid, RotaPerson>,
 )> {
     let members = member_pids(ctx, rota.pid).await?;
     let overrides = override_rows(ctx, rota.pid).await?;
@@ -109,14 +149,15 @@ pub(super) async fn compute(
     ids.extend(overrides.iter().map(|o| o.worker_pid));
     let people = workers_by_pid(ctx, ids.clone()).await?;
     let mut away: HashMap<Uuid, Vec<(NaiveDate, NaiveDate)>> = HashMap::new();
-    for l in leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.is_in(ids))
-        .filter(leave_requests::Column::Status.eq("approved"))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .filter(leave_requests::Column::StartOn.lte(to))
-        .filter(leave_requests::Column::EndOn.gte(from))
-        .all(&ctx.db)
-        .await?
+    for l in sqlx::query!(
+        "SELECT worker_pid, start_on, end_on FROM leave_requests
+          WHERE worker_pid = ANY($1) AND status = 'approved' AND deleted_at IS NULL AND start_on <= $2 AND end_on >= $3",
+        &ids,
+        to,
+        from,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         away.entry(l.worker_pid)
             .or_default()
@@ -148,7 +189,7 @@ pub(super) async fn compute(
     Ok((members, overrides, assignments, people))
 }
 
-pub(super) fn name_of(people: &HashMap<Uuid, workers::Model>, pid: Option<Uuid>) -> Option<String> {
+pub(super) fn name_of(people: &HashMap<Uuid, RotaPerson>, pid: Option<Uuid>) -> Option<String> {
     pid.and_then(|p| people.get(&p))
         .map(|w| w.display_name.clone())
 }
@@ -169,7 +210,7 @@ fn window(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Result<(NaiveDate, 
     Ok((from, to))
 }
 
-fn run_json(r: &rules::Run, people: &HashMap<Uuid, workers::Model>) -> serde_json::Value {
+fn run_json(r: &rules::Run, people: &HashMap<Uuid, RotaPerson>) -> serde_json::Value {
     serde_json::json!({
         "from": r.from,
         "to": r.to,
@@ -214,34 +255,32 @@ pub(super) async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid])
     Ok(())
 }
 
-async fn write_members(txn: &impl ConnectionTrait, rota: Uuid, members: &[Uuid]) -> Result<()> {
-    rota_members::Entity::delete_many()
-        .filter(rota_members::Column::RotaPid.eq(rota))
-        .exec(txn)
+async fn write_members(tx: &mut sqlx::PgConnection, rota: Uuid, members: &[Uuid]) -> Result<()> {
+    sqlx::query!("DELETE FROM rota_members WHERE rota_pid = $1", rota)
+        .execute(&mut *tx)
         .await?;
-    for (i, worker) in members.iter().enumerate() {
-        rota_members::ActiveModel {
-            rota_pid: ActiveValue::set(rota),
-            worker_pid: ActiveValue::set(*worker),
-            position: ActiveValue::set(i32::try_from(i).unwrap_or(i32::MAX)),
-            ..Default::default()
-        }
-        .insert(txn)
-        .await?;
-    }
+    // The rotation order in one statement, each at its place from 0.
+    sqlx::query!(
+        "INSERT INTO rota_members (rota_pid, worker_pid, position)
+         SELECT $1, member.worker_pid, (member.n - 1)::int FROM unnest($2::uuid[]) WITH ORDINALITY AS member(worker_pid, n)",
+        rota,
+        members,
+    )
+    .execute(&mut *tx)
+    .await?;
     Ok(())
 }
 
 /// Tell newly named members they are in the rota (reference-only: the rota's
 /// name, nothing about anyone's availability or leave).
 async fn notify_added(
-    db: &impl ConnectionTrait,
+    tx: &mut sqlx::PgConnection,
     rota: &rotas::Model,
     recipients: &[Uuid],
 ) -> Result<()> {
     for worker in recipients {
-        Notification::push(
-            db,
+        db::notify(
+            tx,
             *worker,
             "rota_added",
             &format!("You were added to the on-call rota {}.", rota.name),
@@ -266,40 +305,41 @@ async fn create_rota(
     rules::validate_rota(i64::from(payload.period_days), &payload.members)
         .map_err(|e| unprocessable(&e))?;
     check_members(&ctx, &payload.organization_ref, &payload.members).await?;
-    let txn = ctx.db.begin().await?;
-    let row = rotas::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        description: ActiveValue::set(
-            payload
-                .description
-                .map(|d| d.trim().to_string())
-                .filter(|d| !d.is_empty()),
-        ),
-        period_days: ActiveValue::set(payload.period_days),
-        starts_on: ActiveValue::set(payload.starts_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        rotas::Model,
+        r#"INSERT INTO rotas (pid, organization_ref, name, description, period_days, starts_on)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, description,
+                  period_days, starts_on, deleted_at AS "deleted_at: _""#,
+        Uuid::new_v4(),
+        payload.organization_ref,
+        payload.name.trim(),
+        payload
+            .description
+            .map(|d| d.trim().to_string())
+            .filter(|d| !d.is_empty()),
+        payload.period_days,
+        payload.starts_on,
+    )
+    .fetch_one(&mut *tx)
     .await
     .map_err(|e| {
-        if e.to_string().contains("rotas_org_name") {
+        if e.as_database_error().and_then(|d| d.constraint()) == Some("rotas_org_name") {
             unprocessable("a rota with that name already exists in this organization")
         } else {
             e.into()
         }
     })?;
-    write_members(&txn, row.pid, &payload.members).await?;
+    write_members(&mut tx, row.pid, &payload.members).await?;
     notify_added(
-        &txn,
+        &mut tx,
         &row,
         &notify::rota_added_recipients(&[], &payload.members),
     )
     .await?;
-    Audit::record(&txn, "rota", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "rota", row.pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 
@@ -307,15 +347,8 @@ async fn create_rota(
 /// on call today.
 #[debug_handler]
 async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let mut query = rotas::Entity::find().filter(rotas::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(rotas::Column::OrganizationRef.is_in(refs));
-    }
-    let all = query
-        .order_by_asc(rotas::Column::OrganizationRef)
-        .order_by_asc(rotas::Column::Name)
-        .all(&ctx.db)
-        .await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
+    let all = rotas_in(&ctx, scope.as_deref()).await?;
     let today = Utc::now().date_naive();
     let mut out = Vec::with_capacity(all.len());
     for rota in &all {
@@ -334,8 +367,8 @@ async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
             })),
         }));
     }
-    let total = out.len() as u64;
-    Ok(with_page_headers(format::json(out)?, total, total, 0))
+    // Not paged: everything, with no `Link`, so a client that pages sees it is whole.
+    Ok(axum::Json(out).into_response())
 }
 
 /// Query for a rota's schedule.
@@ -353,7 +386,7 @@ async fn get_rota(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<WindowQuery>,
+    axa::extract::Query(q): axa::extract::Query<WindowQuery>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let (from, to) = window(q.from, q.to)?;
@@ -415,7 +448,7 @@ async fn on_call(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<OnQuery>,
+    axa::extract::Query(q): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let on = q.on.unwrap_or_else(|| Utc::now().date_naive());
@@ -466,33 +499,38 @@ async fn update_rota(
     if payload.name.as_deref().is_some_and(|n| n.trim().is_empty()) {
         return Err(unprocessable("name must not be blank"));
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: rotas::ActiveModel = rota.clone().into();
-    if let Some(name) = payload.name {
-        active.name = ActiveValue::set(name.trim().to_string());
-    }
-    if let Some(description) = payload.description {
-        let d = description.trim().to_string();
-        active.description = ActiveValue::set(if d.is_empty() { None } else { Some(d) });
-    }
-    active.period_days = ActiveValue::set(period);
-    if let Some(starts_on) = payload.starts_on {
-        active.starts_on = ActiveValue::set(starts_on);
-    }
-    active.update(&txn).await?;
+    let name = payload
+        .name
+        .map_or_else(|| rota.name.clone(), |n| n.trim().to_string());
+    let description = match payload.description {
+        Some(d) => Some(d.trim().to_string()).filter(|d| !d.is_empty()),
+        None => rota.description.clone(),
+    };
+    let starts_on = payload.starts_on.unwrap_or(rota.starts_on);
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE rotas SET name = $2, description = $3, period_days = $4, starts_on = $5 WHERE id = $1",
+        rota.id,
+        name,
+        description,
+        period,
+        starts_on,
+    )
+    .execute(&mut *tx)
+    .await?;
     if payload.members.is_some() {
-        write_members(&txn, rota.pid, &members).await?;
+        write_members(&mut tx, rota.pid, &members).await?;
         // `current` was read before the transaction opened: reading again here
         // would wait on a second pooled connection while this one is held.
         notify_added(
-            &txn,
+            &mut tx,
             &rota,
             &notify::rota_added_recipients(&current, &members),
         )
         .await?;
     }
-    Audit::record(&txn, "rota", rota.pid, "updated", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "rota", rota.pid, "updated", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": rota.pid }))
 }
 
@@ -505,21 +543,22 @@ async fn delete_rota(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
-    let txn = ctx.db.begin().await?;
-    rota_members::Entity::delete_many()
-        .filter(rota_members::Column::RotaPid.eq(rota.pid))
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM rota_members WHERE rota_pid = $1", rota.pid)
+        .execute(&mut *tx)
         .await?;
-    rota_overrides::Entity::delete_many()
-        .filter(rota_overrides::Column::RotaPid.eq(rota.pid))
-        .exec(&txn)
+    sqlx::query!("DELETE FROM rota_overrides WHERE rota_pid = $1", rota.pid)
+        .execute(&mut *tx)
         .await?;
-    let rota_pid = rota.pid;
-    let mut active: rotas::ActiveModel = rota.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(&txn, "rota", rota_pid, "retired", caller.actor(), None).await?;
-    txn.commit().await?;
+    sqlx::query!(
+        "UPDATE rotas SET deleted_at = $2 WHERE id = $1",
+        rota.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "rota", rota.pid, "retired", caller.actor(), None).await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -548,26 +587,26 @@ async fn add_override(
         return Err(unprocessable("ends_on must not be before starts_on"));
     }
     check_members(&ctx, &rota.organization_ref, &[payload.worker_pid]).await?;
-    let txn = ctx.db.begin().await?;
-    let row = rota_overrides::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        rota_pid: ActiveValue::set(rota.pid),
-        worker_pid: ActiveValue::set(payload.worker_pid),
-        starts_on: ActiveValue::set(payload.starts_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        note: ActiveValue::set(
-            payload
-                .note
-                .map(|n| n.trim().to_string())
-                .filter(|n| !n.is_empty()),
-        ),
-        created_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let swap = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO rota_overrides (pid, rota_pid, worker_pid, starts_on, ends_on, note, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        swap,
+        rota.pid,
+        payload.worker_pid,
+        payload.starts_on,
+        payload.ends_on,
+        payload
+            .note
+            .map(|n| n.trim().to_string())
+            .filter(|n| !n.is_empty()),
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Notification::push(
-        &txn,
+    db::notify(
+        &mut tx,
         payload.worker_pid,
         "on_call_swap",
         &format!(
@@ -581,9 +620,17 @@ async fn add_override(
         }),
     )
     .await?;
-    Audit::record(&txn, "rota", rota.pid, "swap_added", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    db::audit(
+        &mut tx,
+        "rota",
+        rota.pid,
+        "swap_added",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": swap }))
 }
 
 /// `DELETE /api/rota-overrides/{pid}` — undo a swap.
@@ -593,18 +640,28 @@ async fn delete_override(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = rota_overrides::Entity::find()
-        .filter(rota_overrides::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query!(
+        "SELECT id, rota_pid FROM rota_overrides WHERE pid = $1",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let rota = find_rota(&ctx, &caller, &row.rota_pid.to_string()).await?;
-    let txn = ctx.db.begin().await?;
-    rota_overrides::Entity::delete_by_id(row.id)
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM rota_overrides WHERE id = $1", row.id)
+        .execute(&mut *tx)
         .await?;
-    Audit::record(&txn, "rota", rota.pid, "swap_removed", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "rota",
+        rota.pid,
+        "swap_removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -615,16 +672,13 @@ async fn worker_on_call(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(q): axum::extract::Query<WindowQuery>,
+    axa::extract::Query(q): axa::extract::Query<WindowQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let (from, to) = window(q.from, q.to)?;
-    let mut query = rotas::Entity::find().filter(rotas::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(rotas::Column::OrganizationRef.is_in(refs));
-    }
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut out: BTreeMap<(NaiveDate, String), serde_json::Value> = BTreeMap::new();
-    for rota in query.all(&ctx.db).await? {
+    for rota in rotas_in(&ctx, scope.as_deref()).await? {
         let (_, _, assignments, _) = compute(&ctx, &rota, from, to).await?;
         for run in rules::runs(&assignments) {
             if run.worker == Some(worker.pid) {
@@ -655,13 +709,13 @@ pub(super) async fn on_call_today(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
 ) -> Result<HashMap<Uuid, Vec<String>>> {
-    let mut query = rotas::Entity::find().filter(rotas::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
-        query = query.filter(rotas::Column::OrganizationRef.is_in(refs));
-    }
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let mut out: HashMap<Uuid, Vec<String>> = HashMap::new();
-    for rota in query.order_by_asc(rotas::Column::Name).all(&ctx.db).await? {
+    // By name, as before: a worker on call in several rotas lists them in name order.
+    let mut rotas = rotas_in(ctx, scope.as_deref()).await?;
+    rotas.sort_by(|a, b| a.name.cmp(&b.name));
+    for rota in rotas {
         let (_, _, assignments, _) = compute(ctx, &rota, today, today).await?;
         if let Some(worker) = assignments.first().and_then(|a| a.worker) {
             out.entry(worker).or_default().push(rota.name.clone());
@@ -683,11 +737,8 @@ pub(crate) async fn turns_starting_on(
     date: NaiveDate,
 ) -> Result<Vec<(rotas::Model, Uuid)>> {
     let mut out = Vec::new();
-    let all = rotas::Entity::find()
-        .filter(rotas::Column::DeletedAt.is_null())
-        .order_by_asc(rotas::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let mut all = rotas_in(ctx, None).await?;
+    all.sort_by_key(|r| r.id);
     for rota in all {
         let (_, _, assignments, _) = compute(ctx, &rota, date - Duration::days(1), date).await?;
         if let [yesterday, today] = assignments.as_slice()

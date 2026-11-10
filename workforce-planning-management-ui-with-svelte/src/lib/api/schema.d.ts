@@ -28,6 +28,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -76,6 +77,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -108,6 +110,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -149,6 +152,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -165,7 +169,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&offset=; include=all is for editors) */
+        /** The announcement feed for the caller's organizations: live posts, pinned first then newest (?organization=&include=all&limit=&cursor=; include=all is for editors) */
         get: {
             parameters: {
                 query?: never;
@@ -182,6 +186,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -208,6 +213,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -240,6 +246,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Edit an announcement */
@@ -265,6 +272,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -293,6 +301,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -334,6 +343,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -366,6 +376,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -400,6 +411,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -432,6 +444,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -478,6 +491,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -510,6 +524,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -558,6 +573,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -590,6 +606,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -638,6 +655,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -686,6 +704,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -727,6 +746,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -755,6 +775,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -786,6 +807,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -818,6 +840,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -864,6 +887,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -896,6 +920,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -930,6 +955,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -957,6 +983,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -1002,6 +1029,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1048,6 +1076,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1088,6 +1117,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1120,6 +1150,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1146,6 +1177,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1186,6 +1218,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1218,6 +1251,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1260,6 +1294,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1292,6 +1327,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1326,6 +1362,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1360,6 +1397,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1394,6 +1432,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1428,6 +1467,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1469,6 +1509,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -1497,6 +1538,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -1528,6 +1570,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1554,6 +1597,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1586,6 +1630,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1620,6 +1665,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1652,6 +1698,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1684,6 +1731,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1727,6 +1775,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -1758,6 +1807,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1790,6 +1840,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1830,6 +1881,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1862,6 +1914,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1894,6 +1947,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -1926,6 +1980,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1960,6 +2015,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -1994,6 +2050,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2028,6 +2085,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2070,6 +2128,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2102,6 +2161,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2136,6 +2196,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2170,6 +2231,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set or clear the work-in-progress limit */
@@ -2195,6 +2257,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -2236,6 +2299,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2268,6 +2332,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2294,6 +2359,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2334,6 +2400,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2366,6 +2433,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2392,6 +2460,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2424,6 +2493,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2450,6 +2520,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2482,6 +2553,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2516,6 +2588,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2559,6 +2632,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -2601,6 +2675,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -2641,6 +2716,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -2683,6 +2759,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -2724,6 +2801,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2756,6 +2834,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2782,6 +2861,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2822,6 +2902,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2862,6 +2943,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -2894,6 +2976,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2928,6 +3011,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -2962,6 +3046,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3004,6 +3089,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3044,6 +3130,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3084,6 +3171,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3116,6 +3204,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3142,6 +3231,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3174,6 +3264,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3216,6 +3307,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3248,6 +3340,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3274,6 +3367,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3314,6 +3408,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3355,6 +3450,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -3396,6 +3492,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3428,6 +3525,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3454,6 +3552,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3493,6 +3592,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -3521,6 +3621,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -3552,6 +3653,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3586,6 +3688,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3620,6 +3723,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3662,6 +3766,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3694,6 +3799,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3720,6 +3826,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3763,6 +3870,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -3804,6 +3912,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3836,6 +3945,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3880,6 +3990,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3912,6 +4023,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -3938,6 +4050,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -3970,6 +4083,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4045,6 +4159,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -4150,6 +4265,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4191,7 +4307,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&offset=); no salary or dates */
+        /** Employee directory: employed workers in the caller's organizations, searchable (?q=&department=&limit=&cursor=); no salary or dates */
         get: {
             parameters: {
                 query?: never;
@@ -4208,6 +4324,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4242,6 +4359,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4274,6 +4392,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4320,6 +4439,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4352,6 +4472,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4394,6 +4515,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4434,6 +4556,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4473,6 +4596,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -4501,6 +4625,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -4532,6 +4657,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4566,6 +4692,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4600,6 +4727,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4648,6 +4776,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4687,6 +4816,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -4720,6 +4850,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4754,6 +4885,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4796,6 +4928,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4836,6 +4969,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -4868,6 +5002,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4902,6 +5037,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4936,6 +5072,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -4970,6 +5107,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5004,6 +5142,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5038,6 +5177,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5080,6 +5220,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5120,6 +5261,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5160,6 +5302,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5200,6 +5343,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5240,6 +5384,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5280,6 +5425,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5320,6 +5466,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5361,6 +5508,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -5392,6 +5540,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5434,6 +5583,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5474,6 +5624,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5506,6 +5657,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5573,6 +5725,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -5606,6 +5759,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5632,6 +5786,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5664,6 +5819,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5705,6 +5861,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -5731,6 +5888,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -5762,6 +5920,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5788,6 +5947,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5827,6 +5987,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -5853,6 +6014,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -5884,6 +6046,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -5912,6 +6075,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -5955,6 +6119,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -5986,6 +6151,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6020,6 +6186,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6046,6 +6213,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6078,6 +6246,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6112,6 +6281,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6146,6 +6316,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6187,6 +6358,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -6213,6 +6385,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -6244,6 +6417,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6278,6 +6452,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6304,6 +6479,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6344,6 +6520,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6383,6 +6560,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -6416,6 +6594,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6442,6 +6621,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6474,6 +6654,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6515,6 +6696,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -6556,6 +6738,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6595,6 +6778,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -6635,6 +6819,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -6668,6 +6853,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6702,6 +6888,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6736,6 +6923,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6778,6 +6966,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6810,6 +6999,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6852,6 +7042,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6926,6 +7117,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -6952,6 +7144,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -6992,6 +7185,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7024,6 +7218,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7058,6 +7253,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7084,6 +7280,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7116,6 +7313,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7158,6 +7356,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7198,6 +7397,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7230,6 +7430,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7264,6 +7465,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7298,6 +7500,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7346,6 +7549,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7392,6 +7596,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7438,6 +7643,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7478,6 +7684,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7510,6 +7717,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Replace the caller's own contact details (a field left out is cleared; shapes validated, nothing verified; address_text is a free-text block in the person's own order, WPM-D152); a self-service write allowed past the HR-only write policy; the audit entry says they changed, never what they were */
@@ -7535,6 +7743,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -7561,6 +7770,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -7592,6 +7802,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7764,6 +7975,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7790,6 +8002,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7830,6 +8043,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7926,6 +8140,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -7952,6 +8167,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -7991,6 +8207,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -8017,6 +8234,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -8048,6 +8266,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Declare or change answers for the categories given (voluntary); 404 while monitoring is off; the audit entry says that answers changed, never which or what */
@@ -8075,6 +8294,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -8103,6 +8323,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -8145,6 +8366,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -8176,6 +8398,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -8204,6 +8427,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8246,6 +8470,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8288,6 +8513,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8330,6 +8556,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8522,6 +8749,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -8566,6 +8794,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8608,6 +8837,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8640,6 +8870,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -8674,6 +8905,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -8872,6 +9104,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -8898,6 +9131,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -8988,6 +9222,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9030,6 +9265,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9126,6 +9362,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9154,6 +9391,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9196,6 +9434,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9312,6 +9551,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9354,6 +9594,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9386,6 +9627,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9428,6 +9670,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9470,6 +9713,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9513,6 +9757,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -9544,6 +9789,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9586,6 +9832,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9628,6 +9875,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9670,6 +9918,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9712,6 +9961,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9744,6 +9994,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9778,6 +10029,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9822,6 +10074,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9864,6 +10117,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9896,6 +10150,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9922,6 +10177,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -9954,6 +10210,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -9996,6 +10253,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10036,6 +10294,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10118,6 +10377,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10158,6 +10418,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10198,6 +10459,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10230,6 +10492,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10264,6 +10527,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10298,6 +10562,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10330,6 +10595,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10371,6 +10637,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -10402,6 +10669,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10434,6 +10702,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10475,6 +10744,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -10516,6 +10786,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10557,6 +10828,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -10588,6 +10860,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10632,6 +10905,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10673,6 +10947,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -10714,6 +10989,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10755,6 +11031,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -10795,6 +11072,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -10828,6 +11106,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10854,6 +11133,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10886,6 +11166,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -10930,6 +11211,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -10972,6 +11254,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11004,6 +11287,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11064,6 +11348,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Record a partner organization's capacity for a pool and month as requested, committed or confirmed; a month with none is unknown, not zero */
@@ -11089,6 +11374,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -11131,6 +11417,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -11162,6 +11449,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11188,6 +11476,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11227,6 +11516,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -11253,6 +11543,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -11284,6 +11575,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11318,6 +11610,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11360,6 +11653,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11392,6 +11686,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11426,6 +11721,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11460,6 +11756,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11494,6 +11791,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Record, for a category and a report date, whether the gap was justified (and on what), when it was remedied, and whether the joint assessment was carried out and how it ended (outcome from a closed list); replaces what was there; never a verdict on a person */
@@ -11519,6 +11817,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -11552,6 +11851,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11586,6 +11886,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11620,6 +11921,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11654,6 +11956,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11686,6 +11989,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11718,6 +12022,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11766,6 +12071,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11812,6 +12118,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11844,6 +12151,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11878,6 +12186,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -11926,6 +12235,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -11958,6 +12268,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12006,6 +12317,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12110,6 +12422,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12142,6 +12455,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12168,6 +12482,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12212,6 +12527,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         trace?: never;
@@ -12248,6 +12564,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12280,6 +12597,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12314,6 +12632,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12340,6 +12659,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12372,6 +12692,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12413,6 +12734,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -12453,6 +12775,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -12493,6 +12816,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -12534,6 +12858,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12600,6 +12925,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12646,6 +12972,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12678,6 +13005,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set a programme's claim on a pool for a month (programme_ref is a thing: URN owned by project-portfolio-management, month is a first-of-month, fte_centi 1-1000000); status may be proposed or closed, never active: a claim becomes active through a recorded start decision */
@@ -12705,6 +13033,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -12747,6 +13076,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -12778,6 +13108,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12810,6 +13141,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12856,6 +13188,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -12888,6 +13221,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12922,6 +13256,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12956,6 +13291,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -12999,6 +13335,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -13038,6 +13375,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13070,6 +13408,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13096,6 +13435,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13128,6 +13468,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13154,6 +13495,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13186,6 +13528,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13212,6 +13555,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13244,6 +13588,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13278,6 +13623,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13312,6 +13658,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13344,6 +13691,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13376,6 +13724,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13410,6 +13759,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13442,6 +13792,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13488,6 +13839,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13520,6 +13872,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13554,6 +13907,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13596,6 +13950,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13636,6 +13991,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13668,6 +14024,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13702,6 +14059,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13744,6 +14102,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13776,6 +14135,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -13808,6 +14168,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13854,6 +14215,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -13886,6 +14248,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Author edits (drafts only; rating 1-5) */
@@ -13911,6 +14274,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -13958,6 +14322,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14004,6 +14369,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14076,6 +14442,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14108,6 +14475,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14134,6 +14502,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14174,6 +14543,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14214,6 +14584,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14246,6 +14617,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14280,6 +14652,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14314,6 +14687,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set a role's job level and/or pay band; absent parts are cleared; a link made by the editor, never derived */
@@ -14339,6 +14713,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -14365,6 +14740,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -14396,6 +14772,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14430,6 +14807,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14456,6 +14834,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14497,6 +14876,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -14541,6 +14921,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -14583,6 +14964,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -14622,6 +15004,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14662,6 +15045,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14702,6 +15086,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14734,6 +15119,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14760,6 +15146,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14792,6 +15179,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Rename, re-time or re-order a rota */
@@ -14817,6 +15205,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -14845,6 +15234,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -14876,6 +15266,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14918,6 +15309,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -14950,6 +15342,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -14976,6 +15369,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15034,6 +15428,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15068,6 +15463,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15111,6 +15507,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15142,6 +15539,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15174,6 +15572,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15220,6 +15619,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15263,6 +15663,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15326,6 +15727,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15352,6 +15754,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15393,6 +15796,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15424,6 +15828,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15450,6 +15855,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15482,6 +15888,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Rename a pool or change its reservation */
@@ -15507,6 +15914,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -15533,6 +15941,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15574,6 +15983,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15615,6 +16025,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15653,6 +16064,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -15686,6 +16098,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15712,6 +16125,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15744,6 +16158,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15786,6 +16201,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15827,6 +16243,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -15855,6 +16272,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -15886,6 +16304,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -15912,6 +16331,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15952,6 +16372,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -15992,6 +16413,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16035,6 +16457,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -16073,6 +16496,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16106,6 +16530,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16140,6 +16565,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16181,6 +16607,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16214,6 +16641,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16246,6 +16674,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16278,6 +16707,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16319,6 +16749,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16366,6 +16797,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16398,6 +16830,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16430,6 +16863,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16462,6 +16896,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16510,6 +16945,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16550,6 +16986,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16589,6 +17026,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16622,6 +17060,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16656,6 +17095,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16682,6 +17122,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16721,6 +17162,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16747,6 +17189,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -16778,6 +17221,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16812,6 +17256,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16844,6 +17289,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -16883,6 +17329,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -16911,6 +17358,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -16942,6 +17390,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -16959,7 +17408,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List workers (?department=&status=&limit=&offset=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does */
+        /** List workers (?department=&status=&limit=&cursor=; per-row mask obligation). ?fields= names the fields to return, comma-separated, from pid, person_ref, upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type, fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor, salary_currency, hired_on, terminated_on, engagement_ends_on, created_at, updated_at (an unknown name is 422; absent is the whole record). An answer that carries an unmasked salary records a salary_read for each such worker, as the single read does */
         get: {
             parameters: {
                 query?: never;
@@ -16976,6 +17425,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17008,6 +17458,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17048,6 +17499,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17080,6 +17532,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Update employment facts (manager change is cycle-checked; work_jurisdiction, where the work is done, is HR's to set, WPM-D144) */
@@ -17105,6 +17558,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -17131,6 +17585,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -17162,6 +17617,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17194,6 +17650,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17226,6 +17683,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17260,6 +17718,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17294,6 +17753,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17326,6 +17786,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17358,6 +17819,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17384,6 +17846,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17416,6 +17879,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17450,6 +17914,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17476,6 +17941,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17508,6 +17974,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17534,6 +18001,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17566,6 +18034,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17598,6 +18067,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17630,6 +18100,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17664,6 +18135,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17698,6 +18170,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set supplier_ref (organization URN), route (agency, own_company, statement_of_work, direct) and a rate (rate_minor, rate_currency, rate_basis day or hour, all together or none); contractors only; never echoes the rate */
@@ -17723,6 +18196,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -17749,6 +18223,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -17780,6 +18255,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17806,6 +18282,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17838,6 +18315,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17872,6 +18350,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17898,6 +18377,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -17930,6 +18410,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17964,6 +18445,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -17996,6 +18478,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18028,6 +18511,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18072,6 +18556,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18115,6 +18600,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -18146,6 +18632,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18180,6 +18667,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18214,6 +18702,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18240,6 +18729,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18272,6 +18762,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18314,6 +18805,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18354,6 +18846,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18386,6 +18879,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18412,6 +18906,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18444,6 +18939,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18492,6 +18988,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18524,6 +19021,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18556,6 +19054,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18588,6 +19087,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18614,6 +19114,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18646,6 +19147,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18680,6 +19182,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -18721,6 +19224,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -18749,6 +19253,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -18790,6 +19295,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -18822,6 +19328,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Select the skills I have, at my own 1-5 level (null deselects) */
@@ -18847,6 +19354,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -18882,6 +19390,7 @@ export interface paths {
                         "application/json": components["schemas"]["PostFunding"];
                     };
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set the funding (kind core, time_limited, external or programme; time_limited and external need ends_on; optional programme_ref thing: URN) */
@@ -18913,6 +19422,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -18941,6 +19451,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -18998,6 +19509,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19039,6 +19551,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -19065,6 +19578,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -19096,6 +19610,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set the worker's level (framework, level, optional effective_on not in the future); the audit entry names no level */
@@ -19121,6 +19636,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -19147,6 +19663,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -19178,6 +19695,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19210,6 +19728,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19242,6 +19761,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19274,6 +19794,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19306,6 +19827,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19340,6 +19862,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19366,6 +19889,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19398,6 +19922,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19424,6 +19949,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19456,6 +19982,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19490,6 +20017,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19524,6 +20052,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19556,6 +20085,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19588,6 +20118,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19622,6 +20153,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Set the worker's scale, band and step (and step_since, not in the future); the audit entry names none of them */
@@ -19647,6 +20179,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -19673,6 +20206,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -19704,6 +20238,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19738,6 +20273,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19772,6 +20308,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19806,6 +20343,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19832,6 +20370,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19864,6 +20403,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19890,6 +20430,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -19922,6 +20463,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19956,6 +20498,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -19990,6 +20533,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20024,6 +20568,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20058,6 +20603,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20092,6 +20638,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20126,6 +20673,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20160,6 +20708,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20204,6 +20753,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20236,6 +20786,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Declare a skill and proficiency 1-5, or a framework level (framework + framework_level) mapped to 1-5 */
@@ -20263,6 +20814,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -20296,6 +20848,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20344,6 +20897,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20376,6 +20930,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20410,6 +20965,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20444,6 +21000,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20478,6 +21035,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20512,6 +21070,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20546,6 +21105,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20580,6 +21140,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20612,6 +21173,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20644,6 +21206,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20676,6 +21239,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20708,6 +21272,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20750,6 +21315,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20782,6 +21348,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20832,6 +21399,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -20864,6 +21432,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20898,6 +21467,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20932,6 +21502,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -20968,6 +21539,7 @@ export interface paths {
                         "application/json": components["schemas"]["ContingentWorkforce"];
                     };
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21002,6 +21574,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21036,6 +21609,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21070,6 +21644,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21104,6 +21679,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21138,6 +21714,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21172,6 +21749,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21206,6 +21784,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21242,6 +21821,7 @@ export interface paths {
                         "application/json": components["schemas"]["ProgrammeRollup"];
                     };
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21276,6 +21856,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21310,6 +21891,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21344,6 +21926,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21378,6 +21961,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21404,6 +21988,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -21436,6 +22021,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21470,6 +22056,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21504,6 +22091,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21545,6 +22133,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -21589,6 +22178,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -21629,6 +22219,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -21662,6 +22253,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21688,6 +22280,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -21720,6 +22313,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21762,6 +22356,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -21794,6 +22389,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21838,6 +22434,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -21870,6 +22467,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         /** Replace the plan's target organization: 1 to 2000 roles, unique keys, present parents, no loop, headcount 1 to 10000. There is no way to name a person. Audited in the same transaction */
@@ -21895,6 +22493,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -21928,6 +22527,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -21971,6 +22571,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         post?: never;
@@ -21999,6 +22600,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         options?: never;
@@ -22030,6 +22632,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -22072,6 +22675,7 @@ export interface paths {
                 };
                 409: components["responses"]["IdempotencyInProgress"];
                 422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
             };
         };
         delete?: never;
@@ -22104,6 +22708,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
             };
         };
         put?: never;
@@ -22489,8 +23094,6 @@ export interface components {
             /** Format: uuid */
             pid: string;
         };
-        /** @description A sentence saying what to change */
-        PlainTextError: string;
         PlanTolerances: {
             /** Format: date */
             as_of: string;
@@ -22598,6 +23201,28 @@ export interface components {
              */
             programme_ref?: string | null;
         };
+        /** @description An error, as RFC 9457 problem details */
+        Problem: {
+            /**
+             * @description A short reason for code to read, where the refusal has one
+             * @example validation
+             */
+            code?: string;
+            /**
+             * @description A sentence saying what to change
+             * @example name is required
+             */
+            detail?: string;
+            /** @example 422 */
+            status: number;
+            /**
+             * @description The status's standard reason
+             * @example Unprocessable Entity
+             */
+            title: string;
+            /** @example about:blank */
+            type: string;
+        };
         /** @description Aggregate only. A programme below the floor is left out and counted in withheld_programmes; a figure for one to nine people is null; no total across programmes. */
         ProgrammeRollup: {
             derivation?: string;
@@ -22663,6 +23288,15 @@ export interface components {
         };
     };
     responses: {
+        /** @description An error, as RFC 9457 problem details */
+        Error: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
         /** @description A request with this Idempotency-Key is still running; try again after Retry-After seconds */
         IdempotencyInProgress: {
             headers: {
@@ -22670,7 +23304,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "text/plain": components["schemas"]["PlainTextError"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
         /** @description Validation failure, or the Idempotency-Key is malformed or was used for a different request */
@@ -22679,7 +23313,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "text/plain": components["schemas"]["PlainTextError"];
+                "application/problem+json": components["schemas"]["Problem"];
             };
         };
     };

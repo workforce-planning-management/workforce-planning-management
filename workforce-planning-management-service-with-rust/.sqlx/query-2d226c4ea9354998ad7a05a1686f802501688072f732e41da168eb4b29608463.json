@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE role_skill_requirements\n                    SET min_proficiency = $2, importance = $3, note = $4,\n                        source_framework = CASE WHEN $5 THEN $6 ELSE source_framework END,\n                        source_level = CASE WHEN $5 THEN $7 ELSE source_level END,\n                        source_scale_max = CASE WHEN $5 THEN $8 ELSE source_scale_max END\n                  WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Varchar",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2d226c4ea9354998ad7a05a1686f802501688072f732e41da168eb4b29608463"
+}

@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT w.pid FROM workers w\n          WHERE w.deleted_at IS NULL AND w.organization_ref = $1 AND w.pid = ANY($2)\n            AND (EXISTS (SELECT 1 FROM worker_framework_roles r WHERE r.worker_pid = w.pid\n                           AND r.ended_at IS NULL AND r.role_profile_pid = ANY($3::uuid[]))\n                 OR lower(btrim(w.job_title)) IN (SELECT lower(btrim(p.job_title)) FROM role_profiles p\n                                                  WHERE p.pid = ANY($3::uuid[]) AND p.deleted_at IS NULL)\n                 OR EXISTS (SELECT 1 FROM worker_skills k\n                              JOIN unnest($4::uuid[], $5::int[]) AS need(skill, least_level)\n                                ON k.skill_pid = need.skill AND k.proficiency >= need.least_level\n                             WHERE k.worker_pid = w.pid AND k.deleted_at IS NULL))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "UuidArray",
+        "UuidArray",
+        "UuidArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "d342da754e03cf81b2243f5f38c998c8c864280bca0886ef6918b28e20d3928a"
+}

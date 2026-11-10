@@ -61,7 +61,7 @@ identities by `EntityRef` URN, never duplicating them.
 
 | Subproject                                                                                                     | Role                           | Stack                                   |
 | -------------------------------------------------------------------------------------------------------------- | ------------------------------ | --------------------------------------- |
-| [workforce-planning-management-service-with-rust](../workforce-planning-management-service-with-rust/)         | Back-end JSON API              | Rust, Loco (Axum + SeaORM), PostgreSQL  |
+| [workforce-planning-management-service-with-rust](../workforce-planning-management-service-with-rust/)         | Back-end JSON API              | Rust, Axum (axa + SeaORM), PostgreSQL   |
 | [workforce-planning-management-ui-with-svelte](../workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 2, Svelte 5 runes, TypeScript |
 
 ## Specification (topic files)
@@ -171,3 +171,4 @@ announcement read receipts are counts, never names (WPM-D35).
   security
 - **Local-first CI/CD (proposed):** [local-ci-cd.md](local-ci-cd.md).
 - **Learning, upskilling and economic viability:** [learning-economics.md](learning-economics.md).
+- **Help, learning to use WPM, and what is required of me:** [help-and-learning.md](help-and-learning.md).

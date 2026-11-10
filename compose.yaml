@@ -1,7 +1,7 @@
 # A demo of the service from a fresh clone, with no sibling repositories:
 #
 #   podman compose up --build
-#   curl http://localhost:5150/_health
+#   curl http://localhost:5150/_health/live
 #   open http://localhost:5150/swagger-ui/
 #
 # DEMO ONLY. The demo has no identity service, so it turns sign-in enforcement
@@ -74,6 +74,7 @@ services:
       APP_ENV: demo
       REDIS_URL: redis://redis:6379
       DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_demo
+      DB_ALLOW_INSECURE: "true"   # explicit, demo only: the database is on this compose network, and `demo` boots like production
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173
     ports:

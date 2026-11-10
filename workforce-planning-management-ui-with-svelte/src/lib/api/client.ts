@@ -7,11 +7,12 @@ export class ApiError extends Error {
   status: number;
   body: unknown;
   constructor(status: number, body: unknown) {
-    const description =
-      typeof body === "object" && body !== null && "description" in body
-        ? String((body as { description: unknown }).description)
+    // RFC 9457: `detail` says what went wrong this time (WPM-R238).
+    const detail =
+      typeof body === "object" && body !== null && "detail" in body
+        ? String((body as { detail: unknown }).detail)
         : `API error ${status}`;
-    super(description);
+    super(detail);
     this.status = status;
     this.body = body;
   }
@@ -78,32 +79,36 @@ export async function api<T>(
   return (await send<T>(path, init)).parsed;
 }
 
-/** One page of a collection, with what the service said about the whole of it (`x-total-count`, `x-limit`, `x-offset`). */
+/**
+ * One page of a collection (WPM-T478): its rows, and the cursor of the next page from the service's `Link: <...>;
+ * rel="next"`, or `null` on the last page. There is no total: a total would count rows the caller may not see.
+ */
 export type Page<T> = {
   items: T[];
-  /** Every row that matches, not just this page; `null` when the service did not say. */
-  total: number | null;
-  limit: number | null;
-  offset: number;
+  /** The signed `cursor` to send for the next page, opaque to the UI; `null` when no more rows follow. */
+  next: string | null;
 };
 
-const headerNumber = (response: Response, name: string): number | null => {
-  const value = response.headers.get(name);
-  if (value === null || value.trim() === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-};
+/** The `cursor` of a `Link` header's `rel="next"` target, or `null` when there is none. */
+export function nextCursor(link: string | null): string | null {
+  if (!link) return null;
+  // Each link is `<target>` then its parameters up to the next `<`; a target may hold commas (`?fields=a,b`).
+  for (const [, target = "", params = ""] of link.matchAll(
+    /<([^>]*)>([^<]*)/g,
+  )) {
+    if (!/;\s*rel\s*=\s*"?next"?(?=[\s;,]|$)/.test(params)) continue;
+    const query = target.split("?")[1] ?? "";
+    const cursor = new URLSearchParams(query).get("cursor");
+    if (cursor) return cursor;
+  }
+  return null;
+}
 
-/** A GET of a paged list: the rows and the paging headers. A missing header is `null`, never `0`. */
+/** A GET of a paged list: the rows and the next page's cursor. */
 export async function apiPage<T>(
   path: string,
   init?: { fetch?: typeof fetch },
 ): Promise<Page<T>> {
   const { parsed, response } = await send<T[]>(path, init);
-  return {
-    items: parsed,
-    total: headerNumber(response, "x-total-count"),
-    limit: headerNumber(response, "x-limit"),
-    offset: headerNumber(response, "x-offset") ?? 0,
-  };
+  return { items: parsed, next: nextCursor(response.headers.get("link")) };
 }

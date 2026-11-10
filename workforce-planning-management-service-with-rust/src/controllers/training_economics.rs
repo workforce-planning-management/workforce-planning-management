@@ -12,9 +12,9 @@
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Datelike, NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -23,12 +23,10 @@ use super::me::me_worker;
 use super::training_plan::load_catalogue;
 use super::{ensure_org_in_scope, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{
-    benchmarks, development_plan_benefits, development_plan_items, development_plans,
-    learning_budgets, plan_demand_lines, positions, requisitions, role_skill_requirements,
-    skill_courses, skills, training_enrollments, worker_skills, workers,
+    development_plan_benefits, development_plans, positions, skill_courses, workers,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::cost as cost_rules;
 use crate::rules::jurisdiction::Resolution;
@@ -74,8 +72,9 @@ async fn audit_salary_read(
     caller: &MaybeAuthUser,
     worker: &workers::Model,
 ) -> Result<()> {
-    Audit::record(
-        &ctx.db,
+    let mut connection = db::pool(ctx).acquire().await?;
+    db::audit(
+        &mut connection,
         "worker",
         worker.pid,
         "salary_read",
@@ -91,9 +90,30 @@ async fn plan_and_worker(
     ctx: &AppContext,
     pid: &str,
 ) -> Result<(development_plans::Model, workers::Model)> {
-    let plan = records::find_development_plan(&ctx.db, records::parse_pid(pid)?).await?;
-    let worker = records::find_worker(&ctx.db, plan.worker_pid).await?;
+    let plan = sqlx::query_as!(
+        development_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, target_job_title,
+                  target_department, rationale, status, started_on, target_on, deleted_at AS "deleted_at: _"
+             FROM development_plans WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let worker = records::worker_by_pid(ctx, plan.worker_pid).await?;
     Ok((plan, worker))
+}
+
+/// The live catalogue rows.
+async fn live_courses(ctx: &AppContext) -> Result<Vec<skill_courses::Model>> {
+    Ok(sqlx::query_as!(
+        skill_courses::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, skill_pid, course_ref, title, hours,
+                  levels, deleted_at AS "deleted_at: _", fee_minor, fee_currency
+             FROM skill_courses WHERE deleted_at IS NULL ORDER BY id"#
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// The fee a catalogue row states.
@@ -110,20 +130,20 @@ fn fee_of(course: &skill_courses::Model) -> Fee {
 /// The steps of a plan, leaving out what was abandoned. A course step reads the catalogue; a step with no catalogue row counts
 /// as a course with no fee, at the skill's per-level figure. A step that is not a course has no fee to know.
 async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result<Vec<Step>> {
-    let items = development_plan_items::Entity::find()
-        .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
-        .order_by_asc(development_plan_items::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let per_level: HashMap<Uuid, i32> = skills::Entity::find()
-        .all(&ctx.db)
+    let items = sqlx::query!(
+        "SELECT skill_pid, current_level, target_level, method, course_ref, status FROM development_plan_items
+          WHERE plan_pid = $1 ORDER BY id",
+        plan.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
+    let per_level: HashMap<Uuid, i32> = sqlx::query!("SELECT pid, hours_per_level FROM skills")
+        .fetch_all(db::pool(ctx))
         .await?
         .into_iter()
         .filter_map(|s| s.hours_per_level.map(|h| (s.pid, h)))
         .collect();
-    let courses: HashMap<(Uuid, String), skill_courses::Model> = skill_courses::Entity::find()
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+    let courses: HashMap<(Uuid, String), skill_courses::Model> = live_courses(ctx)
         .await?
         .into_iter()
         .map(|c| ((c.skill_pid, c.course_ref.clone()), c))
@@ -202,7 +222,7 @@ async fn plan_cost(
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
     if reader.on_behalf && hours.resolved().is_some() {
@@ -245,36 +265,42 @@ async fn state_benefit(
         &payload.source,
     )
     .map_err(|e| unprocessable(&e))?;
-    let taken = development_plan_benefits::Entity::find()
-        .filter(development_plan_benefits::Column::PlanPid.eq(plan.pid))
-        .filter(development_plan_benefits::Column::Year.eq(payload.year))
-        .filter(development_plan_benefits::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM development_plan_benefits
+            WHERE plan_pid = $1 AND year = $2 AND deleted_at IS NULL LIMIT 1"#,
+        plan.pid,
+        payload.year,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .is_some();
     if taken {
         return Err(unprocessable(
             "this plan already has a benefit for that year; remove it first",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let row = development_plan_benefits::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        plan_pid: ActiveValue::set(plan.pid),
-        worker_pid: ActiveValue::set(plan.worker_pid),
-        year: ActiveValue::set(payload.year),
-        amount_minor: ActiveValue::set(payload.amount_minor),
-        currency: ActiveValue::set(payload.currency.clone()),
-        source: ActiveValue::set(payload.source.trim().to_string()),
-        stated_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        stated_on: ActiveValue::set(Utc::now().date_naive()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(ctx).begin().await?;
+    let row = sqlx::query_as!(
+        development_plan_benefits::Model,
+        r#"INSERT INTO development_plan_benefits (pid, plan_pid, worker_pid, year, amount_minor, currency, source, stated_by,
+                                                  stated_on, deleted_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, year,
+                     amount_minor, currency, source, stated_by, stated_on, deleted_at AS "deleted_at: _""#,
+        Uuid::new_v4(),
+        plan.pid,
+        plan.worker_pid,
+        payload.year,
+        payload.amount_minor,
+        payload.currency,
+        payload.source.trim(),
+        caller.actor(),
+        Utc::now().date_naive(),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "development_plan_benefit",
         row.pid,
         "stated",
@@ -282,7 +308,7 @@ async fn state_benefit(
         Some(serde_json::json!({ "plan_pid": plan.pid, "year": row.year })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(benefit_json(&row))
 }
 
@@ -293,12 +319,15 @@ async fn remove_benefit(
     row: development_plan_benefits::Model,
 ) -> Result<Response> {
     let pid = row.pid;
-    let mut active: development_plan_benefits::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE development_plan_benefits SET deleted_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "development_plan_benefit",
         pid,
         "removed",
@@ -306,18 +335,22 @@ async fn remove_benefit(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// A live benefit by its pid.
 async fn find_benefit(ctx: &AppContext, pid: &str) -> Result<development_plan_benefits::Model> {
-    development_plan_benefits::Entity::find()
-        .filter(development_plan_benefits::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(development_plan_benefits::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        development_plan_benefits::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, year,
+                  amount_minor, currency, source, stated_by, stated_on, deleted_at AS "deleted_at: _"
+             FROM development_plan_benefits WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `POST /api/development-plans/{pid}/benefits` — HR states a benefit for a plan in their organization.
@@ -348,7 +381,7 @@ async fn delete_benefit(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find_benefit(&ctx, &pid).await?;
-    let worker = records::find_worker(&ctx.db, row.worker_pid).await?;
+    let worker = records::worker_by_pid(&ctx, row.worker_pid).await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Write,
@@ -413,15 +446,19 @@ async fn plan_viability(
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &worker).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
-    let rows = development_plan_benefits::Entity::find()
-        .filter(development_plan_benefits::Column::PlanPid.eq(plan.pid))
-        .filter(development_plan_benefits::Column::DeletedAt.is_null())
-        .order_by_asc(development_plan_benefits::Column::Year)
-        .all(&ctx.db)
-        .await?;
+    // One live benefit a year per plan, so the year orders them; the id breaks any tie.
+    let rows = sqlx::query_as!(
+        development_plan_benefits::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, year,
+                  amount_minor, currency, source, stated_by, stated_on, deleted_at AS "deleted_at: _"
+             FROM development_plan_benefits WHERE plan_pid = $1 AND deleted_at IS NULL ORDER BY year, id"#,
+        plan.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let benefits: Vec<Benefit> = rows
         .iter()
         .filter_map(|b| {
@@ -463,18 +500,21 @@ async fn seat_needs(ctx: &AppContext, position: &positions::Model) -> Result<Opt
     let Some(line) = position.demand_line_pid else {
         return Ok(None);
     };
-    let Some(role) = plan_demand_lines::Entity::find()
-        .filter(plan_demand_lines::Column::Pid.eq(line))
-        .one(&ctx.db)
-        .await?
-        .and_then(|l| l.role_profile_pid)
-    else {
+    let Some(role) = sqlx::query_scalar!(
+        "SELECT role_profile_pid FROM plan_demand_lines WHERE pid = $1 LIMIT 1",
+        line,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .flatten() else {
         return Ok(None);
     };
-    let rows = role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::RoleProfilePid.eq(role))
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT skill_pid, min_proficiency, importance FROM role_skill_requirements WHERE role_profile_pid = $1 ORDER BY id",
+        role,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     if rows.is_empty() {
         return Ok(None);
     }
@@ -497,14 +537,15 @@ async fn candidate_steps(
     candidate: &workers::Model,
     needs: &[Need],
 ) -> Result<(Option<Vec<Step>>, usize)> {
-    let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(candidate.pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|r| (r.skill_pid, r.proficiency))
-        .collect();
+    let declared: BTreeMap<Uuid, i32> = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        candidate.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|r| (r.skill_pid, r.proficiency))
+    .collect();
     let gaps = gap_rules::merge(needs, &declared);
     let undeclared = gaps
         .iter()
@@ -514,9 +555,7 @@ async fn candidate_steps(
         return Ok((None, undeclared));
     }
     let catalogue = load_catalogue(ctx, &[candidate.pid]).await?;
-    let fees: HashMap<(Uuid, String), Fee> = skill_courses::Entity::find()
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+    let fees: HashMap<(Uuid, String), Fee> = live_courses(ctx)
         .await?
         .into_iter()
         .map(|c| ((c.skill_pid, c.course_ref.clone()), fee_of(&c)))
@@ -554,25 +593,30 @@ async fn seat_unit(
     currency: &str,
 ) -> Result<Option<(i64, cost_rules::CostSource)>> {
     let title = position.title.trim().to_lowercase();
-    let benchmark = benchmarks::Entity::find()
-        .filter(benchmarks::Column::DeletedAt.is_null())
-        .filter(benchmarks::Column::Currency.eq(currency))
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .find(|b| b.job_title.trim().to_lowercase() == title)
-        .map(|b| b.median_minor);
-    let salaries: Vec<i64> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&position.organization_ref))
-        .filter(workers::Column::Department.eq(&position.cost_centre))
-        .filter(workers::Column::SalaryCurrency.eq(currency))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .filter_map(|w| w.salary_minor)
-        .collect();
+    // The first benchmark of the title, in id order, as when read in table order.
+    let benchmark = sqlx::query!(
+        "SELECT job_title, median_minor FROM benchmarks WHERE deleted_at IS NULL AND currency = $1 ORDER BY id",
+        currency,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .find(|b| b.job_title.trim().to_lowercase() == title)
+    .map(|b| b.median_minor);
+    let salaries: Vec<i64> = sqlx::query_scalar!(
+        "SELECT salary_minor FROM workers
+          WHERE organization_ref = $1 AND department = $2 AND salary_currency = $3 AND deleted_at IS NULL
+            AND terminated_on IS NULL
+          ORDER BY id",
+        position.organization_ref,
+        position.cost_centre,
+        currency,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .flatten()
+    .collect();
     Ok(cost_rules::pick_unit_cost(
         benchmark,
         cost_rules::cohort_average_minor(&salaries),
@@ -600,12 +644,13 @@ fn recruitment_in(scope: &Scope, currency: &str, today: NaiveDate) -> Option<i64
 
 /// The organization's median days to fill, and how many filled requisitions it rests on.
 async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i64>, usize)> {
-    let days: Vec<i64> = requisitions::Entity::find()
-        .filter(requisitions::Column::OrganizationRef.eq(organization))
-        .filter(requisitions::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .iter()
+    let days: Vec<i64> = sqlx::query!(
+        "SELECT opened_on, filled_on FROM requisitions WHERE organization_ref = $1 AND deleted_at IS NULL",
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .iter()
         .filter_map(|r| metrics::time_to_fill_days(r.opened_on, r.filled_on))
         .collect();
     #[allow(clippy::cast_possible_truncation)] // a median of day counts
@@ -625,15 +670,21 @@ async fn train_or_hire(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<TrainOrHireQuery>,
+    axa::extract::Query(query): axa::extract::Query<TrainOrHireQuery>,
 ) -> Result<Response> {
-    let position = positions::Entity::find()
-        .filter(positions::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let position = sqlx::query_as!(
+        positions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
+                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+             FROM positions WHERE pid = $1"#,
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(&ctx, &caller, &position.organization_ref).await?;
-    let candidate = records::find_worker(&ctx.db, records::parse_pid(&query.candidate)?).await?;
+    let candidate = records::worker_by_pid(&ctx, records::parse_pid(&query.candidate)?).await?;
     if candidate.organization_ref != position.organization_ref {
         return Err(Error::NotFound);
     }
@@ -646,7 +697,7 @@ async fn train_or_hire(
     let pay_visible = !obligations.iter().any(|o| o == "mask");
 
     let today = Utc::now().date_naive();
-    let scope = Scope::for_worker(&ctx.db, &candidate).await?;
+    let scope = Scope::for_worker(crate::db::pool(&ctx), &candidate).await?;
     let Some(currency) = candidate.salary_currency.clone() else {
         return format::json(serde_json::json!({
             "position_pid": position.pid,
@@ -790,7 +841,7 @@ fn fees_by_ref(courses: Vec<skill_courses::Model>) -> HashMap<String, (i64, Stri
 async fn learning_budget(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<BudgetQuery>,
+    axa::extract::Query(query): axa::extract::Query<BudgetQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
     let year = query.year.unwrap_or_else(|| Utc::now().year());
@@ -801,41 +852,38 @@ async fn learning_budget(
         return Err(unprocessable("year is out of range"));
     };
     let mut budgets: BTreeMap<String, BTreeMap<String, i64>> = BTreeMap::new();
-    for row in learning_budgets::Entity::find()
-        .filter(learning_budgets::Column::OrganizationRef.eq(&query.organization))
-        .filter(learning_budgets::Column::Year.eq(year))
-        .all(&ctx.db)
-        .await?
+    for row in sqlx::query!(
+        "SELECT department, currency, amount_minor FROM learning_budgets WHERE organization_ref = $1 AND year = $2",
+        query.organization,
+        year,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
     {
         budgets
             .entry(row.department)
             .or_default()
             .insert(row.currency, row.amount_minor);
     }
-    let staff = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let staff = sqlx::query!(
+        "SELECT pid, department FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL",
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let department: HashMap<Uuid, String> =
         staff.into_iter().map(|w| (w.pid, w.department)).collect();
-    let fees = fees_by_ref(
-        skill_courses::Entity::find()
-            .filter(skill_courses::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?,
-    );
-    let completions = super::find_in(
-        &ctx,
-        training_enrollments::Entity::find()
-            .filter(training_enrollments::Column::DeletedAt.is_null())
-            .filter(training_enrollments::Column::Status.eq("completed"))
-            .filter(training_enrollments::Column::CompletedOn.gte(start))
-            .filter(training_enrollments::Column::CompletedOn.lte(end)),
-        training_enrollments::Column::WorkerPid,
+    let fees = fees_by_ref(live_courses(&ctx).await?);
+    let completions = sqlx::query!(
+        "SELECT worker_pid, course_ref FROM training_enrollments
+          WHERE deleted_at IS NULL AND status = 'completed' AND completed_on >= $1 AND completed_on <= $2
+            AND worker_pid = ANY($3)",
+        start,
+        end,
         &pids,
     )
+    .fetch_all(db::pool(&ctx))
     .await?;
     let mut spent: BTreeMap<String, BTreeMap<String, i64>> = BTreeMap::new();
     let mut unpriced: BTreeMap<String, usize> = BTreeMap::new();
@@ -917,36 +965,26 @@ async fn set_budget(
     if !cost_rules::valid_currency(&payload.currency) {
         return Err(unprocessable("currency must be an ISO-4217 code, e.g. GBP"));
     }
-    let existing = learning_budgets::Entity::find()
-        .filter(learning_budgets::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(learning_budgets::Column::Department.eq(&department))
-        .filter(learning_budgets::Column::Year.eq(payload.year))
-        .filter(learning_budgets::Column::Currency.eq(&payload.currency))
-        .one(&ctx.db)
-        .await?;
-    let actor = caller.actor().map(ToString::to_string);
-    let txn = ctx.db.begin().await?;
-    let row = if let Some(row) = existing {
-        let mut active: learning_budgets::ActiveModel = row.into();
-        active.amount_minor = ActiveValue::set(payload.amount_minor);
-        active.recorded_by = ActiveValue::set(actor);
-        active.update(&txn).await?
-    } else {
-        learning_budgets::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            organization_ref: ActiveValue::set(payload.organization_ref.clone()),
-            department: ActiveValue::set(department),
-            year: ActiveValue::set(payload.year),
-            amount_minor: ActiveValue::set(payload.amount_minor),
-            currency: ActiveValue::set(payload.currency.clone()),
-            recorded_by: ActiveValue::set(actor),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One budget per department, year and currency: a second one replaces the amount and keeps its pid.
+    let row = sqlx::query!(
+        "INSERT INTO learning_budgets (pid, organization_ref, department, year, amount_minor, currency, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (organization_ref, department, year, currency)
+         DO UPDATE SET amount_minor = EXCLUDED.amount_minor, recorded_by = EXCLUDED.recorded_by
+         RETURNING pid, department, year, amount_minor, currency",
+        Uuid::new_v4(),
+        payload.organization_ref,
+        department,
+        payload.year,
+        payload.amount_minor,
+        payload.currency,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "learning_budget",
         row.pid,
         "set",
@@ -959,7 +997,7 @@ async fn set_budget(
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "pid": row.pid }))
 }
 

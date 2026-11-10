@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, name,\n                  description, period_days, starts_on, deleted_at AS \"deleted_at: _\"\n             FROM rotas WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "period_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "period_days"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "rotas",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "bdfd8c7b5856915441406d37a341f2d3e1f0104908a3dfe00f32cf87854211da"
+}

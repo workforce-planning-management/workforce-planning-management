@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM workers\n            WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6e1090091f8312bfff4c45d47219df906889b96cc8ab3dc042880772eeafa6a7"
+}

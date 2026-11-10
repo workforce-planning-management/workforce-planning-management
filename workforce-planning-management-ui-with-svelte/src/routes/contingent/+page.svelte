@@ -36,7 +36,7 @@
   let people = $state<Awaited<ReturnType<typeof contingentList>>["people"] | null>(null);
   let listError = $state<string | null>(null);
   const plans = createPagedLoader<OpenConversionRow>(
-    () => (limit, offset) => openConversionPlansPage(undefined, limit, offset),
+    () => (limit, cursor) => openConversionPlansPage(undefined, limit, cursor),
   );
   const conversions = $derived(plans.items);
   let conversionsOpen = $state(false);
@@ -292,7 +292,7 @@
           rowId={(row) => String(row.worker_pid)}
           pageSize={25}
         />
-        <LoadMore shown={conversions.length} total={plans.total} more={plans.more} loading={plans.loadingMore} onmore={() => plans.showMore()} />
+        <LoadMore more={plans.more} loading={plans.loadingMore} onmore={() => plans.showMore()} />
         {#if plans.moreError}<ErrorNote testid="more-error" message={plans.moreError} />{/if}
       {/if}
     {/if}

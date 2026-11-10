@@ -14,27 +14,92 @@
 //! Past entries and aspirations are statements, not assessments.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, NaiveDate, TimeZone, Utc};
-use sea_orm::{ActiveValue, QueryOrder};
+use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{
-    esco_occupation_skills, role_profiles, role_skill_requirements, skill_external_refs, skills,
-    worker_aspirations, worker_framework_roles, worker_skill_history, worker_skills, workers,
+    worker_aspirations, worker_framework_roles, worker_skill_history, workers,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::career::{self as rules, Interval};
 use crate::tasks::import_esco::ESCO_SLUG;
 use crate::tasks::import_framework::PCF_SLUG;
 
-fn utc(t: sea_orm::prelude::DateTimeWithTimeZone) -> DateTime<Utc> {
+fn utc(t: DateTime<FixedOffset>) -> DateTime<Utc> {
     t.with_timezone(&Utc)
+}
+
+/// A live UK GDAD PCF role level: its pid and job title.
+async fn pcf_profile(ctx: &AppContext, pid: Uuid) -> Result<Option<(Uuid, String)>> {
+    Ok(sqlx::query!(
+        "SELECT pid, job_title FROM role_profiles
+          WHERE pid = $1 AND deleted_at IS NULL AND framework_slug = $2 LIMIT 1",
+        pid,
+        PCF_SLUG,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .map(|r| (r.pid, r.job_title)))
+}
+
+/// Whether a live catalogue skill has this pid.
+async fn live_skill(ctx: &AppContext, pid: Uuid) -> Result<bool> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM skills WHERE pid = $1 AND deleted_at IS NULL LIMIT 1"#,
+        pid
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .is_some())
+}
+
+/// A worker's role intervals, in one framework or all, in the order they were recorded.
+async fn roles_of(
+    ctx: &AppContext,
+    worker_pid: Uuid,
+    framework: Option<&str>,
+) -> Result<Vec<worker_framework_roles::Model>> {
+    Ok(sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                  ended_at AS "ended_at: _", recorded_by, on_behalf
+             FROM worker_framework_roles
+            WHERE worker_pid = $1 AND ($2::text IS NULL OR framework_slug = $2)
+            ORDER BY id"#,
+        worker_pid,
+        framework,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A worker's skill-level intervals, for one skill or all, in the order they were recorded.
+async fn skill_intervals_of(
+    ctx: &AppContext,
+    worker_pid: Uuid,
+    skill_pid: Option<Uuid>,
+) -> Result<Vec<worker_skill_history::Model>> {
+    Ok(sqlx::query_as!(
+        worker_skill_history::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                  proficiency, started_at AS "started_at: _", ended_at AS "ended_at: _", source, recorded_by,
+                  on_behalf
+             FROM worker_skill_history
+            WHERE worker_pid = $1 AND ($2::uuid IS NULL OR skill_pid = $2)
+            ORDER BY id"#,
+        worker_pid,
+        skill_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 fn start_of(day: NaiveDate) -> DateTime<Utc> {
@@ -70,18 +135,22 @@ fn role_row(r: &worker_framework_roles::Model) -> serde_json::Value {
 async fn role_history(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<FrameworkQuery>,
+    axa::extract::Query(query): axa::extract::Query<FrameworkQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let mut select = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid));
-    if let Some(framework) = &query.framework {
-        select = select.filter(worker_framework_roles::Column::FrameworkSlug.eq(framework));
-    }
-    let rows = select
-        .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                  ended_at AS "ended_at: _", recorded_by, on_behalf
+             FROM worker_framework_roles
+            WHERE worker_pid = $1 AND ($2::text IS NULL OR framework_slug = $2)
+            ORDER BY started_at DESC"#,
+        worker.pid,
+        query.framework,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows.iter().map(role_row).collect::<Vec<_>>())
 }
 
@@ -122,14 +191,10 @@ async fn add_past_role(
         let id = payload
             .role_profile_pid
             .ok_or_else(|| unprocessable("role_profile_pid is required for the UK GDAD PCF"))?;
-        let profile = role_profiles::Entity::find()
-            .filter(role_profiles::Column::Pid.eq(id))
-            .filter(role_profiles::Column::DeletedAt.is_null())
-            .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .one(&ctx.db)
+        let (profile_pid, job_title) = pcf_profile(&ctx, id)
             .await?
             .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
-        (Some(profile.pid), None, profile.job_title)
+        (Some(profile_pid), None, job_title)
     } else {
         let uri = payload
             .occupation_uri
@@ -139,11 +204,7 @@ async fn add_past_role(
             .map_err(|_| unprocessable("that is not an ESCO occupation in the pinned copy"))?;
         (None, Some(occupation.uri), occupation.label)
     };
-    let existing = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(&framework))
-        .all(&ctx.db)
-        .await?;
+    let existing = roles_of(&ctx, worker.pid, Some(&framework)).await?;
     let spans: Vec<Interval> = existing
         .iter()
         .map(|r| Interval {
@@ -158,25 +219,31 @@ async fn add_past_role(
             existing[i].started_at.date_naive()
         )));
     }
-    let txn = ctx.db.begin().await?;
-    let row = worker_framework_roles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        framework_slug: ActiveValue::set(framework.clone()),
-        role_profile_pid: ActiveValue::set(profile_pid),
-        esco_occupation_uri: ActiveValue::set(occupation_uri),
-        role_label: ActiveValue::set(label),
-        selected_on: ActiveValue::set(payload.started_on),
-        started_at: ActiveValue::set(interval.start.into()),
-        ended_at: ActiveValue::set(interval.end.map(Into::into)),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, esco_occupation_uri,
+                                             role_label, selected_on, started_at, ended_at, recorded_by, on_behalf)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                     role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                     ended_at AS "ended_at: _", recorded_by, on_behalf"#,
+        Uuid::new_v4(),
+        worker.pid,
+        framework,
+        profile_pid,
+        occupation_uri,
+        label,
+        payload.started_on,
+        interval.start,
+        interval.end,
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "past_role_added",
@@ -184,7 +251,7 @@ async fn add_past_role(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(role_row(&row))
 }
 
@@ -197,8 +264,8 @@ struct SkillQuery {
 }
 
 async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
-    Ok(skills::Entity::find()
-        .all(&ctx.db)
+    Ok(sqlx::query!("SELECT pid, name FROM skills")
+        .fetch_all(db::pool(ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -211,18 +278,22 @@ async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
 async fn skill_history(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<SkillQuery>,
+    axa::extract::Query(query): axa::extract::Query<SkillQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let mut select = worker_skill_history::Entity::find()
-        .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid));
-    if let Some(skill) = query.skill_pid {
-        select = select.filter(worker_skill_history::Column::SkillPid.eq(skill));
-    }
-    let rows = select
-        .order_by_desc(worker_skill_history::Column::StartedAt)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        worker_skill_history::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                  proficiency, started_at AS "started_at: _", ended_at AS "ended_at: _", source, recorded_by,
+                  on_behalf
+             FROM worker_skill_history
+            WHERE worker_pid = $1 AND ($2::uuid IS NULL OR skill_pid = $2)
+            ORDER BY started_at DESC"#,
+        worker.pid,
+        query.skill_pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let names = skill_names(&ctx).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -267,23 +338,16 @@ async fn add_past_skill(
         return Err(unprocessable("proficiency must be between 1 and 5"));
     }
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    skills::Entity::find()
-        .filter(skills::Column::Pid.eq(payload.skill_pid))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    if !live_skill(&ctx, payload.skill_pid).await? {
+        return Err(Error::NotFound);
+    }
     let interval = rules::validate_past(
         start_of(payload.started_on),
         start_of(payload.ended_on) + chrono::Duration::days(1),
         Utc::now(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let existing = worker_skill_history::Entity::find()
-        .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_skill_history::Column::SkillPid.eq(payload.skill_pid))
-        .all(&ctx.db)
-        .await?;
+    let existing = skill_intervals_of(&ctx, worker.pid, Some(payload.skill_pid)).await?;
     let spans: Vec<Interval> = existing
         .iter()
         .map(|r| Interval {
@@ -296,23 +360,25 @@ async fn add_past_skill(
             "that overlaps another interval recorded for this skill",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let row = worker_skill_history::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        skill_pid: ActiveValue::set(payload.skill_pid),
-        proficiency: ActiveValue::set(payload.proficiency),
-        started_at: ActiveValue::set(interval.start.into()),
-        ended_at: ActiveValue::set(interval.end.map(Into::into)),
-        source: ActiveValue::set("retrospective".to_string()),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO worker_skill_history (pid, worker_pid, skill_pid, proficiency, started_at, ended_at, source,
+                                           recorded_by, on_behalf)
+         VALUES ($1, $2, $3, $4, $5, $6, 'retrospective', $7, $8)",
+        pid,
+        worker.pid,
+        payload.skill_pid,
+        payload.proficiency,
+        interval.start,
+        interval.end,
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "past_skill_added",
@@ -320,8 +386,8 @@ async fn add_past_skill(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// Query for the as-of view.
@@ -337,14 +403,11 @@ struct AsOfQuery {
 async fn skills_as_of(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
-    axum::extract::Query(query): axum::extract::Query<AsOfQuery>,
+    axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let instant = start_of(query.at) + chrono::Duration::days(1) - chrono::Duration::seconds(1);
-    let rows = worker_skill_history::Entity::find()
-        .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
-        .await?;
+    let rows = skill_intervals_of(&ctx, worker.pid, None).await?;
     let names = skill_names(&ctx).await?;
     let mut by_skill: BTreeMap<Uuid, Vec<(Interval, i32)>> = BTreeMap::new();
     for r in &rows {
@@ -365,10 +428,7 @@ async fn skills_as_of(
         })
         .collect();
     held.sort_by_key(|v| v["skill"].as_str().map(str::to_lowercase));
-    let roles = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
-        .await?;
+    let roles = roles_of(&ctx, worker.pid, None).await?;
     let held_roles: Vec<serde_json::Value> = roles
         .iter()
         .filter(|r| {
@@ -413,18 +473,14 @@ async fn aspiration_target(
             let id = payload
                 .role_profile_pid
                 .ok_or_else(|| unprocessable("role_profile_pid is required for the UK GDAD PCF"))?;
-            let profile = role_profiles::Entity::find()
-                .filter(role_profiles::Column::Pid.eq(id))
-                .filter(role_profiles::Column::DeletedAt.is_null())
-                .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-                .one(&ctx.db)
+            let (profile_pid, job_title) = pcf_profile(ctx, id)
                 .await?
                 .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
             (
                 Some(framework),
-                Some(profile.pid),
+                Some(profile_pid),
                 None,
-                Some(profile.job_title),
+                Some(job_title),
                 None,
             )
         } else {
@@ -447,12 +503,9 @@ async fn aspiration_target(
         let id = payload
             .skill_pid
             .ok_or_else(|| unprocessable("a skill aspiration needs a skill_pid"))?;
-        skills::Entity::find()
-            .filter(skills::Column::Pid.eq(id))
-            .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            .ok_or(Error::NotFound)?;
+        if !live_skill(ctx, id).await? {
+            return Err(Error::NotFound);
+        }
         (None, None, None, None, Some(id))
     })
 }
@@ -512,30 +565,33 @@ async fn add_aspiration(
     .map_err(|e| unprocessable(&e))?;
     let (framework, profile, occupation, role_label, skill) =
         aspiration_target(&ctx, &payload).await?;
-    let txn = ctx.db.begin().await?;
-    let row = worker_aspirations::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(payload.kind.clone()),
-        framework_slug: ActiveValue::set(framework),
-        role_profile_pid: ActiveValue::set(profile),
-        esco_occupation_uri: ActiveValue::set(occupation),
-        role_label: ActiveValue::set(role_label),
-        skill_pid: ActiveValue::set(skill),
-        target_level: ActiveValue::set(payload.target_level),
-        horizon: ActiveValue::set(payload.horizon.clone()),
-        status: ActiveValue::set(status),
-        note: ActiveValue::set(payload.note.clone()),
-        visibility: ActiveValue::set(visibility),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO worker_aspirations (pid, worker_pid, kind, framework_slug, role_profile_pid, esco_occupation_uri,
+                                         role_label, skill_pid, target_level, horizon, status, note, visibility,
+                                         recorded_by, on_behalf, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL)",
+        pid,
+        worker.pid,
+        payload.kind,
+        framework,
+        profile,
+        occupation,
+        role_label,
+        skill,
+        payload.target_level,
+        payload.horizon,
+        status,
+        payload.note,
+        visibility,
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "aspiration_added",
@@ -543,8 +599,8 @@ async fn add_aspiration(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// How the worker stands against an aspiration today.
@@ -565,10 +621,12 @@ async fn progress_toward(
         }));
     }
     if let Some(profile) = a.role_profile_pid {
-        let reqs = role_skill_requirements::Entity::find()
-            .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile))
-            .all(&ctx.db)
-            .await?;
+        let reqs = sqlx::query!(
+            "SELECT skill_pid, min_proficiency FROM role_skill_requirements WHERE role_profile_pid = $1 ORDER BY id",
+            profile
+        )
+        .fetch_all(db::pool(ctx))
+        .await?;
         let met = reqs
             .iter()
             .filter(|r| {
@@ -580,21 +638,22 @@ async fn progress_toward(
         return Ok(serde_json::json!({ "requirements": reqs.len(), "met": met }));
     }
     if let Some(uri) = &a.esco_occupation_uri {
-        let essential: Vec<String> = esco_occupation_skills::Entity::find()
-            .filter(esco_occupation_skills::Column::OccupationUri.eq(uri))
-            .filter(esco_occupation_skills::Column::Relation.eq("essential"))
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|r| r.skill_uri)
-            .collect();
-        let links: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
-            .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-            .all(&ctx.db)
-            .await?
-            .into_iter()
-            .map(|r| (r.reference, r.skill_pid))
-            .collect();
+        let essential: Vec<String> = sqlx::query_scalar!(
+            "SELECT skill_uri FROM esco_occupation_skills
+              WHERE occupation_uri = $1 AND relation = 'essential' ORDER BY id",
+            uri
+        )
+        .fetch_all(db::pool(ctx))
+        .await?;
+        let links: BTreeMap<String, Uuid> = sqlx::query!(
+            r#"SELECT "ref" AS reference, skill_pid FROM skill_external_refs WHERE framework_slug = $1 ORDER BY id"#,
+            ESCO_SLUG
+        )
+        .fetch_all(db::pool(ctx))
+        .await?
+        .into_iter()
+        .map(|r| (r.reference, r.skill_pid))
+        .collect();
         let have = essential
             .iter()
             .filter(|u| links.get(*u).is_some_and(|p| declared.contains_key(p)))
@@ -619,15 +678,16 @@ async fn viewer_of(
     let Some(claims) = caller.claims() else {
         return Ok(rules::Viewer::Other);
     };
-    let all = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let all = sqlx::query!(
+        "SELECT pid, manager_pid, person_ref FROM workers WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     let manager_of: BTreeMap<Uuid, Uuid> = all
         .iter()
         .filter_map(|w| w.manager_pid.map(|m| (w.pid, m)))
         .collect();
-    let by_pid: BTreeMap<Uuid, &workers::Model> = all.iter().map(|w| (w.pid, w)).collect();
+    let by_pid: BTreeMap<Uuid, _> = all.iter().map(|w| (w.pid, w)).collect();
     let is_manager = crate::rules::org::upline(worker.pid, &manager_of)
         .iter()
         .any(|m| {
@@ -651,22 +711,19 @@ async fn list_aspirations(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let viewer = viewer_of(&ctx, &caller, &worker).await?;
-    let rows = worker_aspirations::Entity::find()
-        .filter(worker_aspirations::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_aspirations::Column::DeletedAt.is_null())
-        .order_by_desc(worker_aspirations::Column::Id)
-        .all(&ctx.db)
-        .await?;
-    let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| (d.skill_pid, d.proficiency))
-        .collect();
+    let rows = aspirations_of(&ctx, &[worker.pid]).await?;
+    let declared: BTreeMap<Uuid, i32> = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills
+          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        worker.pid
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|d| (d.skill_pid, d.proficiency))
+    .collect();
     let names = skill_names(&ctx).await?;
     let mut out = Vec::new();
     for a in &rows {
@@ -714,16 +771,18 @@ async fn downline_aspirations(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let manager = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let manager = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let viewer = if auth::acting_for_other(&caller, &manager.person_ref) {
         rules::Viewer::Other
     } else {
         rules::Viewer::Manager
     };
-    let all = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let all = sqlx::query!(
+        "SELECT pid, manager_pid, display_name, job_title, department FROM workers
+          WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut reports_of: BTreeMap<Uuid, Vec<Uuid>> = BTreeMap::new();
     for w in &all {
         if let Some(boss) = w.manager_pid {
@@ -731,22 +790,18 @@ async fn downline_aspirations(
         }
     }
     let below = crate::rules::org::downline(manager.pid, &reports_of);
-    let by_pid: BTreeMap<Uuid, &workers::Model> = all.iter().map(|w| (w.pid, w)).collect();
+    let by_pid: BTreeMap<Uuid, _> = all.iter().map(|w| (w.pid, w)).collect();
     let pids: Vec<Uuid> = below.iter().map(|(p, _)| *p).collect();
-    let rows = worker_aspirations::Entity::find()
-        .filter(worker_aspirations::Column::WorkerPid.is_in(pids))
-        .filter(worker_aspirations::Column::DeletedAt.is_null())
-        .order_by_desc(worker_aspirations::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = aspirations_of(&ctx, &pids).await?;
     let names = skill_names(&ctx).await?;
-    let declared: BTreeMap<(Uuid, Uuid), i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
-        .collect();
+    let declared: BTreeMap<(Uuid, Uuid), i32> = sqlx::query!(
+        "SELECT worker_pid, skill_pid, proficiency FROM worker_skills WHERE deleted_at IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
+    .collect();
     let mut people = Vec::new();
     for (pid, depth) in &below {
         let Some(person) = by_pid.get(pid) else {
@@ -812,13 +867,38 @@ struct AspirationUpdate {
     visibility: Option<String>,
 }
 
+/// The live aspirations of these workers, newest first.
+async fn aspirations_of(
+    ctx: &AppContext,
+    worker_pids: &[Uuid],
+) -> Result<Vec<worker_aspirations::Model>> {
+    Ok(sqlx::query_as!(
+        worker_aspirations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
+                  framework_slug, role_profile_pid, esco_occupation_uri, role_label, skill_pid, target_level, horizon,
+                  status, note, visibility, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM worker_aspirations
+            WHERE worker_pid = ANY($1) AND deleted_at IS NULL
+            ORDER BY id DESC"#,
+        worker_pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
 async fn find_aspiration(ctx: &AppContext, pid: &str) -> Result<worker_aspirations::Model> {
-    worker_aspirations::Entity::find()
-        .filter(worker_aspirations::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(worker_aspirations::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        worker_aspirations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
+                  framework_slug, role_profile_pid, esco_occupation_uri, role_label, skill_pid, target_level, horizon,
+                  status, note, visibility, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM worker_aspirations
+            WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/aspirations/{pid}` — update status, horizon, target, note, or
@@ -840,27 +920,28 @@ async fn update_aspiration(
         payload.note.as_deref().or(row.note.as_deref()),
     )
     .map_err(|e| unprocessable(&e))?;
-    let mut active: worker_aspirations::ActiveModel = row.into();
-    if let Some(status) = payload.status {
-        active.status = ActiveValue::set(status);
+    if let Some(visibility) = &payload.visibility {
+        rules::validate_visibility(visibility).map_err(|e| unprocessable(&e))?;
     }
-    if let Some(horizon) = payload.horizon {
-        active.horizon = ActiveValue::set(horizon);
-    }
-    if payload.target_level.is_some() {
-        active.target_level = ActiveValue::set(payload.target_level);
-    }
-    if payload.note.is_some() {
-        active.note = ActiveValue::set(payload.note);
-    }
-    if let Some(visibility) = payload.visibility {
-        rules::validate_visibility(&visibility).map_err(|e| unprocessable(&e))?;
-        active.visibility = ActiveValue::set(visibility);
-    }
-    let txn = ctx.db.begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query!(
+        "UPDATE worker_aspirations
+            SET status = COALESCE($2, status), horizon = COALESCE($3, horizon),
+                target_level = COALESCE($4, target_level), note = COALESCE($5, note),
+                visibility = COALESCE($6, visibility)
+          WHERE id = $1
+          RETURNING pid, status, visibility",
+        row.id,
+        payload.status,
+        payload.horizon,
+        payload.target_level,
+        payload.note,
+        payload.visibility,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "aspiration_updated",
@@ -868,7 +949,7 @@ async fn update_aspiration(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(
         serde_json::json!({ "pid": updated.pid, "status": updated.status, "visibility": updated.visibility }),
     )
@@ -883,12 +964,15 @@ async fn delete_aspiration(
 ) -> Result<Response> {
     let row = find_aspiration(&ctx, &pid).await?;
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
-    let mut active: worker_aspirations::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE worker_aspirations SET deleted_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "aspiration_dropped",
@@ -896,7 +980,7 @@ async fn delete_aspiration(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 

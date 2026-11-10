@@ -1,0 +1,113 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.pid, r.asked_on, r.due_on, r.answered_on,\n                w.pid AS worker_pid, w.worker_number, w.display_name, w.organization_ref\n           FROM pay_information_requests r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL\n          WHERE r.deleted_at IS NULL AND ($1::text IS NULL OR w.organization_ref = $1)\n            AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))\n          ORDER BY r.due_on, r.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "asked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "asked_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "due_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "due_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "answered_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pay_information_requests",
+            "name": "answered_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "organization_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0c9966c1877c8a73e6f5afea907be27ad58e7d0bb685c82d76825797e66e0474"
+}

@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO early_warnings\n                 (pid, organization_ref, kind, subject_pid, subject_name, first_true_on)\n             VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0beb1aa4ab869f971cb0bbab4861193b4f3e671abbe0e67fe5fcf74481622389"
+}

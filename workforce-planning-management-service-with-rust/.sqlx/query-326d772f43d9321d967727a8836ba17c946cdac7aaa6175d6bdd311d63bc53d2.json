@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, name, kind,\n                  basis, recognised_on, contact_role, recorded_by\n             FROM recognised_bodies WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "basis",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "basis"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recognised_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "recognised_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "contact_role",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "contact_role"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "recognised_bodies",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "326d772f43d9321d967727a8836ba17c946cdac7aaa6175d6bdd311d63bc53d2"
+}

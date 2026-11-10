@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, data, occurred_at, next_attempt_at)\n             SELECT gen_random_uuid(), s.pid, $1, $2::text, $3, $4, now(), now()\n               FROM webhook_subscriptions s WHERE s.active AND $2::text = ANY (s.kinds)\n             ON CONFLICT (subscription_pid, event_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Varchar",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3413b816b4f59a2b1b9220b8ce5e26c65ff4d63621353914d5e23d759ceb7fad"
+}

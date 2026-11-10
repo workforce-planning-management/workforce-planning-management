@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE announcements SET deleted_at = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4fbc94eeeb74515876b2d1b341d6174fa3d47d9197a5e43617c9b4c0b9fc7e93"
+}

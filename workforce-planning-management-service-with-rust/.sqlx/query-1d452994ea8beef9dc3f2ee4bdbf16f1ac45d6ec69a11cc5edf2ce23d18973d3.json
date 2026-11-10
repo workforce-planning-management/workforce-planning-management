@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM skill_pools WHERE organization_ref = $1 AND peer_pool_ref = $2 AND pid <> $3\n                                                         AND deleted_at IS NULL) AS \"taken!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "taken!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1d452994ea8beef9dc3f2ee4bdbf16f1ac45d6ec69a11cc5edf2ce23d18973d3"
+}

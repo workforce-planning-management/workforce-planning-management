@@ -30,11 +30,24 @@ that date: the Keycloak and Entra suites (CI runs them), the Redis-backed shared
 here), and the live Playwright specs against a real service. See each subproject's README and
 [spec/testing.md](spec/testing.md).
 
+## Getting help
+
+- **Found a bug?** Open an issue in the [issue tracker](https://github.com/workforce-planning-management/workforce-planning-management/issues):
+  say which page or command, what you did, what you expected and what happened. Never paste real personal data; WPM holds
+  synthetic data only.
+- **Something confusing?** Ask in the issue tracker and say it is a question. A confusing screen or document is worth
+  reporting too.
+- **A security problem?** Email the maintainer as [SECURITY.md](SECURITY.md) says, not in a public issue.
+- **Learning a workflow?** In the app, the **Help** link in every header opens the help page, with the walkthroughs for an
+  employee, a manager and HR (`/tour/employee`, `/tour/manager`, `/tour/hr`) and the tour; every error message links there too. The demo tutorial is at
+  [locales/en-001/start/index.md](locales/en-001/start/index.md); install and test steps are in [INSTALL.md](INSTALL.md).
+- **Contributing?** See [CONTRIBUTING.md](CONTRIBUTING.md) (an issue or an email before large work).
+
 ## Subprojects
 
 | Subproject | Role | Stack |
 | --- | --- | --- |
-| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Axum and axa, SeaORM, PostgreSQL |
+| [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Axum and axa, `sqlx` and SeaORM, PostgreSQL |
 | [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 3, Svelte 5 runes, TypeScript |
 | [workforce-planning-management-matcher-with-rust](workforce-planning-management-matcher-with-rust/) | Worker-record matcher crate (published; the service uses the crates.io copy) | Rust, no database, no clock |
 

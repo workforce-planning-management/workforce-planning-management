@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, skill_pid, proficiency FROM worker_skills WHERE deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "proficiency"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "eb42374c8aac93da55f10482c9218adf9a65d041f4700cd3ea614c2039b4e4a1"
+}

@@ -1,6 +1,6 @@
 # Workforce Planning Management service — edition spec
 
-Stack-specific specification for the Loco edition. The
+Stack-specific specification for the Axum edition. The
 **cross-cutting spec at [`../../spec/`](../../spec/index.md) is the
 single source of truth** for the domain (model, pillars, state
 machines, auth posture); this file adds only what is specific to
@@ -17,8 +17,8 @@ this edition.
 
 Per [architecture](../../spec/architecture.md) and the family
 rust-axum-stack:
-Rust 2024, Loco (Axum + SeaORM), PostgreSQL 18, crate-root
-`migration/`, loco-idiomatic `src/controllers/` layout, pure
+Rust 2024, Axum (axa + SeaORM), PostgreSQL 18, crate-root
+`migration/`, `src/controllers/` layout, pure
 `src/rules/` core, stub-first upstream clients, offline PASETO +
 ABAC, OpenAPI/Swagger, `Accepts-version` header versioning,
 tracing + OTLP, Podman.

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT skill_uri FROM esco_occupation_skills\n              WHERE occupation_uri = $1 AND relation = 'essential' ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupation_skills",
+            "name": "skill_uri"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2144622a99cd2966c8b0402ae735a4af05c30f5d319e977f8ab6b04c832c98eb"
+}

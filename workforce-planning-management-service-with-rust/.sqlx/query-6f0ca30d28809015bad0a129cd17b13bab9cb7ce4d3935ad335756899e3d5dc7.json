@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM holidays WHERE organization_ref = $1 AND region = $2 AND natural_on = $3 AND name = $4\n           ) AS \"clash!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "clash!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Date",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6f0ca30d28809015bad0a129cd17b13bab9cb7ce4d3935ad335756899e3d5dc7"
+}

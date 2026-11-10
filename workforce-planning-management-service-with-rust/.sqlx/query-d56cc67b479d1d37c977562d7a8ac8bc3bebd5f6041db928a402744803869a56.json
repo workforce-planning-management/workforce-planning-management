@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO skill_pool_members (pid, pool_pid, role_profile_pid, skill_pid, min_proficiency)\n         VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d56cc67b479d1d37c977562d7a8ac8bc3bebd5f6041db928a402744803869a56"
+}

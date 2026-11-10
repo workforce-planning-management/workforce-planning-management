@@ -1,0 +1,149 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, report_pid, manager_pid, note,\n                  started_at AS \"started_at: _\", ended_at AS \"ended_at: _\", recorded_by, on_behalf\n             FROM dotted_line_reports\n            WHERE (report_pid = $1 OR manager_pid = $1) AND ($2 OR ended_at IS NULL)\n            ORDER BY started_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "report_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "report_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "manager_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "manager_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "started_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "started_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "ended_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "ended_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "on_behalf"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "94d3acf67c54138c74b334b89391bee83bc2f55edfc0acf8c4117a37b3c36015"
+}

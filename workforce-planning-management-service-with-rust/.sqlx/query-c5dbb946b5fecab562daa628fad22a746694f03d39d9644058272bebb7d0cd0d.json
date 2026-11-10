@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE rotas SET deleted_at = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c5dbb946b5fecab562daa628fad22a746694f03d39d9644058272bebb7d0cd0d"
+}

@@ -10,7 +10,7 @@
 //! `DATABASE_URL`). Run with
 //! `cargo test --test enforcement -- --ignored`.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -18,6 +18,7 @@ use rusty_paseto::core::{Footer, Key, Paseto, PasetoAsymmetricPrivateKey, Payloa
 use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -105,7 +106,7 @@ async fn enforcement_personas_gate_and_mask() {
         let bearer = |token: &str| format!("Bearer {token}");
 
         // Public allow-list stays open without a token.
-        assert_eq!(request.get("/_health").await.status_code(), 200);
+        assert_eq!(request.get("/_health/live").await.status_code(), 200);
         assert_eq!(request.get("/_posture").await.status_code(), 200);
         // Metrics are not public: no token ⇒ 401, a service token ⇒ 200.
         assert_eq!(request.get("/metrics.prom").await.status_code(), 401);
@@ -189,13 +190,11 @@ async fn enforcement_personas_gate_and_mask() {
         };
         assert_eq!(stranger, 403, "a stranger does not read a colleague's record");
         {
-            use sea_orm::ConnectionTrait;
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{other_person}', '{org}', '{worker_pid}', 'member', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -302,27 +301,20 @@ async fn enforcement_personas_gate_and_mask() {
         // The list with `?fields=` (WPM-T388) keeps the mask: a masked colleague asking for the salary gets null and no salary read is
         // recorded; payroll asking for it gets the figure, and its list read is audited as the single read is.
         let salary_reads = || async {
-            use sea_orm::{ConnectionTrait, Statement};
-            ctx.db
-                .query_one_raw(Statement::from_string(
-                    ctx.db.get_database_backend(),
-                    format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"),
-                ))
+            sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"))).fetch_optional(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap()
                 .unwrap()
-                .try_get::<i64>("", "n")
+                .try_get::<i64, _>("n")
                 .unwrap()
         };
         // The database may hold more workers than one page, so page through to the one made here.
         let row_of = |fields: &'static str, token: String| {
             let (request, worker_pid) = (&request, worker_pid.clone());
             async move {
+                let mut at = format!("/api/workers?department=engineering&fields={fields}&limit=500");
                 for page in 0.. {
-                    let response = request
-                        .get(&format!("/api/workers?department=engineering&fields={fields}&limit=500&offset={}", page * 500))
-                        .add_header("authorization", bearer(&token))
-                        .await;
+                    let response = request.get(&at).add_header("authorization", bearer(&token)).await;
                     assert_eq!(response.status_code(), 200);
                     let rows: Value = response.json();
                     let rows = rows.as_array().unwrap();
@@ -330,19 +322,21 @@ async fn enforcement_personas_gate_and_mask() {
                     if let Some(row) = rows.iter().find(|r| r["pid"] == worker_pid.as_str()) {
                         return row.clone();
                     }
+                    // The next page is where the last one's `Link` points (WPM-T478).
+                    let link = response.headers().get("link").expect("the worker is on a later page");
+                    let link = link.to_str().unwrap();
+                    at = link[1..link.find('>').unwrap()].to_string();
                 }
                 unreachable!()
             }
         };
         // The list is scoped to the caller's organizations (the single read is not), so payroll needs a membership in this one.
         {
-            use sea_orm::ConnectionTrait;
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:payroll-user', '{org}', 'member', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

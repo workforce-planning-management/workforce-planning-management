@@ -13,13 +13,8 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 
-use crate::models::_entities::{
-    conversion_plans, engagement_decisions, engagement_reminders, organization_memberships, workers,
-};
-use crate::models::notifications::Model as Notification;
 use crate::rules::engagement::{self as rules, Reminder};
 
 /// The reminder task.
@@ -74,13 +69,12 @@ pub struct Report {
 /// A database error.
 pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
     let mut report = Report::default();
-    let staff = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .filter(workers::Column::EngagementEndsOn.is_not_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let staff = sqlx::query!(
+        "SELECT pid, status, display_name, organization_ref, manager_pid, engagement_ends_on FROM workers
+          WHERE deleted_at IS NULL AND terminated_on IS NULL AND engagement_ends_on IS NOT NULL ORDER BY id"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     for worker in staff {
         let Some(ends_on) = worker.engagement_ends_on else {
             continue;
@@ -92,40 +86,35 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             continue;
         };
         // A decision already recorded for this end date settles it: nothing more to ask.
-        let decided = engagement_decisions::Entity::find()
-            .filter(engagement_decisions::Column::WorkerPid.eq(worker.pid))
-            .filter(engagement_decisions::Column::EndsOn.eq(ends_on))
-            .one(&ctx.db)
-            .await?
-            .is_some();
+        let decided = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM engagement_decisions WHERE worker_pid = $1 AND ends_on = $2) AS "e!""#,
+            worker.pid,
+            ends_on,
+        )
+        .fetch_one(crate::db::pool(ctx))
+        .await?;
         if decided {
             continue;
         }
-        let already = engagement_reminders::Entity::find()
-            .filter(engagement_reminders::Column::WorkerPid.eq(worker.pid))
-            .filter(engagement_reminders::Column::EndsOn.eq(ends_on))
-            .filter(engagement_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&ctx.db)
-            .await?
-            .is_some();
+        let already = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM engagement_reminders
+                               WHERE worker_pid = $1 AND ends_on = $2 AND kind = $3) AS "e!""#,
+            worker.pid,
+            ends_on,
+            reminder.as_str(),
+        )
+        .fetch_one(crate::db::pool(ctx))
+        .await?;
         if already {
             continue;
         }
-        let mut recipients: Vec<uuid::Uuid> = worker.manager_pid.into_iter().collect();
-        for m in organization_memberships::Entity::find()
-            .filter(organization_memberships::Column::OrganizationRef.eq(&worker.organization_ref))
-            .filter(organization_memberships::Column::Role.eq("hr_admin"))
-            .filter(organization_memberships::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?
-        {
-            if let Some(pid) = m.worker_pid
-                && pid != worker.pid
-                && !recipients.contains(&pid)
-            {
-                recipients.push(pid);
-            }
-        }
+        let recipients = recipients(
+            ctx,
+            worker.pid,
+            worker.manager_pid,
+            &worker.organization_ref,
+        )
+        .await?;
         let plan_note = plan_note(ctx, worker.pid).await?;
         let (kind, body) = match reminder {
             Reminder::Ending => (
@@ -143,9 +132,10 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
                 ),
             ),
         };
+        let mut tx = crate::db::pool(ctx).begin().await?;
         for to in &recipients {
-            Notification::push(
-                &ctx.db,
+            crate::db::notify(
+                &mut tx,
                 *to,
                 kind,
                 &body,
@@ -154,15 +144,16 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .await?;
             report.told += 1;
         }
-        engagement_reminders::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            ends_on: ActiveValue::set(ends_on),
-            kind: ActiveValue::set(reminder.as_str().to_string()),
-            reminded_on: ActiveValue::set(as_of),
-            ..Default::default()
-        }
-        .insert(&ctx.db)
+        sqlx::query!(
+            "INSERT INTO engagement_reminders (worker_pid, ends_on, kind, reminded_on) VALUES ($1, $2, $3, $4)",
+            worker.pid,
+            ends_on,
+            reminder.as_str(),
+            as_of,
+        )
+        .execute(&mut *tx)
         .await?;
+        tx.commit().await?;
         match reminder {
             Reminder::Ending => report.ending += 1,
             Reminder::EndedUndecided => report.ended_undecided += 1,
@@ -173,12 +164,40 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
 
 /// The open conversion plan, named by its status and review date, never its reason; empty when
 /// there is none.
+/// Who is told: the manager, then the organization's HR administrators, never the worker, each once.
+async fn recipients(
+    ctx: &AppContext,
+    worker: uuid::Uuid,
+    manager: Option<uuid::Uuid>,
+    organization: &str,
+) -> Result<Vec<uuid::Uuid>> {
+    let mut recipients: Vec<uuid::Uuid> = manager.into_iter().collect();
+    for m in sqlx::query_scalar!(
+        "SELECT worker_pid FROM organization_memberships
+          WHERE organization_ref = $1 AND role = 'hr_admin' AND deleted_at IS NULL",
+        organization,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?
+    {
+        if let Some(pid) = m
+            && pid != worker
+            && !recipients.contains(&pid)
+        {
+            recipients.push(pid);
+        }
+    }
+    Ok(recipients)
+}
+
 async fn plan_note(ctx: &AppContext, worker_pid: uuid::Uuid) -> Result<String> {
-    let plan = conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::WorkerPid.eq(worker_pid))
-        .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .one(&ctx.db)
-        .await?;
+    let plan = sqlx::query!(
+        "SELECT status, review_on FROM conversion_plans
+          WHERE worker_pid = $1 AND status IN ('proposed', 'approved') ORDER BY id LIMIT 1",
+        worker_pid,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?;
     Ok(plan.map_or_else(String::new, |p| {
         let review = p
             .review_on

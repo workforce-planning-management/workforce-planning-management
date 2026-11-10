@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT opened_on, filled_on FROM requisitions WHERE deleted_at IS NULL AND filled_on BETWEEN $1 AND $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "opened_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "opened_on"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "filled_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "filled_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "fb3836376051b1b90a71767698749c31faf482dc5d4d36571bfb463608931484"
+}

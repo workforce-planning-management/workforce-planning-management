@@ -141,7 +141,11 @@ async fn appraisal_round_trip() {
             .post(&format!("/api/notifications/{bell_pid}/read"))
             .await
             .json();
-        assert!(read["read_at"].is_string());
+        assert!(
+            read["read_at"].as_str().unwrap().ends_with('Z'),
+            "a timestamp stays RFC 3339 in UTC: {}",
+            read["read_at"]
+        );
 
         // Nominations freeze once collecting.
         let late = seed_worker!(&request, &org, "A-L", None).await;

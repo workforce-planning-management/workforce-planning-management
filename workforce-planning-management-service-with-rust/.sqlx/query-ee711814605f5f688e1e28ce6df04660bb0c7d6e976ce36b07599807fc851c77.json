@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO cpd_entries\n             (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths,\n              source, external_ref, course_ref)\n         VALUES ($1, $2, $3, $4, 'course', $5, $6, 'lms', $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Int8",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee711814605f5f688e1e28ce6df04660bb0c7d6e976ce36b07599807fc851c77"
+}

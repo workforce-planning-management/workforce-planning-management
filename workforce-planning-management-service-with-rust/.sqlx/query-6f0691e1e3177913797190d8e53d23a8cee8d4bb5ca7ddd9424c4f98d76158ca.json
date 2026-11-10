@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO professional_registrations (pid, worker_pid, body, reference, registered_on, expires_on)\n         VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6f0691e1e3177913797190d8e53d23a8cee8d4bb5ca7ddd9424c4f98d76158ca"
+}

@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT occupation_uri, relation FROM esco_occupation_skills WHERE occupation_uri = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "occupation_uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupation_skills",
+            "name": "occupation_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "relation",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "esco_occupation_skills",
+            "name": "relation"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "45327e2eed78678dd91e92eb4212210e78e77009f77d8299d71afb7a70535732"
+}

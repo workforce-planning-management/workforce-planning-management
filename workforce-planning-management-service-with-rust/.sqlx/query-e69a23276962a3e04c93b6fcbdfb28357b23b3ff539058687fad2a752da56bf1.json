@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE qualifications SET verified_on = $2, verified_by = $3, evidence_ref = $4 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e69a23276962a3e04c93b6fcbdfb28357b23b3ff539058687fad2a752da56bf1"
+}

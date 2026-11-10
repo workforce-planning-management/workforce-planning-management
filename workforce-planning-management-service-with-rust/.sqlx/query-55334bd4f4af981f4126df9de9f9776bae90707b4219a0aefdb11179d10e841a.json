@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE movements SET status = 'cancelled' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "55334bd4f4af981f4126df9de9f9776bae90707b4219a0aefdb11179d10e841a"
+}

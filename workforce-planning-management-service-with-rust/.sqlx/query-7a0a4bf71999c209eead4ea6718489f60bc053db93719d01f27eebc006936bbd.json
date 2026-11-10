@@ -1,0 +1,138 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, organization_ref, programme_ref, decision, reason, fit, earliest_shift_months, wip_exceeds,\n                decided_by, created_at\n           FROM start_decisions\n          WHERE ($1::text IS NULL OR programme_ref = $1) AND ($2::text IS NULL OR organization_ref = $2)\n            AND ($3::text[] IS NULL OR organization_ref = ANY($3))\n          ORDER BY id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "decision",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "decision"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "fit",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "fit"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "earliest_shift_months",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "earliest_shift_months"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "wip_exceeds",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "wip_exceeds"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "decided_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "start_decisions",
+            "name": "created_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "7a0a4bf71999c209eead4ea6718489f60bc053db93719d01f27eebc006936bbd"
+}

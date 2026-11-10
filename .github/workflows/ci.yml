@@ -32,7 +32,7 @@ jobs:
     name: docs, links, days, licenses, status
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Markdown links resolve
@@ -52,7 +52,7 @@ jobs:
     name: secret scan (gitleaks, whole history)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: taiki-e/install-action@1e29709c0ec63babbe8f266397a465f29a825f91 # v2.87.31
+      - uses: taiki-e/install-action@682ce6c3c696a4cd5168a05f98e51aa02b877941 # v2.89.1
         with:
           tool: zizmor
       - run: zizmor --offline .github
@@ -84,7 +84,7 @@ jobs:
       run:
         working-directory: workforce-planning-management-service-with-rust
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add rustfmt clippy
@@ -102,7 +102,7 @@ jobs:
       run:
         working-directory: workforce-planning-management-matcher-with-rust
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup component add rustfmt clippy
@@ -114,24 +114,24 @@ jobs:
       - run: cargo test --locked
 
   # spec/rust-msrv-n-minus-2: the MSRV is the current stable minus two (1.99 - 2 = 1.97 on 2026-10-30).
-  # The matcher, the migration crate and the vendored entity-ref declare 1.97 and are checked on it here. The service still
+  # The matcher and the vendored entity-ref declare 1.97 and are checked on it here. The service still
   # declares 1.99, because the published matcher 0.1.0 it depends on declares 1.99; it compiles on
   # 1.97 (`cargo +1.97 check --all-targets --ignore-rust-version`), and is lowered once a matcher
   # declaring 1.97 is published (WPM-T390).
   msrv:
-    name: MSRV · matcher and migration on Rust 1.97
+    name: MSRV · matcher and entity-ref on Rust 1.97
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: rustup toolchain install 1.97 --profile minimal
       - name: matcher
         working-directory: workforce-planning-management-matcher-with-rust
         run: cargo +1.97 check --locked --all-targets
-      - name: migration
+      - name: entity-ref
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo +1.97 check --locked -p workforce-planning-management-migration -p entity-ref
+        run: cargo +1.97 check --locked -p entity-ref
 
   api-db:
     name: api · database, enforcement and security suites
@@ -164,7 +164,7 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -178,6 +178,8 @@ jobs:
       - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_engagements -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_duplicates -- --ignored --test-threads=1
+      - run: cargo test --locked --test migration_adoption -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
       - run: cargo test --locked --test learning_economics -- --ignored --test-threads=1
@@ -189,6 +191,12 @@ jobs:
       - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
       - run: cargo test --locked --test shared_cache_upstream
+      # The query cache a build reads must match the migrated schema and the queries (WPM-D184).
+      - run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features postgres,rustls,sqlx-toml
+      - run: cargo run --locked -- db migrate
+        env:
+          APP_ENV: test
+      - run: cargo sqlx prepare --check
       - run: cargo test --locked --test enforcement_equality -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_oversight_pack -- --ignored --test-threads=1
@@ -237,7 +245,7 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -277,7 +285,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       # pg_dump must be at least the server's version (18).
@@ -339,7 +347,7 @@ jobs:
       DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -378,7 +386,7 @@ jobs:
       ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
       WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -394,7 +402,7 @@ jobs:
       run:
         working-directory: workforce-planning-management-service-with-rust
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -414,13 +422,13 @@ jobs:
       run:
         working-directory: workforce-planning-management-ui-with-svelte
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 11.0.8
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: pnpm
@@ -444,13 +452,13 @@ jobs:
       run:
         working-directory: workforce-planning-management.github.io
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 11.0.8
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: pnpm
@@ -503,7 +511,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
@@ -518,7 +526,7 @@ jobs:
         run: |
           cargo build --locked --release --bin workforce-planning-management
           ./target/release/workforce-planning-management start > service.log 2>&1 &
-          for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
+          for i in $(seq 1 60); do curl -fs http://localhost:5150/_health/live && break; sleep 2; done
           curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0

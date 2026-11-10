@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_goals SET status = 'agreed', agreed_on = $2 WHERE id = $1 RETURNING status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_goals",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3fb4828dd3988c36d6c79c4895d5e2b17f5d84bf65098756d5d6fbb04ca62cd7"
+}

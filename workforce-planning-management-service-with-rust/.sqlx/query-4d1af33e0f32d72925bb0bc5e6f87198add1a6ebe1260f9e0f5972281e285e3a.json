@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT w.department, r.reason\n           FROM resignations r JOIN workers w ON w.pid = r.worker_pid\n          WHERE r.status IN ('logged', 'accepted') AND ($1::text[] IS NULL OR w.organization_ref = ANY($1))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "resignations",
+            "name": "reason"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "4d1af33e0f32d72925bb0bc5e6f87198add1a6ebe1260f9e0f5972281e285e3a"
+}

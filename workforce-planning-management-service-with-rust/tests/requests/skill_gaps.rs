@@ -2,7 +2,6 @@
 //! targets and (for them alone) aspirations; and the workforce roll-up, which
 //! counts people and never names them.
 
-use sea_orm::ConnectionTrait;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -47,19 +46,17 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
                 .assert_status_ok();
         }
         // Make it a PCF role and give both workers that current role.
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         for w in [&a, &b] {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO worker_framework_roles \
                      (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
                      VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'SG role', CURRENT_DATE, now(), false)"
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }
@@ -172,18 +169,16 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
                 .await
                 .assert_status_ok();
         }
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO worker_framework_roles \
                  (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
                  VALUES (gen_random_uuid(), '{w}', 'uk-gdad-pcf', '{role}', 'TP role', CURRENT_DATE, now(), false)"
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         // S1: 2 → needs 4 (short 2). S2: 1 → needs 3 (short 2). S3: undeclared.
@@ -316,18 +311,16 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
 
         // Every catalogue write is audited (WPM-T246): the course's creation and removal, and the per-level figure.
         let actions = |entity: &'static str, pid: String| {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::pool(&ctx).clone();
             async move {
-                db.query_all_raw(sea_orm::Statement::from_sql_and_values(
-                    sea_orm::DbBackend::Postgres,
+                sqlx::query_scalar::<_, String>(
                     "SELECT action FROM audit_logs WHERE entity = $1 AND entity_pid = $2::uuid ORDER BY id",
-                    [entity.into(), pid.into()],
-                ))
+                )
+                .bind(entity)
+                .bind(pid)
+                .fetch_all(&db)
                 .await
                 .unwrap()
-                .iter()
-                .map(|r| r.try_get::<String>("", "action").unwrap())
-                .collect::<Vec<_>>()
             }
         };
         let fast_pid = fast_row["pid"].as_str().unwrap().to_string();
@@ -335,4 +328,139 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
         assert_eq!(actions("skill", skills[1].clone()).await.last().map(String::as_str), Some("updated"));
     })
     .await;
+}
+
+/// A person's role in a framework, and the skills they select from it (`framework_roles`): choosing the same role again changes
+/// nothing, a new choice ends the old one, the role's skills carry the catalogue's name and the person's own level, a selection
+/// declares, a `null` level withdraws and a later level brings the same declaration back, and a skill outside the framework is
+/// refused.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_framework_role_lists_its_skills_and_the_selection_declares_them() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("FR-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let mut skills = Vec::new();
+        for n in 1..=2 {
+            let s: Value = request
+                .post("/api/skills")
+                .json(&json!({ "name": format!("FR{tag}-{n}"), "category": "technical" }))
+                .await
+                .json();
+            skills.push(s["pid"].as_str().unwrap().to_string());
+        }
+        let mut roles = Vec::new();
+        for n in 1..=2 {
+            let profile: Value = request
+                .post("/api/role-profiles")
+                .json(&json!({ "job_title": format!("FR role {tag} {n}") }))
+                .await
+                .json();
+            roles.push(profile["pid"].as_str().unwrap().to_string());
+        }
+        request
+            .put(&format!("/api/role-profiles/{}/requirements", roles[0]))
+            .json(&json!({ "skill_pid": skills[0], "min_proficiency": 3, "importance": "critical" }))
+            .await
+            .assert_status_ok();
+        // Both roles are PCF levels; only the first skill carries a PCF reference.
+        let pool = workforce_planning_management::db::pool(&ctx);
+        for role in &roles {
+            sqlx::query("UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = $1")
+                .bind(uuid::Uuid::parse_str(role).unwrap())
+                .execute(pool)
+                .await
+                .unwrap();
+        }
+        sqlx::query(
+            r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label) VALUES ($1, $2, 'uk-gdad-pcf', $3, 'FR')"#,
+        )
+        .bind(uuid::Uuid::new_v4())
+        .bind(uuid::Uuid::parse_str(&skills[0]).unwrap())
+        .bind(format!("pcf:{tag}"))
+        .execute(pool)
+        .await
+        .unwrap();
+
+        let selectable: Value = request.get("/api/frameworks/selectable").await.json();
+        let pcf = selectable.as_array().unwrap().iter().find(|f| f["slug"] == "uk-gdad-pcf").unwrap().clone();
+        assert!(pcf["roles"].as_i64().unwrap() >= 2 && pcf["available"] == true, "{pcf}");
+
+        let base = format!("/api/workers/{w}/framework-roles");
+        let pcf_role = format!("{base}/uk-gdad-pcf");
+        // The second role first, then the first: the second ends, so one current role remains.
+        let first: Value =
+            request.put(&pcf_role).json(&json!({ "role_profile_pid": roles[1] })).await.json();
+        assert_eq!(first["role_label"], format!("FR role {tag} 2"));
+        let again: Value =
+            request.put(&pcf_role).json(&json!({ "role_profile_pid": roles[1] })).await.json();
+        assert_eq!(again["started_at"], first["started_at"], "the same role again changes nothing");
+        let chosen: Value =
+            request.put(&pcf_role).json(&json!({ "role_profile_pid": roles[0] })).await.json();
+        assert_eq!(chosen["role_label"], format!("FR role {tag} 1"));
+        let current: Value = request.get(&base).await.json();
+        assert_eq!(current.as_array().unwrap().len(), 1, "a new role ends the old one: {current}");
+        assert_eq!(current[0]["role_profile_pid"], roles[0].as_str());
+        let ended: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM worker_framework_roles WHERE worker_pid = $1 AND ended_at IS NOT NULL",
+        )
+        .bind(uuid::Uuid::parse_str(&w).unwrap())
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        assert_eq!(ended, 1);
+
+        let listed = role_skills(&request, &pcf_role).await;
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0]["ref"], skills[0].as_str());
+        assert_eq!(listed[0]["label"], format!("FR{tag}-1"), "named from the catalogue");
+        assert_eq!(listed[0]["role_expects"], 3);
+        assert!(listed[0]["declared"].is_null(), "nothing declared yet");
+
+        let select = |level: Value| json!({ "selections": [{ "ref": skills[0], "proficiency": level }] });
+        let set: Value = request.put(&format!("{pcf_role}/skills")).json(&select(json!(2))).await.json();
+        assert_eq!((set["declared"].as_u64(), set["removed"].as_u64()), (Some(1), Some(0)));
+        assert_eq!(role_skills(&request, &pcf_role).await[0]["declared"], 2);
+        let cleared: Value = request.put(&format!("{pcf_role}/skills")).json(&select(Value::Null)).await.json();
+        assert_eq!(cleared["removed"], 1);
+        assert!(
+            role_skills(&request, &pcf_role).await[0]["declared"].is_null(),
+            "a null level withdraws the declaration"
+        );
+        request.put(&format!("{pcf_role}/skills")).json(&select(json!(4))).await.assert_status_ok();
+        assert_eq!(
+            role_skills(&request, &pcf_role).await[0]["declared"],
+            4,
+            "a later level brings it back"
+        );
+        let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM worker_skills WHERE worker_pid = $1 AND skill_pid = $2")
+            .bind(uuid::Uuid::parse_str(&w).unwrap())
+            .bind(uuid::Uuid::parse_str(&skills[0]).unwrap())
+            .fetch_one(pool)
+            .await
+            .unwrap();
+        assert_eq!(rows, 1, "one declaration, revived rather than duplicated");
+
+        let outside = json!({ "selections": [{ "ref": skills[1], "proficiency": 2 }] });
+        assert_eq!(request.put(&format!("{pcf_role}/skills")).json(&outside).await.status_code(), 422);
+
+        request.delete(&pcf_role).await.assert_status_ok();
+        let none: Value = request.get(&base).await.json();
+        assert!(none.as_array().unwrap().is_empty(), "cleared: {none}");
+        assert_eq!(
+            request.get(&format!("{pcf_role}/skills")).await.status_code(),
+            422,
+            "no role, no skills to list"
+        );
+    })
+    .await;
+}
+
+/// The skills of a worker's current role in a framework, as `GET .../skills` lists them.
+async fn role_skills(request: &axa_test::TestServer, pcf_role: &str) -> Vec<Value> {
+    let body: Value = request.get(&format!("{pcf_role}/skills")).await.json();
+    body["skills"].as_array().unwrap().clone()
 }

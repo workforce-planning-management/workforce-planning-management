@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_skill_history (pid, worker_pid, skill_pid, proficiency, started_at, ended_at, source,\n                                           recorded_by, on_behalf)\n         VALUES ($1, $2, $3, $4, $5, $6, 'retrospective', $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Timestamptz",
+        "Timestamptz",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4174eaebc372fcf9c5d76e29763e6c735679ffb644144553dbad7d1557e094aa"
+}

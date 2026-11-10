@@ -2,26 +2,20 @@
 //! the durable event bus (Phase 2; `agents/share/event-bus.md` §3).
 //!
 //! [`OutboxInsert::from_envelope`] is the **pure** envelope→row mapping
-//! (unit-testable DB-free). [`OutboxInsert::insert_on`] performs the
-//! in-transaction `INSERT` — generic over [`ConnectionTrait`] so the
-//! handler passes its own `&DatabaseTransaction`, giving the entity
-//! write and the event one commit boundary. [`Model::unpublished`] /
-//! [`Model::mark_published`] are the Phase-3 relay's poll + ack
-//! (roadmap; the relay itself is not built yet).
+//! (unit-testable DB-free). [`crate::streaming::emit_in`] performs the
+//! in-transaction `INSERT` on the handler's own connection, giving the
+//! entity write and the event one commit boundary. The Phase-3 relay's
+//! poll and ack are roadmap (the relay itself is not built yet).
 
 use axa::prelude::*;
-use sea_orm::sea_query::Expr;
-use sea_orm::{ConnectionTrait, QueryOrder, QuerySelect, prelude::DateTimeWithTimeZone};
+use chrono::{DateTime, FixedOffset};
 use uuid::Uuid;
 
-pub use super::_entities::event_outbox::{self, ActiveModel, Entity, Model};
-use crate::streaming::{Envelope, EventView};
-
-impl ActiveModelBehavior for super::_entities::event_outbox::ActiveModel {}
+use crate::streaming::Envelope;
 
 /// The column values for one outbox row, derived from a canonical
-/// [`Envelope`] plus the enqueue timestamp. A plain struct (separate
-/// from the `ActiveModel`) so the derivation is unit-testable DB-free.
+/// [`Envelope`] plus the enqueue timestamp. A plain struct so the
+/// derivation is unit-testable DB-free.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutboxInsert {
     /// Envelope dedup id.
@@ -33,7 +27,7 @@ pub struct OutboxInsert {
     /// Change kind token (`created`, `worker_hired`, …).
     pub kind: String,
     /// When the change occurred.
-    pub occurred_at: DateTimeWithTimeZone,
+    pub occurred_at: DateTime<FixedOffset>,
     /// Actor pid, if any.
     pub actor: Option<String>,
     /// Envelope schema version.
@@ -49,7 +43,7 @@ impl OutboxInsert {
     /// # Errors
     ///
     /// When `env.pid` is not a UUID, or the envelope fails to serialize.
-    pub fn from_envelope(env: &Envelope, occurred_at: DateTimeWithTimeZone) -> ModelResult<Self> {
+    pub fn from_envelope(env: &Envelope, occurred_at: DateTime<FixedOffset>) -> ModelResult<Self> {
         let entity_pid = Uuid::parse_str(&env.pid).map_err(|e| ModelError::Any(Box::new(e)))?;
         let payload = serde_json::to_value(env).map_err(|e| ModelError::Any(Box::new(e)))?;
         Ok(Self {
@@ -62,94 +56,6 @@ impl OutboxInsert {
             schema_version: i32::try_from(env.schema_version).unwrap_or(1),
             payload,
         })
-    }
-
-    /// Build the `ActiveModel` (`published_at` starts `NULL`).
-    fn active_model(&self) -> ActiveModel {
-        event_outbox::ActiveModel {
-            event_id: ActiveValue::set(self.event_id),
-            entity: ActiveValue::set(self.entity.clone()),
-            entity_pid: ActiveValue::set(self.entity_pid),
-            kind: ActiveValue::set(self.kind.clone()),
-            occurred_at: ActiveValue::set(self.occurred_at),
-            actor: ActiveValue::set(self.actor.clone()),
-            schema_version: ActiveValue::set(self.schema_version),
-            payload: ActiveValue::set(self.payload.clone()),
-            published_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-    }
-
-    /// Durably enqueue this event **on the given connection** — pass a
-    /// `&DatabaseTransaction` to share the mutation's commit boundary.
-    ///
-    /// # Errors
-    ///
-    /// When the insert fails (e.g. a duplicate `event_id`).
-    pub async fn insert_on<C: ConnectionTrait>(&self, conn: &C) -> ModelResult<Model> {
-        let row = self.active_model().insert(conn).await?;
-        Ok(row)
-    }
-}
-
-impl Model {
-    /// The most recent outbox rows, newest first, projected to the
-    /// frozen operator [`EventView`] shape. Drives `/events/recent`
-    /// when the transport is `outbox`.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn recent(db: &DatabaseConnection, limit: u64) -> ModelResult<Vec<EventView>> {
-        let rows = event_outbox::Entity::find()
-            .order_by_desc(event_outbox::Column::Id)
-            .limit(limit)
-            .all(db)
-            .await?;
-        let views = rows
-            .iter()
-            .filter_map(|row| serde_json::from_value::<Envelope>(row.payload.clone()).ok())
-            .map(|env| EventView::from(&env))
-            .collect();
-        Ok(views)
-    }
-
-    /// The Phase-3 relay poll: oldest unpublished rows in id order,
-    /// claimed with `FOR UPDATE SKIP LOCKED` (SEC-B6). Call inside the
-    /// relay's transaction.
-    ///
-    /// # Errors
-    ///
-    /// When the query fails.
-    pub async fn unpublished<C: ConnectionTrait>(db: &C, limit: u64) -> ModelResult<Vec<Self>> {
-        let rows = event_outbox::Entity::find()
-            .filter(event_outbox::Column::PublishedAt.is_null())
-            .order_by_asc(event_outbox::Column::Id)
-            .limit(limit)
-            .lock_with_behavior(
-                sea_orm::sea_query::LockType::Update,
-                sea_orm::sea_query::LockBehavior::SkipLocked,
-            )
-            .all(db)
-            .await?;
-        Ok(rows)
-    }
-
-    /// The Phase-3 relay ack: stamp `published_at = now()` on `ids`.
-    ///
-    /// # Errors
-    ///
-    /// When the update fails.
-    pub async fn mark_published<C: ConnectionTrait>(db: &C, ids: &[i32]) -> ModelResult<u64> {
-        if ids.is_empty() {
-            return Ok(0);
-        }
-        let res = event_outbox::Entity::update_many()
-            .col_expr(event_outbox::Column::PublishedAt, Expr::current_timestamp())
-            .filter(event_outbox::Column::Id.is_in(ids.iter().copied()))
-            .exec(db)
-            .await?;
-        Ok(res.rows_affected)
     }
 }
 

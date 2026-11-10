@@ -26,8 +26,8 @@ not a statement that your deployment is under that regime.
 
 | Variable | Required | Default | What it does |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | yes | none | PostgreSQL 18 connection string. **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
-| `REDIS_URL` | no | none: an in-memory cache per instance, with a boot warning (demo: `redis://127.0.0.1:6379`) | Redis for Loco's cache, shared by every instance (WPM-D78). It holds only non-personal lookups (organization and course names, ESCO searches) and a Redis that is down is a cache miss, never an error. Use `rediss://` across a network; boot refuses a plaintext `redis://` to another host |
+| `DB_URL` (or `DATABASE_URL`) | yes | none | PostgreSQL 18 connection string. `axa` reads `DB_URL`; WPM falls back to `DATABASE_URL` when it is unset or blank, the name `sqlx`'s own tools read (WPM-T482). **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
+| `REDIS_URL` | no | none: an in-memory cache per instance, with a boot warning (demo: `redis://127.0.0.1:6379`) | Redis for the service's cache, shared by every instance (WPM-D78). It holds only non-personal lookups (organization and course names, ESCO searches) and a Redis that is down is a cache miss, never an error. Use `rediss://` across a network; boot refuses a plaintext `redis://` to another host |
 | `WPM_ALLOW_PLAINTEXT_REDIS` | no | off | Set to `1` only if the network path to Redis is protected another way and you accept the risk; boot then logs a warning |
 | `WPM_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
 | *(profiles first)* | | | **Since WPM-T384 (WPM-D153)** the flexible working, resignation notice, pay information, pay range, joint assessment, pay-gap tier and retention settings below are the **fallback**: an organization's jurisdiction profile is read first (over a worker's `work_jurisdiction` for a reader about one worker, over the organization's home jurisdiction for one about the organization), then the setting, then the default. `GET /api/statutory-defaults?organization=` says which each value came from |
@@ -52,18 +52,27 @@ not a statement that your deployment is under that regime.
 | `WPM_CREDENTIAL_ISSUER_NAME` | no | the issuer URL | The issuer's name as a verifier shows it |
 | `WPM_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
 | `WPM_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
+| `WPM_CURSOR_KEY` | with more than one instance | a key per process | Signs every list's cursors (WPM-R241): base64url of at least 32 random bytes, such as `openssl rand -base64 32 \| tr '+/' '-_' \| tr -d '='`. Never logged or returned. A value that is not base64url or is too short stops the start. Unset, each instance makes its own, so behind a load balancer a cursor from one is refused by another with `422`; changing it refuses the cursors already handed out, which a client recovers from by starting again at the first page |
 | `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo run -- task webhook_deliver` on a schedule |
 | `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
 | `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
 | `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
-| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | A request running longer is answered `408` |
+| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | In production, a request running longer is answered `408`; rounded up to whole seconds. Production reads this and not `axa`'s `REQUEST_TIMEOUT_SECONDS`. Outside production there is no limit unless `REQUEST_TIMEOUT_SECONDS` sets one, and the container demo has none |
 | `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
 | `WPM_PASETO_KEYS_URL` or `WPM_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WPM_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |
 | `WPM_TOKEN_ISSUER`, `WPM_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
 | `WPM_KEYCLOAK_ISSUER`, `WPM_KEYCLOAK_AUDIENCE` | with the OIDC backend | none | Expected `iss` and `aud` |
 | `WPM_ABAC_POLICY_FILE` or `WPM_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
 | `PORT`, `HOST` | no | `5150`, `http://localhost` | Listen port; the host used in links |
-| `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `500`, `500` | Pool sizes and timeouts |
+| `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `5000`, `600000` | Pool sizes, and timeouts in milliseconds |
+| `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DB_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
+| `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
+| `KEEP_ALIVE_TIMEOUT_SECONDS` | no | `75` | How long an idle connection is kept, counted from the last byte written. A load balancer that keeps idle connections longer needs a higher value, or it can reuse one as it closes and answer `502` |
+| `SEND_STALL_TIMEOUT_SECONDS` | no | `60` | How long a response may wait on a client that has stopped reading before the connection is dropped. Any byte that goes through starts it again, so a slow download is unaffected (`axa` 0.7) |
+| `HTTP_REQUEST_HEADER_READ_TIMEOUT_SECONDS` | no | `30` | How long a client may take to send a request's headers before the connection is dropped (`axa` 0.11; it was `HEADER_READ_TIMEOUT_SECONDS`) |
+| `SHUTDOWN_DRAIN_SECONDS` | no | `0` | After `SIGTERM`, how long `/_health/ready` answers `503` while the service still serves, so a load balancer stops sending it requests first (`axa` 0.11). On Kubernetes set a little more than the cluster takes to remove a pod, and keep `terminationGracePeriodSeconds` above it plus `SHUTDOWN_TIMEOUT_SECONDS` |
+| `SHUTDOWN_TIMEOUT_SECONDS` | no | `25` | How long to wait for requests in flight after `SIGTERM`. Keep it under the orchestrator's own limit; `0` waits for as long as they take |
+| `AXA_DESTROY_DATA` | no | off | Confirms `db down`, `db reset` or `db truncate` in development or test. They are refused elsewhere (WPM-R237) |
 
 ## Behaviour switches
 
@@ -72,7 +81,9 @@ not a statement that your deployment is under that regime.
 | `WPM_REQUIRE_AUTH` | on | Only an explicit `0`/`false`/`no`/`off` disables sign-in; production refuses that |
 | `WPM_RATE_LIMIT_PER_MINUTE` | 600 | Requests per caller per minute (`0` disables) |
 | `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` | 20 | Erase, sweep, import, merge, token and export routes |
-| `WPM_TRUST_FORWARDED` | off | Name callers by the first `X-Forwarded-For` hop. Set only behind a proxy that **overwrites** that header |
+| `TRUSTED_PROXIES` | none | Comma-separated addresses or CIDR ranges of your proxies, such as `10.0.0.5,192.168.1.0/24`. **Needed behind any proxy**: see [Proxy and TLS](#proxy-and-tls). A bad list stops production from starting; elsewhere it logs a warning and trusts no proxy |
+| `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` | off | `401`s one client address may earn in 15 minutes before every request from it is refused with `429` until they end (WPM-R242). Unset or `0` is off; a value that is not a whole number stops the start. The address is counted as the rate limit counts it, so behind a proxy set `TRUSTED_PROXIES`, or one client's expired tokens lock out every client behind it |
+| `WPM_TRUST_FORWARDED` | retired | Does nothing (WPM-D187). If it is set, boot logs a warning. Remove it and set `TRUSTED_PROXIES` |
 | `WPM_MAX_TOKEN_LIFETIME_SECONDS` | `86400` | The longest token lifetime accepted (`exp` minus `iat`); a longer one, or one with no issue time, is `401`. `0` or `off` removes the limit. Tighten it to what your identity provider issues, see [Token age and revocation](../auth.md#token-age-and-revocation-wpm-r72-wpm-t200) |
 | `WPM_MAX_ORG_WORKERS` | `200000` | The most employed workers the plan forecast and cost views will read for one request (the workers of the departments the plan names); over it they answer `422`. The default is the largest size the load test ran with no failure; raise it only after running `scripts/load-test.sh` on your hardware (see `BENCHMARKS.md`) |
 | `WPM_LMS_COURSE_URL` | unset | A link template to a course in your learning management system, e.g. `https://lms.example.org/course/{course}`. `{course}` is replaced by the id of the course URN. `https` only, one placeholder, a real host with no user-info; anything else is ignored with a warning in the log. Unset means no links. See [skills-and-training](../skills-and-training.md) (WPM-R138, WPM-D91) |
@@ -96,10 +107,18 @@ service (the table above).
 
 ## Proxy and TLS
 
-Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), and if you
-set `WPM_TRUST_FORWARDED` it must overwrite `X-Forwarded-For` with the real client
-address, or callers can pick their own rate-limit bucket. Without `WPM_TRUST_FORWARDED`,
-every caller behind the proxy shares one bucket, which is safe but coarse.
+Terminate TLS at a proxy. It must send `X-Forwarded-Proto: https` (for HSTS), and it must
+add the address it saw to `X-Forwarded-For`, by appending or by overwriting. **List every
+proxy in `TRUSTED_PROXIES`**, including the UI's server when the UI calls the API through
+its own proxy, by the address the service sees it connect from. The header is believed
+only from a listed peer, and is read from the right, so a caller cannot pick its own
+rate-limit bucket (WPM-R239). Without the list, every caller behind the proxy shares the
+proxy's one bucket, which is safe but coarse, and at the default limit it can refuse real
+users.
+
+Name the proxies themselves. A client inside a listed range can write the entries to the
+left of its own, so do not list a whole network that callers are in. `check` prints the
+list the service read.
 
 ## Running more than one instance (WPM-T198)
 
@@ -116,7 +135,7 @@ the rate limiter a dependency whose outage blocks every request, so that is left
 3. **Pin a caller to an instance** (sticky routing by client address): then each caller meets one counter again. It costs even load
    and does not survive an instance restart.
 
-Whatever you choose, name callers correctly: set `WPM_TRUST_FORWARDED` only when the proxy overwrites `X-Forwarded-For` (above), or
+Whatever you choose, name callers correctly: list every proxy in `TRUSTED_PROXIES` (above), or
 every caller shares the proxy's bucket. The sensitive limit is the one that matters most, since it protects irreversible routes.
 What does **not** need sharing: the cache (use `REDIS_URL`, WPM-D78), tokens (stateless), and the policy (each instance reloads its file).
 
@@ -147,8 +166,11 @@ set: it migrates as `wpm_migrator`, shows `wpm_app` is refused each schema and a
 
 ## Probes
 
-`GET /_health` and `GET /_ping` (liveness), `GET /_readiness`, and `GET /_posture`
-(`{"auth_enforced": true|false}`: alert if it is false in production). `GET /metrics.prom`
+`GET /_health/live` (liveness), `GET /_health/ready` (readiness: the database answers, and a `503` with the `code`
+`shutting_down` once the service starts to drain), `GET /_health/startup` (startup, optional), and `GET /_posture`
+(`{"auth_enforced": true|false}`: alert if it is false in production). axa 0.11 moved the probes (WPM-T482): `/_health`,
+`/_ping` and `/_readiness` now answer `404`, so move a liveness or readiness probe, a load balancer or an uptime check
+before the upgrade, or the orchestrator restarts the service again and again. `GET /metrics.prom`
 needs a bearer token; give the scraper a service token.
 
 ## Logs and the audit feed (WPM-R122, WPM-T197)
@@ -191,6 +213,8 @@ test fails if a task is neither scheduled there nor named as run by hand. Or sch
 cargo run -- db migrate     # or let the demo config migrate on start
 cargo run -- task seed      # demo only: a synthetic organization
 ```
+
+`task seed` runs only in development or test (WPM-R240). A release binary defaults to production, so a demo database is seeded once with `APP_ENV=development` set for that one command, and served under `demo`.
 
 Production does not auto-migrate (`auto_migrate: false`): run `db migrate` as a deliberate
 step, after a backup ([upgrade-and-migration.md](upgrade-and-migration.md)).

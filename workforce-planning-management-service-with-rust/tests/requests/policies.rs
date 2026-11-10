@@ -2,15 +2,15 @@
 //! acknowledgement, a manager's counts with the floor, and HR's named record.
 
 use chrono::{Duration, Utc};
-use sea_orm::{ConnectionTrait, Statement};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::policy_reminders::send_reminders;
 
 use super::{a_person, an_org};
+use sqlx::Row;
 
 async fn hire(
-    request: &axa::TestServer,
+    request: &axa_test::TestServer,
     org: &str,
     department: &str,
     manager: Option<&str>,
@@ -43,11 +43,10 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
         let acknowledge = |who: String, version: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
-                    .execute_unprepared(&format!(
+                sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                         "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ('{}', '{version}', '{who}', CURRENT_DATE)",
                         uuid::Uuid::new_v4()
-                    ))
+                    ))).execute(workforce_planning_management::db::pool(ctx))
                     .await
                     .unwrap();
             }
@@ -185,16 +184,11 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         let told = |worker: String| {
             let ctx = &ctx;
             async move {
-                let row = ctx
-                    .db
-                    .query_one_raw(Statement::from_string(
-                        ctx.db.get_database_backend(),
-                        format!("SELECT count(*) FROM notifications WHERE worker_pid = '{worker}' AND kind = 'policy_due'"),
-                    ))
+                let row = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM notifications WHERE worker_pid = '{worker}' AND kind = 'policy_due'"))).fetch_optional(workforce_planning_management::db::pool(ctx))
                     .await
                     .unwrap()
                     .unwrap();
-                row.try_get_by_index::<i64>(0).unwrap()
+                row.try_get::<i64, _>(0).unwrap()
             }
         };
         send_reminders(&ctx, today, 3).await.unwrap();
@@ -207,11 +201,10 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         // Someone who has acknowledged is left alone; a worker hired later is not told as of an earlier day.
         let c = hire(&request, &org, "care", None).await;
         let version_pid = listed_version(&request, &org, &conduct).await;
-        ctx.db
-            .execute_unprepared(&format!(
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                 "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ('{}', '{version_pid}', '{c}', CURRENT_DATE)",
                 uuid::Uuid::new_v4()
-            ))
+            ))).execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
         send_reminders(&ctx, today, 30).await.unwrap();
@@ -222,7 +215,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
     .await;
 }
 
-async fn listed_version(request: &axa::TestServer, org: &str, policy: &str) -> String {
+async fn listed_version(request: &axa_test::TestServer, org: &str, policy: &str) -> String {
     let listed: Value = request
         .get(&format!("/api/policies?organization={org}"))
         .await

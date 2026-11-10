@@ -7,7 +7,7 @@ through WPM-T403.)
 ## What this project is
 
 A **SvelteKit browser client** for the
-[Loco JSON API sibling](../workforce-planning-management-service-with-rust/): hiring
+[JSON API sibling](../workforce-planning-management-service-with-rust/): hiring
 boards, onboarding, time/leave/rotas, the employee record (the **self-service
 hub**) and org chart, reviews and 360°s, learning, skills, succession, payroll,
 benchmarking, wellbeing and privacy — and, since WPM-T69: `/metrics` (with
@@ -96,7 +96,7 @@ masked fields render as first-class masked states, never errors or fake zeros.
 
 ```bash
 pnpm install
-pnpm dev                    # expects the Loco sibling on :5150
+pnpm dev                    # expects the API sibling on :5150
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm lint                   # eslint, then prettier --check
 pnpm test                   # vitest (313 in 37 files, 2026-10-30)

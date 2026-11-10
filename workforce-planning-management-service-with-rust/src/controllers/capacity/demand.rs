@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use axa::extract::{Json, Path};
 
 /// `PUT /api/programme-demands` body.
 #[derive(Debug, Deserialize)]
@@ -49,47 +50,35 @@ pub(super) async fn set_demand(
         ));
     }
     let pool = live_pool_by_pid(&ctx, &caller, payload.pool_pid).await?;
-    let existing = programme_demands::Entity::find()
-        .filter(programme_demands::Column::ProgrammeRef.eq(&payload.programme_ref))
-        .filter(programme_demands::Column::PoolPid.eq(pool.pid))
-        .filter(programme_demands::Column::Month.eq(payload.month))
-        .filter(programme_demands::Column::Source.eq("local"))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    let row = if let Some(row) = existing {
-        let mut active = row.into_active_model();
-        active.fte_centi = ActiveValue::set(payload.fte_centi);
-        if let Some(status) = &payload.status {
-            active.status = ActiveValue::set(status.clone());
-        }
-        active.update(&txn).await?
-    } else {
-        programme_demands::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-            pool_pid: ActiveValue::set(pool.pid),
-            month: ActiveValue::set(payload.month),
-            fte_centi: ActiveValue::set(payload.fte_centi),
-            status: ActiveValue::set(payload.status.clone().unwrap_or_else(|| "proposed".into())),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    // One upsert on the live claim's key (the local source), where it was a read and then an insert or an update. A
+    // status left out keeps the claim's current one; a new claim is `proposed`.
+    let row = sqlx::query_scalar!(
+        "INSERT INTO programme_demands (pid, programme_ref, pool_pid, month, fte_centi, status)
+         VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'proposed'))
+         ON CONFLICT (programme_ref, pool_pid, month, source) WHERE deleted_at IS NULL
+         DO UPDATE SET fte_centi = EXCLUDED.fte_centi, status = COALESCE($6, programme_demands.status)
+         RETURNING pid",
+        Uuid::new_v4(),
+        payload.programme_ref,
+        pool.pid,
+        payload.month,
+        payload.fte_centi,
+        payload.status,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "programme_demand",
-        row.pid,
+        row,
         "set",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    tx.commit().await?;
+    format::json(pid_ref(row))
 }
 
 /// Query for the demand and commitment lists.
@@ -105,16 +94,13 @@ pub(super) async fn visible_pool_pids(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
 ) -> Result<Vec<Uuid>> {
-    let mut select = skill_pools::Entity::find().filter(skill_pools::Column::DeletedAt.is_null());
-    if let Some(refs) = scope(ctx, caller).await? {
-        select = select.filter(skill_pools::Column::OrganizationRef.is_in(refs));
-    }
-    Ok(select
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|p| p.pid)
-        .collect())
+    let refs = scope(ctx, caller).await?;
+    Ok(sqlx::query_scalar!(
+        "SELECT pid FROM skill_pools WHERE deleted_at IS NULL AND ($1::text[] IS NULL OR organization_ref = ANY($1))",
+        refs.as_deref(),
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/programme-demands?pool=&programme=`.
@@ -122,30 +108,33 @@ pub(super) async fn visible_pool_pids(
 pub(super) async fn list_demand(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PoolQuery>,
+    axa::extract::Query(query): axa::extract::Query<PoolQuery>,
 ) -> Result<Response> {
     let visible = visible_pool_pids(&ctx, &caller).await?;
-    let mut select = programme_demands::Entity::find()
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .filter(programme_demands::Column::PoolPid.is_in(visible));
-    if let Some(pool) = query.pool {
-        select = select.filter(programme_demands::Column::PoolPid.eq(pool));
-    }
-    if let Some(programme) = &query.programme {
-        select = select.filter(programme_demands::Column::ProgrammeRef.eq(programme));
-    }
-    let rows = select
-        .order_by_asc(programme_demands::Column::Month)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, programme_ref, pool_pid, month, fte_centi, status, source, received_at, peer_sent_at,
+                peer_withdrawn_at
+           FROM programme_demands
+          WHERE deleted_at IS NULL AND pool_pid = ANY($1) AND ($2::uuid IS NULL OR pool_pid = $2)
+            AND ($3::text IS NULL OR programme_ref = $3)
+          ORDER BY month, id",
+        &visible,
+        query.pool,
+        query.programme,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(|r| {
                 json!({
                     "pid": r.pid, "programme_ref": r.programme_ref, "pool_pid": r.pool_pid,
                     "month": r.month, "fte_centi": r.fte_centi, "status": r.status,
-                    "source": r.source, "received_at": r.received_at,
-                    "peer_sent_at": r.peer_sent_at, "peer_withdrawn_at": r.peer_withdrawn_at,
+                    "source": r.source,
+                    // As the answer gave them before: with a `+00:00` offset, not `Z`.
+                    "received_at": r.received_at.map(|t| t.fixed_offset()),
+                    "peer_sent_at": r.peer_sent_at.map(|t| t.fixed_offset()),
+                    "peer_withdrawn_at": r.peer_withdrawn_at.map(|t| t.fixed_offset()),
                 })
             })
             .collect::<Vec<_>>(),
@@ -159,19 +148,24 @@ pub(super) async fn delete_demand(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = programme_demands::Entity::find()
-        .filter(programme_demands::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(programme_demands::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query!(
+        "SELECT id, pid, pool_pid FROM programme_demands WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(crate::db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     live_pool_by_pid(&ctx, &caller, row.pool_pid).await?;
-    let mut active = row.into_active_model();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE programme_demands SET deleted_at = $2 WHERE id = $1",
+        row.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "programme_demand",
         row.pid,
         "deleted",
@@ -179,7 +173,7 @@ pub(super) async fn delete_demand(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(pid_ref(row.pid))
 }
 
@@ -216,44 +210,33 @@ pub(super) async fn set_commitment(
         )));
     }
     let pool = live_pool_by_pid(&ctx, &caller, payload.pool_pid).await?;
-    let existing = partner_commitments::Entity::find()
-        .filter(partner_commitments::Column::PartnerRef.eq(&payload.partner_ref))
-        .filter(partner_commitments::Column::PoolPid.eq(pool.pid))
-        .filter(partner_commitments::Column::Month.eq(payload.month))
-        .filter(partner_commitments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?;
-    let txn = ctx.db.begin().await?;
-    let row = if let Some(row) = existing {
-        let mut active = row.into_active_model();
-        active.fte_centi = ActiveValue::set(payload.fte_centi);
-        active.status = ActiveValue::set(payload.status.clone());
-        active.update(&txn).await?
-    } else {
-        partner_commitments::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            partner_ref: ActiveValue::set(payload.partner_ref.clone()),
-            pool_pid: ActiveValue::set(pool.pid),
-            month: ActiveValue::set(payload.month),
-            fte_centi: ActiveValue::set(payload.fte_centi),
-            status: ActiveValue::set(payload.status.clone()),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    // One upsert on the live commitment's key, where it was a read and then an insert or an update.
+    let row = sqlx::query_scalar!(
+        "INSERT INTO partner_commitments (pid, partner_ref, pool_pid, month, fte_centi, status) VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (partner_ref, pool_pid, month) WHERE deleted_at IS NULL
+         DO UPDATE SET fte_centi = EXCLUDED.fte_centi, status = EXCLUDED.status
+         RETURNING pid",
+        Uuid::new_v4(),
+        payload.partner_ref,
+        pool.pid,
+        payload.month,
+        payload.fte_centi,
+        payload.status,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "partner_commitment",
-        row.pid,
+        row,
         "set",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(pid_ref(row.pid))
+    tx.commit().await?;
+    format::json(pid_ref(row))
 }
 
 /// `GET /api/partner-commitments?pool=&partner=`.
@@ -261,22 +244,20 @@ pub(super) async fn set_commitment(
 pub(super) async fn list_commitments(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
-    axum::extract::Query(query): axum::extract::Query<PoolQuery>,
+    axa::extract::Query(query): axa::extract::Query<PoolQuery>,
 ) -> Result<Response> {
     let visible = visible_pool_pids(&ctx, &caller).await?;
-    let mut select = partner_commitments::Entity::find()
-        .filter(partner_commitments::Column::DeletedAt.is_null())
-        .filter(partner_commitments::Column::PoolPid.is_in(visible));
-    if let Some(pool) = query.pool {
-        select = select.filter(partner_commitments::Column::PoolPid.eq(pool));
-    }
-    if let Some(partner) = &query.partner {
-        select = select.filter(partner_commitments::Column::PartnerRef.eq(partner));
-    }
-    let rows = select
-        .order_by_asc(partner_commitments::Column::Month)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, partner_ref, pool_pid, month, fte_centi, status FROM partner_commitments
+          WHERE deleted_at IS NULL AND pool_pid = ANY($1) AND ($2::uuid IS NULL OR pool_pid = $2)
+            AND ($3::text IS NULL OR partner_ref = $3)
+          ORDER BY month, id",
+        &visible,
+        query.pool,
+        query.partner,
+    )
+    .fetch_all(crate::db::pool(&ctx))
+    .await?;
     format::json(
         rows.iter()
             .map(|r| {
@@ -296,19 +277,24 @@ pub(super) async fn delete_commitment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = partner_commitments::Entity::find()
-        .filter(partner_commitments::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(partner_commitments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query!(
+        "SELECT id, pid, pool_pid FROM partner_commitments WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(crate::db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     live_pool_by_pid(&ctx, &caller, row.pool_pid).await?;
-    let mut active = row.into_active_model();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = crate::db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE partner_commitments SET deleted_at = $2 WHERE id = $1",
+        row.id,
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+    crate::db::audit(
+        &mut tx,
         "partner_commitment",
         row.pid,
         "deleted",
@@ -316,6 +302,6 @@ pub(super) async fn delete_commitment(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(pid_ref(row.pid))
 }

@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, scale_id, band, step, step_since FROM worker_pay_positions",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "band"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "step",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "step"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "step_since",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "step_since"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ff0bdcf42fa3698e226c8a15175f8fcff0eb6b8579bb13e8db8b99f97b8d07b0"
+}

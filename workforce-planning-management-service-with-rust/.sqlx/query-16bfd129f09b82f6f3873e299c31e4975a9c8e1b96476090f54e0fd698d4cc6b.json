@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT w.pid, w.worker_number, w.display_name, d.phone_mobile_digits, d.phone_mobile_e164,\n                d.phone_home_digits, d.phone_home_e164\n           FROM worker_contact_details d JOIN workers w ON w.pid = d.worker_pid\n          WHERE w.organization_ref = $1 AND w.deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "worker_number"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "phone_mobile_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_mobile_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "phone_mobile_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_mobile_e164"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "phone_home_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_home_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "phone_home_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_home_e164"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "16bfd129f09b82f6f3873e299c31e4975a9c8e1b96476090f54e0fd698d4cc6b"
+}

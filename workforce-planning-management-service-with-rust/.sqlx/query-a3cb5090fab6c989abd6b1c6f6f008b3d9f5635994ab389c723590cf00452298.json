@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessments (pid, instrument_pid, subject_kind, subject_pid, application_pid, status, scheduled_on,\n                                  administered_by, notes)\n         VALUES ($1, $2, $3, $4, $5, 'scheduled', $6, $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a3cb5090fab6c989abd6b1c6f6f008b3d9f5635994ab389c723590cf00452298"
+}

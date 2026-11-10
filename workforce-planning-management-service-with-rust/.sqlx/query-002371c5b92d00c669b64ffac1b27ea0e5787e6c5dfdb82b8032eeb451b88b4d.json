@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid FROM workers\n         WHERE deleted_at IS NULL\n           AND person_ref = $1\n           AND ($2::text IS NULL OR organization_ref = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "002371c5b92d00c669b64ffac1b27ea0e5787e6c5dfdb82b8032eeb451b88b4d"
+}

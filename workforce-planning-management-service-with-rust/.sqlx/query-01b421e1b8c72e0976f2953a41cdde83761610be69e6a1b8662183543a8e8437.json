@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO appraisal_nominations (pid, appraisal_pid, rater_pid, rater_group) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "01b421e1b8c72e0976f2953a41cdde83761610be69e6a1b8662183543a8e8437"
+}

@@ -30,7 +30,7 @@ describe("errorText", () => {
   it("says only the catalogue's words, whatever the service said", () => {
     for (const status of [403, 409, 422]) {
       const text = errorText(
-        new ApiError(status, { description: "end date is before start date" }),
+        new ApiError(status, { detail: "end date is before start date" }),
       );
       expect(text).not.toContain("end date");
       expect(text).toBe(errorText(new ApiError(status, null)));
@@ -40,7 +40,7 @@ describe("errorText", () => {
 
   it("never passes a server error's detail on", () => {
     const text = errorText(
-      new ApiError(500, { description: 'relation "workers" does not exist' }),
+      new ApiError(500, { detail: 'relation "workers" does not exist' }),
     );
     expect(text).not.toContain("workers");
   });
@@ -82,7 +82,7 @@ describe("attempt", () => {
       message: null,
     });
     const refused = await attempt(() =>
-      Promise.reject(new ApiError(422, { description: "no" })),
+      Promise.reject(new ApiError(422, { detail: "no" })),
     );
     expect(refused?.notAllowed).toBe(false);
     expect(refused?.message).toContain("no");

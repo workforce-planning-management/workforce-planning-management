@@ -67,6 +67,6 @@
     rowId={(row) => String(row.pid)}
     pageSize={25}
   />
-  <LoadMore shown={runs.length} total={loader.total} more={loader.more} loading={loader.loadingMore} onmore={() => loader.showMore()} />
+  <LoadMore more={loader.more} loading={loader.loadingMore} onmore={() => loader.showMore()} />
   {#if loader.moreError}<ErrorNote testid="more-error" message={loader.moreError} />{/if}
 {/if}

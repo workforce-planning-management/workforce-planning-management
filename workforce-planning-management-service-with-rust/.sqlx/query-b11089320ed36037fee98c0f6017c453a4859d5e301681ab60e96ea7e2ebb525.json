@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)\n         ON CONFLICT (organization_ref) DO UPDATE SET home_jurisdiction = EXCLUDED.home_jurisdiction, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b11089320ed36037fee98c0f6017c453a4859d5e301681ab60e96ea7e2ebb525"
+}

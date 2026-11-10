@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT as_of, headcount, leavers FROM headcount_snapshots WHERE organization_ref = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "as_of",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "headcount"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "leavers",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "headcount_snapshots",
+            "name": "leavers"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "375b0bdbcdd014680082be963d68c1271bbefd0f2bda2c57fb0dc9c7f5fe938f"
+}

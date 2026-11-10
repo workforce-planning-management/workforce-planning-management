@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, body, reference,\n                  registered_on, expires_on, deleted_at AS \"deleted_at: _\"\n             FROM professional_registrations WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY expires_on",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "reference"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "registered_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "registered_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "expires_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "expires_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "professional_registrations",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "fc5b3ed2a24559fae09122164683995bd5e5366fa8c4f21b0bbad6aa1ee82970"
+}

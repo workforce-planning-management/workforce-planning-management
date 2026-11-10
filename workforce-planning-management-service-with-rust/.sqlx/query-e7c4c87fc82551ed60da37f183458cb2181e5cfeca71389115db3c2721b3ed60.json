@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, display_name, department, work_jurisdiction FROM workers\n              WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1) AND pid = ANY($2)\n              ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "display_name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "work_jurisdiction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "work_jurisdiction"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "e7c4c87fc82551ed60da37f183458cb2181e5cfeca71389115db3c2721b3ed60"
+}

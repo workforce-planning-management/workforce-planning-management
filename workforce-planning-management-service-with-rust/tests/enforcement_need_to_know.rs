@@ -9,7 +9,7 @@
 //! Before this guard, a signed-in caller with no attributes could read a colleague's sick-leave
 //! request with its reason, their time-entry notes and every applicant's e-mail address.
 
-use axa::testing::prelude::*;
+use axa_test::prelude::*;
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::SigningKey;
@@ -74,8 +74,6 @@ const REFERENCE_POLICY_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/config/abac-policy.reference.json"
 );
-
-use sea_orm::ConnectionTrait;
 
 /// One boot, every persona against every class.
 #[tokio::test]
@@ -143,12 +141,11 @@ async fn reads_are_need_to_know() {
             (hr_member_p, &org_a, &w_hr, "hr_admin"),
             (hr_other_p, &org_b, &w_other, "hr_admin"),
         ] {
-            ctx.db
-                .execute_unprepared(&format!(
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2026-01-05')",
                     uuid::Uuid::new_v4()
-                ))
+                ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await
                 .unwrap();
         }

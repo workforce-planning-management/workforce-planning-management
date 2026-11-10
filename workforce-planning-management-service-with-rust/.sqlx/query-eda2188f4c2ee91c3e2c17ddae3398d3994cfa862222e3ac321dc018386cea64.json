@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM equality_declarations\n         WHERE worker_pid = $1 AND ($2::text IS NULL OR category = $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "eda2188f4c2ee91c3e2c17ddae3398d3994cfa862222e3ac321dc018386cea64"
+}

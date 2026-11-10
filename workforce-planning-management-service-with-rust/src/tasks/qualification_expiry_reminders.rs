@@ -11,11 +11,8 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 
-use crate::models::_entities::{qualification_reminders, qualifications, workers};
-use crate::models::notifications::Model as Notification;
 use crate::rules::qualification::{self as rules, Reminder};
 
 /// The reminder task.
@@ -70,11 +67,11 @@ pub struct Report {
 /// A database error.
 pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
     let mut report = Report::default();
-    let held = qualifications::Entity::find()
-        .filter(qualifications::Column::ExpiresOn.is_not_null())
-        .order_by_asc(qualifications::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let held = sqlx::query!(
+        "SELECT pid, worker_pid, title, expires_on FROM qualifications WHERE expires_on IS NOT NULL ORDER BY id"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     for q in held {
         let Some(expires_on) = q.expires_on else {
             continue;
@@ -82,25 +79,28 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         let Some(reminder) = rules::reminder_for(expires_on, as_of, window) else {
             continue;
         };
-        let Some(worker) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(q.worker_pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .filter(workers::Column::TerminatedOn.is_null())
-            .one(&ctx.db)
-            .await?
+        let Some(worker) = sqlx::query!(
+            "SELECT pid, status, display_name, manager_pid FROM workers
+              WHERE pid = $1 AND deleted_at IS NULL AND terminated_on IS NULL",
+            q.worker_pid,
+        )
+        .fetch_optional(crate::db::pool(ctx))
+        .await?
         else {
             continue;
         };
         if matches!(worker.status.as_str(), "terminated" | "retired") {
             continue;
         }
-        let already = qualification_reminders::Entity::find()
-            .filter(qualification_reminders::Column::QualificationPid.eq(q.pid))
-            .filter(qualification_reminders::Column::ExpiresOn.eq(expires_on))
-            .filter(qualification_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&ctx.db)
-            .await?
-            .is_some();
+        let already = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM qualification_reminders
+                               WHERE qualification_pid = $1 AND expires_on = $2 AND kind = $3) AS "e!""#,
+            q.pid,
+            expires_on,
+            reminder.as_str(),
+        )
+        .fetch_one(crate::db::pool(ctx))
+        .await?;
         if already {
             continue;
         }
@@ -123,24 +123,27 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             ),
         };
         let data = json!({ "worker_pid": worker.pid, "expires_on": expires_on });
-        Notification::push(&ctx.db, worker.pid, kind, &own, data.clone()).await?;
+        let mut tx = crate::db::pool(ctx).begin().await?;
+        crate::db::notify(&mut tx, worker.pid, kind, &own, data.clone()).await?;
         report.told += 1;
         if let Some(boss) = worker.manager_pid
             && boss != worker.pid
         {
-            Notification::push(&ctx.db, boss, kind, &theirs, data).await?;
+            crate::db::notify(&mut tx, boss, kind, &theirs, data).await?;
             report.told += 1;
         }
-        qualification_reminders::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            qualification_pid: ActiveValue::set(q.pid),
-            expires_on: ActiveValue::set(expires_on),
-            kind: ActiveValue::set(reminder.as_str().to_string()),
-            reminded_on: ActiveValue::set(as_of),
-            ..Default::default()
-        }
-        .insert(&ctx.db)
+        sqlx::query!(
+            "INSERT INTO qualification_reminders (worker_pid, qualification_pid, expires_on, kind, reminded_on)
+             VALUES ($1, $2, $3, $4, $5)",
+            worker.pid,
+            q.pid,
+            expires_on,
+            reminder.as_str(),
+            as_of,
+        )
+        .execute(&mut *tx)
         .await?;
+        tx.commit().await?;
         match reminder {
             Reminder::Expiring => report.expiring += 1,
             Reminder::Expired => report.expired += 1,

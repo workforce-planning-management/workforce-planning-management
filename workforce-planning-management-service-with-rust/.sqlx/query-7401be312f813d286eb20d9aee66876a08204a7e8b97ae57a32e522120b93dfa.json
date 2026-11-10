@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT job_title, median_minor FROM benchmarks WHERE deleted_at IS NULL AND currency = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "median_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "median_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "7401be312f813d286eb20d9aee66876a08204a7e8b97ae57a32e522120b93dfa"
+}

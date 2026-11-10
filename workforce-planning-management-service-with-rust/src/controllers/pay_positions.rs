@@ -10,27 +10,30 @@
 //! only*; nothing here says the employer will move anyone.
 
 use super::writable_worker;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::ActiveValue;
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{worker_pay_positions, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db::{self, pool};
+use crate::models::_entities::worker_pay_positions;
 use crate::rules::pay_position as rules;
 use crate::rules::pay_scale as scale_rules;
 
-async fn current(
-    ctx: &AppContext,
-    worker: &workers::Model,
-) -> Result<Option<worker_pay_positions::Model>> {
-    Ok(worker_pay_positions::Entity::find()
-        .filter(worker_pay_positions::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
-        .await?)
+async fn current(ctx: &AppContext, worker: Uuid) -> Result<Option<worker_pay_positions::Model>> {
+    Ok(sqlx::query_as!(
+        worker_pay_positions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, scale_id, band, step,
+                  step_since, recorded_by, on_behalf
+           FROM worker_pay_positions WHERE worker_pid = $1"#,
+        worker,
+    )
+    .fetch_optional(pool(ctx))
+    .await?)
 }
 
 /// The position as the API shows it, with progression worked out for `today`.
@@ -61,7 +64,9 @@ async fn get_position(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let today = Utc::now().date_naive();
-    let position = current(&ctx, &worker).await?.map(|row| view(&row, today));
+    let position = current(&ctx, worker.pid)
+        .await?
+        .map(|row| view(&row, today));
     format::json(json!({ "pay_position": position }))
 }
 
@@ -92,39 +97,51 @@ async fn set_position(
     let step_since = payload.step_since.unwrap_or(today);
     rules::validate_step_since(step_since, today).map_err(|e| unprocessable(&e))?;
     let step = i32::try_from(step).unwrap_or(i32::MAX);
-    let recorded_by = caller.actor().map(ToString::to_string);
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
-    let existing = current(&ctx, &worker).await?;
-    let txn = ctx.db.begin().await?;
+    let existing = current(&ctx, worker.pid).await?;
+    let mut tx = pool(&ctx).begin().await?;
     let saved = match existing {
         Some(row) => {
-            let mut active: worker_pay_positions::ActiveModel = row.into();
-            active.scale_id = ActiveValue::set(scale.to_string());
-            active.band = ActiveValue::set(band.to_string());
-            active.step = ActiveValue::set(step);
-            active.step_since = ActiveValue::set(step_since);
-            active.recorded_by = ActiveValue::set(recorded_by);
-            active.on_behalf = ActiveValue::set(on_behalf);
-            active.update(&txn).await?
+            sqlx::query_as!(
+                worker_pay_positions::Model,
+                r#"UPDATE worker_pay_positions
+                   SET scale_id = $2, band = $3, step = $4, step_since = $5, recorded_by = $6, on_behalf = $7
+                   WHERE id = $1
+                   RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, scale_id, band, step,
+                             step_since, recorded_by, on_behalf"#,
+                row.id,
+                scale,
+                band,
+                step,
+                step_since,
+                caller.actor(),
+                on_behalf,
+            )
+            .fetch_one(&mut *tx)
+            .await?
         }
         None => {
-            worker_pay_positions::ActiveModel {
-                worker_pid: ActiveValue::set(worker.pid),
-                scale_id: ActiveValue::set(scale.to_string()),
-                band: ActiveValue::set(band.to_string()),
-                step: ActiveValue::set(step),
-                step_since: ActiveValue::set(step_since),
-                recorded_by: ActiveValue::set(recorded_by),
-                on_behalf: ActiveValue::set(on_behalf),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query_as!(
+                worker_pay_positions::Model,
+                r#"INSERT INTO worker_pay_positions (worker_pid, scale_id, band, step, step_since, recorded_by, on_behalf)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7)
+                   RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, scale_id, band, step,
+                             step_since, recorded_by, on_behalf"#,
+                worker.pid,
+                scale,
+                band,
+                step,
+                step_since,
+                caller.actor(),
+                on_behalf,
+            )
+            .fetch_one(&mut *tx)
             .await?
         }
     };
     // No band, step or amount in the audit entry: the position is the sensitive thing.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "pay_position_set",
@@ -132,7 +149,7 @@ async fn set_position(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pay_position": view(&saved, today) }))
 }
 
@@ -144,13 +161,13 @@ async fn clear_position(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let row = current(&ctx, &worker).await?.ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
-    worker_pay_positions::Entity::delete_by_id(row.id)
-        .exec(&txn)
+    let row = current(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
+    let mut tx = pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM worker_pay_positions WHERE id = $1", row.id)
+        .execute(&mut *tx)
         .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "pay_position_cleared",
@@ -158,7 +175,7 @@ async fn clear_position(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 

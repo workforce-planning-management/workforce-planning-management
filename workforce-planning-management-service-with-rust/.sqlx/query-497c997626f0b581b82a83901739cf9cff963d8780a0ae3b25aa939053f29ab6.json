@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT salary_minor FROM workers\n          WHERE organization_ref = $1 AND department = $2 AND salary_currency = $3 AND deleted_at IS NULL\n            AND terminated_on IS NULL\n          ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "salary_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "salary_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "497c997626f0b581b82a83901739cf9cff963d8780a0ae3b25aa939053f29ab6"
+}

@@ -7,7 +7,6 @@ use axa::{
     boot::{BootResult, TestApp},
     cli::{Cli, Command, DbCommand, parse_vars},
     config::{Config, Defaults, Logger, MB},
-    db::truncate_table,
     routes::{AppRoutes, Routes},
     server,
     task::Tasks,
@@ -18,9 +17,8 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use migration::{Migrator, MigratorTrait};
 
-use crate::{auth, controllers, models::_entities::prelude::*, rules, tasks};
+use crate::{auth, controllers, rules, tasks};
 
 /// Blanket auth-enforcement middleware: reads `WPM_REQUIRE_AUTH` per
 /// request and delegates to the pure [`auth::enforce`] (public paths
@@ -90,6 +88,75 @@ fn warn_auth_off() {
         "WPM_REQUIRE_AUTH is off: sign-in is NOT enforced. Development only; production refuses to start this way"
     );
 }
+
+/// The tables a test boot empties, children before parents.
+const TRUNCATED: &[&str] = &[
+    "idempotency_keys",
+    "event_outbox",
+    "post_fundings",
+    "conversion_plans",
+    "engagement_decisions",
+    "engagement_reminders",
+    "worker_health_records",
+    "health_requirements",
+    "equality_declarations",
+    "flexible_working_requests",
+    "resignations",
+    "worker_contact_details",
+    "engagement_status_assessments",
+    "worker_contractor_details",
+    "engagement_extensions",
+    "start_decisions",
+    "capacity_settings",
+    "partner_commitments",
+    "programme_demands",
+    "skill_pool_members",
+    "skill_pools",
+    "audit_logs",
+    "entitlement_acknowledgements",
+    "wellbeing_entitlements",
+    "pulse_responses",
+    "pulse_surveys",
+    "appraisal_responses",
+    "appraisal_nominations",
+    "appraisals",
+    "notifications",
+    "adjustment_requests",
+    "ergonomic_items",
+    "ergonomic_assessments",
+    "program_placements",
+    "early_career_programs",
+    "pipeline_members",
+    "talent_pipelines",
+    "development_plan_items",
+    "development_plans",
+    "assessment_results",
+    "assessments",
+    "assessment_instruments",
+    "benchmarks",
+    "payslips",
+    "payroll_runs",
+    "succession_candidates",
+    "succession_plans",
+    "training_enrollments",
+    "feedback_entries",
+    "goals",
+    "reviews",
+    "review_cycles",
+    "benefit_enrollments",
+    "benefit_plans",
+    "shift_assignments",
+    "shifts",
+    "leave_requests",
+    "leave_entitlements",
+    "time_entries",
+    "onboarding_items",
+    "interviews",
+    "applications",
+    "candidates",
+    "requisitions",
+    "workers",
+];
 
 /// The `workforce-planning-management` application.
 pub struct App;
@@ -205,6 +272,18 @@ pub fn app_routes() -> AppRoutes {
         .fold(AppRoutes::empty(), AppRoutes::add_route)
 }
 
+/// A setting `axa` reads, as WPM finds it: `DB_URL`, else `DATABASE_URL`. axa 0.11 reads only `DB_URL`, but `sqlx`'s own tools
+/// (`cargo sqlx`, and the query macros' build-time check) read `DATABASE_URL`, and every WPM deployment, script and guide set it, so
+/// one variable still does both (WPM-T482). A blank value counts as unset. Pure over `get`, so it is tested without the process
+/// environment.
+fn setting(name: &str, get: impl Fn(&str) -> Option<String>) -> Option<String> {
+    let nonblank = |name: &str| get(name).filter(|value| !value.trim().is_empty());
+    match name {
+        "DB_URL" => nonblank("DB_URL").or_else(|| nonblank("DATABASE_URL")),
+        _ => get(name),
+    }
+}
+
 /// What the service falls back to when the environment does not say.
 fn defaults() -> Defaults {
     Defaults {
@@ -213,6 +292,7 @@ fn defaults() -> Defaults {
         production_port: Some(5150),
         body_limit: 2 * MB,
         max_connections: 20,
+        ..Defaults::default()
     }
 }
 
@@ -220,7 +300,7 @@ fn defaults() -> Defaults {
 /// logs (WPM-R122); `src/request_log.rs` writes the request line instead.
 fn log_filter(level: axa::logger::LogLevel) -> String {
     format!(
-        "{}={level},axa={level},sea_orm_migration={level},tower_http=warn",
+        "{}={level},axa={level},tower_http=warn",
         env!("CARGO_CRATE_NAME")
     )
 }
@@ -267,7 +347,9 @@ impl App {
     /// # Errors
     /// A setting is missing or does not parse.
     pub fn config(environment: &Environment) -> Result<Config> {
-        let mut config = Config::from_env(environment, &defaults())?;
+        let mut config = Config::from_lookup(environment, &defaults(), |name| {
+            setting(name, |name| std::env::var(name).ok())
+        })?;
         if *environment == Environment::Production {
             config.http.timeout_seconds = request_timeout_seconds(
                 crate::compat::env_var("WPM_REQUEST_TIMEOUT_MS").as_deref(),
@@ -302,7 +384,10 @@ impl App {
         let environment = Environment::from_env();
         Self::config(&environment).map_or_else(
             |_| {
-                let mut logger = Config::from_env(&Environment::Development, &defaults())
+                let mut logger =
+                    Config::from_lookup(&Environment::Development, &defaults(), |name| {
+                        setting(name, |name| std::env::var(name).ok())
+                    })
                     .map(|config| config.logger)
                     .expect("the development defaults need no settings");
                 logger.override_filter = Some(log_filter(logger.level));
@@ -325,19 +410,35 @@ impl App {
 
     /// The full router: `axa`'s standard middleware inside WPM's own layers.
     ///
+    /// Errors become problems here as well as in [`Self::after_routes`], because `axa` compresses and a compressed body cannot be
+    /// read after it: this pass has what a handler refused, that one what `axa` and WPM's own layers refused (WPM-D186).
+    ///
     /// # Errors
     /// A boot check refuses to start.
     pub async fn router(ctx: &AppContext) -> Result<AxumRouter> {
-        let router = app_routes().into_app(ctx.clone())?;
+        let router = app_routes()
+            .into_router(ctx.clone())
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw));
+        let router = axa::middleware::apply(router, &ctx.config.http)?;
         Self::after_routes(router, ctx).await
     }
 
     async fn db(ctx: &AppContext, command: DbCommand) -> Result<()> {
         match command {
-            DbCommand::Migrate => Migrator::up(&ctx.db, None).await?,
-            DbCommand::Down { steps } => Migrator::down(&ctx.db, Some(steps)).await?,
-            DbCommand::Reset => Migrator::fresh(&ctx.db).await?,
-            DbCommand::Status => Migrator::status(&ctx.db).await?,
+            DbCommand::Migrate => crate::migrations::up(crate::db::pool(ctx)).await?,
+            // The migrations are forward only (WPM-D193): a step back is a new migration, or a restore.
+            DbCommand::Down { steps } => {
+                return Err(Error::string(&format!(
+                    "db down {steps}: the migrations have no down steps; write a new migration, or restore a backup"
+                )));
+            }
+            DbCommand::Reset => crate::migrations::fresh(crate::db::pool(ctx)).await?,
+            DbCommand::Status => {
+                for m in crate::migrations::status(crate::db::pool(ctx)).await? {
+                    let state = if m.applied { "applied" } else { "pending" };
+                    println!("{}\t{state}\t{}", m.version, m.description);
+                }
+            }
             DbCommand::Truncate => Self::truncate(ctx).await?,
         }
         Ok(())
@@ -353,18 +454,18 @@ impl App {
             .as_deref()
             .map_or_else(Environment::from_env, Environment::parse);
         let mut config = Self::config(&environment)?;
-        if let Command::Start { binding, port, .. } = &cli.command {
-            if let Some(binding) = binding {
-                config.server.binding.clone_from(binding);
+        if matches!(cli.command, Command::Check) {
+            // WPM's own config, not `axa::cli::check`, which re-reads the environment and so reports `axa`'s timeout and CORS, not these.
+            for (name, value) in config.settings() {
+                println!("{name}={value}");
             }
-            if let Some(port) = port {
-                config.server.port = *port;
-            }
+            return Ok(());
         }
+        config.apply_cli(&cli);
         let ctx = Self::context(environment, config).await?;
         axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
         if ctx.config.database.auto_migrate && !matches!(cli.command, Command::Db { .. }) {
-            Migrator::up(&ctx.db, None).await?;
+            crate::migrations::up(crate::db::pool(&ctx)).await?;
         }
         match cli.command {
             Command::Start { .. } => {
@@ -383,6 +484,7 @@ impl App {
                 };
                 tasks.run(&name, &ctx, &parse_vars(&params)?).await
             }
+            Command::Check => Ok(()), // answered above
         }
     }
 
@@ -474,6 +576,33 @@ impl App {
                 "workplace health requirements are ENABLED on the lawful basis recorded as: {basis}"
             );
         }
+        // The key that signs list cursors (WPM-D189). A value that is set but unusable stops the start; none is a key for
+        // this process, which is enough for one instance and refuses another instance's cursors with a `422`.
+        let cursor_key =
+            controllers::cursor_key_from(crate::compat::env_var("WPM_CURSOR_KEY").as_deref())
+                .map_err(|message| Error::string(&message))?;
+        if cursor_key.is_none() && ctx.environment.is_production_like() {
+            tracing::warn!(
+                "WPM_CURSOR_KEY is not set, so each instance signs list cursors with its own key; set it when more than one runs"
+            );
+        }
+        controllers::install_cursor_key(cursor_key);
+        // The failed sign-in lockout (WPM-R242, WPM-D190). A count that is set but unreadable stops the start.
+        let lockout = crate::security::lockout_from(
+            crate::compat::env_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT").as_deref(),
+        )
+        .map_err(|message| Error::string(&message))?;
+        if lockout.is_some() {
+            tracing::info!(
+                "a client address is locked out for up to 15 minutes after LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT 401s"
+            );
+        }
+        // The variable no longer does anything (WPM-D187). Refusing to start would take a running service down over it.
+        if let Some(warning) = crate::security::trust_forwarded_warning(
+            crate::compat::env_var("WPM_TRUST_FORWARDED").as_deref(),
+        ) {
+            tracing::warn!("{warning}");
+        }
         auth::init().await;
         auth::spawn_key_refresh();
         auth::spawn_policy_watcher();
@@ -490,9 +619,10 @@ impl App {
                 ctx.clone(),
                 crate::need_to_know::need_to_know_mw,
             ))
-            .layer(axum::middleware::from_fn(require_auth_mw));
+            .layer(axum::middleware::from_fn(require_auth_mw))
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw));
         let router = controllers::mcp::mount(router, api, ctx.clone());
-        Ok(router
+        let router = router
             .layer(axum::middleware::from_fn_with_state(
                 ctx.clone(),
                 crate::idempotency::idempotency_mw,
@@ -506,8 +636,26 @@ impl App {
             .layer(axum::middleware::from_fn(controllers::mcp::challenge_mw))
             .layer(axum::middleware::from_fn(
                 crate::version::require_version_mw,
+            ));
+        // Outside sign-in, so it sees every 401, and inside the rate limit, which puts the address on the request
+        // (WPM-R242, WPM-D190). Off unless a count is set.
+        let router = match lockout {
+            Some(limiter) => router.layer(axum::middleware::from_fn_with_state(
+                limiter,
+                axa::ratelimit::lock_out_failures,
+            )),
+            None => router,
+        };
+        Ok(router
+            // Outside `axa`'s layers, so it resolves the address itself, from the same list (WPM-D187).
+            .layer(axum::middleware::from_fn_with_state(
+                std::sync::Arc::new(crate::security::RateLimits::from_env(
+                    ctx.config.http.trusted_proxies.clone(),
+                )),
+                crate::security::rate_limit_mw,
             ))
-            .layer(axum::middleware::from_fn(crate::security::rate_limit_mw))
+            // Outside everything that refuses a request, so a 401, 406, 408, 429 or panic is a problem too (WPM-R238).
+            .layer(axum::middleware::from_fn(crate::problem::problem_mw))
             .layer(axum::middleware::from_fn(
                 crate::security::security_headers_mw,
             ))
@@ -546,71 +694,13 @@ impl App {
     /// # Errors
     /// Propagates a database failure.
     pub async fn truncate(ctx: &AppContext) -> Result<()> {
-        truncate_table(&ctx.db, IdempotencyKeys).await?;
-        truncate_table(&ctx.db, EventOutbox).await?;
-        truncate_table(&ctx.db, PostFundings).await?;
-        truncate_table(&ctx.db, ConversionPlans).await?;
-        truncate_table(&ctx.db, EngagementDecisions).await?;
-        truncate_table(&ctx.db, EngagementReminders).await?;
-        truncate_table(&ctx.db, WorkerHealthRecords).await?;
-        truncate_table(&ctx.db, HealthRequirements).await?;
-        truncate_table(&ctx.db, EqualityDeclarations).await?;
-        truncate_table(&ctx.db, FlexibleWorkingRequests).await?;
-        truncate_table(&ctx.db, Resignations).await?;
-        truncate_table(&ctx.db, WorkerContactDetails).await?;
-        truncate_table(&ctx.db, EngagementStatusAssessments).await?;
-        truncate_table(&ctx.db, WorkerContractorDetails).await?;
-        truncate_table(&ctx.db, EngagementExtensions).await?;
-        truncate_table(&ctx.db, StartDecisions).await?;
-        truncate_table(&ctx.db, CapacitySettings).await?;
-        truncate_table(&ctx.db, PartnerCommitments).await?;
-        truncate_table(&ctx.db, ProgrammeDemands).await?;
-        truncate_table(&ctx.db, SkillPoolMembers).await?;
-        truncate_table(&ctx.db, SkillPools).await?;
-        truncate_table(&ctx.db, AuditLogs).await?;
-        truncate_table(&ctx.db, EntitlementAcknowledgements).await?;
-        truncate_table(&ctx.db, WellbeingEntitlements).await?;
-        truncate_table(&ctx.db, PulseResponses).await?;
-        truncate_table(&ctx.db, PulseSurveys).await?;
-        truncate_table(&ctx.db, AppraisalResponses).await?;
-        truncate_table(&ctx.db, AppraisalNominations).await?;
-        truncate_table(&ctx.db, Appraisals).await?;
-        truncate_table(&ctx.db, Notifications).await?;
-        truncate_table(&ctx.db, AdjustmentRequests).await?;
-        truncate_table(&ctx.db, ErgonomicItems).await?;
-        truncate_table(&ctx.db, ErgonomicAssessments).await?;
-        truncate_table(&ctx.db, ProgramPlacements).await?;
-        truncate_table(&ctx.db, EarlyCareerPrograms).await?;
-        truncate_table(&ctx.db, PipelineMembers).await?;
-        truncate_table(&ctx.db, TalentPipelines).await?;
-        truncate_table(&ctx.db, DevelopmentPlanItems).await?;
-        truncate_table(&ctx.db, DevelopmentPlans).await?;
-        truncate_table(&ctx.db, AssessmentResults).await?;
-        truncate_table(&ctx.db, Assessments).await?;
-        truncate_table(&ctx.db, AssessmentInstruments).await?;
-        truncate_table(&ctx.db, Benchmarks).await?;
-        truncate_table(&ctx.db, Payslips).await?;
-        truncate_table(&ctx.db, PayrollRuns).await?;
-        truncate_table(&ctx.db, SuccessionCandidates).await?;
-        truncate_table(&ctx.db, SuccessionPlans).await?;
-        truncate_table(&ctx.db, TrainingEnrollments).await?;
-        truncate_table(&ctx.db, FeedbackEntries).await?;
-        truncate_table(&ctx.db, Goals).await?;
-        truncate_table(&ctx.db, Reviews).await?;
-        truncate_table(&ctx.db, ReviewCycles).await?;
-        truncate_table(&ctx.db, BenefitEnrollments).await?;
-        truncate_table(&ctx.db, BenefitPlans).await?;
-        truncate_table(&ctx.db, ShiftAssignments).await?;
-        truncate_table(&ctx.db, Shifts).await?;
-        truncate_table(&ctx.db, LeaveRequests).await?;
-        truncate_table(&ctx.db, LeaveEntitlements).await?;
-        truncate_table(&ctx.db, TimeEntries).await?;
-        truncate_table(&ctx.db, OnboardingItems).await?;
-        truncate_table(&ctx.db, Interviews).await?;
-        truncate_table(&ctx.db, Applications).await?;
-        truncate_table(&ctx.db, Candidates).await?;
-        truncate_table(&ctx.db, Requisitions).await?;
-        truncate_table(&ctx.db, Workers).await?;
+        // One `DELETE` per table, in this order (children first), as the `SeaORM` truncation did; a `TRUNCATE` would need a
+        // privilege the runtime role does not hold.
+        for table in TRUNCATED {
+            sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table}")))
+                .execute(crate::db::pool(ctx))
+                .await?;
+        }
         Ok(())
     }
 }
@@ -624,7 +714,7 @@ impl TestApp for App {
         let config = Self::config(&environment)?;
         let app_context = Self::context(environment, config).await?;
         if flag("WPM_TEST_FRESH_SCHEMA") {
-            Migrator::fresh(&app_context.db).await?;
+            crate::migrations::fresh(crate::db::pool(&app_context)).await?;
         }
         if flag("WPM_TEST_TRUNCATE") {
             Self::truncate(&app_context).await?;
@@ -640,6 +730,42 @@ impl TestApp for App {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `axa::cli::parse` refuses `db down`, `db reset` and `db truncate` (WPM-R237, WPM-D185). `Cli::parse()` would not.
+    #[test]
+    fn the_binary_reads_its_arguments_through_the_guard() {
+        let main = include_str!("bin/main.rs");
+        assert!(main.contains("axa::cli::parse("));
+        assert!(!main.contains("Cli::parse("));
+    }
+
+    #[test]
+    fn the_database_is_db_url_else_database_url() {
+        let env = |pairs: &'static [(&'static str, &'static str)]| {
+            move |name: &str| {
+                pairs
+                    .iter()
+                    .find(|(n, _)| *n == name)
+                    .map(|(_, v)| (*v).to_string())
+            }
+        };
+        let both = env(&[
+            ("DB_URL", "postgres://a/x"),
+            ("DATABASE_URL", "postgres://b/x"),
+        ]);
+        assert_eq!(setting("DB_URL", both).as_deref(), Some("postgres://a/x"));
+        let old = env(&[("DATABASE_URL", "postgres://b/x")]);
+        assert_eq!(setting("DB_URL", old).as_deref(), Some("postgres://b/x"));
+        let blank = env(&[("DB_URL", " "), ("DATABASE_URL", "postgres://b/x")]);
+        assert_eq!(setting("DB_URL", blank).as_deref(), Some("postgres://b/x"));
+        assert_eq!(setting("DB_URL", env(&[])), None);
+        // Only the database name falls back: another setting is read as it is.
+        assert_eq!(
+            setting("PORT", env(&[("DATABASE_URL", "postgres://b/x")])),
+            None
+        );
+        assert_eq!(setting("PORT", env(&[("PORT", "1")])).as_deref(), Some("1"));
+    }
 
     #[test]
     fn a_request_timeout_rounds_up_to_whole_seconds() {

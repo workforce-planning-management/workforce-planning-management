@@ -3,20 +3,19 @@
 //! (`FOR UPDATE`, WPM-D9); balances change in the decision's
 //! transaction.
 
-use super::IN_BATCH;
 use super::row_json;
+use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use sea_orm::{ExprTrait, PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db;
 use crate::metrics::Metrics;
 use crate::models::_entities::{
-    leave_entitlements, leave_requests, shift_assignments, shifts, time_entries, workers,
+    leave_entitlements, leave_requests, shift_assignments, shifts, time_entries,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::{leave, lifecycle, tokens, workforce, working_time};
 use crate::streaming;
@@ -89,56 +88,57 @@ async fn create_time_entry(
     Path(pid): Path<String>,
     Json(payload): Json<TimeEntryPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::TIME_KINDS, &payload.kind);
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let existing: Vec<time_entries::Model> = time_entries::Entity::find()
-        .filter(time_entries::Column::WorkerPid.eq(worker.pid))
-        .filter(time_entries::Column::WorkedOn.eq(payload.worked_on))
-        .filter(time_entries::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    let existing_minutes: i32 = existing.iter().map(|e| e.minutes).sum();
+    let existing: Vec<i32> = sqlx::query_scalar!(
+        "SELECT minutes FROM time_entries WHERE worker_pid = $1 AND worked_on = $2 AND deleted_at IS NULL",
+        worker.pid,
+        payload.worked_on,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let existing_minutes: i32 = existing.iter().sum();
     workforce::check_day_minutes(existing_minutes, payload.minutes)
         .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
-    let row = time_entries::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        worked_on: ActiveValue::set(payload.worked_on),
-        minutes: ActiveValue::set(payload.minutes),
-        kind: ActiveValue::set(payload.kind.clone()),
-        status: ActiveValue::set("recorded".to_string()),
-        notes: ActiveValue::set(payload.notes.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO time_entries (pid, worker_pid, worked_on, minutes, kind, status, notes)
+         VALUES ($1, $2, $3, $4, $5, 'recorded', $6)",
+        pid,
+        worker.pid,
+        payload.worked_on,
+        payload.minutes,
+        payload.kind,
+        payload.notes,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "time_entry",
-        row.pid,
+        pid,
         "time_recorded",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "time_entry",
         "time_recorded",
-        &row.pid.to_string(),
+        &pid.to_string(),
         &worker.worker_number,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -158,21 +158,22 @@ async fn list_time_entries(
     Path(pid): Path<String>,
     Query(params): Query<TimeListParams>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let mut query = time_entries::Entity::find()
-        .filter(time_entries::Column::WorkerPid.eq(worker.pid))
-        .filter(time_entries::Column::DeletedAt.is_null());
-    if let Some(from) = params.from {
-        query = query.filter(time_entries::Column::WorkedOn.gte(from));
-    }
-    if let Some(to) = params.to {
-        query = query.filter(time_entries::Column::WorkedOn.lte(to));
-    }
-    let rows = query
-        .order_by_asc(time_entries::Column::WorkedOn)
-        .limit(1000)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        time_entries::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, worked_on, minutes,
+                  kind, status, notes, deleted_at AS "deleted_at: _"
+             FROM time_entries
+            WHERE worker_pid = $1 AND deleted_at IS NULL AND ($2::date IS NULL OR worked_on >= $2)
+              AND ($3::date IS NULL OR worked_on <= $3)
+            ORDER BY worked_on, id
+            LIMIT 1000"#,
+        worker.pid,
+        params.from,
+        params.to,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // Per-day overtime derivation over the returned window, against the deployment's day (WPM-T383).
     let full_day = super::payroll::contracted_day();
     let mut days: std::collections::BTreeMap<chrono::NaiveDate, (i32, i32)> =
@@ -205,16 +206,28 @@ async fn approve_time_entry(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let entry = records::find_time_entry(&ctx.db, records::parse_pid(&pid)?).await?;
+    let entry = sqlx::query!(
+        "SELECT id, status FROM time_entries WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if entry.status == "approved" {
         return Err(unprocessable("time entry is already approved"));
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: time_entries::ActiveModel = entry.into();
-    active.status = ActiveValue::set("approved".to_string());
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        time_entries::Model,
+        r#"UPDATE time_entries SET status = 'approved' WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, worked_on, minutes,
+                  kind, status, notes, deleted_at AS "deleted_at: _""#,
+        entry.id,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "time_entry",
         row.pid,
         "time_approved",
@@ -222,7 +235,7 @@ async fn approve_time_entry(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -234,7 +247,7 @@ async fn create_entitlement(
     Path(pid): Path<String>,
     Json(payload): Json<EntitlementPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
     if !(2000..=2100).contains(&payload.year) {
@@ -247,43 +260,45 @@ async fn create_entitlement(
         ));
     }
     ensure_valid(&problems.into_vec())?;
-    let existing = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_entitlements::Column::Kind.eq(&payload.kind))
-        .filter(leave_entitlements::Column::Year.eq(payload.year))
-        .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .count(&ctx.db)
-        .await?;
-    if existing > 0 {
+    let existing = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM leave_entitlements
+            WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1"#,
+        worker.pid,
+        payload.kind,
+        payload.year,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    if existing.is_some() {
         return Err(unprocessable(
             "entitlement already exists for this kind and year",
         ));
     }
-    let txn = ctx.db.begin().await?;
-    let row = leave_entitlements::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(payload.kind.clone()),
-        year: ActiveValue::set(payload.year),
-        entitled_days: ActiveValue::set(payload.entitled_days),
-        used_days: ActiveValue::set(0),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO leave_entitlements (pid, worker_pid, kind, year, entitled_days, used_days)
+         VALUES ($1, $2, $3, $4, $5, 0)",
+        pid,
+        worker.pid,
+        payload.kind,
+        payload.year,
+        payload.entitled_days,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "leave_entitlement",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -293,13 +308,16 @@ async fn list_entitlements(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .order_by_asc(leave_entitlements::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        leave_entitlements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, year,
+                  entitled_days, used_days, deleted_at AS "deleted_at: _"
+             FROM leave_entitlements WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
@@ -313,7 +331,7 @@ async fn create_leave_request(
     Path(pid): Path<String>,
     Json(payload): Json<LeaveRequestPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     create_leave_for(&ctx, &caller, &worker, payload).await
 }
 
@@ -332,7 +350,7 @@ pub(crate) async fn create_leave_for(
     leave::validate_reason(&payload.kind, payload.reason.as_deref())
         .map_err(|e| unprocessable(&e))?;
     let days = leave::day_span(payload.start_on, payload.end_on).map_err(|e| unprocessable(&e))?;
-    let check = balance_check(&ctx.db, worker, &payload.kind, payload.start_on, days).await?;
+    let check = balance_check(ctx, worker, &payload.kind, payload.start_on, days).await?;
     let negative = match check {
         leave::BalanceCheck::Ok { .. } => false,
         leave::BalanceCheck::NegativeFlagged { .. } => true,
@@ -345,50 +363,48 @@ pub(crate) async fn create_leave_for(
             )));
         }
     };
-    let txn = ctx.db.begin().await?;
-    let row = leave_requests::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(payload.kind.clone()),
-        start_on: ActiveValue::set(payload.start_on),
-        end_on: ActiveValue::set(payload.end_on),
-        days: ActiveValue::set(days),
-        status: ActiveValue::set("requested".to_string()),
-        negative_balance: ActiveValue::set(negative),
-        reason: ActiveValue::set(payload.reason.clone()),
-        decided_by: ActiveValue::set(None),
-        decided_at: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status, negative_balance, reason)
+         VALUES ($1, $2, $3, $4, $5, $6, 'requested', $7, $8)",
+        pid,
+        worker.pid,
+        payload.kind,
+        payload.start_on,
+        payload.end_on,
+        days,
+        negative,
+        payload.reason,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "leave_request",
-        row.pid,
+        pid,
         "leave_requested",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "leave_request",
         "leave_requested",
-        &row.pid.to_string(),
+        &pid.to_string(),
         &worker.worker_number,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid, "days": days, "negative_balance": negative }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid, "days": days, "negative_balance": negative }))
 }
 
 /// The balance verdict for `kind` in the request's starting year.
 async fn balance_check(
-    db: &DatabaseConnection,
+    ctx: &AppContext,
     worker: &crate::models::_entities::workers::Model,
     kind: &str,
     start_on: chrono::NaiveDate,
@@ -396,13 +412,15 @@ async fn balance_check(
 ) -> Result<leave::BalanceCheck> {
     use chrono::Datelike;
     let year = start_on.year();
-    let entitlement = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_entitlements::Column::Kind.eq(kind))
-        .filter(leave_entitlements::Column::Year.eq(year))
-        .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .one(db)
-        .await?;
+    let entitlement = sqlx::query!(
+        "SELECT entitled_days, used_days FROM leave_entitlements
+          WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1",
+        worker.pid,
+        kind,
+        year,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?;
     let (entitled, used) = entitlement.map_or((0, 0), |e| (e.entitled_days, e.used_days));
     Ok(leave::check_balance(kind, entitled, used, days))
 }
@@ -413,19 +431,24 @@ async fn list_leave_requests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .order_by_asc(leave_requests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query_as!(
+        leave_requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, start_on, end_on,
+                  days, status, negative_balance, reason, decided_by, decided_at AS "decided_at: _",
+                  deleted_at AS "deleted_at: _"
+             FROM leave_requests WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
 /// One leave decision (`approved` / `rejected` / `cancelled`),
 /// serialized on the locked request row; approval decrements the
 /// balance in the same transaction (WPM-R5, WPM-D9).
+#[allow(clippy::too_many_lines)] // the audit is written per decision, each with its literal action
 pub(crate) async fn decide_leave(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -434,28 +457,34 @@ pub(crate) async fn decide_leave(
 ) -> Result<Response> {
     use chrono::Datelike;
     let pid = records::parse_pid(pid)?;
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(ctx).begin().await?;
     // Lock the request row: two racing approvers serialize here; the
     // loser sees the already-decided status and gets the 422.
-    let request = leave_requests::Entity::find()
-        .filter(leave_requests::Column::Pid.eq(pid))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .lock_exclusive()
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let request = sqlx::query!(
+        "SELECT id, status, kind, start_on, days, worker_pid FROM leave_requests
+          WHERE pid = $1 AND deleted_at IS NULL LIMIT 1 FOR UPDATE",
+        pid,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
     lifecycle::check("leave request", lifecycle::LEAVE, &request.status, to)
         .map_err(|e| unprocessable(&e))?;
     let was = request.status.clone();
-    let kind = request.kind.clone();
     let year = request.start_on.year();
     let days = request.days;
-    let worker_pid = request.worker_pid;
-    let mut active: leave_requests::ActiveModel = request.into();
-    active.status = ActiveValue::set(to.to_string());
-    active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.decided_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&txn).await?;
+    let row = sqlx::query_as!(
+        leave_requests::Model,
+        r#"UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now() WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, start_on, end_on,
+                  days, status, negative_balance, reason, decided_by, decided_at AS "decided_at: _",
+                  deleted_at AS "deleted_at: _""#,
+        request.id,
+        to,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     // Balance mutation: approve uses days; cancelling an approved
     // request restores them.
     let delta = if to == "approved" {
@@ -466,32 +495,70 @@ pub(crate) async fn decide_leave(
         0
     };
     if delta != 0 {
-        let entitlement = leave_entitlements::Entity::find()
-            .filter(leave_entitlements::Column::WorkerPid.eq(worker_pid))
-            .filter(leave_entitlements::Column::Kind.eq(&kind))
-            .filter(leave_entitlements::Column::Year.eq(year))
-            .filter(leave_entitlements::Column::DeletedAt.is_null())
-            .lock_exclusive()
-            .one(&txn)
+        let entitlement = sqlx::query_scalar!(
+            "SELECT id FROM leave_entitlements
+              WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1 FOR UPDATE",
+            request.worker_pid,
+            request.kind,
+            year,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        if let Some(id) = entitlement {
+            sqlx::query!(
+                "UPDATE leave_entitlements SET used_days = used_days + $2 WHERE id = $1",
+                id,
+                delta,
+            )
+            .execute(&mut *tx)
             .await?;
-        if let Some(entitlement) = entitlement {
-            let mut active: leave_entitlements::ActiveModel = entitlement.clone().into();
-            active.used_days = ActiveValue::set(entitlement.used_days + delta);
-            active.update(&txn).await?;
+        }
+    }
+    let snapshot = Some(serde_json::json!({ "from": was, "days": days }));
+    // One literal action per decision, so the audit guard can read each.
+    match to {
+        "approved" => {
+            db::audit(
+                &mut tx,
+                "leave_request",
+                row.pid,
+                "leave_approved",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
+        "rejected" => {
+            db::audit(
+                &mut tx,
+                "leave_request",
+                row.pid,
+                "leave_rejected",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
+        "cancelled" => {
+            db::audit(
+                &mut tx,
+                "leave_request",
+                row.pid,
+                "leave_cancelled",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
+        _ => {
+            return Err(super::internal(
+                "a leave decision is approved, rejected or cancelled",
+            ));
         }
     }
     let event = format!("leave_{to}");
-    Audit::record(
-        &txn,
-        "leave_request",
-        row.pid,
-        &event,
-        caller.actor(),
-        Some(serde_json::json!({ "from": was, "days": days })),
-    )
-    .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "leave_request",
         &event,
         &row.pid.to_string(),
@@ -500,7 +567,7 @@ pub(crate) async fn decide_leave(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     if to == "approved" || to == "rejected" {
         Metrics::global().leave_decided_total.inc();
     }
@@ -553,22 +620,22 @@ async fn create_shift(
         problems.push("required_headcount must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
-    let row = shifts::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        department: ActiveValue::set(payload.department.clone()),
-        starts_at: ActiveValue::set(payload.starts_at),
-        ends_at: ActiveValue::set(payload.ends_at),
-        required_headcount: ActiveValue::set(payload.required_headcount),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO shifts (pid, department, starts_at, ends_at, required_headcount) VALUES ($1, $2, $3, $4, $5)",
+        pid,
+        payload.department,
+        payload.starts_at,
+        payload.ends_at,
+        payload.required_headcount,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "shift", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "shift", pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
@@ -586,15 +653,17 @@ async fn list_shifts(
     State(ctx): State<AppContext>,
     Query(params): Query<RotaParams>,
 ) -> Result<Response> {
-    let mut query = shifts::Entity::find().filter(shifts::Column::DeletedAt.is_null());
-    if let Some(department) = &params.department {
-        query = query.filter(shifts::Column::Department.eq(department));
-    }
-    let rows = query
-        .order_by_asc(shifts::Column::StartsAt)
-        .limit(1000)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        shifts::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, department,
+                  starts_at AS "starts_at: _", ends_at AS "ends_at: _", required_headcount, deleted_at AS "deleted_at: _"
+             FROM shifts WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1)
+            ORDER BY starts_at, id
+            LIMIT 1000"#,
+        params.department,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let rows: Vec<_> = if let Some(date) = params.date {
         rows.into_iter()
             .filter(|s| s.starts_at.date_naive() == date)
@@ -602,14 +671,28 @@ async fn list_shifts(
     } else {
         rows
     };
-    // Attach assignments per shift.
+    // Attach assignments per shift, read in one statement.
+    let shift_pids: Vec<Uuid> = rows.iter().map(|s| s.pid).collect();
+    let mut by_shift: std::collections::HashMap<Uuid, Vec<shift_assignments::Model>> =
+        std::collections::HashMap::new();
+    for assignment in sqlx::query_as!(
+        shift_assignments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, shift_pid, worker_pid,
+                  deleted_at AS "deleted_at: _"
+             FROM shift_assignments WHERE shift_pid = ANY($1) AND deleted_at IS NULL ORDER BY id"#,
+        &shift_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        by_shift
+            .entry(assignment.shift_pid)
+            .or_default()
+            .push(assignment);
+    }
     let mut out = Vec::with_capacity(rows.len());
     for shift in rows {
-        let assignments = shift_assignments::Entity::find()
-            .filter(shift_assignments::Column::ShiftPid.eq(shift.pid))
-            .filter(shift_assignments::Column::DeletedAt.is_null())
-            .all(&ctx.db)
-            .await?;
+        let assignments = by_shift.remove(&shift.pid).unwrap_or_default();
         out.push(serde_json::json!({ "shift": shift, "assignments": assignments }));
     }
     format::json(out)
@@ -625,27 +708,34 @@ async fn assign_shift(
     Path(pid): Path<String>,
     Json(payload): Json<AssignmentPayload>,
 ) -> Result<Response> {
-    let shift = records::find_shift(&ctx.db, records::parse_pid(&pid)?).await?;
-    let worker = records::find_worker(&ctx.db, payload.worker_pid).await?;
-    // Double-booking: any live assignment to an overlapping shift.
-    let their_assignments = shift_assignments::Entity::find()
-        .filter(shift_assignments::Column::WorkerPid.eq(worker.pid))
-        .filter(shift_assignments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
-    for assignment in &their_assignments {
-        if let Some(other) = shifts::Entity::find()
-            .filter(shifts::Column::Pid.eq(assignment.shift_pid))
-            .filter(shifts::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?
-            && workforce::windows_overlap(
-                shift.starts_at,
-                shift.ends_at,
-                other.starts_at,
-                other.ends_at,
-            )
-        {
+    let shift = sqlx::query!(
+        r#"SELECT pid, starts_at AS "starts_at: chrono::DateTime<chrono::FixedOffset>",
+                  ends_at AS "ends_at: chrono::DateTime<chrono::FixedOffset>"
+             FROM shifts WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
+    // Double-booking: any live assignment to an overlapping live shift.
+    let theirs = sqlx::query!(
+        r#"SELECT s.pid, s.starts_at AS "starts_at: chrono::DateTime<chrono::FixedOffset>",
+                  s.ends_at AS "ends_at: chrono::DateTime<chrono::FixedOffset>"
+             FROM shift_assignments a JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL
+            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL
+            ORDER BY a.id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    for other in &theirs {
+        if workforce::windows_overlap(
+            shift.starts_at,
+            shift.ends_at,
+            other.starts_at,
+            other.ends_at,
+        ) {
             return Err(unprocessable(&format!(
                 "double booking: worker already assigned to an overlapping shift ({})",
                 other.pid
@@ -653,12 +743,13 @@ async fn assign_shift(
         }
     }
     // Leave conflict: any approved leave overlapping the shift's dates.
-    let approved_leave = leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_requests::Column::Status.eq("approved"))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let approved_leave = sqlx::query!(
+        "SELECT kind, start_on, end_on FROM leave_requests
+          WHERE worker_pid = $1 AND status = 'approved' AND deleted_at IS NULL ORDER BY id",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let shift_start = shift.starts_at.date_naive();
     let shift_end = shift.ends_at.date_naive();
     for request in &approved_leave {
@@ -669,38 +760,38 @@ async fn assign_shift(
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
-    let row = shift_assignments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        shift_pid: ActiveValue::set(shift.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let new_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO shift_assignments (pid, shift_pid, worker_pid) VALUES ($1, $2, $3)",
+        new_pid,
+        shift.pid,
+        worker.pid,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "shift_assignment",
-        row.pid,
+        new_pid,
         "shift_assigned",
         caller.actor(),
         None,
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "shift_assignment",
         "shift_assigned",
-        &row.pid.to_string(),
+        &new_pid.to_string(),
         &worker.worker_number,
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: new_pid.to_string(),
     })
 }
 
@@ -711,14 +802,23 @@ async fn unassign_shift(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = records::find_shift_assignment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
-    let pid = row.pid;
-    let mut active: shift_assignments::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let pid = records::parse_pid(&pid)?;
+    let id = sqlx::query_scalar!(
+        "SELECT id FROM shift_assignments WHERE pid = $1 AND deleted_at IS NULL",
+        pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE shift_assignments SET deleted_at = now() WHERE id = $1",
+        id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "shift_assignment",
         pid,
         "deleted",
@@ -726,7 +826,7 @@ async fn unassign_shift(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -771,7 +871,7 @@ impl WorkerLimits {
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // limits → minutes → shifts → rest breaches → flagged, linearly
 async fn working_time(
-    axum::extract::Query(query): axum::extract::Query<WorkingTimeQuery>,
+    axa::extract::Query(query): axa::extract::Query<WorkingTimeQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     use crate::rules::jurisdiction::Resolution;
@@ -779,22 +879,17 @@ async fn working_time(
         .as_of
         .unwrap_or_else(|| chrono::Utc::now().date_naive());
     let department = query.department.as_deref();
-    let live_workers = || {
-        let mut find = workers::Entity::find().filter(workers::Column::DeletedAt.is_null());
-        if let Some(department) = department {
-            find = find.filter(workers::Column::Department.eq(department));
-        }
-        find
-    };
     // Every worker in scope, with where their work is done: the limits are per worker.
-    let places: Vec<(Uuid, String, Option<String>)> = live_workers()
-        .select_only()
-        .column(workers::Column::Pid)
-        .column(workers::Column::OrganizationRef)
-        .column(workers::Column::WorkJurisdiction)
-        .into_tuple()
-        .all(&ctx.db)
-        .await?;
+    let places: Vec<(Uuid, String, Option<String>)> = sqlx::query!(
+        "SELECT pid, organization_ref, work_jurisdiction FROM workers
+          WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1) ORDER BY id",
+        department,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w.organization_ref, w.work_jurisdiction))
+    .collect();
     let workers_checked = places.len();
     let organizations: Vec<String> = places
         .iter()
@@ -802,7 +897,8 @@ async fn working_time(
         .collect::<std::collections::BTreeSet<_>>()
         .into_iter()
         .collect();
-    let profiles = super::jurisdictions::profiles_for(&ctx.db, &organizations).await?;
+    let profiles =
+        super::jurisdictions::profiles_for(crate::db::pool(&ctx), &organizations).await?;
     let empty = super::jurisdictions::Profile::default();
     let limits: std::collections::BTreeMap<Uuid, WorkerLimits> = places
         .iter()
@@ -837,77 +933,62 @@ async fn working_time(
         let window_start = as_of - chrono::Duration::weeks(weeks);
         let total_ceiling = ceiling.saturating_mul(weeks);
         let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
-        for batch in pids.chunks(IN_BATCH) {
-            let rows = ctx
-                .db
-                .query_all_raw(sea_orm::Statement::from_sql_and_values(
-                    sea_orm::DbBackend::Postgres,
-                    "WITH heavy AS (
-                         SELECT DISTINCT worker_pid FROM time_entry_weeks
-                          WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2
-                            AND minutes >= $4 AND worker_pid = ANY($5)),
-                          maybe AS (
-                         SELECT w.worker_pid FROM time_entry_weeks w
-                          WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)
-                            AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2
-                          GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3)
-                     SELECT t.worker_pid, SUM(t.minutes)::bigint AS total
-                       FROM time_entries t
-                      WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
-                        AND t.deleted_at IS NULL AND t.worked_on > $1 AND t.worked_on <= $2
-                      GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3",
-                    [
-                        window_start.into(),
-                        as_of.into(),
-                        total_ceiling.into(),
-                        heavy.into(),
-                        batch.to_vec().into(),
-                    ],
-                ))
-                .await?;
-            for row in rows {
-                minutes_of.insert(row.try_get("", "worker_pid")?, row.try_get("", "total")?);
-            }
+        // One bind for the whole list (`ANY`), so the statement's parameter limit does not apply.
+        let rows = sqlx::query!(
+            r#"WITH heavy AS (
+                   SELECT DISTINCT worker_pid FROM time_entry_weeks
+                    WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2::date
+                      AND minutes >= $4::bigint AND worker_pid = ANY($5::uuid[])),
+                    maybe AS (
+                   SELECT w.worker_pid FROM time_entry_weeks w
+                    WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)
+                      AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2::date
+                    GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3::bigint)
+               SELECT t.worker_pid, SUM(t.minutes)::bigint AS "total!"
+                 FROM time_entries t
+                WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
+                  AND t.deleted_at IS NULL AND t.worked_on > $1::date AND t.worked_on <= $2::date
+                GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3::bigint"#,
+            window_start,
+            as_of,
+            total_ceiling,
+            heavy,
+            pids.as_slice(),
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?;
+        for row in rows {
+            minutes_of.insert(row.worker_pid, row.total);
         }
     }
     // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
     let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
     let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);
     let utc_midnight = |date: chrono::NaiveDate| date.and_time(chrono::NaiveTime::MIN).and_utc();
-    let shift_rows = shifts::Entity::find()
-        .filter(shifts::Column::DeletedAt.is_null())
-        .filter(shifts::Column::StartsAt.gte(utc_midnight(rest_start)))
-        .filter(shifts::Column::StartsAt.lt(utc_midnight(rest_end + chrono::Duration::days(1))))
-        .all(&ctx.db)
-        .await?;
+    let shift_rows = sqlx::query!(
+        r#"SELECT pid, starts_at AS "starts_at: chrono::DateTime<chrono::Utc>",
+                  ends_at AS "ends_at: chrono::DateTime<chrono::Utc>"
+             FROM shifts WHERE deleted_at IS NULL AND starts_at >= $1 AND starts_at < $2"#,
+        utc_midnight(rest_start),
+        utc_midnight(rest_end + chrono::Duration::days(1)),
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let window_shifts: std::collections::BTreeMap<Uuid, ShiftInterval> = shift_rows
         .iter()
-        .map(|shift| {
-            (
-                shift.pid,
-                (
-                    shift.starts_at.with_timezone(&chrono::Utc),
-                    shift.ends_at.with_timezone(&chrono::Utc),
-                ),
-            )
-        })
+        .map(|shift| (shift.pid, (shift.starts_at, shift.ends_at)))
         .collect();
+    let window_pids: Vec<Uuid> = window_shifts.keys().copied().collect();
     let mut assigned: Vec<(Uuid, ShiftInterval)> = Vec::new();
-    for shift_pids in window_shifts
-        .keys()
-        .copied()
-        .collect::<Vec<_>>()
-        .chunks(IN_BATCH)
+    for assignment in sqlx::query!(
+        "SELECT shift_pid, worker_pid FROM shift_assignments WHERE deleted_at IS NULL AND shift_pid = ANY($1) ORDER BY id",
+        &window_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
     {
-        for assignment in shift_assignments::Entity::find()
-            .filter(shift_assignments::Column::DeletedAt.is_null())
-            .filter(shift_assignments::Column::ShiftPid.is_in(shift_pids.to_vec()))
-            .all(&ctx.db)
-            .await?
-        {
-            if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
-                assigned.push((assignment.worker_pid, *interval));
-            }
+        if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
+            assigned.push((assignment.worker_pid, *interval));
         }
     }
     let breaches_of = working_time::breaches_by_worker(&assigned, |pid| {
@@ -921,20 +1002,16 @@ async fn working_time(
         let Some((weeks, _)) = limits.get(pid).and_then(WorkerLimits::average) else {
             continue;
         };
-        let total: Option<Option<i64>> = time_entries::Entity::find()
-            .select_only()
-            .column_as(
-                sea_orm::sea_query::Expr::col(time_entries::Column::Minutes).sum(),
-                "total",
-            )
-            .filter(time_entries::Column::DeletedAt.is_null())
-            .filter(time_entries::Column::WorkerPid.eq(*pid))
-            .filter(time_entries::Column::WorkedOn.gt(as_of - chrono::Duration::weeks(weeks)))
-            .filter(time_entries::Column::WorkedOn.lte(as_of))
-            .into_tuple()
-            .one(&ctx.db)
-            .await?;
-        minutes_of.insert(*pid, total.flatten().unwrap_or(0));
+        let total = sqlx::query_scalar!(
+            "SELECT SUM(minutes)::bigint FROM time_entries
+              WHERE deleted_at IS NULL AND worker_pid = $1 AND worked_on > $2 AND worked_on <= $3",
+            *pid,
+            as_of - chrono::Duration::weeks(weeks),
+            as_of,
+        )
+        .fetch_one(db::pool(&ctx))
+        .await?;
+        minutes_of.insert(*pid, total.unwrap_or(0));
     }
     let mut candidates: Vec<Uuid> = minutes_of
         .keys()
@@ -946,12 +1023,16 @@ async fn working_time(
     candidates.sort_unstable();
     let limit_json = |resolution: &Resolution| serde_json::to_value(resolution).unwrap_or_default();
     let mut flagged = Vec::new();
-    for pids in candidates.chunks(IN_BATCH) {
-        let people = live_workers()
-            .filter(workers::Column::Pid.is_in(pids.to_vec()))
-            .order_by_asc(workers::Column::Id)
-            .all(&ctx.db)
-            .await?;
+    {
+        let people = sqlx::query!(
+            "SELECT pid, display_name, department, work_jurisdiction FROM workers
+              WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1) AND pid = ANY($2)
+              ORDER BY id",
+            department,
+            &candidates,
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?;
         for worker in &people {
             let Some(limit) = limits.get(&worker.pid) else {
                 continue;

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM pay_information_requests\n                           WHERE worker_pid = $1 AND deleted_at IS NULL AND answered_on IS NULL) AS \"open!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "open!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "6523b43467522c8845dcbc9a3b29305c0868b5a8a899665977786a43704316c0"
+}

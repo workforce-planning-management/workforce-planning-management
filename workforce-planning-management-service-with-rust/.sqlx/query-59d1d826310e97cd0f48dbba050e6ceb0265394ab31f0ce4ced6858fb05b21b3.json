@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_framework_roles SET ended_at = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "59d1d826310e97cd0f48dbba050e6ceb0265394ab31f0ce4ced6858fb05b21b3"
+}

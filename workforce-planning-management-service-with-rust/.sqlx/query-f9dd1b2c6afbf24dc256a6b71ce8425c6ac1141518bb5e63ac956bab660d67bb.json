@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, pack_pid, withdrawn_on, reason\n           FROM oversight_pack_withdrawals WHERE pack_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pack_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "pack_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "withdrawn_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "withdrawn_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_pack_withdrawals",
+            "name": "reason"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f9dd1b2c6afbf24dc256a6b71ce8425c6ac1141518bb5e63ac956bab660d67bb"
+}

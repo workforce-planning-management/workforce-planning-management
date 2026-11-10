@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT code, retired_in FROM sfia_skills",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "code",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "code"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "retired_in",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skills",
+            "name": "retired_in"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "60e568ed6b62a77193581a8cea98c1506f18598bf8741b982d2c95c97aef3903"
+}

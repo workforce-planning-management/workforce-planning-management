@@ -1,0 +1,292 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, requested_on,\n                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,\n                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,\n                  appeal_note, appeal_decided_by\n             FROM flexible_working_requests WHERE worker_pid = $1 ORDER BY id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "requested_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "requested_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "proposed_start",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "proposed_start"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "proposed_fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "proposed_fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "effect_on_team",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "effect_on_team"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "how_to_manage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "how_to_manage"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "decide_by",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "decide_by"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "decided_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "decided_on"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "decided_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "decision_reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "decision_reason"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "decision_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "decision_note"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "counter_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "counter_note"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "counter_fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "counter_fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "trial_until",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "trial_until"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "appealed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "appealed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "appeal_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "appeal_note"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "appeal_decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "flexible_working_requests",
+            "name": "appeal_decided_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "4aec7466c0d6525b5cfc5d8d25546ee47c8476c1f4c1e26d00da320cf9d2c36b"
+}

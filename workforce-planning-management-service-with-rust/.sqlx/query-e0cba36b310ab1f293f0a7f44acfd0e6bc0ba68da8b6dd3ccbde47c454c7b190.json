@@ -1,0 +1,150 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE pipeline_members SET stage = $2, readiness = COALESCE($3, readiness)\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, pipeline_pid, subject_kind,\n                  subject_pid, stage, readiness, added_on, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pipeline_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pipeline_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "subject_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "stage"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "readiness",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "readiness"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "added_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "added_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "e0cba36b310ab1f293f0a7f44acfd0e6bc0ba68da8b6dd3ccbde47c454c7b190"
+}

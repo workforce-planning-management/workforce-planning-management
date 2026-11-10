@@ -29,7 +29,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-! curl -fs "127.0.0.1:$port_api/_ping" >/dev/null 2>&1 || { echo "something already answers on port $port_api; stop it first"; exit 1; }
+! curl -fs "127.0.0.1:$port_api/_health/live" >/dev/null 2>&1 || { echo "something already answers on port $port_api; stop it first"; exit 1; }
 podman rm -f "$pg" >/dev/null 2>&1 || true
 podman run -d --shm-size=512m --name "$pg" -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco -e POSTGRES_DB=load \
   -p "$port:5432" docker.io/library/postgres:17@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3 >/dev/null
@@ -88,7 +88,7 @@ SQL
   # exec: the pid is the service itself, so the kill below stops it and not just a wrapper shell
   (cd "$svc" && exec "$bin" start >"${LOAD_LOG:-/dev/null}" 2>&1) & api_pid=$!
   ready=0
-  for _ in $(seq 60); do curl -fs "127.0.0.1:$port_api/_ping" >/dev/null 2>&1 && { ready=1; break; }; sleep 1; done
+  for _ in $(seq 60); do curl -fs "127.0.0.1:$port_api/_health/live" >/dev/null 2>&1 && { ready=1; break; }; sleep 1; done
   [ "$ready" = 1 ] || { echo "the service did not become ready"; exit 1; }
 
   # A plan with a demand line in every department (the workers are in dept-0..dept-19): the worst case for
@@ -123,7 +123,7 @@ SQL
   if [ -n "${LOAD_PATHS:-}" ]; then
     paths=(); while read -r line; do line=${line//\{PLAN\}/$plan}; line=${line//\{WORKER\}/$worker}; paths+=("$line?organization=organization:00000000-0000-4000-8000-0000000000aa"); done < "$LOAD_PATHS"
   else
-    paths=("/_ping" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time")
+    paths=("/_health/live" "/api/workers?limit=50" "/api/directory?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/capacity?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce-plans/$plan/forecast" "/api/workforce-plans/$plan/cost" "/api/cpd/overview" "/api/workforce-intelligence/overview" "/api/workforce-intelligence/metrics" "/api/workforce-intelligence/insights" "/api/workforce-intelligence/key-person?organization=organization:00000000-0000-4000-8000-0000000000aa" "/api/workforce/working-time")
   fi
   for path in "${paths[@]}"; do
     out=$(oha -z "${secs}s" -c "$conc" --no-tui --output-format json "http://127.0.0.1:$port_api$path" 2>/dev/null || echo '{}')

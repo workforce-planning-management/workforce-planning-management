@@ -9,18 +9,15 @@
 //! [`crate::rules::gap`].
 
 use super::ratio_json;
+use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    mobility_interests, requisitions, role_profiles, role_skill_requirements, worker_skills,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
 use crate::models::records;
 use crate::rules::gap as gap_rules;
 use crate::rules::mobility as rules;
@@ -33,9 +30,23 @@ struct PidRef {
     pid: String,
 }
 
+/// A role profile, as matching reads it.
+struct Profile {
+    pid: Uuid,
+    job_title: String,
+}
+
+/// A role's requirement of one skill.
+struct Requirement {
+    role_profile_pid: Uuid,
+    skill_pid: Uuid,
+    min_proficiency: i32,
+    importance: String,
+}
+
 /// A worker's readiness for one role profile, from their declarations.
 fn readiness_for(
-    requirements: &[&role_skill_requirements::Model],
+    requirements: &[&Requirement],
     declared: &BTreeMap<Uuid, i32>,
 ) -> gap_rules::Readiness {
     let graded: Vec<(String, &'static str)> = requirements
@@ -53,26 +64,34 @@ fn readiness_for(
 
 /// Everything needed to compute one worker's fit for any role.
 struct Fits {
-    profiles: Vec<role_profiles::Model>,
-    requirements: Vec<role_skill_requirements::Model>,
+    profiles: Vec<Profile>,
+    requirements: Vec<Requirement>,
     declared: BTreeMap<Uuid, i32>,
 }
 
 async fn load_fits(ctx: &AppContext, worker_pid: Uuid) -> Result<Fits> {
-    let profiles = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .order_by_asc(role_profiles::Column::JobTitle)
-        .all(&ctx.db)
-        .await?;
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
-    let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?
-        .into_iter()
-        .map(|d| (d.skill_pid, d.proficiency))
-        .collect();
+    let db = db::pool(ctx);
+    let profiles = sqlx::query_as!(
+        Profile,
+        "SELECT pid, job_title FROM role_profiles WHERE deleted_at IS NULL ORDER BY job_title"
+    )
+    .fetch_all(db)
+    .await?;
+    let requirements = sqlx::query_as!(
+        Requirement,
+        "SELECT role_profile_pid, skill_pid, min_proficiency, importance FROM role_skill_requirements ORDER BY id"
+    )
+    .fetch_all(db)
+    .await?;
+    let declared: BTreeMap<Uuid, i32> = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL",
+        worker_pid,
+    )
+    .fetch_all(db)
+    .await?
+    .into_iter()
+    .map(|d| (d.skill_pid, d.proficiency))
+    .collect();
     Ok(Fits {
         profiles,
         requirements,
@@ -82,7 +101,7 @@ async fn load_fits(ctx: &AppContext, worker_pid: Uuid) -> Result<Fits> {
 
 impl Fits {
     fn readiness_of(&self, profile_pid: Uuid) -> gap_rules::Readiness {
-        let reqs: Vec<&role_skill_requirements::Model> = self
+        let reqs: Vec<&Requirement> = self
             .requirements
             .iter()
             .filter(|r| r.role_profile_pid == profile_pid)
@@ -105,9 +124,9 @@ fn fit_json(readiness: &gap_rules::Readiness) -> serde_json::Value {
 /// never ranks people.
 #[debug_handler]
 async fn role_matches(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let fits = load_fits(&ctx, worker.pid).await?;
-    let mut rows: Vec<(&role_profiles::Model, gap_rules::Readiness)> = fits
+    let mut rows: Vec<(&Profile, gap_rules::Readiness)> = fits
         .profiles
         .iter()
         .filter(|p| !rules::same_title(&p.job_title, &worker.job_title))
@@ -141,15 +160,16 @@ async fn role_matches(State(ctx): State<AppContext>, Path(pid): Path<String>) ->
 /// worker's fit when a role profile exists for that title.
 #[debug_handler]
 async fn opportunities(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let fits = load_fits(&ctx, worker.pid).await?;
-    let open = requisitions::Entity::find()
-        .filter(requisitions::Column::DeletedAt.is_null())
-        .filter(requisitions::Column::OrganizationRef.eq(&worker.organization_ref))
-        .filter(requisitions::Column::Status.is_in(["open", "interviewing"]))
-        .order_by_asc(requisitions::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let open = sqlx::query!(
+        "SELECT pid, job_title, department, status FROM requisitions
+          WHERE deleted_at IS NULL AND organization_ref = $1 AND status IN ('open', 'interviewing')
+          ORDER BY id",
+        worker.organization_ref,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let out: Vec<serde_json::Value> = open
         .iter()
         .filter(|r| !rules::same_title(&r.job_title, &worker.job_title))
@@ -196,7 +216,7 @@ async fn express_interest(
     Path(pid): Path<String>,
     Json(payload): Json<InterestPayload>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let target = rules::interest_target(
         payload.role_profile_pid.is_some(),
         payload.requisition_pid.is_some(),
@@ -212,61 +232,71 @@ async fn express_interest(
         ));
     }
     ensure_valid(&problems.into_vec())?;
-    let mut live = mobility_interests::Entity::find()
-        .filter(mobility_interests::Column::WorkerPid.eq(worker.pid))
-        .filter(mobility_interests::Column::DeletedAt.is_null());
+    let db = db::pool(&ctx);
     match target {
         rules::Target::Role => {
             let role = payload.role_profile_pid.ok_or(Error::NotFound)?;
-            role_profiles::Entity::find()
-                .filter(role_profiles::Column::Pid.eq(role))
-                .filter(role_profiles::Column::DeletedAt.is_null())
-                .one(&ctx.db)
-                .await?
-                .ok_or(Error::NotFound)?;
-            live = live.filter(mobility_interests::Column::RoleProfilePid.eq(role));
+            sqlx::query_scalar!(
+                "SELECT id FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+                role
+            )
+            .fetch_optional(db)
+            .await?
+            .ok_or(Error::NotFound)?;
         }
         rules::Target::Requisition => {
             let requisition = payload.requisition_pid.ok_or(Error::NotFound)?;
-            let found = requisitions::Entity::find()
-                .filter(requisitions::Column::Pid.eq(requisition))
-                .filter(requisitions::Column::DeletedAt.is_null())
-                .one(&ctx.db)
-                .await?
-                .ok_or(Error::NotFound)?;
-            if !matches!(found.status.as_str(), "open" | "interviewing") {
+            let status = sqlx::query_scalar!(
+                "SELECT status FROM requisitions WHERE pid = $1 AND deleted_at IS NULL",
+                requisition
+            )
+            .fetch_optional(db)
+            .await?
+            .ok_or(Error::NotFound)?;
+            if !matches!(status.as_str(), "open" | "interviewing") {
                 return Err(unprocessable("the requisition is not open"));
             }
-            live = live.filter(mobility_interests::Column::RequisitionPid.eq(requisition));
         }
     }
-    if live.one(&ctx.db).await?.is_some() {
+    // Exactly one of the two is given (`interest_target`), so this matches the same target.
+    let already = sqlx::query_scalar!(
+        r#"SELECT EXISTS (SELECT 1 FROM mobility_interests
+                           WHERE worker_pid = $1 AND deleted_at IS NULL
+                             AND role_profile_pid IS NOT DISTINCT FROM $2
+                             AND requisition_pid IS NOT DISTINCT FROM $3) AS "exists!""#,
+        worker.pid,
+        payload.role_profile_pid,
+        payload.requisition_pid,
+    )
+    .fetch_one(db)
+    .await?;
+    if already {
         return Err(unprocessable("interest already expressed"));
     }
-    let txn = ctx.db.begin().await?;
-    let row = mobility_interests::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        role_profile_pid: ActiveValue::set(payload.role_profile_pid),
-        requisition_pid: ActiveValue::set(payload.requisition_pid),
-        note: ActiveValue::set(payload.note.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let interest = Uuid::new_v4();
+    let mut tx = db.begin().await?;
+    sqlx::query!(
+        "INSERT INTO mobility_interests (pid, worker_pid, role_profile_pid, requisition_pid, note) VALUES ($1, $2, $3, $4, $5)",
+        interest,
+        worker.pid,
+        payload.role_profile_pid,
+        payload.requisition_pid,
+        payload.note,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "mobility_interest",
-        row.pid,
+        interest,
         "expressed",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: interest.to_string(),
     })
 }
 
@@ -277,13 +307,14 @@ async fn list_interests(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
-    let rows = mobility_interests::Entity::find()
-        .filter(mobility_interests::Column::WorkerPid.eq(worker.pid))
-        .filter(mobility_interests::Column::DeletedAt.is_null())
-        .order_by_desc(mobility_interests::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
+    let rows = sqlx::query!(
+        "SELECT pid, role_profile_pid, requisition_pid, note FROM mobility_interests
+          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id DESC",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let titles = target_titles(&ctx).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -304,10 +335,16 @@ async fn list_interests(
 /// pid → job title for every role profile and requisition.
 async fn target_titles(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
     let mut titles = BTreeMap::new();
-    for p in role_profiles::Entity::find().all(&ctx.db).await? {
+    for p in sqlx::query!("SELECT pid, job_title FROM role_profiles")
+        .fetch_all(db::pool(ctx))
+        .await?
+    {
         titles.insert(p.pid, p.job_title);
     }
-    for r in requisitions::Entity::find().all(&ctx.db).await? {
+    for r in sqlx::query!("SELECT pid, job_title FROM requisitions")
+        .fetch_all(db::pool(ctx))
+        .await?
+    {
         titles.insert(r.pid, r.job_title);
     }
     Ok(titles)
@@ -320,26 +357,25 @@ async fn withdraw_interest(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = mobility_interests::Entity::find()
-        .filter(mobility_interests::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(mobility_interests::Column::DeletedAt.is_null())
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active: mobility_interests::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
-    let row = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let interest = sqlx::query_scalar!(
+        "UPDATE mobility_interests SET deleted_at = $2 WHERE pid = $1 AND deleted_at IS NULL RETURNING pid",
+        records::parse_pid(&pid)?,
+        chrono::Utc::now(),
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "mobility_interest",
-        row.pid,
+        interest,
         "withdrawn",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -348,10 +384,11 @@ async fn withdraw_interest(
 /// interest. Never who (WPM-D28).
 #[debug_handler]
 async fn interest_summary(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = mobility_interests::Entity::find()
-        .filter(mobility_interests::Column::DeletedAt.is_null())
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT role_profile_pid, requisition_pid FROM mobility_interests WHERE deleted_at IS NULL"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let titles = target_titles(&ctx).await?;
     let mut counts: BTreeMap<(&'static str, Uuid), usize> = BTreeMap::new();
     for row in &rows {

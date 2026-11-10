@@ -1,0 +1,244 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, job_title, description, source_ref,\n                  framework_slug, external_ref, profession, role_name, level_name, level_order, management_track,\n                  job_level_framework, job_level, pay_scale_id, pay_band, deleted_at AS \"deleted_at: _\"\n             FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "source_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "framework_slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "framework_slug"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "external_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "external_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "profession",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "profession"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "role_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "role_name"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "level_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "level_name"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "level_order",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "level_order"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "management_track",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "management_track"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "job_level_framework",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_level_framework"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "job_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "job_level"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "pay_scale_id",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pay_scale_id"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "pay_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "pay_band"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "217066c383212ab577022047435a64a916fcad03f0fec0a93267af772a2e1b2c"
+}

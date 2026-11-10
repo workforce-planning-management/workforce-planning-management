@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM post_fundings WHERE worker_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d58ed51f5aaca3de172277520a8ac5f1acc3b7f8d5984ba199528baa150e432e"
+}

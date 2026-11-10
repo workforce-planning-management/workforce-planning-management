@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO rota_overrides (pid, rota_pid, worker_pid, starts_on, ends_on, note, created_by)\n         SELECT gen_random_uuid(), $1, $2, run.starts_on, run.ends_on, $5, $6\n           FROM unnest($3::date[], $4::date[]) AS run(starts_on, ends_on)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "DateArray",
+        "DateArray",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "619e77e37060ea5dfcc99981621662fb08ea7166ff6782a18f009f23cce32b2a"
+}
