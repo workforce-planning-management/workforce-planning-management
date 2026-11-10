@@ -222,3 +222,47 @@ async fn overtime_status_starts_unknown_is_recorded_by_a_person_and_a_stray_valu
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_number_names_one_position_and_an_update_without_it_keeps_it() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let body = |cost_centre: &str, number: Option<&str>| {
+            let mut b = json!({ "organization_ref": org, "cost_centre": cost_centre, "title": "Engineer",
+                                "budget_fte_percent": 100, "funding_kind": "core" });
+            if let Some(n) = number {
+                b["number"] = json!(n);
+            }
+            b
+        };
+        let created = request.post("/api/positions").json(&body("CC-A", Some(" P-1 "))).await;
+        assert_eq!(created.status_code(), 200, "{}", created.text());
+        let pid = created.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let again = request.post("/api/positions").json(&body("CC-B", Some("P-1"))).await;
+        assert_eq!(again.status_code(), 422, "a second use in the organization is refused");
+        let elsewhere = request
+            .post("/api/positions")
+            .json(&json!({ "organization_ref": an_org(), "cost_centre": "CC-A", "title": "Engineer",
+                           "budget_fte_percent": 100, "funding_kind": "core", "number": "P-1" }))
+            .await;
+        assert_eq!(elsewhere.status_code(), 200, "another organization may use it");
+        let other = request.post("/api/positions").json(&body("CC-B", None)).await;
+        assert_eq!(other.status_code(), 200);
+
+        // Its own number is no clash, and an update that leaves it out keeps it.
+        let url = format!("/api/positions/{pid}");
+        request.put(&url).json(&body("CC-A", Some("P-1"))).await.assert_status_ok();
+        request.put(&url).json(&body("CC-A", None)).await.assert_status_ok();
+        let listed: Value = request
+            .get(&format!("/api/positions?organization={org}&cost_centre=CC-A"))
+            .await
+            .json();
+        let positions = listed["positions"].as_array().unwrap();
+        assert_eq!(positions.len(), 1, "the cost centre filters: {listed}");
+        assert_eq!(positions[0]["pid"], pid.as_str());
+        assert_eq!(positions[0]["number"], "P-1", "trimmed, and kept");
+    })
+    .await;
+}

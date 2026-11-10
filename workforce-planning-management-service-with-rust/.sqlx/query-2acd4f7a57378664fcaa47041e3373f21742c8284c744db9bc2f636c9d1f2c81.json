@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, funding_ends_on,\n                                programme_ref, state, overtime_status, demand_line_pid, number, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'planned', $9, $10, $11, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2acd4f7a57378664fcaa47041e3373f21742c8284c744db9bc2f636c9d1f2c81"
+}

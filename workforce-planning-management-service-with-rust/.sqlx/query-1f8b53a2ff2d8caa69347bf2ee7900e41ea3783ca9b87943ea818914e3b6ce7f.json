@@ -1,0 +1,234 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, cost_centre,\n                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,\n                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by\n             FROM positions\n            WHERE organization_ref = $1 AND ($2::text IS NULL OR state = $2) AND ($3::text IS NULL OR cost_centre = $3)\n            ORDER BY cost_centre, title, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "cost_centre",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "cost_centre"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "budget_fte_percent",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "budget_fte_percent"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "funding_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "funding_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "funding_ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "funding_ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "state",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "holder_worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "holder_worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "requisition_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "requisition_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "demand_line_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "demand_line_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "overtime_status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "overtime_status"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "number",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "number"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "1f8b53a2ff2d8caa69347bf2ee7900e41ea3783ca9b87943ea818914e3b6ce7f"
+}

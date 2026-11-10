@@ -4,7 +4,6 @@
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -12,8 +11,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{plan_demand_lines, positions, requisitions, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::positions;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::position::{self as rules, Facts, Holding, Seat};
 
@@ -63,26 +62,28 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let mut find = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(&query.organization));
-    if let Some(state) = &query.state {
-        if !rules::STATES.contains(&state.as_str()) {
-            return Err(unprocessable(&format!(
-                "state is one of {}",
-                rules::STATES.join(", ")
-            )));
-        }
-        find = find.filter(positions::Column::State.eq(state));
+    if let Some(state) = &query.state
+        && !rules::STATES.contains(&state.as_str())
+    {
+        return Err(unprocessable(&format!(
+            "state is one of {}",
+            rules::STATES.join(", ")
+        )));
     }
-    if let Some(cc) = &query.cost_centre {
-        find = find.filter(positions::Column::CostCentre.eq(cc));
-    }
-    let rows = find
-        .order_by_asc(positions::Column::CostCentre)
-        .order_by_asc(positions::Column::Title)
-        .order_by_asc(positions::Column::Id)
-        .all(&ctx.db)
-        .await?;
+    let rows = sqlx::query_as!(
+        positions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
+                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+             FROM positions
+            WHERE organization_ref = $1 AND ($2::text IS NULL OR state = $2) AND ($3::text IS NULL OR cost_centre = $3)
+            ORDER BY cost_centre, title, id"#,
+        query.organization,
+        query.state,
+        query.cost_centre,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let with_holder = sees_holders(&ctx, &caller, &query.organization).await?;
     format::json(json!({
         "states": rules::STATES,
@@ -152,12 +153,14 @@ async fn ensure_number_free(
     let Some(number) = number else {
         return Ok(());
     };
-    let taken = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(organization))
-        .filter(positions::Column::Number.eq(number))
-        .one(&ctx.db)
-        .await?;
-    if taken.is_some_and(|t| Some(t.pid) != except) {
+    let taken = sqlx::query_scalar!(
+        "SELECT pid FROM positions WHERE organization_ref = $1 AND number = $2 LIMIT 1",
+        organization,
+        number,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?;
+    if taken.is_some_and(|t| Some(t) != except) {
         return Err(unprocessable(
             "number is already used by another position in this organization",
         ));
@@ -167,11 +170,13 @@ async fn ensure_number_free(
 
 async fn ensure_demand_line(ctx: &AppContext, pid: Option<Uuid>) -> Result<()> {
     if let Some(pid) = pid
-        && plan_demand_lines::Entity::find()
-            .filter(plan_demand_lines::Column::Pid.eq(pid))
-            .one(&ctx.db)
-            .await?
-            .is_none()
+        && sqlx::query_scalar!(
+            "SELECT 1 AS \"one!\" FROM plan_demand_lines WHERE pid = $1",
+            pid
+        )
+        .fetch_optional(db::pool(ctx))
+        .await?
+        .is_none()
     {
         return Err(unprocessable("demand_line_pid names no demand line"));
     }
@@ -193,32 +198,28 @@ async fn create(
     let number = clean_number(payload.number.as_deref());
     ensure_number_free(&ctx, &organization, number.as_deref(), None).await?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
-    positions::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(organization),
-        cost_centre: ActiveValue::set(payload.cost_centre.trim().to_string()),
-        title: ActiveValue::set(payload.title.trim().to_string()),
-        budget_fte_percent: ActiveValue::set(payload.budget_fte_percent),
-        funding_kind: ActiveValue::set(payload.funding_kind.clone()),
-        funding_ends_on: ActiveValue::set(payload.funding_ends_on),
-        programme_ref: ActiveValue::set(payload.programme_ref.clone()),
-        state: ActiveValue::set("planned".to_string()),
-        overtime_status: ActiveValue::set(
-            payload
-                .overtime_status
-                .clone()
-                .unwrap_or_else(|| "unknown".to_string()),
-        ),
-        demand_line_pid: ActiveValue::set(payload.demand_line_pid),
-        number: ActiveValue::set(number),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, funding_ends_on,
+                                programme_ref, state, overtime_status, demand_line_pid, number, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'planned', $9, $10, $11, $12)",
+        pid,
+        organization,
+        payload.cost_centre.trim(),
+        payload.title.trim(),
+        payload.budget_fte_percent,
+        payload.funding_kind,
+        payload.funding_ends_on,
+        payload.programme_ref,
+        payload.overtime_status.as_deref().unwrap_or("unknown"),
+        payload.demand_line_pid,
+        number,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "position",
         pid,
         "position_created",
@@ -226,16 +227,22 @@ async fn create(
         Some(json!({ "from_demand_line": payload.demand_line_pid.is_some() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
 async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<positions::Model> {
-    let row = positions::Entity::find()
-        .filter(positions::Column::Pid.eq(pid))
-        .one(&ctx.db)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        positions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
+                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+             FROM positions WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -266,29 +273,31 @@ async fn update(
     }
     let number = clean_number(payload.number.as_deref());
     ensure_number_free(&ctx, &row.organization_ref, number.as_deref(), Some(pid)).await?;
-    let before_status = row.overtime_status.clone();
-    let txn = ctx.db.begin().await?;
-    let mut active: positions::ActiveModel = row.into();
-    active.cost_centre = ActiveValue::set(payload.cost_centre.trim().to_string());
-    active.title = ActiveValue::set(payload.title.trim().to_string());
-    active.budget_fte_percent = ActiveValue::set(payload.budget_fte_percent);
-    active.funding_kind = ActiveValue::set(payload.funding_kind.clone());
-    active.funding_ends_on = ActiveValue::set(payload.funding_ends_on);
-    active.programme_ref = ActiveValue::set(payload.programme_ref.clone());
     let status_changed = payload
         .overtime_status
         .as_ref()
-        .is_some_and(|s| *s != before_status);
-    if let Some(s) = &payload.overtime_status {
-        active.overtime_status = ActiveValue::set(s.clone());
-    }
-    if number.is_some() {
-        active.number = ActiveValue::set(number);
-    }
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+        .is_some_and(|s| *s != row.overtime_status);
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET cost_centre = $2, title = $3, budget_fte_percent = $4, funding_kind = $5, funding_ends_on = $6,
+                programme_ref = $7, overtime_status = COALESCE($8, overtime_status), number = COALESCE($9, number),
+                recorded_by = $10
+          WHERE id = $1",
+        row.id,
+        payload.cost_centre.trim(),
+        payload.title.trim(),
+        payload.budget_fte_percent,
+        payload.funding_kind,
+        payload.funding_ends_on,
+        payload.programme_ref,
+        payload.overtime_status,
+        number,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "position",
         pid,
         "position_updated",
@@ -296,7 +305,7 @@ async fn update(
         status_changed.then(|| json!({ "overtime_status": payload.overtime_status })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -321,12 +330,16 @@ async fn status(
     };
     rules::check_move(&row.state, &payload.to, facts).map_err(|e| unprocessable(&e))?;
     let from = row.state.clone();
-    let txn = ctx.db.begin().await?;
-    let mut active: positions::ActiveModel = row.into();
-    active.state = ActiveValue::set(payload.to.clone());
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET state = $2 WHERE id = $1",
+        row.id,
+        payload.to
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "position",
         pid,
         "position_status_changed",
@@ -334,7 +347,7 @@ async fn status(
         Some(json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "state": payload.to }))
 }
 
@@ -361,24 +374,29 @@ async fn holder(
         )));
     }
     if let Some(worker) = payload.worker_pid {
-        let found = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(worker))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?;
-        if found.is_none_or(|w| w.organization_ref != row.organization_ref) {
+        let found = sqlx::query_scalar!(
+            "SELECT organization_ref FROM workers WHERE pid = $1 AND deleted_at IS NULL",
+            worker,
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?;
+        if found.is_none_or(|o| o != row.organization_ref) {
             return Err(unprocessable(
                 "worker_pid names no worker of this organization",
             ));
         }
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: positions::ActiveModel = row.into();
-    active.holder_worker_pid = ActiveValue::set(payload.worker_pid);
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET holder_worker_pid = $2, recorded_by = $3 WHERE id = $1",
+        row.id,
+        payload.worker_pid,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "position",
         pid,
         "position_holder_set",
@@ -386,7 +404,7 @@ async fn holder(
         Some(json!({ "linked": payload.worker_pid.is_some() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -416,24 +434,29 @@ async fn requisition(
         ));
     }
     if let Some(r) = payload.requisition_pid {
-        let found = requisitions::Entity::find()
-            .filter(requisitions::Column::Pid.eq(r))
-            .filter(requisitions::Column::DeletedAt.is_null())
-            .one(&ctx.db)
-            .await?;
-        if found.is_none_or(|q| q.organization_ref != row.organization_ref) {
+        let found = sqlx::query_scalar!(
+            "SELECT organization_ref FROM requisitions WHERE pid = $1 AND deleted_at IS NULL",
+            r,
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?;
+        if found.is_none_or(|o| o != row.organization_ref) {
             return Err(unprocessable(
                 "requisition_pid names no requisition of this organization",
             ));
         }
     }
-    let txn = ctx.db.begin().await?;
-    let mut active: positions::ActiveModel = row.into();
-    active.requisition_pid = ActiveValue::set(payload.requisition_pid);
-    active.recorded_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET requisition_pid = $2, recorded_by = $3 WHERE id = $1",
+        row.id,
+        payload.requisition_pid,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "position",
         pid,
         "position_requisition_set",
@@ -441,7 +464,7 @@ async fn requisition(
         Some(json!({ "linked": payload.requisition_pid.is_some() })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -461,36 +484,29 @@ async fn establishment(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(&query.organization))
-        .all(&ctx.db)
-        .await?;
-    let held: Vec<Uuid> = rows.iter().filter_map(|r| r.holder_worker_pid).collect();
-    let fte: std::collections::HashMap<Uuid, i32> = super::find_in(
-        &ctx,
-        workers::Entity::find().filter(workers::Column::DeletedAt.is_null()),
-        workers::Column::Pid,
-        &held,
+    // Each position with its holder's FTE; a holder whose record is gone (erased or deleted) has none.
+    let seats: Vec<Seat> = sqlx::query!(
+        r#"SELECT p.cost_centre, p.state, p.budget_fte_percent, p.holder_worker_pid, w.fte_percent AS "fte_percent?"
+             FROM positions p
+             LEFT JOIN workers w ON w.pid = p.holder_worker_pid AND w.deleted_at IS NULL
+            WHERE p.organization_ref = $1"#,
+        query.organization,
     )
+    .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .map(|w| (w.pid, w.fte_percent))
+    .map(|r| Seat {
+        cost_centre: r.cost_centre,
+        state: r.state,
+        budget_fte_percent: r.budget_fte_percent,
+        // A holder whose FTE we cannot say is held by someone, not vacant.
+        holding: match (r.holder_worker_pid, r.fte_percent) {
+            (None, _) => Holding::Vacant,
+            (Some(_), None) => Holding::HeldUnknown,
+            (Some(_), Some(f)) => Holding::Held(f),
+        },
+    })
     .collect();
-    let seats: Vec<Seat> = rows
-        .iter()
-        .map(|r| Seat {
-            cost_centre: r.cost_centre.clone(),
-            state: r.state.clone(),
-            budget_fte_percent: r.budget_fte_percent,
-            // A holder whose record is gone (erased or deleted) is held by someone whose FTE we cannot say.
-            holding: match r.holder_worker_pid {
-                None => Holding::Vacant,
-                Some(w) => fte
-                    .get(&w)
-                    .map_or(Holding::HeldUnknown, |f| Holding::Held(*f)),
-            },
-        })
-        .collect();
     let floor = if sees_holders(&ctx, &caller, &query.organization).await? {
         None
     } else {

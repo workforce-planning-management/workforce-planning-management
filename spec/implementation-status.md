@@ -17,7 +17,7 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Pure rule modules | 128 |
 | OpenAPI paths | 513 |
 | Rust unit tests (`#[test]` in `src/`) | 1294 |
-| Rust request tests (`tests/requests/`) | 224 |
+| Rust request tests (`tests/requests/`) | 225 |
 | Rust test binaries beside the request suite | 34 |
 | Front-end unit test files | 41 |
 | Front-end unit tests (`it(` / `test(`) | 286 |
