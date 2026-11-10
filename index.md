@@ -26,8 +26,8 @@ documentation page of the website
   [issue tracker](https://github.com/workforce-planning-management/workforce-planning-management/issues), and say whether it is
   a bug or a question. Never paste real personal data.
 - **A security problem:** by email, as [SECURITY.md](SECURITY.md) says, not in a public issue.
-- **How to do a task in the app:** the **Help** link in the app's header opens the help page and the tour; every error message
-  links there too.
+- **How to do a task in the app:** the **Help** link in the app's header opens the help page and the walkthroughs for an employee,
+  a manager and HR; every error message links there too.
 
 ## The specification
 

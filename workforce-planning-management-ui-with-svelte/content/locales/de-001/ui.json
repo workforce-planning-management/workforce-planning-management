@@ -411,6 +411,10 @@
       "title": "Nicht weitergekommen oder einen Fehler gefunden?",
       "body": "Die Hilfeseite sagt, wie Sie ein Problem melden, wie Sie eine Frage stellen und wo jede Aufgabe erklärt wird.",
       "link": "Hilfe erhalten"
+    },
+    "learn": {
+      "title": "Lernen durch Tun",
+      "body": "Anleitungen für Beschäftigte, Führungskräfte und HR: Jede Aufgabe sagt, wo Sie klicken und was Sie sehen."
     }
   },
   "insights": {
@@ -1568,7 +1572,8 @@
     "myGoals": "Meine Ziele — WPM",
     "myPadrs": "Meine Entwicklungsgespräche — WPM",
     "padr": "Entwicklungsgespräch — WPM",
-    "help": "Hilfe — WPM"
+    "help": "Hilfe — WPM",
+    "guides": "Anleitungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -3337,5 +3342,81 @@
     "failed": "Etwas ist schiefgegangen",
     "hint": "Prüfen Sie die Adresse oder beginnen Sie neu auf der Startseite. Wenn ein Link innerhalb von WPM Sie hierher geführt hat, melden Sie ihn bitte.",
     "home": "Zur Startseite"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Wählen Sie auf einer Seite mit einer Organisationsliste zuerst die Organisation: Listen und Formulare erscheinen erst danach.",
+      "title": "Für HR",
+      "intro": "Die Seiten für HR finden Sie im Menü (☰). Jede sagt unter ihrer Überschrift, was sie zeigt und was sie auslässt.",
+      "requirement": {
+        "title": "Eine Pflichtschulungsanforderung festlegen",
+        "body": "Öffnen Sie Pflichtschulungen. Geben Sie unter Anforderung hinzufügen das Thema an, ob sie gesetzlich vorgeschrieben oder verpflichtend ist, die Auffrischung in Monaten und für wen sie gilt. Die Tabelle zeigt für jede Anforderung, wie viele Personen aktuell sind; eine Gruppe, die zu klein zum Anzeigen ist, wird als solche ausgewiesen."
+      },
+      "completion": {
+        "title": "Anderswo absolvierte Schulungen erfassen",
+        "body": "Wählen Sie auf Pflichtschulungen unter Abschluss erfassen die Person und die Anforderung, den Tag des Abschlusses und wo er erfolgte, und speichern Sie. Der Status der Person wird ab diesem Tag aktualisiert."
+      },
+      "verify": {
+        "title": "Eine Qualifikation prüfen",
+        "body": "Öffnen Sie Qualifikationen. Die Liste zeigt angegebene Qualifikationen, die noch niemand geprüft hat. Tragen Sie ein, wo der Nachweis aufbewahrt wird, und drücken Sie Prüfen. Wählen Sie unter Was jede Rolle verlangt eine Rolle, um die von ihr geforderten Qualifikationen hinzuzufügen."
+      },
+      "vacancy": {
+        "title": "Eine Stelle ausschreiben",
+        "body": "Öffnen Sie Offene Stellen. Füllen Sie unter Stelle ausschreiben Abteilung, Stellenbezeichnung und Anzahl der Stellen aus und drücken Sie Anlegen. Jede Ausschreibung ist eine Karte auf der Tafel, die Sie im Laufe des Verfahrens von Spalte zu Spalte verschieben."
+      },
+      "movement": {
+        "title": "Einen Ein- oder Austrittsvorgang anlegen",
+        "body": "Öffnen Sie Ein- und Austritte, dann Vorgang anlegen: Wählen Sie die Person, Eintritt oder Austritt und den Tag. Die Checkliste des Vorgangs zeigt jeden Punkt als erledigt, heute fällig, überfällig oder anstehend, und die Übergabe bei einem Austritt listet auf, was die Person noch hat."
+      }
+    },
+    "title": "Anleitungen",
+    "intro": "Aufgaben für jede Rolle, Schritt für Schritt: wo Sie klicken und was Sie sehen.",
+    "open": "Diese Seite öffnen",
+    "others": "Weitere Anleitungen",
+    "signin": "Diese Seiten öffnen sich, sobald Sie angemeldet sind. Melden Sie sich in der Demo als example@example.com an.",
+    "employee": {
+      "title": "Für Beschäftigte",
+      "intro": "Alles hier beginnt bei Mein Profil: Öffnen Sie oben das Menü (☰) und wählen Sie Mein Profil.",
+      "waiting": {
+        "title": "Sehen, was auf Sie wartet",
+        "body": "Auf Mein Profil listet ein Bereich Wartet auf Sie weit oben alles auf, was Sie betrifft: ein Ziel, dem Sie zustimmen sollen, ein entschiedener Kursantrag, ein Entwicklungsgespräch, das Sie unterschreiben sollen. Jeder Eintrag verlinkt dorthin, wo Sie handeln, und Als gelesen markieren entfernt ihn."
+      },
+      "goal": {
+        "title": "Ziel vorschlagen",
+        "body": "Wählen Sie auf Mein Profil Meine Ziele. Geben Sie unter Ziel vorschlagen einen Titel, einen Beginn und ein Ende an und drücken Sie Vorschlagen. Das Ziel wartet dann auf die Zustimmung Ihrer Führungskraft; danach erfassen Sie den Fortschritt unter Wie läuft es?"
+      },
+      "qualification": {
+        "title": "Eine eigene Qualifikation hinzufügen",
+        "body": "Scrollen Sie auf Mein Profil zu Qualifikationen. Wählen Sie unter Qualifikation hinzufügen die Art, geben Sie Titel und Daten ein und drücken Sie Speichern. Sie wird als Angegeben geführt, bis HR sie prüft; nur eine geprüfte zählt unter Was meine Rolle verlangt als erfüllt."
+      },
+      "payslips": {
+        "title": "Gehaltsabrechnungen lesen",
+        "body": "Wählen Sie auf Mein Profil Meine Gehaltsabrechnungen. Jeder Abrechnungszeitraum hat einen eigenen Abschnitt mit seinen Positionen, und die Summe seit Jahresbeginn wird für jedes Steuerjahr gebildet."
+      },
+      "feedback": {
+        "title": "Eine Anfrage für 360°-Feedback beantworten",
+        "body": "Wählen Sie auf Mein Profil Meine Akte: Abwesenheit, Gehaltsabrechnungen, Beurteilungen und 360°-Feedback. Drücken Sie unter Meine 360-Anfragen Antworten senden, bewerten Sie jede Kompetenz von 1 bis 5, fügen Sie nach Wunsch einen Kommentar hinzu und drücken Sie erneut Antworten senden. Antworten von Kolleginnen und Kollegen und von unterstellten Personen werden immer nur als Gruppe von drei oder mehr angezeigt."
+      }
+    },
+    "manager": {
+      "title": "Für Führungskräfte",
+      "intro": "Die Aufgaben einer Führungskraft stehen auf denselben Seiten wie ihre eigenen, in Abschnitten mit der Überschrift Mein Team.",
+      "team": {
+        "title": "Schulungen und Qualifikationen Ihres Teams prüfen",
+        "body": "Auf Mein Profil listen die Bereiche Vorgeschriebene Schulungen meines Teams und Qualifikationen meines Teams die Ihnen unterstellten Personen auf, die Aufmerksamkeit brauchen, mit Namen und dem Status jeder Anforderung. Braucht niemand Aufmerksamkeit, sagt der Bereich das."
+      },
+      "goals": {
+        "title": "Einem Ziel zustimmen",
+        "body": "Wählen Sie auf Mein Profil Meine Ziele. Unter Mein Team hat ein vorgeschlagenes Ziel die Schaltfläche Diesem Ziel zustimmen. Drücken Sie sie, oder ändern Sie den Vorschlag, damit die Person Ihrer Fassung zustimmt."
+      },
+      "padr": {
+        "title": "Ein persönliches Entwicklungsgespräch führen",
+        "body": "Wählen Sie auf Mein Profil Meine Entwicklungsgespräche. Legen Sie unter Mein Team Beginn und Ende des kommenden Jahres für die Person fest und drücken Sie Gespräch eröffnen. Fügen Sie Ziele und Entwicklungsbedarf hinzu, geben Sie an, ob ein Gespräch über das Wohlbefinden angeboten wurde, und beide unterschreiben. Mit der Unterschrift wird diese Fassung festgeschrieben; eine Korrektur ist eine neue Fassung."
+      },
+      "appraisal": {
+        "title": "Eine 360°-Beurteilung durchführen",
+        "body": "Öffnen Sie Arbeitskräfte im Menü und wählen Sie die Person. Benennen Sie unter 360°-Beurteilungen die Kompetenzen und drücken Sie Neue 360. Öffnen Sie sie, benennen Sie mindestens drei Bewertende mit ihrer Beziehung und drücken Sie Sammlung starten. Wenn genug geantwortet haben, drücken Sie Bericht teilen; eine Gruppe von Kolleginnen und Kollegen oder unterstellten Personen mit weniger als drei Antworten wird zurückgehalten."
+      }
+    }
   }
 }

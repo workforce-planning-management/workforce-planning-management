@@ -411,6 +411,10 @@
       "title": "Stuck, or found a bug?",
       "body": "The help page says how to report a problem, how to ask a question and where each task is explained.",
       "link": "Get help"
+    },
+    "learn": {
+      "title": "Learn by doing",
+      "body": "Walkthroughs for an employee, a manager and HR: each task says where to click and what you see."
     }
   },
   "insights": {
@@ -1568,7 +1572,8 @@
     "myGoals": "My goals — WPM",
     "myPadrs": "My development reviews — WPM",
     "padr": "Development review — WPM",
-    "help": "Help — WPM"
+    "help": "Help — WPM",
+    "guides": "Walkthroughs — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -3337,5 +3342,81 @@
     "failed": "Something went wrong",
     "hint": "Check the address, or start again from the home page. If a link inside WPM brought you here, please report it.",
     "home": "Go to the home page"
+  },
+  "guides": {
+    "title": "Walkthroughs",
+    "intro": "Tasks for each role, step by step: where to click and what you see.",
+    "open": "Open this page",
+    "others": "Other walkthroughs",
+    "signin": "These pages open once you are signed in. In the demo, sign in as example@example.com.",
+    "employee": {
+      "title": "For an employee",
+      "intro": "Everything here starts from My profile: open the menu (☰) at the top and choose My profile.",
+      "waiting": {
+        "title": "See what is waiting for you",
+        "body": "On My profile, a Waiting for you panel near the top lists anything that needs you: a goal to agree, a decided course request, a development review to sign. Each item links to where you act on it, and Mark read clears it."
+      },
+      "goal": {
+        "title": "Propose a goal",
+        "body": "On My profile, choose My goals. Under Propose a goal, give it a title, a start and an end, and press Propose. It waits for your manager to agree it; then record progress under How is it going?"
+      },
+      "qualification": {
+        "title": "Add a qualification you hold",
+        "body": "On My profile, scroll to Qualifications. Under Add a qualification, choose its kind, type its title and dates, and press Save. It is listed as Declared until HR verifies it; only a verified one counts as met under What my role asks for."
+      },
+      "payslips": {
+        "title": "Read your payslips",
+        "body": "On My profile, choose My payslips. Each pay period has its own section with its lines, and the year to date is summed for each tax year."
+      },
+      "feedback": {
+        "title": "Answer a request for 360° feedback",
+        "body": "On My profile, choose My record: leave, payslips, reviews and 360° appraisals. Under My 360 requests, press Respond, score each competency from 1 to 5, add a comment if you wish, and press Respond again. Answers from peers and reports are only ever shown as a group of three or more."
+      }
+    },
+    "manager": {
+      "title": "For a manager",
+      "intro": "A manager's tasks sit on the same pages as their own, in sections headed My team.",
+      "team": {
+        "title": "Check your team's training and qualifications",
+        "body": "On My profile, the panels My team's statutory and mandatory learning and My team's qualifications list the people below you who need attention, by name, with the status of each requirement. If nobody needs attention, the panel says so."
+      },
+      "goals": {
+        "title": "Agree a goal",
+        "body": "On My profile, choose My goals. Under My team, a proposed goal has Agree this goal. Press it, or change the proposal so the person agrees your version."
+      },
+      "padr": {
+        "title": "Hold a personal development review",
+        "body": "On My profile, choose My development reviews. Under My team, set the start and end of the year ahead for the person and press Open a review. Add objectives and development needs, say whether a wellbeing conversation was offered, and both of you sign. Signing freezes that version; a correction is a new version."
+      },
+      "appraisal": {
+        "title": "Run a 360° appraisal",
+        "body": "Open Workers from the menu and choose the person. Under 360° appraisals, name the competencies and press New 360. Open it, nominate at least three raters with their relationship, and press Start collecting. When enough have answered, press Share report; a group of peers or reports with fewer than three answers is withheld."
+      }
+    },
+    "hr": {
+      "title": "For HR",
+      "intro": "HR's pages are in the menu (☰). Each one says under its heading what it shows and what it leaves out.",
+      "requirement": {
+        "title": "Set a mandatory training requirement",
+        "body": "Open Mandatory learning. Under Add a requirement, give the subject, whether it is statutory or mandatory, the refresher in months and who it applies to. The table shows, for each requirement, how many people are in date; a group too small to show says so."
+      },
+      "completion": {
+        "title": "Record training done elsewhere",
+        "body": "On Mandatory learning, under Record a completion, choose the person and the requirement, the day it was completed and where it was done, and save. The person's status updates from that day."
+      },
+      "verify": {
+        "title": "Verify a qualification",
+        "body": "Open Qualifications. The list shows qualifications people declared that nobody has verified yet. Write where the proof is held and press Verify. Under What each role asks for, choose a role to add the qualifications it requires."
+      },
+      "vacancy": {
+        "title": "Open a vacancy",
+        "body": "Open Vacancies. Under Open a requisition, fill in the department, job title and headcount and press Create. Each requisition is a card on the board, and you move it from column to column as it progresses."
+      },
+      "movement": {
+        "title": "Start a joiner or leaver record",
+        "body": "Open Joiners and leavers, then Start a record: choose the person, joiner or leaver, and the day. The record's checklist shows each item as done, due today, overdue or upcoming, and a leaver's handover lists what they still hold."
+      },
+      "chooseOrg": "On a page with an Organization list, choose the organization first: the lists and forms appear once it is chosen."
+    }
   }
 }

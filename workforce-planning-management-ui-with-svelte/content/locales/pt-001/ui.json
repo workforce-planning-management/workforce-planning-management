@@ -411,6 +411,10 @@
       "title": "Encravado, ou encontrou um erro?",
       "body": "A página de ajuda explica como comunicar um problema, como fazer uma pergunta e onde cada tarefa é explicada.",
       "link": "Obter ajuda"
+    },
+    "learn": {
+      "title": "Aprender fazendo",
+      "body": "Guias passo a passo para um trabalhador, um gestor e os RH: cada tarefa indica onde clicar e o que vê."
     }
   },
   "insights": {
@@ -1575,7 +1579,8 @@
     "myGoals": "Os meus objetivos — WPM",
     "myPadrs": "As minhas avaliações de desenvolvimento — WPM",
     "padr": "Avaliação de desenvolvimento — WPM",
-    "help": "Ajuda — WPM"
+    "help": "Ajuda — WPM",
+    "guides": "Guias passo a passo — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -3346,5 +3351,81 @@
     "failed": "Algo correu mal",
     "hint": "Verifique o endereço ou comece de novo a partir da página inicial. Se uma ligação dentro do WPM o trouxe aqui, por favor comunique-a.",
     "home": "Ir para a página inicial"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Numa página com uma lista de organizações, escolha primeiro a organização: as listas e os formulários aparecem depois.",
+      "title": "Para os RH",
+      "intro": "As páginas dos RH estão no menu (☰). Cada uma diz, sob o título, o que mostra e o que deixa de fora.",
+      "requirement": {
+        "title": "Definir um requisito de formação obrigatória",
+        "body": "Abra Formação obrigatória. Em Adicionar um requisito, indique o tema, se é legal ou obrigatória, a reciclagem em meses e a quem se aplica. A tabela mostra, para cada requisito, quantas pessoas estão em dia; um grupo demasiado pequeno para mostrar indica-o."
+      },
+      "completion": {
+        "title": "Registar formação feita noutro local",
+        "body": "Em Formação obrigatória, em Registar uma conclusão, escolha a pessoa e o requisito, o dia em que foi concluída e onde foi feita, e guarde. O estado da pessoa é atualizado a partir desse dia."
+      },
+      "verify": {
+        "title": "Verificar uma qualificação",
+        "body": "Abra Qualificações. A lista mostra as qualificações declaradas pelas pessoas que ninguém verificou ainda. Escreva onde está guardada a prova e prima Verificar. Em O que cada função exige, escolha uma função para adicionar as qualificações que ela requer."
+      },
+      "vacancy": {
+        "title": "Abrir uma vaga",
+        "body": "Abra Vagas. Em Abrir um pedido de contratação, preencha o departamento, o título da função e o número de pessoas e prima Criar. Cada pedido é um cartão no quadro, e move-o de coluna em coluna à medida que avança."
+      },
+      "movement": {
+        "title": "Iniciar um registo de entrada ou saída",
+        "body": "Abra Entradas e saídas, depois Iniciar um registo: escolha a pessoa, entrada ou saída, e o dia. A lista de verificação do registo mostra cada item como feito, para hoje, em atraso ou futuro, e a passagem de testemunho de quem sai lista o que ainda tem em sua posse."
+      }
+    },
+    "title": "Guias passo a passo",
+    "intro": "Tarefas de cada função, passo a passo: onde clicar e o que vê.",
+    "open": "Abrir esta página",
+    "others": "Outros guias passo a passo",
+    "signin": "Estas páginas abrem depois de iniciar sessão. Na demonstração, inicie sessão como example@example.com.",
+    "employee": {
+      "title": "Para um trabalhador",
+      "intro": "Tudo aqui começa em O meu perfil: abra o menu (☰) no topo e escolha O meu perfil.",
+      "waiting": {
+        "title": "Ver o que aguarda por si",
+        "body": "Em O meu perfil, um painel Aguarda por si perto do topo lista tudo o que precisa de si: um objetivo a acordar, um pedido de curso decidido, uma avaliação de desenvolvimento a assinar. Cada item liga ao sítio onde age sobre ele, e Marcar como lida remove-o."
+      },
+      "goal": {
+        "title": "Propor um objetivo",
+        "body": "Em O meu perfil, escolha Os meus objetivos. Em Propor um objetivo, dê-lhe um título, um início e um fim, e prima Propor. Fica à espera de que o seu gestor o acorde; depois registe o progresso em Como está a correr?"
+      },
+      "qualification": {
+        "title": "Adicionar uma qualificação que possui",
+        "body": "Em O meu perfil, desça até Qualificações. Em Adicionar uma qualificação, escolha o tipo, escreva o título e as datas, e prima Guardar. Fica listada como Declarado até os RH a verificarem; só uma verificada conta como cumprida em O que meu cargo exige."
+      },
+      "payslips": {
+        "title": "Ler os seus recibos de vencimento",
+        "body": "Em O meu perfil, escolha Os meus recibos de vencimento. Cada período de pagamento tem a sua própria secção com as suas linhas, e o acumulado do ano é somado para cada ano fiscal."
+      },
+      "feedback": {
+        "title": "Responder a um pedido de feedback 360°",
+        "body": "Em O meu perfil, escolha O meu registo: ausências, recibos de vencimento, avaliações e avaliações 360°. Em Minhas solicitações 360, prima Responder, pontue cada competência de 1 a 5, adicione um comentário se quiser, e prima Responder de novo. As respostas de pares e subordinados só são mostradas em grupos de três ou mais."
+      }
+    },
+    "manager": {
+      "title": "Para um gestor",
+      "intro": "As tarefas de um gestor estão nas mesmas páginas que as suas próprias, em secções intituladas A minha equipa.",
+      "team": {
+        "title": "Verificar a formação e as qualificações da sua equipa",
+        "body": "Em O meu perfil, os painéis Formação legal e obrigatória da minha equipa e Qualificações da minha equipa listam as pessoas abaixo de si que precisam de atenção, pelo nome, com o estado de cada requisito. Se ninguém precisar de atenção, o painel indica-o."
+      },
+      "goals": {
+        "title": "Acordar um objetivo",
+        "body": "Em O meu perfil, escolha Os meus objetivos. Em A minha equipa, um objetivo proposto tem Acordar este objetivo. Prima-o, ou altere a proposta para que a pessoa acorde a sua versão."
+      },
+      "padr": {
+        "title": "Realizar uma avaliação de desenvolvimento pessoal",
+        "body": "Em O meu perfil, escolha As minhas avaliações de desenvolvimento. Em A minha equipa, defina o início e o fim do ano seguinte para a pessoa e prima Abrir uma avaliação. Adicione objetivos e necessidades de desenvolvimento, indique se foi oferecida uma conversa sobre bem-estar, e ambos assinam. Assinar fixa essa versão; uma correção é uma nova versão."
+      },
+      "appraisal": {
+        "title": "Conduzir uma avaliação 360°",
+        "body": "Abra Trabalhadores no menu e escolha a pessoa. Em Avaliações 360°, indique as competências e prima Nova 360. Abra-a, nomeie pelo menos três avaliadores com a sua relação, e prima Iniciar coleta. Quando houver respostas suficientes, prima Compartilhar relatório; um grupo de pares ou subordinados com menos de três respostas é retido."
+      }
+    }
   }
 }

@@ -5,6 +5,8 @@
 <script lang="ts">
   import { l, t } from "#lib/i18n.svelte.js";
   import { DOCS_URL, ISSUES_URL, SECURITY_URL } from "#lib/help.js";
+  import { GUIDE_ROLES } from "#lib/guides.js";
+  import type { StringKey } from "#lib/i18n.svelte.js";
 </script>
 
 <svelte:head><title>{t("titles.help")}</title></svelte:head>
@@ -31,8 +33,13 @@
 
   <section class="panel" id="learn" data-testid="help-learn">
     <h2>{t("help.learnTitle")}</h2>
-    <p>{t("help.learnBody")}</p>
+    <p>{t("guides.intro")} {t("help.learnBody")}</p>
     <ul>
+      {#each GUIDE_ROLES as role (role)}
+        <li>
+          <a href={l(`/tour/${role}`)} data-testid={`help-guide-${role}`}>{t("guides.title")}: {t(`guides.${role}.title` as StringKey)}</a>
+        </li>
+      {/each}
       <li><a href={l("/tour")} data-testid="help-tour">{t("help.tourLink")}</a></li>
       <li><a href={DOCS_URL} rel="noopener" data-testid="help-docs">{t("help.docsLink")}</a></li>
     </ul>

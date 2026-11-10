@@ -38,8 +38,8 @@ here), and the live Playwright specs against a real service. See each subproject
 - **Something confusing?** Ask in the issue tracker and say it is a question. A confusing screen or document is worth
   reporting too.
 - **A security problem?** Email the maintainer as [SECURITY.md](SECURITY.md) says, not in a public issue.
-- **Learning a workflow?** In the app, the **Help** link in every header opens the help page and the tour; every error message
-  links there too. The demo tutorial is at
+- **Learning a workflow?** In the app, the **Help** link in every header opens the help page, with the walkthroughs for an
+  employee, a manager and HR (`/tour/employee`, `/tour/manager`, `/tour/hr`) and the tour; every error message links there too. The demo tutorial is at
   [locales/en-001/start/index.md](locales/en-001/start/index.md); install and test steps are in [INSTALL.md](INSTALL.md).
 - **Contributing?** See [CONTRIBUTING.md](CONTRIBUTING.md) (an issue or an email before large work).
 

@@ -53,7 +53,7 @@ The table compares WPM with three categories of HR system. It is a general orien
 
 - **Report a bug or ask a question** in the [issue tracker](https://github.com/workforce-planning-management/workforce-planning-management/issues). State the page, what you did, what you expected and what happened. Do not include real personal data.
 - **Report a security problem** by email, as described in the [security policy](../../SECURITY.md), not in a public issue.
-- **Learn a task in the application.** The **Help** link in the application's header opens the help page and the tour. Each error message also links to it.
+- **Learn a task in the application.** The **Help** link in the application's header opens the help page and the walkthroughs for employees, managers and HR. Each error message also links to it.
 
 ## Next steps
 

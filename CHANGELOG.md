@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — walkthroughs for learning WPM (WPM-R244, WPM-T486, 2026-11-10)
+
+Task-by-task walkthroughs for an employee, a manager and HR, reached from the tour and the help page.
+
 ### Added — getting help (WPM-R243, WPM-D191, WPM-T484, 2026-11-10)
 
 A Help link in every header of the app, a help page, and every error saying what to try with a link to help. `README.md`, the

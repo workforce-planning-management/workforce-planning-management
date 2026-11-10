@@ -411,6 +411,10 @@
       "title": "Bloqué, ou vous avez trouvé un bogue ?",
       "body": "La page d'aide explique comment signaler un problème, comment poser une question et où chaque tâche est expliquée.",
       "link": "Obtenir de l'aide"
+    },
+    "learn": {
+      "title": "Apprendre en pratiquant",
+      "body": "Des guides pas à pas pour un salarié, un manager et les RH : chaque tâche indique où cliquer et ce que vous voyez."
     }
   },
   "insights": {
@@ -1575,7 +1579,8 @@
     "myGoals": "Mes objectifs — WPM",
     "myPadrs": "Mes entretiens de développement — WPM",
     "padr": "Entretien de développement — WPM",
-    "help": "Aide — WPM"
+    "help": "Aide — WPM",
+    "guides": "Guides pas à pas — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -3346,5 +3351,81 @@
     "failed": "Une erreur s'est produite",
     "hint": "Vérifiez l'adresse ou recommencez depuis la page d'accueil. Si un lien dans WPM vous a amené ici, merci de le signaler.",
     "home": "Aller à la page d'accueil"
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "Sur une page avec une liste d'organisations, choisissez d'abord l'organisation : les listes et les formulaires apparaissent ensuite.",
+      "title": "Pour les RH",
+      "intro": "Les pages des RH se trouvent dans le menu (☰). Chacune indique sous son titre ce qu'elle montre et ce qu'elle laisse de côté.",
+      "requirement": {
+        "title": "Définir une exigence de formation obligatoire",
+        "body": "Ouvrez Formations obligatoires. Sous Ajouter une exigence, indiquez le sujet, s'il est légal ou obligatoire, la périodicité de recyclage en mois et à qui il s'applique. Le tableau montre, pour chaque exigence, combien de personnes sont à jour ; un groupe trop petit pour être affiché l'indique."
+      },
+      "completion": {
+        "title": "Enregistrer une formation suivie ailleurs",
+        "body": "Sur Formations obligatoires, sous Enregistrer une réalisation, choisissez la personne et l'exigence, le jour où elle a été réalisée et l'endroit, puis enregistrez. Le statut de la personne est mis à jour à partir de ce jour."
+      },
+      "verify": {
+        "title": "Vérifier une qualification",
+        "body": "Ouvrez Qualifications. La liste montre les qualifications déclarées que personne n'a encore vérifiées. Indiquez où la preuve est conservée et appuyez sur Vérifier. Sous Ce que demande chaque poste, choisissez un poste pour ajouter les qualifications qu'il exige."
+      },
+      "vacancy": {
+        "title": "Ouvrir un poste vacant",
+        "body": "Ouvrez Postes vacants. Sous Ouvrir une demande de recrutement, renseignez le service, l'intitulé du poste et l'effectif, puis appuyez sur Créer. Chaque demande est une carte sur le tableau, que vous déplacez de colonne en colonne au fil de son avancement."
+      },
+      "movement": {
+        "title": "Ouvrir un dossier d'arrivée ou de départ",
+        "body": "Ouvrez Arrivées et départs, puis Ouvrir un dossier : choisissez la personne, arrivée ou départ, et le jour. La liste de contrôle du dossier montre chaque élément comme fait, à faire aujourd'hui, en retard ou à venir, et la passation d'un départ liste ce que la personne détient encore."
+      }
+    },
+    "title": "Guides pas à pas",
+    "intro": "Les tâches de chaque rôle, étape par étape : où cliquer et ce que vous voyez.",
+    "open": "Ouvrir cette page",
+    "others": "Autres guides pas à pas",
+    "signin": "Ces pages s'ouvrent une fois que vous êtes connecté. Dans la démo, connectez-vous en tant que example@example.com.",
+    "employee": {
+      "title": "Pour un salarié",
+      "intro": "Tout commence ici à partir de Mon profil : ouvrez le menu (☰) en haut et choisissez Mon profil.",
+      "waiting": {
+        "title": "Voir ce qui vous attend",
+        "body": "Sur Mon profil, un panneau En attente de votre action, près du haut, liste tout ce qui vous concerne : un objectif à accepter, une demande de formation tranchée, un entretien de développement à signer. Chaque élément renvoie à l'endroit où agir, et Marquer comme lue l'efface."
+      },
+      "goal": {
+        "title": "Proposer un objectif",
+        "body": "Sur Mon profil, choisissez Mes objectifs. Sous Proposer un objectif, indiquez un titre, un début et une fin, puis appuyez sur Proposer. L'objectif attend l'accord de votre manager ; enregistrez ensuite l'avancement sous Où en êtes-vous ?"
+      },
+      "qualification": {
+        "title": "Ajouter une qualification que vous détenez",
+        "body": "Sur Mon profil, faites défiler jusqu'à Qualifications. Sous Ajouter une qualification, choisissez son type, saisissez son intitulé et ses dates, puis appuyez sur Enregistrer. Elle apparaît comme Déclarée jusqu'à ce que les RH la vérifient ; seule une qualification vérifiée compte comme satisfaite sous Ce que demande mon poste."
+      },
+      "payslips": {
+        "title": "Consulter vos bulletins de paie",
+        "body": "Sur Mon profil, choisissez Mes bulletins de paie. Chaque période de paie a sa propre section avec ses lignes, et le cumul annuel est calculé pour chaque année fiscale."
+      },
+      "feedback": {
+        "title": "Répondre à une demande de feedback 360°",
+        "body": "Sur Mon profil, choisissez Mon dossier : absences, bulletins de paie, évaluations et évaluations 360°. Sous Mes demandes 360, appuyez sur Répondre, notez chaque compétence de 1 à 5, ajoutez un commentaire si vous le souhaitez, puis appuyez de nouveau sur Répondre. Les réponses des pairs et des collaborateurs ne sont jamais présentées qu'en groupe de trois ou plus."
+      }
+    },
+    "manager": {
+      "title": "Pour un manager",
+      "intro": "Les tâches d'un manager se trouvent sur les mêmes pages que les siennes, dans des sections intitulées Mon équipe.",
+      "team": {
+        "title": "Vérifier les formations et qualifications de votre équipe",
+        "body": "Sur Mon profil, les panneaux Formations légales et obligatoires de mon équipe et Qualifications de mon équipe listent les personnes placées sous votre responsabilité qui demandent votre attention, par leur nom, avec le statut de chaque exigence. Si personne ne demande d'attention, le panneau l'indique."
+      },
+      "goals": {
+        "title": "Accepter un objectif",
+        "body": "Sur Mon profil, choisissez Mes objectifs. Sous Mon équipe, un objectif proposé comporte Accepter cet objectif. Appuyez dessus, ou modifiez la proposition pour que la personne accepte votre version."
+      },
+      "padr": {
+        "title": "Mener un entretien de développement personnel",
+        "body": "Sur Mon profil, choisissez Mes entretiens de développement. Sous Mon équipe, définissez le début et la fin de l'année à venir pour la personne, puis appuyez sur Ouvrir un entretien. Ajoutez des objectifs et des besoins de développement, indiquez si un échange sur le bien-être a été proposé, et signez tous les deux. La signature fige cette version ; une correction constitue une nouvelle version."
+      },
+      "appraisal": {
+        "title": "Mener une évaluation 360°",
+        "body": "Ouvrez Travailleurs depuis le menu et choisissez la personne. Sous Évaluations 360°, nommez les compétences et appuyez sur Nouvelle 360. Ouvrez-la, désignez au moins trois évaluateurs avec leur relation, puis appuyez sur Lancer la collecte. Quand suffisamment de personnes ont répondu, appuyez sur Partager le rapport ; un groupe de pairs ou de collaborateurs ayant moins de trois réponses n'est pas communiqué."
+      }
+    }
   }
 }

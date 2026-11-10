@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — walkthroughs for an employee, a manager and HR (WPM-R244, WPM-T486)
+
+`/tour/employee`, `/tour/manager`, `/tour/hr`, linked from the tour and help; `tests/e2e/guides.spec.ts`, `tests/unit/guides.test.ts`;
+43 strings in 13 locales (AI-written, unreviewed).
+
 ### Changed — 360° appraisals easier to find and start (WPM-T485)
 
 `/me` links to the person's own record at its appraisals; "New 360" asks which competencies (up to twelve). 3 strings in 13 locales.

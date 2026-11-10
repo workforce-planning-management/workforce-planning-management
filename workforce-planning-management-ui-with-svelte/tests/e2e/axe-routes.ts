@@ -66,6 +66,7 @@ export const ROUTES: Record<string, string> = {
   "/skills": "/skills",
   "/statutory-defaults": "/statutory-defaults",
   "/tour": "/tour",
+  "/tour/[role]": "/tour/employee",
   "/verify": "/verify",
   "/verify/sso": "/verify/sso",
   "/warnings": "/warnings",

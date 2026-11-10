@@ -38,6 +38,24 @@ Acceptance criteria:
 - **What to try is chosen from the catalogue's own failure sentences**, not from the service's message, so it is in the reader's
   language and says nothing the page does not know.
 
+## WPM-R244 — Learning to use WPM: walkthroughs for an employee, a manager and HR
+
+**As** an employee, a manager or someone in HR who is new to WPM, **I want** short task-based walkthroughs that say where to click
+and what I will see, **so that** I can do my main tasks without being shown.
+
+Acceptance criteria:
+
+1. `/<locale>/tour/employee`, `/tour/manager` and `/tour/hr`, public like the tour. Each is an ordered list of tasks; each task has
+   a title, a paragraph naming the screen's own labels in the reader's language (where to click, what appears), and a link to the
+   page it starts from. An unknown role is not found.
+2. They are reached from the tour (a "Learn by doing" section) and from the help page, and each links to the other two and to help.
+3. **True to the current UI.** Every task's page is a route the app has (a unit test checks each against the route table), and the
+   walkthrough's words were written against the screens (Playwright screenshots of each page, read). When a screen's label changes,
+   the walkthrough is content and changes with it.
+4. Tasks covered: an employee (what is waiting for you, propose a goal, add a qualification, read payslips, answer a 360° request);
+   a manager (the team's training and qualifications, agree a goal, hold a PADR, run a 360°); HR (set a mandatory requirement,
+   record training done elsewhere, verify a qualification, open a vacancy, start a joiner or leaver record).
+
 ## Uploading an appraisal: an open question (WPM-T485)
 
 "Make it easy to upload appraisals" has more than one reading, and none of them is settled by the spec. What WPM has today:

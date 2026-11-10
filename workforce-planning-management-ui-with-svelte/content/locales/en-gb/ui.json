@@ -21,5 +21,10 @@
   },
   "help": {
     "deployerNote": "These links go to the WPM project itself. An organisation that runs WPM for its staff would point this page at its own service desk."
+  },
+  "guides": {
+    "hr": {
+      "chooseOrg": "On a page with an Organisation list, choose the organisation first: the lists and forms appear once it is chosen."
+    }
   }
 }
