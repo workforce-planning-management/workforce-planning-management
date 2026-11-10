@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT framework_slug, profession, role_name FROM role_profiles\n          WHERE deleted_at IS NULL AND framework_slug IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "framework_slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "framework_slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "profession",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "profession"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "role_name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_profiles",
+            "name": "role_name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "05c0ae5853413d0c429f009cb19aa6a39b71ac3f8fff4f3bc6112b412d035997"
+}

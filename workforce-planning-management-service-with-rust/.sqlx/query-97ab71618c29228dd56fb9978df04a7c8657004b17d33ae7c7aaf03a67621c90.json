@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, worker_pid, requirement_pid, status,\n                  recorded_on, next_due, recorded_by\n             FROM worker_health_records WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "requirement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "requirement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "recorded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "recorded_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "next_due",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "next_due"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_health_records",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "97ab71618c29228dd56fb9978df04a7c8657004b17d33ae7c7aaf03a67621c90"
+}

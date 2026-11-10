@@ -13,14 +13,15 @@ use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, QuerySelect, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use std::collections::HashMap;
+use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{conversion_plans, engagement_decisions, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{conversion_plans, workers};
 use crate::models::{memberships, records};
 use crate::rules::conversion::{self as rules, Proposal};
 
@@ -59,15 +60,17 @@ async fn scoped_worker(
     Ok(worker)
 }
 
-async fn open_plan(
-    ctx: &AppContext,
-    worker_pid: uuid::Uuid,
-) -> Result<Option<conversion_plans::Model>> {
-    Ok(conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::WorkerPid.eq(worker_pid))
-        .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .one(&crate::db::orm(ctx))
-        .await?)
+async fn open_plan(ctx: &AppContext, worker_pid: Uuid) -> Result<Option<conversion_plans::Model>> {
+    Ok(sqlx::query_as!(
+        conversion_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on
+             FROM conversion_plans WHERE worker_pid = $1 AND status IN ('proposed', 'approved') LIMIT 1"#,
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/conversion-plans` — the worker's plans, oldest first. HR only.
@@ -80,13 +83,18 @@ async fn list_for_worker(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let worker = scoped_worker(&ctx, &caller, worker).await?;
     let as_of = Utc::now().date_naive();
-    let rows = conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::WorkerPid.eq(worker.pid))
-        .order_by_asc(conversion_plans::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    Audit::record(
-        &crate::db::orm(&ctx),
+    let rows = sqlx::query_as!(
+        conversion_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on
+             FROM conversion_plans WHERE worker_pid = $1 ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "worker",
         worker.pid,
         "conversion_plans_read",
@@ -107,6 +115,16 @@ struct ListQuery {
     organization: Option<String>,
 }
 
+/// What the list of open plans needs of a contingent worker.
+struct Contingent {
+    pid: Uuid,
+    organization_ref: String,
+    worker_number: String,
+    department: String,
+    employment_type: String,
+    engagement_ends_on: Option<NaiveDate>,
+}
+
 /// `GET /api/conversion-plans` — every open plan in the caller's organizations with its flags, and
 /// the contingent engagements past their end that no approved plan covers. HR only; names workers.
 #[debug_handler]
@@ -119,7 +137,17 @@ async fn list_open(
     let window = super::window(&page)?;
     let as_of = Utc::now().date_naive();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let in_scope = |w: &workers::Model| {
+    let staff: Vec<Contingent> = sqlx::query_as!(
+        Contingent,
+        "SELECT pid, organization_ref, worker_number, department, employment_type, engagement_ends_on
+           FROM workers
+          WHERE deleted_at IS NULL AND terminated_on IS NULL AND engagement_ends_on IS NOT NULL
+          ORDER BY worker_number, id",
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|w| {
         query
             .organization
             .as_ref()
@@ -127,20 +155,26 @@ async fn list_open(
             && scope
                 .as_ref()
                 .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
-    };
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null())
-        .filter(workers::Column::EngagementEndsOn.is_not_null())
-        .order_by_asc(workers::Column::WorkerNumber)
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .filter(in_scope)
-        .collect();
+    })
+    .collect();
+    let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+    // At most one open plan per worker: a partial unique index holds it.
+    let mut open: HashMap<Uuid, conversion_plans::Model> = sqlx::query_as!(
+        conversion_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on
+             FROM conversion_plans WHERE worker_pid = ANY($1) AND status IN ('proposed', 'approved')"#,
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|p| (p.worker_pid, p))
+    .collect();
     let mut out = Vec::new();
     for w in &staff {
-        let plan = open_plan(&ctx, w.pid).await?;
+        let plan = open.remove(&w.pid);
         let status = plan.as_ref().map(|p| p.status.as_str());
         let flags = rules::flags(
             w.engagement_ends_on,
@@ -158,10 +192,10 @@ async fn list_open(
             "flags": flags.into_iter().map(rules::Flag::as_str).collect::<Vec<_>>(),
         }));
     }
-    Audit::record(
-        &crate::db::orm(&ctx),
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "conversion_plan",
-        uuid::Uuid::nil(),
+        Uuid::nil(),
         "conversion_plans_listed",
         caller.actor(),
         None,
@@ -222,29 +256,34 @@ async fn propose(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let inserted = conversion_plans::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        intent: ActiveValue::set(payload.intent),
-        target_on: ActiveValue::set(payload.target_on),
-        department: ActiveValue::set(payload.department),
-        role_profile_ref: ActiveValue::set(payload.role_profile_ref),
-        post_funding_kind: ActiveValue::set(payload.post_funding_kind),
-        post_funding_ends_on: ActiveValue::set(payload.post_funding_ends_on),
-        reason: ActiveValue::set(payload.reason),
-        proposed_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        status: ActiveValue::set("proposed".to_string()),
-        review_on: ActiveValue::set(payload.review_on),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let inserted = sqlx::query_as!(
+        conversion_plans::Model,
+        r#"INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, department, role_profile_ref, post_funding_kind,
+                                         post_funding_ends_on, reason, proposed_by, status, review_on)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'proposed', $11)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                     department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                     status, review_on, settled_on"#,
+        Uuid::new_v4(),
+        worker.pid,
+        payload.intent,
+        payload.target_on,
+        payload.department,
+        payload.role_profile_ref,
+        payload.post_funding_kind,
+        payload.post_funding_ends_on,
+        payload.reason,
+        caller.actor(),
+        payload.review_on,
+    )
+    .fetch_one(&mut *tx)
     .await;
     // Two proposals at once: the partial unique index lets one in and this one is told, not failed.
     let row = match inserted {
         Ok(row) => row,
         Err(e) => {
-            txn.rollback().await?;
+            tx.rollback().await?;
             return if open_plan(&ctx, worker.pid).await?.is_some() {
                 Err(unprocessable(
                     "the worker already has an open plan; approve, carry out or abandon it first",
@@ -254,8 +293,8 @@ async fn propose(
             };
         }
     };
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "conversion_plan_proposed",
@@ -263,7 +302,7 @@ async fn propose(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(plan_json(&row, worker.engagement_ends_on, today))
 }
 
@@ -272,11 +311,17 @@ async fn plan_and_worker(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<(conversion_plans::Model, workers::Model)> {
-    let row = conversion_plans::Entity::find()
-        .filter(conversion_plans::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        conversion_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on
+             FROM conversion_plans WHERE pid = $1"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
     let worker = scoped_worker(ctx, caller, worker).await?;
     super::flexible_working::ensure_decider(ctx, caller, &worker).await?;
@@ -285,12 +330,62 @@ async fn plan_and_worker(
 
 /// Re-read a plan inside the transaction with a row lock, so two callers acting on the same plan at
 /// once are taken one after the other and the second sees what the first did.
-async fn locked(txn: &sea_orm::DatabaseTransaction, id: i32) -> Result<conversion_plans::Model> {
-    conversion_plans::Entity::find_by_id(id)
-        .lock_exclusive()
-        .one(txn)
-        .await?
-        .ok_or(Error::NotFound)
+async fn locked(connection: &mut sqlx::PgConnection, id: i32) -> Result<conversion_plans::Model> {
+    sqlx::query_as!(
+        conversion_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on
+             FROM conversion_plans WHERE id = $1 FOR UPDATE"#,
+        id,
+    )
+    .fetch_optional(connection)
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// What a plan's step needs of its worker, re-read under a row lock.
+struct LockedWorker {
+    pid: Uuid,
+    engagement_ends_on: Option<NaiveDate>,
+    terminated_on: Option<NaiveDate>,
+}
+
+async fn locked_worker(connection: &mut sqlx::PgConnection, id: i32) -> Result<LockedWorker> {
+    sqlx::query_as!(
+        LockedWorker,
+        "SELECT pid, engagement_ends_on, terminated_on FROM workers WHERE id = $1 FOR UPDATE",
+        id,
+    )
+    .fetch_optional(connection)
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// Set a plan's status, and its approver or settlement day where given; the row as it now stands.
+async fn set_status(
+    connection: &mut sqlx::PgConnection,
+    id: i32,
+    status: &str,
+    approved_by: Option<&str>,
+    settled_on: Option<NaiveDate>,
+) -> Result<conversion_plans::Model> {
+    Ok(sqlx::query_as!(
+        conversion_plans::Model,
+        r#"UPDATE conversion_plans
+              SET status = $2, approved_by = COALESCE($3, approved_by), settled_on = COALESCE($4, settled_on),
+                  updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                  status, review_on, settled_on"#,
+        id,
+        status,
+        approved_by,
+        settled_on,
+    )
+    .fetch_one(connection)
+    .await?)
 }
 
 /// `POST /api/conversion-plans/{pid}/approve` — approve a proposed plan. Never the proposer.
@@ -305,8 +400,8 @@ async fn approve(
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let actor = caller.actor().map(ToString::to_string);
     let today = Utc::now().date_naive();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = locked(&txn, row.id).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = locked(&mut tx, row.id).await?;
     rules::validate_approval(
         &row.intent,
         &row.status,
@@ -314,38 +409,34 @@ async fn approve(
         actor.as_deref(),
     )
     .map_err(|e| unprocessable(&e))?;
-    let worker = workers::Entity::find_by_id(worker.id)
-        .lock_exclusive()
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
-    let mut active: conversion_plans::ActiveModel = row.clone().into();
-    active.status = ActiveValue::set("approved".to_string());
-    active.approved_by = ActiveValue::set(actor.clone());
-    let updated = active.update(&txn).await?;
+    let worker = locked_worker(&mut tx, worker.id).await?;
+    let updated = set_status(&mut tx, row.id, "approved", actor.as_deref(), None).await?;
     if let Some(ends_on) = worker.engagement_ends_on {
-        let settled = engagement_decisions::Entity::find()
-            .filter(engagement_decisions::Column::WorkerPid.eq(worker.pid))
-            .filter(engagement_decisions::Column::EndsOn.eq(ends_on))
-            .one(&txn)
-            .await?
-            .is_some();
+        let settled = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM engagement_decisions WHERE worker_pid = $1 AND ends_on = $2 LIMIT 1"#,
+            worker.pid,
+            ends_on,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
         if !settled {
-            engagement_decisions::ActiveModel {
-                pid: ActiveValue::set(uuid::Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                ends_on: ActiveValue::set(ends_on),
-                decision: ActiveValue::set(row.intent.clone()),
-                decided_by: ActiveValue::set(actor),
-                decided_on: ActiveValue::set(today),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query!(
+                "INSERT INTO engagement_decisions (pid, worker_pid, ends_on, decision, decided_by, decided_on)
+                 VALUES ($1, $2, $3, $4, $5, $6)",
+                Uuid::new_v4(),
+                worker.pid,
+                ends_on,
+                row.intent,
+                actor,
+                today,
+            )
+            .execute(&mut *tx)
             .await?;
         }
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "conversion_plan_approved",
@@ -353,7 +444,7 @@ async fn approve(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(plan_json(&updated, worker.engagement_ends_on, today))
 }
 
@@ -372,13 +463,10 @@ async fn abandon(
         )));
     }
     let today = Utc::now().date_naive();
-    let mut active: conversion_plans::ActiveModel = row.into();
-    active.status = ActiveValue::set("abandoned".to_string());
-    active.settled_on = ActiveValue::set(Some(today));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = set_status(&mut tx, row.id, "abandoned", None, Some(today)).await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "conversion_plan_abandoned",
@@ -386,7 +474,7 @@ async fn abandon(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(plan_json(&updated, worker.engagement_ends_on, today))
 }
 
@@ -403,30 +491,26 @@ async fn done(
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let today = Utc::now().date_naive();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = locked(&txn, row.id).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = locked(&mut tx, row.id).await?;
     rules::validate_done(&row.intent, &row.status).map_err(|e| unprocessable(&e))?;
-    let worker = workers::Entity::find_by_id(worker.id)
-        .lock_exclusive()
-        .one(&txn)
-        .await?
-        .ok_or(Error::NotFound)?;
+    let worker = locked_worker(&mut tx, worker.id).await?;
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
-    let mut w: workers::ActiveModel = worker.clone().into();
-    w.employment_type = ActiveValue::set("permanent".to_string());
-    w.engagement_ends_on = ActiveValue::set(None);
-    if let Some(department) = &row.department {
-        w.department = ActiveValue::set(department.clone());
-    }
-    w.update(&txn).await?;
-    let mut active: conversion_plans::ActiveModel = row.into();
-    active.status = ActiveValue::set("done".to_string());
-    active.settled_on = ActiveValue::set(Some(today));
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    sqlx::query!(
+        "UPDATE workers
+            SET employment_type = 'permanent', engagement_ends_on = NULL, department = COALESCE($2, department),
+                updated_at = now()
+          WHERE pid = $1",
+        worker.pid,
+        row.department,
+    )
+    .execute(&mut *tx)
+    .await?;
+    let updated = set_status(&mut tx, row.id, "done", None, Some(today)).await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "conversion_plan_done",
@@ -434,7 +518,7 @@ async fn done(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(plan_json(&updated, None, today))
 }
 

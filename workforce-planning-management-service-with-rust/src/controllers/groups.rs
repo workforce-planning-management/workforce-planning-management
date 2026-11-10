@@ -10,16 +10,14 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
-use sea_orm::{ActiveValue, QueryOrder, QuerySelect};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{group_members, groups, skills, worker_skills, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{group_members, groups, workers};
 use crate::models::{memberships, records};
 use crate::rules::groups as rules;
 
@@ -61,12 +59,16 @@ async fn edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
 
 /// A live group in one of the caller's organizations; one elsewhere is `404`.
 async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Result<groups::Model> {
-    let group = groups::Entity::find()
-        .filter(groups::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(groups::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let group = sqlx::query_as!(
+        groups::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, scope, name,
+                  kind, description, deleted_at AS "deleted_at: _"
+             FROM groups WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if !can_read(
         scope(ctx, caller).await?.as_ref(),
         &group,
@@ -79,19 +81,65 @@ async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Resu
 
 /// Current member counts by group, counted by the database.
 async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
-    let rows: Vec<(Uuid, i64)> = group_members::Entity::find()
-        .select_only()
-        .column(group_members::Column::GroupPid)
-        .column_as(group_members::Column::Id.count(), "members")
-        .filter(group_members::Column::LeftAt.is_null())
-        .group_by(group_members::Column::GroupPid)
-        .into_tuple()
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let rows = sqlx::query!(
+        r#"SELECT group_pid, COUNT(id) AS "members!" FROM group_members WHERE left_at IS NULL GROUP BY group_pid"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     Ok(rows
         .into_iter()
-        .map(|(group, members)| (group, usize::try_from(members).unwrap_or(0)))
+        .map(|r| (r.group_pid, usize::try_from(r.members).unwrap_or(0)))
         .collect())
+}
+
+/// Every live group, by name.
+async fn live_groups(ctx: &AppContext) -> Result<Vec<groups::Model>> {
+    Ok(sqlx::query_as!(
+        groups::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, scope, name,
+                  kind, description, deleted_at AS "deleted_at: _"
+             FROM groups WHERE deleted_at IS NULL ORDER BY name, id"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A group's memberships, current only unless `include_past`.
+async fn memberships_of_group(
+    ctx: &AppContext,
+    group_pid: Uuid,
+    include_past: bool,
+) -> Result<Vec<group_members::Model>> {
+    Ok(sqlx::query_as!(
+        group_members::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
+                  joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf
+             FROM group_members WHERE group_pid = $1 AND ($2 OR left_at IS NULL)
+            ORDER BY joined_at, id"#,
+        group_pid,
+        include_past,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A worker's current membership of a group, if any.
+async fn current_membership(
+    ctx: &AppContext,
+    group_pid: Uuid,
+    worker_pid: Uuid,
+) -> Result<Option<group_members::Model>> {
+    Ok(sqlx::query_as!(
+        group_members::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
+                  joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf
+             FROM group_members WHERE group_pid = $1 AND worker_pid = $2 AND left_at IS NULL
+            LIMIT 1"#,
+        group_pid,
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// `POST /api/groups` and `PUT /api/groups/{pid}` body.
@@ -126,13 +174,14 @@ async fn ensure_name_free(
     except: Option<Uuid>,
 ) -> Result<()> {
     let wanted = name.trim().to_lowercase();
-    let taken = groups::Entity::find()
-        .filter(groups::Column::DeletedAt.is_null())
-        .filter(groups::Column::OrganizationRef.eq(organization_ref))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .any(|g| g.name.trim().to_lowercase() == wanted && Some(g.pid) != except);
+    let taken = sqlx::query!(
+        "SELECT pid, name FROM groups WHERE deleted_at IS NULL AND organization_ref = $1",
+        organization_ref,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .any(|g| g.name.trim().to_lowercase() == wanted && Some(g.pid) != except);
     if taken {
         return Err(unprocessable(
             "a group with that name already exists in this organization",
@@ -174,22 +223,22 @@ async fn create_group(
         ));
     }
     ensure_name_free(&ctx, &organization_ref, &payload.name, None).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = groups::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(organization_ref),
-        scope: ActiveValue::set(group_scope),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        kind: ActiveValue::set(payload.kind),
-        description: ActiveValue::set(payload.description),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO groups (pid, organization_ref, scope, name, kind, description) VALUES ($1, $2, $3, $4, $5, $6)",
+        pid,
+        organization_ref,
+        group_scope,
+        payload.name.trim(),
+        payload.kind,
+        payload.description,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "group", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(PidRef { pid: row.pid })
+    db::audit(&mut tx, "group", pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(PidRef { pid })
 }
 
 /// Query for the group list.
@@ -210,10 +259,7 @@ async fn list_groups(
 ) -> Result<Response> {
     let allowed = scope(&ctx, &caller).await?;
     let graph = edges(&ctx).await?;
-    let rows: Vec<groups::Model> = groups::Entity::find()
-        .filter(groups::Column::DeletedAt.is_null())
-        .order_by_asc(groups::Column::Name)
-        .all(&crate::db::orm(&ctx))
+    let rows: Vec<groups::Model> = live_groups(&ctx)
         .await?
         .into_iter()
         .filter(|g| can_read(allowed.as_ref(), g, &graph))
@@ -244,15 +290,19 @@ async fn update_group(
     rules::validate_group(&payload.name, &payload.kind, payload.description.as_deref())
         .map_err(|e| unprocessable(&e))?;
     ensure_name_free(&ctx, &row.organization_ref, &payload.name, Some(row.pid)).await?;
-    let mut active: groups::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name.trim().to_string());
-    active.kind = ActiveValue::set(payload.kind);
-    active.description = ActiveValue::set(payload.description);
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(&txn, "group", updated.pid, "updated", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(PidRef { pid: updated.pid })
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE groups SET name = $2, kind = $3, description = $4, updated_at = now() WHERE id = $1",
+        row.id,
+        payload.name.trim(),
+        payload.kind,
+        payload.description,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "group", row.pid, "updated", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(PidRef { pid: row.pid })
 }
 
 /// `DELETE /api/groups/{pid}` — retire a group (soft-delete); its membership
@@ -264,17 +314,26 @@ async fn delete_group(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find_group(&ctx, &caller, &pid).await?;
-    let group_pid = row.pid;
-    let mut active: groups::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    active.update(&txn).await?;
-    Audit::record(&txn, "group", group_pid, "retired", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE groups SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "group", row.pid, "retired", caller.actor(), None).await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
-fn member_json(m: &group_members::Model, w: Option<&workers::Model>) -> serde_json::Value {
+/// What a member listing shows of a worker.
+struct Shown {
+    display_name: String,
+    job_title: String,
+    department: String,
+}
+
+fn member_json(m: &group_members::Model, w: Option<&Shown>) -> serde_json::Value {
     serde_json::json!({
         "worker_pid": m.worker_pid,
         "display_name": w.map(|w| &w.display_name),
@@ -307,23 +366,27 @@ async fn list_members(
     axa::extract::Query(query): axa::extract::Query<MembersQuery>,
 ) -> Result<Response> {
     let group = find_group(&ctx, &caller, &pid).await?;
-    let mut select =
-        group_members::Entity::find().filter(group_members::Column::GroupPid.eq(group.pid));
-    if !query.include_past {
-        select = select.filter(group_members::Column::LeftAt.is_null());
-    }
-    let mut rows = select
-        .order_by_asc(group_members::Column::JoinedAt)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let mut rows = memberships_of_group(&ctx, group.pid, query.include_past).await?;
     rows.sort_by_key(|m| (m.left_at.is_some(), m.role != "lead"));
-    let staff: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect();
+    let pids: Vec<Uuid> = rows.iter().map(|m| m.worker_pid).collect();
+    let staff: BTreeMap<Uuid, Shown> = sqlx::query!(
+        "SELECT pid, display_name, job_title, department FROM workers WHERE deleted_at IS NULL AND pid = ANY($1)",
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|w| {
+        (
+            w.pid,
+            Shown {
+                display_name: w.display_name,
+                job_title: w.job_title,
+                department: w.department,
+            },
+        )
+    })
+    .collect();
     format::json(serde_json::json!({
         "group": group_json(&group, rows.iter().filter(|m| m.left_at.is_none()).count()),
         "members": rows.iter().map(|m| member_json(m, staff.get(&m.worker_pid))).collect::<Vec<_>>(),
@@ -378,34 +441,38 @@ async fn join_group(
             "a worker can only join groups open to their organization",
         ));
     }
-    let current = group_members::Entity::find()
-        .filter(group_members::Column::GroupPid.eq(group.pid))
-        .filter(group_members::Column::WorkerPid.eq(worker.pid))
-        .filter(group_members::Column::LeftAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let current = current_membership(&ctx, group.pid, worker.pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let row = if let Some(existing) = current {
-        let mut active: group_members::ActiveModel = existing.into();
-        active.role = ActiveValue::set(role);
-        active.update(&txn).await?
+        sqlx::query_as!(
+            group_members::Model,
+            r#"UPDATE group_members SET role = $2, updated_at = now() WHERE id = $1
+            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
+                      joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf"#,
+            existing.id,
+            role,
+        )
+        .fetch_one(&mut *tx)
+        .await?
     } else {
-        group_members::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            group_pid: ActiveValue::set(group.pid),
-            worker_pid: ActiveValue::set(worker.pid),
-            role: ActiveValue::set(role),
-            joined_at: ActiveValue::set(Utc::now().into()),
-            left_at: ActiveValue::set(None),
-            recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-            on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query_as!(
+            group_members::Model,
+            r#"INSERT INTO group_members (pid, group_pid, worker_pid, role, joined_at, recorded_by, on_behalf)
+               VALUES ($1, $2, $3, $4, now(), $5, $6)
+            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
+                      joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf"#,
+            Uuid::new_v4(),
+            group.pid,
+            worker.pid,
+            role,
+            caller.actor(),
+            auth::acting_for_other(&caller, &worker.person_ref),
+        )
+        .fetch_one(&mut *tx)
         .await?
     };
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "group_joined",
@@ -413,8 +480,13 @@ async fn join_group(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(member_json(&row, Some(&worker)))
+    tx.commit().await?;
+    let shown = Shown {
+        display_name: worker.display_name,
+        job_title: worker.job_title,
+        department: worker.department,
+    };
+    format::json(member_json(&row, Some(&shown)))
 }
 
 /// `DELETE /api/groups/{pid}/members/{worker_pid}` — leave a group. The
@@ -427,19 +499,18 @@ async fn leave_group(
 ) -> Result<Response> {
     let group = find_group(&ctx, &caller, &pid).await?;
     let worker = writable_worker(&ctx, &caller, records::parse_pid(&worker_pid)?).await?;
-    let current = group_members::Entity::find()
-        .filter(group_members::Column::GroupPid.eq(group.pid))
-        .filter(group_members::Column::WorkerPid.eq(worker.pid))
-        .filter(group_members::Column::LeftAt.is_null())
-        .one(&crate::db::orm(&ctx))
+    let current = current_membership(&ctx, group.pid, worker.pid)
         .await?
         .ok_or(Error::NotFound)?;
-    let mut active: group_members::ActiveModel = current.into();
-    active.left_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE group_members SET left_at = now(), updated_at = now() WHERE id = $1",
+        current.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "group_left",
@@ -447,7 +518,7 @@ async fn leave_group(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -463,25 +534,25 @@ async fn group_skills(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let group = find_group(&ctx, &caller, &pid).await?;
-    let members: Vec<Uuid> = group_members::Entity::find()
-        .filter(group_members::Column::GroupPid.eq(group.pid))
-        .filter(group_members::Column::LeftAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|m| m.worker_pid)
-        .collect();
-    let declared = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.is_in(members.clone()))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let members: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT worker_pid FROM group_members WHERE group_pid = $1 AND left_at IS NULL",
+        group.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let declared = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = ANY($1) AND deleted_at IS NULL",
+        &members,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut by_skill: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
     for d in &declared {
         by_skill.entry(d.skill_pid).or_default().push(d.proficiency);
     }
-    let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&crate::db::orm(&ctx))
+    // Every skill's name, retired ones too: a member may still declare one.
+    let names: BTreeMap<Uuid, String> = sqlx::query!("SELECT pid, name FROM skills")
+        .fetch_all(db::pool(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -531,20 +602,20 @@ async fn worker_groups(
     axa::extract::Query(query): axa::extract::Query<MembersQuery>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let mut select =
-        group_members::Entity::find().filter(group_members::Column::WorkerPid.eq(worker.pid));
-    if !query.include_past {
-        select = select.filter(group_members::Column::LeftAt.is_null());
-    }
-    let memberships = select
-        .order_by_desc(group_members::Column::JoinedAt)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let memberships = sqlx::query_as!(
+        group_members::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
+                  joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf
+             FROM group_members WHERE worker_pid = $1 AND ($2 OR left_at IS NULL)
+            ORDER BY joined_at DESC, id DESC"#,
+        worker.pid,
+        query.include_past,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let allowed = scope(&ctx, &caller).await?;
     let graph = edges(&ctx).await?;
-    let by_pid: BTreeMap<Uuid, groups::Model> = groups::Entity::find()
-        .filter(groups::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
+    let by_pid: BTreeMap<Uuid, groups::Model> = live_groups(&ctx)
         .await?
         .into_iter()
         .filter(|g| can_read(allowed.as_ref(), g, &graph))

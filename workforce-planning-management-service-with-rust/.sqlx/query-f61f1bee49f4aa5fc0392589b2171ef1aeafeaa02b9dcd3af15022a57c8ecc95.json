@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT slug, scale_max FROM capability_frameworks WHERE slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "scale_max"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f61f1bee49f4aa5fc0392589b2171ef1aeafeaa02b9dcd3af15022a57c8ecc95"
+}

@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, starts_at AS \"starts_at: chrono::DateTime<chrono::Utc>\",\n                  ends_at AS \"ends_at: chrono::DateTime<chrono::Utc>\"\n             FROM shifts WHERE deleted_at IS NULL AND starts_at >= $1 AND starts_at < $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "starts_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "starts_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ends_at: chrono::DateTime<chrono::Utc>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "ends_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ac7360b81c4ada7f910f44fc6b89e15f2f1735ae7965d8224b9b0eb91c5ef4ad"
+}

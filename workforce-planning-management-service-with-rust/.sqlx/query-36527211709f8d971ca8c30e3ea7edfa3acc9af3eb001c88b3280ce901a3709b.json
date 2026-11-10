@@ -1,0 +1,141 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO health_requirements (pid, name, description, departments, recheck_calendar_days, reminder_calendar_days)\n           VALUES ($1, $2, $3, $4, $5, $6)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, description, departments,\n                     recheck_calendar_days, reminder_calendar_days, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "departments",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "departments"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "recheck_calendar_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "recheck_calendar_days"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "reminder_calendar_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "reminder_calendar_days"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "health_requirements",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Jsonb",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "36527211709f8d971ca8c30e3ea7edfa3acc9af3eb001c88b3280ce901a3709b"
+}

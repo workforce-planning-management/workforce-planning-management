@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"people!\" FROM workers\n            WHERE deleted_at IS NULL AND organization_ref = $1 AND ($2::text[] IS NULL OR organization_ref = ANY($2))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "people!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "1a69e9fc964fdbdb4625e7e42f637e45e2831aba4745fc6c1766b11fb570c281"
+}

@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT shift_pid, worker_pid FROM shift_assignments WHERE deleted_at IS NULL AND shift_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "shift_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shift_assignments",
+            "name": "shift_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shift_assignments",
+            "name": "worker_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bd099650ae3877e556c6b20c18989e739f0f6deec95821dc9817fb99b89446f4"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"open!\" FROM onboarding_items\n                WHERE worker_pid = $1 AND deleted_at IS NULL AND mandatory AND status = 'pending'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "open!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "63a4a0f48b8908f030970393ccc6acd491cb2112f4238a0eb076ed4403099f9c"
+}

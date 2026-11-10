@@ -7,17 +7,13 @@
 
 use super::row_json;
 use axa::prelude::*;
-use sea_orm::{ActiveValue, PaginatorTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    development_plan_items, initiative_skill_shifts, mentorship_sessions, mentorships,
-    role_skill_requirements, skill_external_refs, skills, worker_skills,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{mentorship_sessions, mentorships, worker_skills};
 use crate::models::records;
 use crate::rules::learning as rules;
 use crate::rules::skill_merge as merge_rules;

@@ -24,33 +24,35 @@ pub(super) async fn create_skill(
     problems.cap_text("name", &payload.name);
     problems.require_token("category", rules::SKILL_CATEGORIES, &payload.category);
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = skills::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        category: ActiveValue::set(payload.category.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO skills (pid, name, category) VALUES ($1, $2, $3)",
+        pid,
+        payload.name,
+        payload.category,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "skill", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    db::audit(&mut tx, "skill", pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(PidRef::of(pid))
 }
 
 /// `GET /api/skills` — the catalog, each skill with the external-framework
 /// references it carries (PCF name, ESCO concept URI).
 #[debug_handler]
 pub(super) async fn list_skills(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .order_by_asc(skills::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let refs = skill_external_refs::Entity::find()
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, name, category FROM skills WHERE deleted_at IS NULL ORDER BY name, id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let refs = sqlx::query!(
+        r#"SELECT skill_pid, framework_slug, "ref" AS reference, label, version FROM skill_external_refs ORDER BY id"#
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|s| {
@@ -102,28 +104,36 @@ pub(super) async fn update_skill(
     }
     ensure_valid(&problems.into_vec())?;
     let row = find_live_skill(&ctx, &pid).await?;
-    let mut active: skills::ActiveModel = row.clone().into();
+    let mut new_name = None;
     if let Some(name) = &payload.name {
         let name = rules::normalize_skill_name(name).map_err(|e| unprocessable(&e))?;
         if name != row.name {
-            let taken = skills::Entity::find()
-                .filter(skills::Column::Name.eq(&name))
-                .one(&crate::db::orm(&ctx))
-                .await?
-                .is_some();
+            let taken = sqlx::query_scalar!(
+                r#"SELECT 1 AS "one!" FROM skills WHERE name = $1 LIMIT 1"#,
+                name
+            )
+            .fetch_optional(db::pool(&ctx))
+            .await?
+            .is_some();
             if taken {
                 return Err(unprocessable("a skill with that name already exists"));
             }
-            active.name = ActiveValue::set(name);
+            new_name = Some(name);
         }
     }
-    if let Some(category) = &payload.category {
-        active.category = ActiveValue::set(category.clone());
-    }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query!(
+        "UPDATE skills SET name = COALESCE($2, name), category = COALESCE($3, category), updated_at = now()
+          WHERE id = $1
+        RETURNING pid, name, category",
+        row.id,
+        new_name,
+        payload.category,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "skill",
         updated.pid,
         "updated",
@@ -131,17 +141,30 @@ pub(super) async fn update_skill(
         Some(serde_json::json!({ "name": updated.name, "category": updated.category })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef::of(updated.pid))
 }
 
-async fn find_live_skill(ctx: &AppContext, pid: &str) -> Result<skills::Model> {
-    skills::Entity::find()
-        .filter(skills::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+/// A live catalogue skill: what the handlers here need of it.
+struct LiveSkill {
+    id: i32,
+    pid: Uuid,
+    name: String,
+}
+
+async fn find_live_skill(ctx: &AppContext, pid: &str) -> Result<LiveSkill> {
+    find_live_skill_by_pid(ctx, records::parse_pid(pid)?).await
+}
+
+async fn find_live_skill_by_pid(ctx: &AppContext, pid: Uuid) -> Result<LiveSkill> {
+    sqlx::query_as!(
+        LiveSkill,
+        "SELECT id, pid, name FROM skills WHERE pid = $1 AND deleted_at IS NULL",
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `GET /api/skills/category-suggestions` — skills still `other` for which a
@@ -149,12 +172,11 @@ async fn find_live_skill(ctx: &AppContext, pid: &str) -> Result<skills::Model> {
 /// Suggestions only: nothing changes until a planner applies them.
 #[debug_handler]
 pub(super) async fn category_suggestions(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .filter(skills::Column::Category.eq("other"))
-        .order_by_asc(skills::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query!(
+        "SELECT pid, name FROM skills WHERE deleted_at IS NULL AND category = 'other' ORDER BY name, id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .filter_map(|s| {
@@ -193,26 +215,31 @@ pub(super) async fn apply_suggestions(
     Json(payload): Json<ApplySuggestions>,
 ) -> Result<Response> {
     let (mut applied, mut skipped) = (0usize, 0usize);
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     for pid in &payload.skill_pids {
-        let found = skills::Entity::find()
-            .filter(skills::Column::Pid.eq(*pid))
-            .filter(skills::Column::DeletedAt.is_null())
-            .one(&txn)
-            .await?;
+        let found = sqlx::query!(
+            "SELECT id, pid, name, category FROM skills WHERE pid = $1 AND deleted_at IS NULL",
+            pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
         let suggestion = found
             .as_ref()
             .filter(|s| s.category == "other")
             .and_then(|s| rules::suggest_category(&s.name));
         match (found, suggestion) {
             (Some(row), Some((category, _))) => {
-                let mut active: skills::ActiveModel = row.into();
-                active.category = ActiveValue::set(category.to_string());
-                let updated = active.update(&txn).await?;
-                Audit::record(
-                    &txn,
+                sqlx::query!(
+                    "UPDATE skills SET category = $2, updated_at = now() WHERE id = $1",
+                    row.id,
+                    category,
+                )
+                .execute(&mut *tx)
+                .await?;
+                db::audit(
+                    &mut tx,
                     "skill",
-                    updated.pid,
+                    row.pid,
                     "categorised",
                     caller.actor(),
                     Some(serde_json::json!({ "category": category })),
@@ -223,39 +250,28 @@ pub(super) async fn apply_suggestions(
             _ => skipped += 1,
         }
     }
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "applied": applied, "skipped": skipped }))
 }
 
 /// Count where a skill is used.
-async fn skill_usage<C: ConnectionTrait>(db: &C, skill_pid: Uuid) -> Result<merge_rules::Usage> {
-    let count = |n: u64| usize::try_from(n).unwrap_or(usize::MAX);
+async fn skill_usage(ctx: &AppContext, skill_pid: Uuid) -> Result<merge_rules::Usage> {
+    let count = |n: i64| usize::try_from(n).unwrap_or(usize::MAX);
+    let row = sqlx::query!(
+        r#"SELECT
+             (SELECT COUNT(*) FROM worker_skills WHERE skill_pid = $1 AND deleted_at IS NULL) AS "declared_by!",
+             (SELECT COUNT(*) FROM role_skill_requirements WHERE skill_pid = $1) AS "required_by_profiles!",
+             (SELECT COUNT(*) FROM development_plan_items WHERE skill_pid = $1) AS "in_development_plans!",
+             (SELECT COUNT(*) FROM initiative_skill_shifts WHERE skill_pid = $1) AS "in_initiatives!""#,
+        skill_pid,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?;
     Ok(merge_rules::Usage {
-        declared_by: count(
-            worker_skills::Entity::find()
-                .filter(worker_skills::Column::SkillPid.eq(skill_pid))
-                .filter(worker_skills::Column::DeletedAt.is_null())
-                .count(db)
-                .await?,
-        ),
-        required_by_profiles: count(
-            role_skill_requirements::Entity::find()
-                .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
-                .count(db)
-                .await?,
-        ),
-        in_development_plans: count(
-            development_plan_items::Entity::find()
-                .filter(development_plan_items::Column::SkillPid.eq(skill_pid))
-                .count(db)
-                .await?,
-        ),
-        in_initiatives: count(
-            initiative_skill_shifts::Entity::find()
-                .filter(initiative_skill_shifts::Column::SkillPid.eq(skill_pid))
-                .count(db)
-                .await?,
-        ),
+        declared_by: count(row.declared_by),
+        required_by_profiles: count(row.required_by_profiles),
+        in_development_plans: count(row.in_development_plans),
+        in_initiatives: count(row.in_initiatives),
     })
 }
 
@@ -278,9 +294,7 @@ pub(super) async fn skill_usage_view(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let skill = find_live_skill(&ctx, &pid).await?;
-    format::json(usage_json(
-        &skill_usage(&crate::db::orm(&ctx), skill.pid).await?,
-    ))
+    format::json(usage_json(&skill_usage(&ctx, skill.pid).await?))
 }
 
 /// `DELETE /api/skills/{pid}` — delete a skill **nothing uses** (soft-delete;
@@ -293,23 +307,28 @@ pub(super) async fn delete_skill(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let skill = find_live_skill(&ctx, &pid).await?;
-    let usage = skill_usage(&crate::db::orm(&ctx), skill.pid).await?;
+    let usage = skill_usage(&ctx, skill.pid).await?;
     if !usage.deletable() {
         return Err(unprocessable(&format!(
             "the skill is in use ({} place(s)); merge it into another skill instead",
             usage.total()
         )));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    skill_external_refs::Entity::delete_many()
-        .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
-        .exec(&txn)
-        .await?;
-    let mut active: skills::ActiveModel = skill.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "skill", row.pid, "deleted", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "DELETE FROM skill_external_refs WHERE skill_pid = $1",
+        skill.pid
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "UPDATE skills SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        skill.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "skill", skill.pid, "deleted", caller.actor(), None).await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -335,157 +354,219 @@ pub(super) async fn merge_skill(
     if source.pid == payload.into_pid {
         return Err(unprocessable("a skill cannot be merged into itself"));
     }
-    let target = find_live_skill(&ctx, &payload.into_pid.to_string()).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let target = find_live_skill_by_pid(&ctx, payload.into_pid).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let (mut merged, mut moved) = (0usize, 0usize);
 
     // Worker declarations.
-    for row in worker_skills::Entity::find()
-        .filter(worker_skills::Column::SkillPid.eq(source.pid))
-        .all(&txn)
-        .await?
+    for row in sqlx::query!(
+        r#"SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at AS "deleted_at: chrono::DateTime<chrono::FixedOffset>"
+             FROM worker_skills WHERE skill_pid = $1 ORDER BY id"#,
+        source.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?
     {
-        let twin = worker_skills::Entity::find()
-            .filter(worker_skills::Column::WorkerPid.eq(row.worker_pid))
-            .filter(worker_skills::Column::SkillPid.eq(target.pid))
-            .one(&txn)
-            .await?;
+        let twin = sqlx::query!(
+            "SELECT id, proficiency, target, assessed_on FROM worker_skills WHERE worker_pid = $1 AND skill_pid = $2 LIMIT 1",
+            row.worker_pid,
+            target.pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
         if let Some(twin) = twin {
-            let mut active: worker_skills::ActiveModel = twin.clone().into();
-            active.proficiency =
-                ActiveValue::set(merge_rules::merge_level(twin.proficiency, row.proficiency));
-            active.target = ActiveValue::set(merge_rules::merge_target(twin.target, row.target));
-            active.assessed_on = ActiveValue::set(twin.assessed_on.max(row.assessed_on));
-            if row.deleted_at.is_none() {
-                active.deleted_at = ActiveValue::set(None);
-            }
-            active.update(&txn).await?;
-            row.delete(&txn).await?;
+            // The stronger statement is kept; a live declaration revives a retired twin.
+            sqlx::query!(
+                "UPDATE worker_skills
+                    SET proficiency = $2, target = $3, assessed_on = $4,
+                        deleted_at = CASE WHEN $5 THEN NULL ELSE deleted_at END, updated_at = now()
+                  WHERE id = $1",
+                twin.id,
+                merge_rules::merge_level(twin.proficiency, row.proficiency),
+                merge_rules::merge_target(twin.target, row.target),
+                twin.assessed_on.max(row.assessed_on),
+                row.deleted_at.is_none(),
+            )
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query!("DELETE FROM worker_skills WHERE id = $1", row.id)
+                .execute(&mut *tx)
+                .await?;
             merged += 1;
         } else {
-            let mut active: worker_skills::ActiveModel = row.into();
-            active.skill_pid = ActiveValue::set(target.pid);
-            active.update(&txn).await?;
+            sqlx::query!(
+                "UPDATE worker_skills SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                row.id,
+                target.pid,
+            )
+            .execute(&mut *tx)
+            .await?;
             moved += 1;
         }
     }
     // Role requirements.
-    for row in role_skill_requirements::Entity::find()
-        .filter(role_skill_requirements::Column::SkillPid.eq(source.pid))
-        .all(&txn)
-        .await?
+    for row in sqlx::query!(
+        "SELECT id, role_profile_pid, min_proficiency, importance, note, source_level, source_scale_max
+           FROM role_skill_requirements WHERE skill_pid = $1 ORDER BY id",
+        source.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?
     {
-        let twin = role_skill_requirements::Entity::find()
-            .filter(role_skill_requirements::Column::RoleProfilePid.eq(row.role_profile_pid))
-            .filter(role_skill_requirements::Column::SkillPid.eq(target.pid))
-            .one(&txn)
-            .await?;
+        let twin = sqlx::query!(
+            "SELECT id, min_proficiency, importance, note, source_level FROM role_skill_requirements
+              WHERE role_profile_pid = $1 AND skill_pid = $2 LIMIT 1",
+            row.role_profile_pid,
+            target.pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
         if let Some(twin) = twin {
-            let mut active: role_skill_requirements::ActiveModel = twin.clone().into();
-            active.min_proficiency = ActiveValue::set(merge_rules::merge_level(
-                twin.min_proficiency,
-                row.min_proficiency,
-            ));
-            active.importance = ActiveValue::set(
-                merge_rules::stronger_importance(&twin.importance, &row.importance).to_string(),
-            );
-            if twin.note.is_none() {
-                active.note = ActiveValue::set(row.note.clone());
-            }
-            if twin.source_level.is_none() {
-                active.source_level = ActiveValue::set(row.source_level);
-                active.source_scale_max = ActiveValue::set(row.source_scale_max);
-            }
-            active.update(&txn).await?;
-            row.delete(&txn).await?;
+            let take_level = twin.source_level.is_none();
+            sqlx::query!(
+                "UPDATE role_skill_requirements
+                    SET min_proficiency = $2, importance = $3, note = COALESCE(note, $4),
+                        source_level = CASE WHEN $5 THEN $6 ELSE source_level END,
+                        source_scale_max = CASE WHEN $5 THEN $7 ELSE source_scale_max END,
+                        updated_at = now()
+                  WHERE id = $1",
+                twin.id,
+                merge_rules::merge_level(twin.min_proficiency, row.min_proficiency),
+                merge_rules::stronger_importance(&twin.importance, &row.importance),
+                row.note,
+                take_level,
+                row.source_level,
+                row.source_scale_max,
+            )
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query!("DELETE FROM role_skill_requirements WHERE id = $1", row.id)
+                .execute(&mut *tx)
+                .await?;
             merged += 1;
         } else {
-            let mut active: role_skill_requirements::ActiveModel = row.into();
-            active.skill_pid = ActiveValue::set(target.pid);
-            active.update(&txn).await?;
+            sqlx::query!(
+                "UPDATE role_skill_requirements SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                row.id,
+                target.pid,
+            )
+            .execute(&mut *tx)
+            .await?;
             moved += 1;
         }
     }
     // Initiative skill shifts: the target's statement wins a conflict.
-    for row in initiative_skill_shifts::Entity::find()
-        .filter(initiative_skill_shifts::Column::SkillPid.eq(source.pid))
-        .all(&txn)
-        .await?
+    for row in sqlx::query!(
+        "SELECT id, initiative_pid FROM initiative_skill_shifts WHERE skill_pid = $1 ORDER BY id",
+        source.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?
     {
-        let twin_exists = initiative_skill_shifts::Entity::find()
-            .filter(initiative_skill_shifts::Column::InitiativePid.eq(row.initiative_pid))
-            .filter(initiative_skill_shifts::Column::SkillPid.eq(target.pid))
-            .one(&txn)
-            .await?
-            .is_some();
+        let twin_exists = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM initiative_skill_shifts WHERE initiative_pid = $1 AND skill_pid = $2 LIMIT 1"#,
+            row.initiative_pid,
+            target.pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
         if twin_exists {
-            row.delete(&txn).await?;
+            sqlx::query!("DELETE FROM initiative_skill_shifts WHERE id = $1", row.id)
+                .execute(&mut *tx)
+                .await?;
             merged += 1;
         } else {
-            let mut active: initiative_skill_shifts::ActiveModel = row.into();
-            active.skill_pid = ActiveValue::set(target.pid);
-            active.update(&txn).await?;
+            sqlx::query!(
+                "UPDATE initiative_skill_shifts SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                row.id,
+                target.pid,
+            )
+            .execute(&mut *tx)
+            .await?;
             moved += 1;
         }
     }
     // Development-plan items: the target's item wins a conflict.
-    for row in development_plan_items::Entity::find()
-        .filter(development_plan_items::Column::SkillPid.eq(source.pid))
-        .all(&txn)
-        .await?
+    for row in sqlx::query!(
+        "SELECT id, plan_pid FROM development_plan_items WHERE skill_pid = $1 ORDER BY id",
+        source.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?
     {
-        let twin_exists = development_plan_items::Entity::find()
-            .filter(development_plan_items::Column::PlanPid.eq(row.plan_pid))
-            .filter(development_plan_items::Column::SkillPid.eq(target.pid))
-            .one(&txn)
-            .await?
-            .is_some();
+        let twin_exists = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM development_plan_items WHERE plan_pid = $1 AND skill_pid = $2 LIMIT 1"#,
+            row.plan_pid,
+            target.pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
         if twin_exists {
-            row.delete(&txn).await?;
+            sqlx::query!("DELETE FROM development_plan_items WHERE id = $1", row.id)
+                .execute(&mut *tx)
+                .await?;
             merged += 1;
         } else {
-            let mut active: development_plan_items::ActiveModel = row.into();
-            active.skill_pid = ActiveValue::set(target.pid);
-            active.update(&txn).await?;
+            sqlx::query!(
+                "UPDATE development_plan_items SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                row.id,
+                target.pid,
+            )
+            .execute(&mut *tx)
+            .await?;
             moved += 1;
         }
     }
     // External references: keep the target's per framework, move the rest.
-    for row in skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::SkillPid.eq(source.pid))
-        .all(&txn)
-        .await?
+    for row in sqlx::query!(
+        "SELECT id, framework_slug FROM skill_external_refs WHERE skill_pid = $1 ORDER BY id",
+        source.pid,
+    )
+    .fetch_all(&mut *tx)
+    .await?
     {
-        let has = skill_external_refs::Entity::find()
-            .filter(skill_external_refs::Column::SkillPid.eq(target.pid))
-            .filter(skill_external_refs::Column::FrameworkSlug.eq(&row.framework_slug))
-            .one(&txn)
-            .await?
-            .is_some();
+        let has = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
+            target.pid,
+            row.framework_slug,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
         if has {
-            row.delete(&txn).await?;
+            sqlx::query!("DELETE FROM skill_external_refs WHERE id = $1", row.id)
+                .execute(&mut *tx)
+                .await?;
         } else {
-            let mut active: skill_external_refs::ActiveModel = row.into();
-            active.skill_pid = ActiveValue::set(target.pid);
-            active.update(&txn).await?;
+            sqlx::query!(
+                "UPDATE skill_external_refs SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                row.id,
+                target.pid,
+            )
+            .execute(&mut *tx)
+            .await?;
         }
     }
-    let source_name = source.name.clone();
-    let mut retire: skills::ActiveModel = source.into();
-    retire.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let retired = retire.update(&txn).await?;
-    Audit::record(
-        &txn,
+    sqlx::query!(
+        "UPDATE skills SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        source.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "skill",
-        retired.pid,
+        source.pid,
         "merged",
         caller.actor(),
         Some(serde_json::json!({
-            "into": target.pid, "from_name": source_name, "records_moved": moved, "records_merged": merged,
+            "into": target.pid, "from_name": source.name, "records_moved": moved, "records_merged": merged,
         })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
         "merged_into": target.pid,
         "records_moved": moved,
@@ -524,50 +605,54 @@ pub(super) async fn add_skill_ref(
     // A reference into ESCO must name a concept in the pinned local copy
     // (when one has been loaded).
     if payload.framework_slug.trim() == "esco" {
-        let loaded = crate::models::_entities::esco_skills::Entity::find()
-            .one(&crate::db::orm(&ctx))
+        let loaded = sqlx::query_scalar!(r#"SELECT 1 AS "one!" FROM esco_skills LIMIT 1"#)
+            .fetch_optional(db::pool(&ctx))
             .await?
             .is_some();
-        let known = crate::models::_entities::esco_skills::Entity::find()
-            .filter(crate::models::_entities::esco_skills::Column::Uri.eq(&payload.reference))
-            .one(&crate::db::orm(&ctx))
-            .await?
-            .is_some();
+        let known = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM esco_skills WHERE uri = $1 LIMIT 1"#,
+            payload.reference,
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?
+        .is_some();
         if loaded && !known {
             return Err(unprocessable(
                 "that URI is not an ESCO skill in the pinned copy",
             ));
         }
     }
-    let clash = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(&payload.framework_slug))
-        .filter(
-            sea_orm::Condition::any()
-                .add(skill_external_refs::Column::SkillPid.eq(skill.pid))
-                .add(skill_external_refs::Column::Reference.eq(&payload.reference)),
-        )
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .is_some();
+    let clash = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM skill_external_refs
+            WHERE framework_slug = $1 AND (skill_pid = $2 OR "ref" = $3) LIMIT 1"#,
+        payload.framework_slug,
+        skill.pid,
+        payload.reference,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .is_some();
     if clash {
         return Err(unprocessable(
             "this skill already has a reference in that framework, or the reference names another skill",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = skill_external_refs::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        skill_pid: ActiveValue::set(skill.pid),
-        framework_slug: ActiveValue::set(payload.framework_slug.trim().to_string()),
-        reference: ActiveValue::set(payload.reference.clone()),
-        label: ActiveValue::set(payload.label.clone()),
-        version: ActiveValue::set(payload.version.clone()),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let ref_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version)
+           VALUES ($1, $2, $3, $4, $5, $6)"#,
+        ref_pid,
+        skill.pid,
+        payload.framework_slug.trim(),
+        payload.reference,
+        payload.label,
+        payload.version,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "skill",
         skill.pid,
         "reference_added",
@@ -575,8 +660,8 @@ pub(super) async fn add_skill_ref(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(ref_pid))
 }
 
 /// `DELETE /api/skills/{pid}/refs/{framework_slug}`.
@@ -587,16 +672,20 @@ pub(super) async fn remove_skill_ref(
     Path((pid, framework)): Path<(String, String)>,
 ) -> Result<Response> {
     let skill = find_live_skill(&ctx, &pid).await?;
-    let row = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(&framework))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    row.delete(&txn).await?;
-    Audit::record(
-        &txn,
+    let id = sqlx::query_scalar!(
+        "SELECT id FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1",
+        skill.pid,
+        framework,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM skill_external_refs WHERE id = $1", id)
+        .execute(&mut *tx)
+        .await?;
+    db::audit(
+        &mut tx,
         "skill",
         skill.pid,
         "reference_removed",
@@ -604,7 +693,7 @@ pub(super) async fn remove_skill_ref(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -628,6 +717,7 @@ pub(super) struct WorkerSkillPayload {
 /// `PUT /api/workers/{pid}/skills` — declare or update the
 /// proficiency (one row per worker+skill).
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // validate, map the framework level, upsert, history and audit, linearly
 pub(super) async fn declare_skill(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -650,69 +740,82 @@ pub(super) async fn declare_skill(
     }
     ensure_valid(&problems.into_vec())?;
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let skill = skills::Entity::find()
-        .filter(skills::Column::Pid.eq(payload.skill_pid))
-        .filter(skills::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let native = crate::controllers::sfia::resolve_native(
-        &crate::db::orm(&ctx),
+    let skill = find_live_skill_by_pid(&ctx, payload.skill_pid).await?;
+    let native = crate::controllers::roles::resolve_native(
+        &ctx,
         payload.framework.as_deref(),
         payload.framework_level,
     )
     .await?;
     if let Some(n) = &native {
-        crate::controllers::sfia::check_defined(&crate::db::orm(&ctx), skill.pid, n).await?;
+        crate::controllers::roles::check_defined(&ctx, skill.pid, n).await?;
     }
     // A stated 1–5 stands; otherwise the framework level is mapped, and the mapping is shown wherever it is read.
     let proficiency = payload
         .proficiency
         .or_else(|| native.as_ref().map(|n| n.wpm))
         .ok_or_else(|| unprocessable("give proficiency, or framework and framework_level"))?;
-    let existing = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_skills::Column::SkillPid.eq(skill.pid))
-        .one(&crate::db::orm(&ctx))
-        .await?;
+    let existing = sqlx::query_scalar!(
+        "SELECT id FROM worker_skills WHERE worker_pid = $1 AND skill_pid = $2 LIMIT 1",
+        worker.pid,
+        skill.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     let today = chrono::Utc::now().date_naive();
-    let txn = crate::db::orm(&ctx).begin().await?;
     let (source_framework, source_level, source_scale_max) =
         native.as_ref().map_or((None, None, None), |n| {
             (Some(n.framework.clone()), Some(n.level), Some(n.scale_max))
         });
+    let mut tx = db::pool(&ctx).begin().await?;
     let row = match existing {
-        Some(row) => {
-            let mut active: worker_skills::ActiveModel = row.into();
-            active.proficiency = ActiveValue::set(proficiency);
-            active.source_framework = ActiveValue::set(source_framework);
-            active.source_level = ActiveValue::set(source_level);
-            active.source_scale_max = ActiveValue::set(source_scale_max);
-            active.target = ActiveValue::set(payload.target);
-            active.assessed_on = ActiveValue::set(today);
-            active.deleted_at = ActiveValue::set(None);
-            active.update(&txn).await?
+        Some(id) => {
+            sqlx::query_as!(
+                worker_skills::Model,
+                r#"UPDATE worker_skills
+                      SET proficiency = $2, source_framework = $3, source_level = $4, source_scale_max = $5, target = $6,
+                          assessed_on = $7, deleted_at = NULL, updated_at = now()
+                    WHERE id = $1
+                RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                          proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
+                          deleted_at AS "deleted_at: _""#,
+                id,
+                proficiency,
+                source_framework,
+                source_level,
+                source_scale_max,
+                payload.target,
+                today,
+            )
+            .fetch_one(&mut *tx)
+            .await?
         }
         None => {
-            worker_skills::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker.pid),
-                skill_pid: ActiveValue::set(skill.pid),
-                proficiency: ActiveValue::set(proficiency),
-                target: ActiveValue::set(payload.target),
-                assessed_on: ActiveValue::set(today),
-                source_framework: ActiveValue::set(source_framework),
-                source_level: ActiveValue::set(source_level),
-                source_scale_max: ActiveValue::set(source_scale_max),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query_as!(
+                worker_skills::Model,
+                r#"INSERT INTO worker_skills
+                          (pid, worker_pid, skill_pid, proficiency, target, assessed_on, source_framework, source_level,
+                           source_scale_max)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                          proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
+                          deleted_at AS "deleted_at: _""#,
+                Uuid::new_v4(),
+                worker.pid,
+                skill.pid,
+                proficiency,
+                payload.target,
+                today,
+                source_framework,
+                source_level,
+                source_scale_max,
+            )
+            .fetch_one(&mut *tx)
             .await?
         }
     };
-    crate::models::skill_history::record(
-        &txn,
+    crate::models::skill_history::record_in(
+        &mut tx,
         worker.pid,
         skill.pid,
         Some(proficiency),
@@ -721,8 +824,8 @@ pub(super) async fn declare_skill(
         auth::acting_for_other(&caller, &worker.person_ref),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker_skill",
         row.pid,
         "declared",
@@ -730,7 +833,7 @@ pub(super) async fn declare_skill(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -741,19 +844,23 @@ pub(super) async fn list_worker_skills(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let rows = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        worker_skills::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                  proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
+                  deleted_at AS "deleted_at: _"
+             FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // Where a level was stated on a framework's own scale, say so, with the framework's wording and the mapping used.
     let stated: Vec<_> = rows
         .iter()
         .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
         .collect();
-    let described =
-        crate::controllers::sfia::native_descriptions(&crate::db::orm(&ctx), &stated).await?;
-    let names = crate::controllers::sfia::framework_names(&crate::db::orm(&ctx)).await?;
+    let described = crate::controllers::roles::native_descriptions(&ctx, &stated).await?;
+    let names = crate::controllers::roles::framework_names(&ctx).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {

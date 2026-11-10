@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT kind, year, entitled_days, used_days FROM leave_entitlements\n          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "year",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "year"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "entitled_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "entitled_days"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "used_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "used_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b4ddbf79fd52feed5f4e762bc51baaa5929127629acaa903557eead36728423c"
+}

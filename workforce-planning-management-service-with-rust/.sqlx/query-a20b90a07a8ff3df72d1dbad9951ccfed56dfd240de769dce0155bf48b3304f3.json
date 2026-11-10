@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT department, job_title, headcount FROM requisitions\n              WHERE organization_ref = $1 AND deleted_at IS NULL AND status IN ('open', 'interviewing', 'offer')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "requisitions",
+            "name": "headcount"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a20b90a07a8ff3df72d1dbad9951ccfed56dfd240de769dce0155bf48b3304f3"
+}

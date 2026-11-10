@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status, negative_balance, reason)\n         VALUES ($1, $2, $3, $4, $5, $6, 'requested', $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date",
+        "Int4",
+        "Bool",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4a0eac06d81c0e94fd89ebd453f45253b01903bdecea9f8533d9455d2695c08e"
+}

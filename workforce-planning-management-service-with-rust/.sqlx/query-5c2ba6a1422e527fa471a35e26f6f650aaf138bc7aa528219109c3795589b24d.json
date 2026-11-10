@@ -1,0 +1,256 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, worker_pid, address_line1, address_line2,\n                  city, region, postcode, address_text, country, phone_mobile, phone_home, personal_email,\n                  phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164, recorded_by, on_behalf\n             FROM worker_contact_details WHERE worker_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "address_line1",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "address_line1"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "address_line2",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "address_line2"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "city",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "city"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "region",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "region"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "postcode",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "postcode"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "address_text",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "address_text"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "country",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "country"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "phone_mobile",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_mobile"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "phone_home",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_home"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "personal_email",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "personal_email"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "phone_mobile_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_mobile_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "phone_mobile_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_mobile_e164"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "phone_home_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_home_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "phone_home_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "phone_home_e164"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "worker_contact_details",
+            "name": "on_behalf"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "5c2ba6a1422e527fa471a35e26f6f650aaf138bc7aa528219109c3795589b24d"
+}

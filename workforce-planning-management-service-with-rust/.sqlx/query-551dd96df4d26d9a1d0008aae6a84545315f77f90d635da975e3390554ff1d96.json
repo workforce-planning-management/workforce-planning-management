@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT slug, name, licence, attribution, scale_max, scale_labels, note\n                   FROM capability_frameworks WHERE slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "licence",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "licence"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "attribution",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "attribution"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "scale_max"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "scale_labels",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "scale_labels"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "551dd96df4d26d9a1d0008aae6a84545315f77f90d635da975e3390554ff1d96"
+}

@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT status, start_on FROM leave_requests WHERE pid = $1 AND worker_pid = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "start_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "leave_requests",
+            "name": "start_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b901f67a722b7210d20b536d89aaecf7d39b56145a2fe3a57e281b545a8c2fbd"
+}

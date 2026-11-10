@@ -1,0 +1,39 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH heavy AS (\n                   SELECT DISTINCT worker_pid FROM time_entry_weeks\n                    WHERE week_start >= date_trunc('week', $1::date + 1)::date AND week_start <= $2::date\n                      AND minutes >= $4::bigint AND worker_pid = ANY($5::uuid[])),\n                    maybe AS (\n                   SELECT w.worker_pid FROM time_entry_weeks w\n                    WHERE w.worker_pid IN (SELECT worker_pid FROM heavy)\n                      AND w.week_start >= date_trunc('week', $1::date + 1)::date AND w.week_start <= $2::date\n                    GROUP BY w.worker_pid HAVING SUM(w.minutes) > $3::bigint)\n               SELECT t.worker_pid, SUM(t.minutes)::bigint AS \"total!\"\n                 FROM time_entries t\n                WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)\n                  AND t.deleted_at IS NULL AND t.worked_on > $1::date AND t.worked_on <= $2::date\n                GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3::bigint",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "time_entries",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date",
+        "Int8",
+        "Int8",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "c1e3ed81c7e15aecbae3c618080db7d6535c1e58131e4cfff988ae9b4a22d032"
+}

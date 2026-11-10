@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, department,\n                  starts_at AS \"starts_at: _\", ends_at AS \"ends_at: _\", required_headcount, deleted_at AS \"deleted_at: _\"\n             FROM shifts WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1)\n            ORDER BY starts_at, id\n            LIMIT 1000",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "starts_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "starts_at"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "ends_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "ends_at"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "required_headcount",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "required_headcount"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "c7abef1d5490f26ed399e00c89122a53589a9d3f5b126072b6e731ea1b8743bb"
+}

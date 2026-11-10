@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, role_profile_pid, min_proficiency, importance, note, source_level, source_scale_max\n           FROM role_skill_requirements WHERE skill_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "min_proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "min_proficiency"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "importance",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "importance"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "source_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "source_level"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source_scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "source_scale_max"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "ce5d995725d4fbee3554c6c5d0bb0c0c081692c205047530826403074d6e7380"
+}

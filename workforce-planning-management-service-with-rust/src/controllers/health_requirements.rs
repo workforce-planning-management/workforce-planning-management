@@ -17,14 +17,15 @@
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Utc;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
+use std::collections::HashMap;
+use uuid::Uuid;
 
 use super::{ensure_valid, forbidden, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{health_requirements, worker_health_records, workers};
-use crate::models::audit_logs::Model as Audit;
 use crate::models::{memberships, records};
 use crate::need_to_know::{facts_for, has_privileged_attrs};
 use crate::rules::access::Relation;
@@ -99,11 +100,43 @@ fn departments_of(r: &health_requirements::Model) -> Vec<String> {
 }
 
 async fn live_requirements(ctx: &AppContext) -> Result<Vec<health_requirements::Model>> {
-    Ok(health_requirements::Entity::find()
-        .filter(health_requirements::Column::DeletedAt.is_null())
-        .order_by_asc(health_requirements::Column::Name)
-        .all(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        health_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
+                  recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _"
+             FROM health_requirements WHERE deleted_at IS NULL ORDER BY name"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// Every live worker, oldest first.
+async fn live_workers(ctx: &AppContext) -> Result<Vec<workers::Model>> {
+    Ok(sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE deleted_at IS NULL ORDER BY id"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The reminder days as stored.
+fn reminder_days(p: &RequirementPayload) -> i32 {
+    i32::try_from(
+        p.reminder_calendar_days
+            .unwrap_or(rules::DEFAULT_REMINDER_CALENDAR_DAYS),
+    )
+    .unwrap_or(60)
+}
+
+/// The re-check days as stored.
+fn recheck_days(p: &RequirementPayload) -> Option<i32> {
+    p.recheck_calendar_days
+        .map(|d| i32::try_from(d).unwrap_or(i32::MAX))
 }
 
 /// `GET /api/health-requirements` — what is required, and of whom. Not personal data.
@@ -167,32 +200,24 @@ async fn create_requirement(
     if exists {
         return Err(unprocessable("a requirement with that name already exists"));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = health_requirements::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        description: ActiveValue::set(payload.description.clone().filter(|d| !d.trim().is_empty())),
-        departments: ActiveValue::set(json!(payload.departments)),
-        recheck_calendar_days: ActiveValue::set(
-            payload
-                .recheck_calendar_days
-                .map(|d| i32::try_from(d).unwrap_or(i32::MAX)),
-        ),
-        reminder_calendar_days: ActiveValue::set(
-            i32::try_from(
-                payload
-                    .reminder_calendar_days
-                    .unwrap_or(rules::DEFAULT_REMINDER_CALENDAR_DAYS),
-            )
-            .unwrap_or(60),
-        ),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        health_requirements::Model,
+        r#"INSERT INTO health_requirements (pid, name, description, departments, recheck_calendar_days, reminder_calendar_days)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
+                     recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _""#,
+        Uuid::new_v4(),
+        payload.name.trim(),
+        payload.description.clone().filter(|d| !d.trim().is_empty()),
+        json!(payload.departments),
+        recheck_days(&payload),
+        reminder_days(&payload),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "health_requirement",
         row.pid,
         "created",
@@ -200,17 +225,21 @@ async fn create_requirement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(requirement_json(&row))
 }
 
 async fn find_requirement(ctx: &AppContext, pid: &str) -> Result<health_requirements::Model> {
-    health_requirements::Entity::find()
-        .filter(health_requirements::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(health_requirements::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        health_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
+                  recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _"
+             FROM health_requirements WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/health-requirements/{pid}` — change one (HR).
@@ -231,28 +260,26 @@ async fn update_requirement(
     if clash {
         return Err(unprocessable("a requirement with that name already exists"));
     }
-    let mut active: health_requirements::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name.trim().to_string());
-    active.description =
-        ActiveValue::set(payload.description.clone().filter(|d| !d.trim().is_empty()));
-    active.departments = ActiveValue::set(json!(payload.departments));
-    active.recheck_calendar_days = ActiveValue::set(
-        payload
-            .recheck_calendar_days
-            .map(|d| i32::try_from(d).unwrap_or(i32::MAX)),
-    );
-    active.reminder_calendar_days = ActiveValue::set(
-        i32::try_from(
-            payload
-                .reminder_calendar_days
-                .unwrap_or(rules::DEFAULT_REMINDER_CALENDAR_DAYS),
-        )
-        .unwrap_or(60),
-    );
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        health_requirements::Model,
+        r#"UPDATE health_requirements
+              SET name = $2, description = $3, departments = $4, recheck_calendar_days = $5, reminder_calendar_days = $6,
+                  updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
+                  recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _""#,
+        row.id,
+        payload.name.trim(),
+        payload.description.clone().filter(|d| !d.trim().is_empty()),
+        json!(payload.departments),
+        recheck_days(&payload),
+        reminder_days(&payload),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "health_requirement",
         saved.pid,
         "updated",
@@ -260,7 +287,7 @@ async fn update_requirement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(requirement_json(&saved))
 }
 
@@ -273,12 +300,18 @@ async fn delete_requirement(
 ) -> Result<Response> {
     on()?;
     let row = find_requirement(&ctx, &pid).await?;
-    let mut active: health_requirements::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        health_requirements::Model,
+        r#"UPDATE health_requirements SET deleted_at = now(), updated_at = now() WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
+                  recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _""#,
+        row.id,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "health_requirement",
         saved.pid,
         "deleted",
@@ -286,7 +319,7 @@ async fn delete_requirement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(requirement_json(&saved))
 }
 
@@ -341,35 +374,25 @@ async fn record_status(
     });
     rules::validate_record(&payload.status, recorded_on, next_due, today)
         .map_err(|e| unprocessable(&e))?;
-    let existing = worker_health_records::Entity::find()
-        .filter(worker_health_records::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
-        .one(&crate::db::orm(&ctx))
-        .await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let recorded_by = caller.actor().map(ToString::to_string);
-    if let Some(row) = existing {
-        let mut active: worker_health_records::ActiveModel = row.into();
-        active.status = ActiveValue::set(payload.status.clone());
-        active.recorded_on = ActiveValue::set(recorded_on);
-        active.next_due = ActiveValue::set(next_due);
-        active.recorded_by = ActiveValue::set(recorded_by);
-        active.update(&txn).await?;
-    } else {
-        worker_health_records::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            requirement_pid: ActiveValue::set(requirement.pid),
-            status: ActiveValue::set(payload.status.clone()),
-            recorded_on: ActiveValue::set(recorded_on),
-            next_due: ActiveValue::set(next_due),
-            recorded_by: ActiveValue::set(recorded_by),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?;
-    }
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One record per worker and requirement: a second recording replaces the first.
+    sqlx::query!(
+        "INSERT INTO worker_health_records (worker_pid, requirement_pid, status, recorded_on, next_due, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (worker_pid, requirement_pid) DO UPDATE
+            SET status = EXCLUDED.status, recorded_on = EXCLUDED.recorded_on, next_due = EXCLUDED.next_due,
+                recorded_by = EXCLUDED.recorded_by, updated_at = now()",
+        worker.pid,
+        requirement.pid,
+        payload.status,
+        recorded_on,
+        next_due,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "health_requirement_recorded",
@@ -377,7 +400,7 @@ async fn record_status(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     // The answer to the caller is the same yes-or-no a manager would see, not an echo of the status.
     let standing = rules::standing(
         Some(&payload.status),
@@ -400,18 +423,20 @@ async fn remove_record(
     ensure_occupational_health(&caller)?;
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let requirement = find_requirement(&ctx, &req_pid).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let removed = worker_health_records::Entity::delete_many()
-        .filter(worker_health_records::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
-        .exec(&txn)
-        .await?
-        .rows_affected;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let removed = sqlx::query!(
+        "DELETE FROM worker_health_records WHERE worker_pid = $1 AND requirement_pid = $2",
+        worker.pid,
+        requirement.pid,
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
     if removed == 0 {
         return Err(Error::NotFound);
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "health_requirement_removed",
@@ -419,7 +444,7 @@ async fn remove_record(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 
@@ -427,12 +452,34 @@ async fn remove_record(
 
 async fn records_for(
     ctx: &AppContext,
-    worker_pid: uuid::Uuid,
+    worker_pid: Uuid,
 ) -> Result<Vec<worker_health_records::Model>> {
-    Ok(worker_health_records::Entity::find()
-        .filter(worker_health_records::Column::WorkerPid.eq(worker_pid))
-        .all(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        worker_health_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, requirement_pid, status,
+                  recorded_on, next_due, recorded_by
+             FROM worker_health_records WHERE worker_pid = $1"#,
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// Every worker's records, by worker: one read for a whole list.
+async fn all_records(ctx: &AppContext) -> Result<HashMap<Uuid, Vec<worker_health_records::Model>>> {
+    let mut out: HashMap<Uuid, Vec<worker_health_records::Model>> = HashMap::new();
+    for row in sqlx::query_as!(
+        worker_health_records::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, requirement_pid, status,
+                  recorded_on, next_due, recorded_by
+             FROM worker_health_records"#,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    {
+        out.entry(row.worker_pid).or_default().push(row);
+    }
+    Ok(out)
 }
 
 fn standing_of(
@@ -512,12 +559,8 @@ async fn clearance(
         .collect();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut out = Vec::new();
-    for worker in workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?
-    {
+    let mut held_by = all_records(&ctx).await?;
+    for worker in live_workers(&ctx).await? {
         if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)
             || scope
                 .as_ref()
@@ -534,7 +577,7 @@ async fn clearance(
                 continue;
             }
         }
-        let held = records_for(&ctx, worker.pid).await?;
+        let held = held_by.remove(&worker.pid).unwrap_or_default();
         for r in requirements
             .iter()
             .filter(|r| rules::applies(&departments_of(r), &worker.department))
@@ -589,8 +632,8 @@ async fn detail(
             })
         })
         .collect();
-    Audit::record(
-        &crate::db::orm(&ctx),
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "worker",
         worker.pid,
         "health_record_read",
@@ -618,11 +661,8 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     let requirements = live_requirements(&ctx).await?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut rows: Vec<(String, String, bool)> = Vec::new();
-    for worker in workers::Entity::find()
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-    {
+    let mut held_by = all_records(&ctx).await?;
+    for worker in live_workers(&ctx).await? {
         if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)
             || scope
                 .as_ref()
@@ -630,7 +670,7 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         {
             continue;
         }
-        let held = records_for(&ctx, worker.pid).await?;
+        let held = held_by.remove(&worker.pid).unwrap_or_default();
         for r in requirements
             .iter()
             .filter(|r| rules::applies(&departments_of(r), &worker.department))

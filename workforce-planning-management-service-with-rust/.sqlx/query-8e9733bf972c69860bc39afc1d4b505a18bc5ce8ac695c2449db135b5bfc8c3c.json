@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM skill_external_refs WHERE skill_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8e9733bf972c69860bc39afc1d4b505a18bc5ce8ac695c2449db135b5bfc8c3c"
+}

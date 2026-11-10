@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT period_start, period_end FROM facility_time_periods WHERE body_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "period_start",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "facility_time_periods",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "period_end",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "facility_time_periods",
+            "name": "period_end"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "c876ba694dae57f7b25d50417388ebb5302e4af784c3d8d698f790f234ad300d"
+}

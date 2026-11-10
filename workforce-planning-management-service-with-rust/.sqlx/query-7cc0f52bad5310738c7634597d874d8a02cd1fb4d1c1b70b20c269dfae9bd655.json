@@ -1,0 +1,230 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, slug, name, source_url, licence,\n                  attribution, scale_max, scale_labels, imported_on, note, version, redistribution, licence_holder,\n                  licence_reference, licence_checked_on\n             FROM capability_frameworks ORDER BY name, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "slug"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "source_url",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "source_url"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "licence",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "licence"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "attribution",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "attribution"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "scale_max"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "scale_labels",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "scale_labels"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "imported_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "imported_on"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "version",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "version"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "redistribution",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "redistribution"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "licence_holder",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "licence_holder"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "licence_reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "licence_reference"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "licence_checked_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "capability_frameworks",
+            "name": "licence_checked_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "7cc0f52bad5310738c7634597d874d8a02cd1fb4d1c1b70b20c269dfae9bd655"
+}

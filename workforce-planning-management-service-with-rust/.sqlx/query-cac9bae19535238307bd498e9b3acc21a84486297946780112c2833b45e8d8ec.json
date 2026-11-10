@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.pid, s.starts_at AS \"starts_at: chrono::DateTime<chrono::FixedOffset>\",\n                  s.ends_at AS \"ends_at: chrono::DateTime<chrono::FixedOffset>\"\n             FROM shift_assignments a JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "starts_at: chrono::DateTime<chrono::FixedOffset>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "starts_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ends_at: chrono::DateTime<chrono::FixedOffset>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "ends_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "cac9bae19535238307bd498e9b3acc21a84486297946780112c2833b45e8d8ec"
+}

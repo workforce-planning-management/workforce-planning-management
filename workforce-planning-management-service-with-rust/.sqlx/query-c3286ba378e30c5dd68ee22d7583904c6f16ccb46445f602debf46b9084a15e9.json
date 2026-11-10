@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_health_records (worker_pid, requirement_pid, status, recorded_on, next_due, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6)\n         ON CONFLICT (worker_pid, requirement_pid) DO UPDATE\n            SET status = EXCLUDED.status, recorded_on = EXCLUDED.recorded_on, next_due = EXCLUDED.next_due,\n                recorded_by = EXCLUDED.recorded_by, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c3286ba378e30c5dd68ee22d7583904c6f16ccb46445f602debf46b9084a15e9"
+}

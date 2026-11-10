@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM worker_health_records WHERE worker_pid = $1 AND requirement_pid = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e05aa6e87c2a5980703af107c59b55cc136349b1139a0dca8956017f2fc11f6a"
+}

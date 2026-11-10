@@ -18,7 +18,6 @@ use axa::error::ErrorDetail;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{Datelike, Utc};
-use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -42,10 +41,8 @@ use super::resignations::{LogPayload, latest, log_for, own_json, withdraw_for};
 use super::workforce::{LeaveRequestPayload, create_leave_for, decide_leave};
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    leave_entitlements, leave_requests, worker_contact_details, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{worker_contact_details, workers};
 use crate::models::records;
 use crate::rules::contact_details as contact_rules;
 use crate::rules::phone as phone_rules;
@@ -60,12 +57,17 @@ pub(crate) async fn me_worker(ctx: &AppContext, caller: &MaybeAuthUser) -> Resul
             ErrorDetail::new("unauthorized", "sign in to use /api/me"),
         ));
     };
-    let mut rows = workers::Entity::find()
-        .filter(workers::Column::PersonRef.eq(format!("person:{}", claims.sub)))
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let mut rows = sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE person_ref = $1 AND deleted_at IS NULL ORDER BY id"#,
+        format!("person:{}", claims.sub),
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     if let Some(i) = rows.iter().position(|w| w.terminated_on.is_none()) {
         return Ok(rows.swap_remove(i));
     }
@@ -98,10 +100,24 @@ async fn details_of(
     ctx: &AppContext,
     worker_pid: uuid::Uuid,
 ) -> Result<Option<worker_contact_details::Model>> {
-    Ok(worker_contact_details::Entity::find()
-        .filter(worker_contact_details::Column::WorkerPid.eq(worker_pid))
-        .one(&crate::db::orm(ctx))
-        .await?)
+    details_on(&mut *db::pool(ctx).acquire().await?, worker_pid).await
+}
+
+/// A worker's contact details, read on `connection`.
+async fn details_on(
+    connection: &mut sqlx::PgConnection,
+    worker_pid: uuid::Uuid,
+) -> Result<Option<worker_contact_details::Model>> {
+    Ok(sqlx::query_as!(
+        worker_contact_details::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, address_line1, address_line2,
+                  city, region, postcode, address_text, country, phone_mobile, phone_home, personal_email,
+                  phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164, recorded_by, on_behalf
+             FROM worker_contact_details WHERE worker_pid = $1"#,
+        worker_pid,
+    )
+    .fetch_optional(connection)
+    .await?)
 }
 
 /// The derived forms of a worker's two numbers (WPM-D152): ASCII digits, and E.164 read in the address's country, else
@@ -125,15 +141,11 @@ fn phone_forms(
 /// # Errors
 ///
 /// A database error.
-pub(crate) async fn refresh_phone_forms<C: ConnectionTrait>(
-    db: &C,
+pub(crate) async fn refresh_phone_forms(
+    connection: &mut sqlx::PgConnection,
     worker: &workers::Model,
 ) -> Result<()> {
-    let Some(row) = worker_contact_details::Entity::find()
-        .filter(worker_contact_details::Column::WorkerPid.eq(worker.pid))
-        .one(db)
-        .await?
-    else {
+    let Some(row) = details_on(&mut *connection, worker.pid).await? else {
         return Ok(());
     };
     let (mobile, home) = phone_forms(
@@ -145,10 +157,14 @@ pub(crate) async fn refresh_phone_forms<C: ConnectionTrait>(
     if mobile.e164 == row.phone_mobile_e164 && home.e164 == row.phone_home_e164 {
         return Ok(());
     }
-    let mut active: worker_contact_details::ActiveModel = row.into();
-    active.phone_mobile_e164 = ActiveValue::set(mobile.e164);
-    active.phone_home_e164 = ActiveValue::set(home.e164);
-    active.update(db).await?;
+    sqlx::query!(
+        "UPDATE worker_contact_details SET phone_mobile_e164 = $2, phone_home_e164 = $3, updated_at = now() WHERE id = $1",
+        row.id,
+        mobile.e164,
+        home.e164,
+    )
+    .execute(connection)
+    .await?;
     Ok(())
 }
 
@@ -243,60 +259,53 @@ async fn set_my_details(
         .collect();
         contact_rules::validate_country_known(country, &added).map_err(|e| unprocessable(&e))?;
     }
-    let recorded_by = caller.actor().map(ToString::to_string);
     let (mobile, home) = phone_forms(
         details.country.as_deref(),
         details.phone_mobile.as_deref(),
         details.phone_home.as_deref(),
         worker.work_jurisdiction.as_deref(),
     );
-    let existing = details_of(&ctx, worker.pid).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let saved = if let Some(row) = existing {
-        let mut active: worker_contact_details::ActiveModel = row.into();
-        active.address_line1 = ActiveValue::set(details.address_line1);
-        active.address_line2 = ActiveValue::set(details.address_line2);
-        active.city = ActiveValue::set(details.city);
-        active.region = ActiveValue::set(details.region);
-        active.postcode = ActiveValue::set(details.postcode);
-        active.address_text = ActiveValue::set(details.address_text);
-        active.country = ActiveValue::set(details.country);
-        active.phone_mobile = ActiveValue::set(details.phone_mobile);
-        active.phone_home = ActiveValue::set(details.phone_home);
-        active.phone_mobile_digits = ActiveValue::set(mobile.digits);
-        active.phone_mobile_e164 = ActiveValue::set(mobile.e164);
-        active.phone_home_digits = ActiveValue::set(home.digits);
-        active.phone_home_e164 = ActiveValue::set(home.e164);
-        active.personal_email = ActiveValue::set(details.personal_email);
-        active.recorded_by = ActiveValue::set(recorded_by);
-        active.on_behalf = ActiveValue::set(false);
-        active.update(&txn).await?
-    } else {
-        worker_contact_details::ActiveModel {
-            worker_pid: ActiveValue::set(worker.pid),
-            address_line1: ActiveValue::set(details.address_line1),
-            address_line2: ActiveValue::set(details.address_line2),
-            city: ActiveValue::set(details.city),
-            region: ActiveValue::set(details.region),
-            postcode: ActiveValue::set(details.postcode),
-            address_text: ActiveValue::set(details.address_text),
-            country: ActiveValue::set(details.country),
-            phone_mobile: ActiveValue::set(details.phone_mobile),
-            phone_home: ActiveValue::set(details.phone_home),
-            phone_mobile_digits: ActiveValue::set(mobile.digits),
-            phone_mobile_e164: ActiveValue::set(mobile.e164),
-            phone_home_digits: ActiveValue::set(home.digits),
-            phone_home_e164: ActiveValue::set(home.e164),
-            personal_email: ActiveValue::set(details.personal_email),
-            recorded_by: ActiveValue::set(recorded_by),
-            on_behalf: ActiveValue::set(false),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One record per worker, replaced as a whole.
+    let saved = sqlx::query_as!(
+        worker_contact_details::Model,
+        r#"INSERT INTO worker_contact_details
+                  (worker_pid, address_line1, address_line2, city, region, postcode, address_text, country, phone_mobile,
+                   phone_home, phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164, personal_email,
+                   recorded_by, on_behalf)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, false)
+           ON CONFLICT (worker_pid) DO UPDATE
+              SET address_line1 = EXCLUDED.address_line1, address_line2 = EXCLUDED.address_line2, city = EXCLUDED.city,
+                  region = EXCLUDED.region, postcode = EXCLUDED.postcode, address_text = EXCLUDED.address_text,
+                  country = EXCLUDED.country, phone_mobile = EXCLUDED.phone_mobile, phone_home = EXCLUDED.phone_home,
+                  phone_mobile_digits = EXCLUDED.phone_mobile_digits, phone_mobile_e164 = EXCLUDED.phone_mobile_e164,
+                  phone_home_digits = EXCLUDED.phone_home_digits, phone_home_e164 = EXCLUDED.phone_home_e164,
+                  personal_email = EXCLUDED.personal_email, recorded_by = EXCLUDED.recorded_by, on_behalf = false,
+                  updated_at = now()
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, address_line1,
+                     address_line2, city, region, postcode, address_text, country, phone_mobile, phone_home, personal_email,
+                     phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164, recorded_by, on_behalf"#,
+        worker.pid,
+        details.address_line1,
+        details.address_line2,
+        details.city,
+        details.region,
+        details.postcode,
+        details.address_text,
+        details.country,
+        details.phone_mobile,
+        details.phone_home,
+        mobile.digits,
+        mobile.e164,
+        home.digits,
+        home.e164,
+        details.personal_email,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "contact_details_set",
@@ -304,7 +313,7 @@ async fn set_my_details(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "contact_details": details_json(&saved) }))
 }
 
@@ -316,12 +325,12 @@ async fn clear_my_details(
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    worker_contact_details::Entity::delete_by_id(row.id)
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM worker_contact_details WHERE id = $1", row.id)
+        .execute(&mut *tx)
         .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "contact_details_cleared",
@@ -329,7 +338,7 @@ async fn clear_my_details(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty()
 }
 
@@ -350,8 +359,8 @@ async fn get_worker_details(
     .map_err(record_rejection)?;
     let row = details_of(&ctx, worker.pid).await?;
     if row.is_some() && auth::acting_for_other(&caller, &worker.person_ref) {
-        Audit::record(
-            &crate::db::orm(&ctx),
+        db::audit(
+            &mut *db::pool(&ctx).acquire().await?,
             "worker",
             worker.pid,
             "contact_details_read",
@@ -361,6 +370,13 @@ async fn get_worker_details(
         .await?;
     }
     format::json(json!({ "contact_details": row.as_ref().map(details_json) }))
+}
+
+/// A worker a telephone search found.
+struct Found {
+    pid: uuid::Uuid,
+    worker_number: String,
+    display_name: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -394,22 +410,22 @@ async fn search_by_phone(
             phone_rules::SEARCH_MIN
         )));
     }
-    let members: std::collections::HashMap<uuid::Uuid, workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(q.organization.clone()))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect();
-    let rows = worker_contact_details::Entity::find()
-        .filter(worker_contact_details::Column::WorkerPid.is_in(members.keys().copied()))
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    // Each live worker of the organization with contact details: who they are, and the stored forms of their numbers.
+    let rows = sqlx::query!(
+        "SELECT w.pid, w.worker_number, w.display_name, d.phone_mobile_digits, d.phone_mobile_e164,
+                d.phone_home_digits, d.phone_home_e164
+           FROM worker_contact_details d JOIN workers w ON w.pid = d.worker_pid
+          WHERE w.organization_ref = $1 AND w.deleted_at IS NULL",
+        q.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut found = Vec::new();
     for details in rows {
-        let Some(worker) = members.get(&details.worker_pid).cloned() else {
-            continue;
+        let worker = Found {
+            pid: details.pid,
+            worker_number: details.worker_number.clone(),
+            display_name: details.display_name.clone(),
         };
         let matched: Vec<&str> = [
             (
@@ -434,10 +450,10 @@ async fn search_by_phone(
         }
     }
     found.sort_by(|a, b| a.0.worker_number.cmp(&b.0.worker_number));
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     for (worker, _) in &found {
-        Audit::record(
-            &txn,
+        db::audit(
+            &mut tx,
             "worker",
             worker.pid,
             "contact_details_found",
@@ -446,7 +462,7 @@ async fn search_by_phone(
         )
         .await?;
     }
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
         "workers": found.iter().map(|(w, matched)| json!({
             "pid": w.pid,
@@ -530,25 +546,28 @@ async fn my_time_off(
     let worker = me_worker(&ctx, &caller).await?;
     let today = Utc::now().date_naive();
     let year = query.year.unwrap_or_else(|| today.year());
-    let entitlements: Vec<time_rules::Entitlement> = leave_entitlements::Entity::find()
-        .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|e| time_rules::Entitlement {
-            kind: e.kind,
-            year: e.year,
-            entitled: e.entitled_days,
-            used: e.used_days,
-        })
-        .collect();
-    let rows = leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .order_by_asc(leave_requests::Column::StartOn)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let entitlements: Vec<time_rules::Entitlement> = sqlx::query!(
+        "SELECT kind, year, entitled_days, used_days FROM leave_entitlements
+          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|e| time_rules::Entitlement {
+        kind: e.kind,
+        year: e.year,
+        entitled: e.entitled_days,
+        used: e.used_days,
+    })
+    .collect();
+    let rows = sqlx::query!(
+        "SELECT pid, kind, start_on, end_on, days, status, reason FROM leave_requests
+          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY start_on, id",
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let requests: Vec<time_rules::Request> = rows
         .iter()
         .map(|r| time_rules::Request {
@@ -632,13 +651,14 @@ async fn cancel_my_leave(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
-    let request = leave_requests::Entity::find()
-        .filter(leave_requests::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let request = sqlx::query!(
+        "SELECT status, start_on FROM leave_requests WHERE pid = $1 AND worker_pid = $2 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+        worker.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     time_rules::can_worker_cancel(&request.status, request.start_on, Utc::now().date_naive())
         .map_err(|e| unprocessable(&e))?;
     decide_leave(&ctx, &caller, &pid, "cancelled").await

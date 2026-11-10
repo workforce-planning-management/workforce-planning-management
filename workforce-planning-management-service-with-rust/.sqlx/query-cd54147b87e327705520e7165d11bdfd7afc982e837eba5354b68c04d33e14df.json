@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entitled_days, used_days FROM leave_entitlements\n          WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entitled_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "entitled_days"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "used_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "leave_entitlements",
+            "name": "used_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "cd54147b87e327705520e7165d11bdfd7afc982e837eba5354b68c04d33e14df"
+}

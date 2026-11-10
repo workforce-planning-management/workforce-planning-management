@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, band FROM worker_pay_positions WHERE worker_pid = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_pay_positions",
+            "name": "band"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "fd3f46d13ceaefae60a7b5b7fd568719d920afb181dd279f97c7b8ee9a5a5e60"
+}

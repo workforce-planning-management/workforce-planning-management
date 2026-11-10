@@ -2536,3 +2536,31 @@ async fn capability_counts_targets_plans_and_completed_sittings() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_group_is_renamed_recast_and_redescribed() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let make = |name: &str| request.post("/api/groups").json(&json!({ "organization_ref": org, "name": name, "kind": "interest", "description": "old" }));
+        let group: Value = make("Book club").await.json();
+        let other: Value = make("Film club").await.json();
+        let (group, other) = (group["pid"].as_str().unwrap(), other["pid"].as_str().unwrap());
+        let rename = |pid: &str, name: &str| {
+            request.put(&format!("/api/groups/{pid}")).json(&json!({ "name": name, "kind": "practice", "description": "new" }))
+        };
+        let answer: Value = rename(group, "  Reading circle ").await.json();
+        assert_eq!(answer["pid"], group);
+        let listed: Value = request.get(&format!("/api/groups?organization_ref={org}")).await.json();
+        let shown = listed.as_array().unwrap().iter().find(|g| g["pid"] == group).unwrap().clone();
+        assert_eq!((&shown["name"], &shown["kind"], &shown["description"]), (&json!("Reading circle"), &json!("practice"), &json!("new")));
+        assert_eq!(rename(group, "film CLUB").await.status_code(), 422, "another group's name, ignoring case");
+        rename(group, "READING circle").await.assert_status_ok();
+        let again: Value = request.get(&format!("/api/groups?organization_ref={org}")).await.json();
+        assert_eq!(again.as_array().unwrap().iter().find(|g| g["pid"] == group).unwrap()["name"], "READING circle", "its own name, recased");
+        let untouched = again.as_array().unwrap().iter().find(|g| g["pid"] == other).unwrap().clone();
+        assert_eq!((&untouched["name"], &untouched["kind"], &untouched["description"]), (&json!("Film club"), &json!("interest"), &json!("old")));
+    })
+    .await;
+}

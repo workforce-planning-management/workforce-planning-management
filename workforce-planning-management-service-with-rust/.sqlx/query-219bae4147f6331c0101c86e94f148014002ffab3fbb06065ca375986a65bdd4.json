@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT SUM(minutes)::bigint FROM time_entries\n              WHERE deleted_at IS NULL AND worker_pid = $1 AND worked_on > $2 AND worked_on <= $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "sum",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "219bae4147f6331c0101c86e94f148014002ffab3fbb06065ca375986a65bdd4"
+}

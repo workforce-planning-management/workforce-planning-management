@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at AS \"deleted_at: chrono::DateTime<chrono::FixedOffset>\"\n             FROM worker_skills WHERE skill_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "proficiency"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "target",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "target"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "assessed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "assessed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "deleted_at: chrono::DateTime<chrono::FixedOffset>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "fe914fa9a9cdfb0568446ed466a5b6dc06c3f9b0db20dcaa5b6bd5f68355a5e5"
+}
