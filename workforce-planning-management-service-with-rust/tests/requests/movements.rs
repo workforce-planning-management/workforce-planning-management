@@ -228,6 +228,15 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
         request.post(&format!("/api/movements/{mv}/complete")).await.assert_status_ok();
         let done: Value = request.get(&format!("/api/movements/{mv}")).await.json();
         assert_eq!(done["status"], "completed");
+        assert!(done["completed_at"].is_string(), "completing stamps the time: {done}");
+        let actions: Vec<String> = sqlx::query_scalar(
+            "SELECT action FROM audit_logs WHERE entity_pid = $1::uuid AND action LIKE 'leaver_%' ORDER BY id",
+        )
+        .bind(l)
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert_eq!(actions, ["leaver_opened", "leaver_completed"], "audited by kind");
         // A completed record takes no more changes.
         assert_eq!(
             request.post(&handover).json(&json!({ "kind": "backup", "subject_pid": uuid::Uuid::new_v4() })).await.status_code(),
@@ -252,7 +261,7 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_cancelled() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let joiner = seed_worker!(&request, &org, format!("MC-{tag}-J"), None).await;
@@ -352,6 +361,31 @@ async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_ca
             .await
             .json();
         assert_eq!(cancelled["status"], "cancelled");
+        let actions: Vec<String> = sqlx::query_scalar(
+            "SELECT action FROM audit_logs WHERE entity_pid = $1::uuid ORDER BY id",
+        )
+        .bind(&joiner)
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        let movement_actions: Vec<&str> = actions
+            .iter()
+            .map(String::as_str)
+            .filter(|a| a.starts_with("joiner_") || a.starts_with("movement_item_"))
+            .collect();
+        assert_eq!(
+            movement_actions,
+            [
+                "joiner_opened",
+                "movement_item_added",
+                "movement_item_assigned",
+                "movement_item_assigned",
+                "movement_item_done",
+                "movement_item_reopened",
+                "joiner_cancelled",
+            ],
+            "each change audited once, by kind; a refused one not at all"
+        );
         assert_eq!(
             request
                 .post(&items_url)

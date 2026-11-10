@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE movement_items SET done_on = $2, done_by = $3, skipped_reason = NULL WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0d854e00d6e89227254e4535cdded52ddf067e3bd3684e08cb8896e55ec59c42"
+}

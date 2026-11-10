@@ -13,9 +13,6 @@ use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-// `accept` opens the leaver record through `movements::open_in`, a SeaORM transaction, so it stays on SeaORM until
-// `movements` moves (WPM-T466).
-use sea_orm::{ActiveValue, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -24,8 +21,6 @@ use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::db;
 use crate::models::_entities::{resignations, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
 use crate::models::{memberships, records};
 use crate::rules::pulse::K_ANONYMITY;
 use crate::rules::resignation::{self as rules, Action, Status};
@@ -262,9 +257,9 @@ async fn accept(
     let to = rules::next(status_of(&row)?, Action::Accept).map_err(|e| unprocessable(&e))?;
     let agreed = payload.agreed_last_day.unwrap_or(row.proposed_last_day);
     rules::validate_agreed(row.logged_on, agreed).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let movement = open_in(
-        &txn,
+        &mut tx,
         &caller,
         &worker,
         MovementPayload {
@@ -275,23 +270,31 @@ async fn accept(
         },
     )
     .await?;
-    let mut active: resignations::ActiveModel = row.clone().into();
-    active.status = ActiveValue::set(to.as_str().to_string());
-    active.agreed_last_day = ActiveValue::set(Some(agreed));
-    active.movement_pid = ActiveValue::set(Some(movement.pid));
-    active.decided_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    active.decided_at = ActiveValue::set(Some(Utc::now().into()));
-    let saved = active.update(&txn).await?;
-    Notification::push(
-        &txn,
+    let saved = sqlx::query_as!(
+        resignations::Model,
+        r#"UPDATE resignations SET status = $2, agreed_last_day = $3, movement_pid = $4, decided_by = $5, decided_at = $6
+            WHERE id = $1
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, logged_on,
+                     proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _""#,
+        row.id,
+        to.as_str(),
+        agreed,
+        movement.pid,
+        caller.actor(),
+        Utc::now().fixed_offset(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::notify(
+        &mut tx,
         worker.pid,
         "resignation_decided",
         "Your resignation was accepted.",
         json!({ "resignation_pid": saved.pid }),
     )
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "resignation_accepted",
@@ -299,7 +302,7 @@ async fn accept(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "resignation": shared_json(&saved), "movement_pid": movement.pid }))
 }
 
