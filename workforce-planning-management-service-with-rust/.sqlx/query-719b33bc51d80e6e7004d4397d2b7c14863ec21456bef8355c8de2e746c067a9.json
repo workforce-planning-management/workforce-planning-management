@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO goals (pid, review_pid, title, weight_percent, status) VALUES ($1, $2, $3, $4, 'open')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "719b33bc51d80e6e7004d4397d2b7c14863ec21456bef8355c8de2e746c067a9"
+}

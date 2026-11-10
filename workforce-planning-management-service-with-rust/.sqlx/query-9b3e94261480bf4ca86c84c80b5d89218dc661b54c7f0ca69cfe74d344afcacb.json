@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO review_cycles (pid, name, period_start, period_end, status) VALUES ($1, $2, $3, $4, 'open')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9b3e94261480bf4ca86c84c80b5d89218dc661b54c7f0ca69cfe74d344afcacb"
+}

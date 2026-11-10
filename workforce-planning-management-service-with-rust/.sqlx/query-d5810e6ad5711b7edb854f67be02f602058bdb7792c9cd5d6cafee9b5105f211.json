@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, pid, readiness FROM succession_candidates WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "readiness",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "readiness"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d5810e6ad5711b7edb854f67be02f602058bdb7792c9cd5d6cafee9b5105f211"
+}

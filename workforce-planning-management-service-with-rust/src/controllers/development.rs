@@ -6,21 +6,131 @@
 use super::row_json;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use sea_orm::{PaginatorTrait, QueryOrder, QuerySelect, TransactionTrait};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db;
 use crate::models::_entities::{
     feedback_entries, goals, review_cycles, reviews, succession_candidates, succession_plans,
-    training_enrollments,
+    training_enrollments, worker_goals,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::{lifecycle, tokens};
 use crate::streaming;
 use crate::validation::Problems;
+
+/// The live review cycle with this pid, else a 404.
+async fn find_review_cycle(ctx: &AppContext, pid: Uuid) -> Result<review_cycles::Model> {
+    sqlx::query_as!(
+        review_cycles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, period_start, period_end, status,
+                  deleted_at AS "deleted_at: _"
+             FROM review_cycles WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live performance review with this pid, else a 404. A PADR answers only in `padr.rs`.
+async fn find_review(ctx: &AppContext, pid: Uuid) -> Result<reviews::Model> {
+    sqlx::query_as!(
+        reviews::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
+                  reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _"
+             FROM reviews WHERE pid = $1 AND kind = 'performance' AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live training enrolment with this pid, else a 404.
+async fn find_training_enrollment(
+    ctx: &AppContext,
+    pid: Uuid,
+) -> Result<training_enrollments::Model> {
+    sqlx::query_as!(
+        training_enrollments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
+                  completed_on, certificate_expires_on, deleted_at AS "deleted_at: _"
+             FROM training_enrollments WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The live succession plan with this pid, else a 404.
+async fn find_succession_plan(ctx: &AppContext, pid: Uuid) -> Result<succession_plans::Model> {
+    sqlx::query_as!(
+        succession_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_title, department, criticality,
+                  incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS "deleted_at: _"
+             FROM succession_plans WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// Freeze the goals of a review as it is shared (WPM-D165): each goal in the cycle's period gets a snapshot beside its outcomes,
+/// in the transaction that shares it. The `sqlx` twin of `individual_goals::freeze_review_goals`, which is still `SeaORM`.
+async fn freeze_review_goals(
+    connection: &mut sqlx::PgConnection,
+    review: &reviews::Model,
+) -> Result<()> {
+    let Some(cycle_pid) = review.cycle_pid else {
+        return Ok(());
+    };
+    let Some(cycle) = sqlx::query!(
+        "SELECT period_start, period_end FROM review_cycles WHERE pid = $1 LIMIT 1",
+        cycle_pid,
+    )
+    .fetch_optional(&mut *connection)
+    .await?
+    else {
+        return Ok(());
+    };
+    let goals = sqlx::query_as!(
+        worker_goals::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, organization_ref, title,
+                  description, period_start, period_end, status, proposed_by, agreed_on, skill_pid, skill_target_level,
+                  plan_item_pid, aligns_to, deleted_at AS "deleted_at: _"
+             FROM worker_goals WHERE worker_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        review.worker_pid,
+    )
+    .fetch_all(&mut *connection)
+    .await?;
+    for goal in goals.into_iter().filter(|g| {
+        crate::rules::individual_goals::overlaps(
+            (g.period_start, g.period_end),
+            (cycle.period_start, cycle.period_end),
+        )
+    }) {
+        let snapshot = super::padr::goal_snapshot(&mut *connection, &goal).await?;
+        sqlx::query!(
+            "INSERT INTO review_goal_outcomes (pid, review_pid, goal_pid, worker_pid, snapshot)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (review_pid, goal_pid) DO UPDATE SET snapshot = EXCLUDED.snapshot, updated_at = now()",
+            Uuid::new_v4(),
+            review.pid,
+            goal.pid,
+            goal.worker_pid,
+            snapshot,
+        )
+        .execute(&mut *connection)
+        .await?;
+    }
+    Ok(())
+}
 
 /// `POST /api/review-cycles` body.
 #[derive(Debug, Deserialize)]
@@ -166,42 +276,44 @@ async fn create_cycle(
         problems.push("period_end is before period_start".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = review_cycles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        period_start: ActiveValue::set(payload.period_start),
-        period_end: ActiveValue::set(payload.period_end),
-        status: ActiveValue::set("open".to_string()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO review_cycles (pid, name, period_start, period_end, status) VALUES ($1, $2, $3, $4, 'open')",
+        pid,
+        payload.name,
+        payload.period_start,
+        payload.period_end,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "review_cycle",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: pid.to_string(),
     })
 }
 
 /// `GET /api/review-cycles`.
 #[debug_handler]
 async fn list_cycles(State(ctx): State<AppContext>) -> Result<Response> {
-    let rows = review_cycles::Entity::find()
-        .filter(review_cycles::Column::DeletedAt.is_null())
-        .order_by_asc(review_cycles::Column::Id)
-        .limit(200)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        review_cycles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, period_start, period_end, status,
+                  deleted_at AS "deleted_at: _"
+             FROM review_cycles WHERE deleted_at IS NULL
+            ORDER BY id LIMIT 200"#,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows)
 }
 
@@ -213,8 +325,7 @@ async fn create_review(
     Path(pid): Path<String>,
     Json(payload): Json<ReviewPayload>,
 ) -> Result<Response> {
-    let cycle =
-        records::find_review_cycle(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let cycle = find_review_cycle(&ctx, records::parse_pid(&pid)?).await?;
     if cycle.status != "open" {
         return Err(unprocessable("review cycle is closed"));
     }
@@ -226,25 +337,30 @@ async fn create_review(
         &payload.reviewer_ref,
     );
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = reviews::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        cycle_pid: ActiveValue::set(Some(cycle.pid)),
-        kind: ActiveValue::set("performance".to_string()),
-        worker_pid: ActiveValue::set(worker.pid),
-        reviewer_ref: ActiveValue::set(payload.reviewer_ref.clone()),
-        status: ActiveValue::set("draft".to_string()),
-        rating: ActiveValue::set(None),
-        content: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let review_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO reviews (pid, cycle_pid, kind, worker_pid, reviewer_ref, status)
+         VALUES ($1, $2, 'performance', $3, $4, 'draft')",
+        review_pid,
+        cycle.pid,
+        worker.pid,
+        payload.reviewer_ref,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "review", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "review",
+        review_pid,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: review_pid.to_string(),
     })
 }
 
@@ -258,13 +374,16 @@ async fn list_reviews(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let rows = reviews::Entity::find()
-        .filter(reviews::Column::WorkerPid.eq(worker.pid))
-        .filter(reviews::Column::Kind.eq("performance"))
-        .filter(reviews::Column::DeletedAt.is_null())
-        .order_by_asc(reviews::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        reviews::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
+                  reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _"
+             FROM reviews WHERE worker_pid = $1 AND kind = 'performance' AND deleted_at IS NULL
+            ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut any_shared = false;
     let rows: Vec<reviews::Model> = rows
         .into_iter()
@@ -279,8 +398,8 @@ async fn list_reviews(
         })
         .collect();
     if any_shared {
-        Audit::record(
-            &crate::db::orm(&ctx),
+        db::audit(
+            &mut *db::pool(&ctx).acquire().await?,
             "worker",
             worker.pid,
             "review_content_read",
@@ -300,7 +419,7 @@ async fn update_review(
     Path(pid): Path<String>,
     Json(payload): Json<ReviewUpdate>,
 ) -> Result<Response> {
-    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
     if review.status != "draft" {
         return Err(unprocessable(&format!(
             "review is {} — only drafts are editable",
@@ -315,17 +434,21 @@ async fn update_review(
     }
     problems.cap_opt("content", payload.content.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: reviews::ActiveModel = review.into();
-    if let Some(rating) = payload.rating {
-        active.rating = ActiveValue::set(Some(rating));
-    }
-    if let Some(content) = payload.content {
-        active.content = ActiveValue::set(Some(content));
-    }
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "review", row.pid, "updated", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        reviews::Model,
+        r#"UPDATE reviews SET rating = COALESCE($2, rating), content = COALESCE($3, content), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
+                  reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _""#,
+        review.id,
+        payload.rating,
+        payload.content,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "review", row.pid, "updated", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -341,33 +464,69 @@ async fn review_status(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::REVIEW_STATUSES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
     lifecycle::check("review", lifecycle::REVIEW, &review.status, &payload.to)
         .map_err(|e| unprocessable(&e))?;
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let from = review.status.clone();
-    let mut active: reviews::ActiveModel = review.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    let row = active.update(&txn).await?;
+    let row = sqlx::query_as!(
+        reviews::Model,
+        r#"UPDATE reviews SET status = $2, updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
+                  reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _""#,
+        review.id,
+        payload.to,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     if row.status == "shared" {
-        super::individual_goals::freeze_review_goals(&txn, &row).await?;
+        freeze_review_goals(&mut tx, &row).await?;
+    }
+    let snapshot = Some(serde_json::json!({ "from": from, "to": payload.to }));
+    // One literal action per kind, so the audit guard can read each (WPM-D107).
+    match payload.to.as_str() {
+        "submitted" => {
+            db::audit(
+                &mut tx,
+                "review",
+                row.pid,
+                "review_submitted",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
+        "shared" => {
+            db::audit(
+                &mut tx,
+                "review",
+                row.pid,
+                "review_shared",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
+        _ => {
+            db::audit(
+                &mut tx,
+                "review",
+                row.pid,
+                "review_status_changed",
+                caller.actor(),
+                snapshot,
+            )
+            .await?;
+        }
     }
     let kind = match payload.to.as_str() {
         "submitted" => "review_submitted",
         "shared" => "review_shared",
         _ => "review_status_changed",
     };
-    Audit::record(
-        &txn,
-        "review",
-        row.pid,
-        kind,
-        caller.actor(),
-        Some(serde_json::json!({ "from": from, "to": payload.to })),
-    )
-    .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "review",
         kind,
         &row.pid.to_string(),
@@ -376,7 +535,7 @@ async fn review_status(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -388,7 +547,7 @@ async fn create_goal(
     Path(pid): Path<String>,
     Json(payload): Json<GoalPayload>,
 ) -> Result<Response> {
-    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("title", &payload.title);
     if !(1..=100).contains(&payload.weight_percent) {
@@ -398,22 +557,21 @@ async fn create_goal(
         ));
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = goals::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        review_pid: ActiveValue::set(review.pid),
-        title: ActiveValue::set(payload.title.clone()),
-        weight_percent: ActiveValue::set(payload.weight_percent),
-        status: ActiveValue::set("open".to_string()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let goal_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO goals (pid, review_pid, title, weight_percent, status) VALUES ($1, $2, $3, $4, 'open')",
+        goal_pid,
+        review.pid,
+        payload.title,
+        payload.weight_percent,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "goal", row.pid, "created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "goal", goal_pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: goal_pid.to_string(),
     })
 }
 
@@ -429,18 +587,21 @@ async fn update_goal(
     problems.require_token("status", tokens::GOAL_STATUSES, &payload.status);
     ensure_valid(&problems.into_vec())?;
     let pid = records::parse_pid(&pid)?;
-    let goal = goals::Entity::find()
-        .filter(goals::Column::Pid.eq(pid))
-        .filter(goals::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: goals::ActiveModel = goal.into();
-    active.status = ActiveValue::set(payload.status.clone());
-    let row = active.update(&txn).await?;
-    Audit::record(&txn, "goal", row.pid, "updated", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        goals::Model,
+        r#"UPDATE goals SET status = $2, updated_at = now()
+            WHERE pid = $1 AND deleted_at IS NULL
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, title, weight_percent,
+                  status, deleted_at AS "deleted_at: _""#,
+        pid,
+        payload.status,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(&mut tx, "goal", row.pid, "updated", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -451,23 +612,31 @@ async fn review_detail(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
-    let goal_rows = goals::Entity::find()
-        .filter(goals::Column::ReviewPid.eq(review.pid))
-        .filter(goals::Column::DeletedAt.is_null())
-        .order_by_asc(goals::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let feedback = feedback_entries::Entity::find()
-        .filter(feedback_entries::Column::ReviewPid.eq(review.pid))
-        .filter(feedback_entries::Column::DeletedAt.is_null())
-        .order_by_asc(feedback_entries::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
+    let goal_rows = sqlx::query_as!(
+        goals::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, title, weight_percent,
+                  status, deleted_at AS "deleted_at: _"
+             FROM goals WHERE review_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        review.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let feedback = sqlx::query_as!(
+        feedback_entries::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, author_ref, content,
+                  deleted_at AS "deleted_at: _"
+             FROM feedback_entries WHERE review_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        review.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // Reading a review with content is a sensitive read (WPM-D7).
     if review.content.is_some() {
-        Audit::record(
-            &crate::db::orm(&ctx),
+        db::audit(
+            &mut *db::pool(&ctx).acquire().await?,
             "review",
             review.pid,
             "review_content_read",
@@ -489,7 +658,7 @@ async fn create_feedback(
     Path(pid): Path<String>,
     Json(payload): Json<FeedbackPayload>,
 ) -> Result<Response> {
-    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_ref(
         "author_ref",
@@ -498,29 +667,29 @@ async fn create_feedback(
     );
     problems.require_text("content", &payload.content);
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = feedback_entries::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        review_pid: ActiveValue::set(review.pid),
-        author_ref: ActiveValue::set(payload.author_ref.clone()),
-        content: ActiveValue::set(payload.content.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let entry_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO feedback_entries (pid, review_pid, author_ref, content) VALUES ($1, $2, $3, $4)",
+        entry_pid,
+        review.pid,
+        payload.author_ref,
+        payload.content,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "feedback_entry",
-        row.pid,
+        entry_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: entry_pid.to_string(),
     })
 }
 
@@ -546,31 +715,28 @@ async fn create_training(
             ));
         }
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = training_enrollments::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        course_ref: ActiveValue::set(payload.course_ref.clone()),
-        status: ActiveValue::set("enrolled".to_string()),
-        completed_on: ActiveValue::set(None),
-        certificate_expires_on: ActiveValue::set(None),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let enrollment_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status) VALUES ($1, $2, $3, 'enrolled')",
+        enrollment_pid,
+        worker.pid,
+        payload.course_ref,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "training_enrollment",
-        row.pid,
+        enrollment_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: enrollment_pid.to_string(),
     })
 }
 
@@ -578,12 +744,16 @@ async fn create_training(
 #[debug_handler]
 async fn list_training(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let rows = training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .order_by_asc(training_enrollments::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        training_enrollments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
+                  completed_on, certificate_expires_on, deleted_at AS "deleted_at: _"
+             FROM training_enrollments WHERE worker_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // each row as it is, plus the link to its course in the learning system (WPM-R138)
     let rows: Vec<serde_json::Value> = rows
         .into_iter()
@@ -610,34 +780,48 @@ async fn update_training(
     let mut problems = Problems::new();
     problems.require_token("status", tokens::TRAINING_STATUSES, &payload.status);
     ensure_valid(&problems.into_vec())?;
-    let enrollment =
-        records::find_training_enrollment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: training_enrollments::ActiveModel = enrollment.into();
-    active.status = ActiveValue::set(payload.status.clone());
-    if let Some(done) = payload.completed_on {
-        active.completed_on = ActiveValue::set(Some(done));
-    }
-    if let Some(expiry) = payload.certificate_expires_on {
-        active.certificate_expires_on = ActiveValue::set(Some(expiry));
-    }
-    let row = active.update(&txn).await?;
+    let enrollment = find_training_enrollment(&ctx, records::parse_pid(&pid)?).await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        training_enrollments::Model,
+        r#"UPDATE training_enrollments
+              SET status = $2, completed_on = COALESCE($3, completed_on),
+                  certificate_expires_on = COALESCE($4, certificate_expires_on), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
+                  completed_on, certificate_expires_on, deleted_at AS "deleted_at: _""#,
+        enrollment.id,
+        payload.status,
+        payload.completed_on,
+        payload.certificate_expires_on,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     let kind = if payload.status == "completed" {
+        db::audit(
+            &mut tx,
+            "training_enrollment",
+            row.pid,
+            "training_completed",
+            caller.actor(),
+            None,
+        )
+        .await?;
         "training_completed"
     } else {
+        db::audit(
+            &mut tx,
+            "training_enrollment",
+            row.pid,
+            "updated",
+            caller.actor(),
+            None,
+        )
+        .await?;
         "updated"
     };
-    Audit::record(
-        &txn,
-        "training_enrollment",
-        row.pid,
-        kind,
-        caller.actor(),
-        None,
-    )
-    .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "training_enrollment",
         kind,
         &row.pid.to_string(),
@@ -646,7 +830,7 @@ async fn update_training(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -669,14 +853,17 @@ async fn expiring_training(
 ) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
     let horizon = today + chrono::Duration::days(params.within_days.clamp(0, 3650));
-    let rows = training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .filter(training_enrollments::Column::CertificateExpiresOn.is_not_null())
-        .filter(training_enrollments::Column::CertificateExpiresOn.lte(horizon))
-        .order_by_asc(training_enrollments::Column::CertificateExpiresOn)
-        .limit(500)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        training_enrollments::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
+                  completed_on, certificate_expires_on, deleted_at AS "deleted_at: _"
+             FROM training_enrollments
+            WHERE deleted_at IS NULL AND certificate_expires_on IS NOT NULL AND certificate_expires_on <= $1
+            ORDER BY certificate_expires_on, id LIMIT 500"#,
+        horizon,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({ "as_of": today, "horizon": horizon, "expiring": rows }))
 }
 
@@ -705,32 +892,34 @@ async fn create_succession(
     if let Some(incumbent) = payload.incumbent_pid {
         records::worker_by_pid(&ctx, incumbent).await?;
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = succession_plans::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        role_title: ActiveValue::set(payload.role_title.clone()),
-        department: ActiveValue::set(payload.department.clone()),
-        criticality: ActiveValue::set(payload.criticality),
-        incumbent_pid: ActiveValue::set(payload.incumbent_pid),
-        risk_of_loss: ActiveValue::set(payload.risk_of_loss.clone()),
-        vacancy_expected_on: ActiveValue::set(payload.vacancy_expected_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let plan_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO succession_plans (pid, role_title, department, criticality, incumbent_pid, risk_of_loss,
+                                       vacancy_expected_on)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        plan_pid,
+        payload.role_title,
+        payload.department,
+        payload.criticality,
+        payload.incumbent_pid,
+        payload.risk_of_loss,
+        payload.vacancy_expected_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "succession_plan",
-        row.pid,
+        plan_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: plan_pid.to_string(),
     })
 }
 
@@ -738,25 +927,39 @@ async fn create_succession(
 /// audited (high-sensitivity, WPM-R12).
 #[debug_handler]
 async fn list_succession(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let plans = succession_plans::Entity::find()
-        .filter(succession_plans::Column::DeletedAt.is_null())
-        .order_by_asc(succession_plans::Column::Id)
-        .limit(500)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let plans = sqlx::query_as!(
+        succession_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_title, department, criticality,
+                  incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS "deleted_at: _"
+             FROM succession_plans WHERE deleted_at IS NULL
+            ORDER BY id LIMIT 500"#,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let plan_pids: Vec<Uuid> = plans.iter().map(|p| p.pid).collect();
+    let mut bench: std::collections::HashMap<Uuid, Vec<succession_candidates::Model>> =
+        std::collections::HashMap::new();
+    for candidate in sqlx::query_as!(
+        succession_candidates::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, readiness, rank,
+                  deleted_at AS "deleted_at: _"
+             FROM succession_candidates WHERE plan_pid = ANY($1) AND deleted_at IS NULL
+            ORDER BY rank, id"#,
+        &plan_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        bench.entry(candidate.plan_pid).or_default().push(candidate);
+    }
     let mut out = Vec::with_capacity(plans.len());
     for plan in plans {
-        let candidates = succession_candidates::Entity::find()
-            .filter(succession_candidates::Column::PlanPid.eq(plan.pid))
-            .filter(succession_candidates::Column::DeletedAt.is_null())
-            .order_by_asc(succession_candidates::Column::Rank)
-            .all(&crate::db::orm(&ctx))
-            .await?;
+        let candidates = bench.remove(&plan.pid).unwrap_or_default();
         out.push(serde_json::json!({ "plan": plan, "candidates": candidates }));
     }
     if let Some(actor) = caller.actor() {
-        Audit::record(
-            &crate::db::orm(&ctx),
+        db::audit(
+            &mut *db::pool(&ctx).acquire().await?,
             "succession_plan",
             Uuid::nil(),
             "succession_read",
@@ -776,8 +979,7 @@ async fn add_succession_candidate(
     Path(pid): Path<String>,
     Json(payload): Json<SuccessionCandidatePayload>,
 ) -> Result<Response> {
-    let plan =
-        records::find_succession_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let plan = find_succession_plan(&ctx, records::parse_pid(&pid)?).await?;
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let mut problems = Problems::new();
     problems.require_token("readiness", tokens::READINESS, &payload.readiness);
@@ -785,30 +987,30 @@ async fn add_succession_candidate(
         problems.push("rank must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = succession_candidates::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        plan_pid: ActiveValue::set(plan.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        readiness: ActiveValue::set(payload.readiness.clone()),
-        rank: ActiveValue::set(payload.rank),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let candidate_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO succession_candidates (pid, plan_pid, worker_pid, readiness, rank) VALUES ($1, $2, $3, $4, $5)",
+        candidate_pid,
+        plan.pid,
+        worker.pid,
+        payload.readiness,
+        payload.rank,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "succession_candidate",
-        row.pid,
+        candidate_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(PidRef {
-        pid: row.pid.to_string(),
+        pid: candidate_pid.to_string(),
     })
 }
 
@@ -816,23 +1018,18 @@ async fn add_succession_candidate(
 /// with no `ready_now` candidate (WPM-R12).
 #[debug_handler]
 async fn succession_gaps(State(ctx): State<AppContext>) -> Result<Response> {
-    let plans = succession_plans::Entity::find()
-        .filter(succession_plans::Column::DeletedAt.is_null())
-        .filter(succession_plans::Column::Criticality.gte(4))
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let mut gaps = Vec::new();
-    for plan in plans {
-        let ready_now = succession_candidates::Entity::find()
-            .filter(succession_candidates::Column::PlanPid.eq(plan.pid))
-            .filter(succession_candidates::Column::DeletedAt.is_null())
-            .filter(succession_candidates::Column::Readiness.eq("ready_now"))
-            .count(&crate::db::orm(&ctx))
-            .await?;
-        if ready_now == 0 {
-            gaps.push(plan);
-        }
-    }
+    let gaps = sqlx::query_as!(
+        succession_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_title, department, criticality,
+                  incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS "deleted_at: _"
+             FROM succession_plans p
+            WHERE deleted_at IS NULL AND criticality >= 4
+              AND NOT EXISTS (SELECT 1 FROM succession_candidates c
+                               WHERE c.plan_pid = p.pid AND c.deleted_at IS NULL AND c.readiness = 'ready_now')
+            ORDER BY id"#,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(serde_json::json!({ "gaps": gaps }))
 }
 
@@ -848,8 +1045,7 @@ async fn update_succession(
     Path(pid): Path<String>,
     Json(payload): Json<SuccessionUpdate>,
 ) -> Result<Response> {
-    let plan =
-        records::find_succession_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let plan = find_succession_plan(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if let Some(criticality) = payload.criticality
         && !(1..=5).contains(&criticality)
@@ -873,23 +1069,26 @@ async fn update_succession(
         "vacancy_expected_on": plan.vacancy_expected_on,
         "incumbent_pid": plan.incumbent_pid,
     });
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: succession_plans::ActiveModel = plan.into();
-    if let Some(criticality) = payload.criticality {
-        active.criticality = ActiveValue::set(criticality);
-    }
-    if payload.risk_of_loss.is_some() {
-        active.risk_of_loss = ActiveValue::set(payload.risk_of_loss.clone());
-    }
-    if payload.vacancy_expected_on.is_some() {
-        active.vacancy_expected_on = ActiveValue::set(payload.vacancy_expected_on);
-    }
-    if payload.incumbent_pid.is_some() {
-        active.incumbent_pid = ActiveValue::set(payload.incumbent_pid);
-    }
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        succession_plans::Model,
+        r#"UPDATE succession_plans
+              SET criticality = COALESCE($2, criticality), risk_of_loss = COALESCE($3, risk_of_loss),
+                  vacancy_expected_on = COALESCE($4, vacancy_expected_on), incumbent_pid = COALESCE($5, incumbent_pid),
+                  updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_title, department, criticality,
+                  incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS "deleted_at: _""#,
+        plan.id,
+        payload.criticality,
+        payload.risk_of_loss,
+        payload.vacancy_expected_on,
+        payload.incumbent_pid,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "succession_plan",
         plan_pid,
         "updated",
@@ -897,7 +1096,7 @@ async fn update_succession(
         Some(serde_json::json!({ "before": before })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -919,26 +1118,31 @@ async fn update_succession_candidate(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let candidate = succession_candidates::Entity::find()
-        .filter(succession_candidates::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(succession_candidates::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let candidate = sqlx::query!(
+        "SELECT id, pid, readiness FROM succession_candidates WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let candidate_pid = candidate.pid;
-    let from = candidate.readiness.clone();
-    let mut active: succession_candidates::ActiveModel = candidate.into();
-    if payload.readiness.is_some() {
-        active.readiness =
-            ActiveValue::set(payload.readiness.clone().unwrap_or_else(|| from.clone()));
-    }
-    if let Some(rank) = payload.rank {
-        active.rank = ActiveValue::set(rank);
-    }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let from = candidate.readiness;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        succession_candidates::Model,
+        r#"UPDATE succession_candidates
+              SET readiness = COALESCE($2, readiness), rank = COALESCE($3, rank), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, readiness, rank,
+                  deleted_at AS "deleted_at: _""#,
+        candidate.id,
+        payload.readiness,
+        payload.rank,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "succession_candidate",
         candidate_pid,
         "updated",
@@ -946,7 +1150,7 @@ async fn update_succession_candidate(
         Some(serde_json::json!({ "readiness_from": from, "readiness_to": payload.readiness })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 

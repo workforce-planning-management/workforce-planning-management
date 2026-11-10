@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE padr_versions SET period_start = $2, period_end = $3, values_summary = $4, wellbeing_offered = $5,\n                development_needs = $6, updated_at = now()\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date",
+        "Date",
+        "Varchar",
+        "Bool",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9ca068e9bad48862a4e040afe82a4ae00c6652e2d2181d5d61d2820ed94b3e20"
+}
