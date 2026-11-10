@@ -438,8 +438,8 @@ async fn worker_plan(
     let hours: Vec<u32> = recs.iter().map(|r| r.hours).collect();
     let slots = rules::schedule(&hours, weekly, start);
     // `SFIAplus` pointers (WPM-R112): resources the deployer is licensed for, for the level each skill is needed at. Not booked.
-    let pointers = crate::controllers::sfia::pointers_for(
-        &crate::db::orm(&ctx),
+    let pointers = super::skill_gaps::sfiaplus_pointers(
+        &ctx,
         &below
             .iter()
             .map(|g| (g.skill, g.required))

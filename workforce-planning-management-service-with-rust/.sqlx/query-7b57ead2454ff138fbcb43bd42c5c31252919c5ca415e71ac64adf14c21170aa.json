@@ -1,0 +1,201 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessments\n              SET status = $2,\n                  completed_on = CASE WHEN $3 THEN $4::date ELSE completed_on END,\n                  expires_on = CASE WHEN $3 AND $5 THEN $6::date ELSE expires_on END\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, instrument_pid, subject_kind,\n                  subject_pid, application_pid, status, scheduled_on, completed_on, expires_on, administered_by, notes,\n                  deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "instrument_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "instrument_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "subject_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "subject_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "application_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "application_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "scheduled_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "scheduled_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "completed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "completed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "expires_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "expires_on"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "administered_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "administered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Bool",
+        "Date",
+        "Bool",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "7b57ead2454ff138fbcb43bd42c5c31252919c5ca415e71ac64adf14c21170aa"
+}

@@ -1,0 +1,100 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.skill_pid, s.name AS \"name?\", r.min_proficiency, r.source_level, r.source_scale_max, r.importance,\n                      r.note\n                 FROM role_skill_requirements r\n                 LEFT JOIN skills s ON s.pid = r.skill_pid\n                WHERE r.role_profile_pid = $1\n                ORDER BY r.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name?",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "min_proficiency",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "min_proficiency"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "source_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "source_level"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "source_scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "source_scale_max"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "importance",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "importance"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "role_skill_requirements",
+            "name": "note"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "5c2c4378eed693bcd6c9611f84f99777b92afdb729dc7301f479b00acf45a89a"
+}

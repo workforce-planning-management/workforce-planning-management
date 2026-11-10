@@ -1,0 +1,208 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, title,\n                  awarding_body, framework, level, awarded_on, expires_on, verified_by, verified_on, evidence_ref, recorded_by\n             FROM qualifications WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "awarding_body",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "awarding_body"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "framework",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "framework"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "awarded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "awarded_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "expires_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "expires_on"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "verified_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "verified_by"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "verified_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "verified_on"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "evidence_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "evidence_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "qualifications",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c89cfe64fb752975953345bc20a9478da7805e5e33d814b25b67900fbf7206dd"
+}

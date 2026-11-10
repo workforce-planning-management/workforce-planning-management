@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessment_results SET raw_score = $2, max_score = $3, percentile = $4, band = $5, narrative = $6\n              WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ce2f0bf29ddac0d75cf540ea71dab7c704eae77dd2f5c0f89cb073a1412fb570"
+}

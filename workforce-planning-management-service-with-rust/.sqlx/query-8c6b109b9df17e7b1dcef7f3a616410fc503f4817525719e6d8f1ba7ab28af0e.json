@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT scale, band AS \"band!\" FROM assessment_results WHERE band IS NOT NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "scale"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "band!",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "band"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "8c6b109b9df17e7b1dcef7f3a616410fc503f4817525719e6d8f1ba7ab28af0e"
+}

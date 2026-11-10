@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, report_pid FROM dotted_line_reports WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "report_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "dotted_line_reports",
+            "name": "report_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "46b8d16a65abb6ae7952dd797c7434d2cb534d136e5c70da9c1ba40b32a17959"
+}

@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, instrument_pid, status, scheduled_on, completed_on FROM assessments\n          WHERE application_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "instrument_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "instrument_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "scheduled_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "scheduled_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "completed_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "completed_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "57e7eeaf8069933f5326f197052fba6db28368ff34a36e0c0da8a0cb93ebb1f7"
+}

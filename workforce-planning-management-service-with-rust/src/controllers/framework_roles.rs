@@ -13,20 +13,17 @@
 use super::writable_worker;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use super::esco::{Resolution, occupation_skills, pinned_version, resolve_catalogue_skill};
+use super::esco::{Resolution, occupation_skills};
 use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    esco_occupations, esco_skills, role_profiles, role_skill_requirements, skill_external_refs,
-    skills, worker_framework_roles, worker_skills,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{esco_skills, worker_framework_roles};
 use crate::models::records;
+use crate::rules::esco as esco_rules;
 use crate::rules::framework_roles::{self as rules, Choice};
 use crate::rules::learning::valid_proficiency;
 use crate::tasks::import_esco::ESCO_SLUG;
@@ -62,12 +59,19 @@ async fn current_selection(
     worker_pid: Uuid,
     framework: &str,
 ) -> Result<Option<worker_framework_roles::Model>> {
-    Ok(worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(framework))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                  ended_at AS "ended_at: _", recorded_by, on_behalf
+             FROM worker_framework_roles
+            WHERE worker_pid = $1 AND framework_slug = $2 AND ended_at IS NULL
+            LIMIT 1"#,
+        worker_pid,
+        framework,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/framework-roles` — the worker's current role in each
@@ -78,11 +82,18 @@ async fn list_selections(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let rows = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                  ended_at AS "ended_at: _", recorded_by, on_behalf
+             FROM worker_framework_roles
+            WHERE worker_pid = $1 AND ended_at IS NULL
+            ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     format::json(rows.iter().map(selection_json).collect::<Vec<_>>())
 }
 
@@ -111,13 +122,14 @@ async fn set_selection(
         let profile_pid = payload
             .role_profile_pid
             .ok_or_else(|| unprocessable("role_profile_pid is required for the UK GDAD PCF"))?;
-        let profile = role_profiles::Entity::find()
-            .filter(role_profiles::Column::Pid.eq(profile_pid))
-            .filter(role_profiles::Column::DeletedAt.is_null())
-            .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .one(&crate::db::orm(&ctx))
-            .await?
-            .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
+        let profile = sqlx::query!(
+            "SELECT pid, job_title FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL AND framework_slug = $2 LIMIT 1",
+            profile_pid,
+            PCF_SLUG,
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?
+        .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
         (Some(profile.pid), None, profile.job_title)
     } else {
         let uri = payload
@@ -136,28 +148,33 @@ async fn set_selection(
     {
         return format::json(selection_json(&current));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     // The previous role ends now — that is what makes it a *past* role.
-    close_current(&txn, worker.pid, &framework).await?;
-    let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
-    let row = worker_framework_roles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        framework_slug: ActiveValue::set(framework.clone()),
-        role_profile_pid: ActiveValue::set(profile_pid),
-        esco_occupation_uri: ActiveValue::set(occupation_uri),
-        role_label: ActiveValue::set(label),
-        selected_on: ActiveValue::set(chrono::Utc::now().date_naive()),
-        started_at: ActiveValue::set(now),
-        ended_at: ActiveValue::set(None),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(on_behalf),
-        ..Default::default()
-    }
-    .insert(&txn)
+    close_current(&mut tx, worker.pid, &framework).await?;
+    let now: chrono::DateTime<chrono::FixedOffset> = chrono::Utc::now().into();
+    let row = sqlx::query_as!(
+        worker_framework_roles::Model,
+        r#"INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, esco_occupation_uri, role_label,
+                                             selected_on, started_at, recorded_by, on_behalf)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
+                     role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
+                     ended_at AS "ended_at: _", recorded_by, on_behalf"#,
+        Uuid::new_v4(),
+        worker.pid,
+        framework,
+        profile_pid,
+        occupation_uri,
+        label,
+        chrono::Utc::now().date_naive(),
+        now,
+        caller.actor(),
+        on_behalf,
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "framework_role_selected",
@@ -165,7 +182,7 @@ async fn set_selection(
         Some(serde_json::json!({ "framework": framework, "role": row.role_label, "on_behalf": on_behalf })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(selection_json(&row))
 }
 
@@ -179,10 +196,10 @@ async fn clear_selection(
 ) -> Result<Response> {
     check_framework(&framework)?;
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    close_current(&txn, worker.pid, &framework).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    close_current(&mut tx, worker.pid, &framework).await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "framework_role_cleared",
@@ -190,40 +207,46 @@ async fn clear_selection(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
 /// End the worker's current role in a framework, if they have one.
-async fn close_current<C: ConnectionTrait>(
-    db: &C,
+async fn close_current(
+    tx: &mut sqlx::PgConnection,
     worker_pid: Uuid,
     framework: &str,
 ) -> Result<()> {
-    if let Some(current) = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_framework_roles::Column::FrameworkSlug.eq(framework))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .one(db)
-        .await?
+    if let Some(id) = sqlx::query_scalar!(
+        "SELECT id FROM worker_framework_roles WHERE worker_pid = $1 AND framework_slug = $2 AND ended_at IS NULL LIMIT 1",
+        worker_pid,
+        framework,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
     {
-        let mut active: worker_framework_roles::ActiveModel = current.into();
-        active.ended_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-        active.update(db).await?;
+        sqlx::query!(
+            "UPDATE worker_framework_roles SET ended_at = $2 WHERE id = $1",
+            id,
+            chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+        )
+        .execute(&mut *tx)
+        .await?;
     }
     Ok(())
 }
 
 /// The worker's live declarations by catalogue skill.
 async fn declared_levels(ctx: &AppContext, worker_pid: Uuid) -> Result<BTreeMap<Uuid, i32>> {
-    Ok(worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|d| (d.skill_pid, d.proficiency))
-        .collect())
+    Ok(sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|d| (d.skill_pid, d.proficiency))
+    .collect())
 }
 
 /// `GET /api/workers/{pid}/framework-roles/{framework}/skills` — the selected
@@ -247,22 +270,24 @@ async fn role_skills(
     let declared = declared_levels(&ctx, worker.pid).await?;
     let out: Vec<serde_json::Value> = if framework == PCF_SLUG {
         let profile_pid = selection.role_profile_pid.ok_or(Error::NotFound)?;
-        let requirements = role_skill_requirements::Entity::find()
-            .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile_pid))
-            .all(&crate::db::orm(&ctx))
-            .await?;
-        let names: BTreeMap<Uuid, String> = skills::Entity::find()
-            .all(&crate::db::orm(&ctx))
-            .await?
-            .into_iter()
-            .map(|s| (s.pid, s.name))
-            .collect();
+        // Each requirement with its skill's name (any skill row, as the catalogue names it).
+        let requirements = sqlx::query!(
+            r#"SELECT r.skill_pid, s.name AS "name?", r.min_proficiency, r.source_level, r.source_scale_max, r.importance,
+                      r.note
+                 FROM role_skill_requirements r
+                 LEFT JOIN skills s ON s.pid = r.skill_pid
+                WHERE r.role_profile_pid = $1
+                ORDER BY r.id"#,
+            profile_pid,
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?;
         let mut rows: Vec<serde_json::Value> = requirements
             .iter()
             .map(|r| {
                 serde_json::json!({
                     "ref": r.skill_pid,
-                    "label": names.get(&r.skill_pid),
+                    "label": r.name,
                     "role_expects": r.min_proficiency,
                     "framework_level": r.source_level,
                     "framework_scale_max": r.source_scale_max,
@@ -279,13 +304,15 @@ async fn role_skills(
             .esco_occupation_uri
             .clone()
             .ok_or(Error::NotFound)?;
-        let links: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
-            .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-            .all(&crate::db::orm(&ctx))
-            .await?
-            .into_iter()
-            .map(|r| (r.reference, r.skill_pid))
-            .collect();
+        let links: BTreeMap<String, Uuid> = sqlx::query!(
+            r#"SELECT "ref" AS reference, skill_pid FROM skill_external_refs WHERE framework_slug = $1 ORDER BY id"#,
+            ESCO_SLUG,
+        )
+        .fetch_all(db::pool(&ctx))
+        .await?
+        .into_iter()
+        .map(|r| (r.reference, r.skill_pid))
+        .collect();
         occupation_skills(&ctx, &uri)
             .await?
             .iter()
@@ -326,15 +353,15 @@ struct ChoicesPayload {
 /// Declare (or clear) one worker declaration, the same upsert as
 /// `PUT /api/workers/{pid}/skills`.
 async fn apply_declaration(
-    txn: &sea_orm::DatabaseTransaction,
+    tx: &mut sqlx::PgConnection,
     worker_pid: Uuid,
     skill_pid: Uuid,
     proficiency: Option<i32>,
     actor: Option<&str>,
     on_behalf: bool,
 ) -> Result<bool> {
-    crate::models::skill_history::record(
-        txn,
+    crate::models::skill_history::record_in(
+        &mut *tx,
         worker_pid,
         skill_pid,
         proficiency,
@@ -344,43 +371,165 @@ async fn apply_declaration(
     )
     .await?;
     let today = chrono::Utc::now().date_naive();
-    let existing = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_skills::Column::SkillPid.eq(skill_pid))
-        .one(txn)
-        .await?;
+    let existing = sqlx::query!(
+        r#"SELECT id, deleted_at AS "deleted_at: chrono::DateTime<chrono::FixedOffset>"
+             FROM worker_skills WHERE worker_pid = $1 AND skill_pid = $2 LIMIT 1"#,
+        worker_pid,
+        skill_pid,
+    )
+    .fetch_optional(&mut *tx)
+    .await?;
     match (proficiency, existing) {
         (Some(level), Some(row)) => {
-            let mut active: worker_skills::ActiveModel = row.into();
-            active.proficiency = ActiveValue::set(level);
-            active.assessed_on = ActiveValue::set(today);
-            active.deleted_at = ActiveValue::set(None);
-            active.update(txn).await?;
+            sqlx::query!(
+                "UPDATE worker_skills SET proficiency = $2, assessed_on = $3, deleted_at = NULL WHERE id = $1",
+                row.id,
+                level,
+                today,
+            )
+            .execute(&mut *tx)
+            .await?;
             Ok(true)
         }
         (Some(level), None) => {
-            worker_skills::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                worker_pid: ActiveValue::set(worker_pid),
-                skill_pid: ActiveValue::set(skill_pid),
-                proficiency: ActiveValue::set(level),
-                target: ActiveValue::set(None),
-                assessed_on: ActiveValue::set(today),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(txn)
+            sqlx::query!(
+                "INSERT INTO worker_skills (pid, worker_pid, skill_pid, proficiency, assessed_on) VALUES ($1, $2, $3, $4, $5)",
+                Uuid::new_v4(),
+                worker_pid,
+                skill_pid,
+                level,
+                today,
+            )
+            .execute(&mut *tx)
             .await?;
             Ok(true)
         }
         (None, Some(row)) if row.deleted_at.is_none() => {
-            let mut active: worker_skills::ActiveModel = row.into();
-            active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-            active.update(txn).await?;
+            sqlx::query!(
+                "UPDATE worker_skills SET deleted_at = $2 WHERE id = $1",
+                row.id,
+                chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+            )
+            .execute(&mut *tx)
+            .await?;
             Ok(false)
         }
         (None, _) => Ok(false),
     }
+}
+
+/// The ESCO version pinned by the last import, from the framework row's note: the sqlx form of
+/// [`super::esco::pinned_version`], kept here while that file is on `SeaORM` (WPM-T466).
+async fn pinned_esco_version(ctx: &AppContext) -> Result<Option<String>> {
+    Ok(sqlx::query_scalar!(
+        "SELECT note FROM capability_frameworks WHERE slug = $1 LIMIT 1",
+        ESCO_SLUG,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .flatten()
+    .and_then(|n| {
+        n.rsplit("Pinned version: ")
+            .next()
+            .map(|v| v.trim_end_matches('.').to_string())
+    }))
+}
+
+/// Resolve an ESCO skill to a catalogue skill on `tx`: by its ESCO reference, else by exact normalised label (when
+/// unambiguous and not already linked to another ESCO skill), else create one with a draft category — and link it. The
+/// sqlx form of [`super::esco::resolve_catalogue_skill`], kept here while that file is on `SeaORM` (WPM-T466).
+async fn resolve_catalogue_skill(
+    tx: &mut sqlx::PgConnection,
+    esco_skill: &esco_skills::Model,
+    version: Option<&str>,
+) -> Result<(Uuid, Resolution)> {
+    if let Some(skill_pid) = sqlx::query_scalar!(
+        r#"SELECT skill_pid FROM skill_external_refs WHERE framework_slug = $1 AND "ref" = $2 LIMIT 1"#,
+        ESCO_SLUG,
+        esco_skill.uri,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    {
+        return Ok((skill_pid, Resolution::Existing));
+    }
+    let wanted_label = esco_rules::normalise_label(&esco_skill.label);
+    let candidates: Vec<Uuid> =
+        sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL ORDER BY id")
+            .fetch_all(&mut *tx)
+            .await?
+            .into_iter()
+            .filter(|s| esco_rules::normalise_label(&s.name) == wanted_label)
+            .map(|s| s.pid)
+            .collect();
+    let one_unlinked = match candidates.as_slice() {
+        [one] => {
+            let linked = sqlx::query_scalar!(
+                r#"SELECT 1 AS "one!" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
+                one,
+                ESCO_SLUG,
+            )
+            .fetch_optional(&mut *tx)
+            .await?
+            .is_some();
+            (!linked).then_some(*one)
+        }
+        _ => None,
+    };
+    let (pid, created) = if let Some(one) = one_unlinked {
+        (one, false)
+    } else {
+        let name = unique_skill_name(tx, &esco_skill.label).await?;
+        let pid = Uuid::new_v4();
+        sqlx::query!(
+            "INSERT INTO skills (pid, name, category) VALUES ($1, $2, $3)",
+            pid,
+            name,
+            esco_rules::category_for(
+                esco_skill.skill_type.as_deref(),
+                esco_skill.reuse_level.as_deref(),
+            ),
+        )
+        .execute(&mut *tx)
+        .await?;
+        (pid, true)
+    };
+    sqlx::query!(
+        r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version) VALUES ($1, $2, $3, $4, $5, $6)"#,
+        Uuid::new_v4(),
+        pid,
+        ESCO_SLUG,
+        esco_skill.uri,
+        esco_skill.label,
+        version,
+    )
+    .execute(&mut *tx)
+    .await?;
+    Ok((
+        pid,
+        if created {
+            Resolution::Created
+        } else {
+            Resolution::Linked
+        },
+    ))
+}
+
+/// A catalogue name not yet taken: the label, else the label with ` (ESCO)`.
+async fn unique_skill_name(tx: &mut sqlx::PgConnection, label: &str) -> Result<String> {
+    for candidate in [label.to_string(), format!("{label} (ESCO)")] {
+        let taken = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM skills WHERE name = $1 LIMIT 1"#,
+            candidate
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
+        if !taken {
+            return Ok(candidate);
+        }
+    }
+    Err(super::internal("cannot find a free skill name"))
 }
 
 /// `PUT /api/workers/{pid}/framework-roles/{framework}/skills` — select the
@@ -420,46 +569,55 @@ async fn set_skills(
     );
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
     let version = if framework == ESCO_SLUG {
-        pinned_version(&crate::db::orm(&ctx)).await?
+        pinned_esco_version(&ctx).await?
     } else {
         None
     };
 
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let (mut declared, mut removed, mut created, mut linked) = (0usize, 0usize, 0usize, 0usize);
     for choice in &choices {
         let skill_pid = if framework == PCF_SLUG {
             let pid = Uuid::parse_str(&choice.reference)
                 .map_err(|_| unprocessable("a PCF ref must be a skill id"))?;
-            let has_ref = skill_external_refs::Entity::find()
-                .filter(skill_external_refs::Column::SkillPid.eq(pid))
-                .filter(skill_external_refs::Column::FrameworkSlug.eq(PCF_SLUG))
-                .one(&txn)
-                .await?
-                .is_some();
+            let has_ref = sqlx::query_scalar!(
+                r#"SELECT 1 AS "one!" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
+                pid,
+                PCF_SLUG,
+            )
+            .fetch_optional(&mut *tx)
+            .await?
+            .is_some();
             if !has_ref {
                 return Err(unprocessable("that skill is not a UK GDAD PCF skill"));
             }
             pid
         } else {
-            let esco = esco_skills::Entity::find()
-                .filter(esco_skills::Column::Uri.eq(&choice.reference))
-                .one(&txn)
-                .await?
-                .ok_or_else(|| unprocessable("that is not an ESCO skill in the pinned copy"))?;
+            let esco = sqlx::query_as!(
+                esco_skills::Model,
+                r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, uri, label, skill_type, reuse_level
+                     FROM esco_skills WHERE uri = $1 LIMIT 1"#,
+                choice.reference,
+            )
+            .fetch_optional(&mut *tx)
+            .await?
+            .ok_or_else(|| unprocessable("that is not an ESCO skill in the pinned copy"))?;
             if choice.proficiency.is_none() {
                 // Deselecting: only a skill already linked can have a declaration.
-                let link = skill_external_refs::Entity::find()
-                    .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-                    .filter(skill_external_refs::Column::Reference.eq(&esco.uri))
-                    .one(&txn)
-                    .await?;
+                let link = sqlx::query_scalar!(
+                    r#"SELECT skill_pid FROM skill_external_refs WHERE framework_slug = $1 AND "ref" = $2 LIMIT 1"#,
+                    ESCO_SLUG,
+                    esco.uri,
+                )
+                .fetch_optional(&mut *tx)
+                .await?;
                 match link {
-                    Some(l) => l.skill_pid,
+                    Some(skill_pid) => skill_pid,
                     None => continue,
                 }
             } else {
-                let (pid, how) = resolve_catalogue_skill(&txn, &esco, version.as_deref()).await?;
+                let (pid, how) =
+                    resolve_catalogue_skill(&mut tx, &esco, version.as_deref()).await?;
                 match how {
                     Resolution::Created => created += 1,
                     Resolution::Linked => linked += 1,
@@ -469,7 +627,7 @@ async fn set_skills(
             }
         };
         if apply_declaration(
-            &txn,
+            &mut tx,
             worker.pid,
             skill_pid,
             choice.proficiency,
@@ -483,8 +641,8 @@ async fn set_skills(
             removed += 1;
         }
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "framework_skills_set",
@@ -494,7 +652,7 @@ async fn set_skills(
         ),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
         "declared": declared,
         "removed": removed,
@@ -507,16 +665,15 @@ async fn set_skills(
 /// role in, with how much each has loaded.
 #[debug_handler]
 async fn selectable(State(ctx): State<AppContext>) -> Result<Response> {
-    let pcf = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .len();
-    let esco = esco_occupations::Entity::find()
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .len();
+    let pcf = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM role_profiles WHERE deleted_at IS NULL AND framework_slug = $1"#,
+        PCF_SLUG,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
+    let esco = sqlx::query_scalar!(r#"SELECT count(*) AS "n!" FROM esco_occupations"#)
+        .fetch_one(db::pool(&ctx))
+        .await?;
     format::json(serde_json::json!([
         { "slug": PCF_SLUG, "name": "UK Government Digital and Data Profession Capability Framework", "roles": pcf, "available": pcf > 0 },
         { "slug": ESCO_SLUG, "name": "ESCO — European Skills, Competences, Qualifications and Occupations", "roles": esco, "available": esco > 0 },

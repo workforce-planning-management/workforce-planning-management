@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, assessment_pid, scale, raw_score,\n                  max_score, percentile, band, narrative\n             FROM assessment_results WHERE assessment_pid = $1 ORDER BY scale",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "assessment_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "assessment_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "scale"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "raw_score",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "raw_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "max_score",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "max_score"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "percentile",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "percentile"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "band"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "narrative",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assessment_results",
+            "name": "narrative"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "cb75d300d8a24e387c9960c32b85ca8444b191807991d31b822c7571eb564b74"
+}

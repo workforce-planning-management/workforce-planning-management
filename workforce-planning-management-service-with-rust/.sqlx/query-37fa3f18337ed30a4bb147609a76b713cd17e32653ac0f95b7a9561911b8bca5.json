@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO expense_items (pid, claim_pid, worker_pid, incurred_on, category, amount_minor, description, receipt_ref)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Int8",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "37fa3f18337ed30a4bb147609a76b713cd17e32653ac0f95b7a9561911b8bca5"
+}

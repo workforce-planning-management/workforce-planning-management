@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE applications SET stage = $2 WHERE id = $1 RETURNING stage",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "applications",
+            "name": "stage"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cdee236265ee6b55c61eb230aab75e835cf230f409362b4630757fd3a8bd9b7f"
+}

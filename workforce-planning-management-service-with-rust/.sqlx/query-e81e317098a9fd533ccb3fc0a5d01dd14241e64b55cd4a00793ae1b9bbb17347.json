@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO worker_goals (pid, worker_pid, organization_ref, title, description, period_start, period_end, status,\n                                   proposed_by, skill_pid, skill_target_level, plan_item_pid, aligns_to)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, 'proposed', $8, $9, $10, $11, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Date",
+        "Varchar",
+        "Uuid",
+        "Int4",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e81e317098a9fd533ccb3fc0a5d01dd14241e64b55cd4a00793ae1b9bbb17347"
+}

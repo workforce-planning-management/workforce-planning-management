@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT i.pid, i.title\n           FROM movement_items i\n           JOIN movements m ON m.pid = i.movement_pid\n          WHERE i.assignee_pid = $1 AND i.done_on IS NULL AND i.skipped_reason IS NULL\n            AND m.status = 'open' AND m.worker_pid <> $1\n          ORDER BY i.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "movement_items",
+            "name": "title"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "0f4ce06e88c4c8e643b6d8d322410d01c0622b20b3a36276dc8753e9bbfbb9c3"
+}

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT role_profile_pid AS \"role_profile_pid!\" FROM worker_framework_roles\n            WHERE worker_pid = $1 AND ended_at IS NULL AND role_profile_pid IS NOT NULL\n            ORDER BY started_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "role_profile_pid!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_framework_roles",
+            "name": "role_profile_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "6c2977cdc978b3d67751bf058c60e27a4629a5373c4ddd641698547313b3d8fd"
+}

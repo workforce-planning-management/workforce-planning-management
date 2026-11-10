@@ -6,20 +6,73 @@
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use super::mandatory_learning::ensure_hr;
-use super::{ensure_valid, writable_worker};
+use super::{ensure_valid, ensure_within_ceiling, writable_worker};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    qualifications, role_profiles, role_qualification_requirements, worker_framework_roles, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{qualifications, role_qualification_requirements};
 use crate::models::records;
 use crate::rules::qualification as rules;
+
+/// The qualifications held by any of `workers`, by title.
+async fn held_by_any(ctx: &AppContext, workers: &[Uuid]) -> Result<Vec<qualifications::Model>> {
+    Ok(sqlx::query_as!(
+        qualifications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, title,
+                  awarding_body, framework, level, awarded_on, expires_on, verified_by, verified_on, evidence_ref, recorded_by
+             FROM qualifications WHERE worker_pid = ANY($1) ORDER BY title"#,
+        workers,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The requirements of any of `profiles`, by title.
+async fn requirements_of(
+    ctx: &AppContext,
+    profiles: &[Uuid],
+) -> Result<Vec<role_qualification_requirements::Model>> {
+    Ok(sqlx::query_as!(
+        role_qualification_requirements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_profile_pid, title, kind,
+                  framework, min_level, recorded_by
+             FROM role_qualification_requirements WHERE role_profile_pid = ANY($1) ORDER BY title"#,
+        profiles,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A current worker of the organization: what the team and HR views read.
+struct Staff {
+    pid: Uuid,
+    manager_pid: Option<Uuid>,
+    display_name: String,
+}
+
+/// The organization's current workers (not deleted, not terminated), refused over the scale ceiling first.
+async fn current_staff(ctx: &AppContext, organization: &str) -> Result<Vec<Staff>> {
+    let count = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM workers
+            WHERE organization_ref = $1 AND deleted_at IS NULL AND terminated_on IS NULL"#,
+        organization,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?;
+    ensure_within_ceiling(count.unsigned_abs())?;
+    Ok(sqlx::query_as!(
+        Staff,
+        "SELECT pid, manager_pid, display_name FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL AND terminated_on IS NULL ORDER BY id",
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
 
 fn trimmed(s: Option<&str>) -> Option<String> {
     s.map(str::trim)
@@ -109,24 +162,26 @@ async fn add(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    qualifications::ActiveModel {
-        pid: ActiveValue::set(id),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(p.kind),
-        title: ActiveValue::set(title),
-        awarding_body: ActiveValue::set(body),
-        framework: ActiveValue::set(framework),
-        level: ActiveValue::set(p.level),
-        awarded_on: ActiveValue::set(p.awarded_on),
-        expires_on: ActiveValue::set(p.expires_on),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO qualifications (pid, worker_pid, kind, title, awarding_body, framework, level, awarded_on, expires_on,
+                                     recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        id,
+        worker.pid,
+        p.kind,
+        title,
+        body,
+        framework,
+        p.level,
+        p.awarded_on,
+        p.expires_on,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "qualification",
         id,
         "qualification_declared",
@@ -134,16 +189,21 @@ async fn add(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": id }))
 }
 
 async fn find(ctx: &AppContext, pid: Uuid) -> Result<qualifications::Model> {
-    qualifications::Entity::find()
-        .filter(qualifications::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        qualifications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, title,
+                  awarding_body, framework, level, awarded_on, expires_on, verified_by, verified_on, evidence_ref, recorded_by
+             FROM qualifications WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 #[derive(Debug, Deserialize)]
@@ -172,14 +232,18 @@ async fn verify(
         }),
     )?;
     if q.verified_on.is_none() {
-        let txn = crate::db::orm(&ctx).begin().await?;
-        let mut m: qualifications::ActiveModel = q.into();
-        m.verified_on = ActiveValue::set(Some(Utc::now().date_naive()));
-        m.verified_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-        m.evidence_ref = ActiveValue::set(Some(evidence));
-        m.update(&txn).await?;
-        Audit::record(
-            &txn,
+        let mut tx = db::pool(&ctx).begin().await?;
+        sqlx::query!(
+            "UPDATE qualifications SET verified_on = $2, verified_by = $3, evidence_ref = $4 WHERE id = $1",
+            q.id,
+            Utc::now().date_naive(),
+            caller.actor(),
+            evidence,
+        )
+        .execute(&mut *tx)
+        .await?;
+        db::audit(
+            &mut tx,
             "qualification",
             pid,
             "qualification_verified",
@@ -187,7 +251,7 @@ async fn verify(
             None,
         )
         .await?;
-        txn.commit().await?;
+        tx.commit().await?;
     }
     format::json(json!({ "pid": pid, "status": "verified" }))
 }
@@ -202,13 +266,12 @@ async fn remove(
     let q = find(&ctx, pid).await?;
     let worker = records::worker_by_pid(&ctx, q.worker_pid).await?;
     writable_worker(&ctx, &caller, &worker.pid.to_string()).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    qualifications::Entity::delete_many()
-        .filter(qualifications::Column::Pid.eq(pid))
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM qualifications WHERE pid = $1", pid)
+        .execute(&mut *tx)
         .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "qualification",
         pid,
         "qualification_removed",
@@ -216,50 +279,49 @@ async fn remove(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
-/// The worker's current role profile, if one is recorded.
-async fn current_role(
-    ctx: &AppContext,
-    worker: &workers::Model,
-) -> Result<Option<role_profiles::Model>> {
-    let Some(link) = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .filter(worker_framework_roles::Column::RoleProfilePid.is_not_null())
-        .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .one(&crate::db::orm(ctx))
-        .await?
+/// A role profile as the qualification views show it.
+struct Profile {
+    pid: Uuid,
+    job_title: String,
+}
+
+/// The worker's current role profile, if one is recorded: the newest current link, and only if its profile is live.
+async fn current_role(ctx: &AppContext, worker: Uuid) -> Result<Option<Profile>> {
+    let Some(profile_pid) = sqlx::query_scalar!(
+        r#"SELECT role_profile_pid AS "role_profile_pid!" FROM worker_framework_roles
+            WHERE worker_pid = $1 AND ended_at IS NULL AND role_profile_pid IS NOT NULL
+            ORDER BY started_at DESC LIMIT 1"#,
+        worker,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
     else {
         return Ok(None);
     };
-    let Some(profile_pid) = link.role_profile_pid else {
-        return Ok(None);
-    };
-    Ok(role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(profile_pid))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        Profile,
+        "SELECT pid, job_title FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+        profile_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// The worker's current role and how each of its requirements stands for `held`. No role recorded is `Null`, not a clean gap.
 async fn role_and_gap(
     ctx: &AppContext,
-    worker: &workers::Model,
+    worker: Uuid,
     held: &[rules::Held],
     today: NaiveDate,
 ) -> Result<(Value, Vec<Value>)> {
     let Some(profile) = current_role(ctx, worker).await? else {
         return Ok((Value::Null, Vec::new()));
     };
-    let reqs = role_qualification_requirements::Entity::find()
-        .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let reqs = requirements_of(ctx, &[profile.pid]).await?;
     let gap = reqs
         .iter()
         .map(|r| {
@@ -300,12 +362,7 @@ async fn team(
         ));
     }
     let today = Utc::now().date_naive();
-    let staff = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&manager.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null());
-    super::ensure_scale(&ctx, staff.clone()).await?;
-    let staff = staff.all(&crate::db::orm(&ctx)).await?;
+    let staff = current_staff(&ctx, &manager.organization_ref).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
     for w in &staff {
@@ -314,21 +371,17 @@ async fn team(
         }
     }
     let below = crate::rules::org::downline(manager.pid, &reports_of);
-    let by_pid: std::collections::HashMap<Uuid, &workers::Model> =
+    let by_pid: std::collections::HashMap<Uuid, &Staff> =
         staff.iter().map(|w| (w.pid, w)).collect();
     let pids: Vec<Uuid> = below.iter().map(|(p, _)| *p).collect();
-    let all = qualifications::Entity::find()
-        .filter(qualifications::Column::WorkerPid.is_in(pids))
-        .order_by_asc(qualifications::Column::Title)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let all = held_by_any(&ctx, &pids).await?;
     let mut people: Vec<Value> = Vec::new();
     for (p, depth) in &below {
         let Some(w) = by_pid.get(p) else { continue };
         let mine: Vec<&qualifications::Model> =
             all.iter().filter(|q| q.worker_pid == w.pid).collect();
         let held: Vec<rules::Held> = mine.iter().map(|q| held_of(q)).collect();
-        let (role, gap) = role_and_gap(&ctx, w, &held, today).await?;
+        let (role, gap) = role_and_gap(&ctx, w.pid, &held, today).await?;
         people.push(json!({
             "worker_pid": w.pid, "display_name": w.display_name,
             "report_kind": crate::rules::org::report_kind(*depth).map(crate::rules::org::ReportKind::as_str),
@@ -349,13 +402,9 @@ async fn of_worker(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let today = Utc::now().date_naive();
-    let mine = qualifications::Entity::find()
-        .filter(qualifications::Column::WorkerPid.eq(worker.pid))
-        .order_by_asc(qualifications::Column::Title)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let mine = held_by_any(&ctx, &[worker.pid]).await?;
     let held: Vec<rules::Held> = mine.iter().map(held_of).collect();
-    let (role, gap) = role_and_gap(&ctx, &worker, &held, today).await?;
+    let (role, gap) = role_and_gap(&ctx, worker.pid, &held, today).await?;
     format::json(json!({
         "worker_pid": worker.pid, "as_of": today,
         "qualifications": mine.iter().map(|q| row(q, today)).collect::<Vec<_>>(),
@@ -372,13 +421,13 @@ struct RequirementPayload {
 }
 
 async fn profile_pid(ctx: &AppContext, pid: &str) -> Result<Uuid> {
-    let profile = role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    Ok(profile.pid)
+    sqlx::query_scalar!(
+        "SELECT pid FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `GET /api/role-profiles/{pid}/qualification-requirements` — what a role asks for. Policy, not a person's record.
@@ -388,10 +437,7 @@ async fn list_requirements(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let profile = profile_pid(&ctx, &pid).await?;
-    let rows: Vec<Value> = role_qualification_requirements::Entity::find()
-        .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile))
-        .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&crate::db::orm(&ctx))
+    let rows: Vec<Value> = requirements_of(&ctx, &[profile])
         .await?
         .iter()
         .map(|r| {
@@ -433,21 +479,22 @@ async fn add_requirement(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    role_qualification_requirements::ActiveModel {
-        pid: ActiveValue::set(id),
-        role_profile_pid: ActiveValue::set(profile),
-        title: ActiveValue::set(title),
-        kind: ActiveValue::set(p.kind),
-        framework: ActiveValue::set(framework),
-        min_level: ActiveValue::set(p.min_level),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO role_qualification_requirements (pid, role_profile_pid, title, kind, framework, min_level, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        id,
+        profile,
+        title,
+        p.kind,
+        framework,
+        p.min_level,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "role_qualification_requirement",
         id,
         "role_qualification_requirement_added",
@@ -455,7 +502,7 @@ async fn add_requirement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": id }))
 }
 
@@ -474,19 +521,17 @@ async fn unverified(
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
     let today = Utc::now().date_naive();
-    let in_org = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&q.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null());
-    super::ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&crate::db::orm(&ctx)).await?;
+    let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
-    let waiting = qualifications::Entity::find()
-        .filter(qualifications::Column::WorkerPid.is_in(pids))
-        .filter(qualifications::Column::VerifiedOn.is_null())
-        .order_by_asc(qualifications::Column::CreatedAt)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let waiting = sqlx::query_as!(
+        qualifications::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, title,
+                  awarding_body, framework, level, awarded_on, expires_on, verified_by, verified_on, evidence_ref, recorded_by
+             FROM qualifications WHERE worker_pid = ANY($1) AND verified_on IS NULL ORDER BY created_at"#,
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let name_of: std::collections::HashMap<Uuid, &str> = people
         .iter()
         .map(|w| (w.pid, w.display_name.as_str()))
@@ -515,26 +560,20 @@ async fn rollup(
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
     let today = Utc::now().date_naive();
-    let in_org = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&q.organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .filter(workers::Column::TerminatedOn.is_null());
-    super::ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&crate::db::orm(&ctx)).await?;
+    let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
-    let links = worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .filter(worker_framework_roles::Column::RoleProfilePid.is_not_null())
-        .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let links = sqlx::query!(
+        r#"SELECT worker_pid, role_profile_pid AS "role_profile_pid!" FROM worker_framework_roles
+            WHERE worker_pid = ANY($1) AND ended_at IS NULL AND role_profile_pid IS NOT NULL
+            ORDER BY started_at DESC"#,
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // Each person's newest current role, as the person's own list reads it.
     let mut role_of: std::collections::HashMap<Uuid, Uuid> = std::collections::HashMap::new();
     for l in &links {
-        if let Some(r) = l.role_profile_pid {
-            role_of.entry(l.worker_pid).or_insert(r);
-        }
+        role_of.entry(l.worker_pid).or_insert(l.role_profile_pid);
     }
     let mut holders: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
@@ -542,20 +581,15 @@ async fn rollup(
         holders.entry(*r).or_default().push(*w);
     }
     let role_pids: Vec<Uuid> = holders.keys().copied().collect();
-    let profiles = role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.is_in(role_pids.clone()))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let reqs = role_qualification_requirements::Entity::find()
-        .filter(role_qualification_requirements::Column::RoleProfilePid.is_in(role_pids))
-        .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let all = qualifications::Entity::find()
-        .filter(qualifications::Column::WorkerPid.is_in(pids))
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let profiles = sqlx::query_as!(
+        Profile,
+        "SELECT pid, job_title FROM role_profiles WHERE pid = ANY($1) AND deleted_at IS NULL ORDER BY id",
+        &role_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let reqs = requirements_of(&ctx, &role_pids).await?;
+    let all = held_by_any(&ctx, &pids).await?;
     let mut held_by: std::collections::HashMap<Uuid, Vec<rules::Held>> =
         std::collections::HashMap::new();
     for qual in &all {

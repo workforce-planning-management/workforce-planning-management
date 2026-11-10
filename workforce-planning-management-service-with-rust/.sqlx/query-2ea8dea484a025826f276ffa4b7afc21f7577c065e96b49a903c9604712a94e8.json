@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.pid, COALESCE(w.display_name, '') AS \"name!\"\n             FROM mentorships m\n             LEFT JOIN workers w ON w.pid = m.mentee_pid AND w.deleted_at IS NULL\n            WHERE m.mentor_pid = $1 AND m.deleted_at IS NULL AND m.status IN ('proposed', 'active')\n            ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "mentorships",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "2ea8dea484a025826f276ffa4b7afc21f7577c065e96b49a903c9604712a94e8"
+}

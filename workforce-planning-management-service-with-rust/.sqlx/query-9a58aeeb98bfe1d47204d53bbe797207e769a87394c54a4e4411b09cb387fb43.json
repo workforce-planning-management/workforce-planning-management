@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO applications (pid, requisition_pid, candidate_pid, stage, notes) VALUES ($1, $2, $3, 'received', $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a58aeeb98bfe1d47204d53bbe797207e769a87394c54a4e4411b09cb387fb43"
+}

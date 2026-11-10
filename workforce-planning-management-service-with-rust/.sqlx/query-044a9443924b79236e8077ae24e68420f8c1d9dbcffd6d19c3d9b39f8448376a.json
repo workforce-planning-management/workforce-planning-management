@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE cpd_requirements SET name = $2, required_hundredths = $3, period_start = $4, period_end = $5, job_title = $6\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Int8",
+        "Date",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "044a9443924b79236e8077ae24e68420f8c1d9dbcffd6d19c3d9b39f8448376a"
+}

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT person_ref FROM workers\n          WHERE (upstream_worker_ref = $1 OR ($2::uuid IS NOT NULL AND pid = $2)) AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "person_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "workers",
+            "name": "person_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3831cf1d79bc35ce4a5af49809e277267d06fd2e6b89c96b90a92ec2c6bcbb80"
+}

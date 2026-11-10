@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE worker_skills SET proficiency = $2, assessed_on = $3, deleted_at = NULL WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b07c05a89e2b1db26279e6b9f27014834685c4e9a6b1e5e9762012e2838f8931"
+}

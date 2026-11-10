@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT 1 AS \"one!\" FROM development_plan_items i\n             JOIN development_plans p ON p.pid = i.plan_pid AND p.worker_pid = $2 AND p.deleted_at IS NULL\n            WHERE i.pid = $1\n            LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "one!",
+        "type_info": "Int4",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "e26d509878a0e9a2488d8a1d52e34180c2b3db7d08967681b6c527a0e7eeefc1"
+}

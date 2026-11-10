@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT skill_pid, \"ref\" AS reference FROM skill_external_refs WHERE framework_slug = $1 AND skill_pid = ANY($2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "f628c47d8299801a4510c53037f69f4ffa27263c10531bf54e95c929e8f0aeaa"
+}

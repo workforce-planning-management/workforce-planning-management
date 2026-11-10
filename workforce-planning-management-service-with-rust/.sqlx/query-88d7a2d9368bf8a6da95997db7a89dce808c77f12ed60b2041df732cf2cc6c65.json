@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT kind, subject_pid, subject_label, action, to_worker, note, performed_by,\n                  performed_at AS \"performed_at: DateTime<FixedOffset>\"\n             FROM handover_actions WHERE movement_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "subject_label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "subject_label"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "action",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "action"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "to_worker",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "to_worker"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "performed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "performed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "performed_at: DateTime<FixedOffset>",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "handover_actions",
+            "name": "performed_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "88d7a2d9368bf8a6da95997db7a89dce808c77f12ed60b2041df732cf2cc6c65"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mentorships SET status = 'ended', ended_on = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "156bd1ff92f3110e0447dfc1fe4b6320b39df751acb811d85e43e12c98c7b51a"
+}

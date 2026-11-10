@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE goal_measures SET current_value = COALESCE($2, current_value), done = COALESCE($3, done) WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d13336d29803e80c0187d3a5493fd751bd425466101634a36b087818ac25e0c"
+}

@@ -196,6 +196,7 @@ pub(crate) async fn native_descriptions(
 ///
 /// # Errors
 /// A database error.
+#[allow(dead_code)] // WPM-T466: its callers read `skill_gaps::sfiaplus_pointers`, the sqlx form; this goes when sfia.rs moves
 pub(crate) async fn pointers_for(
     db: &impl OnPool,
     wanted: &[(Uuid, i32)],

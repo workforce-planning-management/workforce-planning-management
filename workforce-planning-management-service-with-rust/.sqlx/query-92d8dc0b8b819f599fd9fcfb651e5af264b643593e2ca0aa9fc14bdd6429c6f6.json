@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO goal_check_ins (pid, goal_pid, worker_pid, checked_on, status, note, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "92d8dc0b8b819f599fd9fcfb651e5af264b643593e2ca0aa9fc14bdd6429c6f6"
+}

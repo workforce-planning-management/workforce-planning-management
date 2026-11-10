@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM goal_measures WHERE goal_pid = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3fc82f1785a9ac649a397286f2db2826bd61ba570772fbcdc781c59e15ef3ddc"
+}
