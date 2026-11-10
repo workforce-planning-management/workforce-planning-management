@@ -16,17 +16,13 @@ use std::str::FromStr;
 use super::row_json;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{
-    benefit_enrollments, entitlement_acknowledgements, pulse_responses, pulse_surveys,
-    wellbeing_entitlements,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{entitlement_acknowledgements, wellbeing_entitlements};
 use crate::models::records;
 use crate::rules::pulse;
 use crate::rules::wellbeing as rules;
@@ -124,39 +120,94 @@ async fn create_entitlement(
 ) -> Result<Response> {
     ensure_valid(&payload.validate())?;
     if let Some(plan_pid) = payload.benefit_plan_pid {
-        records::find_benefit_plan(&crate::db::orm(&ctx), plan_pid).await?;
+        ensure_benefit_plan(&ctx, plan_pid).await?;
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = wellbeing_entitlements::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        kind: ActiveValue::set(payload.kind.clone()),
-        benefit_plan_pid: ActiveValue::set(payload.benefit_plan_pid),
-        description: ActiveValue::set(payload.description.clone()),
-        info_url: ActiveValue::set(payload.info_url.clone()),
-        min_age: ActiveValue::set(payload.min_age),
-        max_age: ActiveValue::set(payload.max_age),
-        departments: ActiveValue::set(serde_json::json!(payload.departments)),
-        job_titles: ActiveValue::set(serde_json::json!(payload.job_titles)),
-        doses: ActiveValue::set(payload.doses),
-        active_from: ActiveValue::set(payload.active_from),
-        active_until: ActiveValue::set(payload.active_until),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO wellbeing_entitlements (pid, name, kind, benefit_plan_pid, description, info_url, min_age, max_age,
+                                             departments, job_titles, doses, active_from, active_until, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL)",
+        pid,
+        payload.name,
+        payload.kind,
+        payload.benefit_plan_pid,
+        payload.description,
+        payload.info_url,
+        payload.min_age,
+        payload.max_age,
+        serde_json::json!(payload.departments),
+        serde_json::json!(payload.job_titles),
+        payload.doses,
+        payload.active_from,
+        payload.active_until,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "wellbeing_entitlement",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(pid))
+}
+
+/// A `404` unless a live benefit plan has this pid.
+async fn ensure_benefit_plan(ctx: &AppContext, pid: Uuid) -> Result<()> {
+    sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM benefit_plans WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
+    Ok(())
+}
+
+/// The live entitlement rules, of one kind or all, by name.
+async fn live_entitlements(
+    ctx: &AppContext,
+    kind: Option<&str>,
+) -> Result<Vec<wellbeing_entitlements::Model>> {
+    Ok(sqlx::query_as!(
+        wellbeing_entitlements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind, benefit_plan_pid,
+                  description, info_url, min_age, max_age, departments, job_titles, doses, active_from, active_until,
+                  deleted_at AS "deleted_at: _"
+             FROM wellbeing_entitlements
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR kind = $1)
+            ORDER BY name"#,
+        kind,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// A survey that is not soft-deleted, or `404`.
+async fn find_survey(ctx: &AppContext, pid: &str) -> Result<Survey> {
+    sqlx::query_as!(
+        Survey,
+        "SELECT pid, name, question, active_from, active_until FROM pulse_surveys
+          WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The columns of a pulse survey these handlers read.
+struct Survey {
+    pid: Uuid,
+    name: String,
+    question: String,
+    active_from: Option<chrono::NaiveDate>,
+    active_until: Option<chrono::NaiveDate>,
 }
 
 /// `GET /api/wellbeing-entitlements?kind=` query.
@@ -175,15 +226,7 @@ async fn list_entitlements(
     let mut problems = Problems::new();
     problems.token_opt("kind", rules::ENTITLEMENT_KINDS, query.kind.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let mut find = wellbeing_entitlements::Entity::find()
-        .filter(wellbeing_entitlements::Column::DeletedAt.is_null());
-    if let Some(kind) = &query.kind {
-        find = find.filter(wellbeing_entitlements::Column::Kind.eq(kind.as_str()));
-    }
-    let rows = find
-        .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = live_entitlements(&ctx, query.kind.as_deref()).await?;
     format::json(rows)
 }
 
@@ -198,27 +241,39 @@ async fn update_entitlement(
 ) -> Result<Response> {
     ensure_valid(&payload.validate())?;
     if let Some(plan_pid) = payload.benefit_plan_pid {
-        records::find_benefit_plan(&crate::db::orm(&ctx), plan_pid).await?;
+        ensure_benefit_plan(&ctx, plan_pid).await?;
     }
     let row = find_entitlement(&ctx, &pid).await?;
     let row_pid = row.pid;
-    let mut active: wellbeing_entitlements::ActiveModel = row.into();
-    active.name = ActiveValue::set(payload.name.clone());
-    active.kind = ActiveValue::set(payload.kind.clone());
-    active.benefit_plan_pid = ActiveValue::set(payload.benefit_plan_pid);
-    active.description = ActiveValue::set(payload.description.clone());
-    active.info_url = ActiveValue::set(payload.info_url.clone());
-    active.min_age = ActiveValue::set(payload.min_age);
-    active.max_age = ActiveValue::set(payload.max_age);
-    active.departments = ActiveValue::set(serde_json::json!(payload.departments));
-    active.job_titles = ActiveValue::set(serde_json::json!(payload.job_titles));
-    active.doses = ActiveValue::set(payload.doses);
-    active.active_from = ActiveValue::set(payload.active_from);
-    active.active_until = ActiveValue::set(payload.active_until);
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        wellbeing_entitlements::Model,
+        r#"UPDATE wellbeing_entitlements
+              SET name = $2, kind = $3, benefit_plan_pid = $4, description = $5, info_url = $6, min_age = $7,
+                  max_age = $8, departments = $9, job_titles = $10, doses = $11, active_from = $12,
+                  active_until = $13, updated_at = now()
+            WHERE id = $1
+            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind,
+                      benefit_plan_pid, description, info_url, min_age, max_age, departments, job_titles, doses,
+                      active_from, active_until, deleted_at AS "deleted_at: _""#,
+        row.id,
+        payload.name,
+        payload.kind,
+        payload.benefit_plan_pid,
+        payload.description,
+        payload.info_url,
+        payload.min_age,
+        payload.max_age,
+        serde_json::json!(payload.departments),
+        serde_json::json!(payload.job_titles),
+        payload.doses,
+        payload.active_from,
+        payload.active_until,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "wellbeing_entitlement",
         row_pid,
         "updated",
@@ -226,7 +281,7 @@ async fn update_entitlement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -240,12 +295,15 @@ async fn delete_entitlement(
 ) -> Result<Response> {
     let row = find_entitlement(&ctx, &pid).await?;
     let row_pid = row.pid;
-    let mut active: wellbeing_entitlements::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE wellbeing_entitlements SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "wellbeing_entitlement",
         row_pid,
         "deleted",
@@ -253,7 +311,7 @@ async fn delete_entitlement(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "deleted": row_pid }))
 }
 
@@ -293,26 +351,27 @@ async fn worker_prompts(
             .and_then(|born| rules::age_on(born, today)),
         Err(_) => None,
     };
-    let entitlements = wellbeing_entitlements::Entity::find()
-        .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let acks = entitlement_acknowledgements::Entity::find()
-        .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let entitlements = live_entitlements(&ctx, None).await?;
+    let acks = sqlx::query!(
+        "SELECT entitlement_pid, response, reminded_on FROM entitlement_acknowledgements
+          WHERE worker_pid = $1 ORDER BY id",
+        worker.pid
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     // The plans this worker is live-enrolled in: a plan-linked rule
     // goes quiet for them — derived here, never stored (WPM-D18).
-    let enrolled_plans: Vec<Uuid> = benefit_enrollments::Entity::find()
-        .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
-        .filter(benefit_enrollments::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
-        .map(|enrollment| enrollment.plan_pid)
-        .collect();
+    let enrolled_plans: Vec<Uuid> = sqlx::query!(
+        "SELECT plan_pid, ends_on FROM benefit_enrollments
+          WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+        worker.pid
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
+    .map(|enrollment| enrollment.plan_pid)
+    .collect();
     let mut prompts = Vec::new();
     for entitlement in &entitlements {
         if entitlement
@@ -403,19 +462,23 @@ async fn acknowledge(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let entitlement = wellbeing_entitlements::Entity::find()
-        .filter(wellbeing_entitlements::Column::Pid.eq(payload.entitlement_pid))
-        .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let entitlement = sqlx::query!(
+        "SELECT pid, doses FROM wellbeing_entitlements WHERE pid = $1 AND deleted_at IS NULL",
+        payload.entitlement_pid
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     let today = chrono::Utc::now().date_naive();
-    let existing = entitlement_acknowledgements::Entity::find()
-        .filter(entitlement_acknowledgements::Column::EntitlementPid.eq(entitlement.pid))
-        .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .one(&crate::db::orm(&ctx))
-        .await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
+    let existing = sqlx::query!(
+        "SELECT id, response, reminded_on FROM entitlement_acknowledgements
+          WHERE entitlement_pid = $1 AND worker_pid = $2 LIMIT 1",
+        entitlement.pid,
+        worker.pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    let mut tx = db::pool(&ctx).begin().await?;
     let row = match existing {
         Some(row) => {
             // Answering the one reminder uses it up, whatever the answer.
@@ -424,30 +487,42 @@ async fn acknowledge(
                 Some(row.response.as_str()),
                 row.reminded_on.is_some(),
             ) == rules::PromptState::Reminder;
-            let mut active: entitlement_acknowledgements::ActiveModel = row.into();
-            active.response = ActiveValue::set(payload.response.clone());
-            active.responded_on = ActiveValue::set(today);
-            if answers_reminder {
-                active.reminded_on = ActiveValue::set(Some(today));
-            }
-            active.update(&txn).await?
+            sqlx::query_as!(
+                entitlement_acknowledgements::Model,
+                r#"UPDATE entitlement_acknowledgements
+                      SET response = $2, responded_on = $3,
+                          reminded_on = CASE WHEN $4 THEN $3 ELSE reminded_on END, updated_at = now()
+                    WHERE id = $1
+                    RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid,
+                              entitlement_pid, worker_pid, response, responded_on, reminded_on"#,
+                row.id,
+                payload.response,
+                today,
+                answers_reminder,
+            )
+            .fetch_one(&mut *tx)
+            .await?
         }
         None => {
-            entitlement_acknowledgements::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                entitlement_pid: ActiveValue::set(entitlement.pid),
-                worker_pid: ActiveValue::set(worker.pid),
-                response: ActiveValue::set(payload.response.clone()),
-                responded_on: ActiveValue::set(today),
-                reminded_on: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query_as!(
+                entitlement_acknowledgements::Model,
+                r#"INSERT INTO entitlement_acknowledgements (pid, entitlement_pid, worker_pid, response, responded_on,
+                                                            reminded_on)
+                   VALUES ($1, $2, $3, $4, $5, NULL)
+                   RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid,
+                             entitlement_pid, worker_pid, response, responded_on, reminded_on"#,
+                Uuid::new_v4(),
+                entitlement.pid,
+                worker.pid,
+                payload.response,
+                today,
+            )
+            .fetch_one(&mut *tx)
             .await?
         }
     };
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "entitlement_acknowledgement",
         row.pid,
         "acknowledged",
@@ -455,7 +530,7 @@ async fn acknowledge(
         Some(serde_json::json!({ "response": payload.response })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&row)?)
 }
 
@@ -471,25 +546,23 @@ async fn acknowledge(
 /// deliberately no per-manager or per-worker variant of this view.
 #[debug_handler]
 async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
-    let entitlements = wellbeing_entitlements::Entity::find()
-        .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let acks = entitlement_acknowledgements::Entity::find()
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let entitlements = live_entitlements(&ctx, None).await?;
+    let acks = sqlx::query!(
+        "SELECT entitlement_pid, worker_pid, response FROM entitlement_acknowledgements ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let today = chrono::Utc::now().date_naive();
     // Live (plan, worker) enrolment pairs, for the conversion terms.
-    let live_enrollments: std::collections::HashSet<(Uuid, Uuid)> =
-        benefit_enrollments::Entity::find()
-            .filter(benefit_enrollments::Column::DeletedAt.is_null())
-            .all(&crate::db::orm(&ctx))
-            .await?
-            .into_iter()
-            .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
-            .map(|enrollment| (enrollment.plan_pid, enrollment.worker_pid))
-            .collect();
+    let live_enrollments: std::collections::HashSet<(Uuid, Uuid)> = sqlx::query!(
+        "SELECT plan_pid, worker_pid, ends_on FROM benefit_enrollments WHERE deleted_at IS NULL"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
+    .map(|enrollment| (enrollment.plan_pid, enrollment.worker_pid))
+    .collect();
     let view: Vec<serde_json::Value> = entitlements
         .iter()
         .map(|entitlement| {
@@ -574,40 +647,43 @@ async fn create_survey(
         problems.push("active_from must not be after active_until");
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = pulse_surveys::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        question: ActiveValue::set(payload.question.clone()),
-        active_from: ActiveValue::set(payload.active_from),
-        active_until: ActiveValue::set(payload.active_until),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO pulse_surveys (pid, name, question, active_from, active_until, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, NULL)",
+        pid,
+        payload.name,
+        payload.question,
+        payload.active_from,
+        payload.active_until,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "pulse_survey",
-        row.pid,
+        pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(pid))
 }
 
 /// `GET /api/pulse-surveys` — the surveys, with their open state.
 #[debug_handler]
 async fn list_surveys(State(ctx): State<AppContext>) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let rows = pulse_surveys::Entity::find()
-        .filter(pulse_surveys::Column::DeletedAt.is_null())
-        .order_by_asc(pulse_surveys::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        Survey,
+        "SELECT pid, name, question, active_from, active_until FROM pulse_surveys
+          WHERE deleted_at IS NULL ORDER BY name"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let view: Vec<serde_json::Value> = rows
         .iter()
         .map(|survey| {
@@ -653,12 +729,7 @@ async fn submit_response(
         ));
     }
     ensure_valid(&problems.into_vec())?;
-    let survey = pulse_surveys::Entity::find()
-        .filter(pulse_surveys::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(pulse_surveys::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let survey = find_survey(&ctx, &pid).await?;
     let today = chrono::Utc::now().date_naive();
     if !pulse::survey_open(survey.active_from, survey.active_until, today) {
         return Err(super::unprocessable("this survey is not open"));
@@ -670,21 +741,30 @@ async fn submit_response(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = pulse_responses::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        survey_pid: ActiveValue::set(survey.pid),
-        department: ActiveValue::set(worker.department.clone()),
-        score: ActiveValue::set(payload.score),
-        submitted_on: ActiveValue::set(today),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let response_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO pulse_responses (pid, survey_pid, department, score, submitted_on) VALUES ($1, $2, $3, $4, $5)",
+        response_pid,
+        survey.pid,
+        worker.department,
+        payload.score,
+        today,
+    )
+    .execute(&mut *tx)
     .await?;
     // Deliberately actor-less (WPM-D20): the trail records that a
     // submission happened, never who made it.
-    Audit::record(&txn, "pulse_response", row.pid, "submitted", None, None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "pulse_response",
+        response_pid,
+        "submitted",
+        None,
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(serde_json::json!({ "submitted": true }))
 }
 
@@ -698,16 +778,13 @@ async fn survey_results(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let survey = pulse_surveys::Entity::find()
-        .filter(pulse_surveys::Column::Pid.eq(records::parse_pid(&pid)?))
-        .filter(pulse_surveys::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let responses = pulse_responses::Entity::find()
-        .filter(pulse_responses::Column::SurveyPid.eq(survey.pid))
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let survey = find_survey(&ctx, &pid).await?;
+    let responses = sqlx::query!(
+        "SELECT department, score FROM pulse_responses WHERE survey_pid = $1 ORDER BY id",
+        survey.pid
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut by_department: std::collections::BTreeMap<&str, Vec<i32>> =
         std::collections::BTreeMap::new();
     for response in &responses {
@@ -754,12 +831,18 @@ async fn survey_results(
 
 /// Find one live entitlement rule by pid, or 404.
 async fn find_entitlement(ctx: &AppContext, pid: &str) -> Result<wellbeing_entitlements::Model> {
-    wellbeing_entitlements::Entity::find()
-        .filter(wellbeing_entitlements::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        wellbeing_entitlements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind, benefit_plan_pid,
+                  description, info_url, min_age, max_age, departments, job_titles, doses, active_from, active_until,
+                  deleted_at AS "deleted_at: _"
+             FROM wellbeing_entitlements
+            WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// The wellbeing routes.

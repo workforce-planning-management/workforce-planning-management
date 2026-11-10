@@ -1,0 +1,220 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, kind, benefit_plan_pid,\n                  description, info_url, min_age, max_age, departments, job_titles, doses, active_from, active_until,\n                  deleted_at AS \"deleted_at: _\"\n             FROM wellbeing_entitlements\n            WHERE deleted_at IS NULL AND ($1::text IS NULL OR kind = $1)\n            ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "benefit_plan_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "benefit_plan_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "info_url",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "info_url"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "min_age",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "min_age"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "max_age",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "max_age"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "departments",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "departments"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "job_titles",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "job_titles"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "doses",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "doses"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "active_from",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "active_from"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "active_until",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "active_until"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "wellbeing_entitlements",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "465dc88ed16d0bb2627b9e83ce187fcc3e0cffbedd8375ee0ad2ab8ddcc95242"
+}

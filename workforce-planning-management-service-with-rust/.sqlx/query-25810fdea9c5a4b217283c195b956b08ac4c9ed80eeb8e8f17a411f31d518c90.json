@@ -1,0 +1,128 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO entitlement_acknowledgements (pid, entitlement_pid, worker_pid, response, responded_on,\n                                                            reminded_on)\n                   VALUES ($1, $2, $3, $4, $5, NULL)\n                   RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid,\n                             entitlement_pid, worker_pid, response, responded_on, reminded_on",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "entitlement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "entitlement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "response",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "response"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "responded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "responded_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "reminded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "reminded_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "25810fdea9c5a4b217283c195b956b08ac4c9ed80eeb8e8f17a411f31d518c90"
+}

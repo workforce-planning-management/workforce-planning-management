@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entitlement_pid, worker_pid, response FROM entitlement_acknowledgements ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entitlement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "entitlement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "response",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "response"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "277c3e3244368b7df3be1ab5636e8433c2a99dca119612733bf3ab4b20b16bd7"
+}

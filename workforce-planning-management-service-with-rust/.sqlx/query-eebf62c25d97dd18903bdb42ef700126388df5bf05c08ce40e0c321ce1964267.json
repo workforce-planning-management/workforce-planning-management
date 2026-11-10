@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT entitlement_pid, response, reminded_on FROM entitlement_acknowledgements\n          WHERE worker_pid = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "entitlement_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "entitlement_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "response",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "response"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "reminded_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "entitlement_acknowledgements",
+            "name": "reminded_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "eebf62c25d97dd18903bdb42ef700126388df5bf05c08ce40e0c321ce1964267"
+}

@@ -1,0 +1,244 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind,\n                  framework_slug, role_profile_pid, esco_occupation_uri, role_label, skill_pid, target_level, horizon,\n                  status, note, visibility, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\"\n             FROM worker_aspirations\n            WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "framework_slug",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "framework_slug"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "role_profile_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "esco_occupation_uri",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "esco_occupation_uri"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "role_label",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "role_label"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "target_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "target_level"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "horizon",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "horizon"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "visibility",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "visibility"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "on_behalf"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "worker_aspirations",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "f7cf12df8f3148d83b4f067d276765a59a0382b0e1a2a6f8639445385619581f"
+}
