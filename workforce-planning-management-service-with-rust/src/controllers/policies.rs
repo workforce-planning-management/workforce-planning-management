@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -16,8 +15,8 @@ use uuid::Uuid;
 use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, forbidden, unprocessable, writable_worker};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{policies, policy_acknowledgements, policy_versions, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{policies, policy_versions, workers};
 use crate::models::records;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::metrics::is_employed_on;
@@ -32,11 +31,58 @@ fn version_json(v: &policy_versions::Model) -> serde_json::Value {
 }
 
 async fn versions_of(ctx: &AppContext, policy: Uuid) -> Result<Vec<policy_versions::Model>> {
-    Ok(policy_versions::Entity::find()
-        .filter(policy_versions::Column::PolicyPid.eq(policy))
-        .order_by_asc(policy_versions::Column::Version)
-        .all(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        policy_versions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, policy_pid, version, title,
+                  document_ref, effective_on, audience_kind, audience_value, acknowledge_within_days, recorded_by
+             FROM policy_versions
+            WHERE policy_pid = $1
+            ORDER BY version"#,
+        policy,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The organization's policies, by name.
+async fn policies_of(ctx: &AppContext, organization: &str) -> Result<Vec<policies::Model>> {
+    Ok(sqlx::query_as!(
+        policies::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, recorded_by
+             FROM policies
+            WHERE organization_ref = $1
+            ORDER BY name"#,
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
+}
+
+/// The policy with this pid, wherever it is.
+async fn policy_by_pid(ctx: &AppContext, pid: Uuid) -> Result<policies::Model> {
+    sqlx::query_as!(
+        policies::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name, recorded_by
+             FROM policies WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+/// The version with this pid.
+async fn version_by_pid(ctx: &AppContext, pid: Uuid) -> Result<policy_versions::Model> {
+    sqlx::query_as!(
+        policy_versions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, policy_pid, version, title,
+                  document_ref, effective_on, audience_kind, audience_value, acknowledge_within_days, recorded_by
+             FROM policy_versions WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,11 +99,7 @@ async fn list(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let rows = policies::Entity::find()
-        .filter(policies::Column::OrganizationRef.eq(&query.organization))
-        .order_by_asc(policies::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let rows = policies_of(&ctx, &query.organization).await?;
     let mut out = Vec::new();
     for p in &rows {
         let versions = versions_of(&ctx, p.pid).await?;
@@ -86,29 +128,39 @@ async fn create(
     if n == 0 || n > 120 {
         return Err(unprocessable("name must be 1 to 120 characters"));
     }
-    let clash = policies::Entity::find()
-        .filter(policies::Column::OrganizationRef.eq(&payload.organization_ref))
-        .filter(policies::Column::Name.eq(&name))
-        .count(&crate::db::orm(&ctx))
-        .await?;
+    let clash = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "n!" FROM policies WHERE organization_ref = $1 AND name = $2"#,
+        payload.organization_ref,
+        name,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     if clash > 0 {
         return Err(unprocessable(
             "another policy in this organization has that name",
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    policies::ActiveModel {
-        pid: ActiveValue::set(pid),
-        organization_ref: ActiveValue::set(payload.organization_ref),
-        name: ActiveValue::set(name),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO policies (pid, organization_ref, name, recorded_by) VALUES ($1, $2, $3, $4)",
+        pid,
+        payload.organization_ref,
+        name,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(&txn, "policy", pid, "policy_created", caller.actor(), None).await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "policy",
+        pid,
+        "policy_created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid }))
 }
 
@@ -132,23 +184,37 @@ async fn rename(
     if n == 0 || n > 120 {
         return Err(unprocessable("name must be 1 to 120 characters"));
     }
-    let clash = policies::Entity::find()
-        .filter(policies::Column::OrganizationRef.eq(&policy.organization_ref))
-        .filter(policies::Column::Name.eq(&name))
-        .filter(policies::Column::Pid.ne(pid))
-        .count(&crate::db::orm(&ctx))
-        .await?;
+    let clash = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "n!" FROM policies WHERE organization_ref = $1 AND name = $2 AND pid <> $3"#,
+        policy.organization_ref,
+        name,
+        pid,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     if clash > 0 {
         return Err(unprocessable(
             "another policy in this organization has that name",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: policies::ActiveModel = policy.into();
-    active.name = ActiveValue::set(name.clone());
-    active.update(&txn).await?;
-    Audit::record(&txn, "policy", pid, "policy_renamed", caller.actor(), None).await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE policies SET name = $2, updated_at = now() WHERE id = $1",
+        policy.id,
+        name,
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "policy",
+        pid,
+        "policy_renamed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "pid": pid, "name": name }))
 }
 
@@ -167,11 +233,7 @@ async fn find_policy(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<policies::Model> {
-    let row = policies::Entity::find()
-        .filter(policies::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = policy_by_pid(ctx, pid).await?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
 }
@@ -201,30 +263,30 @@ async fn add_version(
         .last()
         .map_or(0, |v| v.version);
     let version_pid = Uuid::new_v4();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    policy_versions::ActiveModel {
-        pid: ActiveValue::set(version_pid),
-        policy_pid: ActiveValue::set(policy.pid),
-        version: ActiveValue::set(latest + 1),
-        title: ActiveValue::set(payload.title.trim().to_string()),
-        document_ref: ActiveValue::set(payload.document_ref.trim().to_string()),
-        effective_on: ActiveValue::set(payload.effective_on),
-        audience_kind: ActiveValue::set(payload.audience.clone()),
-        audience_value: ActiveValue::set(
-            payload
-                .audience_value
-                .as_ref()
-                .map(|v| v.trim().to_string())
-                .filter(|v| !v.is_empty()),
-        ),
-        acknowledge_within_days: ActiveValue::set(days),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO policy_versions (pid, policy_pid, version, title, document_ref, effective_on, audience_kind,
+                                      audience_value, acknowledge_within_days, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        version_pid,
+        policy.pid,
+        latest + 1,
+        payload.title.trim(),
+        payload.document_ref.trim(),
+        payload.effective_on,
+        payload.audience,
+        payload
+            .audience_value
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty()),
+        days,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "policy_version",
         version_pid,
         "policy_version_added",
@@ -232,7 +294,7 @@ async fn add_version(
         Some(json!({ "version": latest + 1 })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "pid": version_pid, "version": latest + 1 }))
 }
 
@@ -251,18 +313,16 @@ async fn of_worker(
 /// What `worker` is asked to acknowledge and where they stand. Also served as `GET /api/me/policies`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
     let today = Utc::now().date_naive();
-    let acked: BTreeMap<Uuid, NaiveDate> = policy_acknowledgements::Entity::find()
-        .filter(policy_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|a| (a.version_pid, a.acknowledged_on))
-        .collect();
-    let rows = policies::Entity::find()
-        .filter(policies::Column::OrganizationRef.eq(&worker.organization_ref))
-        .order_by_asc(policies::Column::Name)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let acked: BTreeMap<Uuid, NaiveDate> = sqlx::query!(
+        "SELECT version_pid, acknowledged_on FROM policy_acknowledgements WHERE worker_pid = $1",
+        worker.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|a| (a.version_pid, a.acknowledged_on))
+    .collect();
+    let rows = policies_of(ctx, &worker.organization_ref).await?;
     let mut out = Vec::new();
     let mut waiting = 0_usize;
     for p in &rows {
@@ -312,16 +372,8 @@ async fn applicable(
     version_pid: Uuid,
     today: NaiveDate,
 ) -> Result<policy_versions::Model> {
-    let v = policy_versions::Entity::find()
-        .filter(policy_versions::Column::Pid.eq(version_pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let policy = policies::Entity::find()
-        .filter(policies::Column::Pid.eq(v.policy_pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let v = version_by_pid(ctx, version_pid).await?;
+    let policy = policy_by_pid(ctx, v.policy_pid).await?;
     if policy.organization_ref != worker.organization_ref
         || !rules::in_audience(
             &v.audience_kind,
@@ -360,27 +412,29 @@ pub(crate) async fn acknowledge_for(
 ) -> Result<Response> {
     let today = Utc::now().date_naive();
     let version = applicable(ctx, worker, payload.version_pid, today).await?;
-    let existing = policy_acknowledgements::Entity::find()
-        .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-        .filter(policy_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .one(&crate::db::orm(ctx))
-        .await?;
-    if let Some(row) = existing {
-        return format::json(json!({ "acknowledged_on": row.acknowledged_on }));
+    let existing = sqlx::query_scalar!(
+        "SELECT acknowledged_on FROM policy_acknowledgements WHERE version_pid = $1 AND worker_pid = $2 LIMIT 1",
+        version.pid,
+        worker.pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?;
+    if let Some(acknowledged_on) = existing {
+        return format::json(json!({ "acknowledged_on": acknowledged_on }));
     }
     let ack_pid = Uuid::new_v4();
-    let txn = crate::db::orm(ctx).begin().await?;
-    policy_acknowledgements::ActiveModel {
-        pid: ActiveValue::set(ack_pid),
-        version_pid: ActiveValue::set(version.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        acknowledged_on: ActiveValue::set(today),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ($1, $2, $3, $4)",
+        ack_pid,
+        version.pid,
+        worker.pid,
+        today,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "policy_acknowledgement",
         ack_pid,
         "policy_acknowledged",
@@ -388,7 +442,7 @@ pub(crate) async fn acknowledge_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({ "acknowledged_on": today }))
 }
 
@@ -419,13 +473,19 @@ async fn audience_workers(
     organization: &str,
     on: NaiveDate,
 ) -> Result<Vec<workers::Model>> {
-    Ok(workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(organization))
-        .filter(workers::Column::DeletedAt.is_null())
-        .order_by_asc(workers::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
+    Ok(sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        organization,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
         .filter(|w| is_employed_on(on, w.hired_on, w.terminated_on))
         .filter(|w| {
             rules::in_audience(
@@ -446,20 +506,12 @@ async fn version_and_org(
     pid: Uuid,
     scoped: bool,
 ) -> Result<(policy_versions::Model, String)> {
-    let v = policy_versions::Entity::find()
-        .filter(policy_versions::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let v = version_by_pid(ctx, pid).await?;
     if scoped {
         let policy = find_policy(ctx, caller, v.policy_pid).await?;
         return Ok((v, policy.organization_ref));
     }
-    let policy = policies::Entity::find()
-        .filter(policies::Column::Pid.eq(v.policy_pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let policy = policy_by_pid(ctx, v.policy_pid).await?;
     Ok((v, policy.organization_ref))
 }
 
@@ -489,11 +541,13 @@ async fn team_counts(
         .filter(|w| w.manager_pid == Some(manager.pid))
         .map(|w| w.pid)
         .collect();
-    let acknowledged = policy_acknowledgements::Entity::find()
-        .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-        .filter(policy_acknowledgements::Column::WorkerPid.is_in(team.clone()))
-        .count(&crate::db::orm(&ctx))
-        .await?;
+    let acknowledged = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "n!" FROM policy_acknowledgements WHERE version_pid = $1 AND worker_pid = ANY($2)"#,
+        version.pid,
+        &team,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     let count = rules::team_count(
         team.len(),
         usize::try_from(acknowledged).unwrap_or(0),
@@ -515,15 +569,17 @@ async fn named_record(
         return Err(forbidden("the named record is for HR"));
     }
     let people = audience_workers(&ctx, &version, &organization, Utc::now().date_naive()).await?;
-    let acked: BTreeMap<Uuid, NaiveDate> = policy_acknowledgements::Entity::find()
-        .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|a| (a.worker_pid, a.acknowledged_on))
-        .collect();
-    Audit::record(
-        &crate::db::orm(&ctx),
+    let acked: BTreeMap<Uuid, NaiveDate> = sqlx::query!(
+        "SELECT worker_pid, acknowledged_on FROM policy_acknowledgements WHERE version_pid = $1",
+        version.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|a| (a.worker_pid, a.acknowledged_on))
+    .collect();
+    db::audit(
+        &mut *db::pool(&ctx).acquire().await?,
         "policy_version",
         version.pid,
         "policy_acknowledgements_read",

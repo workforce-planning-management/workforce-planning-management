@@ -360,9 +360,13 @@ async fn revoke(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row =
-        records::find_organization_membership(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
-            .await?;
+    let row = sqlx::query!(
+        "SELECT pid, organization_ref, role FROM organization_memberships WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if !may_manage_membership(&ctx, &caller, &row.organization_ref, &row.role).await? {
         return Err(not_privileged());
     }
@@ -580,9 +584,13 @@ async fn revoke_confederation(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row =
-        records::find_organization_confederation(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
-            .await?;
+    let row = sqlx::query!(
+        "SELECT pid, parent_organization_ref FROM organization_confederations WHERE pid = $1 AND deleted_at IS NULL",
+        records::parse_pid(&pid)?,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     if !may_manage_confederation(&ctx, &caller, &row.parent_organization_ref).await? {
         return Err(not_privileged_for_confederation());
     }

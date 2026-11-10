@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, department, staff_group, starts_on, ends_on\n           FROM assignments WHERE worker_pid = ANY($1) ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "staff_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "staff_group"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "starts_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "starts_on"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "ends_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "44a3c31e2316f770307c3a60ce4f2e9ffc4a143f5e025ea7e0836f42f2a4b365"
+}
