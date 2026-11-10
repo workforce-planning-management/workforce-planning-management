@@ -2344,6 +2344,7 @@ collections:
               - { name: "padr", label: "Padr", widget: string, required: false, i18n: true }
               - { name: "help", label: "Help", widget: string, required: false, i18n: true }
               - { name: "guides", label: "Guides", widget: string, required: false, i18n: true }
+              - { name: "required", label: "Required", widget: string, required: false, i18n: true }
           - name: "values"
             label: "Values"
             widget: object
@@ -4541,6 +4542,15 @@ collections:
                     fields:
                       - { name: "title", label: "Title", widget: string, required: false, i18n: true }
                       - { name: "body", label: "Body", widget: text, required: false, i18n: true }
+                  - name: "required"
+                    label: "Required"
+                    widget: object
+                    collapsed: true
+                    required: false
+                    i18n: true
+                    fields:
+                      - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+                      - { name: "body", label: "Body", widget: text, required: false, i18n: true }
               - name: "manager"
                 label: "Manager"
                 widget: object
@@ -4641,3 +4651,24 @@ collections:
                       - { name: "title", label: "Title", widget: string, required: false, i18n: true }
                       - { name: "body", label: "Body", widget: text, required: false, i18n: true }
                   - { name: "chooseOrg", label: "Choose Org", widget: text, required: false, i18n: true }
+          - name: "required"
+            label: "Required"
+            widget: object
+            collapsed: true
+            required: false
+            i18n: true
+            fields:
+              - { name: "link", label: "Link", widget: string, required: false, i18n: true }
+              - { name: "title", label: "Title", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "learningTitle", label: "Learning Title", widget: string, required: false, i18n: true }
+              - { name: "certsTitle", label: "Certs Title", widget: string, required: false, i18n: true }
+              - { name: "allClear", label: "All Clear", widget: string, required: false, i18n: true }
+              - { name: "attention", label: "Attention", widget: string, required: false, i18n: true }
+              - { name: "learningAct", label: "Learning Act", widget: string, required: false, i18n: true }
+              - { name: "learningHow", label: "Learning How", widget: text, required: false, i18n: true }
+              - { name: "certAct", label: "Cert Act", widget: string, required: false, i18n: true }
+              - { name: "certMissingHow", label: "Cert Missing How", widget: string, required: false, i18n: true }
+              - { name: "certDeclaredHow", label: "Cert Declared How", widget: string, required: false, i18n: true }
+              - { name: "certExpiredHow", label: "Cert Expired How", widget: string, required: false, i18n: true }
+              - { name: "noExpiry", label: "No Expiry", widget: string, required: false, i18n: true }

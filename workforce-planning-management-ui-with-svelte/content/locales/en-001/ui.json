@@ -1573,7 +1573,8 @@
     "myPadrs": "My development reviews — WPM",
     "padr": "Development review — WPM",
     "help": "Help — WPM",
-    "guides": "Walkthroughs — WPM"
+    "guides": "Walkthroughs — WPM",
+    "required": "My mandatory training and certifications — WPM"
   },
   "values": {
     "abandoned": "abandoned",
@@ -3371,6 +3372,10 @@
       "feedback": {
         "title": "Answer a request for 360° feedback",
         "body": "On My profile, choose My record: leave, payslips, reviews and 360° appraisals. Under My 360 requests, press Respond, score each competency from 1 to 5, add a comment if you wish, and press Respond again. Answers from peers and reports are only ever shown as a group of three or more."
+      },
+      "required": {
+        "title": "Find your mandatory training and certifications",
+        "body": "On My profile, choose My mandatory training and certifications. Training you must complete lists each requirement with its status (In date, Due soon, Expired, Never completed) and when it expires; Certifications your role asks for lists each one with its standing and the day it expires. Whatever needs attention is at the top, with what to do next and a link."
       }
     },
     "manager": {
@@ -3418,5 +3423,21 @@
       },
       "chooseOrg": "On a page with an Organization list, choose the organization first: the lists and forms appear once it is chosen."
     }
+  },
+  "required": {
+    "link": "My mandatory training and certifications",
+    "title": "My mandatory training and certifications",
+    "hint": "What you must complete or hold, with whatever needs doing first at the top. Each line says what to do next.",
+    "learningTitle": "Training you must complete",
+    "certsTitle": "Certifications your role asks for",
+    "allClear": "Nothing needs doing now.",
+    "attention": "Needs attention",
+    "learningAct": "My training record",
+    "learningHow": "Book one of its courses in your organization's learning system; once you complete it, it counts here. If you did it elsewhere, ask HR to record the completion.",
+    "certAct": "Add or update it on My profile",
+    "certMissingHow": "If you hold it, add it with its dates; HR then verifies it.",
+    "certDeclaredHow": "HR has not verified it yet. Tell HR where the proof is held.",
+    "certExpiredHow": "Add the renewed one with its new dates.",
+    "noExpiry": "Does not expire"
   }
 }

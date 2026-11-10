@@ -1601,7 +1601,8 @@
     "myPadrs": "Fy adolygiadau datblygu — WPM",
     "padr": "Adolygiad datblygu — WPM",
     "help": "Cymorth — WPM",
-    "guides": "Canllawiau cam wrth gam — WPM"
+    "guides": "Canllawiau cam wrth gam — WPM",
+    "required": "Fy hyfforddiant gorfodol a'm hardystiadau — WPM"
   },
   "values": {
     "abandoned": "wedi'i adael",
@@ -3432,6 +3433,10 @@
       "feedback": {
         "title": "Ateb cais am adborth 360°",
         "body": "Ar Fy mhroffil, dewiswch Fy nghofnod: absenoldeb, slipiau cyflog, adolygiadau ac arfarniadau 360°. O dan Fy ngheisiadau 360, pwyswch Ymateb, sgoriwch bob cymhwysedd o 1 i 5, ychwanegwch sylw os dymunwch, a phwyswch Ymateb eto. Dim ond fel grŵp o dri neu fwy y dangosir atebion gan gymheiriaid ac adroddeion."
+      },
+      "required": {
+        "title": "Dod o hyd i'ch hyfforddiant gorfodol a'ch ardystiadau",
+        "body": "Ar Fy mhroffil, dewiswch Fy hyfforddiant gorfodol a'm hardystiadau. Mae Hyfforddiant y mae'n rhaid i chi ei gwblhau yn rhestru pob gofyniad gyda'i statws (Cyfredol, Yn ddyledus cyn bo hir, Wedi dod i ben, Heb ei gwblhau erioed) a phryd mae'n dod i ben; mae Ardystiadau y mae eich rôl yn gofyn amdanynt yn rhestru pob un gyda'i statws a'r diwrnod y daw i ben. Mae'r hyn sydd angen sylw ar y brig, gyda beth i'w wneud nesaf a dolen."
       }
     },
     "manager": {
@@ -3454,5 +3459,21 @@
         "body": "Agorwch Gweithwyr o'r ddewislen a dewis y person. O dan Arfarniadau 360°, enwch y cymwyseddau a phwyswch 360 newydd. Agorwch ef, enwebwch o leiaf dri sgoriwr gyda'u perthynas, a phwyswch Dechrau casglu. Pan fydd digon wedi ateb, pwyswch Rhannu'r adroddiad; caiff grŵp o gymheiriaid neu adroddeion â llai na thri ateb ei ddal yn ôl."
       }
     }
+  },
+  "required": {
+    "link": "Fy hyfforddiant gorfodol a'm hardystiadau",
+    "title": "Fy hyfforddiant gorfodol a'm hardystiadau",
+    "hint": "Yr hyn y mae'n rhaid i chi ei gwblhau neu ei feddu, gyda'r hyn sydd angen ei wneud gyntaf ar y brig. Mae pob llinell yn dweud beth i'w wneud nesaf.",
+    "learningTitle": "Hyfforddiant y mae'n rhaid i chi ei gwblhau",
+    "certsTitle": "Ardystiadau y mae eich rôl yn gofyn amdanynt",
+    "allClear": "Does dim angen gwneud dim ar hyn o bryd.",
+    "attention": "Angen sylw",
+    "learningAct": "Fy nghofnod hyfforddiant",
+    "learningHow": "Archebwch un o'i gyrsiau yn system ddysgu eich sefydliad; unwaith y byddwch yn ei gwblhau, mae'n cyfrif yma. Os gwnaethoch ef yn rhywle arall, gofynnwch i AD gofnodi'r cwblhau.",
+    "certAct": "Ei ychwanegu neu ei ddiweddaru ar Fy mhroffil",
+    "certMissingHow": "Os yw gennych, ychwanegwch ef gyda'i ddyddiadau; yna bydd AD yn ei wirio.",
+    "certDeclaredHow": "Nid yw AD wedi'i wirio eto. Dywedwch wrth AD ble mae'r prawf yn cael ei gadw.",
+    "certExpiredHow": "Ychwanegwch yr un a adnewyddwyd gyda'i ddyddiadau newydd.",
+    "noExpiry": "Nid yw'n dod i ben"
   }
 }

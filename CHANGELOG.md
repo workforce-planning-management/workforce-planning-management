@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — an employee's mandatory training and certifications in one place (WPM-R245, WPM-D192, WPM-T487, 2026-11-10)
+
+`/me/required`, first on My profile: what is mandatory, what is due or overdue, which certifications the role requires and when
+they expire, each with a link to act.
+
 ### Added — walkthroughs for learning WPM (WPM-R244, WPM-T486, 2026-11-10)
 
 Task-by-task walkthroughs for an employee, a manager and HR, reached from the tour and the help page.

@@ -16,13 +16,13 @@
     "tests": {
       "service_unit_declared": 1295,
       "service_request_declared": 226,
-      "ui_unit_declared": 288,
-      "ui_e2e_declared": 321,
+      "ui_unit_declared": 294,
+      "ui_e2e_declared": 328,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 133,
     "controllers": 96,
-    "pages": 68
+    "pages": 69
   },
   "sections": {
     "specification": [
@@ -429,7 +429,7 @@
       {
         "title": "spec/help-and-learning.md",
         "path": "spec/help-and-learning.md",
-        "description": "WPM-R243–R245, WPM-D191–D193 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean"
+        "description": "WPM-R243–R245, WPM-D191–D192 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean"
       },
       {
         "title": "spec/local-ci-cd.md",

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — my mandatory training and certifications (WPM-R245, WPM-T487)
+
+`/me/required`, first on `/me`: training that applies and certifications the role asks for, most urgent first, with expiry days and
+a link to act; `tests/e2e/my-required.spec.ts`, `tests/unit/required.test.ts`; 17 strings in 13 locales (AI-written, unreviewed).
+The not-found page no longer takes the title of a page that failed while showing.
+
 ### Added — walkthroughs for an employee, a manager and HR (WPM-R244, WPM-T486)
 
 `/tour/employee`, `/tour/manager`, `/tour/hr`, linked from the tour and help; `tests/e2e/guides.spec.ts`, `tests/unit/guides.test.ts`;

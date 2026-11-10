@@ -54,6 +54,8 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
 <svelte:head><title>{tf("pages.me.page_title", { me: t("nav.me") })}</title></svelte:head>
 
 <h1>{t("nav.me")}</h1>
+<!-- What is required of me (WPM-R245): first on the page, so an employee finds mandatory training and certifications at once. -->
+<p><a class="btn primary" href={l("/me/required")} data-testid="my-required-link">{t("required.link")}</a></p>
 <p><a href={l("/me/payslips")} data-testid="my-payslips-link">{t("payslips.link")}</a></p>
 <WaitingForYou />
 <p><a href={l("/me/goals")} data-testid="my-goals-link">{t("goals.link")}</a></p>

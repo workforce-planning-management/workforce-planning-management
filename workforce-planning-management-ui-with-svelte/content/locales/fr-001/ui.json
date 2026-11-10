@@ -1580,7 +1580,8 @@
     "myPadrs": "Mes entretiens de développement — WPM",
     "padr": "Entretien de développement — WPM",
     "help": "Aide — WPM",
-    "guides": "Guides pas à pas — WPM"
+    "guides": "Guides pas à pas — WPM",
+    "required": "Mes formations obligatoires et certifications — WPM"
   },
   "values": {
     "abandoned": "abandonné",
@@ -3405,6 +3406,10 @@
       "feedback": {
         "title": "Répondre à une demande de feedback 360°",
         "body": "Sur Mon profil, choisissez Mon dossier : absences, bulletins de paie, évaluations et évaluations 360°. Sous Mes demandes 360, appuyez sur Répondre, notez chaque compétence de 1 à 5, ajoutez un commentaire si vous le souhaitez, puis appuyez de nouveau sur Répondre. Les réponses des pairs et des collaborateurs ne sont jamais présentées qu'en groupe de trois ou plus."
+      },
+      "required": {
+        "title": "Trouver vos formations obligatoires et certifications",
+        "body": "Sur Mon profil, choisissez Mes formations obligatoires et certifications. Formations à suivre liste chaque exigence avec son statut (À jour, Bientôt échue, Expirée, Jamais réalisée) et sa date d'échéance ; Certifications demandées par votre poste liste chacune avec sa situation et le jour où elle expire. Ce qui demande votre attention figure en haut, avec la marche à suivre et un lien."
       }
     },
     "manager": {
@@ -3427,5 +3432,21 @@
         "body": "Ouvrez Travailleurs depuis le menu et choisissez la personne. Sous Évaluations 360°, nommez les compétences et appuyez sur Nouvelle 360. Ouvrez-la, désignez au moins trois évaluateurs avec leur relation, puis appuyez sur Lancer la collecte. Quand suffisamment de personnes ont répondu, appuyez sur Partager le rapport ; un groupe de pairs ou de collaborateurs ayant moins de trois réponses n'est pas communiqué."
       }
     }
+  },
+  "required": {
+    "link": "Mes formations obligatoires et certifications",
+    "title": "Mes formations obligatoires et certifications",
+    "hint": "Ce que vous devez suivre ou détenir, avec en haut ce qui doit être fait en premier. Chaque ligne indique quoi faire ensuite.",
+    "learningTitle": "Formations à suivre",
+    "certsTitle": "Certifications demandées par votre poste",
+    "allClear": "Rien à faire pour le moment.",
+    "attention": "Demande votre attention",
+    "learningAct": "Mon historique de formation",
+    "learningHow": "Réservez l'une de ses sessions dans le système de formation de votre organisation ; une fois terminée, elle compte ici. Si vous l'avez suivie ailleurs, demandez aux RH d'enregistrer la réalisation.",
+    "certAct": "L'ajouter ou la mettre à jour sur Mon profil",
+    "certMissingHow": "Si vous la détenez, ajoutez-la avec ses dates ; les RH la vérifient ensuite.",
+    "certDeclaredHow": "Les RH ne l'ont pas encore vérifiée. Indiquez aux RH où la preuve est conservée.",
+    "certExpiredHow": "Ajoutez la certification renouvelée avec ses nouvelles dates.",
+    "noExpiry": "N'expire pas"
   }
 }

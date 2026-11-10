@@ -26,5 +26,8 @@
     "hr": {
       "chooseOrg": "On a page with an Organisation list, choose the organisation first: the lists and forms appear once it is chosen."
     }
+  },
+  "required": {
+    "learningHow": "Book one of its courses in your organisation's learning system; once you complete it, it counts here. If you did it elsewhere, ask HR to record the completion."
   }
 }

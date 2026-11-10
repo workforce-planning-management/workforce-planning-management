@@ -9,7 +9,8 @@
   const heading = $derived(page.status === 404 ? t("errorPage.notFound") : t("errorPage.failed"));
 </script>
 
-<svelte:head><title>{heading}</title></svelte:head>
+<!-- Only a missing page takes the title: a page that failed while showing keeps its own name in the tab, which says where it failed. -->
+<svelte:head>{#if page.status === 404}<title>{heading}</title>{/if}</svelte:head>
 
 <h1 data-testid="error-page-title">{heading}</h1>
 <p>{t("errorPage.hint")}</p>

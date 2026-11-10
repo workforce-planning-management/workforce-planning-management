@@ -428,7 +428,7 @@
   />
   <ReviewGoals {reviews} />
 
-  <h2>{t("emp.training")}</h2>
+  <h2 id="training">{t("emp.training")}</h2>
   {@render panelError("training")}
   <DataTable
     label={t("emp.training")}

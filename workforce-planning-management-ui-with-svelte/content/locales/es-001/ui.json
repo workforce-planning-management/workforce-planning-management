@@ -1580,7 +1580,8 @@
     "myPadrs": "Mis evaluaciones de desarrollo — WPM",
     "padr": "Evaluación de desarrollo — WPM",
     "help": "Ayuda — WPM",
-    "guides": "Guías paso a paso — WPM"
+    "guides": "Guías paso a paso — WPM",
+    "required": "Mi formación obligatoria y certificaciones — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -3405,6 +3406,10 @@
       "feedback": {
         "title": "Responder a una solicitud de feedback 360°",
         "body": "En Mi perfil, elija Mi expediente: ausencias, nóminas, evaluaciones y evaluaciones 360°. En Mis solicitudes 360, pulse Responder, puntúe cada competencia de 1 a 5, añada un comentario si lo desea y vuelva a pulsar Responder. Las respuestas de compañeros y de subordinados solo se muestran como un grupo de tres o más."
+      },
+      "required": {
+        "title": "Encontrar su formación obligatoria y certificaciones",
+        "body": "En Mi perfil, elija Mi formación obligatoria y certificaciones. Formación que debe completar enumera cada requisito con su estado (Al día, Próximo a vencer, Caducado, Nunca realizado) y cuándo vence; Certificaciones que pide su puesto enumera cada una con su situación y el día en que caduca. Lo que requiere atención aparece arriba, con qué hacer a continuación y un enlace."
       }
     },
     "manager": {
@@ -3427,5 +3432,21 @@
         "body": "Abra Trabajadores en el menú y elija a la persona. En Evaluaciones 360°, nombre las competencias y pulse Nueva 360. Ábrala, designe al menos tres evaluadores con su relación y pulse Iniciar recogida. Cuando hayan respondido suficientes, pulse Compartir informe; un grupo de compañeros o de subordinados con menos de tres respuestas se retiene."
       }
     }
+  },
+  "required": {
+    "link": "Mi formación obligatoria y certificaciones",
+    "title": "Mi formación obligatoria y certificaciones",
+    "hint": "Lo que debe completar o tener, con lo más urgente arriba. Cada línea indica qué hacer a continuación.",
+    "learningTitle": "Formación que debe completar",
+    "certsTitle": "Certificaciones que pide su puesto",
+    "allClear": "No hay nada que hacer ahora.",
+    "attention": "Requiere atención",
+    "learningAct": "Mi historial de formación",
+    "learningHow": "Reserve uno de sus cursos en el sistema de formación de su organización; cuando lo complete, contará aquí. Si lo realizó en otro lugar, pida a RR. HH. que registre la realización.",
+    "certAct": "Añadirla o actualizarla en Mi perfil",
+    "certMissingHow": "Si la tiene, añádala con sus fechas; después RR. HH. la verifica.",
+    "certDeclaredHow": "RR. HH. aún no la ha verificado. Indique a RR. HH. dónde se conserva la prueba.",
+    "certExpiredHow": "Añada la renovada con sus nuevas fechas.",
+    "noExpiry": "No caduca"
   }
 }

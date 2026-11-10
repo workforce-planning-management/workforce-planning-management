@@ -627,3 +627,4 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R216** the worker list returns only the fields a caller names (`?fields=`, an allowlist; unknown is 422) under the same policy and scope, and audits a salary read for each worker whose salary it carries unmasked — [cross-app-bridges.md](cross-app-bridges.md) (WPM-D147; WPM-T388).
 - **WPM-R243** getting help is obvious everywhere: a Help link in every header, a public help page, and every error saying what to try and linking to help — [help-and-learning.md](help-and-learning.md).
 - **WPM-R244** walkthroughs for an employee, a manager and HR under the tour, each task saying where to click and what you see — [help-and-learning.md](help-and-learning.md).
+- **WPM-R245** an employee finds their mandatory training and the certifications their role requires in one place from `/me`, most urgent first, with expiry days and a link to act — [help-and-learning.md](help-and-learning.md).

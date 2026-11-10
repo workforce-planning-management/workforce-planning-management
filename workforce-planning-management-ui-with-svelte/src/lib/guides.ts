@@ -14,6 +14,7 @@ export interface GuideTask {
 
 export const GUIDES: Record<GuideRole, readonly GuideTask[]> = {
   employee: [
+    { id: "required", path: "/me/required" },
     { id: "waiting", path: "/me" },
     { id: "goal", path: "/me/goals" },
     { id: "qualification", path: "/me" },

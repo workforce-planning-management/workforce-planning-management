@@ -86,7 +86,7 @@
           : t("qualifications.standingMissing");
 </script>
 
-<section class="panel" data-testid="my-qualifications">
+<section class="panel" id="my-qualifications" data-testid="my-qualifications">
   <h2>{t("qualifications.title")}</h2>
   {#if error}
     <ErrorNote testid="my-qualifications-error" message={error} />

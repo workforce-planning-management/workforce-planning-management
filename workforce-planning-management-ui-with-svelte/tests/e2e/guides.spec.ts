@@ -26,8 +26,14 @@ test.describe("Walkthroughs", () => {
   }) => {
     await page.goto("/tour/employee");
     const tasks = page.getByTestId("guide-task");
-    await expect(tasks.first()).toContainText("See what is waiting for you");
-    await expect(tasks.first()).toContainText("Waiting for you panel");
+    await expect(tasks.first()).toContainText(
+      "Find your mandatory training and certifications",
+    );
+    await expect(tasks.first().getByTestId("guide-open")).toHaveAttribute(
+      "href",
+      "/en-001/me/required",
+    );
+    await expect(tasks.nth(1)).toContainText("Waiting for you panel");
     const goal = tasks.filter({ hasText: "Propose a goal" });
     await expect(goal.getByTestId("guide-open")).toHaveAttribute(
       "href",

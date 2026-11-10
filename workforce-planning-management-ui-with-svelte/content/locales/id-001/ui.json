@@ -1566,7 +1566,8 @@
     "myPadrs": "Penilaian pengembangan saya — WPM",
     "padr": "Penilaian pengembangan — WPM",
     "help": "Bantuan — WPM",
-    "guides": "Panduan langkah demi langkah — WPM"
+    "guides": "Panduan langkah demi langkah — WPM",
+    "required": "Pelatihan wajib dan sertifikasi saya — WPM"
   },
   "values": {
     "abandoned": "ditinggalkan",
@@ -3387,6 +3388,10 @@
       "feedback": {
         "title": "Jawab permintaan umpan balik 360°",
         "body": "Di Profil saya, pilih Catatan saya: cuti, slip gaji, tinjauan, dan penilaian 360°. Di bawah Permintaan 360 saya, tekan Tanggapi, beri skor setiap kompetensi dari 1 sampai 5, tambahkan komentar jika mau, lalu tekan Tanggapi lagi. Jawaban dari rekan dan bawahan hanya ditampilkan sebagai kelompok berisi tiga orang atau lebih."
+      },
+      "required": {
+        "title": "Temukan pelatihan wajib dan sertifikasi Anda",
+        "body": "Di Profil saya, pilih Pelatihan wajib dan sertifikasi saya. Pelatihan yang harus Anda selesaikan mencantumkan setiap persyaratan dengan statusnya (Terkini, Segera jatuh tempo, Kedaluwarsa, Belum pernah diselesaikan) dan kapan kedaluwarsa; Sertifikasi yang diminta peran Anda mencantumkan masing-masing dengan kedudukannya dan tanggal kedaluwarsanya. Apa pun yang perlu perhatian ada di bagian atas, dengan langkah berikutnya dan sebuah tautan."
       }
     },
     "manager": {
@@ -3409,5 +3414,21 @@
         "body": "Buka Pekerja dari menu dan pilih orangnya. Di bawah Penilaian 360°, sebutkan kompetensinya dan tekan 360 baru. Buka penilaian itu, tunjuk paling sedikit tiga penilai beserta hubungannya, lalu tekan Mulai pengumpulan. Setelah cukup banyak yang menjawab, tekan Bagikan laporan; kelompok rekan atau bawahan dengan kurang dari tiga jawaban tidak ditampilkan."
       }
     }
+  },
+  "required": {
+    "link": "Pelatihan wajib dan sertifikasi saya",
+    "title": "Pelatihan wajib dan sertifikasi saya",
+    "hint": "Apa yang harus Anda selesaikan atau miliki, dengan apa pun yang perlu dikerjakan lebih dulu di bagian atas. Setiap baris menyebutkan langkah berikutnya.",
+    "learningTitle": "Pelatihan yang harus Anda selesaikan",
+    "certsTitle": "Sertifikasi yang diminta peran Anda",
+    "allClear": "Tidak ada yang perlu dikerjakan sekarang.",
+    "attention": "Perlu perhatian",
+    "learningAct": "Catatan pelatihan saya",
+    "learningHow": "Pesan salah satu kursusnya di sistem pembelajaran organisasi Anda; setelah Anda menyelesaikannya, kursus itu dihitung di sini. Jika Anda melakukannya di tempat lain, minta HR mencatat penyelesaiannya.",
+    "certAct": "Tambahkan atau perbarui di Profil saya",
+    "certMissingHow": "Jika Anda memilikinya, tambahkan beserta tanggalnya; HR kemudian memverifikasinya.",
+    "certDeclaredHow": "HR belum memverifikasinya. Beri tahu HR di mana bukti disimpan.",
+    "certExpiredHow": "Tambahkan yang sudah diperbarui beserta tanggal barunya.",
+    "noExpiry": "Tidak kedaluwarsa"
   }
 }

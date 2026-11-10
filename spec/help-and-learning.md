@@ -1,6 +1,6 @@
 # Help, learning to use WPM, and what is required of me
 
-WPM-R243–R245, WPM-D191–D193; tasks WPM-T484–WPM-T487. The maintainer asked on 2026-11-10, in these words: "emphasize how to
+WPM-R243–R245, WPM-D191–D192; tasks WPM-T484–WPM-T487 (WPM-D193 unused). The maintainer asked on 2026-11-10, in these words: "emphasize how to
 get help for bugs, confusion, workflows" (in the UI's help page and header link, the README and the documentation site, and in-context
 hints: "for any error, show the user how to get help or suggestions"), "make it easy to upload appraisals", "create much better
 e-learning" (chosen: learning to use WPM), and "make it simpler to have an employee find mandatory training and mandatory
@@ -55,6 +55,40 @@ Acceptance criteria:
 4. Tasks covered: an employee (what is waiting for you, propose a goal, add a qualification, read payslips, answer a 360° request);
    a manager (the team's training and qualifications, agree a goal, hold a PADR, run a 360°); HR (set a mandatory requirement,
    record training done elsewhere, verify a qualification, open a vacancy, start a joiner or leaver record).
+
+## WPM-R245 — An employee finds their mandatory training and certifications in one place
+
+**As** an employee, **I want** one page, reached first from my own home, that lists what is mandatory for me, what is due or
+overdue, and which certifications I must hold and when they expire, **so that** I do not have to search several panels to know
+what to do.
+
+Acceptance criteria:
+
+1. `/me/required`, linked as the first thing on `/me` ("My mandatory training and certifications"), and the first task of the
+   employee's walkthrough (WPM-R244).
+2. **Training you must complete:** each statutory or mandatory learning requirement that applies to the person (WPM-R170), with
+   its status, the last completion and the day it expires; not-applicable requirements are left out. Expired, never completed and
+   due soon are marked as needing attention (▲ and the word, never colour alone), say what to do (book a course in the
+   organization's learning system, or ask HR to record a completion done elsewhere) and link to the person's training record.
+   Unknown says the record does not say which group they are in (WPM-D117), and is neither in date nor missing.
+3. **Certifications your role asks for:** each qualification the person's current role requires (WPM-R171), with the service's
+   standing (met, declared and not yet verified, expired, not held), the day the record that answers it expires (or that it does
+   not expire), and, unless met, what to do and a link to add or update it on `/me`. With no role recorded it says so, never
+   "all met".
+4. Most urgent first in both lists. "Nothing needs doing now" only when both lists have loaded and nothing needs attention.
+5. Each list fails on its own, with the error note's next step and help link (WPM-R243).
+
+## WPM-D192 — The page reads what the panels read and decides nothing
+
+- **No new endpoint.** It reads `GET /workers/{pid}/mandatory-learning` and `GET /workers/{pid}/qualifications`, the same answers
+  `/me`'s panels read, under the same rules (the person reads their own). The service files were not changed.
+- **The standing is the service's.** To show the day a requirement's certification expires, the page finds which held
+  qualification answers it, mirroring the service's match (title and kind ignoring case and space; a minimum level needs the same
+  framework and a level at least that) and its preference (verified in date, then declared in date, then expired; the longest
+  lasting among equals). It never computes the standing itself; a unit test pins the mirror.
+- **"Act" goes where the action is.** WPM does not host courses (the course registry does), so the training link is the person's
+  training record and the words say where to book; the certification link is the qualifications panel on `/me`, where a person
+  adds or updates one.
 
 ## Uploading an appraisal: an open question (WPM-T485)
 

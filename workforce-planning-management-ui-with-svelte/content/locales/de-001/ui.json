@@ -1573,7 +1573,8 @@
     "myPadrs": "Meine Entwicklungsgespräche — WPM",
     "padr": "Entwicklungsgespräch — WPM",
     "help": "Hilfe — WPM",
-    "guides": "Anleitungen — WPM"
+    "guides": "Anleitungen — WPM",
+    "required": "Meine Pflichtschulungen und Zertifizierungen — WPM"
   },
   "values": {
     "abandoned": "abgebrochen",
@@ -3396,6 +3397,10 @@
       "feedback": {
         "title": "Eine Anfrage für 360°-Feedback beantworten",
         "body": "Wählen Sie auf Mein Profil Meine Akte: Abwesenheit, Gehaltsabrechnungen, Beurteilungen und 360°-Feedback. Drücken Sie unter Meine 360-Anfragen Antworten senden, bewerten Sie jede Kompetenz von 1 bis 5, fügen Sie nach Wunsch einen Kommentar hinzu und drücken Sie erneut Antworten senden. Antworten von Kolleginnen und Kollegen und von unterstellten Personen werden immer nur als Gruppe von drei oder mehr angezeigt."
+      },
+      "required": {
+        "title": "Ihre Pflichtschulungen und Zertifizierungen finden",
+        "body": "Wählen Sie auf Mein Profil Meine Pflichtschulungen und Zertifizierungen. Schulungen, die Sie absolvieren müssen listet jede Anforderung mit ihrem Status (Aktuell, Bald fällig, Abgelaufen, Nie abgeschlossen) und ihrem Ablaufdatum auf; Zertifizierungen, die Ihre Rolle verlangt listet jede mit ihrem Stand und dem Tag ihres Ablaufs auf. Was Aufmerksamkeit braucht, steht zuoberst, mit dem nächsten Schritt und einem Link."
       }
     },
     "manager": {
@@ -3418,5 +3423,21 @@
         "body": "Öffnen Sie Arbeitskräfte im Menü und wählen Sie die Person. Benennen Sie unter 360°-Beurteilungen die Kompetenzen und drücken Sie Neue 360. Öffnen Sie sie, benennen Sie mindestens drei Bewertende mit ihrer Beziehung und drücken Sie Sammlung starten. Wenn genug geantwortet haben, drücken Sie Bericht teilen; eine Gruppe von Kolleginnen und Kollegen oder unterstellten Personen mit weniger als drei Antworten wird zurückgehalten."
       }
     }
+  },
+  "required": {
+    "link": "Meine Pflichtschulungen und Zertifizierungen",
+    "title": "Meine Pflichtschulungen und Zertifizierungen",
+    "hint": "Was Sie absolvieren oder besitzen müssen, das Dringendste zuoberst. Jede Zeile sagt, was als Nächstes zu tun ist.",
+    "learningTitle": "Schulungen, die Sie absolvieren müssen",
+    "certsTitle": "Zertifizierungen, die Ihre Rolle verlangt",
+    "allClear": "Derzeit ist nichts zu tun.",
+    "attention": "Braucht Aufmerksamkeit",
+    "learningAct": "Mein Schulungsnachweis",
+    "learningHow": "Buchen Sie einen der zugehörigen Kurse im Lernsystem Ihrer Organisation; sobald Sie ihn abgeschlossen haben, zählt er hier. Haben Sie ihn anderswo absolviert, bitten Sie HR, den Abschluss zu erfassen.",
+    "certAct": "Auf Mein Profil hinzufügen oder aktualisieren",
+    "certMissingHow": "Wenn Sie sie besitzen, fügen Sie sie mit ihren Daten hinzu; HR prüft sie dann.",
+    "certDeclaredHow": "HR hat sie noch nicht geprüft. Teilen Sie HR mit, wo der Nachweis aufbewahrt wird.",
+    "certExpiredHow": "Fügen Sie die erneuerte mit ihren neuen Daten hinzu.",
+    "noExpiry": "Läuft nicht ab"
   }
 }

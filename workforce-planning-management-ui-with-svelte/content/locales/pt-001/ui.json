@@ -1580,7 +1580,8 @@
     "myPadrs": "As minhas avaliações de desenvolvimento — WPM",
     "padr": "Avaliação de desenvolvimento — WPM",
     "help": "Ajuda — WPM",
-    "guides": "Guias passo a passo — WPM"
+    "guides": "Guias passo a passo — WPM",
+    "required": "A minha formação obrigatória e certificações — WPM"
   },
   "values": {
     "abandoned": "abandonado",
@@ -3405,6 +3406,10 @@
       "feedback": {
         "title": "Responder a um pedido de feedback 360°",
         "body": "Em O meu perfil, escolha O meu registo: ausências, recibos de vencimento, avaliações e avaliações 360°. Em Minhas solicitações 360, prima Responder, pontue cada competência de 1 a 5, adicione um comentário se quiser, e prima Responder de novo. As respostas de pares e subordinados só são mostradas em grupos de três ou mais."
+      },
+      "required": {
+        "title": "Encontrar a sua formação obrigatória e certificações",
+        "body": "Em O meu perfil, escolha A minha formação obrigatória e certificações. Formação que tem de concluir lista cada requisito com o seu estado (Em dia, A vencer, Expirado, Nunca concluído) e quando expira; Certificações que a sua função exige lista cada uma com a sua situação e o dia em que expira. O que precisa de atenção está no topo, com o que fazer a seguir e uma ligação."
       }
     },
     "manager": {
@@ -3427,5 +3432,21 @@
         "body": "Abra Trabalhadores no menu e escolha a pessoa. Em Avaliações 360°, indique as competências e prima Nova 360. Abra-a, nomeie pelo menos três avaliadores com a sua relação, e prima Iniciar coleta. Quando houver respostas suficientes, prima Compartilhar relatório; um grupo de pares ou subordinados com menos de três respostas é retido."
       }
     }
+  },
+  "required": {
+    "link": "A minha formação obrigatória e certificações",
+    "title": "A minha formação obrigatória e certificações",
+    "hint": "O que tem de concluir ou possuir, com o que precisa de ser feito primeiro no topo. Cada linha diz o que fazer a seguir.",
+    "learningTitle": "Formação que tem de concluir",
+    "certsTitle": "Certificações que a sua função exige",
+    "allClear": "Nada precisa de ser feito agora.",
+    "attention": "Precisa de atenção",
+    "learningAct": "O meu registo de formação",
+    "learningHow": "Reserve um dos seus cursos no sistema de formação da sua organização; quando o concluir, conta aqui. Se o fez noutro local, peça aos RH que registem a conclusão.",
+    "certAct": "Adicione-a ou atualize-a em O meu perfil",
+    "certMissingHow": "Se a possui, adicione-a com as suas datas; depois os RH verificam-na.",
+    "certDeclaredHow": "Os RH ainda não a verificaram. Diga aos RH onde está guardada a prova.",
+    "certExpiredHow": "Adicione a renovada com as novas datas.",
+    "noExpiry": "Não expira"
   }
 }
