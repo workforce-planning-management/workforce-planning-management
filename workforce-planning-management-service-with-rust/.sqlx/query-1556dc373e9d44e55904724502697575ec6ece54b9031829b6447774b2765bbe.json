@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.pid, a.worker_pid, a.competencies, n.rater_group,\n                  (SELECT w.display_name FROM workers w WHERE w.pid = a.worker_pid ORDER BY w.id LIMIT 1) AS subject\n             FROM appraisal_nominations n\n             JOIN appraisals a ON a.pid = n.appraisal_pid AND a.deleted_at IS NULL AND a.status = 'collecting'\n            WHERE n.rater_pid = $1\n              AND NOT EXISTS (SELECT 1 FROM appraisal_responses r WHERE r.nomination_pid = n.pid)\n            ORDER BY n.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "competencies",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "appraisals",
+            "name": "competencies"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "rater_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "rater_group"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "subject",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "1556dc373e9d44e55904724502697575ec6ece54b9031829b6447774b2765bbe"
+}

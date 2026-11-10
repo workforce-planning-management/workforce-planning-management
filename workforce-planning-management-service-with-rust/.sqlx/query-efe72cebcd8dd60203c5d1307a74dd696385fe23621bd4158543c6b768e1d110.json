@@ -1,0 +1,172 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind,\n                  target_job_title, target_department, rationale, status, started_on, target_on,\n                  deleted_at AS \"deleted_at: _\"\n             FROM development_plans WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "target_job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "target_job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "target_department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "target_department"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "rationale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "rationale"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "started_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "started_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "target_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "target_on"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plans",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "efe72cebcd8dd60203c5d1307a74dd696385fe23621bd4158543c6b768e1d110"
+}

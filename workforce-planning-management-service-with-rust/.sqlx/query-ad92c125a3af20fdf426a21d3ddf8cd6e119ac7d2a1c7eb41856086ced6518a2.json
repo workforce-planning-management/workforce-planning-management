@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rater_pid FROM appraisal_nominations WHERE appraisal_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rater_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "rater_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ad92c125a3af20fdf426a21d3ddf8cd6e119ac7d2a1c7eb41856086ced6518a2"
+}

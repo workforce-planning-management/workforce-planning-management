@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, name, kind, level,\n                  duration_months, min_off_the_job_hours, provider_ref, deleted_at AS \"deleted_at: _\"\n             FROM early_career_programs\n            WHERE deleted_at IS NULL AND ($1::text IS NULL OR kind = $1)\n            ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "duration_months",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "duration_months"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "min_off_the_job_hours",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "min_off_the_job_hours"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "provider_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "provider_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "early_career_programs",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "f1d7875e1fd0c35180fe5ed677cbafbfe7cc21bd3a071085f96feac854d83610"
+}

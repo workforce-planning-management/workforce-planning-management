@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT rater_group, scores, comment FROM appraisal_responses WHERE appraisal_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "rater_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisal_responses",
+            "name": "rater_group"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "scores",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "appraisal_responses",
+            "name": "scores"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "comment",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisal_responses",
+            "name": "comment"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "72f727445ac2eab8e6bef481de1720c3c4bc9d9203a8414ffc8aa280308d8b62"
+}

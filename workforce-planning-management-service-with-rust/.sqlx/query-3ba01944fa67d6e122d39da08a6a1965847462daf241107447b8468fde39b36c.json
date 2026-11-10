@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, name, purpose, target_job_title, target_department\n           FROM talent_pipelines WHERE deleted_at IS NULL\n          ORDER BY name",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "purpose",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "purpose"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "target_job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "target_job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "target_department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "talent_pipelines",
+            "name": "target_department"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "3ba01944fa67d6e122d39da08a6a1965847462daf241107447b8468fde39b36c"
+}

@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.pid, m.subject_kind, m.subject_pid, m.stage, m.readiness, m.added_on,\n                  CASE WHEN m.subject_kind = 'worker'\n                       THEN (SELECT w.display_name FROM workers w WHERE w.pid = m.subject_pid ORDER BY w.id LIMIT 1)\n                       ELSE (SELECT c.display_name FROM candidates c WHERE c.pid = m.subject_pid ORDER BY c.id LIMIT 1)\n                  END AS display_name\n             FROM pipeline_members m\n            WHERE m.pipeline_pid = $1 AND m.deleted_at IS NULL\n            ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "subject_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "stage"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "readiness",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "readiness"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "added_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "added_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      null
+    ]
+  },
+  "hash": "2cfa95afd598fcc171edca241f8a7cfe12b882925bde40e4a6ba7de71f6875a6"
+}

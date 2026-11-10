@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pipeline_pid, stage FROM pipeline_members WHERE pipeline_pid = ANY($1) AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pipeline_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pipeline_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "stage"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3ce0f9a26d8e207014d5538e4f781c84618fea38611bd61fdad308c8b64ba40e"
+}

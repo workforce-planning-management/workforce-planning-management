@@ -1,0 +1,161 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE development_plan_items SET status = $2, updated_at = now()\n            WHERE pid = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, plan_pid, skill_pid,\n                  current_level, target_level, method, course_ref, due_on, status",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "plan_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "plan_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "skill_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "current_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "current_level"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "target_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "target_level"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "method",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "method"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "course_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "due_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "due_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_items",
+            "name": "status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "d9a6435adb416ea2305e12f697a04c64b2be0051391638902bf9039fecf64ab2"
+}

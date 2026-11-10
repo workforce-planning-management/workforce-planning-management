@@ -1,0 +1,148 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, pipeline_pid, subject_kind,\n                  subject_pid, stage, readiness, added_on, deleted_at AS \"deleted_at: _\"\n             FROM pipeline_members WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "pipeline_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "pipeline_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "subject_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "subject_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "stage",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "stage"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "readiness",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "readiness"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "added_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "added_on"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "pipeline_members",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "cbe7ea4e31c3596cdbf630a057da2c438c0c658af79a40cccd933274cb1514cb"
+}

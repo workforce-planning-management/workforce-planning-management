@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) AS \"open!\" FROM development_plan_items\n                WHERE plan_pid = $1 AND status NOT IN ('achieved', 'abandoned')",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "open!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "0978bf18a3b1b6f3abe3ef4139b39c6eff37ee031499622635579f60deda25e5"
+}

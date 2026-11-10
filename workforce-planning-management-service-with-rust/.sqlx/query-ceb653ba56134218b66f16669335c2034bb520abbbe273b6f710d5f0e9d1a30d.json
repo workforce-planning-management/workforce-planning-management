@@ -1,0 +1,173 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE program_placements SET off_the_job_hours = $2, updated_at = now()\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, program_pid, worker_pid,\n                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,\n                  deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "program_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "program_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "supervisor_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "supervisor_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "started_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "started_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "off_the_job_hours",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "off_the_job_hours"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "outcome",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "outcome"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "program_placements",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "ceb653ba56134218b66f16669335c2034bb520abbbe273b6f710d5f0e9d1a30d"
+}

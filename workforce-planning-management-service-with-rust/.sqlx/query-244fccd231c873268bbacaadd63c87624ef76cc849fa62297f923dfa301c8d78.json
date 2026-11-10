@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO appraisals (pid, worker_pid, competencies, status, shared_on, deleted_at)\n         VALUES ($1, $2, $3, 'draft', NULL, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "244fccd231c873268bbacaadd63c87624ef76cc849fa62297f923dfa301c8d78"
+}

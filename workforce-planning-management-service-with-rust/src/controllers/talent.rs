@@ -24,22 +24,93 @@
 use super::row_json;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::{ensure_valid, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{
-    candidates, development_plan_items, development_plans, early_career_programs, pipeline_members,
-    program_placements, skills, talent_pipelines, worker_skills, workers,
+    development_plan_items, development_plans, early_career_programs, pipeline_members,
+    program_placements, talent_pipelines,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::talent as rules;
 use crate::streaming;
 use crate::validation::Problems;
+
+// ─── The live (not soft-deleted) row by pid, or 404 ──────────────────────────
+
+async fn find_development_plan(ctx: &AppContext, pid: Uuid) -> Result<development_plans::Model> {
+    sqlx::query_as!(
+        development_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
+                  target_job_title, target_department, rationale, status, started_on, target_on,
+                  deleted_at AS "deleted_at: _"
+             FROM development_plans WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+async fn find_talent_pipeline(ctx: &AppContext, pid: Uuid) -> Result<talent_pipelines::Model> {
+    sqlx::query_as!(
+        talent_pipelines::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, purpose,
+                  target_job_title, target_department, deleted_at AS "deleted_at: _"
+             FROM talent_pipelines WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+async fn find_pipeline_member(ctx: &AppContext, pid: Uuid) -> Result<pipeline_members::Model> {
+    sqlx::query_as!(
+        pipeline_members::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pipeline_pid, subject_kind,
+                  subject_pid, stage, readiness, added_on, deleted_at AS "deleted_at: _"
+             FROM pipeline_members WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+async fn find_early_career_program(
+    ctx: &AppContext,
+    pid: Uuid,
+) -> Result<early_career_programs::Model> {
+    sqlx::query_as!(
+        early_career_programs::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind, level,
+                  duration_months, min_off_the_job_hours, provider_ref, deleted_at AS "deleted_at: _"
+             FROM early_career_programs WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
+
+async fn find_program_placement(ctx: &AppContext, pid: Uuid) -> Result<program_placements::Model> {
+    sqlx::query_as!(
+        program_placements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
+                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
+                  deleted_at AS "deleted_at: _"
+             FROM program_placements WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
+}
 
 /// A `{pid}` reference response.
 #[derive(serde::Serialize)]
@@ -157,67 +228,69 @@ async fn create_plan(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let plan = development_plans::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(payload.kind.clone()),
-        target_job_title: ActiveValue::set(payload.target_job_title.clone()),
-        target_department: ActiveValue::set(payload.target_department.clone()),
-        rationale: ActiveValue::set(payload.rationale.clone()),
-        status: ActiveValue::set("draft".to_string()),
-        started_on: ActiveValue::set(None),
-        target_on: ActiveValue::set(payload.target_on),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let plan_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO development_plans (pid, worker_pid, kind, target_job_title, target_department, rationale, status,
+                                        started_on, target_on, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'draft', NULL, $7, NULL)",
+        plan_pid,
+        worker.pid,
+        payload.kind,
+        payload.target_job_title,
+        payload.target_department,
+        payload.rationale,
+        payload.target_on,
+    )
+    .execute(&mut *tx)
     .await?;
     for item in &payload.items {
         // The skill must exist — a plan step against an unknown skill
         // could never be verified against declared proficiency.
-        let skill = skills::Entity::find()
-            .filter(skills::Column::Pid.eq(item.skill_pid))
-            .filter(skills::Column::DeletedAt.is_null())
-            .one(&txn)
-            .await?
-            .ok_or(Error::NotFound)?;
-        development_plan_items::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            plan_pid: ActiveValue::set(plan.pid),
-            skill_pid: ActiveValue::set(skill.pid),
-            current_level: ActiveValue::set(item.current_level),
-            target_level: ActiveValue::set(item.target_level),
-            method: ActiveValue::set(item.method.clone()),
-            course_ref: ActiveValue::set(item.course_ref.clone()),
-            due_on: ActiveValue::set(item.due_on),
-            status: ActiveValue::set("planned".to_string()),
-            ..Default::default()
-        }
-        .insert(&txn)
+        let skill_pid = sqlx::query_scalar!(
+            "SELECT pid FROM skills WHERE pid = $1 AND deleted_at IS NULL LIMIT 1",
+            item.skill_pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .ok_or(Error::NotFound)?;
+        sqlx::query!(
+            "INSERT INTO development_plan_items (pid, plan_pid, skill_pid, current_level, target_level, method, course_ref,
+                                                 due_on, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'planned')",
+            Uuid::new_v4(),
+            plan_pid,
+            skill_pid,
+            item.current_level,
+            item.target_level,
+            item.method,
+            item.course_ref,
+            item.due_on,
+        )
+        .execute(&mut *tx)
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "development_plan",
-        plan.pid,
+        plan_pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({ "kind": payload.kind, "items": payload.items.len() })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "development_plan",
         "created",
-        &plan.pid.to_string(),
+        &plan_pid.to_string(),
         &worker.display_name,
         caller.actor(),
         Some(serde_json::json!({ "kind": payload.kind })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(plan.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(plan_pid))
 }
 
 /// `GET /api/workers/{pid}/development-plans` — one worker's plans
@@ -236,23 +309,46 @@ async fn list_plans(
     )
     .map_err(record_rejection)?;
 
-    let plans = development_plans::Entity::find()
-        .filter(development_plans::Column::WorkerPid.eq(worker.pid))
-        .filter(development_plans::Column::DeletedAt.is_null())
-        .order_by_asc(development_plans::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let plans = sqlx::query_as!(
+        development_plans::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
+                  target_job_title, target_department, rationale, status, started_on, target_on,
+                  deleted_at AS "deleted_at: _"
+             FROM development_plans WHERE worker_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let declared = declared_levels(&ctx, worker.pid).await?;
 
-    let mut view = Vec::with_capacity(plans.len());
-    for plan in &plans {
-        let items = development_plan_items::Entity::find()
-            .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
-            .order_by_asc(development_plan_items::Column::Id)
-            .all(&crate::db::orm(&ctx))
-            .await?;
-        view.push(plan_view(plan, &items, &declared));
+    // Every plan's items in one read, each plan's in id order.
+    let plan_pids: Vec<Uuid> = plans.iter().map(|p| p.pid).collect();
+    let mut items_by_plan: BTreeMap<Uuid, Vec<development_plan_items::Model>> = BTreeMap::new();
+    for item in sqlx::query_as!(
+        development_plan_items::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, skill_pid,
+                  current_level, target_level, method, course_ref, due_on, status
+             FROM development_plan_items WHERE plan_pid = ANY($1)
+            ORDER BY id"#,
+        &plan_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        items_by_plan.entry(item.plan_pid).or_default().push(item);
     }
+
+    let view: Vec<_> = plans
+        .iter()
+        .map(|plan| {
+            plan_view(
+                plan,
+                items_by_plan.get(&plan.pid).map_or(&[], Vec::as_slice),
+                &declared,
+            )
+        })
+        .collect();
     format::json(serde_json::json!({
         "worker_pid": worker.pid,
         "derivation": PROGRESS_DERIVATION,
@@ -296,11 +392,13 @@ fn plan_view(
 
 /// One worker's declared skill levels, keyed by skill.
 async fn declared_levels(ctx: &AppContext, worker_pid: Uuid) -> Result<BTreeMap<Uuid, i32>> {
-    let rows = worker_skills::Entity::find()
-        .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
-        .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?;
+    // Unordered, as before: a skill is declared once per worker.
+    let rows = sqlx::query!(
+        "SELECT skill_pid, proficiency FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL",
+        worker_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     Ok(rows
         .into_iter()
         .map(|r| (r.skill_pid, r.proficiency))
@@ -325,18 +423,17 @@ async fn plan_status(
     Path(pid): Path<String>,
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
-    let plan =
-        records::find_development_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let plan = find_development_plan(&ctx, records::parse_pid(&pid)?).await?;
     rules::plan_transition(&plan.status, &payload.to).map_err(|reason| unprocessable(&reason))?;
 
     if payload.to == "completed" {
-        let open = development_plan_items::Entity::find()
-            .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
-            .all(&crate::db::orm(&ctx))
-            .await?
-            .into_iter()
-            .filter(|i| !matches!(i.status.as_str(), "achieved" | "abandoned"))
-            .count();
+        let open = sqlx::query_scalar!(
+            r#"SELECT COUNT(*) AS "open!" FROM development_plan_items
+                WHERE plan_pid = $1 AND status NOT IN ('achieved', 'abandoned')"#,
+            plan.pid,
+        )
+        .fetch_one(db::pool(&ctx))
+        .await?;
         if open > 0 {
             return Err(unprocessable(&format!(
                 "{open} plan item(s) are still open; resolve them before completing the plan"
@@ -347,15 +444,23 @@ async fn plan_status(
     let from = plan.status.clone();
     let plan_pid = plan.pid;
     let today = chrono::Utc::now().date_naive();
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: development_plans::ActiveModel = plan.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if payload.to == "active" {
-        active.started_on = ActiveValue::set(Some(today));
-    }
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let started_on = (payload.to == "active").then_some(today);
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        development_plans::Model,
+        r#"UPDATE development_plans SET status = $2, started_on = COALESCE($3, started_on), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
+                  target_job_title, target_department, rationale, status, started_on, target_on,
+                  deleted_at AS "deleted_at: _""#,
+        plan.id,
+        payload.to,
+        started_on,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "development_plan",
         plan_pid,
         "status_changed",
@@ -363,7 +468,7 @@ async fn plan_status(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -391,18 +496,22 @@ async fn update_item(
     problems.require_token("status", rules::DEVELOPMENT_ITEM_STATUSES, &payload.status);
     ensure_valid(&problems.into_vec())?;
 
-    let item = development_plan_items::Entity::find()
-        .filter(development_plan_items::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
-    let item_pid = item.pid;
-    let mut active: development_plan_items::ActiveModel = item.into();
-    active.status = ActiveValue::set(payload.status.clone());
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let item_pid = records::parse_pid(&pid)?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        development_plan_items::Model,
+        r#"UPDATE development_plan_items SET status = $2, updated_at = now()
+            WHERE pid = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, skill_pid,
+                  current_level, target_level, method, course_ref, due_on, status"#,
+        item_pid,
+        payload.status,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "development_plan_item",
         item_pid,
         "status_changed",
@@ -410,7 +519,7 @@ async fn update_item(
         Some(serde_json::json!({ "to": payload.status })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -442,65 +551,76 @@ async fn create_pipeline(
     problems.cap_opt("target_department", payload.target_department.as_deref());
     ensure_valid(&problems.into_vec())?;
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = talent_pipelines::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        purpose: ActiveValue::set(payload.purpose.clone()),
-        target_job_title: ActiveValue::set(payload.target_job_title.clone()),
-        target_department: ActiveValue::set(payload.target_department.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pipeline_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO talent_pipelines (pid, name, purpose, target_job_title, target_department, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, NULL)",
+        pipeline_pid,
+        payload.name,
+        payload.purpose,
+        payload.target_job_title,
+        payload.target_department,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "talent_pipeline",
-        row.pid,
+        pipeline_pid,
         "created",
         caller.actor(),
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(pipeline_pid))
 }
 
 /// `GET /api/talent-pipelines` — every pipeline with its health.
 #[debug_handler]
 async fn list_pipelines(State(ctx): State<AppContext>) -> Result<Response> {
-    let pipelines = talent_pipelines::Entity::find()
-        .filter(talent_pipelines::Column::DeletedAt.is_null())
-        .order_by_asc(talent_pipelines::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let mut view = Vec::with_capacity(pipelines.len());
-    for pipeline in &pipelines {
-        let stages = member_stages(&ctx, pipeline.pid).await?;
-        view.push(serde_json::json!({
-            "pid": pipeline.pid,
-            "name": pipeline.name,
-            "purpose": pipeline.purpose,
-            "target_job_title": pipeline.target_job_title,
-            "target_department": pipeline.target_department,
-            "health": rules::pipeline_health(&stages),
-        }));
+    let pipelines = sqlx::query!(
+        "SELECT pid, name, purpose, target_job_title, target_department
+           FROM talent_pipelines WHERE deleted_at IS NULL
+          ORDER BY name",
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    // The stages of every pipeline's live member rows, in one read.
+    let pipeline_pids: Vec<Uuid> = pipelines.iter().map(|p| p.pid).collect();
+    let mut stages: BTreeMap<Uuid, Vec<String>> = BTreeMap::new();
+    for member in sqlx::query!(
+        "SELECT pipeline_pid, stage FROM pipeline_members WHERE pipeline_pid = ANY($1) AND deleted_at IS NULL",
+        &pipeline_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        stages
+            .entry(member.pipeline_pid)
+            .or_default()
+            .push(member.stage);
     }
+    let view: Vec<_> = pipelines
+        .iter()
+        .map(|pipeline| {
+            serde_json::json!({
+                "pid": pipeline.pid,
+                "name": pipeline.name,
+                "purpose": pipeline.purpose,
+                "target_job_title": pipeline.target_job_title,
+                "target_department": pipeline.target_department,
+                "health": rules::pipeline_health(
+                    stages.get(&pipeline.pid).map_or(&[], Vec::as_slice),
+                ),
+            })
+        })
+        .collect();
     format::json(serde_json::json!({
         "note": "health counts live members (placed and exited have left the pipeline)",
         "pipelines": view,
     }))
-}
-
-/// The stages of one pipeline's live member rows.
-async fn member_stages(ctx: &AppContext, pipeline_pid: Uuid) -> Result<Vec<String>> {
-    let rows = pipeline_members::Entity::find()
-        .filter(pipeline_members::Column::PipelinePid.eq(pipeline_pid))
-        .filter(pipeline_members::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?;
-    Ok(rows.into_iter().map(|r| r.stage).collect())
 }
 
 /// `POST /api/talent-pipelines/{pid}/members` body.
@@ -523,8 +643,7 @@ async fn add_member(
     Path(pid): Path<String>,
     Json(payload): Json<MemberPayload>,
 ) -> Result<Response> {
-    let pipeline =
-        records::find_talent_pipeline(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let pipeline = find_talent_pipeline(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token(
         "subject_kind",
@@ -538,50 +657,53 @@ async fn add_member(
     if payload.subject_kind == "worker" {
         records::worker_by_pid(&ctx, payload.subject_pid).await?;
     } else {
-        candidates::Entity::find()
-            .filter(candidates::Column::Pid.eq(payload.subject_pid))
-            .filter(candidates::Column::DeletedAt.is_null())
-            .one(&crate::db::orm(&ctx))
-            .await?
-            .ok_or(Error::NotFound)?;
+        sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM candidates WHERE pid = $1 AND deleted_at IS NULL LIMIT 1"#,
+            payload.subject_pid,
+        )
+        .fetch_optional(db::pool(&ctx))
+        .await?
+        .ok_or(Error::NotFound)?;
     }
 
-    let existing = pipeline_members::Entity::find()
-        .filter(pipeline_members::Column::PipelinePid.eq(pipeline.pid))
-        .filter(pipeline_members::Column::SubjectKind.eq(payload.subject_kind.clone()))
-        .filter(pipeline_members::Column::SubjectPid.eq(payload.subject_pid))
-        .filter(pipeline_members::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?;
+    let existing = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM pipeline_members
+            WHERE pipeline_pid = $1 AND subject_kind = $2 AND subject_pid = $3 AND deleted_at IS NULL LIMIT 1"#,
+        pipeline.pid,
+        payload.subject_kind,
+        payload.subject_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     if existing.is_some() {
         return Err(unprocessable("this subject is already in the pipeline"));
     }
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = pipeline_members::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        pipeline_pid: ActiveValue::set(pipeline.pid),
-        subject_kind: ActiveValue::set(payload.subject_kind.clone()),
-        subject_pid: ActiveValue::set(payload.subject_pid),
-        stage: ActiveValue::set("identified".to_string()),
-        readiness: ActiveValue::set(payload.readiness.clone()),
-        added_on: ActiveValue::set(chrono::Utc::now().date_naive()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let member_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO pipeline_members (pid, pipeline_pid, subject_kind, subject_pid, stage, readiness, added_on, deleted_at)
+         VALUES ($1, $2, $3, $4, 'identified', $5, $6, NULL)",
+        member_pid,
+        pipeline.pid,
+        payload.subject_kind,
+        payload.subject_pid,
+        payload.readiness,
+        chrono::Utc::now().date_naive(),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "pipeline_member",
-        row.pid,
+        member_pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({ "pipeline": pipeline.name })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(member_pid))
 }
 
 /// `POST /api/pipeline-members/{pid}/stage` body.
@@ -604,8 +726,7 @@ async fn move_member(
     Path(pid): Path<String>,
     Json(payload): Json<StagePayload>,
 ) -> Result<Response> {
-    let member =
-        records::find_pipeline_member(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let member = find_pipeline_member(&ctx, records::parse_pid(&pid)?).await?;
     rules::pipeline_transition(&member.stage, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
     let mut problems = Problems::new();
@@ -614,15 +735,21 @@ async fn move_member(
 
     let from = member.stage.clone();
     let member_pid = member.pid;
-    let mut active: pipeline_members::ActiveModel = member.into();
-    active.stage = ActiveValue::set(payload.to.clone());
-    if payload.readiness.is_some() {
-        active.readiness = ActiveValue::set(payload.readiness.clone());
-    }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        pipeline_members::Model,
+        r#"UPDATE pipeline_members SET stage = $2, readiness = COALESCE($3, readiness), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pipeline_pid, subject_kind,
+                  subject_pid, stage, readiness, added_on, deleted_at AS "deleted_at: _""#,
+        member.id,
+        payload.to,
+        payload.readiness,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "pipeline_member",
         member_pid,
         "stage_changed",
@@ -630,7 +757,7 @@ async fn move_member(
         Some(serde_json::json!({ "from": from, "to": payload.to })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -638,39 +765,35 @@ async fn move_member(
 /// its members with display names.
 #[debug_handler]
 async fn get_pipeline(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let pipeline =
-        records::find_talent_pipeline(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
-    let members = pipeline_members::Entity::find()
-        .filter(pipeline_members::Column::PipelinePid.eq(pipeline.pid))
-        .filter(pipeline_members::Column::DeletedAt.is_null())
-        .order_by_asc(pipeline_members::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let mut view = Vec::with_capacity(members.len());
-    for member in &members {
-        let display_name = if member.subject_kind == "worker" {
-            workers::Entity::find()
-                .filter(workers::Column::Pid.eq(member.subject_pid))
-                .one(&crate::db::orm(&ctx))
-                .await?
-                .map(|e| e.display_name)
-        } else {
-            candidates::Entity::find()
-                .filter(candidates::Column::Pid.eq(member.subject_pid))
-                .one(&crate::db::orm(&ctx))
-                .await?
-                .map(|c| c.display_name)
-        };
-        view.push(serde_json::json!({
-            "pid": member.pid,
-            "subject_kind": member.subject_kind,
-            "subject_pid": member.subject_pid,
-            "display_name": display_name,
-            "stage": member.stage,
-            "readiness": member.readiness,
-            "added_on": member.added_on,
-        }));
-    }
+    let pipeline = find_talent_pipeline(&ctx, records::parse_pid(&pid)?).await?;
+    // The subject's name, whether or not the worker or candidate row is soft-deleted, as before.
+    let members = sqlx::query!(
+        r#"SELECT m.pid, m.subject_kind, m.subject_pid, m.stage, m.readiness, m.added_on,
+                  CASE WHEN m.subject_kind = 'worker'
+                       THEN (SELECT w.display_name FROM workers w WHERE w.pid = m.subject_pid ORDER BY w.id LIMIT 1)
+                       ELSE (SELECT c.display_name FROM candidates c WHERE c.pid = m.subject_pid ORDER BY c.id LIMIT 1)
+                  END AS display_name
+             FROM pipeline_members m
+            WHERE m.pipeline_pid = $1 AND m.deleted_at IS NULL
+            ORDER BY m.id"#,
+        pipeline.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let view: Vec<_> = members
+        .iter()
+        .map(|member| {
+            serde_json::json!({
+                "pid": member.pid,
+                "subject_kind": member.subject_kind,
+                "subject_pid": member.subject_pid,
+                "display_name": member.display_name,
+                "stage": member.stage,
+                "readiness": member.readiness,
+                "added_on": member.added_on,
+            })
+        })
+        .collect();
     let stages: Vec<String> = members.iter().map(|m| m.stage.clone()).collect();
     format::json(serde_json::json!({
         "pipeline": pipeline,
@@ -736,31 +859,33 @@ async fn create_program(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = early_career_programs::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        name: ActiveValue::set(payload.name.clone()),
-        kind: ActiveValue::set(payload.kind.clone()),
-        level: ActiveValue::set(payload.level),
-        duration_months: ActiveValue::set(payload.duration_months),
-        min_off_the_job_hours: ActiveValue::set(payload.min_off_the_job_hours),
-        provider_ref: ActiveValue::set(payload.provider_ref.clone()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let program_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO early_career_programs (pid, name, kind, level, duration_months, min_off_the_job_hours, provider_ref,
+                                           deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NULL)",
+        program_pid,
+        payload.name,
+        payload.kind,
+        payload.level,
+        payload.duration_months,
+        payload.min_off_the_job_hours,
+        payload.provider_ref,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "early_career_program",
-        row.pid,
+        program_pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({ "kind": payload.kind })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(program_pid))
 }
 
 /// Query for the programme list.
@@ -784,34 +909,55 @@ async fn list_programs(
             rules::PROGRAM_KINDS
         )));
     }
-    let mut find = early_career_programs::Entity::find()
-        .filter(early_career_programs::Column::DeletedAt.is_null());
-    if let Some(kind) = &query.kind {
-        find = find.filter(early_career_programs::Column::Kind.eq(kind.clone()));
-    }
-    let programs = find
-        .order_by_asc(early_career_programs::Column::Name)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let programs = sqlx::query_as!(
+        early_career_programs::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind, level,
+                  duration_months, min_off_the_job_hours, provider_ref, deleted_at AS "deleted_at: _"
+             FROM early_career_programs
+            WHERE deleted_at IS NULL AND ($1::text IS NULL OR kind = $1)
+            ORDER BY name"#,
+        query.kind,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
 
-    let mut view = Vec::with_capacity(programs.len());
-    for program in &programs {
-        let placements = program_placements::Entity::find()
-            .filter(program_placements::Column::ProgramPid.eq(program.pid))
-            .filter(program_placements::Column::DeletedAt.is_null())
-            .all(&crate::db::orm(&ctx))
-            .await?;
-        view.push(serde_json::json!({
-            "pid": program.pid,
-            "name": program.name,
-            "kind": program.kind,
-            "level": program.level,
-            "duration_months": program.duration_months,
-            "min_off_the_job_hours": program.min_off_the_job_hours,
-            "provider_ref": program.provider_ref,
-            "placements": placement_rollup(&placements),
-        }));
+    // Every programme's live placements in one read.
+    let program_pids: Vec<Uuid> = programs.iter().map(|p| p.pid).collect();
+    let mut placements: BTreeMap<Uuid, Vec<program_placements::Model>> = BTreeMap::new();
+    for placement in sqlx::query_as!(
+        program_placements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
+                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
+                  deleted_at AS "deleted_at: _"
+             FROM program_placements WHERE program_pid = ANY($1) AND deleted_at IS NULL"#,
+        &program_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        placements
+            .entry(placement.program_pid)
+            .or_default()
+            .push(placement);
     }
+
+    let view: Vec<_> = programs
+        .iter()
+        .map(|program| {
+            serde_json::json!({
+                "pid": program.pid,
+                "name": program.name,
+                "kind": program.kind,
+                "level": program.level,
+                "duration_months": program.duration_months,
+                "min_off_the_job_hours": program.min_off_the_job_hours,
+                "provider_ref": program.provider_ref,
+                "placements": placement_rollup(
+                    placements.get(&program.pid).map_or(&[], Vec::as_slice),
+                ),
+            })
+        })
+        .collect();
     format::json(serde_json::json!({
         "note": CONVERSION_NOTE,
         "programs": view,
@@ -869,9 +1015,7 @@ async fn create_placement(
     Path(pid): Path<String>,
     Json(payload): Json<PlacementPayload>,
 ) -> Result<Response> {
-    let program =
-        records::find_early_career_program(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
-            .await?;
+    let program = find_early_career_program(&ctx, records::parse_pid(&pid)?).await?;
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
@@ -896,43 +1040,42 @@ async fn create_placement(
         records::worker_by_pid(&ctx, supervisor_pid).await?;
     }
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = program_placements::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        program_pid: ActiveValue::set(program.pid),
-        worker_pid: ActiveValue::set(worker.pid),
-        supervisor_pid: ActiveValue::set(payload.supervisor_pid),
-        started_on: ActiveValue::set(payload.started_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        status: ActiveValue::set("offered".to_string()),
-        off_the_job_hours: ActiveValue::set(0),
-        outcome: ActiveValue::set("pending".to_string()),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let placement_pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO program_placements (pid, program_pid, worker_pid, supervisor_pid, started_on, ends_on, status,
+                                        off_the_job_hours, outcome, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 'offered', 0, 'pending', NULL)",
+        placement_pid,
+        program.pid,
+        worker.pid,
+        payload.supervisor_pid,
+        payload.started_on,
+        payload.ends_on,
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "program_placement",
-        row.pid,
+        placement_pid,
         "created",
         caller.actor(),
         Some(serde_json::json!({ "program": program.name, "kind": program.kind })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "program_placement",
         "created",
-        &row.pid.to_string(),
+        &placement_pid.to_string(),
         &program.name,
         caller.actor(),
         Some(serde_json::json!({ "kind": program.kind })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(PidRef::of(row.pid))
+    tx.commit().await?;
+    format::json(PidRef::of(placement_pid))
 }
 
 /// `POST /api/program-placements/{pid}/hours` body.
@@ -953,8 +1096,7 @@ async fn log_hours(
     Path(pid): Path<String>,
     Json(payload): Json<HoursPayload>,
 ) -> Result<Response> {
-    let placement =
-        records::find_program_placement(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let placement = find_program_placement(&ctx, records::parse_pid(&pid)?).await?;
     if payload.hours <= 0 {
         return Err(unprocessable("hours must be positive"));
     }
@@ -970,12 +1112,21 @@ async fn log_hours(
         .ok_or_else(|| unprocessable("recorded hours would overflow"))?;
 
     let placement_pid = placement.pid;
-    let mut active: program_placements::ActiveModel = placement.into();
-    active.off_the_job_hours = ActiveValue::set(total);
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        program_placements::Model,
+        r#"UPDATE program_placements SET off_the_job_hours = $2, updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
+                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
+                  deleted_at AS "deleted_at: _""#,
+        placement.id,
+        total,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "program_placement",
         placement_pid,
         "hours_logged",
@@ -983,7 +1134,7 @@ async fn log_hours(
         Some(serde_json::json!({ "added": payload.hours, "total": total })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -1011,10 +1162,8 @@ async fn placement_status(
     Path(pid): Path<String>,
     Json(payload): Json<PlacementStatusPayload>,
 ) -> Result<Response> {
-    let placement =
-        records::find_program_placement(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
-    let program =
-        records::find_early_career_program(&crate::db::orm(&ctx), placement.program_pid).await?;
+    let placement = find_program_placement(&ctx, records::parse_pid(&pid)?).await?;
+    let program = find_early_career_program(&ctx, placement.program_pid).await?;
     rules::placement_transition(&placement.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
 
@@ -1043,15 +1192,22 @@ async fn placement_status(
         payload.outcome.clone()
     };
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let mut active: program_placements::ActiveModel = placement.into();
-    active.status = ActiveValue::set(payload.to.clone());
-    if let Some(outcome) = &outcome {
-        active.outcome = ActiveValue::set(outcome.clone());
-    }
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        program_placements::Model,
+        r#"UPDATE program_placements SET status = $2, outcome = COALESCE($3, outcome), updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
+                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
+                  deleted_at AS "deleted_at: _""#,
+        placement.id,
+        payload.to,
+        outcome,
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "program_placement",
         placement_pid,
         "status_changed",
@@ -1059,8 +1215,8 @@ async fn placement_status(
         Some(serde_json::json!({ "from": from, "to": payload.to, "outcome": outcome })),
     )
     .await?;
-    streaming::emit_on(
-        &txn,
+    streaming::emit_in(
+        &mut tx,
         "program_placement",
         &format!("placement_{}", payload.to),
         &placement_pid.to_string(),
@@ -1069,7 +1225,7 @@ async fn placement_status(
         Some(serde_json::json!({ "outcome": outcome })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(row_json(&updated)?)
 }
 
@@ -1089,17 +1245,36 @@ async fn list_worker_placements(
     )
     .map_err(record_rejection)?;
 
-    let placements = program_placements::Entity::find()
-        .filter(program_placements::Column::WorkerPid.eq(worker.pid))
-        .filter(program_placements::Column::DeletedAt.is_null())
-        .order_by_asc(program_placements::Column::Id)
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let placements = sqlx::query_as!(
+        program_placements::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
+                  supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
+                  deleted_at AS "deleted_at: _"
+             FROM program_placements WHERE worker_pid = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    // The live programmes they are on, in one read. A placement on a soft-deleted programme is still a 404, as it was.
+    let program_pids: Vec<Uuid> = placements.iter().map(|p| p.program_pid).collect();
+    let programs: BTreeMap<Uuid, early_career_programs::Model> = sqlx::query_as!(
+        early_career_programs::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind, level,
+                  duration_months, min_off_the_job_hours, provider_ref, deleted_at AS "deleted_at: _"
+             FROM early_career_programs WHERE pid = ANY($1) AND deleted_at IS NULL"#,
+        &program_pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|p| (p.pid, p))
+    .collect();
     let mut view = Vec::with_capacity(placements.len());
     for placement in &placements {
-        let program =
-            records::find_early_career_program(&crate::db::orm(&ctx), placement.program_pid)
-                .await?;
+        let program = programs
+            .get(&placement.program_pid)
+            .ok_or(Error::NotFound)?;
         view.push(serde_json::json!({
             "pid": placement.pid,
             "program": { "pid": program.pid, "name": program.name, "kind": program.kind, "level": program.level },

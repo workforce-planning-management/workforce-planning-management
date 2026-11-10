@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, rater_group FROM appraisal_nominations WHERE appraisal_pid = $1 AND rater_pid = $2 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "rater_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "rater_group"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "4c4bc99421a7276d119c5b1727c78ae75982f14cdc80b2bdf9d7c6b27435bcfd"
+}

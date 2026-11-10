@@ -412,3 +412,66 @@ async fn pipelines_apprenticeships_and_intelligence() {
     })
     .await;
 }
+
+/// The pipeline list gives each pipeline its own members' health, and one pipeline names each member and keeps a readiness a
+/// stage move left out (the reads and the update moved to sqlx, WPM-T466).
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn pipeline_list_health_is_per_pipeline_and_members_are_named() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, "PL-1", None).await;
+        activate!(&request, &worker).await;
+
+        let mut pids = Vec::new();
+        for name in ["Pipeline with one", "Pipeline with none"] {
+            let created: Value = request
+                .post("/api/talent-pipelines")
+                .json(&json!({ "name": name, "purpose": "hiring" }))
+                .await
+                .json();
+            pids.push(created["pid"].as_str().expect("pipeline pid").to_string());
+        }
+        let member: Value = request
+            .post(&format!("/api/talent-pipelines/{}/members", pids[0]))
+            .json(&json!({ "subject_kind": "worker", "subject_pid": worker, "readiness": "ready_now" }))
+            .await
+            .json();
+        let member_pid = member["pid"].as_str().expect("member pid").to_string();
+        let moved: Value = request
+            .post(&format!("/api/pipeline-members/{member_pid}/stage"))
+            .json(&json!({ "to": "assessing" }))
+            .await
+            .json();
+        assert_eq!(
+            moved["readiness"], "ready_now",
+            "a move without readiness keeps it"
+        );
+
+        let list: Value = request.get("/api/talent-pipelines").await.json();
+        let health = |pid: &str| {
+            list["pipelines"]
+                .as_array()
+                .expect("pipelines")
+                .iter()
+                .find(|p| p["pid"] == pid)
+                .expect("listed")["health"]
+                .clone()
+        };
+        assert_eq!(
+            health(&pids[0])["live"],
+            1,
+            "the member counts in its own pipeline"
+        );
+        assert_eq!(health(&pids[1])["live"], 0, "and in no other");
+
+        let one: Value = request
+            .get(&format!("/api/talent-pipelines/{}", pids[0]))
+            .await
+            .json();
+        assert_eq!(one["members"][0]["display_name"], "Test Worker PL-1");
+        assert_eq!(one["members"][0]["stage"], "assessing");
+    })
+    .await;
+}

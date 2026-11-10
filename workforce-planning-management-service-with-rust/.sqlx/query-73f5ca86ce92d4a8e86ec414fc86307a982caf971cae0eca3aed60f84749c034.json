@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT n.pid, n.rater_pid, n.rater_group,\n                  (SELECT w.display_name FROM workers w WHERE w.pid = n.rater_pid ORDER BY w.id LIMIT 1) AS display_name,\n                  EXISTS (SELECT 1 FROM appraisal_responses r\n                           WHERE r.appraisal_pid = n.appraisal_pid AND r.nomination_pid = n.pid) AS \"responded!\"\n             FROM appraisal_nominations n\n            WHERE n.appraisal_pid = $1\n            ORDER BY n.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "rater_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "rater_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "rater_group",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "appraisal_nominations",
+            "name": "rater_group"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "display_name",
+        "type_info": "Varchar",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "responded!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "73f5ca86ce92d4a8e86ec414fc86307a982caf971cae0eca3aed60f84749c034"
+}
