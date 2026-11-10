@@ -247,7 +247,7 @@ async fn worker_gaps(
         count(Status::Undeclared),
     );
     // `SFIAplus` pointers (WPM-R112) for a need the person is below: licensed resources to read, never booked or bought.
-    let pointers = sfiaplus_pointers(
+    let pointers = super::sfia::pointers_for(
         &ctx,
         &gaps
             .iter()
@@ -371,72 +371,4 @@ pub fn routes() -> Routes {
         .prefix("/api")
         .add("/workers/{pid}/skill-gaps", get(worker_gaps))
         .add("/workforce-intelligence/skill-gaps", get(workforce_gaps))
-}
-
-/// The `SFIAplus` resources for each wanted `(skill, WPM level)`: the sqlx form of [`super::sfia::pointers_for`], kept here
-/// while that file is on `SeaORM` (WPM-T466). Each names its source and SFIA level; nothing is booked or bought from one.
-/// Empty when `SFIAplus` was never imported or the skill has no SFIA code.
-///
-/// # Errors
-/// A database error.
-pub(super) async fn sfiaplus_pointers(
-    ctx: &AppContext,
-    wanted: &[(Uuid, i32)],
-) -> Result<BTreeMap<Uuid, Vec<serde_json::Value>>> {
-    use crate::rules::sfia as sfia_rules;
-    let pool = crate::db::pool(ctx);
-    let Some(source) = sqlx::query_scalar!(
-        "SELECT name FROM capability_frameworks WHERE slug = $1",
-        crate::tasks::import_sfiaplus::SFIAPLUS_SLUG,
-    )
-    .fetch_optional(pool)
-    .await?
-    else {
-        return Ok(BTreeMap::new());
-    };
-    let skills: Vec<Uuid> = wanted.iter().map(|(p, _)| *p).collect();
-    let refs: BTreeMap<Uuid, String> = sqlx::query!(
-        r#"SELECT skill_pid, "ref" AS reference FROM skill_external_refs WHERE framework_slug = $1 AND skill_pid = ANY($2)"#,
-        crate::tasks::import_sfia::SFIA_SLUG,
-        &skills,
-    )
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(|r| (r.skill_pid, r.reference))
-    .collect();
-    if refs.is_empty() {
-        return Ok(BTreeMap::new());
-    }
-    let codes: Vec<String> = refs.values().cloned().collect();
-    let resources = sqlx::query!(
-        "SELECT code, level, kind, title, provider, url FROM sfiaplus_resources
-          WHERE code = ANY($1) AND retired_in IS NULL ORDER BY id",
-        &codes,
-    )
-    .fetch_all(pool)
-    .await?;
-    let mut out: BTreeMap<Uuid, Vec<serde_json::Value>> = BTreeMap::new();
-    for (skill, required) in wanted {
-        let Some(code) = refs.get(skill) else {
-            continue;
-        };
-        let mine: Vec<serde_json::Value> = resources
-            .iter()
-            .filter(|r| {
-                &r.code == code
-                    && sfia_rules::to_wpm(r.level, sfia_rules::SFIA_SCALE_MAX) == Ok(*required)
-            })
-            .map(|r| {
-                serde_json::json!({
-                    "source": source, "sfia_code": r.code, "sfia_level": r.level,
-                    "kind": r.kind, "title": r.title, "provider": r.provider, "url": r.url,
-                })
-            })
-            .collect();
-        if !mine.is_empty() {
-            out.insert(*skill, mine);
-        }
-    }
-    Ok(out)
 }

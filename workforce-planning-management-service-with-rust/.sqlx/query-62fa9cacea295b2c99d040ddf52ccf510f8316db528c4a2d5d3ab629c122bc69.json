@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE payroll_runs SET status = 'calculated' WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "62fa9cacea295b2c99d040ddf52ccf510f8316db528c4a2d5d3ab629c122bc69"
+}

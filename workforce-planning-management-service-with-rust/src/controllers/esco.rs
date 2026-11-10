@@ -10,7 +10,6 @@
 
 use axa::extract::Json;
 use axa::prelude::*;
-use sea_orm::ActiveValue;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -18,10 +17,7 @@ use uuid::Uuid;
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::db;
-use crate::models::_entities::{
-    capability_frameworks, esco_occupation_skills, esco_occupations, esco_skills,
-    skill_external_refs, skills,
-};
+use crate::models::_entities::{esco_occupation_skills, esco_occupations, esco_skills};
 use crate::rules::esco as rules;
 use crate::rules::learning::valid_proficiency;
 use crate::shared_cache::Namespace;
@@ -403,7 +399,7 @@ fn version_from_note(note: Option<String>) -> Option<String> {
     })
 }
 
-/// [`pinned_version`] through `sqlx`.
+/// The ESCO version pinned by the last import, from the framework row's note.
 ///
 /// # Errors
 /// A database failure.
@@ -418,7 +414,9 @@ pub(crate) async fn pinned_version_in(ctx: &AppContext) -> Result<Option<String>
     Ok(version_from_note(note))
 }
 
-/// [`resolve_catalogue_skill`] inside a `sqlx` transaction: the same resolution, in the same order.
+/// Resolve an ESCO skill to a catalogue skill on `tx`: by its ESCO reference, else by exact normalised label (when
+/// unambiguous and not already linked to another ESCO skill), else create one with a draft category — and link it. Shared by
+/// role seeding and by a person selecting their own ESCO skills.
 ///
 /// # Errors
 /// A database failure, or no free catalogue name.
@@ -519,15 +517,6 @@ async fn unique_name_in(tx: &mut sqlx::PgConnection, label: &str) -> Result<Stri
 // The SeaORM forms below serve `framework_roles.rs`, whose declaration handler still runs one SeaORM transaction
 // (WPM-T466). They go when it moves to the `sqlx` forms above.
 
-/// The ESCO version pinned by the last import, from the framework row's note.
-pub(crate) async fn pinned_version(db: &sea_orm::DatabaseConnection) -> Result<Option<String>> {
-    Ok(capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(ESCO_SLUG))
-        .one(db)
-        .await?
-        .and_then(|f| version_from_note(f.note)))
-}
-
 /// How an ESCO skill was resolved to a catalogue skill.
 pub(crate) enum Resolution {
     /// Already linked to this ESCO skill.
@@ -536,98 +525,6 @@ pub(crate) enum Resolution {
     Linked,
     /// A new catalogue skill was created (draft category) and linked.
     Created,
-}
-
-/// Resolve an ESCO skill to a catalogue skill: by its ESCO reference, else by
-/// exact normalised label (when unambiguous and not already linked to another
-/// ESCO skill), else create one with a draft category — and link it. Shared by
-/// role seeding and by a user selecting their own ESCO skills.
-pub(crate) async fn resolve_catalogue_skill(
-    txn: &sea_orm::DatabaseTransaction,
-    esco_skill: &esco_skills::Model,
-    version: Option<&str>,
-) -> Result<(Uuid, Resolution)> {
-    let by_ref = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .filter(skill_external_refs::Column::Reference.eq(&esco_skill.uri))
-        .one(txn)
-        .await?;
-    if let Some(r) = by_ref {
-        return Ok((r.skill_pid, Resolution::Existing));
-    }
-    let wanted_label = rules::normalise_label(&esco_skill.label);
-    let candidates: Vec<skills::Model> = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(txn)
-        .await?
-        .into_iter()
-        .filter(|s| rules::normalise_label(&s.name) == wanted_label)
-        .collect();
-    let (pid, created) = match candidates.as_slice() {
-        [one] if !has_esco_ref(txn, one.pid).await? => (one.pid, false),
-        _ => {
-            let row = skills::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                name: ActiveValue::set(unique_name(txn, &esco_skill.label).await?),
-                category: ActiveValue::set(
-                    rules::category_for(
-                        esco_skill.skill_type.as_deref(),
-                        esco_skill.reuse_level.as_deref(),
-                    )
-                    .to_string(),
-                ),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(txn)
-            .await?;
-            (row.pid, true)
-        }
-    };
-    skill_external_refs::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        skill_pid: ActiveValue::set(pid),
-        framework_slug: ActiveValue::set(ESCO_SLUG.to_string()),
-        reference: ActiveValue::set(esco_skill.uri.clone()),
-        label: ActiveValue::set(Some(esco_skill.label.clone())),
-        version: ActiveValue::set(version.map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(txn)
-    .await?;
-    Ok((
-        pid,
-        if created {
-            Resolution::Created
-        } else {
-            Resolution::Linked
-        },
-    ))
-}
-
-/// Whether a catalogue skill already carries an ESCO reference.
-async fn has_esco_ref(txn: &sea_orm::DatabaseTransaction, skill_pid: Uuid) -> Result<bool> {
-    Ok(skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::SkillPid.eq(skill_pid))
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .one(txn)
-        .await?
-        .is_some())
-}
-
-/// A catalogue name not yet taken: the label, else the label with ` (ESCO)`.
-async fn unique_name(txn: &sea_orm::DatabaseTransaction, label: &str) -> Result<String> {
-    for candidate in [label.to_string(), format!("{label} (ESCO)")] {
-        let taken = skills::Entity::find()
-            .filter(skills::Column::Name.eq(&candidate))
-            .one(txn)
-            .await?
-            .is_some();
-        if !taken {
-            return Ok(candidate);
-        }
-    }
-    Err(super::internal("cannot find a free skill name"))
 }
 
 /// The ESCO routes.

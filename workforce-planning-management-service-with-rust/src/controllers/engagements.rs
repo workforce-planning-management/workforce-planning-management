@@ -209,7 +209,7 @@ async fn extend(
     .fetch_one(&mut *tx)
     .await?;
     sqlx::query!(
-        "UPDATE workers SET engagement_ends_on = $2, updated_at = now() WHERE id = $1",
+        "UPDATE workers SET engagement_ends_on = $2 WHERE id = $1",
         worker.id,
         payload.new_end,
     )
@@ -363,7 +363,7 @@ async fn set_details(
            ON CONFLICT (worker_pid) DO UPDATE
               SET supplier_ref = EXCLUDED.supplier_ref, supplier_contact_ref = EXCLUDED.supplier_contact_ref,
                   route = EXCLUDED.route, rate_minor = EXCLUDED.rate_minor, rate_currency = EXCLUDED.rate_currency,
-                  rate_basis = EXCLUDED.rate_basis, recorded_by = EXCLUDED.recorded_by, updated_at = now()
+                  rate_basis = EXCLUDED.rate_basis, recorded_by = EXCLUDED.recorded_by
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, supplier_ref,
                      supplier_contact_ref, route, rate_minor, rate_currency, rate_basis, recorded_by"#,
         worker.pid,

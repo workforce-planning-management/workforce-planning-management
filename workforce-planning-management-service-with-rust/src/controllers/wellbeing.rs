@@ -251,7 +251,7 @@ async fn update_entitlement(
         r#"UPDATE wellbeing_entitlements
               SET name = $2, kind = $3, benefit_plan_pid = $4, description = $5, info_url = $6, min_age = $7,
                   max_age = $8, departments = $9, job_titles = $10, doses = $11, active_from = $12,
-                  active_until = $13, updated_at = now()
+                  active_until = $13
             WHERE id = $1
             RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, kind,
                       benefit_plan_pid, description, info_url, min_age, max_age, departments, job_titles, doses,
@@ -297,7 +297,7 @@ async fn delete_entitlement(
     let row_pid = row.pid;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE wellbeing_entitlements SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE wellbeing_entitlements SET deleted_at = now() WHERE id = $1",
         row.id
     )
     .execute(&mut *tx)
@@ -491,7 +491,7 @@ async fn acknowledge(
                 entitlement_acknowledgements::Model,
                 r#"UPDATE entitlement_acknowledgements
                       SET response = $2, responded_on = $3,
-                          reminded_on = CASE WHEN $4 THEN $3 ELSE reminded_on END, updated_at = now()
+                          reminded_on = CASE WHEN $4 THEN $3 ELSE reminded_on END
                     WHERE id = $1
                     RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid,
                               entitlement_pid, worker_pid, response, responded_on, reminded_on"#,

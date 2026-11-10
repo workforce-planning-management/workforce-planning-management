@@ -292,7 +292,7 @@ async fn update_group(
     ensure_name_free(&ctx, &row.organization_ref, &payload.name, Some(row.pid)).await?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE groups SET name = $2, kind = $3, description = $4, updated_at = now() WHERE id = $1",
+        "UPDATE groups SET name = $2, kind = $3, description = $4 WHERE id = $1",
         row.id,
         payload.name.trim(),
         payload.kind,
@@ -315,12 +315,9 @@ async fn delete_group(
 ) -> Result<Response> {
     let row = find_group(&ctx, &caller, &pid).await?;
     let mut tx = db::pool(&ctx).begin().await?;
-    sqlx::query!(
-        "UPDATE groups SET deleted_at = now(), updated_at = now() WHERE id = $1",
-        row.id
-    )
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query!("UPDATE groups SET deleted_at = now() WHERE id = $1", row.id)
+        .execute(&mut *tx)
+        .await?;
     db::audit(&mut tx, "group", row.pid, "retired", caller.actor(), None).await?;
     tx.commit().await?;
     format::empty_json()
@@ -446,7 +443,7 @@ async fn join_group(
     let row = if let Some(existing) = current {
         sqlx::query_as!(
             group_members::Model,
-            r#"UPDATE group_members SET role = $2, updated_at = now() WHERE id = $1
+            r#"UPDATE group_members SET role = $2 WHERE id = $1
             RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, group_pid, worker_pid, role,
                       joined_at AS "joined_at: _", left_at AS "left_at: _", recorded_by, on_behalf"#,
             existing.id,
@@ -504,7 +501,7 @@ async fn leave_group(
         .ok_or(Error::NotFound)?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE group_members SET left_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE group_members SET left_at = now() WHERE id = $1",
         current.id
     )
     .execute(&mut *tx)

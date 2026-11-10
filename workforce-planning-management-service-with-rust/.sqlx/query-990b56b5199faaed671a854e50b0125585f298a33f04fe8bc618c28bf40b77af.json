@@ -1,0 +1,255 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE emergency_contacts\n              SET name = $2, relationship = $3, phone = $4, phone_digits = $5, phone_e164 = $6, alt_phone_digits = $7,\n                  alt_phone_e164 = $8, alt_phone = $9, email = $10, priority = $11, note = $12\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, name, relationship,\n                  phone, alt_phone, email, priority, note, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\",\n                  phone_digits, phone_e164, alt_phone_digits, alt_phone_e164",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "relationship",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "relationship"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "phone",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "phone"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "alt_phone",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "alt_phone"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "email",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "email"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "priority",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "priority"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "on_behalf",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "on_behalf"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "deleted_at"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "phone_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "phone_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "phone_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "phone_e164"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "alt_phone_digits",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "alt_phone_digits"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "alt_phone_e164",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "emergency_contacts",
+            "name": "alt_phone_e164"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "990b56b5199faaed671a854e50b0125585f298a33f04fe8bc618c28bf40b77af"
+}

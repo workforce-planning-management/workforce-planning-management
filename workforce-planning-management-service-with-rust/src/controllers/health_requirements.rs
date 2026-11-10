@@ -264,8 +264,7 @@ async fn update_requirement(
     let saved = sqlx::query_as!(
         health_requirements::Model,
         r#"UPDATE health_requirements
-              SET name = $2, description = $3, departments = $4, recheck_calendar_days = $5, reminder_calendar_days = $6,
-                  updated_at = now()
+              SET name = $2, description = $3, departments = $4, recheck_calendar_days = $5, reminder_calendar_days = $6
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
                   recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _""#,
@@ -303,7 +302,7 @@ async fn delete_requirement(
     let mut tx = db::pool(&ctx).begin().await?;
     let saved = sqlx::query_as!(
         health_requirements::Model,
-        r#"UPDATE health_requirements SET deleted_at = now(), updated_at = now() WHERE id = $1
+        r#"UPDATE health_requirements SET deleted_at = now() WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, name, description, departments,
                   recheck_calendar_days, reminder_calendar_days, deleted_at AS "deleted_at: _""#,
         row.id,
@@ -381,7 +380,7 @@ async fn record_status(
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (worker_pid, requirement_pid) DO UPDATE
             SET status = EXCLUDED.status, recorded_on = EXCLUDED.recorded_on, next_due = EXCLUDED.next_due,
-                recorded_by = EXCLUDED.recorded_by, updated_at = now()",
+                recorded_by = EXCLUDED.recorded_by",
         worker.pid,
         requirement.pid,
         payload.status,

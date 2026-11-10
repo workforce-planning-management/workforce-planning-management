@@ -321,7 +321,7 @@ async fn remove_benefit(
     let pid = row.pid;
     let mut tx = db::pool(ctx).begin().await?;
     sqlx::query!(
-        "UPDATE development_plan_benefits SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE development_plan_benefits SET deleted_at = now() WHERE id = $1",
         row.id
     )
     .execute(&mut *tx)
@@ -971,7 +971,7 @@ async fn set_budget(
         "INSERT INTO learning_budgets (pid, organization_ref, department, year, amount_minor, currency, recorded_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (organization_ref, department, year, currency)
-         DO UPDATE SET amount_minor = EXCLUDED.amount_minor, recorded_by = EXCLUDED.recorded_by, updated_at = now()
+         DO UPDATE SET amount_minor = EXCLUDED.amount_minor, recorded_by = EXCLUDED.recorded_by
          RETURNING pid, department, year, amount_minor, currency",
         Uuid::new_v4(),
         payload.organization_ref,

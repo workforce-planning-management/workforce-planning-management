@@ -731,7 +731,7 @@ async fn retire(
     let mut tx = db::pool(&ctx).begin().await?;
     if req.retired_on.is_none() {
         sqlx::query!(
-            "UPDATE learning_requirements SET retired_on = $2, updated_at = now() WHERE id = $1",
+            "UPDATE learning_requirements SET retired_on = $2 WHERE id = $1",
             req.id,
             on,
         )

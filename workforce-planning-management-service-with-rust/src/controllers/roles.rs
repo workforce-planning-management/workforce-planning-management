@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use super::sfia::Native;
+use super::sfia::{check_defined, framework_names, native_descriptions, resolve_native};
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::db;
@@ -22,141 +22,7 @@ use crate::rules::gap as gap_rules;
 use crate::rules::metrics::is_employed_on;
 use crate::rules::roles as rules;
 use crate::rules::talent::ratio;
-use crate::tasks::import_sfia::SFIA_SLUG;
 use crate::validation::Problems;
-
-// ─── Framework levels through sqlx ──────────────────────────────────────────
-//
-// The same reads as `super::sfia`'s `resolve_native`, `check_defined`, `framework_names` and `native_descriptions`, which still
-// take a SeaORM connection (WPM-T466). They go when those move.
-
-/// Resolve an optional `(framework, level)` pair a client sent.
-///
-/// # Errors
-/// 422 when only one of the two is given, the framework is not recorded, or the level is outside its scale.
-pub(crate) async fn resolve_native(
-    ctx: &AppContext,
-    framework: Option<&str>,
-    level: Option<i32>,
-) -> Result<Option<Native>> {
-    let (framework, level) = match (framework.map(str::trim), level) {
-        (None | Some(""), None) => return Ok(None),
-        (Some(f), Some(l)) if !f.is_empty() => (f, l),
-        _ => return Err(unprocessable("give framework and framework_level together")),
-    };
-    let row = sqlx::query!(
-        "SELECT slug, scale_max FROM capability_frameworks WHERE slug = $1",
-        framework
-    )
-    .fetch_optional(db::pool(ctx))
-    .await?
-    .ok_or_else(|| unprocessable(&format!("unknown framework {framework:?}")))?;
-    let wpm = crate::rules::sfia::to_wpm(level, row.scale_max).map_err(|e| unprocessable(&e))?;
-    Ok(Some(Native {
-        framework: row.slug,
-        level,
-        scale_max: row.scale_max,
-        wpm,
-    }))
-}
-
-/// A skill known in SFIA may only be stated at a level SFIA defines for it (a level is never invented).
-///
-/// # Errors
-/// 422 when the skill has a SFIA code and that code has no current definition at this level.
-pub(crate) async fn check_defined(
-    ctx: &AppContext,
-    skill_pid: Uuid,
-    native: &Native,
-) -> Result<()> {
-    if native.framework != SFIA_SLUG {
-        return Ok(());
-    }
-    let Some(code) = sqlx::query_scalar!(
-        r#"SELECT "ref" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
-        skill_pid,
-        SFIA_SLUG,
-    )
-    .fetch_optional(db::pool(ctx))
-    .await?
-    else {
-        return Ok(());
-    };
-    let defined = sqlx::query_scalar!(
-        r#"SELECT 1 AS "one!" FROM sfia_skill_levels WHERE code = $1 AND level = $2 AND retired_in IS NULL LIMIT 1"#,
-        code,
-        native.level,
-    )
-    .fetch_optional(db::pool(ctx))
-    .await?
-    .is_some();
-    if defined {
-        Ok(())
-    } else {
-        Err(unprocessable(&format!(
-            "SFIA {code} is not defined at level {}",
-            native.level
-        )))
-    }
-}
-
-/// Each recorded framework's display name by slug, so a level stated on one is shown by name, not by its slug.
-///
-/// # Errors
-/// A database error.
-pub(crate) async fn framework_names(ctx: &AppContext) -> Result<BTreeMap<String, String>> {
-    Ok(
-        sqlx::query!("SELECT slug, name FROM capability_frameworks ORDER BY id")
-            .fetch_all(db::pool(ctx))
-            .await?
-            .into_iter()
-            .map(|f| (f.slug, f.name))
-            .collect(),
-    )
-}
-
-/// The framework's own wording for each `(skill, level)` stated on SFIA, so a native level can be shown with what it says.
-///
-/// # Errors
-/// A database error.
-pub(crate) async fn native_descriptions(
-    ctx: &AppContext,
-    stated: &[(Uuid, Option<&str>, Option<i32>)],
-) -> Result<BTreeMap<Uuid, String>> {
-    let wanted: Vec<(Uuid, i32)> = stated
-        .iter()
-        .filter_map(|(p, f, l)| (*f == Some(SFIA_SLUG)).then_some((*p, (*l)?)))
-        .collect();
-    if wanted.is_empty() {
-        return Ok(BTreeMap::new());
-    }
-    let skill_pids: Vec<Uuid> = wanted.iter().map(|(p, _)| *p).collect();
-    let refs: BTreeMap<Uuid, String> = sqlx::query!(
-        r#"SELECT skill_pid, "ref" AS reference FROM skill_external_refs
-            WHERE framework_slug = $1 AND skill_pid = ANY($2) ORDER BY id"#,
-        SFIA_SLUG,
-        &skill_pids,
-    )
-    .fetch_all(db::pool(ctx))
-    .await?
-    .into_iter()
-    .map(|r| (r.skill_pid, r.reference))
-    .collect();
-    let codes: Vec<String> = refs.values().cloned().collect();
-    let levels: BTreeMap<(String, i32), String> = sqlx::query!(
-        "SELECT code, level, description FROM sfia_skill_levels WHERE code = ANY($1) ORDER BY id",
-        &codes,
-    )
-    .fetch_all(db::pool(ctx))
-    .await?
-    .into_iter()
-    .map(|l| ((l.code, l.level), l.description))
-    .collect();
-    Ok(wanted
-        .into_iter()
-        .filter_map(|(p, l)| Some((p, levels.get(&(refs.get(&p)?.clone(), l))?.clone())))
-        .collect())
-}
 
 /// A `{pid}` reference response.
 #[derive(Serialize)]
@@ -503,8 +369,7 @@ async fn set_requirement(
                     SET min_proficiency = $2, importance = $3, note = $4,
                         source_framework = CASE WHEN $5 THEN $6 ELSE source_framework END,
                         source_level = CASE WHEN $5 THEN $7 ELSE source_level END,
-                        source_scale_max = CASE WHEN $5 THEN $8 ELSE source_scale_max END,
-                        updated_at = now()
+                        source_scale_max = CASE WHEN $5 THEN $8 ELSE source_scale_max END
                   WHERE id = $1",
                 id,
                 min_proficiency,

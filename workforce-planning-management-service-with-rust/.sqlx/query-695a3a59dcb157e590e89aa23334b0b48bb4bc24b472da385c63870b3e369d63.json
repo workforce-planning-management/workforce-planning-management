@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE padr_versions SET objectives = $2, reviewer_signed_on = $3, reviewee_signed_on = $4\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Jsonb",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "695a3a59dcb157e590e89aa23334b0b48bb4bc24b472da385c63870b3e369d63"
+}

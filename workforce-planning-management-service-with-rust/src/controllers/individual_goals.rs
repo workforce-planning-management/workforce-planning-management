@@ -16,7 +16,6 @@ use axa::prelude::*;
 use chrono::Utc;
 // `SeaORM` stays only for the three helpers that padr and development call inside their own `SeaORM` transactions
 // (`goal_snapshot`, `objectives_of`, `freeze_review_goals`); every handler here is on `sqlx` (WPM-T466).
-use sea_orm::{ActiveValue, ConnectionTrait, QueryOrder};
 use serde::Deserialize;
 use uuid::Uuid;
 

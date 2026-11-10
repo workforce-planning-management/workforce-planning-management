@@ -487,7 +487,7 @@ async fn move_to(
         r#"UPDATE flexible_working_requests
               SET status = $2, decided_on = $3, decided_by = $4, decision_reason = $5, decision_note = $6,
                   counter_note = $7, counter_fte_percent = $8, trial_until = $9, appealed_on = $10, appeal_note = $11,
-                  appeal_decided_by = $12, updated_at = now()
+                  appeal_decided_by = $12
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
                   proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,

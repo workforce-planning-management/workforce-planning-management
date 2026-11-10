@@ -81,7 +81,7 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── The replay erases them again, before traffic.
-        let report = replay_erasures(&workforce_planning_management::db::orm(&ctx), None).await.unwrap();
+        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap();
         assert_eq!(
             report,
             ReplayReport {
@@ -123,7 +123,7 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── Idempotent: a second replay changes nothing more.
-        assert_eq!(replay_erasures(&workforce_planning_management::db::orm(&ctx), None).await.unwrap().reapplied, 1);
+        assert_eq!(replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap().reapplied, 1);
 
         // ── A pid the database does not hold is counted, not an error.
         workforce_planning_management::db::orm(&ctx)
@@ -133,13 +133,13 @@ async fn a_restore_does_not_undo_an_erasure() {
             ))
             .await
             .unwrap();
-        let report = replay_erasures(&workforce_planning_management::db::orm(&ctx), None).await.unwrap();
+        let report = replay_erasures(workforce_planning_management::db::pool(&ctx), None).await.unwrap();
         assert_eq!((report.considered, report.reapplied, report.missing), (2, 1, 1));
 
         // ── `since` limits it: nothing was erased tomorrow or later.
         let tomorrow = chrono::Utc::now().date_naive() + chrono::Duration::days(1);
         assert_eq!(
-            replay_erasures(&workforce_planning_management::db::orm(&ctx), Some(tomorrow)).await.unwrap(),
+            replay_erasures(workforce_planning_management::db::pool(&ctx), Some(tomorrow)).await.unwrap(),
             ReplayReport::default()
         );
 

@@ -448,7 +448,7 @@ async fn plan_status(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         development_plans::Model,
-        r#"UPDATE development_plans SET status = $2, started_on = COALESCE($3, started_on), updated_at = now()
+        r#"UPDATE development_plans SET status = $2, started_on = COALESCE($3, started_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
                   target_job_title, target_department, rationale, status, started_on, target_on,
@@ -500,7 +500,7 @@ async fn update_item(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         development_plan_items::Model,
-        r#"UPDATE development_plan_items SET status = $2, updated_at = now()
+        r#"UPDATE development_plan_items SET status = $2
             WHERE pid = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, skill_pid,
                   current_level, target_level, method, course_ref, due_on, status"#,
@@ -738,7 +738,7 @@ async fn move_member(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         pipeline_members::Model,
-        r#"UPDATE pipeline_members SET stage = $2, readiness = COALESCE($3, readiness), updated_at = now()
+        r#"UPDATE pipeline_members SET stage = $2, readiness = COALESCE($3, readiness)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pipeline_pid, subject_kind,
                   subject_pid, stage, readiness, added_on, deleted_at AS "deleted_at: _""#,
@@ -1115,7 +1115,7 @@ async fn log_hours(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         program_placements::Model,
-        r#"UPDATE program_placements SET off_the_job_hours = $2, updated_at = now()
+        r#"UPDATE program_placements SET off_the_job_hours = $2
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
                   supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,
@@ -1195,7 +1195,7 @@ async fn placement_status(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         program_placements::Model,
-        r#"UPDATE program_placements SET status = $2, outcome = COALESCE($3, outcome), updated_at = now()
+        r#"UPDATE program_placements SET status = $2, outcome = COALESCE($3, outcome)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, program_pid, worker_pid,
                   supervisor_pid, started_on, ends_on, status, off_the_job_hours, outcome,

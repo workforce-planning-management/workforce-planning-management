@@ -199,7 +199,7 @@ async fn rename(
     }
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE policies SET name = $2, updated_at = now() WHERE id = $1",
+        "UPDATE policies SET name = $2 WHERE id = $1",
         policy.id,
         name,
     )

@@ -529,7 +529,7 @@ pub(crate) async fn edit(
     rules::check_editable(sign_offs(&latest)).map_err(reject)?;
     sqlx::query!(
         "UPDATE padr_versions SET period_start = $2, period_end = $3, values_summary = $4, wellbeing_offered = $5,
-                development_needs = $6, updated_at = now()
+                development_needs = $6
           WHERE id = $1",
         latest.id,
         payload.period_start,
@@ -581,7 +581,7 @@ pub(crate) async fn sign(
         Some(serde_json::json!(snapshot))
     };
     sqlx::query!(
-        "UPDATE padr_versions SET objectives = $2, reviewer_signed_on = $3, reviewee_signed_on = $4, updated_at = now()
+        "UPDATE padr_versions SET objectives = $2, reviewer_signed_on = $3, reviewee_signed_on = $4
           WHERE id = $1",
         latest.id,
         objectives,
@@ -621,7 +621,7 @@ pub(crate) async fn sign(
     let complete = after.complete();
     if complete && review.status == "draft" {
         sqlx::query!(
-            "UPDATE reviews SET status = 'shared', updated_at = now() WHERE id = $1",
+            "UPDATE reviews SET status = 'shared' WHERE id = $1",
             review.id,
         )
         .execute(&mut *tx)
@@ -657,7 +657,7 @@ pub(crate) async fn comment(
     let mut tx = db::pool(&ctx).begin().await?;
     let latest = latest_locked(&mut tx, review.pid).await?;
     sqlx::query!(
-        "UPDATE padr_versions SET reviewee_comment = $2, updated_at = now() WHERE id = $1",
+        "UPDATE padr_versions SET reviewee_comment = $2 WHERE id = $1",
         latest.id,
         text,
     )

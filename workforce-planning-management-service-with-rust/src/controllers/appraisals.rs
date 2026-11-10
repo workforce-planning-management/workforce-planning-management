@@ -248,7 +248,7 @@ async fn appraisal_status(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         appraisals::Model,
-        r#"UPDATE appraisals SET status = $2, shared_on = COALESCE($3, shared_on), updated_at = now()
+        r#"UPDATE appraisals SET status = $2, shared_on = COALESCE($3, shared_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, competencies,
                   status, shared_on, deleted_at AS "deleted_at: _""#,

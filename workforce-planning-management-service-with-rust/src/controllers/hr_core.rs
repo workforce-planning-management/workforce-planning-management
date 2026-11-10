@@ -514,8 +514,7 @@ async fn update_worker(
                   salary_minor = COALESCE($12, salary_minor),
                   salary_currency = COALESCE($13, salary_currency),
                   upstream_worker_ref = COALESCE($14, upstream_worker_ref),
-                  engagement_ends_on = COALESCE($15, engagement_ends_on),
-                  updated_at = now()
+                  engagement_ends_on = COALESCE($15, engagement_ends_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
                   upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
@@ -612,7 +611,7 @@ async fn change_status(
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         workers::Model,
-        r#"UPDATE workers SET status = $2, terminated_on = COALESCE($3, terminated_on), updated_at = now()
+        r#"UPDATE workers SET status = $2, terminated_on = COALESCE($3, terminated_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
                   upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
@@ -717,7 +716,7 @@ async fn delete_worker(
     let pid = worker.pid;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE workers SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE workers SET deleted_at = now() WHERE id = $1",
         worker.id
     )
     .execute(&mut *tx)
@@ -1073,7 +1072,7 @@ async fn unenroll(
     .ok_or(Error::NotFound)?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE benefit_enrollments SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE benefit_enrollments SET deleted_at = now() WHERE id = $1",
         id
     )
     .execute(&mut *tx)

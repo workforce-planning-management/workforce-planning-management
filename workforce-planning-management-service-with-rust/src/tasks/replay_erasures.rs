@@ -17,7 +17,6 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::{DateTime, NaiveDate};
-use sea_orm::ConnectionTrait;
 use uuid::Uuid;
 
 use crate::controllers::privacy::replay_erasures;
@@ -79,17 +78,17 @@ impl Task for ReplayErasures {
                 .map_err(|e| Error::string(&format!("cannot read ledger file {path}: {e}")))?;
             let entries = parse_ledger(&text).map_err(|e| Error::string(&e))?;
             for (pid, at) in &entries {
-                crate::db::orm(ctx)
-                    .execute_unprepared(&format!(
-                        "INSERT INTO erasure_ledger (worker_pid, erased_at) \
-                         VALUES ('{pid}', '{}') ON CONFLICT DO NOTHING",
-                        at.to_rfc3339()
-                    ))
-                    .await?;
+                sqlx::query!(
+                    "INSERT INTO erasure_ledger (worker_pid, erased_at) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                    pid,
+                    at,
+                )
+                .execute(crate::db::pool(ctx))
+                .await?;
             }
             tracing::info!(entries = entries.len(), "erasure ledger file imported");
         }
-        let report = replay_erasures(&crate::db::orm(ctx), since).await?;
+        let report = replay_erasures(crate::db::pool(ctx), since).await?;
         tracing::info!(
             considered = report.considered,
             reapplied = report.reapplied,

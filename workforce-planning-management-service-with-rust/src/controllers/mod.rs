@@ -121,38 +121,6 @@ pub fn ensure_valid(problems: &[String]) -> Result<()> {
     ))
 }
 
-/// Ids per `IN (…)` list. A statement carries at most 65,535 bind parameters, so a list of every worker
-/// of a large organization (WPM-R142) fails outright; a list this size is well under it.
-pub(crate) const IN_BATCH: usize = 5_000;
-
-/// Every row of `select` whose `column` is one of `ids`, read in batches of [`IN_BATCH`] ids.
-///
-/// # Errors
-///
-/// Propagates a database error.
-pub(crate) async fn find_in<E, C>(
-    ctx: &AppContext,
-    select: sea_orm::Select<E>,
-    column: C,
-    ids: &[uuid::Uuid],
-) -> Result<Vec<E::Model>>
-where
-    E: sea_orm::EntityTrait,
-    C: sea_orm::ColumnTrait,
-{
-    let mut rows = Vec::new();
-    for chunk in ids.chunks(IN_BATCH) {
-        rows.extend(
-            select
-                .clone()
-                .filter(column.is_in(chunk.to_vec()))
-                .all(&crate::db::orm(ctx))
-                .await?,
-        );
-    }
-    Ok(rows)
-}
-
 /// A `422` with a single message (state-machine refusals etc.).
 #[must_use]
 pub fn unprocessable(message: &str) -> Error {
@@ -162,22 +130,8 @@ pub fn unprocessable(message: &str) -> Error {
     )
 }
 
-/// Refuse a whole-organization read that would load more workers than the measured ceiling
-/// (WPM-R120, WPM-D90). `scope` is the same `workers` query the view is about to load, so the count
-/// is of exactly those rows. The check costs one indexed `COUNT`.
-///
-/// # Errors
-///
-/// A `422` naming the count and the ceiling, or a database error.
-pub async fn ensure_scale(
-    ctx: &AppContext,
-    scope: sea_orm::Select<crate::models::_entities::workers::Entity>,
-) -> Result<()> {
-    use sea_orm::PaginatorTrait;
-    ensure_within_ceiling(scope.count(&crate::db::orm(ctx)).await?)
-}
-
-/// Refuse `count` workers over the measured ceiling (WPM-R120, WPM-D90): the rule of [`ensure_scale`], for a count already made.
+/// Refuse `count` workers over the measured ceiling (WPM-R120, WPM-D90). The count is of exactly the workers the view is about
+/// to load, made with one indexed `COUNT`.
 ///
 /// # Errors
 ///
@@ -445,34 +399,6 @@ pub(crate) fn with_next(mut response: Response, window: &Window, more: bool) -> 
             .insert(axum::http::header::LINK, link);
     }
     response
-}
-
-/// One page of `select`, cut by the database, each row shown by `show`. `select` must already be ordered by something
-/// that ends in a unique column, or a page is not stable.
-///
-/// # Errors
-///
-/// A database error.
-pub(crate) async fn paged_select<E, V>(
-    ctx: &AppContext,
-    select: sea_orm::Select<E>,
-    window: Window,
-    show: impl Fn(&E::Model) -> Result<V>,
-) -> Result<Response>
-where
-    E: sea_orm::EntityTrait,
-    E::Model: Sync,
-    V: serde::Serialize,
-{
-    use sea_orm::QuerySelect;
-    let (limit, offset) = window.bounds();
-    let rows = select
-        .limit(limit.unsigned_abs())
-        .offset(offset.unsigned_abs())
-        .all(&crate::db::orm(ctx))
-        .await?;
-    let shown = rows.iter().map(show).collect::<Result<Vec<V>>>()?;
-    Ok(window.respond(shown))
 }
 
 #[cfg(test)]

@@ -23,7 +23,6 @@ use crate::auth::{self, MaybeAuthUser};
 use crate::db;
 use crate::models::_entities::{esco_skills, worker_framework_roles};
 use crate::models::records;
-use crate::rules::esco as esco_rules;
 use crate::rules::framework_roles::{self as rules, Choice};
 use crate::rules::learning::valid_proficiency;
 use crate::tasks::import_esco::ESCO_SLUG;
@@ -418,120 +417,6 @@ async fn apply_declaration(
     }
 }
 
-/// The ESCO version pinned by the last import, from the framework row's note: the sqlx form of
-/// [`super::esco::pinned_version`], kept here while that file is on `SeaORM` (WPM-T466).
-async fn pinned_esco_version(ctx: &AppContext) -> Result<Option<String>> {
-    Ok(sqlx::query_scalar!(
-        "SELECT note FROM capability_frameworks WHERE slug = $1 LIMIT 1",
-        ESCO_SLUG,
-    )
-    .fetch_optional(db::pool(ctx))
-    .await?
-    .flatten()
-    .and_then(|n| {
-        n.rsplit("Pinned version: ")
-            .next()
-            .map(|v| v.trim_end_matches('.').to_string())
-    }))
-}
-
-/// Resolve an ESCO skill to a catalogue skill on `tx`: by its ESCO reference, else by exact normalised label (when
-/// unambiguous and not already linked to another ESCO skill), else create one with a draft category — and link it. The
-/// sqlx form of [`super::esco::resolve_catalogue_skill`], kept here while that file is on `SeaORM` (WPM-T466).
-async fn resolve_catalogue_skill(
-    tx: &mut sqlx::PgConnection,
-    esco_skill: &esco_skills::Model,
-    version: Option<&str>,
-) -> Result<(Uuid, Resolution)> {
-    if let Some(skill_pid) = sqlx::query_scalar!(
-        r#"SELECT skill_pid FROM skill_external_refs WHERE framework_slug = $1 AND "ref" = $2 LIMIT 1"#,
-        ESCO_SLUG,
-        esco_skill.uri,
-    )
-    .fetch_optional(&mut *tx)
-    .await?
-    {
-        return Ok((skill_pid, Resolution::Existing));
-    }
-    let wanted_label = esco_rules::normalise_label(&esco_skill.label);
-    let candidates: Vec<Uuid> =
-        sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL ORDER BY id")
-            .fetch_all(&mut *tx)
-            .await?
-            .into_iter()
-            .filter(|s| esco_rules::normalise_label(&s.name) == wanted_label)
-            .map(|s| s.pid)
-            .collect();
-    let one_unlinked = match candidates.as_slice() {
-        [one] => {
-            let linked = sqlx::query_scalar!(
-                r#"SELECT 1 AS "one!" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
-                one,
-                ESCO_SLUG,
-            )
-            .fetch_optional(&mut *tx)
-            .await?
-            .is_some();
-            (!linked).then_some(*one)
-        }
-        _ => None,
-    };
-    let (pid, created) = if let Some(one) = one_unlinked {
-        (one, false)
-    } else {
-        let name = unique_skill_name(tx, &esco_skill.label).await?;
-        let pid = Uuid::new_v4();
-        sqlx::query!(
-            "INSERT INTO skills (pid, name, category) VALUES ($1, $2, $3)",
-            pid,
-            name,
-            esco_rules::category_for(
-                esco_skill.skill_type.as_deref(),
-                esco_skill.reuse_level.as_deref(),
-            ),
-        )
-        .execute(&mut *tx)
-        .await?;
-        (pid, true)
-    };
-    sqlx::query!(
-        r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version) VALUES ($1, $2, $3, $4, $5, $6)"#,
-        Uuid::new_v4(),
-        pid,
-        ESCO_SLUG,
-        esco_skill.uri,
-        esco_skill.label,
-        version,
-    )
-    .execute(&mut *tx)
-    .await?;
-    Ok((
-        pid,
-        if created {
-            Resolution::Created
-        } else {
-            Resolution::Linked
-        },
-    ))
-}
-
-/// A catalogue name not yet taken: the label, else the label with ` (ESCO)`.
-async fn unique_skill_name(tx: &mut sqlx::PgConnection, label: &str) -> Result<String> {
-    for candidate in [label.to_string(), format!("{label} (ESCO)")] {
-        let taken = sqlx::query_scalar!(
-            r#"SELECT 1 AS "one!" FROM skills WHERE name = $1 LIMIT 1"#,
-            candidate
-        )
-        .fetch_optional(&mut *tx)
-        .await?
-        .is_some();
-        if !taken {
-            return Ok(candidate);
-        }
-    }
-    Err(super::internal("cannot find a free skill name"))
-}
-
 /// `PUT /api/workers/{pid}/framework-roles/{framework}/skills` — select the
 /// skills the worker has, at their own level; a `null` level deselects. All
 /// or nothing. PCF refs are catalogue skill ids that carry a PCF reference;
@@ -569,7 +454,7 @@ async fn set_skills(
     );
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
     let version = if framework == ESCO_SLUG {
-        pinned_esco_version(&ctx).await?
+        super::esco::pinned_version_in(&ctx).await?
     } else {
         None
     };
@@ -617,7 +502,8 @@ async fn set_skills(
                 }
             } else {
                 let (pid, how) =
-                    resolve_catalogue_skill(&mut tx, &esco, version.as_deref()).await?;
+                    super::esco::resolve_catalogue_skill_in(&mut tx, &esco, version.as_deref())
+                        .await?;
                 match how {
                     Resolution::Created => created += 1,
                     Resolution::Linked => linked += 1,

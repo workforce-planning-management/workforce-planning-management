@@ -503,13 +503,10 @@ pub struct ReplayReport {
 /// # Errors
 ///
 /// A database error; nothing is applied for the entry that failed.
-///
-/// `db` is the `SeaORM` handle the task passes; the replay runs on the `sqlx` pool under it (WPM-T466).
 pub async fn replay_erasures(
-    db: &sea_orm::DatabaseConnection,
+    pool: &sqlx::PgPool,
     since: Option<chrono::NaiveDate>,
 ) -> Result<ReplayReport> {
-    let pool = db.get_postgres_connection_pool();
     let rows = sqlx::query_scalar!(
         "SELECT worker_pid FROM erasure_ledger WHERE ($1::date IS NULL OR erased_at >= $1) ORDER BY erased_at",
         since,
@@ -586,7 +583,7 @@ async fn erase(
     // Identity fields scrubbed in place; the row soft-deleted.
     sqlx::query!(
         "UPDATE workers SET display_name = $2, person_ref = $3, upstream_worker_ref = NULL, salary_minor = NULL,
-                            salary_currency = NULL, deleted_at = now(), updated_at = now()
+                            salary_currency = NULL, deleted_at = now()
           WHERE id = $1",
         worker.id,
         ERASED,

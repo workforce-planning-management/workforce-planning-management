@@ -219,7 +219,7 @@ async fn approve_time_entry(
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         time_entries::Model,
-        r#"UPDATE time_entries SET status = 'approved', updated_at = now() WHERE id = $1
+        r#"UPDATE time_entries SET status = 'approved' WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, worked_on, minutes,
                   kind, status, notes, deleted_at AS "deleted_at: _""#,
         entry.id,
@@ -475,7 +475,7 @@ pub(crate) async fn decide_leave(
     let days = request.days;
     let row = sqlx::query_as!(
         leave_requests::Model,
-        r#"UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now(), updated_at = now() WHERE id = $1
+        r#"UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now() WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, start_on, end_on,
                   days, status, negative_balance, reason, decided_by, decided_at AS "decided_at: _",
                   deleted_at AS "deleted_at: _""#,
@@ -506,7 +506,7 @@ pub(crate) async fn decide_leave(
         .await?;
         if let Some(id) = entitlement {
             sqlx::query!(
-                "UPDATE leave_entitlements SET used_days = used_days + $2, updated_at = now() WHERE id = $1",
+                "UPDATE leave_entitlements SET used_days = used_days + $2 WHERE id = $1",
                 id,
                 delta,
             )
@@ -812,7 +812,7 @@ async fn unassign_shift(
     .ok_or(Error::NotFound)?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE shift_assignments SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE shift_assignments SET deleted_at = now() WHERE id = $1",
         id
     )
     .execute(&mut *tx)

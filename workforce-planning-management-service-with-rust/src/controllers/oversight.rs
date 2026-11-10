@@ -555,7 +555,7 @@ async fn put_reading(
          VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (measure_pid, period_on)
          DO UPDATE SET value = EXCLUDED.value, evidence = EXCLUDED.evidence, source_document = EXCLUDED.source_document,
-                       recorded_by = EXCLUDED.recorded_by, updated_at = now()
+                       recorded_by = EXCLUDED.recorded_by
          RETURNING pid, measure_pid, period_on, value, evidence, source_document",
         Uuid::new_v4(),
         m.pid,

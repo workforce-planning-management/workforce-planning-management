@@ -284,7 +284,7 @@ pub(crate) async fn update_contact_for(
         emergency_contacts::Model,
         r#"UPDATE emergency_contacts
               SET name = $2, relationship = $3, phone = $4, phone_digits = $5, phone_e164 = $6, alt_phone_digits = $7,
-                  alt_phone_e164 = $8, alt_phone = $9, email = $10, priority = $11, note = $12, updated_at = now()
+                  alt_phone_e164 = $8, alt_phone = $9, email = $10, priority = $11, note = $12
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, relationship,
                   phone, alt_phone, email, priority, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _",
@@ -341,7 +341,7 @@ pub(crate) async fn delete_contact_for(
 ) -> Result<Response> {
     let mut tx = db::pool(ctx).begin().await?;
     sqlx::query!(
-        "UPDATE emergency_contacts SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE emergency_contacts SET deleted_at = now() WHERE id = $1",
         row.id
     )
     .execute(&mut *tx)
@@ -577,7 +577,7 @@ async fn update_backup(
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         worker_backups::Model,
-        r#"UPDATE worker_backups SET priority = $2, starts_on = $3, ends_on = $4, note = $5, updated_at = now()
+        r#"UPDATE worker_backups SET priority = $2, starts_on = $3, ends_on = $4, note = $5
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, backup_pid, priority,
                   starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _""#,
@@ -615,7 +615,7 @@ async fn delete_backup(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE worker_backups SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE worker_backups SET deleted_at = now() WHERE id = $1",
         row.id
     )
     .execute(&mut *tx)

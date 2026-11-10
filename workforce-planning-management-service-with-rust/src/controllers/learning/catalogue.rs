@@ -123,7 +123,7 @@ pub(super) async fn update_skill(
     }
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query!(
-        "UPDATE skills SET name = COALESCE($2, name), category = COALESCE($3, category), updated_at = now()
+        "UPDATE skills SET name = COALESCE($2, name), category = COALESCE($3, category)
           WHERE id = $1
         RETURNING pid, name, category",
         row.id,
@@ -230,7 +230,7 @@ pub(super) async fn apply_suggestions(
         match (found, suggestion) {
             (Some(row), Some((category, _))) => {
                 sqlx::query!(
-                    "UPDATE skills SET category = $2, updated_at = now() WHERE id = $1",
+                    "UPDATE skills SET category = $2 WHERE id = $1",
                     row.id,
                     category,
                 )
@@ -322,7 +322,7 @@ pub(super) async fn delete_skill(
     .execute(&mut *tx)
     .await?;
     sqlx::query!(
-        "UPDATE skills SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE skills SET deleted_at = now() WHERE id = $1",
         skill.id
     )
     .execute(&mut *tx)
@@ -379,7 +379,7 @@ pub(super) async fn merge_skill(
             sqlx::query!(
                 "UPDATE worker_skills
                     SET proficiency = $2, target = $3, assessed_on = $4,
-                        deleted_at = CASE WHEN $5 THEN NULL ELSE deleted_at END, updated_at = now()
+                        deleted_at = CASE WHEN $5 THEN NULL ELSE deleted_at END
                   WHERE id = $1",
                 twin.id,
                 merge_rules::merge_level(twin.proficiency, row.proficiency),
@@ -395,7 +395,7 @@ pub(super) async fn merge_skill(
             merged += 1;
         } else {
             sqlx::query!(
-                "UPDATE worker_skills SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                "UPDATE worker_skills SET skill_pid = $2 WHERE id = $1",
                 row.id,
                 target.pid,
             )
@@ -427,8 +427,7 @@ pub(super) async fn merge_skill(
                 "UPDATE role_skill_requirements
                     SET min_proficiency = $2, importance = $3, note = COALESCE(note, $4),
                         source_level = CASE WHEN $5 THEN $6 ELSE source_level END,
-                        source_scale_max = CASE WHEN $5 THEN $7 ELSE source_scale_max END,
-                        updated_at = now()
+                        source_scale_max = CASE WHEN $5 THEN $7 ELSE source_scale_max END
                   WHERE id = $1",
                 twin.id,
                 merge_rules::merge_level(twin.min_proficiency, row.min_proficiency),
@@ -446,7 +445,7 @@ pub(super) async fn merge_skill(
             merged += 1;
         } else {
             sqlx::query!(
-                "UPDATE role_skill_requirements SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                "UPDATE role_skill_requirements SET skill_pid = $2 WHERE id = $1",
                 row.id,
                 target.pid,
             )
@@ -478,7 +477,7 @@ pub(super) async fn merge_skill(
             merged += 1;
         } else {
             sqlx::query!(
-                "UPDATE initiative_skill_shifts SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                "UPDATE initiative_skill_shifts SET skill_pid = $2 WHERE id = $1",
                 row.id,
                 target.pid,
             )
@@ -510,7 +509,7 @@ pub(super) async fn merge_skill(
             merged += 1;
         } else {
             sqlx::query!(
-                "UPDATE development_plan_items SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                "UPDATE development_plan_items SET skill_pid = $2 WHERE id = $1",
                 row.id,
                 target.pid,
             )
@@ -541,7 +540,7 @@ pub(super) async fn merge_skill(
                 .await?;
         } else {
             sqlx::query!(
-                "UPDATE skill_external_refs SET skill_pid = $2, updated_at = now() WHERE id = $1",
+                "UPDATE skill_external_refs SET skill_pid = $2 WHERE id = $1",
                 row.id,
                 target.pid,
             )
@@ -550,7 +549,7 @@ pub(super) async fn merge_skill(
         }
     }
     sqlx::query!(
-        "UPDATE skills SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE skills SET deleted_at = now() WHERE id = $1",
         source.id
     )
     .execute(&mut *tx)
@@ -741,14 +740,14 @@ pub(super) async fn declare_skill(
     ensure_valid(&problems.into_vec())?;
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let skill = find_live_skill_by_pid(&ctx, payload.skill_pid).await?;
-    let native = crate::controllers::roles::resolve_native(
+    let native = crate::controllers::sfia::resolve_native(
         &ctx,
         payload.framework.as_deref(),
         payload.framework_level,
     )
     .await?;
     if let Some(n) = &native {
-        crate::controllers::roles::check_defined(&ctx, skill.pid, n).await?;
+        crate::controllers::sfia::check_defined(&ctx, skill.pid, n).await?;
     }
     // A stated 1–5 stands; otherwise the framework level is mapped, and the mapping is shown wherever it is read.
     let proficiency = payload
@@ -774,7 +773,7 @@ pub(super) async fn declare_skill(
                 worker_skills::Model,
                 r#"UPDATE worker_skills
                       SET proficiency = $2, source_framework = $3, source_level = $4, source_scale_max = $5, target = $6,
-                          assessed_on = $7, deleted_at = NULL, updated_at = now()
+                          assessed_on = $7, deleted_at = NULL
                     WHERE id = $1
                 RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
                           proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
@@ -859,8 +858,8 @@ pub(super) async fn list_worker_skills(
         .iter()
         .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
         .collect();
-    let described = crate::controllers::roles::native_descriptions(&ctx, &stated).await?;
-    let names = crate::controllers::roles::framework_names(&ctx).await?;
+    let described = crate::controllers::sfia::native_descriptions(&ctx, &stated).await?;
+    let names = crate::controllers::sfia::framework_names(&ctx).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {

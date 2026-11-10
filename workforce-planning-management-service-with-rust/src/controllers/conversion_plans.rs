@@ -373,8 +373,7 @@ async fn set_status(
     Ok(sqlx::query_as!(
         conversion_plans::Model,
         r#"UPDATE conversion_plans
-              SET status = $2, approved_by = COALESCE($3, approved_by), settled_on = COALESCE($4, settled_on),
-                  updated_at = now()
+              SET status = $2, approved_by = COALESCE($3, approved_by), settled_on = COALESCE($4, settled_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
                   department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
@@ -500,8 +499,7 @@ async fn done(
     }
     sqlx::query!(
         "UPDATE workers
-            SET employment_type = 'permanent', engagement_ends_on = NULL, department = COALESCE($2, department),
-                updated_at = now()
+            SET employment_type = 'permanent', engagement_ends_on = NULL, department = COALESCE($2, department)
           WHERE pid = $1",
         worker.pid,
         row.department,

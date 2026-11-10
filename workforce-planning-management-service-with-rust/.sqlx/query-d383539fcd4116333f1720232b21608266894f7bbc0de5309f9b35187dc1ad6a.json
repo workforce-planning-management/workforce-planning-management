@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE initiative_skill_shifts SET skill_pid = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d383539fcd4116333f1720232b21608266894f7bbc0de5309f9b35187dc1ad6a"
+}

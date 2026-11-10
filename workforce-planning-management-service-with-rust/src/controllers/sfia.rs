@@ -19,8 +19,7 @@ use crate::rules::sfia as rules;
 use crate::tasks::import_sfia::SFIA_SLUG;
 use crate::validation::Problems;
 
-/// Whatever the helpers below can read through: the context, the pool, or, while callers outside this module still hold one,
-/// the `SeaORM` handle over the same pool (WPM-T466). The last goes when `SeaORM` does.
+/// Whatever the helpers below can read through: the context or the pool.
 pub(crate) trait OnPool {
     /// The `sqlx` pool underneath.
     fn on_pool(&self) -> &sqlx::PgPool;
@@ -35,12 +34,6 @@ impl OnPool for sqlx::PgPool {
 impl OnPool for AppContext {
     fn on_pool(&self) -> &sqlx::PgPool {
         db::pool(self)
-    }
-}
-
-impl OnPool for sea_orm::DatabaseConnection {
-    fn on_pool(&self) -> &sqlx::PgPool {
-        self.get_postgres_connection_pool()
     }
 }
 
@@ -196,7 +189,6 @@ pub(crate) async fn native_descriptions(
 ///
 /// # Errors
 /// A database error.
-#[allow(dead_code)] // WPM-T466: its callers read `skill_gaps::sfiaplus_pointers`, the sqlx form; this goes when sfia.rs moves
 pub(crate) async fn pointers_for(
     db: &impl OnPool,
     wanted: &[(Uuid, i32)],

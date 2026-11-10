@@ -158,7 +158,7 @@ pub(crate) async fn refresh_phone_forms(
         return Ok(());
     }
     sqlx::query!(
-        "UPDATE worker_contact_details SET phone_mobile_e164 = $2, phone_home_e164 = $3, updated_at = now() WHERE id = $1",
+        "UPDATE worker_contact_details SET phone_mobile_e164 = $2, phone_home_e164 = $3 WHERE id = $1",
         row.id,
         mobile.e164,
         home.e164,
@@ -280,8 +280,7 @@ async fn set_my_details(
                   country = EXCLUDED.country, phone_mobile = EXCLUDED.phone_mobile, phone_home = EXCLUDED.phone_home,
                   phone_mobile_digits = EXCLUDED.phone_mobile_digits, phone_mobile_e164 = EXCLUDED.phone_mobile_e164,
                   phone_home_digits = EXCLUDED.phone_home_digits, phone_home_e164 = EXCLUDED.phone_home_e164,
-                  personal_email = EXCLUDED.personal_email, recorded_by = EXCLUDED.recorded_by, on_behalf = false,
-                  updated_at = now()
+                  personal_email = EXCLUDED.personal_email, recorded_by = EXCLUDED.recorded_by, on_behalf = false
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, worker_pid, address_line1,
                      address_line2, city, region, postcode, address_text, country, phone_mobile, phone_home, personal_email,
                      phone_mobile_digits, phone_mobile_e164, phone_home_digits, phone_home_e164, recorded_by, on_behalf"#,

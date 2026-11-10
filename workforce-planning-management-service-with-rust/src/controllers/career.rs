@@ -928,7 +928,7 @@ async fn update_aspiration(
         "UPDATE worker_aspirations
             SET status = COALESCE($2, status), horizon = COALESCE($3, horizon),
                 target_level = COALESCE($4, target_level), note = COALESCE($5, note),
-                visibility = COALESCE($6, visibility), updated_at = now()
+                visibility = COALESCE($6, visibility)
           WHERE id = $1
           RETURNING pid, status, visibility",
         row.id,
@@ -966,7 +966,7 @@ async fn delete_aspiration(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE worker_aspirations SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        "UPDATE worker_aspirations SET deleted_at = now() WHERE id = $1",
         row.id
     )
     .execute(&mut *tx)

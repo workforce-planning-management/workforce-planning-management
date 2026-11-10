@@ -507,7 +507,7 @@ async fn calculate_run(
         count += 1;
     }
     sqlx::query!(
-        "UPDATE payroll_runs SET status = 'calculated', updated_at = now() WHERE id = $1",
+        "UPDATE payroll_runs SET status = 'calculated' WHERE id = $1",
         run.id
     )
     .execute(&mut *tx)
@@ -567,7 +567,7 @@ async fn run_transition(
     let row = sqlx::query_as!(
         payroll_runs::Model,
         r#"UPDATE payroll_runs
-              SET status = $2::text, approved_by = CASE WHEN $2::text = 'approved' THEN $3 ELSE approved_by END, updated_at = now()
+              SET status = $2::text, approved_by = CASE WHEN $2::text = 'approved' THEN $3 ELSE approved_by END
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, period_start,
                   period_end, status, approved_by, notes, deleted_at AS "deleted_at: _""#,

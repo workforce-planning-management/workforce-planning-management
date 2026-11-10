@@ -260,7 +260,7 @@ async fn set_status(
     let from = initiative.status.clone();
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
-        "UPDATE change_initiatives SET status = $2, updated_at = now() WHERE id = $1",
+        "UPDATE change_initiatives SET status = $2 WHERE id = $1",
         initiative.id,
         payload.to,
     )
@@ -330,7 +330,7 @@ async fn set_role_impact(
         "INSERT INTO initiative_role_impacts (pid, initiative_pid, role_profile_pid, impact, timeframe, note)
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (initiative_pid, role_profile_pid)
-         DO UPDATE SET impact = EXCLUDED.impact, timeframe = EXCLUDED.timeframe, note = EXCLUDED.note, updated_at = now()",
+         DO UPDATE SET impact = EXCLUDED.impact, timeframe = EXCLUDED.timeframe, note = EXCLUDED.note",
         Uuid::new_v4(),
         initiative.pid,
         payload.role_profile_pid,
@@ -424,7 +424,7 @@ async fn set_skill_shift(
         "INSERT INTO initiative_skill_shifts (pid, initiative_pid, skill_pid, direction, note)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (initiative_pid, skill_pid)
-         DO UPDATE SET direction = EXCLUDED.direction, note = EXCLUDED.note, updated_at = now()",
+         DO UPDATE SET direction = EXCLUDED.direction, note = EXCLUDED.note",
         Uuid::new_v4(),
         initiative.pid,
         payload.skill_pid,

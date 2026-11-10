@@ -1,0 +1,126 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE succession_candidates\n              SET readiness = COALESCE($2, readiness), rank = COALESCE($3, rank)\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, plan_pid, worker_pid, readiness, rank,\n                  deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "plan_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "plan_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "readiness",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "readiness"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "rank",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "rank"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "succession_candidates",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d99b6b707e86d86bfc5ec7e7eefc53a7208f2f61b899cd6373f91a0c08a1bb7c"
+}

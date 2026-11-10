@@ -119,7 +119,7 @@ async fn freeze_review_goals(
         sqlx::query!(
             "INSERT INTO review_goal_outcomes (pid, review_pid, goal_pid, worker_pid, snapshot)
              VALUES ($1, $2, $3, $4, $5)
-             ON CONFLICT (review_pid, goal_pid) DO UPDATE SET snapshot = EXCLUDED.snapshot, updated_at = now()",
+             ON CONFLICT (review_pid, goal_pid) DO UPDATE SET snapshot = EXCLUDED.snapshot",
             Uuid::new_v4(),
             review.pid,
             goal.pid,
@@ -437,7 +437,7 @@ async fn update_review(
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         reviews::Model,
-        r#"UPDATE reviews SET rating = COALESCE($2, rating), content = COALESCE($3, content), updated_at = now()
+        r#"UPDATE reviews SET rating = COALESCE($2, rating), content = COALESCE($3, content)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
                   reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _""#,
@@ -471,7 +471,7 @@ async fn review_status(
     let from = review.status.clone();
     let row = sqlx::query_as!(
         reviews::Model,
-        r#"UPDATE reviews SET status = $2, updated_at = now()
+        r#"UPDATE reviews SET status = $2
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, cycle_pid, kind, worker_pid,
                   reviewer_ref, status, rating, content, deleted_at AS "deleted_at: _""#,
@@ -590,7 +590,7 @@ async fn update_goal(
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         goals::Model,
-        r#"UPDATE goals SET status = $2, updated_at = now()
+        r#"UPDATE goals SET status = $2
             WHERE pid = $1 AND deleted_at IS NULL
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, review_pid, title, weight_percent,
                   status, deleted_at AS "deleted_at: _""#,
@@ -786,7 +786,7 @@ async fn update_training(
         training_enrollments::Model,
         r#"UPDATE training_enrollments
               SET status = $2, completed_on = COALESCE($3, completed_on),
-                  certificate_expires_on = COALESCE($4, certificate_expires_on), updated_at = now()
+                  certificate_expires_on = COALESCE($4, certificate_expires_on)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
                   completed_on, certificate_expires_on, deleted_at AS "deleted_at: _""#,
@@ -1074,8 +1074,7 @@ async fn update_succession(
         succession_plans::Model,
         r#"UPDATE succession_plans
               SET criticality = COALESCE($2, criticality), risk_of_loss = COALESCE($3, risk_of_loss),
-                  vacancy_expected_on = COALESCE($4, vacancy_expected_on), incumbent_pid = COALESCE($5, incumbent_pid),
-                  updated_at = now()
+                  vacancy_expected_on = COALESCE($4, vacancy_expected_on), incumbent_pid = COALESCE($5, incumbent_pid)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, role_title, department, criticality,
                   incumbent_pid, risk_of_loss, vacancy_expected_on, deleted_at AS "deleted_at: _""#,
@@ -1131,7 +1130,7 @@ async fn update_succession_candidate(
     let updated = sqlx::query_as!(
         succession_candidates::Model,
         r#"UPDATE succession_candidates
-              SET readiness = COALESCE($2, readiness), rank = COALESCE($3, rank), updated_at = now()
+              SET readiness = COALESCE($2, readiness), rank = COALESCE($3, rank)
             WHERE id = $1
         RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, plan_pid, worker_pid, readiness, rank,
                   deleted_at AS "deleted_at: _""#,

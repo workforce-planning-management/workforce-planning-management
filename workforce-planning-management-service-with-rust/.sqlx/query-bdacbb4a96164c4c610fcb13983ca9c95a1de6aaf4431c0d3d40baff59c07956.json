@@ -1,0 +1,223 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE conversion_plans\n              SET status = $2, approved_by = COALESCE($3, approved_by), settled_on = COALESCE($4, settled_on)\n            WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, intent, target_on,\n                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,\n                  status, review_on, settled_on",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "intent",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "intent"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "target_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "target_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "role_profile_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "role_profile_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "post_funding_kind",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "post_funding_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "post_funding_ends_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "post_funding_ends_on"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "proposed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "proposed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "approved_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "approved_by"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "review_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "review_on"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "settled_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "conversion_plans",
+            "name": "settled_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "bdacbb4a96164c4c610fcb13983ca9c95a1de6aaf4431c0d3d40baff59c07956"
+}
