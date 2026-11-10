@@ -120,7 +120,7 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
             let pid = r.json::<Value>()["pid"].as_str().unwrap().to_string();
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')")).await.unwrap();
             pids.push(pid);
         }
@@ -129,7 +129,7 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
                 "person_ref": format!("person:{p}"), "organization_ref": org, "worker_number": format!("PIE-{n}"),
                 "display_name": format!("Pay Info Enforcement {n}"), "employment_type": "permanent", "department": "people",
                 "job_title": "Administrator", "hired_on": "2020-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{p}', '{org}', '{w}', '{role}', '2020-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }
@@ -198,7 +198,7 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
         // ── It is in the worker's own export, and the audit holds no figure ─────────────
         let export: Value = get(format!("/api/workers/{}/subject-access", pids[0]), tokens[0].clone()).await.json();
         assert_eq!(export["pay_information_requests"].as_array().unwrap().len(), 2);
-        let rows = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action LIKE 'pay_information%' ORDER BY id".to_string()))
             .await.unwrap();
         let actions: Vec<String> = rows.iter().map(|r| r.try_get("", "action").unwrap()).collect();

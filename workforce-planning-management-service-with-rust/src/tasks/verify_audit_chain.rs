@@ -25,7 +25,7 @@ impl Task for VerifyAuditChain {
     }
 
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
-        let report = Audit::verify_chain(&ctx.db).await?;
+        let report = Audit::verify_chain(&crate::db::orm(ctx)).await?;
         println!(
             "{}",
             serde_json::to_string(&report).map_err(|e| Error::string(&e.to_string()))?

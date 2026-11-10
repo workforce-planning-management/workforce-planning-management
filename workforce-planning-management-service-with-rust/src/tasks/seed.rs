@@ -35,7 +35,7 @@ impl Task for Seed {
 
     #[allow(clippy::too_many_lines)] // one linear walk building the demo org
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
-        let db = &ctx.db;
+        let db = &crate::db::orm(ctx);
         let org = format!("organization:{}", Uuid::new_v4());
         let departments = ["engineering", "clinical", "operations", "finance"];
         let titles = [

@@ -228,10 +228,10 @@ async fn search(
     }
     let levels = sfia_skill_levels::Entity::find()
         .filter(sfia_skill_levels::Column::RetiredIn.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let out: Vec<serde_json::Value> = sfia_skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|s| s.code.to_lowercase().contains(&q) || s.name.to_lowercase().contains(&q))
@@ -256,17 +256,17 @@ async fn search(
 async fn show(State(ctx): State<AppContext>, Path(code): Path<String>) -> Result<Response> {
     let skill = sfia_skills::Entity::find()
         .filter(sfia_skills::Column::Code.eq(code.trim()))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let levels = sfia_skill_levels::Entity::find()
         .filter(sfia_skill_levels::Column::Code.eq(&skill.code))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let resources = sfiaplus_resources::Entity::find()
         .filter(sfiaplus_resources::Column::Code.eq(&skill.code))
         .filter(sfiaplus_resources::Column::RetiredIn.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut levels: Vec<serde_json::Value> = levels
         .into_iter()
@@ -349,14 +349,14 @@ async fn from_sfia(
         }
     }
     let known: BTreeMap<String, sfia_skills::Model> = sfia_skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.code.clone(), s))
         .collect();
     let defined: BTreeSet<(String, i32)> = sfia_skill_levels::Entity::find()
         .filter(sfia_skill_levels::Column::RetiredIn.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|l| (l.code, l.level))
@@ -385,7 +385,7 @@ async fn from_sfia(
     let taken = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .filter(role_profiles::Column::JobTitle.eq(&title))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if taken {
@@ -394,7 +394,7 @@ async fn from_sfia(
         ));
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let profile = role_profiles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         job_title: ActiveValue::set(title),

@@ -81,7 +81,7 @@ async fn role_history(
     }
     let rows = select
         .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows.iter().map(role_row).collect::<Vec<_>>())
 }
@@ -127,7 +127,7 @@ async fn add_past_role(
             .filter(role_profiles::Column::Pid.eq(id))
             .filter(role_profiles::Column::DeletedAt.is_null())
             .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
         (Some(profile.pid), None, profile.job_title)
@@ -143,7 +143,7 @@ async fn add_past_role(
     let existing = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
         .filter(worker_framework_roles::Column::FrameworkSlug.eq(&framework))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let spans: Vec<Interval> = existing
         .iter()
@@ -159,7 +159,7 @@ async fn add_past_role(
             existing[i].started_at.date_naive()
         )));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = worker_framework_roles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -199,7 +199,7 @@ struct SkillQuery {
 
 async fn skill_names(ctx: &AppContext) -> Result<BTreeMap<Uuid, String>> {
     Ok(skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -222,7 +222,7 @@ async fn skill_history(
     }
     let rows = select
         .order_by_desc(worker_skill_history::Column::StartedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let names = skill_names(&ctx).await?;
     let out: Vec<serde_json::Value> = rows
@@ -271,7 +271,7 @@ async fn add_past_skill(
     skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let interval = rules::validate_past(
@@ -283,7 +283,7 @@ async fn add_past_skill(
     let existing = worker_skill_history::Entity::find()
         .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skill_history::Column::SkillPid.eq(payload.skill_pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let spans: Vec<Interval> = existing
         .iter()
@@ -297,7 +297,7 @@ async fn add_past_skill(
             "that overlaps another interval recorded for this skill",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = worker_skill_history::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -344,7 +344,7 @@ async fn skills_as_of(
     let instant = start_of(query.at) + chrono::Duration::days(1) - chrono::Duration::seconds(1);
     let rows = worker_skill_history::Entity::find()
         .filter(worker_skill_history::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let names = skill_names(&ctx).await?;
     let mut by_skill: BTreeMap<Uuid, Vec<(Interval, i32)>> = BTreeMap::new();
@@ -368,7 +368,7 @@ async fn skills_as_of(
     held.sort_by_key(|v| v["skill"].as_str().map(str::to_lowercase));
     let roles = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let held_roles: Vec<serde_json::Value> = roles
         .iter()
@@ -418,7 +418,7 @@ async fn aspiration_target(
                 .filter(role_profiles::Column::Pid.eq(id))
                 .filter(role_profiles::Column::DeletedAt.is_null())
                 .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-                .one(&ctx.db)
+                .one(&crate::db::orm(ctx))
                 .await?
                 .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
             (
@@ -451,7 +451,7 @@ async fn aspiration_target(
         skills::Entity::find()
             .filter(skills::Column::Pid.eq(id))
             .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .ok_or(Error::NotFound)?;
         (None, None, None, None, Some(id))
@@ -513,7 +513,7 @@ async fn add_aspiration(
     .map_err(|e| unprocessable(&e))?;
     let (framework, profile, occupation, role_label, skill) =
         aspiration_target(&ctx, &payload).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = worker_aspirations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -568,7 +568,7 @@ async fn progress_toward(
     if let Some(profile) = a.role_profile_pid {
         let reqs = role_skill_requirements::Entity::find()
             .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?;
         let met = reqs
             .iter()
@@ -584,14 +584,14 @@ async fn progress_toward(
         let essential: Vec<String> = esco_occupation_skills::Entity::find()
             .filter(esco_occupation_skills::Column::OccupationUri.eq(uri))
             .filter(esco_occupation_skills::Column::Relation.eq("essential"))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .into_iter()
             .map(|r| r.skill_uri)
             .collect();
         let links: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
             .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .into_iter()
             .map(|r| (r.reference, r.skill_pid))
@@ -622,7 +622,7 @@ async fn viewer_of(
     };
     let all = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let manager_of: BTreeMap<Uuid, Uuid> = all
         .iter()
@@ -658,12 +658,12 @@ async fn list_aspirations(
         .filter(worker_aspirations::Column::WorkerPid.eq(worker.pid))
         .filter(worker_aspirations::Column::DeletedAt.is_null())
         .order_by_desc(worker_aspirations::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|d| (d.skill_pid, d.proficiency))
@@ -723,7 +723,7 @@ async fn downline_aspirations(
     };
     let all = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut reports_of: BTreeMap<Uuid, Vec<Uuid>> = BTreeMap::new();
     for w in &all {
@@ -738,12 +738,12 @@ async fn downline_aspirations(
         .filter(worker_aspirations::Column::WorkerPid.is_in(pids))
         .filter(worker_aspirations::Column::DeletedAt.is_null())
         .order_by_desc(worker_aspirations::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let names = skill_names(&ctx).await?;
     let declared: BTreeMap<(Uuid, Uuid), i32> = worker_skills::Entity::find()
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|d| ((d.worker_pid, d.skill_pid), d.proficiency))
@@ -817,7 +817,7 @@ async fn find_aspiration(ctx: &AppContext, pid: &str) -> Result<worker_aspiratio
     worker_aspirations::Entity::find()
         .filter(worker_aspirations::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(worker_aspirations::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -858,7 +858,7 @@ async fn update_aspiration(
         rules::validate_visibility(&visibility).map_err(|e| unprocessable(&e))?;
         active.visibility = ActiveValue::set(visibility);
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -886,7 +886,7 @@ async fn delete_aspiration(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut active: worker_aspirations::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,

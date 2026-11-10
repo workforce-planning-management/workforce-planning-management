@@ -109,7 +109,7 @@ async fn handle(
         Plan::Call { id, tool, target } => {
             // The audit comes first: a call that cannot be recorded is not made.
             if let Err(error) = Audit::record(
-                &mcp.ctx.db,
+                &crate::db::orm(&mcp.ctx),
                 "mcp",
                 Uuid::nil(),
                 "mcp_tool_called",

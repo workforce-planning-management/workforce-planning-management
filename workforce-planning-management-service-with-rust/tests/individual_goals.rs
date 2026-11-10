@@ -127,7 +127,7 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         for person in ["hr-goals", "pay-goals"] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
@@ -327,7 +327,7 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
             .json();
         assert_eq!(export["worker_goals"].as_array().map(Vec::len), Some(2));
         assert_eq!(export["review_goal_outcomes"].as_array().map(Vec::len), Some(1));
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE workers SET status = 'terminated', terminated_on = '2026-11-01' WHERE pid = '{mine}'"
             ))
@@ -339,8 +339,7 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
             .json(&json!({}))
             .await
             .assert_status_ok();
-        let left = ctx
-            .db
+        let left = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(
@@ -374,7 +373,7 @@ async fn the_rollup_counts_by_department_with_a_floor() {
 
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES ('{}', 'person:hr-rollup', '{org}', 'hr_admin', '2023-01-05')",

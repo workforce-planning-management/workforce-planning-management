@@ -64,7 +64,7 @@ pub(crate) async fn me_worker(ctx: &AppContext, caller: &MaybeAuthUser) -> Resul
         .filter(workers::Column::PersonRef.eq(format!("person:{}", claims.sub)))
         .filter(workers::Column::DeletedAt.is_null())
         .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     if let Some(i) = rows.iter().position(|w| w.terminated_on.is_none()) {
         return Ok(rows.swap_remove(i));
@@ -100,7 +100,7 @@ async fn details_of(
 ) -> Result<Option<worker_contact_details::Model>> {
     Ok(worker_contact_details::Entity::find()
         .filter(worker_contact_details::Column::WorkerPid.eq(worker_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -251,7 +251,7 @@ async fn set_my_details(
         worker.work_jurisdiction.as_deref(),
     );
     let existing = details_of(&ctx, worker.pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let saved = if let Some(row) = existing {
         let mut active: worker_contact_details::ActiveModel = row.into();
         active.address_line1 = ActiveValue::set(details.address_line1);
@@ -316,7 +316,7 @@ async fn clear_my_details(
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     worker_contact_details::Entity::delete_by_id(row.id)
         .exec(&txn)
         .await?;
@@ -351,7 +351,7 @@ async fn get_worker_details(
     let row = details_of(&ctx, worker.pid).await?;
     if row.is_some() && auth::acting_for_other(&caller, &worker.person_ref) {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "worker",
             worker.pid,
             "contact_details_read",
@@ -397,14 +397,14 @@ async fn search_by_phone(
     let members: std::collections::HashMap<uuid::Uuid, workers::Model> = workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(q.organization.clone()))
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w))
         .collect();
     let rows = worker_contact_details::Entity::find()
         .filter(worker_contact_details::Column::WorkerPid.is_in(members.keys().copied()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut found = Vec::new();
     for details in rows {
@@ -434,7 +434,7 @@ async fn search_by_phone(
         }
     }
     found.sort_by(|a, b| a.0.worker_number.cmp(&b.0.worker_number));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     for (worker, _) in &found {
         Audit::record(
             &txn,
@@ -533,7 +533,7 @@ async fn my_time_off(
     let entitlements: Vec<time_rules::Entitlement> = leave_entitlements::Entity::find()
         .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|e| time_rules::Entitlement {
@@ -547,7 +547,7 @@ async fn my_time_off(
         .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::DeletedAt.is_null())
         .order_by_asc(leave_requests::Column::StartOn)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let requests: Vec<time_rules::Request> = rows
         .iter()
@@ -636,7 +636,7 @@ async fn cancel_my_leave(
         .filter(leave_requests::Column::Pid.eq(records::parse_pid(&pid)?))
         .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     time_rules::can_worker_cancel(&request.status, request.start_on, Utc::now().date_naive())

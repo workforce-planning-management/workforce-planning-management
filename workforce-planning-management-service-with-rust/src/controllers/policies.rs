@@ -35,7 +35,7 @@ async fn versions_of(ctx: &AppContext, policy: Uuid) -> Result<Vec<policy_versio
     Ok(policy_versions::Entity::find()
         .filter(policy_versions::Column::PolicyPid.eq(policy))
         .order_by_asc(policy_versions::Column::Version)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -56,7 +56,7 @@ async fn list(
     let rows = policies::Entity::find()
         .filter(policies::Column::OrganizationRef.eq(&query.organization))
         .order_by_asc(policies::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut out = Vec::new();
     for p in &rows {
@@ -89,7 +89,7 @@ async fn create(
     let clash = policies::Entity::find()
         .filter(policies::Column::OrganizationRef.eq(&payload.organization_ref))
         .filter(policies::Column::Name.eq(&name))
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if clash > 0 {
         return Err(unprocessable(
@@ -97,7 +97,7 @@ async fn create(
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     policies::ActiveModel {
         pid: ActiveValue::set(pid),
         organization_ref: ActiveValue::set(payload.organization_ref),
@@ -136,14 +136,14 @@ async fn rename(
         .filter(policies::Column::OrganizationRef.eq(&policy.organization_ref))
         .filter(policies::Column::Name.eq(&name))
         .filter(policies::Column::Pid.ne(pid))
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if clash > 0 {
         return Err(unprocessable(
             "another policy in this organization has that name",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: policies::ActiveModel = policy.into();
     active.name = ActiveValue::set(name.clone());
     active.update(&txn).await?;
@@ -169,7 +169,7 @@ async fn find_policy(
 ) -> Result<policies::Model> {
     let row = policies::Entity::find()
         .filter(policies::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
@@ -201,7 +201,7 @@ async fn add_version(
         .last()
         .map_or(0, |v| v.version);
     let version_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     policy_versions::ActiveModel {
         pid: ActiveValue::set(version_pid),
         policy_pid: ActiveValue::set(policy.pid),
@@ -253,7 +253,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
     let today = Utc::now().date_naive();
     let acked: BTreeMap<Uuid, NaiveDate> = policy_acknowledgements::Entity::find()
         .filter(policy_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|a| (a.version_pid, a.acknowledged_on))
@@ -261,7 +261,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
     let rows = policies::Entity::find()
         .filter(policies::Column::OrganizationRef.eq(&worker.organization_ref))
         .order_by_asc(policies::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let mut out = Vec::new();
     let mut waiting = 0_usize;
@@ -314,12 +314,12 @@ async fn applicable(
 ) -> Result<policy_versions::Model> {
     let v = policy_versions::Entity::find()
         .filter(policy_versions::Column::Pid.eq(version_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let policy = policies::Entity::find()
         .filter(policies::Column::Pid.eq(v.policy_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     if policy.organization_ref != worker.organization_ref
@@ -363,13 +363,13 @@ pub(crate) async fn acknowledge_for(
     let existing = policy_acknowledgements::Entity::find()
         .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
         .filter(policy_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?;
     if let Some(row) = existing {
         return format::json(json!({ "acknowledged_on": row.acknowledged_on }));
     }
     let ack_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     policy_acknowledgements::ActiveModel {
         pid: ActiveValue::set(ack_pid),
         version_pid: ActiveValue::set(version.pid),
@@ -423,7 +423,7 @@ async fn audience_workers(
         .filter(workers::Column::OrganizationRef.eq(organization))
         .filter(workers::Column::DeletedAt.is_null())
         .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter(|w| is_employed_on(on, w.hired_on, w.terminated_on))
@@ -448,7 +448,7 @@ async fn version_and_org(
 ) -> Result<(policy_versions::Model, String)> {
     let v = policy_versions::Entity::find()
         .filter(policy_versions::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     if scoped {
@@ -457,7 +457,7 @@ async fn version_and_org(
     }
     let policy = policies::Entity::find()
         .filter(policies::Column::Pid.eq(v.policy_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     Ok((v, policy.organization_ref))
@@ -492,7 +492,7 @@ async fn team_counts(
     let acknowledged = policy_acknowledgements::Entity::find()
         .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
         .filter(policy_acknowledgements::Column::WorkerPid.is_in(team.clone()))
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     let count = rules::team_count(
         team.len(),
@@ -517,13 +517,13 @@ async fn named_record(
     let people = audience_workers(&ctx, &version, &organization, Utc::now().date_naive()).await?;
     let acked: BTreeMap<Uuid, NaiveDate> = policy_acknowledgements::Entity::find()
         .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|a| (a.worker_pid, a.acknowledged_on))
         .collect();
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "policy_version",
         version.pid,
         "policy_acknowledgements_read",

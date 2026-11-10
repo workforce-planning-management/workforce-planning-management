@@ -109,7 +109,7 @@ async fn add(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     qualifications::ActiveModel {
         pid: ActiveValue::set(id),
         worker_pid: ActiveValue::set(worker.pid),
@@ -141,7 +141,7 @@ async fn add(
 async fn find(ctx: &AppContext, pid: Uuid) -> Result<qualifications::Model> {
     qualifications::Entity::find()
         .filter(qualifications::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -172,7 +172,7 @@ async fn verify(
         }),
     )?;
     if q.verified_on.is_none() {
-        let txn = ctx.db.begin().await?;
+        let txn = crate::db::orm(&ctx).begin().await?;
         let mut m: qualifications::ActiveModel = q.into();
         m.verified_on = ActiveValue::set(Some(Utc::now().date_naive()));
         m.verified_by = ActiveValue::set(caller.actor().map(ToString::to_string));
@@ -202,7 +202,7 @@ async fn remove(
     let q = find(&ctx, pid).await?;
     let worker = records::worker_by_pid(&ctx, q.worker_pid).await?;
     writable_worker(&ctx, &caller, &worker.pid.to_string()).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     qualifications::Entity::delete_many()
         .filter(qualifications::Column::Pid.eq(pid))
         .exec(&txn)
@@ -230,7 +230,7 @@ async fn current_role(
         .filter(worker_framework_roles::Column::EndedAt.is_null())
         .filter(worker_framework_roles::Column::RoleProfilePid.is_not_null())
         .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
     else {
         return Ok(None);
@@ -241,7 +241,7 @@ async fn current_role(
     Ok(role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.eq(profile_pid))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -258,7 +258,7 @@ async fn role_and_gap(
     let reqs = role_qualification_requirements::Entity::find()
         .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile.pid))
         .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let gap = reqs
         .iter()
@@ -305,7 +305,7 @@ async fn team(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null());
     super::ensure_scale(&ctx, staff.clone()).await?;
-    let staff = staff.all(&ctx.db).await?;
+    let staff = staff.all(&crate::db::orm(&ctx)).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
     for w in &staff {
@@ -320,7 +320,7 @@ async fn team(
     let all = qualifications::Entity::find()
         .filter(qualifications::Column::WorkerPid.is_in(pids))
         .order_by_asc(qualifications::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut people: Vec<Value> = Vec::new();
     for (p, depth) in &below {
@@ -352,7 +352,7 @@ async fn of_worker(
     let mine = qualifications::Entity::find()
         .filter(qualifications::Column::WorkerPid.eq(worker.pid))
         .order_by_asc(qualifications::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let held: Vec<rules::Held> = mine.iter().map(held_of).collect();
     let (role, gap) = role_and_gap(&ctx, &worker, &held, today).await?;
@@ -375,7 +375,7 @@ async fn profile_pid(ctx: &AppContext, pid: &str) -> Result<Uuid> {
     let profile = role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     Ok(profile.pid)
@@ -391,7 +391,7 @@ async fn list_requirements(
     let rows: Vec<Value> = role_qualification_requirements::Entity::find()
         .filter(role_qualification_requirements::Column::RoleProfilePid.eq(profile))
         .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .iter()
         .map(|r| {
@@ -433,7 +433,7 @@ async fn add_requirement(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     role_qualification_requirements::ActiveModel {
         pid: ActiveValue::set(id),
         role_profile_pid: ActiveValue::set(profile),
@@ -479,13 +479,13 @@ async fn unverified(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null());
     super::ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&ctx.db).await?;
+    let people = in_org.all(&crate::db::orm(&ctx)).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let waiting = qualifications::Entity::find()
         .filter(qualifications::Column::WorkerPid.is_in(pids))
         .filter(qualifications::Column::VerifiedOn.is_null())
         .order_by_asc(qualifications::Column::CreatedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let name_of: std::collections::HashMap<Uuid, &str> = people
         .iter()
@@ -520,14 +520,14 @@ async fn rollup(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null());
     super::ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&ctx.db).await?;
+    let people = in_org.all(&crate::db::orm(&ctx)).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let links = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
         .filter(worker_framework_roles::Column::EndedAt.is_null())
         .filter(worker_framework_roles::Column::RoleProfilePid.is_not_null())
         .order_by_desc(worker_framework_roles::Column::StartedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Each person's newest current role, as the person's own list reads it.
     let mut role_of: std::collections::HashMap<Uuid, Uuid> = std::collections::HashMap::new();
@@ -545,16 +545,16 @@ async fn rollup(
     let profiles = role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.is_in(role_pids.clone()))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let reqs = role_qualification_requirements::Entity::find()
         .filter(role_qualification_requirements::Column::RoleProfilePid.is_in(role_pids))
         .order_by_asc(role_qualification_requirements::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let all = qualifications::Entity::find()
         .filter(qualifications::Column::WorkerPid.is_in(pids))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut held_by: std::collections::HashMap<Uuid, Vec<rules::Held>> =
         std::collections::HashMap::new();

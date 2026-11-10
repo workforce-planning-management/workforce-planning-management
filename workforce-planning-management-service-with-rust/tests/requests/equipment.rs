@@ -89,8 +89,7 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
             request.post(&format!("/api/workers/{a}/status")).json(&json!({ "to": to })).await.assert_status_ok();
         }
         request.post(&format!("/api/workers/{a}/erase")).await.assert_status_ok();
-        let row = ctx
-            .db
+        let row = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!("SELECT (SELECT count(*) FROM asset_issues WHERE worker_pid = '{a}') AS issues, (SELECT count(*) FROM assets WHERE pid = '{laptop}'::uuid) AS assets"),
@@ -202,11 +201,11 @@ async fn a_manager_sees_how_many_of_their_team_hold_equipment_only_from_the_floo
             .await
             .assert_status_ok();
         assert_eq!(count(lead.clone()).await["count"], json!({ "kind": "shown", "holding": 1, "none": 11 }));
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", crew[1]))
             .await
             .unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", crew[2]))
             .await
             .unwrap();

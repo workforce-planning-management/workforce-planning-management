@@ -361,8 +361,8 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
         let query = |sql: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
-                    .query_one_raw(Statement::from_string(ctx.db.get_database_backend(), sql))
+                workforce_planning_management::db::orm(ctx)
+                    .query_one_raw(Statement::from_string(workforce_planning_management::db::orm(ctx).get_database_backend(), sql))
                     .await
                     .unwrap()
                     .unwrap()

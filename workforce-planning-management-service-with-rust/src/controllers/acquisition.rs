@@ -182,7 +182,7 @@ async fn create_requisition(
         problems.push(message);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = requisitions::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(payload.organization_ref.clone()),
@@ -264,7 +264,7 @@ async fn get_requisition(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    format::json(records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?)
+    format::json(records::find_requisition(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?)
 }
 
 /// `POST /api/requisitions/{pid}/status` — one pipeline transition.
@@ -284,7 +284,8 @@ async fn requisition_status(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::REQUISITION_STATUSES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
+    let requisition =
+        records::find_requisition(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     lifecycle::check(
         "requisition",
         lifecycle::REQUISITION,
@@ -318,7 +319,7 @@ async fn requisition_status(
             .filter(applications::Column::RequisitionPid.eq(requisition.pid))
             .filter(applications::Column::DeletedAt.is_null())
             .filter(applications::Column::Stage.eq("hired"))
-            .count(&ctx.db)
+            .count(&crate::db::orm(&ctx))
             .await?;
         if hired < u64::try_from(requisition.headcount).unwrap_or(u64::MAX) {
             return Err(unprocessable(&format!(
@@ -327,7 +328,7 @@ async fn requisition_status(
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let from = requisition.status.clone();
     let title = requisition.job_title.clone();
     let mut active: requisitions::ActiveModel = requisition.into();
@@ -387,7 +388,7 @@ async fn create_candidate(
         payload.person_ref.as_deref(),
     );
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = candidates::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         person_ref: ActiveValue::set(payload.person_ref.clone()),
@@ -435,7 +436,7 @@ async fn list_candidates(
         .filter(candidates::Column::DeletedAt.is_null())
         .order_by_asc(candidates::Column::Id)
         .limit(1000)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let expired_only = params
         .expired
@@ -459,8 +460,9 @@ async fn create_application(
     Path(pid): Path<String>,
     Json(payload): Json<ApplicationPayload>,
 ) -> Result<Response> {
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
-    let candidate = records::find_candidate(&ctx.db, payload.candidate_pid).await?;
+    let requisition =
+        records::find_requisition(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let candidate = records::find_candidate(&crate::db::orm(&ctx), payload.candidate_pid).await?;
     if requisition.status == "draft"
         || requisition.status == "cancelled"
         || requisition.status == "filled"
@@ -477,7 +479,7 @@ async fn create_application(
     let mut problems = Problems::new();
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = applications::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         requisition_pid: ActiveValue::set(requisition.pid),
@@ -520,12 +522,13 @@ async fn list_applications(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let requisition = records::find_requisition(&ctx.db, records::parse_pid(&pid)?).await?;
+    let requisition =
+        records::find_requisition(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let rows = applications::Entity::find()
         .filter(applications::Column::RequisitionPid.eq(requisition.pid))
         .filter(applications::Column::DeletedAt.is_null())
         .order_by_asc(applications::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -544,7 +547,8 @@ async fn application_stage(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::APPLICATION_STAGES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application =
+        records::find_application(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     lifecycle::check(
         "application",
         lifecycle::APPLICATION,
@@ -552,10 +556,12 @@ async fn application_stage(
         &payload.to,
     )
     .map_err(|e| unprocessable(&e))?;
-    let requisition = records::find_requisition(&ctx.db, application.requisition_pid).await?;
-    let candidate = records::find_candidate(&ctx.db, application.candidate_pid).await?;
+    let requisition =
+        records::find_requisition(&crate::db::orm(&ctx), application.requisition_pid).await?;
+    let candidate =
+        records::find_candidate(&crate::db::orm(&ctx), application.candidate_pid).await?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let from = application.stage.clone();
     let mut active: applications::ActiveModel = application.clone().into();
     active.stage = ActiveValue::set(payload.to.clone());
@@ -689,7 +695,8 @@ async fn create_interview(
     Path(pid): Path<String>,
     Json(payload): Json<InterviewPayload>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application =
+        records::find_application(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_ref(
         "interviewer_ref",
@@ -698,7 +705,7 @@ async fn create_interview(
     );
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = interviews::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         application_pid: ActiveValue::set(application.pid),
@@ -724,12 +731,13 @@ async fn list_interviews(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application =
+        records::find_application(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let rows = interviews::Entity::find()
         .filter(interviews::Column::ApplicationPid.eq(application.pid))
         .filter(interviews::Column::DeletedAt.is_null())
         .order_by_asc(interviews::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -750,10 +758,10 @@ async fn interview_outcome(
     let row = interviews::Entity::find()
         .filter(interviews::Column::Pid.eq(pid))
         .filter(interviews::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: interviews::ActiveModel = row.into();
     active.outcome = ActiveValue::set(payload.outcome.clone());
     if let Some(notes) = payload.notes {
@@ -793,7 +801,7 @@ async fn add_onboarding(
         problems.require_text("items[].name", &item.name);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut pids = Vec::with_capacity(payload.items.len());
     for item in &payload.items {
         let row = onboarding_items::ActiveModel {
@@ -835,7 +843,7 @@ async fn list_onboarding(
         .filter(onboarding_items::Column::WorkerPid.eq(worker.pid))
         .filter(onboarding_items::Column::DeletedAt.is_null())
         .order_by_asc(onboarding_items::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -848,11 +856,12 @@ async fn finish_item(
     status: &str,
     reason: Option<String>,
 ) -> Result<Response> {
-    let item = records::find_onboarding_item(&ctx.db, records::parse_pid(pid)?).await?;
+    let item =
+        records::find_onboarding_item(&crate::db::orm(ctx), records::parse_pid(pid)?).await?;
     if item.status != "pending" {
         return Err(unprocessable(&format!("item is already {}", item.status)));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let mut active: onboarding_items::ActiveModel = item.into();
     active.status = ActiveValue::set(status.to_string());
     active.waived_reason = ActiveValue::set(reason.clone());

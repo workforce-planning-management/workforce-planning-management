@@ -345,10 +345,10 @@ mod tests {
 
     #[test]
     fn arguments_split_at_the_top_level_only() {
-        let source = r#"Audit::record(&ctx.db, "worker", w.pid, "moved, twice", caller.actor(), Some(json!({ "a": [1, 2] }))).await"#;
+        let source = r#"Audit::record(&crate::db::orm(&ctx), "worker", w.pid, "moved, twice", caller.actor(), Some(json!({ "a": [1, 2] }))).await"#;
         let args = arguments(source, "Audit::record(".len());
         assert_eq!(args.len(), 6);
-        assert_eq!(args[0], "&ctx.db");
+        assert_eq!(args[0], "&crate::db::orm(&ctx)");
         assert_eq!(args[3], "\"moved, twice\"");
         assert_eq!(args[5], r#"Some(json!({ "a": [1, 2] }))"#);
     }

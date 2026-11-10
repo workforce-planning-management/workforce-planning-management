@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str, role: &str) {
-    ctx.db
+    workforce_planning_management::db::orm(ctx)
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', '{role}', '2023-01-05')",
@@ -262,7 +262,7 @@ async fn an_injury_record_proves_a_report_and_holds_no_description() {
         let scalar = |sql: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
+                workforce_planning_management::db::orm(ctx)
                     .query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres, sql))
                     .await
                     .unwrap()

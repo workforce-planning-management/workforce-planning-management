@@ -28,7 +28,7 @@
    yours.
 4. Deploy the new binary or image **without** starting traffic, then
    `workforce-planning-management db migrate`.
-5. Start it. Check `GET /_health`, `GET /_posture` (`auth_enforced: true`), and a read.
+5. Start it. Check `GET /_health/ready`, `GET /_posture` (`auth_enforced: true`), and a read.
 6. Watch the logs for `WARN` lines: the service warns when sign-in is off, when it is
    on with no key source, and when `WPM_TRUST_FORWARDED` is still set.
 7. Keep the previous image and the backup until the new version has run a full

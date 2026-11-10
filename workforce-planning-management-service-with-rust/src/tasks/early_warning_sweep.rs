@@ -36,12 +36,15 @@ impl Task for EarlyWarningSweep {
         let mut orgs: BTreeSet<String> = BTreeSet::new();
         for p in skill_pools::Entity::find()
             .filter(skill_pools::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
         {
             orgs.insert(p.organization_ref);
         }
-        for p in oversight_positions::Entity::find().all(&ctx.db).await? {
+        for p in oversight_positions::Entity::find()
+            .all(&crate::db::orm(ctx))
+            .await?
+        {
             orgs.insert(p.organization_ref);
         }
         for org in &orgs {

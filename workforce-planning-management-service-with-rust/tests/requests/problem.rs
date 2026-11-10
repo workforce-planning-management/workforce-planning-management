@@ -70,7 +70,7 @@ async fn an_error_from_a_handler_a_layer_or_no_route_is_a_problem() {
         assert_eq!(nowhere.json::<Value>()["status"], 404);
 
         // A success is not touched.
-        let fine = request.get("/_health").await;
+        let fine = request.get("/_health/live").await;
         assert_eq!(fine.status_code(), 200);
         assert_ne!(fine.header("content-type"), PROBLEM_JSON);
     })

@@ -40,7 +40,7 @@ pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
         .filter(webhook_deliveries::Column::NextAttemptAt.lte(now))
         .order_by_asc(webhook_deliveries::Column::Id)
         .limit(BATCH)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let http = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
@@ -51,7 +51,7 @@ pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
     for delivery in due {
         let subscription = webhook_subscriptions::Entity::find()
             .filter(webhook_subscriptions::Column::Pid.eq(delivery.subscription_pid))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?;
         let attempts = delivery.attempts + 1;
         let (status, reason) = match subscription.filter(|s| s.active) {
@@ -90,7 +90,7 @@ pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
                 row.next_attempt_at = ActiveValue::set(None);
             }
         }
-        row.update(&ctx.db).await?;
+        row.update(&crate::db::orm(ctx)).await?;
     }
     Ok(summary)
 }

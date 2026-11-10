@@ -74,7 +74,7 @@ async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
             format!("UPDATE jurisdiction_parameters SET source = 'x' WHERE pid = '{pid}'"),
             format!("DELETE FROM jurisdiction_parameters WHERE pid = '{pid}'"),
         ] {
-            assert!(ctx.db.execute_unprepared(&sql).await.is_err(), "{sql}");
+            assert!(workforce_planning_management::db::orm(&ctx).execute_unprepared(&sql).await.is_err(), "{sql}");
         }
         // The audit names the code and the key, not the value.
         let audit = serde_json::to_string(&request.get(&format!("/api/audits/{pid}")).await.json::<Value>()).unwrap();
@@ -254,7 +254,7 @@ async fn the_home_jurisdiction_is_set_cleared_and_audited() {
         assert_eq!(set["home_jurisdiction"], "XA");
         assert_eq!(profile().await["home_jurisdiction"], "XA");
         // A cycle recorded behind HR's back (the API refuses one) makes the chain unbuildable: the setter refuses it.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code) VALUES \
                  ('{org}', 'XB', 'national', 'QY'), ('{org}', 'QY', 'supranational', 'XB')"
@@ -267,8 +267,7 @@ async fn the_home_jurisdiction_is_set_cleared_and_audited() {
             let cleared: Value = request.put("/api/home-jurisdiction").json(&home(clear)).await.json();
             assert_eq!(cleared["home_jurisdiction"], Value::Null);
         }
-        let audits = ctx
-            .db
+        let audits = workforce_planning_management::db::orm(&ctx)
             .query_all_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(

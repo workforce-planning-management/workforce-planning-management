@@ -209,10 +209,10 @@ async fn the_service_fails_cleanly_and_heals() {
                 assert_no_leak(&write.text());
             }
             chaos.set(PASS);
-            heal(&request, &ctx.db).await;
+            heal(&request, &workforce_planning_management::db::orm(&ctx)).await;
             let leftover = workers::Entity::find()
                 .filter(workers::Column::WorkerNumber.eq(number.as_str()))
-                .count(&ctx.db)
+                .count(&workforce_planning_management::db::orm(&ctx))
                 .await
                 .expect("count");
             assert_eq!(leftover, 0, "{name}: a refused write left a worker behind");
@@ -227,7 +227,7 @@ async fn the_service_fails_cleanly_and_heals() {
             assert_no_leak(&slow.text());
         }
         chaos.set(PASS);
-        heal(&request, &ctx.db).await;
+        heal(&request, &workforce_planning_management::db::orm(&ctx)).await;
 
         // The monkey: random faults between and during writes (one after another: the test server is not shared across tasks).
         let mut rng = Seeded(seed);
@@ -261,14 +261,14 @@ async fn the_service_fails_cleanly_and_heals() {
             }
         }
         chaos.set(PASS);
-        heal(&request, &ctx.db).await;
+        heal(&request, &workforce_planning_management::db::orm(&ctx)).await;
 
         // All or nothing: a cut can lose the reply to a write that committed, so there may be more
         // workers than `201`s, never fewer, never more than were tried, and none without its audit row.
         let monkeys = workers::Entity::find()
             .filter(workers::Column::OrganizationRef.eq(org.as_str()))
             .filter(workers::Column::WorkerNumber.starts_with("monkey-"))
-            .all(&ctx.db)
+            .all(&workforce_planning_management::db::orm(&ctx))
             .await
             .expect("workers");
         assert!(monkeys.len() >= created, "a 200 was lost (seed {seed})");
@@ -280,7 +280,7 @@ async fn the_service_fails_cleanly_and_heals() {
             let audits = audit_logs::Entity::find()
                 .filter(audit_logs::Column::EntityPid.eq(worker.pid))
                 .filter(audit_logs::Column::Action.eq("created"))
-                .count(&ctx.db)
+                .count(&workforce_planning_management::db::orm(&ctx))
                 .await
                 .expect("audits");
             assert_eq!(

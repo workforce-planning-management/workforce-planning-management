@@ -43,7 +43,7 @@ async fn extensions_of(
     Ok(engagement_extensions::Entity::find()
         .filter(engagement_extensions::Column::WorkerPid.eq(worker_pid))
         .order_by_asc(engagement_extensions::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -96,7 +96,7 @@ async fn decisions_of(
     Ok(engagement_decisions::Entity::find()
         .filter(engagement_decisions::Column::WorkerPid.eq(worker_pid))
         .order_by_asc(engagement_decisions::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -128,7 +128,7 @@ async fn decide(
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = engagement_decisions::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -183,7 +183,7 @@ async fn extend(
         unprocessable("the engagement has no end date to extend; record one first")
     })?;
     rules::validate_extension(previous, payload.new_end).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = engagement_extensions::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -239,7 +239,7 @@ async fn details_of(
 ) -> Result<Option<worker_contractor_details::Model>> {
     Ok(worker_contractor_details::Entity::find()
         .filter(worker_contractor_details::Column::WorkerPid.eq(worker_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -275,7 +275,7 @@ async fn get_details(
     let row = details_of(&ctx, worker.pid).await?;
     if row.as_ref().is_some_and(|r| r.rate_minor.is_some()) && !masked {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "worker",
             worker.pid,
             "rate_read",
@@ -333,7 +333,7 @@ async fn set_details(
     .map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
     let existing = details_of(&ctx, worker.pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let saved = if let Some(row) = existing {
         let mut active: worker_contractor_details::ActiveModel = row.into();
         active.supplier_ref = ActiveValue::set(payload.supplier_ref.clone());
@@ -381,7 +381,7 @@ async fn clear_details(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let row = details_of(&ctx, worker.pid).await?.ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     worker_contractor_details::Entity::delete_by_id(row.id)
         .exec(&txn)
         .await?;
@@ -433,7 +433,7 @@ async fn record_assessment(
     if on > today {
         return Err(unprocessable("assessed_on must not be in the future"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = engagement_status_assessments::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -468,7 +468,7 @@ async fn list_assessments(
     let rows = engagement_status_assessments::Entity::find()
         .filter(engagement_status_assessments::Column::WorkerPid.eq(worker.pid))
         .order_by_desc(engagement_status_assessments::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(
         rows.iter()
@@ -512,7 +512,7 @@ async fn missing_end_date(
     }
     let rows = select
         .order_by_asc(workers::Column::WorkerNumber)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(
         rows.iter()

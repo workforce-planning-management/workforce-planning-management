@@ -124,9 +124,9 @@ async fn create_entitlement(
 ) -> Result<Response> {
     ensure_valid(&payload.validate())?;
     if let Some(plan_pid) = payload.benefit_plan_pid {
-        records::find_benefit_plan(&ctx.db, plan_pid).await?;
+        records::find_benefit_plan(&crate::db::orm(&ctx), plan_pid).await?;
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = wellbeing_entitlements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -182,7 +182,7 @@ async fn list_entitlements(
     }
     let rows = find
         .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -198,7 +198,7 @@ async fn update_entitlement(
 ) -> Result<Response> {
     ensure_valid(&payload.validate())?;
     if let Some(plan_pid) = payload.benefit_plan_pid {
-        records::find_benefit_plan(&ctx.db, plan_pid).await?;
+        records::find_benefit_plan(&crate::db::orm(&ctx), plan_pid).await?;
     }
     let row = find_entitlement(&ctx, &pid).await?;
     let row_pid = row.pid;
@@ -215,7 +215,7 @@ async fn update_entitlement(
     active.doses = ActiveValue::set(payload.doses);
     active.active_from = ActiveValue::set(payload.active_from);
     active.active_until = ActiveValue::set(payload.active_until);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -242,7 +242,7 @@ async fn delete_entitlement(
     let row_pid = row.pid;
     let mut active: wellbeing_entitlements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -296,18 +296,18 @@ async fn worker_prompts(
     let entitlements = wellbeing_entitlements::Entity::find()
         .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
         .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let acks = entitlement_acknowledgements::Entity::find()
         .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // The plans this worker is live-enrolled in: a plan-linked rule
     // goes quiet for them — derived here, never stored (WPM-D18).
     let enrolled_plans: Vec<Uuid> = benefit_enrollments::Entity::find()
         .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
@@ -406,16 +406,16 @@ async fn acknowledge(
     let entitlement = wellbeing_entitlements::Entity::find()
         .filter(wellbeing_entitlements::Column::Pid.eq(payload.entitlement_pid))
         .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let today = chrono::Utc::now().date_naive();
     let existing = entitlement_acknowledgements::Entity::find()
         .filter(entitlement_acknowledgements::Column::EntitlementPid.eq(entitlement.pid))
         .filter(entitlement_acknowledgements::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = match existing {
         Some(row) => {
             // Answering the one reminder uses it up, whatever the answer.
@@ -474,17 +474,17 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
     let entitlements = wellbeing_entitlements::Entity::find()
         .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
         .order_by_asc(wellbeing_entitlements::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let acks = entitlement_acknowledgements::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let today = chrono::Utc::now().date_naive();
     // Live (plan, worker) enrolment pairs, for the conversion terms.
     let live_enrollments: std::collections::HashSet<(Uuid, Uuid)> =
         benefit_enrollments::Entity::find()
             .filter(benefit_enrollments::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .into_iter()
             .filter(|enrollment| enrollment.ends_on.is_none_or(|end| end >= today))
@@ -574,7 +574,7 @@ async fn create_survey(
         problems.push("active_from must not be after active_until");
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = pulse_surveys::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -606,7 +606,7 @@ async fn list_surveys(State(ctx): State<AppContext>) -> Result<Response> {
     let rows = pulse_surveys::Entity::find()
         .filter(pulse_surveys::Column::DeletedAt.is_null())
         .order_by_asc(pulse_surveys::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let view: Vec<serde_json::Value> = rows
         .iter()
@@ -656,7 +656,7 @@ async fn submit_response(
     let survey = pulse_surveys::Entity::find()
         .filter(pulse_surveys::Column::Pid.eq(records::parse_pid(&pid)?))
         .filter(pulse_surveys::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let today = chrono::Utc::now().date_naive();
@@ -670,7 +670,7 @@ async fn submit_response(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = pulse_responses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         survey_pid: ActiveValue::set(survey.pid),
@@ -701,12 +701,12 @@ async fn survey_results(
     let survey = pulse_surveys::Entity::find()
         .filter(pulse_surveys::Column::Pid.eq(records::parse_pid(&pid)?))
         .filter(pulse_surveys::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let responses = pulse_responses::Entity::find()
         .filter(pulse_responses::Column::SurveyPid.eq(survey.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut by_department: std::collections::BTreeMap<&str, Vec<i32>> =
         std::collections::BTreeMap::new();
@@ -757,7 +757,7 @@ async fn find_entitlement(ctx: &AppContext, pid: &str) -> Result<wellbeing_entit
     wellbeing_entitlements::Entity::find()
         .filter(wellbeing_entitlements::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(wellbeing_entitlements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }

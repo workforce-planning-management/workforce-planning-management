@@ -99,12 +99,12 @@ async fn create_time_entry(
         .filter(time_entries::Column::WorkerPid.eq(worker.pid))
         .filter(time_entries::Column::WorkedOn.eq(payload.worked_on))
         .filter(time_entries::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let existing_minutes: i32 = existing.iter().map(|e| e.minutes).sum();
     workforce::check_day_minutes(existing_minutes, payload.minutes)
         .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = time_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -172,7 +172,7 @@ async fn list_time_entries(
     let rows = query
         .order_by_asc(time_entries::Column::WorkedOn)
         .limit(1000)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Per-day overtime derivation over the returned window, against the deployment's day (WPM-T383).
     let full_day = super::payroll::contracted_day();
@@ -206,11 +206,11 @@ async fn approve_time_entry(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let entry = records::find_time_entry(&ctx.db, records::parse_pid(&pid)?).await?;
+    let entry = records::find_time_entry(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     if entry.status == "approved" {
         return Err(unprocessable("time entry is already approved"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: time_entries::ActiveModel = entry.into();
     active.status = ActiveValue::set("approved".to_string());
     let row = active.update(&txn).await?;
@@ -253,14 +253,14 @@ async fn create_entitlement(
         .filter(leave_entitlements::Column::Kind.eq(&payload.kind))
         .filter(leave_entitlements::Column::Year.eq(payload.year))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if existing > 0 {
         return Err(unprocessable(
             "entitlement already exists for this kind and year",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = leave_entitlements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -299,7 +299,7 @@ async fn list_entitlements(
         .filter(leave_entitlements::Column::WorkerPid.eq(worker.pid))
         .filter(leave_entitlements::Column::DeletedAt.is_null())
         .order_by_asc(leave_entitlements::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -333,7 +333,14 @@ pub(crate) async fn create_leave_for(
     leave::validate_reason(&payload.kind, payload.reason.as_deref())
         .map_err(|e| unprocessable(&e))?;
     let days = leave::day_span(payload.start_on, payload.end_on).map_err(|e| unprocessable(&e))?;
-    let check = balance_check(&ctx.db, worker, &payload.kind, payload.start_on, days).await?;
+    let check = balance_check(
+        &crate::db::orm(ctx),
+        worker,
+        &payload.kind,
+        payload.start_on,
+        days,
+    )
+    .await?;
     let negative = match check {
         leave::BalanceCheck::Ok { .. } => false,
         leave::BalanceCheck::NegativeFlagged { .. } => true,
@@ -346,7 +353,7 @@ pub(crate) async fn create_leave_for(
             )));
         }
     };
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let row = leave_requests::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -419,7 +426,7 @@ async fn list_leave_requests(
         .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::DeletedAt.is_null())
         .order_by_asc(leave_requests::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -435,7 +442,7 @@ pub(crate) async fn decide_leave(
 ) -> Result<Response> {
     use chrono::Datelike;
     let pid = records::parse_pid(pid)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     // Lock the request row: two racing approvers serialize here; the
     // loser sees the already-decided status and gets the 422.
     let request = leave_requests::Entity::find()
@@ -554,7 +561,7 @@ async fn create_shift(
         problems.push("required_headcount must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = shifts::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         department: ActiveValue::set(payload.department.clone()),
@@ -594,7 +601,7 @@ async fn list_shifts(
     let rows = query
         .order_by_asc(shifts::Column::StartsAt)
         .limit(1000)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let rows: Vec<_> = if let Some(date) = params.date {
         rows.into_iter()
@@ -609,7 +616,7 @@ async fn list_shifts(
         let assignments = shift_assignments::Entity::find()
             .filter(shift_assignments::Column::ShiftPid.eq(shift.pid))
             .filter(shift_assignments::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         out.push(serde_json::json!({ "shift": shift, "assignments": assignments }));
     }
@@ -626,19 +633,19 @@ async fn assign_shift(
     Path(pid): Path<String>,
     Json(payload): Json<AssignmentPayload>,
 ) -> Result<Response> {
-    let shift = records::find_shift(&ctx.db, records::parse_pid(&pid)?).await?;
+    let shift = records::find_shift(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     // Double-booking: any live assignment to an overlapping shift.
     let their_assignments = shift_assignments::Entity::find()
         .filter(shift_assignments::Column::WorkerPid.eq(worker.pid))
         .filter(shift_assignments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     for assignment in &their_assignments {
         if let Some(other) = shifts::Entity::find()
             .filter(shifts::Column::Pid.eq(assignment.shift_pid))
             .filter(shifts::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             && workforce::windows_overlap(
                 shift.starts_at,
@@ -658,7 +665,7 @@ async fn assign_shift(
         .filter(leave_requests::Column::WorkerPid.eq(worker.pid))
         .filter(leave_requests::Column::Status.eq("approved"))
         .filter(leave_requests::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let shift_start = shift.starts_at.date_naive();
     let shift_end = shift.ends_at.date_naive();
@@ -670,7 +677,7 @@ async fn assign_shift(
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = shift_assignments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         shift_pid: ActiveValue::set(shift.pid),
@@ -712,8 +719,9 @@ async fn unassign_shift(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = records::find_shift_assignment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
+    let row =
+        records::find_shift_assignment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let pid = row.pid;
     let mut active: shift_assignments::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
@@ -794,7 +802,7 @@ async fn working_time(
         .column(workers::Column::OrganizationRef)
         .column(workers::Column::WorkJurisdiction)
         .into_tuple()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let workers_checked = places.len();
     let organizations: Vec<String> = places
@@ -840,8 +848,7 @@ async fn working_time(
         let total_ceiling = ceiling.saturating_mul(weeks);
         let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
         for batch in pids.chunks(IN_BATCH) {
-            let rows = ctx
-                .db
+            let rows = crate::db::orm(&ctx)
                 .query_all_raw(sea_orm::Statement::from_sql_and_values(
                     sea_orm::DbBackend::Postgres,
                     "WITH heavy AS (
@@ -880,7 +887,7 @@ async fn working_time(
         .filter(shifts::Column::DeletedAt.is_null())
         .filter(shifts::Column::StartsAt.gte(utc_midnight(rest_start)))
         .filter(shifts::Column::StartsAt.lt(utc_midnight(rest_end + chrono::Duration::days(1))))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let window_shifts: std::collections::BTreeMap<Uuid, ShiftInterval> = shift_rows
         .iter()
@@ -904,7 +911,7 @@ async fn working_time(
         for assignment in shift_assignments::Entity::find()
             .filter(shift_assignments::Column::DeletedAt.is_null())
             .filter(shift_assignments::Column::ShiftPid.is_in(shift_pids.to_vec()))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
         {
             if let Some(interval) = window_shifts.get(&assignment.shift_pid) {
@@ -934,7 +941,7 @@ async fn working_time(
             .filter(time_entries::Column::WorkedOn.gt(as_of - chrono::Duration::weeks(weeks)))
             .filter(time_entries::Column::WorkedOn.lte(as_of))
             .into_tuple()
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?;
         minutes_of.insert(*pid, total.flatten().unwrap_or(0));
     }
@@ -952,7 +959,7 @@ async fn working_time(
         let people = live_workers()
             .filter(workers::Column::Pid.is_in(pids.to_vec()))
             .order_by_asc(workers::Column::Id)
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         for worker in &people {
             let Some(limit) = limits.get(&worker.pid) else {

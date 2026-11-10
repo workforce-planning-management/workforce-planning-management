@@ -63,7 +63,9 @@ impl Task for PayProgressionReminders {
 /// A database error.
 pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) -> Result<usize> {
     let mut sent = 0;
-    let positions = worker_pay_positions::Entity::find().all(&ctx.db).await?;
+    let positions = worker_pay_positions::Entity::find()
+        .all(&crate::db::orm(ctx))
+        .await?;
     for row in positions {
         let Some(scale) = scale_rules::find(&row.scale_id) else {
             continue;
@@ -82,7 +84,7 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
         let Some(worker) = workers::Entity::find()
             .filter(workers::Column::Pid.eq(row.worker_pid))
             .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
         else {
             continue;
@@ -93,7 +95,7 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
         let already = notifications::Entity::find()
             .filter(notifications::Column::WorkerPid.eq(row.worker_pid))
             .filter(notifications::Column::Kind.eq("pay_step_due"))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .iter()
             .any(|n| n.data["eligible_on"] == serde_json::json!(on));
@@ -101,7 +103,7 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
             continue;
         }
         Notification::push(
-            &ctx.db,
+            &crate::db::orm(ctx),
             row.worker_pid,
             "pay_step_due",
             &format!("You become eligible to move up a pay step on {on}."),

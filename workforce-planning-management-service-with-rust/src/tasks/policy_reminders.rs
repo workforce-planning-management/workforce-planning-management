@@ -67,7 +67,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
     // Versions already reminded, per worker: (worker, version).
     let told: BTreeSet<(Uuid, String)> = notifications::Entity::find()
         .filter(notifications::Column::Kind.eq("policy_due"))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter_map(|n| {
@@ -79,13 +79,13 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
         .collect();
     for policy in policies::Entity::find()
         .order_by_asc(policies::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         let versions = policy_versions::Entity::find()
             .filter(policy_versions::Column::PolicyPid.eq(policy.pid))
             .order_by_asc(policy_versions::Column::Version)
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?;
         let facts: Vec<rules::Fact> = versions
             .iter()
@@ -100,7 +100,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
         let version = &versions[i];
         let acknowledged: BTreeSet<Uuid> = policy_acknowledgements::Entity::find()
             .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .into_iter()
             .map(|a| a.worker_pid)
@@ -108,7 +108,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
         let staff = workers::Entity::find()
             .filter(workers::Column::OrganizationRef.eq(&policy.organization_ref))
             .filter(workers::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?;
         for worker in staff {
             if !metric_rules::is_employed_on(as_of, worker.hired_on, worker.terminated_on)
@@ -138,7 +138,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
                 rules::Standing::Done { .. } => continue,
             };
             Notification::push(
-                &ctx.db,
+                &crate::db::orm(ctx),
                 worker.pid,
                 "policy_due",
                 &format!(

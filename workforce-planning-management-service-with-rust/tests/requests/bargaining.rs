@@ -92,11 +92,11 @@ async fn a_unit_is_counted_by_its_rules_from_the_floor_and_names_no_one() {
         assert_eq!(cover["Whole department"], json!({ "kind": "shown", "covered": 16 }));
 
         // A leaver is no longer covered; a deleted record is not either.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2020-06-01' WHERE pid = '{}'::uuid", leeds[0]))
             .await
             .unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{}'::uuid", leeds[1]))
             .await
             .unwrap();
@@ -245,7 +245,7 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
         }
         // Twelve of the permanent staff sit in band 5.
         for pid in permanent.iter().take(12) {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!("INSERT INTO worker_pay_positions (worker_pid, scale_id, band, step, step_since) VALUES ('{pid}', 'national-2026-27', 'B5', 1, '2024-01-01')"))
                 .await
                 .unwrap();
@@ -303,8 +303,7 @@ async fn the_information_pack_gives_floored_counts_hides_what_could_be_subtracte
         }
 
         // Each read is a disclosure, logged against the unit with who and when.
-        let logged = ctx
-            .db
+        let logged = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'information_pack_disclosed' AND entity_pid = '{}'::uuid", whole["pid"].as_str().unwrap()),

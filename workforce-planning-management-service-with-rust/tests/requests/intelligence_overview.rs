@@ -181,7 +181,7 @@ async fn period_metrics_count_opening_closing_starters_and_leavers_from_the_date
         let leaves = hire(&request, &org, 3, &department, "2019-03-01", 100, None).await;
         let left_before = hire(&request, &org, 4, &department, "2019-03-01", 100, None).await;
         for (worker, on) in [(&leaves, "2021-09-30"), (&left_before, "2020-05-31")] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "UPDATE workers SET terminated_on = '{on}' WHERE pid = '{worker}'"
                 ))

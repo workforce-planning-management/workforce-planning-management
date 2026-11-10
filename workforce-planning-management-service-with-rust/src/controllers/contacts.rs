@@ -86,7 +86,7 @@ pub(crate) async fn list_contacts_for(
         .filter(emergency_contacts::Column::DeletedAt.is_null())
         .order_by_asc(emergency_contacts::Column::Priority)
         .order_by_asc(emergency_contacts::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     format::json(rows.iter().map(contact_row).collect::<Vec<_>>())
 }
@@ -131,7 +131,7 @@ pub(crate) async fn add_contact_for(
     let existing = emergency_contacts::Entity::find()
         .filter(emergency_contacts::Column::WorkerPid.eq(worker.pid))
         .filter(emergency_contacts::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     if existing.len() >= rules::MAX_CONTACTS {
         return Err(unprocessable(&format!(
@@ -154,7 +154,7 @@ pub(crate) async fn add_contact_for(
         priority,
     )
     .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let row = emergency_contacts::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -220,7 +220,7 @@ pub(crate) async fn find_contact(ctx: &AppContext, pid: &str) -> Result<emergenc
     emergency_contacts::Entity::find()
         .filter(emergency_contacts::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(emergency_contacts::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -287,7 +287,7 @@ pub(crate) async fn update_contact_for(
     active.email = ActiveValue::set(email);
     active.priority = ActiveValue::set(priority);
     active.note = ActiveValue::set(note);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -323,7 +323,7 @@ pub(crate) async fn delete_contact_for(
 ) -> Result<Response> {
     let mut active: emergency_contacts::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -371,7 +371,7 @@ async fn backup_workers(
     Ok(workers::Entity::find()
         .filter(workers::Column::Pid.is_in(ids))
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w))
@@ -384,7 +384,7 @@ async fn live_backups(ctx: &AppContext, worker: Uuid) -> Result<Vec<worker_backu
         .filter(worker_backups::Column::DeletedAt.is_null())
         .order_by_asc(worker_backups::Column::Priority)
         .order_by_asc(worker_backups::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -470,7 +470,7 @@ async fn add_backup(
     {
         return Err(unprocessable("that backup is outside your organizations"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = worker_backups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -516,7 +516,7 @@ async fn find_backup(ctx: &AppContext, pid: &str) -> Result<worker_backups::Mode
     worker_backups::Entity::find()
         .filter(worker_backups::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(worker_backups::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -544,7 +544,7 @@ async fn update_backup(
     active.starts_on = ActiveValue::set(starts_on);
     active.ends_on = ActiveValue::set(ends_on);
     active.note = ActiveValue::set(note);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -571,7 +571,7 @@ async fn delete_backup(
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let mut active: worker_backups::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -621,7 +621,7 @@ async fn cover(
         .filter(leave_requests::Column::DeletedAt.is_null())
         .filter(leave_requests::Column::StartOn.lte(on))
         .filter(leave_requests::Column::EndOn.gte(on))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|l| l.worker_pid)

@@ -55,7 +55,7 @@ impl Task for ImportEsco {
         let version = vars
             .cli_arg("version")
             .map_or("unspecified", String::as_str);
-        let report = import_esco(&ctx.db, Path::new(dir), lang, version).await?;
+        let report = import_esco(&crate::db::orm(ctx), Path::new(dir), lang, version).await?;
         // The catalogue changed, so searches cached from the old one are orphaned. With the Redis
         // provider this reaches every instance; with the in-memory one they expire within the hour.
         let cache =

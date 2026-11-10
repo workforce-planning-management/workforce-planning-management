@@ -143,7 +143,7 @@ async fn reads_are_need_to_know() {
             (hr_member_p, &org_a, &w_hr, "hr_admin"),
             (hr_other_p, &org_b, &w_other, "hr_admin"),
         ] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2026-01-05')",

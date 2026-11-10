@@ -124,7 +124,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
             let pid = r.json::<Value>()["pid"].as_str().unwrap().to_string();
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')")).await.unwrap();
             pids.push(pid);
         }
@@ -134,7 +134,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
                 "person_ref": format!("person:{p}"), "organization_ref": org, "worker_number": format!("PGE-{n}"),
                 "display_name": format!("Pay Gap Enforcement {n}"), "employment_type": "permanent", "department": "people",
                 "job_title": "Administrator", "hired_on": "2020-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{p}', '{org}', '{w}', '{role}', '2020-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }
@@ -187,7 +187,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         }
 
         // ── The audit says that it was read, and holds no figure ────────────────────────
-        let rows = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity IN ('pay_gap_report', 'pay_category') ORDER BY id".to_string()))
             .await.unwrap();
         let actions: Vec<String> = rows.iter().map(|r| r.try_get("", "action").unwrap()).collect();
@@ -222,7 +222,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let after: Value = get(signal.clone(), payroll.clone()).await.json();
         assert_eq!(after["categories"][0]["signal"], json!({ "status": "not_due", "why": "justified" }));
         assert!(!after.to_string().contains("Pay Gap Enforcement"), "no worker named");
-        let audits = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let audits = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             "SELECT snapshot::text AS snapshot FROM audit_logs WHERE action IN ('pay_assessment_recorded', 'joint_assessment_read')".to_string()))
             .await.unwrap();
         assert!(audits.len() >= 2);
@@ -410,7 +410,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let x: [u8; 32] = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, public["jwk"]["x"].as_str().unwrap()).unwrap().try_into().unwrap();
         assert_eq!(request.post("/api/me/credentials").json(&json!({ "cpd_entry_pid": uuid::Uuid::new_v4() })).await.status_code(), 401);
         let entry = uuid::Uuid::new_v4();
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO cpd_entries (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths, source) \
              VALUES ('{entry}', '{me}', '2026-09-01', 'Safeguarding refresher', 'course', 'hours', 600, 'self')")).await.unwrap();
         let issue = |entry: uuid::Uuid| {
@@ -418,7 +418,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
             async move { request.post("/api/me/credentials").add_header("authorization", worker).json(&json!({ "cpd_entry_pid": entry })).await }
         };
         assert_eq!(issue(entry).await.status_code(), 422, "an unverified entry is not issued");
-        ctx.db.execute_unprepared(&format!("UPDATE cpd_entries SET verified_on = '2026-09-02', verified_by = 'hr' WHERE pid = '{entry}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE cpd_entries SET verified_on = '2026-09-02', verified_by = 'hr' WHERE pid = '{entry}'")).await.unwrap();
         assert_eq!(issue(uuid::Uuid::new_v4()).await.status_code(), 404, "an entry that is not there");
         let issued = issue(entry).await;
         assert_eq!(issued.status_code(), 200, "{}", issued.text());
@@ -451,12 +451,12 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
 
         // ── A credential from an entry that names a skill carries the skill's ESCO and SFIA references ──
         let skill = uuid::Uuid::new_v4();
-        ctx.db.execute_unprepared(&format!("INSERT INTO skills (pid, name, category) VALUES ('{skill}', 'Safeguarding practice', 'technical')")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("INSERT INTO skills (pid, name, category) VALUES ('{skill}', 'Safeguarding practice', 'technical')")).await.unwrap();
         for (slug, reference, label) in [("esco", "http://data.europa.eu/esco/skill/safeguarding", "safeguard vulnerable people"), ("sfia", "SAFE", "Safeguarding")] {
-            ctx.db.execute_unprepared(&format!("INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, ref, label) VALUES (gen_random_uuid(), '{skill}', '{slug}', '{reference}', '{label}')")).await.unwrap();
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, ref, label) VALUES (gen_random_uuid(), '{skill}', '{slug}', '{reference}', '{label}')")).await.unwrap();
         }
         let tagged = uuid::Uuid::new_v4();
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO cpd_entries (pid, worker_pid, entry_date, activity, category, unit, amount_hundredths, source, verified_on, verified_by, skill_pid) \
              VALUES ('{tagged}', '{me}', '2026-09-03', 'Safeguarding level 3', 'course', 'hours', 300, 'self', '2026-09-04', 'hr', '{skill}')")).await.unwrap();
         let with_skill = issue(tagged).await;
@@ -564,7 +564,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         let made = request.post("/api/positions").add_header("authorization", hr.clone()).json(&seat).await;
         assert_eq!(made.status_code(), 200, "HR plans a seat: {}", made.text());
         let seat_pid = made.json::<Value>()["pid"].as_str().unwrap().to_string();
-        let someone = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let someone = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             format!("SELECT pid::text AS pid FROM workers WHERE organization_ref = '{org}' LIMIT 1"))).await.unwrap().unwrap();
         let someone: String = someone.try_get("", "pid").unwrap();
         for step in ["approved"] {
@@ -579,7 +579,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(as_hr["positions"][0]["holder_worker_pid"], someone, "HR sees who holds it");
         // Outside the organization the worker sees nothing; as a plain member of it they see the seat and not the holder.
         assert_eq!(get(listing.clone(), worker.clone()).await.status_code(), 404);
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) VALUES ('{}', 'person:{worker_p}', '{org}', 'member', '2020-01-01')",
             uuid::Uuid::new_v4())).await.unwrap();
         let as_worker = get(listing.clone(), worker.clone()).await;
@@ -596,7 +596,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(est_hr["small_group_floor"], Value::Null, "HR sees the unfloored figures");
 
         // ── Take the sex answers away and there is nothing to compare ────────────────────
-        ctx.db.execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared("DELETE FROM equality_declarations").await.unwrap();
         let none: Value = get(report.clone(), payroll.clone()).await.json();
         assert_eq!(none["report"]["categories"][0]["basic"], json!({ "status": "unknown", "value": "no_workers" }));
         assert_eq!(none["report"]["exclusions"]["no_sex_declared"], json!({ "status": "exactly", "value": 16 })); // twelve engineers, HR, payroll and the policy and equipment tests' workers

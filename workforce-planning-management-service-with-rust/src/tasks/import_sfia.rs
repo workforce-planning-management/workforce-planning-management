@@ -65,12 +65,12 @@ impl Task for ImportSfia {
             std::fs::read_to_string(Path::new(f)).map_err(|e| Error::string(&format!("{f}: {e}")))
         };
         if let Some(f) = file {
-            let report = import_sfia(&ctx.db, &read(f)?, &licence).await?;
+            let report = import_sfia(&crate::db::orm(ctx), &read(f)?, &licence).await?;
             tracing::info!(?report, "SFIA skills import finished");
             println!("{report:#?}");
         }
         if let Some(f) = levels_file {
-            let n = import_sfia_levels(&ctx.db, &read(f)?, &licence).await?;
+            let n = import_sfia_levels(&crate::db::orm(ctx), &read(f)?, &licence).await?;
             tracing::info!(levels = n, "SFIA levels import finished");
             println!("levels of responsibility: {n}");
         }

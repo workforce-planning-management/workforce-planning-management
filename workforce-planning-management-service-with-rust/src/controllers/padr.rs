@@ -91,7 +91,7 @@ async fn padr_and_worker(ctx: &AppContext, pid: &str) -> Result<(reviews::Model,
         .filter(reviews::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(reviews::Column::Kind.eq("padr"))
         .filter(reviews::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, review.worker_pid).await?;
@@ -232,11 +232,11 @@ async fn summaries(
         .filter(reviews::Column::DeletedAt.is_null())
         .filter(reviews::Column::WorkerPid.is_in(people.iter().copied()))
         .order_by_desc(reviews::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let mut lines: HashMap<Uuid, Vec<serde_json::Value>> = HashMap::new();
     for review in rows.drain(..) {
-        let versions = versions_of(&ctx.db, review.pid).await?;
+        let versions = versions_of(&crate::db::orm(ctx), review.pid).await?;
         let offs: Vec<SignOffs> = versions.iter().map(sign_offs).collect();
         let latest = versions.last();
         lines
@@ -315,7 +315,7 @@ pub(crate) async fn open(
     }
     rules::valid_period(payload.period_start, payload.period_end).map_err(|e| unprocessable(&e))?;
     let me = super::me::me_worker(&ctx, &caller).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let review = reviews::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cycle_pid: ActiveValue::set(None),
@@ -376,20 +376,20 @@ pub(crate) async fn detail(
 ) -> Result<Response> {
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     let role = role_of(&ctx, &caller, &review, &worker).await?;
-    let versions = versions_of(&ctx.db, review.pid).await?;
+    let versions = versions_of(&crate::db::orm(&ctx), review.pid).await?;
     let latest = versions.last().ok_or(Error::NotFound)?;
     let live = if sign_offs(latest).frozen() {
         Vec::new()
     } else {
         objectives_of(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             worker.pid,
             (latest.period_start, latest.period_end),
         )
         .await?
     };
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "padr",
         review.pid,
         "padr_read",
@@ -471,7 +471,7 @@ pub(crate) async fn edit(
             plan_item_pid: n.plan_item_pid,
         })
         .collect();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let latest = latest_locked(&txn, review.pid).await?;
     rules::check_editable(sign_offs(&latest)).map_err(reject)?;
     let mut active: padr_versions::ActiveModel = latest.into();
@@ -505,7 +505,7 @@ pub(crate) async fn sign(
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     let who = writer(role_of(&ctx, &caller, &review, &worker).await?)?;
     let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let latest = latest_locked(&txn, review.pid).await?;
     rules::ready_to_sign(latest.wellbeing_offered).map_err(unprocessable)?;
     let before = sign_offs(&latest);
@@ -584,7 +584,7 @@ pub(crate) async fn comment(
         ));
     }
     let text = rules::clean_text(payload.comment.as_deref()).map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: padr_versions::ActiveModel = latest_locked(&txn, review.pid).await?.into();
     active.reviewee_comment = ActiveValue::set(text);
     active.update(&txn).await?;
@@ -610,7 +610,7 @@ pub(crate) async fn correct(
 ) -> Result<Response> {
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     writer(role_of(&ctx, &caller, &review, &worker).await?)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let latest = latest_locked(&txn, review.pid).await?;
     rules::may_correct(sign_offs(&latest)).map_err(unprocessable)?;
     let next = padr_versions::ActiveModel {
@@ -659,7 +659,7 @@ async fn rollup(
         .filter(workers::Column::OrganizationRef.eq(&query.organization))
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let people: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let standing = standings(&ctx, &people).await?;

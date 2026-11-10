@@ -197,7 +197,7 @@ async fn create_worker(
     if let Some(manager) = payload.manager_pid {
         records::worker_by_pid(&ctx, manager).await?;
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = workers::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         person_ref: ActiveValue::set(payload.person_ref.clone()),
@@ -310,7 +310,7 @@ async fn list_workers(
         .order_by_asc(workers::Column::Id)
         .limit(limit.unsigned_abs())
         .offset(offset.unsigned_abs())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // The row past the page only says that more follow. It is dropped before the salary audit, which records only
     // what is sent.
@@ -347,7 +347,7 @@ async fn list_workers(
     }
     // No audit, no answer (WPM-D107): every salary read is recorded, together, before the list is sent.
     if !salary_reads.is_empty() {
-        let txn = ctx.db.begin().await?;
+        let txn = crate::db::orm(&ctx).begin().await?;
         for (pid, department) in salary_reads {
             Audit::record(
                 &txn,
@@ -386,7 +386,7 @@ async fn get_worker(
     let masked = obligations.iter().any(|o| o == "mask");
     if worker.salary_minor.is_some() && !masked {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "worker",
             worker.pid,
             "salary_read",
@@ -481,12 +481,12 @@ async fn update_worker(
     }
     if let Some(manager) = payload.manager_pid {
         records::worker_by_pid(&ctx, manager).await?;
-        let map = manager_map(&ctx.db).await?;
+        let map = manager_map(&crate::db::orm(&ctx)).await?;
         if org::would_create_cycle(worker.pid, manager, &map) {
             return Err(unprocessable("manager assignment would create a cycle"));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: workers::ActiveModel = worker.clone().into();
     if let Some(v) = payload.display_name {
         active.display_name = ActiveValue::set(v);
@@ -581,7 +581,7 @@ async fn change_status(
             .filter(onboarding_items::Column::DeletedAt.is_null())
             .filter(onboarding_items::Column::Mandatory.eq(true))
             .filter(onboarding_items::Column::Status.eq("pending"))
-            .count(&ctx.db)
+            .count(&crate::db::orm(&ctx))
             .await?;
         if open > 0 {
             return Err(unprocessable(&format!(
@@ -589,7 +589,7 @@ async fn change_status(
             )));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let from = worker.status.clone();
     let number = worker.worker_number.clone();
     let department = worker.department.clone();
@@ -650,7 +650,7 @@ async fn delete_worker(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let pid = worker.pid;
     let number = worker.worker_number.clone();
     let mut active: workers::ActiveModel = worker.into();
@@ -765,7 +765,7 @@ async fn org_chart(
         .filter(workers::Column::ManagerPid.is_null())
         .order_by_asc(workers::Column::Id)
         .limit(limit as u64)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut frontier: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
     for _ in 0..33 {
@@ -778,7 +778,7 @@ async fn org_chart(
                 people
                     .clone()
                     .filter(workers::Column::ManagerPid.is_in(chunk.to_vec()))
-                    .all(&ctx.db)
+                    .all(&crate::db::orm(&ctx))
                     .await?,
             );
         }
@@ -812,7 +812,7 @@ async fn org_chart_size(
     Query(params): Query<OrgChartParams>,
 ) -> Result<Response> {
     let people = org_chart_people(&ctx, &caller, &params.organization).await?;
-    format::json(serde_json::json!({ "people": people.count(&ctx.db).await? }))
+    format::json(serde_json::json!({ "people": people.count(&crate::db::orm(&ctx)).await? }))
 }
 
 /// `POST /api/benefit-plans`.
@@ -831,7 +831,7 @@ async fn create_plan(
         problems.push("benefit costs must be non-negative".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = benefit_plans::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -895,7 +895,7 @@ async fn enroll(
     Json(payload): Json<EnrollmentPayload>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let plan = records::find_benefit_plan(&ctx.db, payload.plan_pid).await?;
+    let plan = records::find_benefit_plan(&crate::db::orm(&ctx), payload.plan_pid).await?;
     if payload.ends_on.is_some_and(|end| end < payload.starts_on) {
         return Err(unprocessable("ends_on is before starts_on"));
     }
@@ -903,12 +903,12 @@ async fn enroll(
         .filter(benefit_enrollments::Column::PlanPid.eq(plan.pid))
         .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if existing > 0 {
         return Err(unprocessable("worker is already enrolled in this plan"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = benefit_enrollments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
@@ -956,7 +956,7 @@ async fn list_enrollments(
         .filter(benefit_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(benefit_enrollments::Column::DeletedAt.is_null())
         .order_by_asc(benefit_enrollments::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -968,8 +968,9 @@ async fn unenroll(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = records::find_benefit_enrollment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
+    let row =
+        records::find_benefit_enrollment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let pid = row.pid;
     let mut active: benefit_enrollments::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));

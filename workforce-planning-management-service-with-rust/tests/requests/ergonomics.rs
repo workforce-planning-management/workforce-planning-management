@@ -117,7 +117,7 @@ async fn ergonomics_round_trip() {
         // A row written before keys existed, holding a default sentence and no key, is shown by that
         // sentence's key; one holding other words stays keyless.
         let old_pid = custom["pid"].as_str().unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO ergonomic_items (pid, assessment_pid, name, created_at, updated_at) VALUES \
                  (gen_random_uuid(), '{old_pid}', 'Leg room clear; feet supported', now(), now())"

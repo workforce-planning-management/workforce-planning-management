@@ -51,7 +51,7 @@ pub async fn freeze_all(ctx: &AppContext, as_of: NaiveDate) -> Result<usize> {
         .checked_sub_months(chrono::Months::new(1))
         .unwrap_or(this_month);
     let orgs: BTreeSet<String> = oversight_positions::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|p| p.organization_ref)
@@ -61,7 +61,7 @@ pub async fn freeze_all(ctx: &AppContext, as_of: NaiveDate) -> Result<usize> {
         let have = oversight_packs::Entity::find()
             .filter(oversight_packs::Column::OrganizationRef.eq(org))
             .filter(oversight_packs::Column::Month.eq(month))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some();
         if have {

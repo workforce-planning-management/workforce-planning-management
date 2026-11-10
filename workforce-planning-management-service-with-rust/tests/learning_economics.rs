@@ -73,7 +73,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
+    workforce_planning_management::db::orm(ctx)
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
@@ -169,7 +169,7 @@ async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
         let mine = worker(&request, &svc, &org, &p1.to_string(), "EC-1", Some(3_600_000)).await;
         worker(&request, &svc, &org, &p2.to_string(), "EC-2", Some(4_000_000)).await;
         let boss_pid = worker(&request, &svc, &org, &boss.to_string(), "EC-3", Some(5_000_000)).await;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE workers SET manager_pid = '{boss_pid}' WHERE pid = '{mine}'"
             ))
@@ -420,7 +420,7 @@ async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
             format!("INSERT INTO benchmarks (pid, job_title, currency, min_minor, median_minor, max_minor, source, as_of) VALUES ('{}', '{title}', 'GBP', 3000000, 3650000, 4000000, 'test', '2026-01-01')", uuid::Uuid::new_v4()),
             format!("INSERT INTO requisitions (pid, organization_ref, job_title, department, status, basis, opened_on, filled_on, headcount) VALUES ('{}', '{org}', 'Filled', 'engineering', 'filled', 'permanent', '2026-01-01', '2026-03-02', 1)", uuid::Uuid::new_v4()),
         ] {
-            ctx.db.execute_unprepared(&statement).await.unwrap();
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&statement).await.unwrap();
         }
         for (key, value) in [
             ("learning.on_cost_bp", json!(0)),
@@ -458,7 +458,7 @@ async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
             sea_orm::DatabaseBackend::Postgres,
             format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'salary_read' AND entity_pid = '{candidate}'::uuid"),
         ))
-        .one(&ctx.db)
+        .one(&workforce_planning_management::db::orm(&ctx))
         .await
         .map(|row: Option<Count>| row.map_or(0, |c| c.n))
         .unwrap();
@@ -500,7 +500,7 @@ async fn spend_is_recorded_fees_against_a_budget_per_currency() {
             ("NOT-IN-CATALOGUE".to_string(), "2026-06-01"),
             (format!("B-{org}"), "2025-06-01"),
         ] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on) \
                      VALUES ('{}', '{one}', '{course}', 'completed', '{on}')",

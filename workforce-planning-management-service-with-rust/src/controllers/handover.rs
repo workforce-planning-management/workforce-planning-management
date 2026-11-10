@@ -53,7 +53,7 @@ pub(super) async fn inventory(
     movement: &movements::Model,
     leaver: &workers::Model,
 ) -> Result<Vec<Held>> {
-    let db = &ctx.db;
+    let db = &crate::db::orm(ctx);
     let last_day = movement.effective_on;
     let mut out = Vec::new();
 
@@ -634,7 +634,7 @@ async fn manager_map(ctx: &AppContext) -> Result<HashMap<Uuid, Uuid>> {
     Ok(workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::ManagerPid.is_not_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter_map(|w| w.manager_pid.map(|m| (w.pid, m)))
@@ -654,7 +654,7 @@ async fn perform(
     note: Option<&str>,
     managers: &HashMap<Uuid, Uuid>,
 ) -> Result<&'static str> {
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let verb = apply(&txn, held, to, leaver, movement.effective_on, managers).await?;
     handover_actions::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
@@ -841,12 +841,12 @@ async fn actions(
     let rows = handover_actions::Entity::find()
         .filter(handover_actions::Column::MovementPid.eq(movement.pid))
         .order_by_asc(handover_actions::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let ids: Vec<Uuid> = rows.iter().filter_map(|r| r.to_worker).collect();
     let names: HashMap<Uuid, String> = workers::Entity::find()
         .filter(workers::Column::Pid.is_in(ids))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w.display_name))

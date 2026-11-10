@@ -338,7 +338,7 @@ mod tests {
     #[test]
     fn hsts_only_over_tls_and_no_store_only_on_the_api() {
         assert!(names("/api/x", true).contains(&"strict-transport-security".to_string()));
-        assert!(!names("/_health", false).contains(&"cache-control".to_string()));
+        assert!(!names("/_health/live", false).contains(&"cache-control".to_string()));
     }
 
     #[test]

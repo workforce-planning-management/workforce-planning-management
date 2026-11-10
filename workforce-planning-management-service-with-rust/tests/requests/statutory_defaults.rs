@@ -173,7 +173,7 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
             let ctx = &ctx;
             async move {
                 let pid = uuid::Uuid::new_v4();
-                ctx.db
+                workforce_planning_management::db::orm(ctx)
                     .execute_unprepared(&format!(
                         "INSERT INTO flexible_working_requests (pid, worker_pid, kind, requested_on, proposed_start, decide_by) \
                          VALUES ('{pid}', '{worker}', 'hours', CURRENT_DATE, CURRENT_DATE + 30, CURRENT_DATE + 60)"

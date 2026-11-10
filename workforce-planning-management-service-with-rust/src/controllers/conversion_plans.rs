@@ -66,7 +66,7 @@ async fn open_plan(
     Ok(conversion_plans::Entity::find()
         .filter(conversion_plans::Column::WorkerPid.eq(worker_pid))
         .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -83,10 +83,10 @@ async fn list_for_worker(
     let rows = conversion_plans::Entity::find()
         .filter(conversion_plans::Column::WorkerPid.eq(worker.pid))
         .order_by_asc(conversion_plans::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "worker",
         worker.pid,
         "conversion_plans_read",
@@ -133,7 +133,7 @@ async fn list_open(
         .filter(workers::Column::TerminatedOn.is_null())
         .filter(workers::Column::EngagementEndsOn.is_not_null())
         .order_by_asc(workers::Column::WorkerNumber)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(in_scope)
@@ -159,7 +159,7 @@ async fn list_open(
         }));
     }
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "conversion_plan",
         uuid::Uuid::nil(),
         "conversion_plans_listed",
@@ -222,7 +222,7 @@ async fn propose(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let inserted = conversion_plans::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -274,7 +274,7 @@ async fn plan_and_worker(
 ) -> Result<(conversion_plans::Model, workers::Model)> {
     let row = conversion_plans::Entity::find()
         .filter(conversion_plans::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
@@ -305,7 +305,7 @@ async fn approve(
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let actor = caller.actor().map(ToString::to_string);
     let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = locked(&txn, row.id).await?;
     rules::validate_approval(
         &row.intent,
@@ -375,7 +375,7 @@ async fn abandon(
     let mut active: conversion_plans::ActiveModel = row.into();
     active.status = ActiveValue::set("abandoned".to_string());
     active.settled_on = ActiveValue::set(Some(today));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -403,7 +403,7 @@ async fn done(
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let today = Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = locked(&txn, row.id).await?;
     rules::validate_done(&row.intent, &row.status).map_err(|e| unprocessable(&e))?;
     let worker = workers::Entity::find_by_id(worker.id)

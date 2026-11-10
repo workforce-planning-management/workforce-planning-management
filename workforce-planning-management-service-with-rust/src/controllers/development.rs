@@ -166,7 +166,7 @@ async fn create_cycle(
         problems.push("period_end is before period_start".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = review_cycles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -200,7 +200,7 @@ async fn list_cycles(State(ctx): State<AppContext>) -> Result<Response> {
         .filter(review_cycles::Column::DeletedAt.is_null())
         .order_by_asc(review_cycles::Column::Id)
         .limit(200)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -213,7 +213,8 @@ async fn create_review(
     Path(pid): Path<String>,
     Json(payload): Json<ReviewPayload>,
 ) -> Result<Response> {
-    let cycle = records::find_review_cycle(&ctx.db, records::parse_pid(&pid)?).await?;
+    let cycle =
+        records::find_review_cycle(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     if cycle.status != "open" {
         return Err(unprocessable("review cycle is closed"));
     }
@@ -225,7 +226,7 @@ async fn create_review(
         &payload.reviewer_ref,
     );
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = reviews::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cycle_pid: ActiveValue::set(Some(cycle.pid)),
@@ -262,7 +263,7 @@ async fn list_reviews(
         .filter(reviews::Column::Kind.eq("performance"))
         .filter(reviews::Column::DeletedAt.is_null())
         .order_by_asc(reviews::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut any_shared = false;
     let rows: Vec<reviews::Model> = rows
@@ -279,7 +280,7 @@ async fn list_reviews(
         .collect();
     if any_shared {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "worker",
             worker.pid,
             "review_content_read",
@@ -299,7 +300,7 @@ async fn update_review(
     Path(pid): Path<String>,
     Json(payload): Json<ReviewUpdate>,
 ) -> Result<Response> {
-    let review = records::find_review(&ctx.db, records::parse_pid(&pid)?).await?;
+    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     if review.status != "draft" {
         return Err(unprocessable(&format!(
             "review is {} — only drafts are editable",
@@ -314,7 +315,7 @@ async fn update_review(
     }
     problems.cap_opt("content", payload.content.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: reviews::ActiveModel = review.into();
     if let Some(rating) = payload.rating {
         active.rating = ActiveValue::set(Some(rating));
@@ -340,10 +341,10 @@ async fn review_status(
     let mut problems = Problems::new();
     problems.require_token("to", tokens::REVIEW_STATUSES, &payload.to);
     ensure_valid(&problems.into_vec())?;
-    let review = records::find_review(&ctx.db, records::parse_pid(&pid)?).await?;
+    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     lifecycle::check("review", lifecycle::REVIEW, &review.status, &payload.to)
         .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let from = review.status.clone();
     let mut active: reviews::ActiveModel = review.into();
     active.status = ActiveValue::set(payload.to.clone());
@@ -387,7 +388,7 @@ async fn create_goal(
     Path(pid): Path<String>,
     Json(payload): Json<GoalPayload>,
 ) -> Result<Response> {
-    let review = records::find_review(&ctx.db, records::parse_pid(&pid)?).await?;
+    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("title", &payload.title);
     if !(1..=100).contains(&payload.weight_percent) {
@@ -397,7 +398,7 @@ async fn create_goal(
         ));
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = goals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         review_pid: ActiveValue::set(review.pid),
@@ -431,10 +432,10 @@ async fn update_goal(
     let goal = goals::Entity::find()
         .filter(goals::Column::Pid.eq(pid))
         .filter(goals::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: goals::ActiveModel = goal.into();
     active.status = ActiveValue::set(payload.status.clone());
     let row = active.update(&txn).await?;
@@ -450,23 +451,23 @@ async fn review_detail(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let review = records::find_review(&ctx.db, records::parse_pid(&pid)?).await?;
+    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let goal_rows = goals::Entity::find()
         .filter(goals::Column::ReviewPid.eq(review.pid))
         .filter(goals::Column::DeletedAt.is_null())
         .order_by_asc(goals::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let feedback = feedback_entries::Entity::find()
         .filter(feedback_entries::Column::ReviewPid.eq(review.pid))
         .filter(feedback_entries::Column::DeletedAt.is_null())
         .order_by_asc(feedback_entries::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Reading a review with content is a sensitive read (WPM-D7).
     if review.content.is_some() {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "review",
             review.pid,
             "review_content_read",
@@ -488,7 +489,7 @@ async fn create_feedback(
     Path(pid): Path<String>,
     Json(payload): Json<FeedbackPayload>,
 ) -> Result<Response> {
-    let review = records::find_review(&ctx.db, records::parse_pid(&pid)?).await?;
+    let review = records::find_review(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_ref(
         "author_ref",
@@ -497,7 +498,7 @@ async fn create_feedback(
     );
     problems.require_text("content", &payload.content);
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = feedback_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         review_pid: ActiveValue::set(review.pid),
@@ -545,7 +546,7 @@ async fn create_training(
             ));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = training_enrollments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -581,7 +582,7 @@ async fn list_training(State(ctx): State<AppContext>, Path(pid): Path<String>) -
         .filter(training_enrollments::Column::WorkerPid.eq(worker.pid))
         .filter(training_enrollments::Column::DeletedAt.is_null())
         .order_by_asc(training_enrollments::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // each row as it is, plus the link to its course in the learning system (WPM-R138)
     let rows: Vec<serde_json::Value> = rows
@@ -609,8 +610,9 @@ async fn update_training(
     let mut problems = Problems::new();
     problems.require_token("status", tokens::TRAINING_STATUSES, &payload.status);
     ensure_valid(&problems.into_vec())?;
-    let enrollment = records::find_training_enrollment(&ctx.db, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
+    let enrollment =
+        records::find_training_enrollment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: training_enrollments::ActiveModel = enrollment.into();
     active.status = ActiveValue::set(payload.status.clone());
     if let Some(done) = payload.completed_on {
@@ -673,7 +675,7 @@ async fn expiring_training(
         .filter(training_enrollments::Column::CertificateExpiresOn.lte(horizon))
         .order_by_asc(training_enrollments::Column::CertificateExpiresOn)
         .limit(500)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(serde_json::json!({ "as_of": today, "horizon": horizon, "expiring": rows }))
 }
@@ -703,7 +705,7 @@ async fn create_succession(
     if let Some(incumbent) = payload.incumbent_pid {
         records::worker_by_pid(&ctx, incumbent).await?;
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = succession_plans::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         role_title: ActiveValue::set(payload.role_title.clone()),
@@ -740,7 +742,7 @@ async fn list_succession(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
         .filter(succession_plans::Column::DeletedAt.is_null())
         .order_by_asc(succession_plans::Column::Id)
         .limit(500)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut out = Vec::with_capacity(plans.len());
     for plan in plans {
@@ -748,13 +750,13 @@ async fn list_succession(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
             .filter(succession_candidates::Column::PlanPid.eq(plan.pid))
             .filter(succession_candidates::Column::DeletedAt.is_null())
             .order_by_asc(succession_candidates::Column::Rank)
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         out.push(serde_json::json!({ "plan": plan, "candidates": candidates }));
     }
     if let Some(actor) = caller.actor() {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "succession_plan",
             Uuid::nil(),
             "succession_read",
@@ -774,7 +776,8 @@ async fn add_succession_candidate(
     Path(pid): Path<String>,
     Json(payload): Json<SuccessionCandidatePayload>,
 ) -> Result<Response> {
-    let plan = records::find_succession_plan(&ctx.db, records::parse_pid(&pid)?).await?;
+    let plan =
+        records::find_succession_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let mut problems = Problems::new();
     problems.require_token("readiness", tokens::READINESS, &payload.readiness);
@@ -782,7 +785,7 @@ async fn add_succession_candidate(
         problems.push("rank must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = succession_candidates::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
@@ -816,7 +819,7 @@ async fn succession_gaps(State(ctx): State<AppContext>) -> Result<Response> {
     let plans = succession_plans::Entity::find()
         .filter(succession_plans::Column::DeletedAt.is_null())
         .filter(succession_plans::Column::Criticality.gte(4))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut gaps = Vec::new();
     for plan in plans {
@@ -824,7 +827,7 @@ async fn succession_gaps(State(ctx): State<AppContext>) -> Result<Response> {
             .filter(succession_candidates::Column::PlanPid.eq(plan.pid))
             .filter(succession_candidates::Column::DeletedAt.is_null())
             .filter(succession_candidates::Column::Readiness.eq("ready_now"))
-            .count(&ctx.db)
+            .count(&crate::db::orm(&ctx))
             .await?;
         if ready_now == 0 {
             gaps.push(plan);
@@ -845,7 +848,8 @@ async fn update_succession(
     Path(pid): Path<String>,
     Json(payload): Json<SuccessionUpdate>,
 ) -> Result<Response> {
-    let plan = records::find_succession_plan(&ctx.db, records::parse_pid(&pid)?).await?;
+    let plan =
+        records::find_succession_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if let Some(criticality) = payload.criticality
         && !(1..=5).contains(&criticality)
@@ -869,7 +873,7 @@ async fn update_succession(
         "vacancy_expected_on": plan.vacancy_expected_on,
         "incumbent_pid": plan.incumbent_pid,
     });
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: succession_plans::ActiveModel = plan.into();
     if let Some(criticality) = payload.criticality {
         active.criticality = ActiveValue::set(criticality);
@@ -918,7 +922,7 @@ async fn update_succession_candidate(
     let candidate = succession_candidates::Entity::find()
         .filter(succession_candidates::Column::Pid.eq(records::parse_pid(&pid)?))
         .filter(succession_candidates::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let candidate_pid = candidate.pid;
@@ -931,7 +935,7 @@ async fn update_succession_candidate(
     if let Some(rank) = payload.rank {
         active.rank = ActiveValue::set(rank);
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,

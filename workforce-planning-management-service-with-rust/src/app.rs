@@ -205,6 +205,18 @@ pub fn app_routes() -> AppRoutes {
         .fold(AppRoutes::empty(), AppRoutes::add_route)
 }
 
+/// A setting `axa` reads, as WPM finds it: `DB_URL`, else `DATABASE_URL`. axa 0.11 reads only `DB_URL`, but `sqlx`'s own tools
+/// (`cargo sqlx`, and the query macros' build-time check) read `DATABASE_URL`, and every WPM deployment, script and guide set it, so
+/// one variable still does both (WPM-T482). A blank value counts as unset. Pure over `get`, so it is tested without the process
+/// environment.
+fn setting(name: &str, get: impl Fn(&str) -> Option<String>) -> Option<String> {
+    let nonblank = |name: &str| get(name).filter(|value| !value.trim().is_empty());
+    match name {
+        "DB_URL" => nonblank("DB_URL").or_else(|| nonblank("DATABASE_URL")),
+        _ => get(name),
+    }
+}
+
 /// What the service falls back to when the environment does not say.
 fn defaults() -> Defaults {
     Defaults {
@@ -268,7 +280,9 @@ impl App {
     /// # Errors
     /// A setting is missing or does not parse.
     pub fn config(environment: &Environment) -> Result<Config> {
-        let mut config = Config::from_env(environment, &defaults())?;
+        let mut config = Config::from_lookup(environment, &defaults(), |name| {
+            setting(name, |name| std::env::var(name).ok())
+        })?;
         if *environment == Environment::Production {
             config.http.timeout_seconds = request_timeout_seconds(
                 crate::compat::env_var("WPM_REQUEST_TIMEOUT_MS").as_deref(),
@@ -303,7 +317,10 @@ impl App {
         let environment = Environment::from_env();
         Self::config(&environment).map_or_else(
             |_| {
-                let mut logger = Config::from_env(&Environment::Development, &defaults())
+                let mut logger =
+                    Config::from_lookup(&Environment::Development, &defaults(), |name| {
+                        setting(name, |name| std::env::var(name).ok())
+                    })
                     .map(|config| config.logger)
                     .expect("the development defaults need no settings");
                 logger.override_filter = Some(log_filter(logger.level));
@@ -341,10 +358,10 @@ impl App {
 
     async fn db(ctx: &AppContext, command: DbCommand) -> Result<()> {
         match command {
-            DbCommand::Migrate => Migrator::up(&ctx.db, None).await?,
-            DbCommand::Down { steps } => Migrator::down(&ctx.db, Some(steps)).await?,
-            DbCommand::Reset => Migrator::fresh(&ctx.db).await?,
-            DbCommand::Status => Migrator::status(&ctx.db).await?,
+            DbCommand::Migrate => Migrator::up(&crate::db::orm(ctx), None).await?,
+            DbCommand::Down { steps } => Migrator::down(&crate::db::orm(ctx), Some(steps)).await?,
+            DbCommand::Reset => Migrator::fresh(&crate::db::orm(ctx)).await?,
+            DbCommand::Status => Migrator::status(&crate::db::orm(ctx)).await?,
             DbCommand::Truncate => Self::truncate(ctx).await?,
         }
         Ok(())
@@ -371,7 +388,7 @@ impl App {
         let ctx = Self::context(environment, config).await?;
         axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
         if ctx.config.database.auto_migrate && !matches!(cli.command, Command::Db { .. }) {
-            Migrator::up(&ctx.db, None).await?;
+            Migrator::up(&crate::db::orm(&ctx), None).await?;
         }
         match cli.command {
             Command::Start { .. } => {
@@ -600,71 +617,71 @@ impl App {
     /// # Errors
     /// Propagates a database failure.
     pub async fn truncate(ctx: &AppContext) -> Result<()> {
-        truncate_table(&ctx.db, IdempotencyKeys).await?;
-        truncate_table(&ctx.db, EventOutbox).await?;
-        truncate_table(&ctx.db, PostFundings).await?;
-        truncate_table(&ctx.db, ConversionPlans).await?;
-        truncate_table(&ctx.db, EngagementDecisions).await?;
-        truncate_table(&ctx.db, EngagementReminders).await?;
-        truncate_table(&ctx.db, WorkerHealthRecords).await?;
-        truncate_table(&ctx.db, HealthRequirements).await?;
-        truncate_table(&ctx.db, EqualityDeclarations).await?;
-        truncate_table(&ctx.db, FlexibleWorkingRequests).await?;
-        truncate_table(&ctx.db, Resignations).await?;
-        truncate_table(&ctx.db, WorkerContactDetails).await?;
-        truncate_table(&ctx.db, EngagementStatusAssessments).await?;
-        truncate_table(&ctx.db, WorkerContractorDetails).await?;
-        truncate_table(&ctx.db, EngagementExtensions).await?;
-        truncate_table(&ctx.db, StartDecisions).await?;
-        truncate_table(&ctx.db, CapacitySettings).await?;
-        truncate_table(&ctx.db, PartnerCommitments).await?;
-        truncate_table(&ctx.db, ProgrammeDemands).await?;
-        truncate_table(&ctx.db, SkillPoolMembers).await?;
-        truncate_table(&ctx.db, SkillPools).await?;
-        truncate_table(&ctx.db, AuditLogs).await?;
-        truncate_table(&ctx.db, EntitlementAcknowledgements).await?;
-        truncate_table(&ctx.db, WellbeingEntitlements).await?;
-        truncate_table(&ctx.db, PulseResponses).await?;
-        truncate_table(&ctx.db, PulseSurveys).await?;
-        truncate_table(&ctx.db, AppraisalResponses).await?;
-        truncate_table(&ctx.db, AppraisalNominations).await?;
-        truncate_table(&ctx.db, Appraisals).await?;
-        truncate_table(&ctx.db, Notifications).await?;
-        truncate_table(&ctx.db, AdjustmentRequests).await?;
-        truncate_table(&ctx.db, ErgonomicItems).await?;
-        truncate_table(&ctx.db, ErgonomicAssessments).await?;
-        truncate_table(&ctx.db, ProgramPlacements).await?;
-        truncate_table(&ctx.db, EarlyCareerPrograms).await?;
-        truncate_table(&ctx.db, PipelineMembers).await?;
-        truncate_table(&ctx.db, TalentPipelines).await?;
-        truncate_table(&ctx.db, DevelopmentPlanItems).await?;
-        truncate_table(&ctx.db, DevelopmentPlans).await?;
-        truncate_table(&ctx.db, AssessmentResults).await?;
-        truncate_table(&ctx.db, Assessments).await?;
-        truncate_table(&ctx.db, AssessmentInstruments).await?;
-        truncate_table(&ctx.db, Benchmarks).await?;
-        truncate_table(&ctx.db, Payslips).await?;
-        truncate_table(&ctx.db, PayrollRuns).await?;
-        truncate_table(&ctx.db, SuccessionCandidates).await?;
-        truncate_table(&ctx.db, SuccessionPlans).await?;
-        truncate_table(&ctx.db, TrainingEnrollments).await?;
-        truncate_table(&ctx.db, FeedbackEntries).await?;
-        truncate_table(&ctx.db, Goals).await?;
-        truncate_table(&ctx.db, Reviews).await?;
-        truncate_table(&ctx.db, ReviewCycles).await?;
-        truncate_table(&ctx.db, BenefitEnrollments).await?;
-        truncate_table(&ctx.db, BenefitPlans).await?;
-        truncate_table(&ctx.db, ShiftAssignments).await?;
-        truncate_table(&ctx.db, Shifts).await?;
-        truncate_table(&ctx.db, LeaveRequests).await?;
-        truncate_table(&ctx.db, LeaveEntitlements).await?;
-        truncate_table(&ctx.db, TimeEntries).await?;
-        truncate_table(&ctx.db, OnboardingItems).await?;
-        truncate_table(&ctx.db, Interviews).await?;
-        truncate_table(&ctx.db, Applications).await?;
-        truncate_table(&ctx.db, Candidates).await?;
-        truncate_table(&ctx.db, Requisitions).await?;
-        truncate_table(&ctx.db, Workers).await?;
+        truncate_table(&crate::db::orm(ctx), IdempotencyKeys).await?;
+        truncate_table(&crate::db::orm(ctx), EventOutbox).await?;
+        truncate_table(&crate::db::orm(ctx), PostFundings).await?;
+        truncate_table(&crate::db::orm(ctx), ConversionPlans).await?;
+        truncate_table(&crate::db::orm(ctx), EngagementDecisions).await?;
+        truncate_table(&crate::db::orm(ctx), EngagementReminders).await?;
+        truncate_table(&crate::db::orm(ctx), WorkerHealthRecords).await?;
+        truncate_table(&crate::db::orm(ctx), HealthRequirements).await?;
+        truncate_table(&crate::db::orm(ctx), EqualityDeclarations).await?;
+        truncate_table(&crate::db::orm(ctx), FlexibleWorkingRequests).await?;
+        truncate_table(&crate::db::orm(ctx), Resignations).await?;
+        truncate_table(&crate::db::orm(ctx), WorkerContactDetails).await?;
+        truncate_table(&crate::db::orm(ctx), EngagementStatusAssessments).await?;
+        truncate_table(&crate::db::orm(ctx), WorkerContractorDetails).await?;
+        truncate_table(&crate::db::orm(ctx), EngagementExtensions).await?;
+        truncate_table(&crate::db::orm(ctx), StartDecisions).await?;
+        truncate_table(&crate::db::orm(ctx), CapacitySettings).await?;
+        truncate_table(&crate::db::orm(ctx), PartnerCommitments).await?;
+        truncate_table(&crate::db::orm(ctx), ProgrammeDemands).await?;
+        truncate_table(&crate::db::orm(ctx), SkillPoolMembers).await?;
+        truncate_table(&crate::db::orm(ctx), SkillPools).await?;
+        truncate_table(&crate::db::orm(ctx), AuditLogs).await?;
+        truncate_table(&crate::db::orm(ctx), EntitlementAcknowledgements).await?;
+        truncate_table(&crate::db::orm(ctx), WellbeingEntitlements).await?;
+        truncate_table(&crate::db::orm(ctx), PulseResponses).await?;
+        truncate_table(&crate::db::orm(ctx), PulseSurveys).await?;
+        truncate_table(&crate::db::orm(ctx), AppraisalResponses).await?;
+        truncate_table(&crate::db::orm(ctx), AppraisalNominations).await?;
+        truncate_table(&crate::db::orm(ctx), Appraisals).await?;
+        truncate_table(&crate::db::orm(ctx), Notifications).await?;
+        truncate_table(&crate::db::orm(ctx), AdjustmentRequests).await?;
+        truncate_table(&crate::db::orm(ctx), ErgonomicItems).await?;
+        truncate_table(&crate::db::orm(ctx), ErgonomicAssessments).await?;
+        truncate_table(&crate::db::orm(ctx), ProgramPlacements).await?;
+        truncate_table(&crate::db::orm(ctx), EarlyCareerPrograms).await?;
+        truncate_table(&crate::db::orm(ctx), PipelineMembers).await?;
+        truncate_table(&crate::db::orm(ctx), TalentPipelines).await?;
+        truncate_table(&crate::db::orm(ctx), DevelopmentPlanItems).await?;
+        truncate_table(&crate::db::orm(ctx), DevelopmentPlans).await?;
+        truncate_table(&crate::db::orm(ctx), AssessmentResults).await?;
+        truncate_table(&crate::db::orm(ctx), Assessments).await?;
+        truncate_table(&crate::db::orm(ctx), AssessmentInstruments).await?;
+        truncate_table(&crate::db::orm(ctx), Benchmarks).await?;
+        truncate_table(&crate::db::orm(ctx), Payslips).await?;
+        truncate_table(&crate::db::orm(ctx), PayrollRuns).await?;
+        truncate_table(&crate::db::orm(ctx), SuccessionCandidates).await?;
+        truncate_table(&crate::db::orm(ctx), SuccessionPlans).await?;
+        truncate_table(&crate::db::orm(ctx), TrainingEnrollments).await?;
+        truncate_table(&crate::db::orm(ctx), FeedbackEntries).await?;
+        truncate_table(&crate::db::orm(ctx), Goals).await?;
+        truncate_table(&crate::db::orm(ctx), Reviews).await?;
+        truncate_table(&crate::db::orm(ctx), ReviewCycles).await?;
+        truncate_table(&crate::db::orm(ctx), BenefitEnrollments).await?;
+        truncate_table(&crate::db::orm(ctx), BenefitPlans).await?;
+        truncate_table(&crate::db::orm(ctx), ShiftAssignments).await?;
+        truncate_table(&crate::db::orm(ctx), Shifts).await?;
+        truncate_table(&crate::db::orm(ctx), LeaveRequests).await?;
+        truncate_table(&crate::db::orm(ctx), LeaveEntitlements).await?;
+        truncate_table(&crate::db::orm(ctx), TimeEntries).await?;
+        truncate_table(&crate::db::orm(ctx), OnboardingItems).await?;
+        truncate_table(&crate::db::orm(ctx), Interviews).await?;
+        truncate_table(&crate::db::orm(ctx), Applications).await?;
+        truncate_table(&crate::db::orm(ctx), Candidates).await?;
+        truncate_table(&crate::db::orm(ctx), Requisitions).await?;
+        truncate_table(&crate::db::orm(ctx), Workers).await?;
         Ok(())
     }
 }
@@ -678,7 +695,7 @@ impl TestApp for App {
         let config = Self::config(&environment)?;
         let app_context = Self::context(environment, config).await?;
         if flag("WPM_TEST_FRESH_SCHEMA") {
-            Migrator::fresh(&app_context.db).await?;
+            Migrator::fresh(&crate::db::orm(&app_context)).await?;
         }
         if flag("WPM_TEST_TRUNCATE") {
             Self::truncate(&app_context).await?;
@@ -701,6 +718,34 @@ mod tests {
         let main = include_str!("bin/main.rs");
         assert!(main.contains("axa::cli::parse("));
         assert!(!main.contains("Cli::parse("));
+    }
+
+    #[test]
+    fn the_database_is_db_url_else_database_url() {
+        let env = |pairs: &'static [(&'static str, &'static str)]| {
+            move |name: &str| {
+                pairs
+                    .iter()
+                    .find(|(n, _)| *n == name)
+                    .map(|(_, v)| (*v).to_string())
+            }
+        };
+        let both = env(&[
+            ("DB_URL", "postgres://a/x"),
+            ("DATABASE_URL", "postgres://b/x"),
+        ]);
+        assert_eq!(setting("DB_URL", both).as_deref(), Some("postgres://a/x"));
+        let old = env(&[("DATABASE_URL", "postgres://b/x")]);
+        assert_eq!(setting("DB_URL", old).as_deref(), Some("postgres://b/x"));
+        let blank = env(&[("DB_URL", " "), ("DATABASE_URL", "postgres://b/x")]);
+        assert_eq!(setting("DB_URL", blank).as_deref(), Some("postgres://b/x"));
+        assert_eq!(setting("DB_URL", env(&[])), None);
+        // Only the database name falls back: another setting is read as it is.
+        assert_eq!(
+            setting("PORT", env(&[("DATABASE_URL", "postgres://b/x")])),
+            None
+        );
+        assert_eq!(setting("PORT", env(&[("PORT", "1")])).as_deref(), Some("1"));
     }
 
     #[test]

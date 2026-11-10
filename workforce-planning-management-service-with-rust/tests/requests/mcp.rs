@@ -49,7 +49,7 @@ async fn tools_are_the_api_reads_and_a_call_that_cannot_be_audited_is_not_made()
         assert_eq!(junk.status_code().as_u16(), 400);
 
         // Each call left a row with the tool name and nothing else.
-        let rows = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             "SELECT snapshot::text AS snapshot FROM audit_logs WHERE action = 'mcp_tool_called'".to_string())).await.unwrap();
         assert_eq!(rows.len(), 2, "one per tool call, none for initialize or list");
         for row in rows {

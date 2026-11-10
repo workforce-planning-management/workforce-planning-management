@@ -66,7 +66,7 @@ async fn create_appraisal(
     }
     ensure_valid(&problems.into_vec())?;
     let subject = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = appraisals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(subject.pid),
@@ -113,18 +113,18 @@ async fn list_appraisals(
         .filter(appraisals::Column::WorkerPid.eq(subject.pid))
         .filter(appraisals::Column::DeletedAt.is_null())
         .order_by_desc(appraisals::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut view = Vec::new();
     for appraisal in &rows {
         let nominated = appraisal_nominations::Entity::find()
             .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .len();
         let responded = appraisal_responses::Entity::find()
             .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .len();
         view.push(serde_json::json!({
@@ -172,7 +172,7 @@ async fn nominate(
     }
     let existing = appraisal_nominations::Entity::find()
         .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     if existing.iter().any(|n| n.rater_pid == rater.pid) {
         return Err(unprocessable("this rater is already nominated"));
@@ -180,7 +180,7 @@ async fn nominate(
     if existing.len() >= rules::MAX_RATERS {
         return Err(unprocessable("at most 12 raters"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = appraisal_nominations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         appraisal_pid: ActiveValue::set(appraisal.pid),
@@ -227,7 +227,7 @@ async fn appraisal_status(
         let non_self = appraisal_nominations::Entity::find()
             .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
             .filter(appraisal_nominations::Column::RaterGroup.ne("self"))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .len();
         if non_self < rules::MIN_NON_SELF_RATERS {
@@ -244,7 +244,7 @@ async fn appraisal_status(
     if payload.to == "shared" {
         active.shared_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     // Fan out the in-app notifications (WPM-R31): collecting tells
     // every rater; shared tells the subject. Reference-only bodies —
@@ -300,11 +300,11 @@ async fn get_appraisal(State(ctx): State<AppContext>, Path(pid): Path<String>) -
     let nominations = appraisal_nominations::Entity::find()
         .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
         .order_by_asc(appraisal_nominations::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let responses = appraisal_responses::Entity::find()
         .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let responded: std::collections::HashSet<Uuid> =
         responses.iter().map(|r| r.nomination_pid).collect();
@@ -312,7 +312,7 @@ async fn get_appraisal(State(ctx): State<AppContext>, Path(pid): Path<String>) -
     for nomination in &nominations {
         let rater = workers::Entity::find()
             .filter(workers::Column::Pid.eq(nomination.rater_pid))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?;
         nomination_view.push(serde_json::json!({
             "pid": nomination.pid,
@@ -376,17 +376,17 @@ async fn respond(
     let nomination = appraisal_nominations::Entity::find()
         .filter(appraisal_nominations::Column::AppraisalPid.eq(appraisal.pid))
         .filter(appraisal_nominations::Column::RaterPid.eq(rater.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or_else(|| unprocessable("this worker is not a nominated rater"))?;
     let already = appraisal_responses::Entity::find()
         .filter(appraisal_responses::Column::NominationPid.eq(nomination.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     if already.is_some() {
         return Err(unprocessable("this rater has already responded"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = appraisal_responses::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         appraisal_pid: ActiveValue::set(appraisal.pid),
@@ -441,7 +441,7 @@ async fn report(
         serde_json::from_value(appraisal.competencies.clone()).unwrap_or_default();
     let responses = appraisal_responses::Entity::find()
         .filter(appraisal_responses::Column::AppraisalPid.eq(appraisal.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut groups = Vec::new();
     for group in rules::GROUPS {
@@ -488,7 +488,7 @@ async fn report(
         }));
     }
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "appraisal",
         appraisal.pid,
         "report_read",
@@ -533,7 +533,7 @@ async fn rater_requests(
     let nominations = appraisal_nominations::Entity::find()
         .filter(appraisal_nominations::Column::RaterPid.eq(rater.pid))
         .order_by_asc(appraisal_nominations::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut requests = Vec::new();
     for nomination in &nominations {
@@ -541,12 +541,12 @@ async fn rater_requests(
             .filter(appraisals::Column::Pid.eq(nomination.appraisal_pid))
             .filter(appraisals::Column::DeletedAt.is_null())
             .filter(appraisals::Column::Status.eq("collecting"))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?;
         let Some(appraisal) = appraisal else { continue };
         let responded = appraisal_responses::Entity::find()
             .filter(appraisal_responses::Column::NominationPid.eq(nomination.pid))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .is_some();
         if responded {
@@ -554,7 +554,7 @@ async fn rater_requests(
         }
         let subject = workers::Entity::find()
             .filter(workers::Column::Pid.eq(appraisal.worker_pid))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?;
         requests.push(serde_json::json!({
             "appraisal_pid": appraisal.pid,
@@ -572,7 +572,7 @@ async fn find_appraisal(ctx: &AppContext, pid: &str) -> Result<appraisals::Model
     appraisals::Entity::find()
         .filter(appraisals::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(appraisals::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }

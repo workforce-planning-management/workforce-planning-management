@@ -253,7 +253,10 @@ pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
                 .expect("the schema owner's connection closes");
         }
         None => {
-            ctx.db.execute_unprepared(sql).await.expect("the DDL runs");
+            workforce_planning_management::db::orm(ctx)
+                .execute_unprepared(sql)
+                .await
+                .expect("the DDL runs");
         }
     }
 }

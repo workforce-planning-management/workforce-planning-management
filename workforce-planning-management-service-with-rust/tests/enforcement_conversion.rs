@@ -145,7 +145,7 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
         let w_nb = make(neighbour_p, "CV-N", "permanent", None).await;
         let w_hr = make(hr_p, "CV-H", "permanent", None).await;
         for (person, wp, role) in [(worker_p, &w, "member"), (mgr_p, &w_mgr, "member"), (other_mgr_p, &w_other, "member"), (neighbour_p, &w_nb, "member"), (hr_p, &w_hr, "hr_admin")] {
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }

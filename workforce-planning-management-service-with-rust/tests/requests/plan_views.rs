@@ -66,7 +66,7 @@ async fn plan_views_count_every_kind_of_person_once() {
             }
             who.push(pid);
         }
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "UPDATE workers SET terminated_on = '2026-06-30' WHERE pid = '{}';
              INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status)
                VALUES (gen_random_uuid(), '{}', 'convert', '2027-01-31', 'proposed');

@@ -104,7 +104,7 @@ pub(crate) async fn is_reviewer(
     Ok(workers::Entity::find()
         .filter(matching)
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .iter()
         .any(|w| is_self(&claims.sub, &w.person_ref)))
@@ -118,7 +118,7 @@ async fn goal_and_worker(
     let goal = worker_goals::Entity::find()
         .filter(worker_goals::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(worker_goals::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, goal.worker_pid).await?;
@@ -133,7 +133,7 @@ pub(crate) async fn audit_reads(
 ) -> Result<()> {
     for goal in goals {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(ctx),
             "goal",
             goal.pid,
             "goals_read",
@@ -251,7 +251,7 @@ pub(crate) async fn check_plan_item(
 ) -> Result<()> {
     let plan = match development_plan_items::Entity::find()
         .filter(development_plan_items::Column::Pid.eq(item))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
     {
         Some(row) => {
@@ -259,7 +259,7 @@ pub(crate) async fn check_plan_item(
                 .filter(development_plans::Column::Pid.eq(row.plan_pid))
                 .filter(development_plans::Column::WorkerPid.eq(worker.pid))
                 .filter(development_plans::Column::DeletedAt.is_null())
-                .one(&ctx.db)
+                .one(&crate::db::orm(ctx))
                 .await?
         }
         None => None,
@@ -278,7 +278,7 @@ async fn check_links(
         skills::Entity::find()
             .filter(skills::Column::Pid.eq(skill))
             .filter(skills::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .ok_or_else(|| unprocessable("that skill is not in the catalogue"))?;
     }
@@ -315,7 +315,7 @@ pub(crate) async fn reports_of(ctx: &AppContext, sub: &str) -> Result<Vec<worker
         .filter(workers::Column::TerminatedOn.is_null())
         .filter(workers::Column::ManagerPid.is_not_null())
         .order_by_asc(workers::Column::DisplayName)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let mut reports = Vec::new();
     for worker in staff {
@@ -333,7 +333,7 @@ async fn goals_of(ctx: &AppContext, worker: Uuid) -> Result<Vec<worker_goals::Mo
         .filter(worker_goals::Column::DeletedAt.is_null())
         .order_by_desc(worker_goals::Column::PeriodStart)
         .order_by_asc(worker_goals::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -473,7 +473,7 @@ async fn propose(
 ) -> Result<Response> {
     let description = checked(payload)?;
     check_links(ctx, worker, payload).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let goal = worker_goals::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -565,7 +565,7 @@ pub(crate) async fn edit(
     active.skill_target_level = ActiveValue::set(skill_target_level);
     active.plan_item_pid = ActiveValue::set(payload.plan_item_pid);
     active.aligns_to = ActiveValue::set(payload.aligns_to.clone());
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let goal = active.update(&txn).await?;
     write_measures(&txn, &goal, &payload.measures).await?;
     Audit::record(&txn, "goal", goal.pid, "edited", caller.actor(), None).await?;
@@ -593,7 +593,7 @@ pub(crate) async fn agree(
     let mut active: worker_goals::ActiveModel = goal.into();
     active.status = ActiveValue::set("agreed".to_string());
     active.agreed_on = ActiveValue::set(Some(Utc::now().date_naive()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let goal = active.update(&txn).await?;
     Audit::record(&txn, "goal", goal.pid, "agreed", caller.actor(), None).await?;
     txn.commit().await?;
@@ -624,7 +624,7 @@ pub(crate) async fn move_status(
     let from = goal.status.clone();
     let mut active: worker_goals::ActiveModel = goal.into();
     active.status = ActiveValue::set(payload.to.clone());
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let goal = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -681,13 +681,13 @@ pub(crate) async fn check_in(
             goal_measures::Entity::find()
                 .filter(goal_measures::Column::Pid.eq(pid))
                 .filter(goal_measures::Column::GoalPid.eq(goal.pid))
-                .one(&ctx.db)
+                .one(&crate::db::orm(&ctx))
                 .await?
                 .ok_or(Error::NotFound)?,
         ),
         None => None,
     };
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     if let Some(measure) = measure {
         rules::valid_measure(MeasureShape {
             name: &measure.name,
@@ -739,11 +739,11 @@ async fn rollup(
     let goals = worker_goals::Entity::find()
         .filter(worker_goals::Column::OrganizationRef.eq(&query.organization))
         .filter(worker_goals::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let department: HashMap<Uuid, String> = workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(&query.organization))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w.department))
@@ -772,10 +772,10 @@ async fn review_and_period(
     ctx: &AppContext,
     pid: &str,
 ) -> Result<(reviews::Model, review_cycles::Model)> {
-    let review = records::find_review(&ctx.db, records::parse_pid(pid)?).await?;
+    let review = records::find_review(&crate::db::orm(ctx), records::parse_pid(pid)?).await?;
     let cycle = review_cycles::Entity::find()
         .filter(review_cycles::Column::Pid.eq(review.cycle_pid.ok_or(Error::NotFound)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     Ok((review, cycle))
@@ -812,12 +812,12 @@ async fn review_goals(
     }
     let outcomes = review_goal_outcomes::Entity::find()
         .filter(review_goal_outcomes::Column::ReviewPid.eq(review.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     if review.status == "shared" {
         for outcome in &outcomes {
             Audit::record(
-                &ctx.db,
+                &crate::db::orm(&ctx),
                 "goal",
                 outcome.goal_pid,
                 "goals_read",
@@ -901,9 +901,9 @@ pub(crate) async fn record_outcome(
     let existing = review_goal_outcomes::Entity::find()
         .filter(review_goal_outcomes::Column::ReviewPid.eq(review.pid))
         .filter(review_goal_outcomes::Column::GoalPid.eq(goal.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active = existing.map_or_else(
         || review_goal_outcomes::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),

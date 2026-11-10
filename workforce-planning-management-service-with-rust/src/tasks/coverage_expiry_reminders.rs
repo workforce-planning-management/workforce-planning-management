@@ -73,7 +73,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         .filter(coverage_evidence::Column::ValidTo.is_not_null())
         .filter(coverage_evidence::Column::RetiredOn.is_null())
         .order_by_asc(coverage_evidence::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     for record in held {
         let Some(valid_to) = record.valid_to else {
@@ -86,7 +86,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(coverage_reminders::Column::CoveragePid.eq(record.pid))
             .filter(coverage_reminders::Column::ValidTo.eq(valid_to))
             .filter(coverage_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some();
         if already {
@@ -115,11 +115,11 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(organization_memberships::Column::OrganizationRef.eq(&record.organization_ref))
             .filter(organization_memberships::Column::Role.eq("hr_admin"))
             .filter(organization_memberships::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
         {
             if let Some(pid) = member.worker_pid {
-                Notification::push(&ctx.db, pid, kind, &body, data.clone()).await?;
+                Notification::push(&crate::db::orm(ctx), pid, kind, &body, data.clone()).await?;
                 report.told += 1;
             }
         }
@@ -130,7 +130,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             reminded_on: ActiveValue::set(as_of),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&crate::db::orm(ctx))
         .await?;
         match reminder {
             Reminder::Expiring => report.expiring += 1,

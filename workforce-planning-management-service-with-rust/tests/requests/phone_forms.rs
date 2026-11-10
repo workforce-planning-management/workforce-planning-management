@@ -53,10 +53,10 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
             if let Some(place) = place {
                 request.put(&format!("/api/workers/{pid}")).json(&json!({ "work_jurisdiction": place })).await.assert_status_ok();
             }
-            insert_raw(&ctx.db, &pid, *country, mobile, home).await;
+            insert_raw(&workforce_planning_management::db::orm(&ctx), &pid, *country, mobile, home).await;
             pids.push(pid);
         }
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO emergency_contacts (pid, worker_pid, name, relationship, phone, alt_phone, priority)
                  VALUES ('{}', '{}', 'Test Contact', 'sibling', '+٩٦٦ ٥٠ ١٢٣ ٤٥٦٧', '01632 960001', 1)",
@@ -65,11 +65,10 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
             ))
             .await
             .expect("insert contact");
-        backfill(&ctx.db).await;
+        backfill(&workforce_planning_management::db::orm(&ctx)).await;
 
         for ((country, place, mobile, home), pid) in cases.iter().zip(&pids) {
-            let row = ctx
-                .db
+            let row = workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(sea_orm::Statement::from_string(
                     sea_orm::DbBackend::Postgres,
                     format!(
@@ -103,7 +102,7 @@ async fn the_backfill_and_the_rule_agree_and_a_change_of_place_rederives() {
         assert_eq!(contacts[0]["alt_phone_digits"], "01632960001");
         assert_eq!(contacts[0]["alt_phone_e164"], Value::Null, "a contact's number is not read in the worker's country");
         // Running it again changes nothing.
-        backfill(&ctx.db).await;
+        backfill(&workforce_planning_management::db::orm(&ctx)).await;
         let again: Value = request.get(&format!("/api/workers/{}/contact-details", pids[0])).await.json();
         assert_eq!(again, one);
 
@@ -129,17 +128,31 @@ async fn hr_finds_workers_by_digits_and_the_answer_names_no_number() {
         let w1 = seed_worker!(&request, org.clone(), format!("PS-{tag}-1"), None).await;
         let w2 = seed_worker!(&request, org.clone(), format!("PS-{tag}-2"), None).await;
         let elsewhere = seed_worker!(&request, other.clone(), format!("PS-{tag}-3"), None).await;
-        insert_raw(&ctx.db, &w1, Some("KR"), "٠١٠-١٢٣٤-٥٦٧٨", "02 555 0100").await;
-        insert_raw(&ctx.db, &w2, None, "07700 900123", "07700 900124").await;
         insert_raw(
-            &ctx.db,
+            &workforce_planning_management::db::orm(&ctx),
+            &w1,
+            Some("KR"),
+            "٠١٠-١٢٣٤-٥٦٧٨",
+            "02 555 0100",
+        )
+        .await;
+        insert_raw(
+            &workforce_planning_management::db::orm(&ctx),
+            &w2,
+            None,
+            "07700 900123",
+            "07700 900124",
+        )
+        .await;
+        insert_raw(
+            &workforce_planning_management::db::orm(&ctx),
             &elsewhere,
             Some("KR"),
             "010-1234-5678",
             "02 555 0100",
         )
         .await;
-        backfill(&ctx.db).await;
+        backfill(&workforce_planning_management::db::orm(&ctx)).await;
 
         let search = |organization: String, phone: &'static str| {
             let request = &request;

@@ -174,7 +174,7 @@ async fn save(
         active.attempts = ActiveValue::set(attempts);
         active.next_attempt_at = ActiveValue::set(next_attempt_at);
         active.last_error = ActiveValue::set(last_error);
-        active.update(&ctx.db).await?
+        active.update(&crate::db::orm(ctx)).await?
     } else {
         scim_pushes::ActiveModel {
             pid: ActiveValue::set(Uuid::new_v4()),
@@ -187,7 +187,7 @@ async fn save(
             last_error: ActiveValue::set(last_error),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&crate::db::orm(ctx))
         .await?
     })
 }
@@ -207,14 +207,14 @@ pub async fn run(
     if let Some(org) = &cfg.organization {
         query = query.filter(workers::Column::OrganizationRef.eq(org));
     }
-    let everyone = query.all(&ctx.db).await?;
+    let everyone = query.all(&crate::db::orm(ctx)).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
         everyone.iter().map(|w| (w.pid, w.manager_pid)).collect();
     let mut ordered: Vec<&workers::Model> = everyone.iter().collect();
     ordered.sort_by_key(|w| (depth(w.pid, &manager_of), w.id));
 
     let mut state: BTreeMap<Uuid, scim_pushes::Model> = scim_pushes::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|p| (p.worker_pid, p))

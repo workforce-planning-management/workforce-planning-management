@@ -127,7 +127,7 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
             "person_ref": format!("person:{hr_p}"), "organization_ref": org, "worker_number": "EQ-HR",
             "display_name": "Test Worker EQ-HR", "employment_type": "permanent", "department": "people",
             "job_title": "HR", "hired_on": "2023-01-05" })).await.json::<Value>()["pid"].as_str().unwrap().to_string();
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
              VALUES ('{}', 'person:{hr_p}', '{org}', '{hr_w}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         let put = |i: usize, body: Value| {
@@ -239,7 +239,7 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
         assert_eq!(after["declarations"], json!({ "religion_or_belief": "none" }), "only the withdrawn category went");
         assert_eq!(request.delete("/api/me/equality-monitoring").add_header("authorization", token(1)).await.status_code(), 200);
         let count = |pid: &str| {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::orm(&ctx).clone();
             let pid = pid.to_string();
             async move {
                 db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,

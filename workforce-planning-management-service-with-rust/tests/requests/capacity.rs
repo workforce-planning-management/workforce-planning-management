@@ -10,7 +10,7 @@ use super::{activate, an_org};
 
 async fn scalar(ctx: &axa::AppContext, sql: String) -> i64 {
     use sea_orm::Statement;
-    ctx.db
+    workforce_planning_management::db::orm(ctx)
         .query_one_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             sql,
@@ -933,7 +933,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
                 terminated_on: ActiveValue::set((n == 0).then_some(left_on)),
                 ..Default::default()
             })
-            .exec(&ctx.db)
+            .exec(&workforce_planning_management::db::orm(&ctx))
             .await
             .unwrap();
         }
@@ -951,7 +951,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
             fixed_term_fte_percent_total: ActiveValue::set(Some(fixed)),
             ..Default::default()
         })
-        .exec(&ctx.db)
+        .exec(&workforce_planning_management::db::orm(&ctx))
         .await
         .unwrap();
         }
@@ -1023,7 +1023,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
         use sea_orm::{ColumnTrait, PaginatorTrait, QueryFilter};
         use workforce_planning_management::models::_entities::oversight_readings;
         let pids: Vec<uuid::Uuid> = [&turnover_pid, &contingent_pid, &pools_pid].iter().map(|p| p.parse().unwrap()).collect();
-        assert_eq!(oversight_readings::Entity::find().filter(oversight_readings::Column::MeasurePid.is_in(pids)).count(&ctx.db).await.unwrap(), 0);
+        assert_eq!(oversight_readings::Entity::find().filter(oversight_readings::Column::MeasurePid.is_in(pids)).count(&workforce_planning_management::db::orm(&ctx)).await.unwrap(), 0);
     })
     .await;
 }
@@ -1049,7 +1049,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
             "display_name": "Synthetic HR", "employment_type": "permanent", "department": "people",
             "job_title": "Administrator", "hired_on": "2026-01-05" })).await.json();
         let hr = hr["pid"].as_str().unwrap().to_string();
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
              VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
         // A measure that breaches last month (value 900 against an at-most of 800), on the level the organization is at.
@@ -1102,7 +1102,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         assert_eq!(t(&status().await)["derived_values"][0]["value"], Value::Null);
         // The pool warning was first seen last month (backdated here), the breach today.
         let seen = last_month + Days::new(2);
-        ctx.db.execute_unprepared(&format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'")).await.unwrap();
         request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.assert_status_ok();
         assert_eq!(request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.status_code(), 422, "once only");
         assert_eq!(request.post(&format!("/api/early-warnings/{}/acknowledge", uuid::Uuid::new_v4())).await.status_code(), 404);
@@ -1225,7 +1225,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let (late_done, expiring, gardener, unplaced_holder) = (people[4].clone(), people[5].clone(), people[6].clone(), people[7].clone());
         let annex = format!("Synthetic Annex {tag}");
         let set_site = |w: &str, loc: &str| {
-            let db = &ctx.db;
+            let db = workforce_planning_management::db::orm(&ctx);
             let sql = format!("UPDATE workers SET location = '{loc}' WHERE pid = '{w}'");
             async move { db.execute_unprepared(&sql).await.unwrap(); }
         };
@@ -1236,9 +1236,9 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         for w in [&late_done, &expiring, &gardener] {
             set_site(w, &site).await;
         }
-        ctx.db.execute_unprepared(&format!("UPDATE workers SET job_title = 'Gardener' WHERE pid = '{gardener}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET job_title = 'Gardener' WHERE pid = '{gardener}'")).await.unwrap();
         let complete = |w: &str| {
-            let db = &ctx.db;
+            let db = workforce_planning_management::db::orm(&ctx);
             let sql = format!(
                 "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on) \
                  VALUES ('{}', '{w}', '{course}', 'completed', '{}')", uuid::Uuid::new_v4(), day(-5));
@@ -1249,7 +1249,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         complete(&d).await;
         complete(&gardener).await; // at the site and trained, but not in the role
         let enrol = |w: &str, completed: i64, expires: Option<i64>| {
-            let db = &ctx.db;
+            let db = workforce_planning_management::db::orm(&ctx);
             let expires = expires.map_or("NULL".to_string(), |n| format!("'{}'", day(n)));
             let sql = format!(
                 "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on) \
@@ -1376,7 +1376,7 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let closed = sweep(&ctx, &org, today).await.unwrap();
         assert_eq!((closed.opened, closed.cleared), (0, 1));
         // A course renamed in the learning records cannot be checked, and is said so.
-        ctx.db.execute_unprepared(&format!("UPDATE training_enrollments SET course_ref = 'RENAMED-{tag}' WHERE course_ref = '{course}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE training_enrollments SET course_ref = 'RENAMED-{tag}' WHERE course_ref = '{course}'")).await.unwrap();
         let renamed = ready().await;
         assert_eq!(renamed["checks"]["trained_staff"]["status"], "unknown");
         assert!(renamed["checks"]["trained_staff"]["reasons"][0].as_str().unwrap().contains("not in the learning records"));
@@ -1478,15 +1478,15 @@ async fn capacity_supply_equals_walking_the_days() {
                     .await.assert_status_ok();
             }
             if let Some(end) = ended {
-                ctx.db.execute_unprepared(&format!("UPDATE workers SET terminated_on = '{end}' WHERE pid = '{pid}'")).await.unwrap();
+                workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET terminated_on = '{end}' WHERE pid = '{pid}'")).await.unwrap();
             }
             for (s, e) in leave {
-                ctx.db.execute_unprepared(&format!(
+                workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                     "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
                      VALUES (gen_random_uuid(), '{pid}', 'annual', '{s}', '{e}', 1, 'approved')")).await.unwrap();
             }
             // Pending and withdrawn leave never count.
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status)
                  VALUES (gen_random_uuid(), '{pid}', 'annual', '2027-01-01', '2027-03-31', 1, 'requested');
                  INSERT INTO leave_requests (pid, worker_pid, kind, start_on, end_on, days, status, deleted_at)
@@ -1573,7 +1573,7 @@ async fn the_what_if_says_what_a_change_does_stores_nothing_and_names_no_one() {
                 .assert_status_ok();
         }
         for programme in [&other, &mine] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
                 .await
                 .unwrap();
@@ -1688,7 +1688,7 @@ async fn a_moved_end_date_counts_the_engagements_that_would_end_before_it_per_po
         // An intern with an early end is not fixed-term or contractor; a fixed-term worker already terminated does not end later.
         hire(big_title.clone(), 9, "intern", Some("2027-01-31")).await;
         hire(big_title.clone(), 10, "fixed_term", Some("2027-01-31")).await;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET terminated_on = '2026-12-01' WHERE worker_number = 'CE-{}-Bf10'", &tag[..8]))
             .await
             .unwrap();
@@ -1788,7 +1788,7 @@ async fn a_linked_pool_counts_the_peers_demand_and_not_its_own_and_unlinking_ret
         let activate = || {
             let (ctx, programme) = (&ctx, programme.clone());
             async move {
-                ctx.db.execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'")).await.unwrap();
+                workforce_planning_management::db::orm(ctx).execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'")).await.unwrap();
             }
         };
         let demand_in_january = || {
@@ -2189,7 +2189,7 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
         }
         // A contractor whose end was never recorded (an older record: the API now asks for one), in no pool.
         hire(&title_c, 0, "contractor", Some(end), &programme).await;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE workers SET engagement_ends_on = NULL WHERE worker_number = 'PI-{}-C0'", &tag[..8]))
             .await
             .unwrap();
@@ -2212,7 +2212,7 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
             .json(&json!({ "programme_ref": programme, "pool_pid": pools[0], "month": next_month, "fte_centi": 5000 }))
             .await
             .assert_status_ok();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref = '{programme}'"))
             .await
             .unwrap();

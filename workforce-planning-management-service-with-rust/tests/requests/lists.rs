@@ -43,8 +43,12 @@ async fn every_collection_read_answers_with_a_list() {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_liveness_and_readiness_probes_answer() {
     crate::requests::request_open(|request, _ctx| async move {
-        for url in ["/_ping", "/_readiness"] {
+        for url in ["/_health/live", "/_health/ready", "/_health/startup"] {
             assert_eq!(request.get(url).await.status_code(), 200, "{url}");
+        }
+        // axa 0.11 moved the probes (WPM-T482): a probe left on an old path sees a 404 and restarts the service, so say so here.
+        for url in ["/_health", "/_ping", "/_readiness"] {
+            assert_eq!(request.get(url).await.status_code(), 404, "{url}");
         }
     })
     .await;

@@ -569,12 +569,14 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         activate!(&request, &a).await;
 
         let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
-        let written = run_snapshot(&ctx.db, first_day)
+        let written = run_snapshot(&workforce_planning_management::db::orm(&ctx), first_day)
             .await
             .expect("first snapshot");
         assert!(written >= 1, "the seeded worker's department is recorded");
         assert_eq!(
-            run_snapshot(&ctx.db, first_day).await.expect("re-run"),
+            run_snapshot(&workforce_planning_management::db::orm(&ctx), first_day)
+                .await
+                .expect("re-run"),
             0,
             "a re-run for the same date writes nothing"
         );
@@ -599,7 +601,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
 
         // A later snapshot measures starters/leavers from the earlier one.
         run_snapshot(
-            &ctx.db,
+            &workforce_planning_management::db::orm(&ctx),
             chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
         )
         .await
@@ -1411,9 +1413,14 @@ async fn capability_framework_import_and_progression() {
     crate::requests::request_open(|request, ctx| async move {
         let fixture =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
-        let report = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("import");
+        let report = import_pcf(
+            &workforce_planning_management::db::orm(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("import");
         assert_eq!(report.levels_read, 4);
         assert_eq!(report.retired_skipped, 1);
         assert_eq!(report.profiles_created, 3);
@@ -1427,9 +1434,14 @@ async fn capability_framework_import_and_progression() {
         );
 
         // Idempotent: a second run creates nothing and refreshes everything.
-        let again = import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import");
+        let again = import_pcf(
+            &workforce_planning_management::db::orm(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import");
         assert_eq!(again.profiles_created, 0);
         assert_eq!(again.profiles_updated, 3);
         assert_eq!(again.requirements_created, 0);
@@ -1509,9 +1521,14 @@ async fn capability_framework_import_and_progression() {
             )
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import");
+        import_pcf(
+            &workforce_planning_management::db::orm(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import");
         let kept: Value = request
             .get(&format!(
                 "/api/role-profiles/{}",
@@ -1529,9 +1546,14 @@ async fn capability_framework_import_and_progression() {
             kept_a["min_proficiency"], 5,
             "the planner's level is not overwritten"
         );
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, true)
-            .await
-            .expect("overwrite");
+        import_pcf(
+            &workforce_planning_management::db::orm(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            true,
+        )
+        .await
+        .expect("overwrite");
         let reset: Value = request
             .get(&format!(
                 "/api/role-profiles/{}",
@@ -1556,9 +1578,14 @@ async fn capability_framework_import_and_progression() {
             .json(&json!({ "name": "Renamed skill A" }))
             .await
             .assert_status_ok();
-        import_pcf(&ctx.db, &fixture, LevelMapping::Identity, false)
-            .await
-            .expect("re-import after rename");
+        import_pcf(
+            &workforce_planning_management::db::orm(&ctx),
+            &fixture,
+            LevelMapping::Identity,
+            false,
+        )
+        .await
+        .expect("re-import after rename");
         let catalogue: Value = request.get("/api/skills").await.json();
         let names: Vec<&str> = catalogue
             .as_array()
@@ -1688,12 +1715,12 @@ async fn esco_import_search_and_seeding() {
                 .assert_status_ok();
         }
         let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/esco-mini");
-        let report = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("import");
+        let report = import_esco(&workforce_planning_management::db::orm(&ctx), &fixture, "en", "v-test").await.expect("import");
         assert_eq!((report.skills, report.occupations, report.relations), (5, 2, 4));
         assert_eq!(report.relations_dangling, 1, "the relation to a skill not in the file");
         assert_eq!(report.catalogue_linked, 2, "exact normalised labels, one match each");
         assert_eq!(report.catalogue_ambiguous, 1, "two ESCO skills share the label: not guessed");
-        let again = import_esco(&ctx.db, &fixture, "en", "v-test").await.expect("re-import");
+        let again = import_esco(&workforce_planning_management::db::orm(&ctx), &fixture, "en", "v-test").await.expect("re-import");
         assert_eq!((again.skills, again.relations), (5, 4), "replaced, not duplicated");
         assert_eq!(again.catalogue_linked, 0, "already linked");
 
@@ -1880,8 +1907,8 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(&workforce_planning_management::db::orm(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(&workforce_planning_management::db::orm(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
 
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
@@ -1990,8 +2017,8 @@ async fn career_history_and_aspirations() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&ctx.db, &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&ctx.db, &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(&workforce_planning_management::db::orm(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(&workforce_planning_management::db::orm(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &me).await;
@@ -2134,7 +2161,7 @@ async fn reporting_lines_stop_at_a_manager_who_has_left() {
             .json();
         assert_eq!(down["summary"]["total"], 3);
 
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE workers SET terminated_on = '2026-02-01' WHERE pid = '{middle}'"
             ))
@@ -2380,7 +2407,7 @@ async fn confederation_groups_and_transfers() {
              WHERE entity_pid = $1::text::uuid AND action = 'transferred'",
         )
         .bind(&in_a)
-        .fetch_one(ctx.db.get_postgres_connection_pool())
+        .fetch_one(workforce_planning_management::db::orm(&ctx).get_postgres_connection_pool())
         .await
         .unwrap();
         assert_eq!(ended, 1, "the audit entry keeps what the move ended");
@@ -2447,7 +2474,7 @@ async fn capability_counts_targets_plans_and_completed_sittings() {
             }))
             .await
             .assert_status_ok();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE development_plans SET status = 'active' WHERE worker_pid = '{}'",
                 people[1]

@@ -62,7 +62,7 @@ async fn hire(
             .json();
         let pid = created["pid"].as_str().expect("pid").to_string();
         if let Some(sex) = sex {
-            ctx.db
+            workforce_planning_management::db::orm(ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"
                 ))
@@ -310,8 +310,7 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
         }
 
         // Audited: the day and how many categories, no figure.
-        let rows = ctx
-            .db
+        let rows = workforce_planning_management::db::orm(&ctx)
             .query_all_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE entity = 'pay_gap_report' ORDER BY id".to_string(),

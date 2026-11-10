@@ -190,7 +190,7 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
         let told = |kind: &'static str, whom: String| {
             let ctx = ctx.clone();
             async move {
-                ctx.db
+                workforce_planning_management::db::orm(&ctx)
                     .query_all_raw(sea_orm::Statement::from_string(
                         sea_orm::DatabaseBackend::Postgres,
                         format!("SELECT id FROM notifications WHERE kind = '{kind}' AND worker_pid = '{whom}'"),

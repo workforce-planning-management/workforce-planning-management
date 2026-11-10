@@ -109,8 +109,7 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
             .json(&bad_body)
             .await;
         assert_eq!(failed.status_code(), 422);
-        let kept: i64 = ctx
-            .db
+        let kept: i64 = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sql("SELECT count(*) AS n FROM idempotency_keys WHERE idem_key = 'retry-after-a-failure-0001'"))
             .await
             .unwrap()
@@ -133,7 +132,7 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
             "/api/announcements",
             body.to_string().as_bytes(),
         );
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_raw(sql(&format!("INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ('anonymous', 'stuck-request-key-00001', '{fingerprint}')")))
             .await
             .unwrap();
@@ -145,7 +144,7 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(busy.status_code(), 409, "{}", busy.text());
         assert_eq!(busy.header("retry-after"), "1");
         assert_eq!(count(&request, &org, &title).await, 4, "and it did not run");
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_raw(sql("UPDATE idempotency_keys SET created_at = now() - interval '10 minutes' WHERE idem_key = 'stuck-request-key-00001'"))
             .await
             .unwrap();
@@ -158,7 +157,7 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
         assert_eq!(count(&request, &org, &title).await, 5, "an abandoned claim is taken over");
 
         // Expiry: a stored response older than the keep period is gone, so the same key runs again.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_raw(sql("UPDATE idempotency_keys SET created_at = now() - interval '2 days' WHERE idem_key = '0123456789abcdef-test-key'"))
             .await
             .unwrap();

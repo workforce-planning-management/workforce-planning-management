@@ -121,7 +121,7 @@ From a fresh clone, with no sibling repositories:
 
 ```sh
 podman compose up --build
-curl http://localhost:5150/_health
+curl http://localhost:5150/_health/live
 ```
 
 This starts PostgreSQL, Redis, a demo mail server (Stalwart: a catch-all for `wpm.test` that delivers nothing

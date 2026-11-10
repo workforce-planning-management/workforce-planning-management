@@ -47,14 +47,14 @@ async fn skill_gaps_merge_sources_rank_by_priority_and_roll_up_without_names() {
                 .assert_status_ok();
         }
         // Make it a PCF role and give both workers that current role.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
             ))
             .await
             .unwrap();
         for w in [&a, &b] {
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO worker_framework_roles \
                      (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
@@ -172,13 +172,13 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
                 .await
                 .assert_status_ok();
         }
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE role_profiles SET framework_slug = 'uk-gdad-pcf' WHERE pid = '{role}'"
             ))
             .await
             .unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO worker_framework_roles \
                  (pid, worker_pid, framework_slug, role_profile_pid, role_label, selected_on, started_at, on_behalf) \
@@ -316,7 +316,7 @@ async fn training_plans_recommend_courses_estimate_the_rest_and_schedule_by_prio
 
         // Every catalogue write is audited (WPM-T246): the course's creation and removal, and the per-level figure.
         let actions = |entity: &'static str, pid: String| {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::orm(&ctx).clone();
             async move {
                 db.query_all_raw(sea_orm::Statement::from_sql_and_values(
                     sea_orm::DbBackend::Postgres,

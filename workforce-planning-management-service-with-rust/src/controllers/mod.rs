@@ -146,7 +146,7 @@ where
             select
                 .clone()
                 .filter(column.is_in(chunk.to_vec()))
-                .all(&ctx.db)
+                .all(&crate::db::orm(ctx))
                 .await?,
         );
     }
@@ -174,7 +174,7 @@ pub async fn ensure_scale(
     scope: sea_orm::Select<crate::models::_entities::workers::Entity>,
 ) -> Result<()> {
     use sea_orm::PaginatorTrait;
-    ensure_within_ceiling(scope.count(&ctx.db).await?)
+    ensure_within_ceiling(scope.count(&crate::db::orm(ctx)).await?)
 }
 
 /// Refuse `count` workers over the measured ceiling (WPM-R120, WPM-D90): the rule of [`ensure_scale`], for a count already made.
@@ -469,7 +469,7 @@ where
     let rows = select
         .limit(limit.unsigned_abs())
         .offset(offset.unsigned_abs())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let shown = rows.iter().map(show).collect::<Result<Vec<V>>>()?;
     Ok(window.respond(shown))

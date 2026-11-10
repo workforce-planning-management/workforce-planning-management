@@ -26,8 +26,7 @@ async fn the_audit_trail_cannot_be_changed_and_a_tamper_is_found() {
         assert_eq!(head.len(), 64);
 
         // The sequence is gapless and each entry names the one before it.
-        let rows = ctx
-            .db
+        let rows = workforce_planning_management::db::orm(&ctx)
             .query_all_raw(sea_orm::Statement::from_string(
                 sea_orm::DbBackend::Postgres,
                 "SELECT chain_seq, prev_hash, entry_hash FROM audit_logs ORDER BY chain_seq",
@@ -46,27 +45,25 @@ async fn the_audit_trail_cannot_be_changed_and_a_tamper_is_found() {
         assert_eq!(previous, head);
 
         // The database refuses to change or remove an entry, even for a connection that could.
-        let update = ctx
-            .db
+        let update = workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(
                 "UPDATE audit_logs SET action = 'nothing happened' WHERE chain_seq = 1",
             )
             .await;
         assert!(update.is_err(), "UPDATE must be refused");
         assert!(update.unwrap_err().to_string().contains("append-only"));
-        let delete = ctx
-            .db
+        let delete = workforce_planning_management::db::orm(&ctx)
             .execute_unprepared("DELETE FROM audit_logs WHERE chain_seq = 2")
             .await;
         assert!(delete.is_err(), "DELETE must be refused");
 
         // A person with the rights to switch the protection off still leaves a trace.
         // 1. Rewrite an entry.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared("ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_immutable")
             .await
             .unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(
                 "UPDATE audit_logs SET action = 'nothing happened' WHERE chain_seq = 3",
             )
@@ -78,7 +75,7 @@ async fn the_audit_trail_cannot_be_changed_and_a_tamper_is_found() {
             tampered["first_break"], 3,
             "the rewritten entry is the first break"
         );
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared("ALTER TABLE audit_logs ENABLE TRIGGER audit_logs_immutable")
             .await
             .unwrap();
@@ -100,11 +97,11 @@ async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
         assert_eq!(before["ok"], true);
         let entries = before["entries"].as_i64().unwrap();
         let middle = entries / 2;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared("ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_immutable")
             .await
             .unwrap();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "DELETE FROM audit_logs WHERE chain_seq = {middle}"
             ))
@@ -119,7 +116,7 @@ async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
         );
         // Cutting entries off the end leaves a chain that still holds; only the head hash recorded
         // elsewhere shows it, which is why the report carries one.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "DELETE FROM audit_logs WHERE chain_seq >= {middle}"
             ))
@@ -135,7 +132,7 @@ async fn removing_an_entry_from_the_middle_is_found_and_the_tail_is_not() {
             "but the head hash differs from the recorded one"
         );
         assert!(cut["entries"].as_i64().unwrap() < entries);
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared("ALTER TABLE audit_logs ENABLE TRIGGER audit_logs_immutable")
             .await
             .unwrap();
@@ -194,8 +191,7 @@ async fn concurrent_writers_make_one_chain() {
         }
         let report: Value = request.get("/api/audits/verify").await.json();
         assert_eq!(report["ok"], true, "{report}");
-        let distinct: i64 = ctx
-            .db
+        let distinct: i64 = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DbBackend::Postgres,
                 "SELECT count(DISTINCT chain_seq)::bigint AS n FROM audit_logs",

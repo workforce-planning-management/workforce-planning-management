@@ -6,10 +6,18 @@ use axa::AppContext;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-/// The connection pool.
+/// The connection pool: since axa 0.11, the context's own database handle (WPM-T482).
 #[must_use]
-pub fn pool(ctx: &AppContext) -> &PgPool {
-    ctx.db.get_postgres_connection_pool()
+pub const fn pool(ctx: &AppContext) -> &PgPool {
+    &ctx.db
+}
+
+/// A `SeaORM` connection over the same pool, for the code not yet moved to `sqlx` (WPM-T466). axa 0.11 makes the context's handle
+/// the `sqlx` pool when both features are on, so `SeaORM` wraps it here; the wrapper holds the pool's own `Arc`, so it opens nothing.
+/// It goes when `SeaORM` does.
+#[must_use]
+pub fn orm(ctx: &AppContext) -> sea_orm::DatabaseConnection {
+    sea_orm::SqlxPostgresConnector::from_sqlx_postgres_pool(ctx.db.clone())
 }
 
 /// Whether `cause` is a unique constraint refusing a row.

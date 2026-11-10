@@ -157,7 +157,7 @@ async fn create_plan(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let plan = development_plans::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -240,7 +240,7 @@ async fn list_plans(
         .filter(development_plans::Column::WorkerPid.eq(worker.pid))
         .filter(development_plans::Column::DeletedAt.is_null())
         .order_by_asc(development_plans::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let declared = declared_levels(&ctx, worker.pid).await?;
 
@@ -249,7 +249,7 @@ async fn list_plans(
         let items = development_plan_items::Entity::find()
             .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
             .order_by_asc(development_plan_items::Column::Id)
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         view.push(plan_view(plan, &items, &declared));
     }
@@ -299,7 +299,7 @@ async fn declared_levels(ctx: &AppContext, worker_pid: Uuid) -> Result<BTreeMap<
     let rows = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     Ok(rows
         .into_iter()
@@ -325,13 +325,14 @@ async fn plan_status(
     Path(pid): Path<String>,
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
-    let plan = records::find_development_plan(&ctx.db, records::parse_pid(&pid)?).await?;
+    let plan =
+        records::find_development_plan(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     rules::plan_transition(&plan.status, &payload.to).map_err(|reason| unprocessable(&reason))?;
 
     if payload.to == "completed" {
         let open = development_plan_items::Entity::find()
             .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .into_iter()
             .filter(|i| !matches!(i.status.as_str(), "achieved" | "abandoned"))
@@ -346,7 +347,7 @@ async fn plan_status(
     let from = plan.status.clone();
     let plan_pid = plan.pid;
     let today = chrono::Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: development_plans::ActiveModel = plan.into();
     active.status = ActiveValue::set(payload.to.clone());
     if payload.to == "active" {
@@ -392,13 +393,13 @@ async fn update_item(
 
     let item = development_plan_items::Entity::find()
         .filter(development_plan_items::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let item_pid = item.pid;
     let mut active: development_plan_items::ActiveModel = item.into();
     active.status = ActiveValue::set(payload.status.clone());
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -441,7 +442,7 @@ async fn create_pipeline(
     problems.cap_opt("target_department", payload.target_department.as_deref());
     ensure_valid(&problems.into_vec())?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = talent_pipelines::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -472,7 +473,7 @@ async fn list_pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     let pipelines = talent_pipelines::Entity::find()
         .filter(talent_pipelines::Column::DeletedAt.is_null())
         .order_by_asc(talent_pipelines::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut view = Vec::with_capacity(pipelines.len());
     for pipeline in &pipelines {
@@ -497,7 +498,7 @@ async fn member_stages(ctx: &AppContext, pipeline_pid: Uuid) -> Result<Vec<Strin
     let rows = pipeline_members::Entity::find()
         .filter(pipeline_members::Column::PipelinePid.eq(pipeline_pid))
         .filter(pipeline_members::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     Ok(rows.into_iter().map(|r| r.stage).collect())
 }
@@ -522,7 +523,8 @@ async fn add_member(
     Path(pid): Path<String>,
     Json(payload): Json<MemberPayload>,
 ) -> Result<Response> {
-    let pipeline = records::find_talent_pipeline(&ctx.db, records::parse_pid(&pid)?).await?;
+    let pipeline =
+        records::find_talent_pipeline(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token(
         "subject_kind",
@@ -539,7 +541,7 @@ async fn add_member(
         candidates::Entity::find()
             .filter(candidates::Column::Pid.eq(payload.subject_pid))
             .filter(candidates::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .ok_or(Error::NotFound)?;
     }
@@ -549,13 +551,13 @@ async fn add_member(
         .filter(pipeline_members::Column::SubjectKind.eq(payload.subject_kind.clone()))
         .filter(pipeline_members::Column::SubjectPid.eq(payload.subject_pid))
         .filter(pipeline_members::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     if existing.is_some() {
         return Err(unprocessable("this subject is already in the pipeline"));
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = pipeline_members::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         pipeline_pid: ActiveValue::set(pipeline.pid),
@@ -602,7 +604,8 @@ async fn move_member(
     Path(pid): Path<String>,
     Json(payload): Json<StagePayload>,
 ) -> Result<Response> {
-    let member = records::find_pipeline_member(&ctx.db, records::parse_pid(&pid)?).await?;
+    let member =
+        records::find_pipeline_member(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     rules::pipeline_transition(&member.stage, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
     let mut problems = Problems::new();
@@ -616,7 +619,7 @@ async fn move_member(
     if payload.readiness.is_some() {
         active.readiness = ActiveValue::set(payload.readiness.clone());
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -635,25 +638,26 @@ async fn move_member(
 /// its members with display names.
 #[debug_handler]
 async fn get_pipeline(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    let pipeline = records::find_talent_pipeline(&ctx.db, records::parse_pid(&pid)?).await?;
+    let pipeline =
+        records::find_talent_pipeline(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let members = pipeline_members::Entity::find()
         .filter(pipeline_members::Column::PipelinePid.eq(pipeline.pid))
         .filter(pipeline_members::Column::DeletedAt.is_null())
         .order_by_asc(pipeline_members::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut view = Vec::with_capacity(members.len());
     for member in &members {
         let display_name = if member.subject_kind == "worker" {
             workers::Entity::find()
                 .filter(workers::Column::Pid.eq(member.subject_pid))
-                .one(&ctx.db)
+                .one(&crate::db::orm(&ctx))
                 .await?
                 .map(|e| e.display_name)
         } else {
             candidates::Entity::find()
                 .filter(candidates::Column::Pid.eq(member.subject_pid))
-                .one(&ctx.db)
+                .one(&crate::db::orm(&ctx))
                 .await?
                 .map(|c| c.display_name)
         };
@@ -732,7 +736,7 @@ async fn create_program(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = early_career_programs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -787,7 +791,7 @@ async fn list_programs(
     }
     let programs = find
         .order_by_asc(early_career_programs::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
 
     let mut view = Vec::with_capacity(programs.len());
@@ -795,7 +799,7 @@ async fn list_programs(
         let placements = program_placements::Entity::find()
             .filter(program_placements::Column::ProgramPid.eq(program.pid))
             .filter(program_placements::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         view.push(serde_json::json!({
             "pid": program.pid,
@@ -865,7 +869,9 @@ async fn create_placement(
     Path(pid): Path<String>,
     Json(payload): Json<PlacementPayload>,
 ) -> Result<Response> {
-    let program = records::find_early_career_program(&ctx.db, records::parse_pid(&pid)?).await?;
+    let program =
+        records::find_early_career_program(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
+            .await?;
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     auth::authorize_record(
         &caller,
@@ -890,7 +896,7 @@ async fn create_placement(
         records::worker_by_pid(&ctx, supervisor_pid).await?;
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = program_placements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         program_pid: ActiveValue::set(program.pid),
@@ -947,7 +953,8 @@ async fn log_hours(
     Path(pid): Path<String>,
     Json(payload): Json<HoursPayload>,
 ) -> Result<Response> {
-    let placement = records::find_program_placement(&ctx.db, records::parse_pid(&pid)?).await?;
+    let placement =
+        records::find_program_placement(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     if payload.hours <= 0 {
         return Err(unprocessable("hours must be positive"));
     }
@@ -965,7 +972,7 @@ async fn log_hours(
     let placement_pid = placement.pid;
     let mut active: program_placements::ActiveModel = placement.into();
     active.off_the_job_hours = ActiveValue::set(total);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -1004,8 +1011,10 @@ async fn placement_status(
     Path(pid): Path<String>,
     Json(payload): Json<PlacementStatusPayload>,
 ) -> Result<Response> {
-    let placement = records::find_program_placement(&ctx.db, records::parse_pid(&pid)?).await?;
-    let program = records::find_early_career_program(&ctx.db, placement.program_pid).await?;
+    let placement =
+        records::find_program_placement(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let program =
+        records::find_early_career_program(&crate::db::orm(&ctx), placement.program_pid).await?;
     rules::placement_transition(&placement.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
 
@@ -1034,7 +1043,7 @@ async fn placement_status(
         payload.outcome.clone()
     };
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: program_placements::ActiveModel = placement.into();
     active.status = ActiveValue::set(payload.to.clone());
     if let Some(outcome) = &outcome {
@@ -1084,11 +1093,13 @@ async fn list_worker_placements(
         .filter(program_placements::Column::WorkerPid.eq(worker.pid))
         .filter(program_placements::Column::DeletedAt.is_null())
         .order_by_asc(program_placements::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut view = Vec::with_capacity(placements.len());
     for placement in &placements {
-        let program = records::find_early_career_program(&ctx.db, placement.program_pid).await?;
+        let program =
+            records::find_early_career_program(&crate::db::orm(&ctx), placement.program_pid)
+                .await?;
         view.push(serde_json::json!({
             "pid": placement.pid,
             "program": { "pid": program.pid, "name": program.name, "kind": program.kind, "level": program.level },

@@ -43,7 +43,7 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
         let acknowledge = |who: String, version: String| {
             let ctx = &ctx;
             async move {
-                ctx.db
+                workforce_planning_management::db::orm(ctx)
                     .execute_unprepared(&format!(
                         "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ('{}', '{version}', '{who}', CURRENT_DATE)",
                         uuid::Uuid::new_v4()
@@ -185,10 +185,9 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         let told = |worker: String| {
             let ctx = &ctx;
             async move {
-                let row = ctx
-                    .db
+                let row = workforce_planning_management::db::orm(ctx)
                     .query_one_raw(Statement::from_string(
-                        ctx.db.get_database_backend(),
+                        workforce_planning_management::db::orm(ctx).get_database_backend(),
                         format!("SELECT count(*) FROM notifications WHERE worker_pid = '{worker}' AND kind = 'policy_due'"),
                     ))
                     .await
@@ -207,7 +206,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         // Someone who has acknowledged is left alone; a worker hired later is not told as of an earlier day.
         let c = hire(&request, &org, "care", None).await;
         let version_pid = listed_version(&request, &org, &conduct).await;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO policy_acknowledgements (pid, version_pid, worker_pid, acknowledged_on) VALUES ('{}', '{version_pid}', '{c}', CURRENT_DATE)",
                 uuid::Uuid::new_v4()

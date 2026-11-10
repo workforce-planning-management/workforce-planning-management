@@ -40,7 +40,7 @@ fn refuse(status: StatusCode, message: &str) -> Response {
 /// Delete what is older than the keep period.
 async fn purge(ctx: &AppContext) -> Result<(), sea_orm::DbErr> {
     let days = i32::try_from(rules::KEEP_CALENDAR_DAYS).unwrap_or(1);
-    ctx.db
+    crate::db::orm(ctx)
         .execute_raw(sql(
             "DELETE FROM idempotency_keys WHERE created_at < now() - make_interval(days => $1)",
             [days.into()],
@@ -56,8 +56,7 @@ async fn claim(
     key: &str,
     fingerprint: &str,
 ) -> Result<bool, sea_orm::DbErr> {
-    Ok(ctx
-        .db
+    Ok(crate::db::orm(ctx)
         .query_one_raw(sql(
             "INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ($1, $2, $3)
              ON CONFLICT (actor, idem_key) DO NOTHING RETURNING id",
@@ -76,8 +75,7 @@ struct Held {
 }
 
 async fn held(ctx: &AppContext, actor: &str, key: &str) -> Result<Option<Held>, sea_orm::DbErr> {
-    let Some(row) = ctx
-        .db
+    let Some(row) = crate::db::orm(ctx)
         .query_one_raw(sql(
             "SELECT fingerprint, status_code, content_type, response_body,
                     EXTRACT(EPOCH FROM (now() - created_at))::BIGINT AS age
@@ -102,7 +100,7 @@ async fn held(ctx: &AppContext, actor: &str, key: &str) -> Result<Option<Held>, 
 }
 
 async fn release(ctx: &AppContext, actor: &str, key: &str) -> Result<(), sea_orm::DbErr> {
-    ctx.db
+    crate::db::orm(ctx)
         .execute_raw(sql(
             "DELETE FROM idempotency_keys WHERE actor = $1 AND idem_key = $2",
             [actor.into(), key.into()],
@@ -119,7 +117,7 @@ async fn finish(
     content_type: Option<&str>,
     body: &[u8],
 ) -> Result<(), sea_orm::DbErr> {
-    ctx.db
+    crate::db::orm(ctx)
         .execute_raw(sql(
             "UPDATE idempotency_keys
                 SET status_code = $3, content_type = $4, response_body = $5, updated_at = now()

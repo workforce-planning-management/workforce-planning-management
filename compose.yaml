@@ -1,7 +1,7 @@
 # A demo of the service from a fresh clone, with no sibling repositories:
 #
 #   podman compose up --build
-#   curl http://localhost:5150/_health
+#   curl http://localhost:5150/_health/live
 #   open http://localhost:5150/swagger-ui/
 #
 # DEMO ONLY. The demo has no identity service, so it turns sign-in enforcement

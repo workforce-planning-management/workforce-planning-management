@@ -68,13 +68,13 @@ async fn subject_rights_round_trip() {
         // The identity provider's link for the worker is held, and erasure removes it.
         {
             use sea_orm::ConnectionTrait;
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO scim_pushes (pid, worker_pid, scim_id) VALUES (gen_random_uuid(), '{worker}', 'idp-1')"
                 ))
                 .await
                 .unwrap();
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "WITH s AS (INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref) VALUES (gen_random_uuid(), 'x', 'https://hooks.example/x', ARRAY['worker_terminated'], 'WPM_WEBHOOK_SECRET_X') RETURNING pid)
                      INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, occurred_at) SELECT gen_random_uuid(), pid, gen_random_uuid(), 'worker_terminated', 'worker:{worker}', now() FROM s"
@@ -85,7 +85,7 @@ async fn subject_rights_round_trip() {
 
         {
             use sea_orm::ConnectionTrait;
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state, holder_worker_pid) \
                      SELECT gen_random_uuid(), organization_ref, 'CC-ERASE', 'Seat', 100, 'core', 'filled', pid FROM workers WHERE pid = '{worker}'"
@@ -118,8 +118,7 @@ async fn subject_rights_round_trip() {
         assert_eq!(erased["erased"], worker.as_str());
         {
             use sea_orm::ConnectionTrait;
-            let left = ctx
-                .db
+            let left = workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(sea_orm::Statement::from_string(
                     sea_orm::DatabaseBackend::Postgres,
                     format!("SELECT count(*) AS n FROM scim_pushes WHERE worker_pid = '{worker}'"),
@@ -129,8 +128,7 @@ async fn subject_rights_round_trip() {
                 .unwrap();
             let n: i64 = left.try_get("", "n").unwrap();
             assert_eq!(n, 0, "erasure removes the identity provider link");
-            let queued = ctx
-                .db
+            let queued = workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(sea_orm::Statement::from_string(
                     sea_orm::DatabaseBackend::Postgres,
                     format!("SELECT count(*) AS n FROM webhook_deliveries WHERE subject = 'worker:{worker}'"),
@@ -140,8 +138,7 @@ async fn subject_rights_round_trip() {
                 .unwrap();
             let n: i64 = queued.try_get("", "n").unwrap();
             assert_eq!(n, 0, "erasure removes the webhook deliveries that name the worker");
-            let seat = ctx
-                .db
+            let seat = workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(sea_orm::Statement::from_string(
                     sea_orm::DatabaseBackend::Postgres,
                     "SELECT count(*) AS seats, count(holder_worker_pid) AS held FROM positions WHERE cost_centre = 'CC-ERASE'".to_string(),
@@ -208,8 +205,7 @@ async fn subject_rights_round_trip() {
 async fn every_soft_deleting_table_has_a_deleted_at_index() {
     use sea_orm::ConnectionTrait;
     crate::requests::request_open(|_request, ctx| async move {
-        let rows = ctx
-            .db
+        let rows = workforce_planning_management::db::orm(&ctx)
             .query_all_raw(sea_orm::Statement::from_string(
                 sea_orm::DbBackend::Postgres,
                 "SELECT tablename FROM pg_indexes WHERE schemaname = current_schema()
@@ -245,7 +241,7 @@ async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_in
         let other: Value = request.post("/api/candidates").json(&candidate("b")).await.json();
         let (mine, other) = (mine["pid"].as_str().unwrap().to_string(), other["pid"].as_str().unwrap().to_string());
         let sql = |q: String| {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::orm(&ctx).clone();
             async move { db.execute_unprepared(&q).await.unwrap() }
         };
         for (cand, note) in [(&mine, "strong on systems"), (&other, "another applicants note")] {
@@ -276,7 +272,7 @@ async fn an_applicant_can_be_given_their_data_and_a_swept_appraisal_leaves_no_in
         assert_eq!(sweep["deleted"]["appraisal_nominations"], 1);
         assert_eq!(sweep["deleted"]["appraisal_responses"], 1);
         for (table, left) in [("appraisal_nominations", 1), ("appraisal_responses", 0)] {
-            let row = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+            let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
                 format!("SELECT count(*) AS n FROM {table} WHERE appraisal_pid IN ('{appraisal}', '{live}')"))).await.unwrap().unwrap();
             assert_eq!(row.try_get::<i64>("", "n").unwrap(), left, "{table}");
         }

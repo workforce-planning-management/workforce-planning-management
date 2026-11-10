@@ -117,7 +117,7 @@ async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() 
         }
         // Payroll in each organization holds a seat there; the plain caller holds none.
         for (person, home, w) in [(payroll_p, &org, &workers[1]), (outsider_p, &other, &workers[2])] {
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{home}', '{w}', 'payroll_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }

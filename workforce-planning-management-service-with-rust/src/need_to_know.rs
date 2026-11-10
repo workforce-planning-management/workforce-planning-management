@@ -101,7 +101,7 @@ pub(crate) async fn is_line_manager(
         let Some(manager) = workers::Entity::find()
             .filter(workers::Column::Pid.eq(pid))
             .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
         else {
             return Ok(false);
@@ -156,7 +156,7 @@ async fn live_worker(ctx: &AppContext, pid: Uuid) -> Result<Option<workers::Mode
     Ok(workers::Entity::find()
         .filter(workers::Column::Pid.eq(pid))
         .filter(workers::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -203,7 +203,7 @@ async fn allowed(
             };
             let Some(review) = reviews::Entity::find()
                 .filter(reviews::Column::Pid.eq(pid))
-                .one(&ctx.db)
+                .one(&crate::db::orm(ctx))
                 .await?
             else {
                 return Ok(true);

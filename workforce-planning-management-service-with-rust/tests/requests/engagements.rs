@@ -251,7 +251,7 @@ async fn existing_engagements_without_an_end_date_are_listed_not_invented() {
         .1;
         let pid = made["pid"].as_str().unwrap().to_string();
         // Simulate a row from before the column existed.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "UPDATE workers SET engagement_ends_on = NULL WHERE pid = '{pid}'"
             ))
@@ -467,7 +467,7 @@ async fn contractor_details_and_assessments() {
         assert_eq!(
             worker_contractor_details::Entity::find()
                 .filter(worker_contractor_details::Column::WorkerPid.eq(pid))
-                .count(&ctx.db)
+                .count(&workforce_planning_management::db::orm(&ctx))
                 .await
                 .unwrap(),
             0,
@@ -476,7 +476,7 @@ async fn contractor_details_and_assessments() {
         assert_eq!(
             engagement_status_assessments::Entity::find()
                 .filter(engagement_status_assessments::Column::WorkerPid.eq(pid))
-                .count(&ctx.db)
+                .count(&workforce_planning_management::db::orm(&ctx))
                 .await
                 .unwrap(),
             0
@@ -484,7 +484,7 @@ async fn contractor_details_and_assessments() {
         assert_eq!(
             engagement_extensions::Entity::find()
                 .filter(engagement_extensions::Column::WorkerPid.eq(pid))
-                .count(&ctx.db)
+                .count(&workforce_planning_management::db::orm(&ctx))
                 .await
                 .unwrap(),
             0
@@ -525,7 +525,7 @@ async fn end_of_engagement_reminders_and_decisions() {
         };
         let manager = make(format!("RM-{tag}"), "permanent", None, None).await;
         let hr = make(format!("RH-{tag}"), "permanent", None, None).await;
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
              VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
         let ending = make(format!("RA-{tag}"), "contractor", Some(day(30)), Some(manager.clone())).await;
@@ -674,7 +674,7 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
         assert_eq!(mine["plan"]["status"], "proposed");
 
         // The database itself refuses a second open plan, whatever the handler does.
-        let duplicate = ctx.db.execute_unprepared(&format!(
+        let duplicate = workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO conversion_plans (pid, worker_pid, intent, target_on, status) \
              VALUES ('{}', '{w}', 'end', '{}', 'proposed')", uuid::Uuid::new_v4(), day(5))).await;
         assert!(duplicate.is_err(), "one open plan per worker is a database rule");
@@ -707,7 +707,7 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
         }
         request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
         use sea_orm::{ConnectionTrait, Statement};
-        let left = ctx.db.query_one_raw(Statement::from_string(
+        let left = workforce_planning_management::db::orm(&ctx).query_one_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             format!("SELECT count(*) AS n FROM conversion_plans WHERE worker_pid = '{w}'"),
         )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
@@ -764,7 +764,7 @@ async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
         }
         request.post(&format!("/api/workers/{w}/erase")).await.assert_status_ok();
         use sea_orm::{ConnectionTrait, Statement};
-        let left = ctx.db.query_one_raw(Statement::from_string(
+        let left = workforce_planning_management::db::orm(&ctx).query_one_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             format!("SELECT count(*) AS n FROM post_fundings WHERE worker_pid = '{w}'"),
         )).await.unwrap().unwrap().try_get::<i64>("", "n").unwrap();
@@ -855,12 +855,12 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
             assert_eq!(r.status_code(), 200, "{}", r.text());
         }
         let date = |m, d| chrono::NaiveDate::from_ymd_opt(2025, m, d).unwrap();
-        run_snapshot(&ctx.db, date(1, 1)).await.unwrap();
+        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(1, 1)).await.unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "insufficient_history", "one date is not a trend");
         assert!(v["trend"]["points"].as_array().unwrap().is_empty());
-        run_snapshot(&ctx.db, date(2, 15)).await.unwrap();
-        run_snapshot(&ctx.db, date(4, 1)).await.unwrap();
+        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(2, 15)).await.unwrap();
+        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(4, 1)).await.unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "ok");
         let points = v["trend"]["points"].as_array().unwrap();
@@ -869,7 +869,7 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
         assert!(points[2]["fixed_term_percent_of_fte"].as_f64().unwrap() > 0.0);
         // A row recorded before the split is unknown, not zero: its whole date is left out.
         use sea_orm::{ConnectionTrait, Statement};
-        ctx.db.execute_raw(Statement::from_string(
+        workforce_planning_management::db::orm(&ctx).execute_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             "UPDATE headcount_snapshots SET contractor_headcount = NULL, contractor_fte_percent_total = NULL, \
              fixed_term_headcount = NULL, fixed_term_fte_percent_total = NULL WHERE as_of = '2025-02-15'".to_string(),

@@ -62,7 +62,7 @@ pub async fn send_reminders(ctx: &AppContext, starts_on: chrono::NaiveDate) -> R
         let already = notifications::Entity::find()
             .filter(notifications::Column::WorkerPid.eq(worker))
             .filter(notifications::Column::Kind.eq("on_call_reminder"))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .iter()
             .any(|n| {
@@ -73,7 +73,7 @@ pub async fn send_reminders(ctx: &AppContext, starts_on: chrono::NaiveDate) -> R
             continue;
         }
         Notification::push(
-            &ctx.db,
+            &crate::db::orm(ctx),
             worker,
             "on_call_reminder",
             &format!("Your on-call turn for {} starts on {starts_on}.", rota.name),

@@ -167,7 +167,7 @@ async fn create_run(
     }
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = payroll_runs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(payload.organization_ref.clone()),
@@ -230,7 +230,7 @@ async fn list_runs(
 /// `GET /api/payroll-runs/{pid}`.
 #[debug_handler]
 async fn get_run(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    format::json(records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?)
+    format::json(records::find_payroll_run(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?)
 }
 
 /// `POST /api/payroll-runs/{pid}/calculate` — derive one payslip per
@@ -245,7 +245,7 @@ async fn calculate_run(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    let run = records::find_payroll_run(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     lifecycle::check("payroll run", lifecycle::PAYROLL, &run.status, "calculated")
         .map_err(|e| unprocessable(&e))?;
     let staff = workers::Entity::find()
@@ -255,7 +255,7 @@ async fn calculate_run(
         .filter(workers::Column::SalaryMinor.is_not_null())
         // Contractors are paid against invoices, not through payroll (WPM-D58).
         .filter(workers::Column::EmploymentType.is_not_in(rules::OFF_PAYROLL_TYPES.iter().copied()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Jurisdiction parameters for the statutory overtime premium (WPM-D169), resolved once for the organization. Read before
     // the transaction: they are append-only and this run writes none.
@@ -264,7 +264,7 @@ async fn calculate_run(
         std::slice::from_ref(&run.organization_ref),
     )
     .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     // Replace any prior calculation for this run.
     payslips::Entity::delete_many()
         .filter(payslips::Column::RunPid.eq(run.pid))
@@ -490,10 +490,10 @@ async fn run_transition(
     pid: &str,
     to: &str,
 ) -> Result<Response> {
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(pid)?).await?;
+    let run = records::find_payroll_run(&crate::db::orm(ctx), records::parse_pid(pid)?).await?;
     lifecycle::check("payroll run", lifecycle::PAYROLL, &run.status, to)
         .map_err(|e| unprocessable(&e))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let from = run.status.clone();
     let mut active: payroll_runs::ActiveModel = run.into();
     active.status = ActiveValue::set(to.to_string());
@@ -589,15 +589,15 @@ async fn run_payslips(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    let run = records::find_payroll_run(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let rows = payslips::Entity::find()
         .filter(payslips::Column::RunPid.eq(run.pid))
         .filter(payslips::Column::DeletedAt.is_null())
         .order_by_asc(payslips::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "payroll_run",
         run.pid,
         "payslips_read",
@@ -621,10 +621,10 @@ async fn worker_payslips(
         .filter(payslips::Column::WorkerPid.eq(worker.pid))
         .filter(payslips::Column::DeletedAt.is_null())
         .order_by_asc(payslips::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "worker",
         worker.pid,
         "payslips_read",
@@ -653,7 +653,7 @@ async fn create_benchmark(
         problems.push("band must satisfy 0 <= min <= median <= max".to_string());
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = benchmarks::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         job_title: ActiveValue::set(payload.job_title.clone()),
@@ -682,7 +682,7 @@ async fn list_benchmarks(State(ctx): State<AppContext>) -> Result<Response> {
         .filter(benchmarks::Column::DeletedAt.is_null())
         .order_by_asc(benchmarks::Column::Id)
         .limit(500)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -712,11 +712,11 @@ async fn benchmark_comparison(
         // zero rows here — no separate 403 needed for this read.
         staff_query = staff_query.filter(workers::Column::OrganizationRef.is_in(refs));
     }
-    let staff = staff_query.all(&ctx.db).await?;
+    let staff = staff_query.all(&crate::db::orm(&ctx)).await?;
     let bands = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())
         .order_by_desc(benchmarks::Column::AsOf)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut rows = Vec::new();
     for worker in &staff {
@@ -740,7 +740,7 @@ async fn benchmark_comparison(
         }));
     }
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "benchmark",
         Uuid::nil(),
         "comparison_read",
@@ -787,12 +787,12 @@ pub(crate) async fn check_minimum_wage(
         .filter(payslips::Column::RunPid.eq(run.pid))
         .filter(payslips::Column::DeletedAt.is_null())
         .order_by_asc(payslips::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let worker_pids: Vec<Uuid> = slips.iter().map(|slip| slip.worker_pid).collect();
     let people: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
         .filter(workers::Column::Pid.is_in(worker_pids.clone()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|worker| (worker.pid, worker))
@@ -808,7 +808,7 @@ pub(crate) async fn check_minimum_wage(
         .column(time_entries::Column::WorkerPid)
         .column(time_entries::Column::Minutes)
         .into_tuple()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let mut minutes: BTreeMap<Uuid, i64> = BTreeMap::new();
     for (worker, entry_minutes) in entries {
@@ -940,11 +940,11 @@ async fn minimum_wage_check(
 ) -> Result<Response> {
     use serde_json::json;
 
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    let run = records::find_payroll_run(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
     let check = check_minimum_wage(&ctx, &run, &mut std::collections::BTreeMap::new()).await?;
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "payroll_run",
         run.pid,
         "minimum_wage_checked",
@@ -1268,18 +1268,18 @@ async fn overtime_check(
     use serde_json::json;
     use std::collections::BTreeMap;
 
-    let run = records::find_payroll_run(&ctx.db, records::parse_pid(&pid)?).await?;
+    let run = records::find_payroll_run(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     super::ensure_org_in_scope(&ctx, &caller, &run.organization_ref).await?;
     let slips = payslips::Entity::find()
         .filter(payslips::Column::RunPid.eq(run.pid))
         .filter(payslips::Column::DeletedAt.is_null())
         .order_by_asc(payslips::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let worker_pids: Vec<Uuid> = slips.iter().map(|slip| slip.worker_pid).collect();
     let people: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
         .filter(workers::Column::Pid.is_in(worker_pids.clone()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|worker| (worker.pid, worker))
@@ -1289,7 +1289,7 @@ async fn overtime_check(
     for seat in positions::Entity::find()
         .filter(positions::Column::HolderWorkerPid.is_in(worker_pids.clone()))
         .filter(positions::Column::State.ne("abolished"))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
     {
         if let Some(holder) = seat.holder_worker_pid {
@@ -1316,7 +1316,7 @@ async fn overtime_check(
         .column(time_entries::Column::WorkedOn)
         .column(time_entries::Column::Minutes)
         .into_tuple()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
     let mut year_days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
@@ -1350,7 +1350,13 @@ async fn overtime_check(
     .collect();
     let mut reasons: BTreeMap<&'static str, u64> = BTreeMap::new();
     let no_days = BTreeMap::new();
-    let holidays = holiday_dates(&ctx.db, &run.organization_ref, year_from, run.period_end).await?;
+    let holidays = holiday_dates(
+        &crate::db::orm(&ctx),
+        &run.organization_ref,
+        year_from,
+        run.period_end,
+    )
+    .await?;
     let mut rows = Vec::with_capacity(slips.len());
     for slip in &slips {
         let found = statutory_outcome(
@@ -1378,7 +1384,7 @@ async fn overtime_check(
         rows.push(row);
     }
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "payroll_run",
         run.pid,
         "overtime_checked",

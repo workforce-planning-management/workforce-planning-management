@@ -46,13 +46,13 @@ async fn list(
     let bodies = recognised_bodies::Entity::find()
         .filter(recognised_bodies::Column::OrganizationRef.eq(&query.organization))
         .order_by_asc(recognised_bodies::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut out = Vec::new();
     for body in &bodies {
         let units = bargaining_units::Entity::find()
             .filter(bargaining_units::Column::BodyPid.eq(body.pid))
-            .count(&ctx.db)
+            .count(&crate::db::orm(&ctx))
             .await?;
         let mut v = row_json(body)?;
         if let Some(o) = v.as_object_mut() {
@@ -93,7 +93,7 @@ async fn create(
     let clash = recognised_bodies::Entity::find()
         .filter(recognised_bodies::Column::OrganizationRef.eq(&payload.organization_ref))
         .filter(recognised_bodies::Column::Name.eq(&name))
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if clash > 0 {
         return Err(unprocessable(
@@ -101,7 +101,7 @@ async fn create(
         ));
     }
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     recognised_bodies::ActiveModel {
         pid: ActiveValue::set(pid),
         organization_ref: ActiveValue::set(payload.organization_ref),
@@ -136,7 +136,7 @@ pub(super) async fn find_body(
 ) -> Result<recognised_bodies::Model> {
     let row = recognised_bodies::Entity::find()
         .filter(recognised_bodies::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
@@ -176,14 +176,14 @@ async fn add_unit(
     let clash = bargaining_units::Entity::find()
         .filter(bargaining_units::Column::BodyPid.eq(body.pid))
         .filter(bargaining_units::Column::Name.eq(&name))
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     if clash > 0 {
         return Err(unprocessable("another unit of this body has that name"));
     }
     let trimmed = |v: &Option<String>| v.as_ref().map(|s| s.trim().to_string());
     let unit_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     bargaining_units::ActiveModel {
         pid: ActiveValue::set(unit_pid),
         body_pid: ActiveValue::set(body.pid),
@@ -223,7 +223,7 @@ async fn units(
     let rows = bargaining_units::Entity::find()
         .filter(bargaining_units::Column::BodyPid.eq(body.pid))
         .order_by_asc(bargaining_units::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Only the four facts a unit is defined over, for the workers in work today: nothing that names anyone is read.
     let facts: Vec<(String, Option<String>, String, String)> = workers::Entity::find()
@@ -244,7 +244,7 @@ async fn units(
             NaiveDate,
             Option<NaiveDate>,
         )>()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|(_, _, _, _, hired, ended)| is_employed_on(today, *hired, *ended))
@@ -299,7 +299,7 @@ async fn find_unit(
 ) -> Result<(bargaining_units::Model, recognised_bodies::Model)> {
     let unit = bargaining_units::Entity::find()
         .filter(bargaining_units::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let body = find_body(ctx, caller, unit.body_pid).await?;
@@ -359,7 +359,7 @@ async fn add_agreement(
         .filter(collective_agreements::Column::UnitPid.eq(unit.pid))
         .filter(collective_agreements::Column::Title.eq(&title))
         .order_by_desc(collective_agreements::Column::Version)
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     ensure_valid(&agreement_rules::version_problems(
         payload.effective_from,
@@ -367,7 +367,7 @@ async fn add_agreement(
     ))?;
     let version = newest.map_or(1, |n| n.version + 1);
     let new_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     collective_agreements::ActiveModel {
         pid: ActiveValue::set(new_pid),
         unit_pid: ActiveValue::set(unit.pid),
@@ -411,7 +411,7 @@ async fn unit_agreements(
         .filter(collective_agreements::Column::UnitPid.eq(unit.pid))
         .order_by_asc(collective_agreements::Column::Title)
         .order_by_asc(collective_agreements::Column::Version)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -460,14 +460,14 @@ async fn of_worker(
     };
     let body_pids: Vec<Uuid> = recognised_bodies::Entity::find()
         .filter(recognised_bodies::Column::OrganizationRef.eq(&worker.organization_ref))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|b| b.pid)
         .collect();
     let covering: Vec<Uuid> = bargaining_units::Entity::find()
         .filter(bargaining_units::Column::BodyPid.is_in(body_pids))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|u| {
@@ -486,7 +486,7 @@ async fn of_worker(
     let rows = collective_agreements::Entity::find()
         .filter(collective_agreements::Column::UnitPid.is_in(covering))
         .order_by_asc(collective_agreements::Column::Title)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut out = Vec::new();
     for a in &rows {
@@ -507,7 +507,7 @@ async fn of_worker(
             out.push(v);
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     Audit::record(
         &txn,
         "worker",
@@ -569,7 +569,7 @@ async fn information_pack(
             NaiveDate,
             Option<NaiveDate>,
         )>()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let covered: Vec<_> = everyone
         .into_iter()
@@ -623,7 +623,7 @@ async fn information_pack(
             .filter(requisitions::Column::OrganizationRef.eq(&body.organization_ref))
             .filter(requisitions::Column::DeletedAt.is_null())
             .filter(requisitions::Column::Status.is_in(["open", "interviewing", "offer"]))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         let posts: i64 = open
             .iter()
@@ -641,7 +641,7 @@ async fn information_pack(
         json!({ "kind": "shown", "open_posts": posts })
     };
     // Reading it is the disclosure: who asked, which unit and when, written with the answer.
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     Audit::record(
         &txn,
         "bargaining_unit",
@@ -681,7 +681,7 @@ async fn add_facility_time(
     let body = find_body(&ctx, &caller, pid).await?;
     let held: Vec<(NaiveDate, NaiveDate)> = facility_time_periods::Entity::find()
         .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|p| (p.period_start, p.period_end))
@@ -694,7 +694,7 @@ async fn add_facility_time(
         &held,
     ))?;
     let new_pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     facility_time_periods::ActiveModel {
         pid: ActiveValue::set(new_pid),
         body_pid: ActiveValue::set(body.pid),
@@ -732,7 +732,7 @@ async fn facility_time(
     let rows = facility_time_periods::Entity::find()
         .filter(facility_time_periods::Column::BodyPid.eq(body.pid))
         .order_by_desc(facility_time_periods::Column::PeriodStart)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let total: i64 = rows.iter().map(|r| i64::from(r.minutes)).sum();
     format::json(json!({

@@ -87,10 +87,9 @@ async fn a_workers_level_is_validated_audited_without_the_level_and_erased() {
         let erased = request.post(&format!("/api/workers/{worker}/erase")).await;
         assert_eq!(erased.status_code(), 200);
         use sea_orm::{ConnectionTrait, Statement};
-        let row = ctx
-            .db
+        let row = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(Statement::from_string(
-                ctx.db.get_database_backend(),
+                workforce_planning_management::db::orm(&ctx).get_database_backend(),
                 format!("SELECT count(*) FROM worker_job_levels WHERE worker_pid = '{worker}'"),
             ))
             .await

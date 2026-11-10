@@ -144,7 +144,7 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
         let w_nb = make(neighbour_p, "FW-N", None).await;
         let w_hr = make(hr_p, "FW-H", None).await;
         for (person, wp, role) in [(worker_p, &w, "member"), (mgr_p, &w_mgr, "member"), (other_mgr_p, &w_other, "member"), (neighbour_p, &w_nb, "member"), (hr_p, &w_hr, "hr_admin")] {
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }
@@ -262,7 +262,7 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
         let late = post("/api/me/flexible-working".into(), me.clone(), json!({ "kind": "times", "proposed_start": day(120) }));
         assert_eq!(late.await.status_code(), 422, "the limit of two in twelve months is reached again");
         // Make an open request overdue by moving its date back, as time would.
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "UPDATE flexible_working_requests SET status = 'requested', decide_by = CURRENT_DATE - 1, decided_on = NULL, decided_by = NULL WHERE pid = '{r2}'")).await.unwrap();
         let overdue: Vec<Value> = get("/api/flexible-working?overdue=true".into(), manager.clone()).await.json();
         assert_eq!(overdue.len(), 1);

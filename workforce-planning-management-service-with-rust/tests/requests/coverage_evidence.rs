@@ -78,7 +78,7 @@ async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
         let day = |n: i64| (today + Duration::days(n)).to_string();
         let hr = super::seed_worker!(&request, &org, format!("CV-H-{tag}"), None).await;
         super::activate!(&request, &hr).await;
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{}', '{org}', '{hr}', 'hr_admin', '2023-01-05')",
@@ -126,7 +126,7 @@ async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
         send_reminders(&ctx, today, 60).await.unwrap();
         assert_eq!(notes().await.matches("coverage_expiring").count(), 1);
         request.post(&format!("/api/coverage-evidence/{soon}/retire")).await.assert_status_ok();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("DELETE FROM coverage_reminders WHERE coverage_pid = '{soon}'"))
             .await
             .unwrap();

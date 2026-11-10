@@ -79,12 +79,12 @@ async fn search_occupations(
         ))
         .order_by_asc(esco_occupations::Column::Label)
         .limit(search_limit(query.limit))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let uris: Vec<String> = rows.iter().map(|r| r.uri.clone()).collect();
     let relations = esco_occupation_skills::Entity::find()
         .filter(esco_occupation_skills::Column::OccupationUri.is_in(uris))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -129,11 +129,11 @@ async fn search_skills(
         ))
         .order_by_asc(esco_skills::Column::Label)
         .limit(search_limit(query.limit))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let linked: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
         .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|r| (r.reference, r.skill_pid))
@@ -165,7 +165,7 @@ pub(crate) async fn find_occupation(
 ) -> Result<esco_occupations::Model> {
     esco_occupations::Entity::find()
         .filter(esco_occupations::Column::Uri.eq(uri))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -177,12 +177,12 @@ pub(crate) async fn occupation_skills(
 ) -> Result<Vec<(esco_occupation_skills::Model, esco_skills::Model)>> {
     let relations = esco_occupation_skills::Entity::find()
         .filter(esco_occupation_skills::Column::OccupationUri.eq(occupation_uri))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let uris: Vec<String> = relations.iter().map(|r| r.skill_uri.clone()).collect();
     let by_uri: BTreeMap<String, esco_skills::Model> = esco_skills::Entity::find()
         .filter(esco_skills::Column::Uri.is_in(uris))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|s| (s.uri.clone(), s))
@@ -207,7 +207,7 @@ async fn get_occupation(
     let occupation = find_occupation(&ctx, &query.uri).await?;
     let linked: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
         .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|r| (r.reference, r.skill_pid))
@@ -288,7 +288,7 @@ async fn from_esco(
                         .add(role_profiles::Column::ExternalRef.eq(&occupation.uri)),
                 ),
         )
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if already {
@@ -302,9 +302,9 @@ async fn from_esco(
             .into_iter()
             .filter(|(r, _)| payload.include_optional || r.relation == "essential")
             .collect();
-    let version = pinned_version(&ctx.db).await?;
+    let version = pinned_version(&crate::db::orm(&ctx)).await?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let profile = role_profiles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         job_title: ActiveValue::set(title),

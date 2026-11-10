@@ -101,7 +101,7 @@ async fn nobody_decides_their_own_claim() {
                 .assert_status_ok();
         }
         // HR: a membership role in the claimants' organization, not a policy attribute.
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{hr}', '{org}', '{w_hr}', 'hr_admin', '2026-01-05')",

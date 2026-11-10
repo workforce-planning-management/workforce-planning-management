@@ -20,7 +20,7 @@ file.
   when no token key source is set (`WPM_PASETO_KEYS`, `WPM_PASETO_KEYS_URL` or
   `WPM_KEYCLOAK_JWKS_URL`). Outside production, no key source is a warning: every
   request is then a `401`.
-- Public paths are `/_health`, `/_ping`, `/_posture`, `/api-docs/openapi.json`
+- Public paths are `/_health/live`, `/_health/ready`, `/_health/startup`, `/_posture`, `/api-docs/openapi.json`
   and `/swagger-ui*`. **`/metrics.prom` is not public**: a scraper presents a
   bearer token the ABAC policy allows (the reference policy allows `svc`). Any
   other path, including an unknown one, is a `401`.

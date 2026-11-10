@@ -57,7 +57,13 @@ impl Task for ImportFramework {
             Err(_) => rules::LevelMapping::default(),
         };
         let overwrite_levels = vars.cli_arg("overwrite_levels").is_ok_and(|v| v == "true");
-        let report = import_pcf(&ctx.db, Path::new(dir), mapping, overwrite_levels).await?;
+        let report = import_pcf(
+            &crate::db::orm(ctx),
+            Path::new(dir),
+            mapping,
+            overwrite_levels,
+        )
+        .await?;
         tracing::info!(?report, "framework import finished");
         println!("{report:#?}");
         Ok(())

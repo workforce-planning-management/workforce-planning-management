@@ -110,7 +110,7 @@ async fn create_instrument(
     }
     ensure_valid(&problems.into_vec())?;
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = assessment_instruments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -164,7 +164,7 @@ async fn list_instruments(
     }
     let rows = find
         .order_by_asc(assessment_instruments::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows)
 }
@@ -210,12 +210,13 @@ async fn create_assessment(
     problems.cap_opt("notes", payload.notes.as_deref());
     ensure_valid(&problems.into_vec())?;
 
-    let instrument = records::find_assessment_instrument(&ctx.db, payload.instrument_pid).await?;
+    let instrument =
+        records::find_assessment_instrument(&crate::db::orm(&ctx), payload.instrument_pid).await?;
     let subject_name =
         subject_display_name(&ctx, &payload.subject_kind, payload.subject_pid, &caller).await?;
 
     if let Some(application_pid) = payload.application_pid {
-        let application = records::find_application(&ctx.db, application_pid).await?;
+        let application = records::find_application(&crate::db::orm(&ctx), application_pid).await?;
         if payload.subject_kind != "candidate" {
             return Err(unprocessable(
                 "only a candidate assessment can belong to an application",
@@ -228,7 +229,7 @@ async fn create_assessment(
         }
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = assessments::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         instrument_pid: ActiveValue::set(instrument.pid),
@@ -295,19 +296,20 @@ async fn assessment_status(
     Path(pid): Path<String>,
     Json(payload): Json<StatusPayload>,
 ) -> Result<Response> {
-    let row = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
+    let row = records::find_assessment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     rules::assessment_transition(&row.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
 
     let today = chrono::Utc::now().date_naive();
-    let instrument = records::find_assessment_instrument(&ctx.db, row.instrument_pid).await?;
+    let instrument =
+        records::find_assessment_instrument(&crate::db::orm(&ctx), row.instrument_pid).await?;
     let from = row.status.clone();
     let row_pid = row.pid;
 
     if payload.to == "completed" {
         let scored = assessment_results::Entity::find()
             .filter(assessment_results::Column::AssessmentPid.eq(row_pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         if scored.is_empty() {
             return Err(unprocessable(
@@ -316,7 +318,7 @@ async fn assessment_status(
         }
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: assessments::ActiveModel = row.into();
     active.status = ActiveValue::set(payload.to.clone());
     if payload.to == "completed" {
@@ -390,9 +392,11 @@ async fn record_result(
     Path(pid): Path<String>,
     Json(payload): Json<ResultPayload>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
+    let assessment =
+        records::find_assessment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+        records::find_assessment_instrument(&crate::db::orm(&ctx), assessment.instrument_pid)
+            .await?;
 
     let mut problems = Problems::new();
     problems.require_token("scale", rules::ASSESSMENT_SCALES, &payload.scale);
@@ -444,9 +448,9 @@ async fn record_result(
     let existing = assessment_results::Entity::find()
         .filter(assessment_results::Column::AssessmentPid.eq(assessment.pid))
         .filter(assessment_results::Column::Scale.eq(payload.scale.clone()))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = match existing {
         Some(found) => {
             let mut active: assessment_results::ActiveModel = found.into();
@@ -499,9 +503,11 @@ async fn get_assessment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
+    let assessment =
+        records::find_assessment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+        records::find_assessment_instrument(&crate::db::orm(&ctx), assessment.instrument_pid)
+            .await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -513,11 +519,11 @@ async fn get_assessment(
     let rows = assessment_results::Entity::find()
         .filter(assessment_results::Column::AssessmentPid.eq(assessment.pid))
         .order_by_asc(assessment_results::Column::Scale)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     if !masked && !rows.is_empty() {
         Audit::record(
-            &ctx.db,
+            &crate::db::orm(&ctx),
             "assessment",
             assessment.pid,
             "results_read",
@@ -550,9 +556,11 @@ async fn delete_assessment(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let assessment = records::find_assessment(&ctx.db, records::parse_pid(&pid)?).await?;
+    let assessment =
+        records::find_assessment(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let instrument =
-        records::find_assessment_instrument(&ctx.db, assessment.instrument_pid).await?;
+        records::find_assessment_instrument(&crate::db::orm(&ctx), assessment.instrument_pid)
+            .await?;
     auth::authorize_record(
         &caller,
         authentication_verifier::Action::Delete,
@@ -561,7 +569,7 @@ async fn delete_assessment(
     .map_err(record_rejection)?;
 
     let row_pid = assessment.pid;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut active: assessments::ActiveModel = assessment.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
     active.update(&txn).await?;
@@ -598,7 +606,8 @@ async fn candidate_profile(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let candidate = records::find_candidate(&ctx.db, records::parse_pid(&pid)?).await?;
+    let candidate =
+        records::find_candidate(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     subject_profile(&ctx, &caller, "candidate", candidate.pid, query.as_of).await
 }
 
@@ -667,9 +676,11 @@ async fn build_profile(
         .filter(assessments::Column::SubjectKind.eq(subject_kind.to_string()))
         .filter(assessments::Column::SubjectPid.eq(subject_pid))
         .filter(assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
-    let instruments = assessment_instruments::Entity::find().all(&ctx.db).await?;
+    let instruments = assessment_instruments::Entity::find()
+        .all(&crate::db::orm(ctx))
+        .await?;
     let instrument_of: BTreeMap<Uuid, &assessment_instruments::Model> =
         instruments.iter().map(|i| (i.pid, i)).collect();
 
@@ -697,7 +708,7 @@ async fn build_profile(
         for sitting in &current {
             let rows = assessment_results::Entity::find()
                 .filter(assessment_results::Column::AssessmentPid.eq(sitting.pid))
-                .all(&ctx.db)
+                .all(&crate::db::orm(ctx))
                 .await?;
             for row in rows {
                 let replace = latest.get(&row.scale).is_none_or(|(held, _)| {
@@ -771,7 +782,8 @@ async fn application_assessments(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let application = records::find_application(&ctx.db, records::parse_pid(&pid)?).await?;
+    let application =
+        records::find_application(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
     let obligations = auth::authorize_record(
         &caller,
         authentication_verifier::Action::Read,
@@ -787,16 +799,17 @@ async fn application_assessments(
         .filter(assessments::Column::ApplicationPid.eq(application.pid))
         .filter(assessments::Column::DeletedAt.is_null())
         .order_by_asc(assessments::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut view = Vec::with_capacity(sittings.len());
     for sitting in &sittings {
         let instrument =
-            records::find_assessment_instrument(&ctx.db, sitting.instrument_pid).await?;
+            records::find_assessment_instrument(&crate::db::orm(&ctx), sitting.instrument_pid)
+                .await?;
         let rows = assessment_results::Entity::find()
             .filter(assessment_results::Column::AssessmentPid.eq(sitting.pid))
             .order_by_asc(assessment_results::Column::Scale)
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         let results: Vec<assessment_results::Model> = if masked {
             rows.into_iter().map(mask_result).collect()
@@ -837,9 +850,11 @@ async fn application_assessments(
 async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
     let sittings = assessments::Entity::find()
         .filter(assessments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let instruments = assessment_instruments::Entity::find().all(&ctx.db).await?;
+    let instruments = assessment_instruments::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let category_of: BTreeMap<Uuid, &str> = instruments
         .iter()
         .map(|i| (i.pid, i.category.as_str()))
@@ -859,7 +874,9 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
     }
 
     // scale → band → count, over every recorded result.
-    let results = assessment_results::Entity::find().all(&ctx.db).await?;
+    let results = assessment_results::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let mut bands: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
     for row in &results {
         if let Some(band) = &row.band {
@@ -965,7 +982,7 @@ async fn subject_display_name(
     let candidate = candidates::Entity::find()
         .filter(candidates::Column::Pid.eq(subject_pid))
         .filter(candidates::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     Ok(candidate.display_name)

@@ -156,7 +156,7 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other_org = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (&ctx.db, organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::orm(&ctx), organization.to_string());
             async move {
                 db.execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -195,7 +195,7 @@ async fn the_what_if_answers_each_persona_with_counts_only_or_refuses_it() {
                 .json(&json!({ "programme_ref": programme, "pool_pid": pool, "month": month, "fte_centi": fte })).await;
             assert_eq!(put.status_code(), 200);
         }
-        ctx.db.execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref IN ('{other}', '{mine}')")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE programme_demands SET status = 'active' WHERE programme_ref IN ('{other}', '{mine}')")).await.unwrap();
 
         let path = "/api/capacity/what-if".to_string();
         let ask = json!({ "organization_ref": org, "programme_ref": mine, "programme_new_end": "2027-06-30",

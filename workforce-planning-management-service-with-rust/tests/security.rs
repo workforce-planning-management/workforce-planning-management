@@ -159,7 +159,7 @@ async fn headers_everywhere_and_the_limiter_trips() {
 
         // Headers are on a 200 and on refusals, and the API is never cached.
         for (path, expect) in [
-            ("/_health", 200),
+            ("/_health/live", 200),
             ("/api/workers", 401),
             // Deny unless public: even an unknown path is a 401, not a 404.
             ("/no/such/path", 401),
@@ -247,7 +247,7 @@ async fn headers_everywhere_and_the_limiter_trips() {
         assert_ne!(other.status_code(), 429);
         // What is let through says how much is left.
         assert_eq!(other.header("ratelimit-remaining"), (LIMIT - 1).to_string());
-        assert_eq!(request.get("/_health").await.status_code(), 200);
+        assert_eq!(request.get("/_health/live").await.status_code(), 200);
 
         // The sensitive class is stricter: the second erase from one caller
         // is refused before it reaches the (unauthenticated) route.
@@ -323,7 +323,7 @@ async fn a_client_address_is_locked_out_after_its_401s_and_only_that_one() {
         StatusCode::UNAUTHORIZED,
         "another address is not locked out"
     );
-    let mut health = Request::get("/_health").body(Body::empty()).unwrap();
+    let mut health = Request::get("/_health/live").body(Body::empty()).unwrap();
     health.extensions_mut().insert(ConnectInfo::<SocketAddr>(
         "203.0.113.81:443".parse().unwrap(),
     ));

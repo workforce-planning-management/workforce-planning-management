@@ -240,13 +240,14 @@ pub fn parse_bool(value: &str) -> bool {
     )
 }
 
-/// Paths that stay public even when enforcement is on: health/ping, the
+/// Paths that stay public even when enforcement is on: the three health probes (axa 0.11, WPM-T482), the
 /// posture probe, and the `OpenAPI` doc + Swagger UI. Everything else,
 /// including `/metrics.prom` (a scraper presents a bearer token), requires a
 /// valid bearer token.
 pub(crate) fn is_public_path(path: &str) -> bool {
-    path == "/_health"
-        || path == "/_ping"
+    path == axa::health::LIVE
+        || path == axa::health::READY
+        || path == axa::health::STARTUP
         || path == "/_posture"
         || path == "/api-docs/openapi.json"
         // A verifier has no account here: the issuer's public key and the revocation list (WPM-R157, WPM-D109).

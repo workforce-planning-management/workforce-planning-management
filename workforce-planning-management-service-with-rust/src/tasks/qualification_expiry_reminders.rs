@@ -73,7 +73,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
     let held = qualifications::Entity::find()
         .filter(qualifications::Column::ExpiresOn.is_not_null())
         .order_by_asc(qualifications::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     for q in held {
         let Some(expires_on) = q.expires_on else {
@@ -86,7 +86,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(workers::Column::Pid.eq(q.worker_pid))
             .filter(workers::Column::DeletedAt.is_null())
             .filter(workers::Column::TerminatedOn.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
         else {
             continue;
@@ -98,7 +98,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(qualification_reminders::Column::QualificationPid.eq(q.pid))
             .filter(qualification_reminders::Column::ExpiresOn.eq(expires_on))
             .filter(qualification_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some();
         if already {
@@ -123,12 +123,12 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             ),
         };
         let data = json!({ "worker_pid": worker.pid, "expires_on": expires_on });
-        Notification::push(&ctx.db, worker.pid, kind, &own, data.clone()).await?;
+        Notification::push(&crate::db::orm(ctx), worker.pid, kind, &own, data.clone()).await?;
         report.told += 1;
         if let Some(boss) = worker.manager_pid
             && boss != worker.pid
         {
-            Notification::push(&ctx.db, boss, kind, &theirs, data).await?;
+            Notification::push(&crate::db::orm(ctx), boss, kind, &theirs, data).await?;
             report.told += 1;
         }
         qualification_reminders::ActiveModel {
@@ -139,7 +139,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             reminded_on: ActiveValue::set(as_of),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&crate::db::orm(ctx))
         .await?;
         match reminder {
             Reminder::Expiring => report.expiring += 1,

@@ -79,7 +79,7 @@ impl Task for ReplayErasures {
                 .map_err(|e| Error::string(&format!("cannot read ledger file {path}: {e}")))?;
             let entries = parse_ledger(&text).map_err(|e| Error::string(&e))?;
             for (pid, at) in &entries {
-                ctx.db
+                crate::db::orm(ctx)
                     .execute_unprepared(&format!(
                         "INSERT INTO erasure_ledger (worker_pid, erased_at) \
                          VALUES ('{pid}', '{}') ON CONFLICT DO NOTHING",
@@ -89,7 +89,7 @@ impl Task for ReplayErasures {
             }
             tracing::info!(entries = entries.len(), "erasure ledger file imported");
         }
-        let report = replay_erasures(&ctx.db, since).await?;
+        let report = replay_erasures(&crate::db::orm(ctx), since).await?;
         tracing::info!(
             considered = report.considered,
             reapplied = report.reapplied,

@@ -125,7 +125,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         let w_nb = make(neighbour_p, "HR-N", "office", None).await;
         let w_hr = make(hr_p, "HR-H", "people", None).await;
         for (person, wp, role) in [(worker_p, &w, "member"), (office_p, &w_office, "member"), (mgr_p, &w_mgr, "member"), (neighbour_p, &w_nb, "member"), (hr_p, &w_hr, "hr_admin")] {
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         }
@@ -197,7 +197,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(hep_view["standing"], "up_to_date");
         assert_eq!(hep_view["next_due"], (today + chrono::Duration::days(365)).to_string().as_str(), "the re-check period in calendar days");
         // Overdue: the reminder shows and they are no longer cleared.
-        ctx.db.execute_unprepared(&format!("UPDATE worker_health_records SET next_due = CURRENT_DATE - 1 WHERE worker_pid = '{w}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE worker_health_records SET next_due = CURRENT_DATE - 1 WHERE worker_pid = '{w}'")).await.unwrap();
         let late: Value = get("/api/me/health-requirements".into(), worker.clone()).await.json();
         let late_hep = late["requirements"].as_array().unwrap().iter().find(|r| r["requirement"]["name"] == "Hepatitis B").unwrap();
         assert_eq!((late_hep["standing"].as_str(), late_hep["reminder"].as_bool(), late_hep["cleared"].as_bool()), (Some("overdue"), Some(true), Some(false)));
@@ -258,7 +258,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(request.delete(&format!("/api/workers/{w}/health-requirements/{induction}")).add_header("authorization", oh.clone()).await.status_code(), 200, "removing a mistaken entry");
         assert_eq!(request.delete(&format!("/api/workers/{w}/health-requirements/{induction}")).add_header("authorization", oh.clone()).await.status_code(), 404);
         let count = || {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::orm(&ctx).clone();
             let w = w.clone();
             async move {
                 db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,

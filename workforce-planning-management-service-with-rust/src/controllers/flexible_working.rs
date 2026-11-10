@@ -223,7 +223,7 @@ pub(crate) async fn create_for(
     .map_err(|e| unprocessable(&e))?;
     let previous: Vec<(NaiveDate, Status)> = requests::Entity::find()
         .filter(requests::Column::WorkerPid.eq(worker.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .iter()
         .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
@@ -239,7 +239,7 @@ pub(crate) async fn create_for(
     let months = decision_months(Some(&scope), today);
     let decide_by = rules::decide_by(today, months.value)
         .ok_or_else(|| unprocessable("the decision date runs past the supported calendar"))?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let row = requests::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -292,7 +292,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
     let rows = requests::Entity::find()
         .filter(requests::Column::WorkerPid.eq(worker.pid))
         .order_by_desc(requests::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let appeal_days = appeal_days_for(ctx, worker, today).await?;
     format::json(
@@ -310,7 +310,7 @@ async fn own_request(
     requests::Entity::find()
         .filter(requests::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(requests::Column::WorkerPid.eq(worker.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -328,7 +328,7 @@ async fn move_to(
     let mut active: requests::ActiveModel = row.into();
     active.status = ActiveValue::set(to.as_str().to_string());
     apply(&mut active);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let saved = active.update(&txn).await?;
     Audit::record(&txn, "worker", worker.pid, event, caller.actor(), None).await?;
     txn.commit().await?;
@@ -444,7 +444,7 @@ pub(crate) async fn appeal_for(
     .await?;
     if let Some(manager) = worker.manager_pid {
         Notification::push(
-            &ctx.db,
+            &crate::db::orm(ctx),
             manager,
             "flexible_working_appeal",
             &format!(
@@ -493,7 +493,7 @@ async fn request_and_worker(
 ) -> Result<(requests::Model, workers::Model)> {
     let row = requests::Entity::find()
         .filter(requests::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
@@ -604,7 +604,7 @@ async fn decide(
     })
     .await?;
     Notification::push(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         worker.pid,
         "flexible_working_decided",
         "Your flexible working request has an answer.",
@@ -661,7 +661,7 @@ async fn decide_appeal(
     })
     .await?;
     Notification::push(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         worker.pid,
         "flexible_working_decided",
         "Your flexible working appeal has an answer.",
@@ -708,11 +708,11 @@ async fn list(
     // Each worker's appeal window is from their own chain; an organization's profile is loaded once.
     let mut profiles: std::collections::BTreeMap<String, Scope> = std::collections::BTreeMap::new();
     let mut out = Vec::new();
-    for row in select.all(&ctx.db).await? {
+    for row in select.all(&crate::db::orm(&ctx)).await? {
         let Some(worker) = workers::Entity::find()
             .filter(workers::Column::Pid.eq(row.worker_pid))
             .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
         else {
             continue;

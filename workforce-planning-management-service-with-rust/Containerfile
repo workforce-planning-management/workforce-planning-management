@@ -45,7 +45,7 @@ ENV APP_ENV=production \
     PORT=5150
 USER wpm
 EXPOSE 5150
-# No HEALTHCHECK: the slim runtime has no HTTP client. Probe GET /_health from
+# No HEALTHCHECK: the slim runtime has no HTTP client. Probe GET /_health/live from
 # the orchestrator.
 ENTRYPOINT ["/app/workforce-planning-management"]
 CMD ["start"]

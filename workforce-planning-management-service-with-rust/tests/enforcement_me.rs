@@ -159,7 +159,7 @@ async fn a_worker_manages_only_their_own_details() {
             }
         };
         // HR searches within an organization it belongs to; the worker belongs to none here.
-        sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+        sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:hr-user', '{org}', 'hr_admin', '2023-01-05')", uuid::Uuid::new_v4())).await.unwrap();
         assert_eq!(search(me.clone()).await.status_code(), 404, "outside the organizations the worker may search: not found");
@@ -413,7 +413,7 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         let _ = make(other_p, "RS-O", None).await;
         let w_hr = make(hr_p, "RS-H", None).await;
         for (person, wp) in [(worker_p, &w), (mgr_p, &w_mgr), (hr_p, &w_hr)] {
-            ctx.db.execute_unprepared(&format!(
+            workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4(), role = if person == hr_p { "hr_admin" } else { "member" })).await.unwrap();
         }
@@ -486,7 +486,7 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(accepted.status_code(), 200);
         let movement = accepted.json::<Value>()["movement_pid"].as_str().unwrap().to_string();
         // The leaver process is open for the agreed day; employment itself has NOT ended.
-        let row = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+        let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
             format!("SELECT kind, status, effective_on::text AS day FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
         assert_eq!(row.try_get::<String>("", "kind").unwrap(), "leaver");
         assert_eq!(row.try_get::<String>("", "status").unwrap(), "open");
@@ -504,10 +504,10 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), me.clone(), json!({})).await.status_code(), 403);
         assert_eq!(post(format!("/api/resignations/{r2}/rescind"), hr_m.clone(), json!({})).await.status_code(), 200);
         // The leaver record it opened, still open, is cancelled with it.
-        let cancelled = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+        let cancelled = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
             format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
         assert_eq!(cancelled.try_get::<String>("", "status").unwrap(), "cancelled");
-        let row = ctx.db.query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
+        let row = workforce_planning_management::db::orm(&ctx).query_one_raw(sea_orm::Statement::from_string(sea_orm::DbBackend::Postgres,
             format!("SELECT status FROM movements WHERE pid = '{movement}'"))).await.unwrap().unwrap();
         assert_eq!(row.try_get::<String>("", "status").unwrap(), "cancelled", "setting it aside cancels the open leaver record");
 
@@ -553,7 +553,7 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         for person in ["hr-user", "payroll-user"] {
             sea_orm::ConnectionTrait::execute_unprepared(
-                &ctx.db,
+                &workforce_planning_management::db::orm(&ctx),
                 &format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
@@ -821,13 +821,13 @@ async fn the_directory_search_stops_at_the_organizations_the_caller_can_read() {
         let boss = hire(theirs.clone(), "B-1", format!("Zebedee Boss {tag}")).await;
         let report = hire(ours.clone(), "R-1", format!("Report {tag}")).await;
         for (person, org) in [(one, &ours), (both, &ours), (both, &theirs)] {
-            sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+            sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', 'member', '2023-01-05')",
                 uuid::Uuid::new_v4())).await.unwrap();
         }
         // a line across two organizations: written directly, whatever the route allows
-        sea_orm::ConnectionTrait::execute_unprepared(&ctx.db, &format!(
+        sea_orm::ConnectionTrait::execute_unprepared(&workforce_planning_management::db::orm(&ctx), &format!(
             "UPDATE workers SET manager_pid = '{boss}' WHERE pid = '{report}'")).await.unwrap();
 
         let search = |token: String, q: String| {

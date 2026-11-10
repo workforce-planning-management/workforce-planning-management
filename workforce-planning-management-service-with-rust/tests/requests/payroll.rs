@@ -755,8 +755,7 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
         request.post(&format!("/api/payroll-runs/{run_pid}/approve")).await.assert_status_ok();
 
         // The audit entry holds the counts and no worker.
-        let counted: i64 = ctx
-            .db
+        let counted: i64 = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!("SELECT count(*) AS n FROM audit_logs WHERE entity_pid = '{run_pid}' AND action = 'minimum_wage_checked' AND snapshot->'counts'->>'below' = '1'"),
@@ -768,8 +767,7 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
             .unwrap();
         assert_eq!(counted, 1);
         for (_, pid) in &slips {
-            let leaked: i64 = ctx
-                .db
+            let leaked: i64 = workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(Statement::from_string(
                     sea_orm::DatabaseBackend::Postgres,
                     format!("SELECT count(*) AS n FROM audit_logs WHERE action = 'minimum_wage_checked' AND snapshot::text LIKE '%{pid}%'"),

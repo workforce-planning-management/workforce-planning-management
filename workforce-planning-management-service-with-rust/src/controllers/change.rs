@@ -61,7 +61,7 @@ async fn create_initiative(
         problems.cap_text("description", text);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = change_initiatives::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.trim().to_string()),
@@ -96,10 +96,14 @@ async fn list_initiatives(State(ctx): State<AppContext>) -> Result<Response> {
     let rows = change_initiatives::Entity::find()
         .filter(change_initiatives::Column::DeletedAt.is_null())
         .order_by_desc(change_initiatives::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let impacts = initiative_role_impacts::Entity::find().all(&ctx.db).await?;
-    let shifts = initiative_skill_shifts::Entity::find().all(&ctx.db).await?;
+    let impacts = initiative_role_impacts::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
+    let shifts = initiative_skill_shifts::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {
@@ -121,7 +125,7 @@ async fn find_initiative(ctx: &AppContext, pid: &str) -> Result<change_initiativ
     change_initiatives::Entity::find()
         .filter(change_initiatives::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(change_initiatives::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -135,20 +139,20 @@ async fn get_initiative(
 ) -> Result<Response> {
     let initiative = find_initiative(&ctx, &pid).await?;
     let titles: BTreeMap<Uuid, String> = role_profiles::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|p| (p.pid, p.job_title))
         .collect();
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
         .collect();
     let role_impacts: Vec<serde_json::Value> = initiative_role_impacts::Entity::find()
         .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .iter()
         .map(|i| {
@@ -163,7 +167,7 @@ async fn get_initiative(
         .collect();
     let skill_shifts: Vec<serde_json::Value> = initiative_skill_shifts::Entity::find()
         .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .iter()
         .map(|s| {
@@ -210,7 +214,7 @@ async fn set_status(
     let from = initiative.status.clone();
     let mut active: change_initiatives::ActiveModel = initiative.into();
     active.status = ActiveValue::set(payload.to.clone());
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -266,15 +270,15 @@ async fn set_role_impact(
     role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.eq(payload.role_profile_pid))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let existing = initiative_role_impacts::Entity::find()
         .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
         .filter(initiative_role_impacts::Column::RoleProfilePid.eq(payload.role_profile_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     match existing {
         Some(row) => {
             let mut active: initiative_role_impacts::ActiveModel = row.into();
@@ -323,10 +327,10 @@ async fn remove_role_impact(
     let row = initiative_role_impacts::Entity::find()
         .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
         .filter(initiative_role_impacts::Column::RoleProfilePid.eq(role))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     row.delete(&txn).await?;
     Audit::record(
         &txn,
@@ -370,15 +374,15 @@ async fn set_skill_shift(
     skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let existing = initiative_skill_shifts::Entity::find()
         .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
         .filter(initiative_skill_shifts::Column::SkillPid.eq(payload.skill_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     match existing {
         Some(row) => {
             let mut active: initiative_skill_shifts::ActiveModel = row.into();
@@ -425,10 +429,10 @@ async fn remove_skill_shift(
     let row = initiative_skill_shifts::Entity::find()
         .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
         .filter(initiative_skill_shifts::Column::SkillPid.eq(skill))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     row.delete(&txn).await?;
     Audit::record(
         &txn,
@@ -472,7 +476,7 @@ async fn readiness(
     let today = chrono::Utc::now().date_naive();
     let employed: Vec<workers::Model> = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
@@ -481,20 +485,20 @@ async fn readiness(
         .filter(development_plans::Column::DeletedAt.is_null())
         .filter(development_plans::Column::Kind.eq("reskill"))
         .filter(development_plans::Column::Status.eq("active"))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|p| p.worker_pid)
         .collect();
     let titles: BTreeMap<Uuid, String> = role_profiles::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|p| (p.pid, p.job_title))
         .collect();
     let impacts = initiative_role_impacts::Entity::find()
         .filter(initiative_role_impacts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
 
     let mut affected: BTreeSet<Uuid> = BTreeSet::new();
@@ -530,17 +534,17 @@ async fn readiness(
 
     let shifts = initiative_skill_shifts::Entity::find()
         .filter(initiative_skill_shifts::Column::InitiativePid.eq(initiative.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
         .collect();
     let declarations = worker_skills::Entity::find()
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let declared: BTreeMap<(Uuid, Uuid), i32> = declarations
         .iter()

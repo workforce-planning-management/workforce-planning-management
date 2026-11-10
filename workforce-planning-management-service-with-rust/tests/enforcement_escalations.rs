@@ -113,7 +113,7 @@ async fn anyone_who_writes_may_raise_but_only_an_administrator_decides() {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (&ctx.db, organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::orm(&ctx), organization.to_string());
             async move {
                 db.execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \

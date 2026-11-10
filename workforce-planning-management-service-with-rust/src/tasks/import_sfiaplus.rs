@@ -54,7 +54,7 @@ impl Task for ImportSfiaplus {
         };
         let text = std::fs::read_to_string(Path::new(file))
             .map_err(|e| Error::string(&format!("{file}: {e}")))?;
-        let report = import_sfiaplus(&ctx.db, &text, &licence).await?;
+        let report = import_sfiaplus(&crate::db::orm(ctx), &text, &licence).await?;
         tracing::info!(?report, "SFIAplus import finished");
         println!("{report:#?}");
         Ok(())

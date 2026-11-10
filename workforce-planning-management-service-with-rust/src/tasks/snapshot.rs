@@ -35,7 +35,7 @@ impl Task for SnapshotHeadcount {
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
             Err(_) => chrono::Utc::now().date_naive(),
         };
-        let written = run_snapshot(&ctx.db, as_of).await?;
+        let written = run_snapshot(&crate::db::orm(ctx), as_of).await?;
         tracing::info!(%as_of, written, "headcount snapshot recorded");
         Ok(())
     }

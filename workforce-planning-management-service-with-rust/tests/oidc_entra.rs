@@ -430,8 +430,7 @@ async fn entra_sign_in_gates_and_authorises() {
         assert_eq!(status(Some("not.a.jwt"), "/api/workers").await, 401);
 
         // The audit actor is the tenant-wide object id (`oid`), not the per-application `sub`.
-        let actor = ctx
-            .db
+        let actor = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 "SELECT actor FROM audit_logs WHERE actor IS NOT NULL ORDER BY id DESC LIMIT 1"

@@ -26,7 +26,7 @@ not a statement that your deployment is under that regime.
 
 | Variable | Required | Default | What it does |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | yes | none | PostgreSQL 18 connection string. **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
+| `DB_URL` (or `DATABASE_URL`) | yes | none | PostgreSQL 18 connection string. `axa` reads `DB_URL`; WPM falls back to `DATABASE_URL` when it is unset or blank, the name `sqlx`'s own tools read (WPM-T482). **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
 | `REDIS_URL` | no | none: an in-memory cache per instance, with a boot warning (demo: `redis://127.0.0.1:6379`) | Redis for the service's cache, shared by every instance (WPM-D78). It holds only non-personal lookups (organization and course names, ESCO searches) and a Redis that is down is a cache miss, never an error. Use `rediss://` across a network; boot refuses a plaintext `redis://` to another host |
 | `WPM_ALLOW_PLAINTEXT_REDIS` | no | off | Set to `1` only if the network path to Redis is protected another way and you accept the risk; boot then logs a warning |
 | `WPM_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
@@ -65,7 +65,7 @@ not a statement that your deployment is under that regime.
 | `WPM_ABAC_POLICY_FILE` or `WPM_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
 | `PORT`, `HOST` | no | `5150`, `http://localhost` | Listen port; the host used in links |
 | `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `5000`, `600000` | Pool sizes, and timeouts in milliseconds |
-| `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DATABASE_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
+| `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DB_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
 | `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
 | `KEEP_ALIVE_TIMEOUT_SECONDS` | no | `75` | How long an idle connection is kept, counted from the last byte written. A load balancer that keeps idle connections longer needs a higher value, or it can reuse one as it closes and answer `502` |
 | `SEND_STALL_TIMEOUT_SECONDS` | no | `60` | How long a response may wait on a client that has stopped reading before the connection is dropped. Any byte that goes through starts it again, so a slow download is unaffected (`axa` 0.7) |
@@ -164,8 +164,11 @@ set: it migrates as `wpm_migrator`, shows `wpm_app` is refused each schema and a
 
 ## Probes
 
-`GET /_health` and `GET /_ping` (liveness), `GET /_readiness`, and `GET /_posture`
-(`{"auth_enforced": true|false}`: alert if it is false in production). `GET /metrics.prom`
+`GET /_health/live` (liveness), `GET /_health/ready` (readiness: the database answers, and a `503` with the `code`
+`shutting_down` once the service starts to drain), `GET /_health/startup` (startup, optional), and `GET /_posture`
+(`{"auth_enforced": true|false}`: alert if it is false in production). axa 0.11 moved the probes (WPM-T482): `/_health`,
+`/_ping` and `/_readiness` now answer `404`, so move a liveness or readiness probe, a load balancer or an uptime check
+before the upgrade, or the orchestrator restarts the service again and again. `GET /metrics.prom`
 needs a bearer token; give the scraper a service token.
 
 ## Logs and the audit feed (WPM-R122, WPM-T197)

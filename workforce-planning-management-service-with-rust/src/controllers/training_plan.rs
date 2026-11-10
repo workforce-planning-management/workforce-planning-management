@@ -439,7 +439,7 @@ async fn worker_plan(
     let slots = rules::schedule(&hours, weekly, start);
     // `SFIAplus` pointers (WPM-R112): resources the deployer is licensed for, for the level each skill is needed at. Not booked.
     let pointers = crate::controllers::sfia::pointers_for(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         &below
             .iter()
             .map(|g| (g.skill, g.required))

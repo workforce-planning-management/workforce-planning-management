@@ -119,7 +119,7 @@ async fn only_an_administrator_plans_a_cutover_and_only_the_organization_reads_i
         let org = format!("organization:{}", uuid::Uuid::new_v4());
         let other = format!("organization:{}", uuid::Uuid::new_v4());
         let grant = |person: String, organization: &str, role: &'static str| {
-            let (db, organization) = (&ctx.db, organization.to_string());
+            let (db, organization) = (workforce_planning_management::db::orm(&ctx), organization.to_string());
             async move {
                 db.execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
@@ -134,7 +134,7 @@ async fn only_an_administrator_plans_a_cutover_and_only_the_organization_reads_i
         let get = |path: String, token: String| { let request = &request; async move { request.get(&path).add_header("authorization", token).await } };
         let post = |path: String, token: String, body: Value| { let request = &request; async move { request.post(&path).add_header("authorization", token).json(&body).await } };
         let profile = post("/api/role-profiles".into(), svc.clone(), json!({ "job_title": "Synthetic Operator" })).await.json::<Value>();
-        ctx.db.execute_unprepared(&format!(
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!(
             "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status) VALUES ('{}', '{}', 'SYN-COURSE', 'enrolled')",
             uuid::Uuid::new_v4(), uuid::Uuid::new_v4())).await.unwrap();
         let body = json!({ "organization_ref": org, "programme_ref": format!("thing:{}", uuid::Uuid::new_v4()), "name": "Synthetic go-live",

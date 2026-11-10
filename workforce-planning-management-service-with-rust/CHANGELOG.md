@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.11 (WPM-T482)
+
+`axa` 0.10.0 to 0.11.0. **An operator must act before deploying:** the health probes moved to `/_health/live` (liveness), `/_health/ready` (readiness) and `/_health/startup`; `/_health`, `/_ping` and `/_readiness` answer `404`, so move every probe, load balancer and uptime check first. The database is `DB_URL`; `DATABASE_URL` still works when `DB_URL` is unset. **A client may notice:** a database that cannot serve answers `503` with `Retry-After`, not `500`, and every response carries `cross-origin-opener-policy`, `cross-origin-resource-policy` and `permissions-policy`.
+
 ### Changed — axa 0.10 (WPM-T481)
 
 `axa` 0.7.0 to 0.10.0. The request-level test helpers are the new `axa-test` dev-dependency, in place of `axa`'s `testing` feature. Nothing a client or an operator sees changes: WPM runs no `axa` outbox, queue or idempotency, and pages by cursor already.

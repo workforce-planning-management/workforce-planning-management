@@ -101,7 +101,7 @@ async fn subject_access(
              salary and payslips; masked callers cannot receive it)",
         ));
     }
-    let db = &ctx.db;
+    let db = &crate::db::orm(&ctx);
     let epid = worker.pid;
     // 360°: appraisals about them, nominations naming them as rater,
     // and only the responses THEY authored.
@@ -230,7 +230,7 @@ async fn subject_access(
         ],
     });
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "worker",
         epid,
         "subject_access_exported",
@@ -252,8 +252,9 @@ async fn candidate_subject_access(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let candidate = records::find_candidate(&ctx.db, records::parse_pid(&pid)?).await?;
-    let db = &ctx.db;
+    let candidate =
+        records::find_candidate(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?;
+    let db = &crate::db::orm(&ctx);
     let apps = rows_for!(db, applications, CandidatePid, candidate.pid);
     let app_pids: Vec<Uuid> = apps
         .as_array()
@@ -288,7 +289,7 @@ async fn candidate_subject_access(
             "upstream person records: held by the identity services, not WPM",
         ],
     });
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     Audit::record(
         &txn,
         "candidate",
@@ -537,7 +538,7 @@ async fn erase(
         ));
     }
     let epid = worker.pid;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     // Identity fields scrubbed in place; the row soft-deleted.
     let mut scrubbed: workers::ActiveModel = worker.into();
     scrubbed.display_name = ActiveValue::set(ERASED.to_string());
@@ -772,8 +773,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
     let mut tables = serde_json::Map::new();
     for table in rules::SOFT_DELETED_TABLES {
         let days = days_for(table, &all);
-        let count = ctx
-            .db
+        let count = crate::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(
@@ -795,7 +795,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
             candidates::Column::ConsentUntil
                 .lt(chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days)),
         )
-        .count(&ctx.db)
+        .count(&crate::db::orm(&ctx))
         .await?;
     format::json(serde_json::json!({
         "as_of": chrono::Utc::now(),
@@ -819,7 +819,7 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
 async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let all = sweep_horizons(&ctx).await?;
     let recruitment_days = days_for("candidates", &all);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let mut deleted = serde_json::Map::new();
     let mut total: u64 = 0;
     // An appraisal's invitations and answers live and die with it: the sweep removes them first, or they would outlive

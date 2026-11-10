@@ -118,7 +118,7 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
             .await
             .assert_status_ok();
         let person: Value = request.get(&format!("/api/workers/{l}")).await.json();
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                  VALUES (gen_random_uuid(), '{}', '{org}', 'hr_admin', CURRENT_DATE - 30)",

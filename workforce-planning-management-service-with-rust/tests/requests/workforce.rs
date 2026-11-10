@@ -429,8 +429,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
 
         // The rollup equals the entries after an update, a soft delete, a restore and a hard delete.
         let rollup_matches = || async {
-            let rows = ctx
-                .db
+            let rows = workforce_planning_management::db::orm(&ctx)
                 .query_all_raw(Statement::from_string(
                     sea_orm::DbBackend::Postgres,
                     "SELECT (SELECT COALESCE(SUM(minutes), 0) FROM time_entry_weeks)::bigint AS rolled,
@@ -452,7 +451,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
         };
         rollup_matches().await;
         let sql = |s: String| {
-            let db = ctx.db.clone();
+            let db = workforce_planning_management::db::orm(&ctx).clone();
             async move { db.execute_unprepared(&s).await.unwrap() }
         };
         let pid = who.clone();

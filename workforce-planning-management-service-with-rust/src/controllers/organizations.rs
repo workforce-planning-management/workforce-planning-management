@@ -360,7 +360,9 @@ async fn revoke(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = records::find_organization_membership(&ctx.db, records::parse_pid(&pid)?).await?;
+    let row =
+        records::find_organization_membership(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
+            .await?;
     if !may_manage_membership(&ctx, &caller, &row.organization_ref, &row.role).await? {
         return Err(not_privileged());
     }
@@ -578,7 +580,9 @@ async fn revoke_confederation(
     caller: MaybeAuthUser,
     Path(pid): Path<String>,
 ) -> Result<Response> {
-    let row = records::find_organization_confederation(&ctx.db, records::parse_pid(&pid)?).await?;
+    let row =
+        records::find_organization_confederation(&crate::db::orm(&ctx), records::parse_pid(&pid)?)
+            .await?;
     if !may_manage_confederation(&ctx, &caller, &row.parent_organization_ref).await? {
         return Err(not_privileged_for_confederation());
     }

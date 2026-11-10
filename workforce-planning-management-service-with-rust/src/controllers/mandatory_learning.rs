@@ -127,7 +127,7 @@ async fn position_numbers(ctx: &AppContext, pids: &[Uuid]) -> Result<HashMap<Uui
         .filter(positions::Column::HolderWorkerPid.is_in(pids.to_vec()))
         .filter(positions::Column::State.ne("abolished"))
         .filter(positions::Column::Number.is_not_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         if let (Some(holder), Some(number)) = (p.holder_worker_pid, p.number) {
@@ -150,7 +150,7 @@ async fn categories_of(
     let numbers = position_numbers(ctx, pids).await?;
     for a in assignments::Entity::find()
         .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         if a.starts_on <= today && a.ends_on.is_none_or(|e| e >= today) {
@@ -181,7 +181,7 @@ async fn completions_of(
     let mut out: HashMap<(Uuid, Uuid), Vec<rules::Completion>> = HashMap::new();
     for c in learning_completions::Entity::find()
         .filter(learning_completions::Column::WorkerPid.is_in(pids.clone()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         let transferred = c
@@ -199,7 +199,7 @@ async fn completions_of(
         .filter(training_enrollments::Column::WorkerPid.is_in(pids))
         .filter(training_enrollments::Column::Status.eq("completed"))
         .filter(training_enrollments::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     for e in enrolments {
         let Some(on) = e.completed_on else { continue };
@@ -225,7 +225,7 @@ async fn live_requirements(
     Ok(learning_requirements::Entity::find()
         .filter(learning_requirements::Column::OrganizationRef.eq(organization))
         .order_by_asc(learning_requirements::Column::Subject)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter(|r| r.retired_on.is_none_or(|d| d > today))
@@ -324,7 +324,7 @@ async fn create(
     });
     ensure_valid(&problems)?;
     let pid = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     learning_requirements::ActiveModel {
         pid: ActiveValue::set(pid),
         organization_ref: ActiveValue::set(p.organization.clone()),
@@ -373,7 +373,7 @@ async fn record_completion(
 ) -> Result<Response> {
     let req = learning_requirements::Entity::find()
         .filter(learning_requirements::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
@@ -396,7 +396,7 @@ async fn record_completion(
     }
     ensure_valid(&problems)?;
     let id = Uuid::new_v4();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     learning_completions::ActiveModel {
         pid: ActiveValue::set(id),
         requirement_pid: ActiveValue::set(req.pid),
@@ -494,7 +494,7 @@ async fn groups_of(
     let mut out: HashMap<Uuid, Vec<Option<String>>> = HashMap::new();
     for a in assignments::Entity::find()
         .filter(assignments::Column::WorkerPid.is_in(pids.to_vec()))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         if a.starts_on <= today && a.ends_on.is_none_or(|e| e >= today) {
@@ -538,7 +538,7 @@ async fn rollup(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null());
     ensure_scale(&ctx, in_org.clone()).await?;
-    let people = in_org.all(&ctx.db).await?;
+    let people = in_org.all(&crate::db::orm(&ctx)).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let reqs = live_requirements(&ctx, &q.organization, today).await?;
     let cats = categories_of(&ctx, &pids, today).await?;
@@ -629,7 +629,7 @@ async fn team(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null());
     ensure_scale(&ctx, staff.clone()).await?;
-    let staff = staff.all(&ctx.db).await?;
+    let staff = staff.all(&crate::db::orm(&ctx)).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
     for w in &staff {
@@ -685,12 +685,12 @@ async fn retire(
 ) -> Result<Response> {
     let req = learning_requirements::Entity::find()
         .filter(learning_requirements::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
     let on = req.retired_on.unwrap_or_else(|| Utc::now().date_naive());
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     if req.retired_on.is_none() {
         let mut row: learning_requirements::ActiveModel = req.clone().into();
         row.retired_on = ActiveValue::set(Some(on));

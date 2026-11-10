@@ -76,7 +76,7 @@ async fn audit_salary_read(
     worker: &workers::Model,
 ) -> Result<()> {
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(ctx),
         "worker",
         worker.pid,
         "salary_read",
@@ -92,7 +92,8 @@ async fn plan_and_worker(
     ctx: &AppContext,
     pid: &str,
 ) -> Result<(development_plans::Model, workers::Model)> {
-    let plan = records::find_development_plan(&ctx.db, records::parse_pid(pid)?).await?;
+    let plan =
+        records::find_development_plan(&crate::db::orm(ctx), records::parse_pid(pid)?).await?;
     let worker = records::worker_by_pid(ctx, plan.worker_pid).await?;
     Ok((plan, worker))
 }
@@ -114,17 +115,17 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
     let items = development_plan_items::Entity::find()
         .filter(development_plan_items::Column::PlanPid.eq(plan.pid))
         .order_by_asc(development_plan_items::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let per_level: HashMap<Uuid, i32> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter_map(|s| s.hours_per_level.map(|h| (s.pid, h)))
         .collect();
     let courses: HashMap<(Uuid, String), skill_courses::Model> = skill_courses::Entity::find()
         .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|c| ((c.skill_pid, c.course_ref.clone()), c))
@@ -250,7 +251,7 @@ async fn state_benefit(
         .filter(development_plan_benefits::Column::PlanPid.eq(plan.pid))
         .filter(development_plan_benefits::Column::Year.eq(payload.year))
         .filter(development_plan_benefits::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .is_some();
     if taken {
@@ -258,7 +259,7 @@ async fn state_benefit(
             "this plan already has a benefit for that year; remove it first",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let row = development_plan_benefits::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         plan_pid: ActiveValue::set(plan.pid),
@@ -296,7 +297,7 @@ async fn remove_benefit(
     let pid = row.pid;
     let mut active: development_plan_benefits::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -316,7 +317,7 @@ async fn find_benefit(ctx: &AppContext, pid: &str) -> Result<development_plan_be
     development_plan_benefits::Entity::find()
         .filter(development_plan_benefits::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(development_plan_benefits::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -421,7 +422,7 @@ async fn plan_viability(
         .filter(development_plan_benefits::Column::PlanPid.eq(plan.pid))
         .filter(development_plan_benefits::Column::DeletedAt.is_null())
         .order_by_asc(development_plan_benefits::Column::Year)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let benefits: Vec<Benefit> = rows
         .iter()
@@ -466,7 +467,7 @@ async fn seat_needs(ctx: &AppContext, position: &positions::Model) -> Result<Opt
     };
     let Some(role) = plan_demand_lines::Entity::find()
         .filter(plan_demand_lines::Column::Pid.eq(line))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .and_then(|l| l.role_profile_pid)
     else {
@@ -474,7 +475,7 @@ async fn seat_needs(ctx: &AppContext, position: &positions::Model) -> Result<Opt
     };
     let rows = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(role))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     if rows.is_empty() {
         return Ok(None);
@@ -501,7 +502,7 @@ async fn candidate_steps(
     let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(candidate.pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|r| (r.skill_pid, r.proficiency))
@@ -517,7 +518,7 @@ async fn candidate_steps(
     let catalogue = load_catalogue(ctx, &[candidate.pid]).await?;
     let fees: HashMap<(Uuid, String), Fee> = skill_courses::Entity::find()
         .filter(skill_courses::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|c| ((c.skill_pid, c.course_ref.clone()), fee_of(&c)))
@@ -558,7 +559,7 @@ async fn seat_unit(
     let benchmark = benchmarks::Entity::find()
         .filter(benchmarks::Column::DeletedAt.is_null())
         .filter(benchmarks::Column::Currency.eq(currency))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .find(|b| b.job_title.trim().to_lowercase() == title)
@@ -569,7 +570,7 @@ async fn seat_unit(
         .filter(workers::Column::SalaryCurrency.eq(currency))
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::TerminatedOn.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter_map(|w| w.salary_minor)
@@ -604,7 +605,7 @@ async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i6
     let days: Vec<i64> = requisitions::Entity::find()
         .filter(requisitions::Column::OrganizationRef.eq(organization))
         .filter(requisitions::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .iter()
         .filter_map(|r| metrics::time_to_fill_days(r.opened_on, r.filled_on))
@@ -630,7 +631,7 @@ async fn train_or_hire(
 ) -> Result<Response> {
     let position = positions::Entity::find()
         .filter(positions::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(&ctx, &caller, &position.organization_ref).await?;
@@ -805,7 +806,7 @@ async fn learning_budget(
     for row in learning_budgets::Entity::find()
         .filter(learning_budgets::Column::OrganizationRef.eq(&query.organization))
         .filter(learning_budgets::Column::Year.eq(year))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
     {
         budgets
@@ -816,7 +817,7 @@ async fn learning_budget(
     let staff = workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(&query.organization))
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let department: HashMap<Uuid, String> =
@@ -824,7 +825,7 @@ async fn learning_budget(
     let fees = fees_by_ref(
         skill_courses::Entity::find()
             .filter(skill_courses::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?,
     );
     let completions = super::find_in(
@@ -923,10 +924,10 @@ async fn set_budget(
         .filter(learning_budgets::Column::Department.eq(&department))
         .filter(learning_budgets::Column::Year.eq(payload.year))
         .filter(learning_budgets::Column::Currency.eq(&payload.currency))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     let actor = caller.actor().map(ToString::to_string);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = if let Some(row) = existing {
         let mut active: learning_budgets::ActiveModel = row.into();
         active.amount_minor = ActiveValue::set(payload.amount_minor);

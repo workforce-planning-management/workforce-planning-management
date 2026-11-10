@@ -31,7 +31,7 @@ async fn staff(
         let created: Value = response.json();
         let pid = created["pid"].as_str().expect("pid");
         if let Some(pay) = salary {
-            ctx.db
+            workforce_planning_management::db::orm(ctx)
                 .execute_unprepared(&format!(
                     "UPDATE workers SET salary_minor = {pay}, salary_currency = 'GBP' WHERE pid = '{pid}'"
                 ))

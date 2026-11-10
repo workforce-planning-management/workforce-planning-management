@@ -99,7 +99,7 @@ fn set_env(keys: &Value) {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
+    workforce_planning_management::db::orm(ctx)
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
@@ -110,8 +110,7 @@ async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
 }
 
 async fn count(ctx: &axa::AppContext, sql: String) -> i64 {
-    let row = ctx
-        .db
+    let row = workforce_planning_management::db::orm(ctx)
         .query_one_raw(sea_orm::Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
             sql,

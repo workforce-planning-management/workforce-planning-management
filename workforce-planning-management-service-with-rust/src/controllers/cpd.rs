@@ -101,7 +101,7 @@ async fn create_requirement(
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
     let (name, required, job_title) = checked_requirement(&payload)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = cpd_requirements::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(name),
@@ -134,7 +134,7 @@ async fn find_requirement(ctx: &AppContext, pid: &str) -> Result<cpd_requirement
     cpd_requirements::Entity::find()
         .filter(cpd_requirements::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(cpd_requirements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -161,7 +161,7 @@ async fn update_requirement(
     active.period_start = ActiveValue::set(payload.period_start);
     active.period_end = ActiveValue::set(payload.period_end);
     active.job_title = ActiveValue::set(job_title);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -188,7 +188,7 @@ async fn delete_requirement(
     let existing = find_requirement(&ctx, &pid).await?;
     let mut active: cpd_requirements::ActiveModel = existing.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -229,7 +229,7 @@ async fn live_requirements(ctx: &AppContext) -> Result<Vec<cpd_requirements::Mod
     Ok(cpd_requirements::Entity::find()
         .filter(cpd_requirements::Column::DeletedAt.is_null())
         .order_by_desc(cpd_requirements::Column::PeriodStart)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -289,13 +289,13 @@ async fn create_entry(
         let known = crate::models::_entities::skills::Entity::find()
             .filter(crate::models::_entities::skills::Column::Pid.eq(skill))
             .filter(crate::models::_entities::skills::Column::DeletedAt.is_null())
-            .count(&ctx.db)
+            .count(&crate::db::orm(&ctx))
             .await?;
         if known == 0 {
             return Err(unprocessable("skill_pid is not a skill in the catalogue"));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = cpd_entries::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -348,7 +348,7 @@ async fn worker_entries(ctx: &AppContext, worker_pid: Uuid) -> Result<Vec<cpd_en
         .filter(cpd_entries::Column::WorkerPid.eq(worker_pid))
         .filter(cpd_entries::Column::DeletedAt.is_null())
         .order_by_desc(cpd_entries::Column::EntryDate)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -375,7 +375,7 @@ async fn verify_entry(
     let mut active: cpd_entries::ActiveModel = entry.into();
     active.verified_on = ActiveValue::set(Some(chrono::Utc::now().date_naive()));
     active.verified_by = ActiveValue::set(caller.actor().map(ToString::to_string));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = active.update(&txn).await?;
     Audit::record(&txn, "cpd_entry", row.pid, "verified", caller.actor(), None).await?;
     txn.commit().await?;
@@ -392,7 +392,7 @@ async fn delete_entry(
     let entry = find_entry(&ctx, &pid).await?;
     let mut active: cpd_entries::ActiveModel = entry.into();
     active.deleted_at = ActiveValue::set(Some(chrono::Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -411,7 +411,7 @@ async fn find_entry(ctx: &AppContext, pid: &str) -> Result<cpd_entries::Model> {
     cpd_entries::Entity::find()
         .filter(cpd_entries::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(cpd_entries::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -452,7 +452,7 @@ async fn create_registration(
         problems.push("expires_on must not be before registered_on");
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = professional_registrations::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -488,7 +488,7 @@ async fn worker_registrations(
         .filter(professional_registrations::Column::WorkerPid.eq(worker_pid))
         .filter(professional_registrations::Column::DeletedAt.is_null())
         .order_by_asc(professional_registrations::Column::ExpiresOn)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -601,7 +601,7 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
                     .add(workers::Column::TerminatedOn.gt(today)),
             )
     };
-    let headcount = employed().count(&ctx.db).await?;
+    let headcount = employed().count(&crate::db::orm(&ctx)).await?;
     // One aggregate per requirement, worked out by the database: no worker and no entry is read into memory.
     let mut requirements: Vec<serde_json::Value> = Vec::new();
     for r in live_requirements(&ctx).await? {
@@ -631,7 +631,7 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
                     .into_query(),
             ),
         )
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
     {
         match rules::registration_status(registration.expires_on, today, rules::DEFAULT_WARN_DAYS) {
@@ -685,8 +685,7 @@ async fn requirement_counts(
             r.job_title.clone().into(),
         ],
     );
-    let row = ctx
-        .db
+    let row = crate::db::orm(ctx)
         .query_one_raw(statement)
         .await?
         .ok_or_else(|| super::internal("the requirement count returned no row"))?;

@@ -525,7 +525,7 @@ jobs:
         run: |
           cargo build --locked --release --bin workforce-planning-management
           ./target/release/workforce-planning-management start > service.log 2>&1 &
-          for i in $(seq 1 60); do curl -fs http://localhost:5150/_health && break; sleep 2; done
+          for i in $(seq 1 60); do curl -fs http://localhost:5150/_health/live && break; sleep 2; done
           curl -fs http://localhost:5150/_posture | grep -q '"auth_enforced":true'
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0

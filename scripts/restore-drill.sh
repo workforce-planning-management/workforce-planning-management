@@ -71,7 +71,7 @@ start_service() { # url
     "$WPM_BIN" start > "$work/service.log" 2>&1 &
   pid=$!
   for _ in $(seq 1 60); do
-    curl -fs "http://localhost:$port/_health" >/dev/null 2>&1 && return 0
+    curl -fs "http://localhost:$port/_health/live" >/dev/null 2>&1 && return 0
     kill -0 "$pid" 2>/dev/null || { cat "$work/service.log" >&2; fail "service exited"; }
     sleep 1
   done

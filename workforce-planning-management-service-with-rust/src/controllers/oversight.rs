@@ -58,7 +58,7 @@ async fn level_in_scope(
 ) -> Result<levels::Model> {
     let level = levels::Entity::find()
         .filter(levels::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &level.organization_ref).await?;
@@ -72,7 +72,7 @@ async fn criterion_in_scope(
 ) -> Result<criteria::Model> {
     let c = criteria::Entity::find()
         .filter(criteria::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     level_in_scope(ctx, caller, c.level_pid).await?;
@@ -86,7 +86,7 @@ async fn measure_in_scope(
 ) -> Result<measures::Model> {
     let m = measures::Entity::find()
         .filter(measures::Column::Pid.eq(pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     criterion_in_scope(ctx, caller, m.criterion_pid).await?;
@@ -121,12 +121,12 @@ async fn create_level(
     let taken = levels::Entity::find()
         .filter(levels::Column::OrganizationRef.eq(&p.organization_ref))
         .filter(levels::Column::Ordinal.eq(p.ordinal))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     if taken.is_some() {
         return Err(unprocessable("that ordinal is already on the scale"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = levels::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -156,12 +156,12 @@ async fn delete_level(
     let level = level_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
     let used = positions::Entity::find()
         .filter(positions::Column::LevelPid.eq(level.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some()
         || criteria::Entity::find()
             .filter(criteria::Column::LevelPid.eq(level.pid))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .is_some();
     if used {
@@ -169,7 +169,7 @@ async fn delete_level(
             "a level with a recorded position or a criterion cannot be removed; remove the criteria first, and a recorded position stays on the record",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     levels::Entity::delete_by_id(level.id).exec(&txn).await?;
     audit(&txn, &caller, "oversight_level", level.pid, "removed").await?;
     txn.commit().await?;
@@ -208,7 +208,7 @@ async fn record_position(
             "that level is on another organization's scale",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = positions::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -254,7 +254,7 @@ async fn create_criterion(
     problems.require_text("name", &p.name);
     ensure_valid(&problems.into_vec())?;
     let level = level_in_scope(&ctx, &caller, p.level_pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = criteria::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         level_pid: ActiveValue::set(level.pid),
@@ -279,9 +279,9 @@ async fn delete_criterion(
     let c = criterion_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
     let ms = measures::Entity::find()
         .filter(measures::Column::CriterionPid.eq(c.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     for m in &ms {
         readings::Entity::delete_many()
             .filter(readings::Column::MeasurePid.eq(m.pid))
@@ -333,7 +333,7 @@ async fn create_measure(
     }
     check_derivation(&p)?;
     let c = criterion_in_scope(&ctx, &caller, p.criterion_pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = measures::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         criterion_pid: ActiveValue::set(c.pid),
@@ -408,7 +408,7 @@ async fn delete_measure(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let m = measure_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     readings::Entity::delete_many()
         .filter(readings::Column::MeasurePid.eq(m.pid))
         .exec(&txn)
@@ -464,9 +464,9 @@ async fn put_reading(
     let existing = readings::Entity::find()
         .filter(readings::Column::MeasurePid.eq(m.pid))
         .filter(readings::Column::PeriodOn.eq(month))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = if let Some(row) = existing {
         let mut a: readings::ActiveModel = row.into();
         a.value = ActiveValue::set(p.value);
@@ -525,7 +525,7 @@ pub(super) async fn measure_readings(
     }
     Ok(readings::Entity::find()
         .filter(readings::Column::MeasurePid.eq(m.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|r| rules::Reading {
@@ -548,20 +548,20 @@ pub(super) async fn current_measures(
         .filter(positions::Column::EffectiveOn.lte(today))
         .order_by_desc(positions::Column::EffectiveOn)
         .order_by_desc(positions::Column::Id)
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?;
     let Some(position) = current else {
         return Ok(Vec::new());
     };
     let cs = criteria::Entity::find()
         .filter(criteria::Column::LevelPid.eq(position.level_pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let pids: Vec<Uuid> = cs.iter().map(|c| c.pid).collect();
     Ok(measures::Entity::find()
         .filter(measures::Column::CriterionPid.is_in(pids))
         .order_by_asc(measures::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -600,14 +600,14 @@ pub(super) async fn status_json(
     let scale = levels::Entity::find()
         .filter(levels::Column::OrganizationRef.eq(org))
         .order_by_asc(levels::Column::Ordinal)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let by_pid: BTreeMap<Uuid, &levels::Model> = scale.iter().map(|l| (l.pid, l)).collect();
     let history = positions::Entity::find()
         .filter(positions::Column::OrganizationRef.eq(org))
         .order_by_desc(positions::Column::EffectiveOn)
         .order_by_desc(positions::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     let current = history.iter().find(|p| p.effective_on <= today);
     let latest = last_complete_month(today);
@@ -616,13 +616,13 @@ pub(super) async fn status_json(
         let cs = criteria::Entity::find()
             .filter(criteria::Column::LevelPid.eq(level.pid))
             .order_by_asc(criteria::Column::Id)
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?;
         for c in &cs {
             let ms = measures::Entity::find()
                 .filter(measures::Column::CriterionPid.eq(c.pid))
                 .order_by_asc(measures::Column::Id)
-                .all(&ctx.db)
+                .all(&crate::db::orm(ctx))
                 .await?;
             let mut input = Vec::new();
             let mut shown: Vec<serde_json::Value> = Vec::new();

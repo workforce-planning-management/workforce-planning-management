@@ -16,7 +16,7 @@ async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let uri = format!("http://data.europa.eu/esco/occupation/{tag}");
         let term = format!("zzcache{}", &tag[..8]);
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO esco_occupations (uri, label) VALUES ('{uri}', 'Test {term} keeper')"
             ))
@@ -32,7 +32,7 @@ async fn an_esco_search_is_cached_until_the_catalogue_is_invalidated() {
             }
         };
         assert_eq!(search().await.as_array().unwrap().len(), 1);
-        ctx.db
+        workforce_planning_management::db::orm(&ctx)
             .execute_unprepared(&format!("DELETE FROM esco_occupations WHERE uri = '{uri}'"))
             .await
             .unwrap();

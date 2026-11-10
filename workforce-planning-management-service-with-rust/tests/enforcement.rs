@@ -105,7 +105,7 @@ async fn enforcement_personas_gate_and_mask() {
         let bearer = |token: &str| format!("Bearer {token}");
 
         // Public allow-list stays open without a token.
-        assert_eq!(request.get("/_health").await.status_code(), 200);
+        assert_eq!(request.get("/_health/live").await.status_code(), 200);
         assert_eq!(request.get("/_posture").await.status_code(), 200);
         // Metrics are not public: no token ⇒ 401, a service token ⇒ 200.
         assert_eq!(request.get("/metrics.prom").await.status_code(), 401);
@@ -190,7 +190,7 @@ async fn enforcement_personas_gate_and_mask() {
         assert_eq!(stranger, 403, "a stranger does not read a colleague's record");
         {
             use sea_orm::ConnectionTrait;
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                      VALUES ('{}', 'person:{other_person}', '{org}', '{worker_pid}', 'member', '2026-01-05')",
@@ -303,9 +303,9 @@ async fn enforcement_personas_gate_and_mask() {
         // recorded; payroll asking for it gets the figure, and its list read is audited as the single read is.
         let salary_reads = || async {
             use sea_orm::{ConnectionTrait, Statement};
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .query_one_raw(Statement::from_string(
-                    ctx.db.get_database_backend(),
+                    workforce_planning_management::db::orm(&ctx).get_database_backend(),
                     format!("SELECT count(*)::bigint AS n FROM audit_logs WHERE entity_pid = '{worker_pid}' AND action = 'salary_read'"),
                 ))
                 .await
@@ -339,7 +339,7 @@ async fn enforcement_personas_gate_and_mask() {
         // The list is scoped to the caller's organizations (the single read is not), so payroll needs a membership in this one.
         {
             use sea_orm::ConnectionTrait;
-            ctx.db
+            workforce_planning_management::db::orm(&ctx)
                 .execute_unprepared(&format!(
                     "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
                      VALUES ('{}', 'person:payroll-user', '{org}', 'member', '2026-01-05')",

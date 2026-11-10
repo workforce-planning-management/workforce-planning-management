@@ -248,7 +248,7 @@ async fn worker_gaps(
     );
     // `SFIAplus` pointers (WPM-R112) for a need the person is below: licensed resources to read, never booked or bought.
     let pointers = crate::controllers::sfia::pointers_for(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         &gaps
             .iter()
             .filter(|g| g.status == Status::Below)

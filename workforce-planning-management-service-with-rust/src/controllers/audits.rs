@@ -14,14 +14,14 @@ use crate::streaming;
 /// `GET /api/audits/recent` — the most recent entries (cap 100).
 #[debug_handler]
 async fn recent(State(ctx): State<AppContext>) -> Result<Response> {
-    format::json(Audit::recent(&ctx.db, 100).await?)
+    format::json(Audit::recent(&crate::db::orm(&ctx), 100).await?)
 }
 
 /// `GET /api/audits/verify` — check the whole audit chain (WPM-R115). Reports the first break,
 /// the number of entries and the head hash. Privileged callers only.
 #[debug_handler]
 async fn verify(State(ctx): State<AppContext>) -> Result<Response> {
-    format::json(Audit::verify_chain(&ctx.db).await?)
+    format::json(Audit::verify_chain(&crate::db::orm(&ctx)).await?)
 }
 
 /// Entries per page of the export, by default and at most.
@@ -55,7 +55,7 @@ async fn export(
         .filter(|l| *l > 0)
         .unwrap_or(EXPORT_DEFAULT_LIMIT)
         .min(EXPORT_MAX_LIMIT);
-    let rows = Audit::export_after(&ctx.db, after, limit).await?;
+    let rows = Audit::export_after(&crate::db::orm(&ctx), after, limit).await?;
     let next = rows.last().map_or(after, |r| r.chain_seq);
     let body: String = rows.iter().map(crate::rules::audit_export::line).collect();
     Ok((
@@ -77,7 +77,7 @@ async fn export(
 /// `GET /api/audits/{entity_pid}` — one record's trail.
 #[debug_handler]
 async fn for_entity(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
-    format::json(Audit::for_entity(&ctx.db, records::parse_pid(&pid)?).await?)
+    format::json(Audit::for_entity(&crate::db::orm(&ctx), records::parse_pid(&pid)?).await?)
 }
 
 /// `GET /api/audits?department=<name>&since=<rfc3339>` — everything
@@ -93,7 +93,10 @@ async fn department(
     State(ctx): State<AppContext>,
     Query(params): Query<DepartmentParams>,
 ) -> Result<Response> {
-    format::json(Audit::for_department_since(&ctx.db, &params.department, params.since, 200).await?)
+    format::json(
+        Audit::for_department_since(&crate::db::orm(&ctx), &params.department, params.since, 200)
+            .await?,
+    )
 }
 
 /// `GET /api/events/recent` — the flat event view (memory ring under
@@ -101,7 +104,7 @@ async fn department(
 #[debug_handler]
 async fn events_recent(State(ctx): State<AppContext>) -> Result<Response> {
     if streaming::transport().is_outbox() {
-        format::json(Outbox::recent(&ctx.db, 100).await?)
+        format::json(Outbox::recent(&crate::db::orm(&ctx), 100).await?)
     } else {
         format::json(streaming::recent(100))
     }

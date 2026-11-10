@@ -79,7 +79,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         .filter(workers::Column::TerminatedOn.is_null())
         .filter(workers::Column::EngagementEndsOn.is_not_null())
         .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     for worker in staff {
         let Some(ends_on) = worker.engagement_ends_on else {
@@ -95,7 +95,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         let decided = engagement_decisions::Entity::find()
             .filter(engagement_decisions::Column::WorkerPid.eq(worker.pid))
             .filter(engagement_decisions::Column::EndsOn.eq(ends_on))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some();
         if decided {
@@ -105,7 +105,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(engagement_reminders::Column::WorkerPid.eq(worker.pid))
             .filter(engagement_reminders::Column::EndsOn.eq(ends_on))
             .filter(engagement_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some();
         if already {
@@ -116,7 +116,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             .filter(organization_memberships::Column::OrganizationRef.eq(&worker.organization_ref))
             .filter(organization_memberships::Column::Role.eq("hr_admin"))
             .filter(organization_memberships::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
         {
             if let Some(pid) = m.worker_pid
@@ -145,7 +145,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         };
         for to in &recipients {
             Notification::push(
-                &ctx.db,
+                &crate::db::orm(ctx),
                 *to,
                 kind,
                 &body,
@@ -161,7 +161,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             reminded_on: ActiveValue::set(as_of),
             ..Default::default()
         }
-        .insert(&ctx.db)
+        .insert(&crate::db::orm(ctx))
         .await?;
         match reminder {
             Reminder::Ending => report.ending += 1,
@@ -177,7 +177,7 @@ async fn plan_note(ctx: &AppContext, worker_pid: uuid::Uuid) -> Result<String> {
     let plan = conversion_plans::Entity::find()
         .filter(conversion_plans::Column::WorkerPid.eq(worker_pid))
         .filter(conversion_plans::Column::Status.is_in(["proposed", "approved"]))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?;
     Ok(plan.map_or_else(String::new, |p| {
         let review = p

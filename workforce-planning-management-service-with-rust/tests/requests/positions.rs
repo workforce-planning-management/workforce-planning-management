@@ -148,13 +148,13 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
         assert_eq!(hold(&a, Some(&w)).await, 422, "an ended seat has no holder");
 
         // An unknown holder (the worker's record is gone) makes the figures unknown, not zero.
-        ctx.db.execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w2}'")).await.unwrap();
+        workforce_planning_management::db::orm(&ctx).execute_unprepared(&format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w2}'")).await.unwrap();
         let body: Value = request.get(&format!("/api/positions/establishment?organization={org}")).await.json();
         assert_eq!(centre(&body, "CC-1")["held"], json!({ "status": "unknown" }));
         assert_eq!(centre(&body, "CC-1")["budgeted"], json!({ "status": "known", "percent": 50 }));
 
         // Every change is audited with a state and no worker.
-        let rows = ctx.db.query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
+        let rows = workforce_planning_management::db::orm(&ctx).query_all_raw(sea_orm::Statement::from_string(sea_orm::DatabaseBackend::Postgres,
             "SELECT snapshot::text AS s FROM audit_logs WHERE action LIKE 'position_%'".to_string())).await.unwrap();
         assert!(rows.len() >= 10);
         for row in rows {

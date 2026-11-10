@@ -62,7 +62,7 @@ fn bearer(token: String) -> String {
 }
 
 async fn seat(ctx: &axa::AppContext, person: &str, org: &str) {
-    ctx.db
+    workforce_planning_management::db::orm(ctx)
         .execute_unprepared(&format!(
             "INSERT INTO organization_memberships (pid, person_ref, organization_ref, role, starts_on) \
              VALUES ('{}', 'person:{person}', '{org}', 'hr_admin', '2023-01-05')",
@@ -233,8 +233,7 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
         assert!(!text.contains("S-3"), "a cancelled leaver is not in it");
 
         // Audited with no content, and in the person's own export.
-        let audited = ctx
-            .db
+        let audited = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(
@@ -248,8 +247,7 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .try_get_by_index::<i64>(0)
             .unwrap();
         assert!(audited > 0);
-        let why_read = ctx
-            .db
+        let why_read = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(
@@ -284,8 +282,7 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .add_header("authorization", svc.clone())
             .await
             .assert_status_ok();
-        let left = ctx
-            .db
+        let left = workforce_planning_management::db::orm(&ctx)
             .query_one_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 format!(

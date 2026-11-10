@@ -67,7 +67,7 @@ async fn gate(ctx: &AppContext, caller: &MaybeAuthUser, claimant: &workers::Mode
         Some(pid) => workers::Entity::find()
             .filter(workers::Column::Pid.eq(pid))
             .filter(workers::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(ctx))
             .await?
             .is_some_and(|m| career::is_self(&claims.sub, &m.person_ref)),
         None => false,
@@ -89,7 +89,7 @@ async fn find_claim(ctx: &AppContext, pid: &str) -> Result<expense_claims::Model
     expense_claims::Entity::find()
         .filter(expense_claims::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -103,7 +103,7 @@ async fn items_of(ctx: &AppContext, claim_pid: Uuid) -> Result<Vec<expense_items
         .filter(expense_items::Column::ClaimPid.eq(claim_pid))
         .order_by_asc(expense_items::Column::IncurredOn)
         .order_by_asc(expense_items::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -161,7 +161,7 @@ async fn create_claim(
         problems.push(e);
     }
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = expense_claims::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         worker_pid: ActiveValue::set(worker.pid),
@@ -210,7 +210,7 @@ async fn list_claims(
         .filter(expense_claims::Column::WorkerPid.eq(worker.pid))
         .filter(expense_claims::Column::DeletedAt.is_null())
         .order_by_desc(expense_claims::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut out = Vec::with_capacity(claims.len());
     for c in &claims {
@@ -285,7 +285,7 @@ async fn other_keys(
         .filter(expense_claims::Column::DeletedAt.is_null())
         .filter(expense_claims::Column::Pid.ne(claim.pid))
         .filter(expense_claims::Column::Status.is_not_in(["cancelled", "rejected"]))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|c| c.pid)
@@ -295,7 +295,7 @@ async fn other_keys(
     }
     Ok(expense_items::Entity::find()
         .filter(expense_items::Column::ClaimPid.is_in(other_claims))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|i| (i.incurred_on, i.category, i.amount_minor))
@@ -367,7 +367,7 @@ async fn add_item(
         receipt_ref: ActiveValue::set(clean(payload.receipt_ref)),
         ..Default::default()
     }
-    .insert(&ctx.db)
+    .insert(&crate::db::orm(&ctx))
     .await?;
     format::json(json!({ "pid": row.pid }))
 }
@@ -381,13 +381,13 @@ async fn remove_item(
 ) -> Result<Response> {
     let item = expense_items::Entity::find()
         .filter(expense_items::Column::Pid.eq(records::parse_pid(&pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let claim = expense_claims::Entity::find()
         .filter(expense_claims::Column::Pid.eq(item.claim_pid))
         .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = claimant_of(&ctx, &claim).await?;
@@ -400,7 +400,7 @@ async fn remove_item(
         ));
     }
     expense_items::Entity::delete_by_id(item.id)
-        .exec(&ctx.db)
+        .exec(&crate::db::orm(&ctx))
         .await?;
     format::empty()
 }
@@ -475,7 +475,7 @@ async fn transition(
     let peek = expense_claims::Entity::find()
         .filter(expense_claims::Column::Pid.eq(pid))
         .filter(expense_claims::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let worker = claimant_of(ctx, &peek).await?;
@@ -505,7 +505,7 @@ async fn transition(
         return Err(unprocessable("reimbursed_on cannot be in the future"));
     }
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(ctx).begin().await?;
     let claim = expense_claims::Entity::find()
         .filter(expense_claims::Column::Pid.eq(pid))
         .filter(expense_claims::Column::DeletedAt.is_null())
@@ -620,7 +620,7 @@ async fn queue(
         let mine: Vec<Uuid> = workers::Entity::find()
             .filter(workers::Column::PersonRef.eq(&person_ref))
             .filter(workers::Column::DeletedAt.is_null())
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .into_iter()
             .map(|w| w.pid)
@@ -631,7 +631,7 @@ async fn queue(
                 workers::Entity::find()
                     .filter(workers::Column::ManagerPid.is_in(mine.clone()))
                     .filter(workers::Column::DeletedAt.is_null())
-                    .all(&ctx.db)
+                    .all(&crate::db::orm(&ctx))
                     .await?
                     .into_iter()
                     .map(|w| w.pid),
@@ -648,7 +648,7 @@ async fn queue(
                 workers::Entity::find()
                     .filter(workers::Column::OrganizationRef.is_in(hr_orgs))
                     .filter(workers::Column::DeletedAt.is_null())
-                    .all(&ctx.db)
+                    .all(&crate::db::orm(&ctx))
                     .await?
                     .into_iter()
                     .map(|w| w.pid),
@@ -663,12 +663,12 @@ async fn queue(
     let claims = query
         .order_by_asc(expense_claims::Column::SubmittedAt)
         .order_by_asc(expense_claims::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let pids: Vec<Uuid> = claims.iter().map(|c| c.worker_pid).collect();
     let names: HashMap<Uuid, String> = workers::Entity::find()
         .filter(workers::Column::Pid.is_in(pids))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w.display_name))

@@ -64,7 +64,7 @@ async fn find_group(ctx: &AppContext, caller: &MaybeAuthUser, pid: &str) -> Resu
     let group = groups::Entity::find()
         .filter(groups::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(groups::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     if !can_read(
@@ -86,7 +86,7 @@ async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
         .filter(group_members::Column::LeftAt.is_null())
         .group_by(group_members::Column::GroupPid)
         .into_tuple()
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     Ok(rows
         .into_iter()
@@ -129,7 +129,7 @@ async fn ensure_name_free(
     let taken = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .filter(groups::Column::OrganizationRef.eq(organization_ref))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .any(|g| g.name.trim().to_lowercase() == wanted && Some(g.pid) != except);
@@ -174,7 +174,7 @@ async fn create_group(
         ));
     }
     ensure_name_free(&ctx, &organization_ref, &payload.name, None).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = groups::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(organization_ref),
@@ -213,7 +213,7 @@ async fn list_groups(
     let rows: Vec<groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
         .order_by_asc(groups::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|g| can_read(allowed.as_ref(), g, &graph))
@@ -248,7 +248,7 @@ async fn update_group(
     active.name = ActiveValue::set(payload.name.trim().to_string());
     active.kind = ActiveValue::set(payload.kind);
     active.description = ActiveValue::set(payload.description);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(&txn, "group", updated.pid, "updated", caller.actor(), None).await?;
     txn.commit().await?;
@@ -267,7 +267,7 @@ async fn delete_group(
     let group_pid = row.pid;
     let mut active: groups::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(&txn, "group", group_pid, "retired", caller.actor(), None).await?;
     txn.commit().await?;
@@ -314,12 +314,12 @@ async fn list_members(
     }
     let mut rows = select
         .order_by_asc(group_members::Column::JoinedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     rows.sort_by_key(|m| (m.left_at.is_some(), m.role != "lead"));
     let staff: BTreeMap<Uuid, workers::Model> = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|w| (w.pid, w))
@@ -382,9 +382,9 @@ async fn join_group(
         .filter(group_members::Column::GroupPid.eq(group.pid))
         .filter(group_members::Column::WorkerPid.eq(worker.pid))
         .filter(group_members::Column::LeftAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = if let Some(existing) = current {
         let mut active: group_members::ActiveModel = existing.into();
         active.role = ActiveValue::set(role);
@@ -431,12 +431,12 @@ async fn leave_group(
         .filter(group_members::Column::GroupPid.eq(group.pid))
         .filter(group_members::Column::WorkerPid.eq(worker.pid))
         .filter(group_members::Column::LeftAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let mut active: group_members::ActiveModel = current.into();
     active.left_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -466,7 +466,7 @@ async fn group_skills(
     let members: Vec<Uuid> = group_members::Entity::find()
         .filter(group_members::Column::GroupPid.eq(group.pid))
         .filter(group_members::Column::LeftAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|m| m.worker_pid)
@@ -474,14 +474,14 @@ async fn group_skills(
     let declared = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.is_in(members.clone()))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let mut by_skill: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
     for d in &declared {
         by_skill.entry(d.skill_pid).or_default().push(d.proficiency);
     }
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -538,13 +538,13 @@ async fn worker_groups(
     }
     let memberships = select
         .order_by_desc(group_members::Column::JoinedAt)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let allowed = scope(&ctx, &caller).await?;
     let graph = edges(&ctx).await?;
     let by_pid: BTreeMap<Uuid, groups::Model> = groups::Entity::find()
         .filter(groups::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|g| can_read(allowed.as_ref(), g, &graph))

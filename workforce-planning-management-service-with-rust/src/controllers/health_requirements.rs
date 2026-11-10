@@ -102,7 +102,7 @@ async fn live_requirements(ctx: &AppContext) -> Result<Vec<health_requirements::
     Ok(health_requirements::Entity::find()
         .filter(health_requirements::Column::DeletedAt.is_null())
         .order_by_asc(health_requirements::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -167,7 +167,7 @@ async fn create_requirement(
     if exists {
         return Err(unprocessable("a requirement with that name already exists"));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = health_requirements::ActiveModel {
         pid: ActiveValue::set(uuid::Uuid::new_v4()),
         name: ActiveValue::set(payload.name.trim().to_string()),
@@ -208,7 +208,7 @@ async fn find_requirement(ctx: &AppContext, pid: &str) -> Result<health_requirem
     health_requirements::Entity::find()
         .filter(health_requirements::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(health_requirements::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -249,7 +249,7 @@ async fn update_requirement(
         )
         .unwrap_or(60),
     );
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let saved = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -275,7 +275,7 @@ async fn delete_requirement(
     let row = find_requirement(&ctx, &pid).await?;
     let mut active: health_requirements::ActiveModel = row.into();
     active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let saved = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -344,9 +344,9 @@ async fn record_status(
     let existing = worker_health_records::Entity::find()
         .filter(worker_health_records::Column::WorkerPid.eq(worker.pid))
         .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let recorded_by = caller.actor().map(ToString::to_string);
     if let Some(row) = existing {
         let mut active: worker_health_records::ActiveModel = row.into();
@@ -400,7 +400,7 @@ async fn remove_record(
     ensure_occupational_health(&caller)?;
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let requirement = find_requirement(&ctx, &req_pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let removed = worker_health_records::Entity::delete_many()
         .filter(worker_health_records::Column::WorkerPid.eq(worker.pid))
         .filter(worker_health_records::Column::RequirementPid.eq(requirement.pid))
@@ -431,7 +431,7 @@ async fn records_for(
 ) -> Result<Vec<worker_health_records::Model>> {
     Ok(worker_health_records::Entity::find()
         .filter(worker_health_records::Column::WorkerPid.eq(worker_pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -515,7 +515,7 @@ async fn clearance(
     for worker in workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
         .order_by_asc(workers::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
     {
         if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)
@@ -590,7 +590,7 @@ async fn detail(
         })
         .collect();
     Audit::record(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         "worker",
         worker.pid,
         "health_record_read",
@@ -620,7 +620,7 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     let mut rows: Vec<(String, String, bool)> = Vec::new();
     for worker in workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
     {
         if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)

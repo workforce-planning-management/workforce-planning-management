@@ -57,7 +57,7 @@ async fn hire(
             .await
             .json();
         let pid = created["pid"].as_str().expect("pid").to_string();
-        ctx.db
+        workforce_planning_management::db::orm(ctx)
             .execute_unprepared(&format!(
                 "INSERT INTO equality_declarations (worker_pid, category, value) VALUES ('{pid}', 'sex', '{sex}')"
             ))
@@ -177,8 +177,7 @@ async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
         assert_eq!(category(&strict, "Engineering")["signal"], json!({ "status": "not_due", "why": "below_threshold" }), "ten percent is under twelve");
 
         // Audited, with no figure and no words.
-        let rows = ctx
-            .db
+        let rows = workforce_planning_management::db::orm(&ctx)
             .query_all_raw(sea_orm::Statement::from_string(
                 sea_orm::DatabaseBackend::Postgres,
                 "SELECT action, snapshot::text AS snapshot FROM audit_logs WHERE action IN ('joint_assessment_read', 'pay_assessment_recorded')".to_string(),

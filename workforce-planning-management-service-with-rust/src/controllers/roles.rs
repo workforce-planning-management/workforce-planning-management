@@ -80,7 +80,7 @@ async fn create_profile(
     let taken = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .filter(role_profiles::Column::JobTitle.eq(&title))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if taken {
@@ -88,7 +88,7 @@ async fn create_profile(
             "a role profile for this job title already exists",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = role_profiles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         job_title: ActiveValue::set(title),
@@ -136,9 +136,11 @@ async fn list_profiles(
     }
     let profiles = select
         .order_by_asc(role_profiles::Column::JobTitle)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
+    let requirements = role_skill_requirements::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let mut counts: BTreeMap<Uuid, usize> = BTreeMap::new();
     for requirement in &requirements {
         *counts.entry(requirement.role_profile_pid).or_default() += 1;
@@ -171,12 +173,12 @@ async fn list_profiles(
 async fn list_frameworks(State(ctx): State<AppContext>) -> Result<Response> {
     let frameworks = capability_frameworks::Entity::find()
         .order_by_asc(capability_frameworks::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let profiles = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .filter(role_profiles::Column::FrameworkSlug.is_not_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let out: Vec<serde_json::Value> = frameworks
         .iter()
@@ -218,9 +220,9 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
     let profile = find_profile(&ctx, &pid).await?;
     let mut requirements = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let skill_rows = skills::Entity::find().all(&ctx.db).await?;
+    let skill_rows = skills::Entity::find().all(&crate::db::orm(&ctx)).await?;
     let skill_of: BTreeMap<Uuid, &skills::Model> = skill_rows.iter().map(|s| (s.pid, s)).collect();
     let rank = |importance: &str| {
         rules::IMPORTANCES
@@ -238,8 +240,8 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
         .iter()
         .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
         .collect();
-    let described = super::sfia::native_descriptions(&ctx.db, &stated).await?;
-    let framework_names = super::sfia::framework_names(&ctx.db).await?;
+    let described = super::sfia::native_descriptions(&crate::db::orm(&ctx), &stated).await?;
+    let framework_names = super::sfia::framework_names(&crate::db::orm(&ctx)).await?;
     let out: Vec<serde_json::Value> = requirements
         .iter()
         .map(|r| {
@@ -263,7 +265,7 @@ async fn get_profile(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
         Some(slug) => {
             capability_frameworks::Entity::find()
                 .filter(capability_frameworks::Column::Slug.eq(slug))
-                .one(&ctx.db)
+                .one(&crate::db::orm(&ctx))
                 .await?
         }
         None => None,
@@ -297,7 +299,7 @@ async fn set_requirement(
     Json(payload): Json<RequirementPayload>,
 ) -> Result<Response> {
     let native = super::sfia::resolve_native(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         payload.framework.as_deref(),
         payload.framework_level,
     )
@@ -317,18 +319,18 @@ async fn set_requirement(
     let skill = skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     if let Some(n) = &native {
-        super::sfia::check_defined(&ctx.db, skill.pid, n).await?;
+        super::sfia::check_defined(&crate::db::orm(&ctx), skill.pid, n).await?;
     }
     let existing = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
         .filter(role_skill_requirements::Column::SkillPid.eq(skill.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     match existing {
         Some(row) => {
             let mut active: role_skill_requirements::ActiveModel = row.into();
@@ -390,10 +392,10 @@ async fn remove_requirement(
     let row = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
         .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     row.delete(&txn).await?;
     Audit::record(
         &txn,
@@ -431,18 +433,18 @@ async fn worker_role_gap(
     let profile = find_profile(&ctx, &query.role_profile_pid.to_string()).await?;
     let requirements = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let declared: BTreeMap<Uuid, i32> = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|d| (d.skill_pid, d.proficiency))
         .collect();
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -489,7 +491,7 @@ async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
     let today = chrono::Utc::now().date_naive();
     let employed: Vec<Uuid> = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
@@ -498,14 +500,14 @@ async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
     let headcount = employed.len();
     let requirements = role_skill_requirements::Entity::find()
         .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let declarations = worker_skills::Entity::find()
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -593,16 +595,18 @@ async fn progression(State(ctx): State<AppContext>, Path(pid): Path<String>) -> 
         .filter(role_profiles::Column::FrameworkSlug.eq(&framework))
         .filter(role_profiles::Column::Profession.eq(&profession))
         .filter(role_profiles::Column::RoleName.eq(&role))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let next_order = siblings
         .iter()
         .filter_map(|p| p.level_order)
         .filter(|o| *o > order)
         .min();
-    let requirements = role_skill_requirements::Entity::find().all(&ctx.db).await?;
+    let requirements = role_skill_requirements::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let names: BTreeMap<Uuid, String> = skills::Entity::find()
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .into_iter()
         .map(|s| (s.pid, s.name))
@@ -638,7 +642,7 @@ async fn find_profile(ctx: &AppContext, pid: &str) -> Result<role_profiles::Mode
     role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }

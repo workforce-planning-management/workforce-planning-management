@@ -24,7 +24,7 @@ pub(super) async fn create_skill(
     problems.cap_text("name", &payload.name);
     problems.require_token("category", rules::SKILL_CATEGORIES, &payload.category);
     ensure_valid(&problems.into_vec())?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = skills::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         name: ActiveValue::set(payload.name.clone()),
@@ -46,9 +46,11 @@ pub(super) async fn list_skills(State(ctx): State<AppContext>) -> Result<Respons
     let rows = skills::Entity::find()
         .filter(skills::Column::DeletedAt.is_null())
         .order_by_asc(skills::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
-    let refs = skill_external_refs::Entity::find().all(&ctx.db).await?;
+    let refs = skill_external_refs::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|s| {
@@ -106,7 +108,7 @@ pub(super) async fn update_skill(
         if name != row.name {
             let taken = skills::Entity::find()
                 .filter(skills::Column::Name.eq(&name))
-                .one(&ctx.db)
+                .one(&crate::db::orm(&ctx))
                 .await?
                 .is_some();
             if taken {
@@ -118,7 +120,7 @@ pub(super) async fn update_skill(
     if let Some(category) = &payload.category {
         active.category = ActiveValue::set(category.clone());
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let updated = active.update(&txn).await?;
     Audit::record(
         &txn,
@@ -137,7 +139,7 @@ async fn find_live_skill(ctx: &AppContext, pid: &str) -> Result<skills::Model> {
     skills::Entity::find()
         .filter(skills::Column::Pid.eq(records::parse_pid(pid)?))
         .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)
 }
@@ -151,7 +153,7 @@ pub(super) async fn category_suggestions(State(ctx): State<AppContext>) -> Resul
         .filter(skills::Column::DeletedAt.is_null())
         .filter(skills::Column::Category.eq("other"))
         .order_by_asc(skills::Column::Name)
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -191,7 +193,7 @@ pub(super) async fn apply_suggestions(
     Json(payload): Json<ApplySuggestions>,
 ) -> Result<Response> {
     let (mut applied, mut skipped) = (0usize, 0usize);
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     for pid in &payload.skill_pids {
         let found = skills::Entity::find()
             .filter(skills::Column::Pid.eq(*pid))
@@ -276,7 +278,9 @@ pub(super) async fn skill_usage_view(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let skill = find_live_skill(&ctx, &pid).await?;
-    format::json(usage_json(&skill_usage(&ctx.db, skill.pid).await?))
+    format::json(usage_json(
+        &skill_usage(&crate::db::orm(&ctx), skill.pid).await?,
+    ))
 }
 
 /// `DELETE /api/skills/{pid}` — delete a skill **nothing uses** (soft-delete;
@@ -289,14 +293,14 @@ pub(super) async fn delete_skill(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let skill = find_live_skill(&ctx, &pid).await?;
-    let usage = skill_usage(&ctx.db, skill.pid).await?;
+    let usage = skill_usage(&crate::db::orm(&ctx), skill.pid).await?;
     if !usage.deletable() {
         return Err(unprocessable(&format!(
             "the skill is in use ({} place(s)); merge it into another skill instead",
             usage.total()
         )));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     skill_external_refs::Entity::delete_many()
         .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
         .exec(&txn)
@@ -332,7 +336,7 @@ pub(super) async fn merge_skill(
         return Err(unprocessable("a skill cannot be merged into itself"));
     }
     let target = find_live_skill(&ctx, &payload.into_pid.to_string()).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let (mut merged, mut moved) = (0usize, 0usize);
 
     // Worker declarations.
@@ -521,12 +525,12 @@ pub(super) async fn add_skill_ref(
     // (when one has been loaded).
     if payload.framework_slug.trim() == "esco" {
         let loaded = crate::models::_entities::esco_skills::Entity::find()
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .is_some();
         let known = crate::models::_entities::esco_skills::Entity::find()
             .filter(crate::models::_entities::esco_skills::Column::Uri.eq(&payload.reference))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .is_some();
         if loaded && !known {
@@ -542,7 +546,7 @@ pub(super) async fn add_skill_ref(
                 .add(skill_external_refs::Column::SkillPid.eq(skill.pid))
                 .add(skill_external_refs::Column::Reference.eq(&payload.reference)),
         )
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if clash {
@@ -550,7 +554,7 @@ pub(super) async fn add_skill_ref(
             "this skill already has a reference in that framework, or the reference names another skill",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = skill_external_refs::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         skill_pid: ActiveValue::set(skill.pid),
@@ -586,10 +590,10 @@ pub(super) async fn remove_skill_ref(
     let row = skill_external_refs::Entity::find()
         .filter(skill_external_refs::Column::SkillPid.eq(skill.pid))
         .filter(skill_external_refs::Column::FrameworkSlug.eq(&framework))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     row.delete(&txn).await?;
     Audit::record(
         &txn,
@@ -649,17 +653,17 @@ pub(super) async fn declare_skill(
     let skill = skills::Entity::find()
         .filter(skills::Column::Pid.eq(payload.skill_pid))
         .filter(skills::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
     let native = crate::controllers::sfia::resolve_native(
-        &ctx.db,
+        &crate::db::orm(&ctx),
         payload.framework.as_deref(),
         payload.framework_level,
     )
     .await?;
     if let Some(n) = &native {
-        crate::controllers::sfia::check_defined(&ctx.db, skill.pid, n).await?;
+        crate::controllers::sfia::check_defined(&crate::db::orm(&ctx), skill.pid, n).await?;
     }
     // A stated 1–5 stands; otherwise the framework level is mapped, and the mapping is shown wherever it is read.
     let proficiency = payload
@@ -669,10 +673,10 @@ pub(super) async fn declare_skill(
     let existing = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::SkillPid.eq(skill.pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     let today = chrono::Utc::now().date_naive();
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let (source_framework, source_level, source_scale_max) =
         native.as_ref().map_or((None, None, None), |n| {
             (Some(n.framework.clone()), Some(n.level), Some(n.scale_max))
@@ -740,15 +744,16 @@ pub(super) async fn list_worker_skills(
     let rows = worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker.pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     // Where a level was stated on a framework's own scale, say so, with the framework's wording and the mapping used.
     let stated: Vec<_> = rows
         .iter()
         .map(|r| (r.skill_pid, r.source_framework.as_deref(), r.source_level))
         .collect();
-    let described = crate::controllers::sfia::native_descriptions(&ctx.db, &stated).await?;
-    let names = crate::controllers::sfia::framework_names(&ctx.db).await?;
+    let described =
+        crate::controllers::sfia::native_descriptions(&crate::db::orm(&ctx), &stated).await?;
+    let names = crate::controllers::sfia::framework_names(&crate::db::orm(&ctx)).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
         .map(|r| {

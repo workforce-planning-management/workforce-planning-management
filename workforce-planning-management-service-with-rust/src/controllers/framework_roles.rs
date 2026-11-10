@@ -66,7 +66,7 @@ async fn current_selection(
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker_pid))
         .filter(worker_framework_roles::Column::FrameworkSlug.eq(framework))
         .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?)
 }
 
@@ -81,7 +81,7 @@ async fn list_selections(
     let rows = worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.eq(worker.pid))
         .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?;
     format::json(rows.iter().map(selection_json).collect::<Vec<_>>())
 }
@@ -115,7 +115,7 @@ async fn set_selection(
             .filter(role_profiles::Column::Pid.eq(profile_pid))
             .filter(role_profiles::Column::DeletedAt.is_null())
             .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?
             .ok_or_else(|| unprocessable("that is not a UK GDAD PCF role level"))?;
         (Some(profile.pid), None, profile.job_title)
@@ -136,7 +136,7 @@ async fn set_selection(
     {
         return format::json(selection_json(&current));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     // The previous role ends now — that is what makes it a *past* role.
     close_current(&txn, worker.pid, &framework).await?;
     let now: sea_orm::prelude::DateTimeWithTimeZone = chrono::Utc::now().into();
@@ -179,7 +179,7 @@ async fn clear_selection(
 ) -> Result<Response> {
     check_framework(&framework)?;
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     close_current(&txn, worker.pid, &framework).await?;
     Audit::record(
         &txn,
@@ -219,7 +219,7 @@ async fn declared_levels(ctx: &AppContext, worker_pid: Uuid) -> Result<BTreeMap<
     Ok(worker_skills::Entity::find()
         .filter(worker_skills::Column::WorkerPid.eq(worker_pid))
         .filter(worker_skills::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|d| (d.skill_pid, d.proficiency))
@@ -249,10 +249,10 @@ async fn role_skills(
         let profile_pid = selection.role_profile_pid.ok_or(Error::NotFound)?;
         let requirements = role_skill_requirements::Entity::find()
             .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile_pid))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?;
         let names: BTreeMap<Uuid, String> = skills::Entity::find()
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .into_iter()
             .map(|s| (s.pid, s.name))
@@ -281,7 +281,7 @@ async fn role_skills(
             .ok_or(Error::NotFound)?;
         let links: BTreeMap<String, Uuid> = skill_external_refs::Entity::find()
             .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-            .all(&ctx.db)
+            .all(&crate::db::orm(&ctx))
             .await?
             .into_iter()
             .map(|r| (r.reference, r.skill_pid))
@@ -420,12 +420,12 @@ async fn set_skills(
     );
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
     let version = if framework == ESCO_SLUG {
-        pinned_version(&ctx.db).await?
+        pinned_version(&crate::db::orm(&ctx)).await?
     } else {
         None
     };
 
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let (mut declared, mut removed, mut created, mut linked) = (0usize, 0usize, 0usize, 0usize);
     for choice in &choices {
         let skill_pid = if framework == PCF_SLUG {
@@ -510,10 +510,13 @@ async fn selectable(State(ctx): State<AppContext>) -> Result<Response> {
     let pcf = role_profiles::Entity::find()
         .filter(role_profiles::Column::DeletedAt.is_null())
         .filter(role_profiles::Column::FrameworkSlug.eq(PCF_SLUG))
-        .all(&ctx.db)
+        .all(&crate::db::orm(&ctx))
         .await?
         .len();
-    let esco = esco_occupations::Entity::find().all(&ctx.db).await?.len();
+    let esco = esco_occupations::Entity::find()
+        .all(&crate::db::orm(&ctx))
+        .await?
+        .len();
     format::json(serde_json::json!([
         { "slug": PCF_SLUG, "name": "UK Government Digital and Data Profession Capability Framework", "roles": pcf, "available": pcf > 0 },
         { "slug": ESCO_SLUG, "name": "ESCO — European Skills, Competences, Qualifications and Occupations", "roles": esco, "available": esco > 0 },

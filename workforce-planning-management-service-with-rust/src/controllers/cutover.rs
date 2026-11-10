@@ -50,7 +50,7 @@ async fn cutover_in_scope(
 ) -> Result<cutovers::Model> {
     let row = cutovers::Entity::find()
         .filter(cutovers::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
@@ -128,7 +128,7 @@ async fn create(
         let found = rota_table::Entity::find()
             .filter(rota_table::Column::Pid.eq(rota))
             .filter(rota_table::Column::DeletedAt.is_null())
-            .one(&ctx.db)
+            .one(&crate::db::orm(&ctx))
             .await?;
         if found.is_none_or(|r| r.organization_ref != p.organization_ref) {
             return Err(unprocessable(
@@ -136,7 +136,7 @@ async fn create(
             ));
         }
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = cutovers::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         organization_ref: ActiveValue::set(p.organization_ref),
@@ -161,7 +161,7 @@ async fn course_known(ctx: &AppContext, course_ref: &str) -> Result<bool> {
     let catalogued = skill_courses::Entity::find()
         .filter(skill_courses::Column::CourseRef.eq(course_ref))
         .filter(skill_courses::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .is_some();
     if catalogued {
@@ -170,7 +170,7 @@ async fn course_known(ctx: &AppContext, course_ref: &str) -> Result<bool> {
     Ok(training_enrollments::Entity::find()
         .filter(training_enrollments::Column::CourseRef.eq(course_ref))
         .filter(training_enrollments::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?
         .is_some())
 }
@@ -208,7 +208,7 @@ async fn add_role(
     let profile = role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.eq(p.role_profile_pid))
         .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     if profile.is_none() {
         return Err(unprocessable("that role profile does not exist"));
@@ -216,7 +216,7 @@ async fn add_role(
     let taken = cutover_roles::Entity::find()
         .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
         .filter(cutover_roles::Column::RoleProfilePid.eq(p.role_profile_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if taken {
@@ -224,7 +224,7 @@ async fn add_role(
             "that role is already listed for this cutover",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = cutover_roles::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cutover_pid: ActiveValue::set(c.pid),
@@ -262,7 +262,7 @@ async fn add_pool(
     let pool = skill_pools::Entity::find()
         .filter(skill_pools::Column::Pid.eq(p.pool_pid))
         .filter(skill_pools::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?;
     if pool.is_none_or(|x| x.organization_ref != c.organization_ref) {
         return Err(unprocessable(
@@ -272,7 +272,7 @@ async fn add_pool(
     let taken = cutover_pools::Entity::find()
         .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
         .filter(cutover_pools::Column::PoolPid.eq(p.pool_pid))
-        .one(&ctx.db)
+        .one(&crate::db::orm(&ctx))
         .await?
         .is_some();
     if taken {
@@ -280,7 +280,7 @@ async fn add_pool(
             "that pool is already listed for this cutover",
         ));
     }
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     let row = cutover_pools::ActiveModel {
         pid: ActiveValue::set(Uuid::new_v4()),
         cutover_pid: ActiveValue::set(c.pid),
@@ -305,7 +305,7 @@ async fn remove(
 ) -> Result<Response> {
     let c = cutover_in_scope(&ctx, &caller, &pid).await?;
     ensure_may_freeze(&ctx, &caller, &c.organization_ref).await?;
-    let txn = ctx.db.begin().await?;
+    let txn = crate::db::orm(&ctx).begin().await?;
     cutover_roles::Entity::delete_many()
         .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
         .exec(&txn)
@@ -352,7 +352,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     let roles = cutover_roles::Entity::find()
         .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
         .order_by_asc(cutover_roles::Column::Id)
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?;
     if roles.is_empty() {
         return Ok(rules::trained_staff(&[]));
@@ -360,7 +360,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     let staff: Vec<workers::Model> = workers::Entity::find()
         .filter(workers::Column::OrganizationRef.eq(&c.organization_ref))
         .filter(workers::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter(|w| is_employed_on(c.window_start, w.hired_on, w.terminated_on))
@@ -368,7 +368,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let profiles: BTreeMap<Uuid, role_profiles::Model> = role_profiles::Entity::find()
         .filter(role_profiles::Column::Pid.is_in(roles.iter().map(|r| r.role_profile_pid)))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|p| (p.pid, p))
@@ -377,7 +377,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     for row in worker_framework_roles::Entity::find()
         .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
         .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
     {
         if let Some(role) = row.role_profile_pid {
@@ -405,7 +405,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
             .filter(training_enrollments::Column::Status.eq("completed"))
             .filter(training_enrollments::Column::DeletedAt.is_null())
             .filter(training_enrollments::Column::WorkerPid.is_in(of_role.iter().map(|w| w.pid)))
-            .all(&ctx.db)
+            .all(&crate::db::orm(ctx))
             .await?
             .into_iter()
             .filter(|e| e.completed_on.is_some_and(|d| d <= c.window_start))
@@ -445,7 +445,7 @@ async fn hypercare_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules:
     let rota = rota_table::Entity::find()
         .filter(rota_table::Column::Pid.eq(rota_pid))
         .filter(rota_table::Column::DeletedAt.is_null())
-        .one(&ctx.db)
+        .one(&crate::db::orm(ctx))
         .await?;
     let Some(rota) = rota else {
         return Ok(rules::hypercare(false, &[]));
@@ -463,7 +463,7 @@ async fn hypercare_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules:
 async fn key_person_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::Check> {
     let pools: Vec<Uuid> = cutover_pools::Entity::find()
         .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .map(|p| p.pool_pid)
@@ -474,7 +474,7 @@ async fn key_person_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules
     let wanted: BTreeSet<Uuid> = skill_pool_members::Entity::find()
         .filter(skill_pool_members::Column::PoolPid.is_in(pools))
         .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .all(&ctx.db)
+        .all(&crate::db::orm(ctx))
         .await?
         .into_iter()
         .filter_map(|m| m.skill_pid)
