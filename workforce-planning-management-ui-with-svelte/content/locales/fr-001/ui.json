@@ -111,7 +111,10 @@
     "respond": "Répondre",
     "report": "Rapport",
     "withheld": "Masqué sous 3 réponses",
-    "requests": "Mes demandes 360"
+    "requests": "Mes demandes 360",
+    "hint": "Une évaluation 360° recueille l'avis d'un responsable, de pairs et de collaborateurs, en plus de la personne elle-même. Indiquez les compétences, créez-en une nouvelle, désignez au moins trois évaluateurs, puis lancez la collecte. Un groupe de moins de trois réponses n'est jamais affiché.",
+    "competencies": "Compétences (séparées par des virgules, douze au plus)",
+    "recordLink": "Mon dossier : absences, bulletins de paie, évaluations et évaluations 360°"
   },
   "notif": {
     "markRead": "Marquer comme lue",

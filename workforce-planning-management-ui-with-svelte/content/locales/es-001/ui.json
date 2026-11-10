@@ -111,7 +111,10 @@
     "respond": "Responder",
     "report": "Informe",
     "withheld": "Retenido por debajo de 3 respuestas",
-    "requests": "Mis solicitudes 360"
+    "requests": "Mis solicitudes 360",
+    "hint": "Una evaluación 360° reúne opiniones de un responsable, compañeros y subordinados, además de la propia persona. Indique las competencias, cree una nueva, nombre al menos tres evaluadores y empiece a recoger respuestas. Un grupo con menos de tres respuestas nunca se muestra.",
+    "competencies": "Competencias (separadas por comas, hasta doce)",
+    "recordLink": "Mi expediente: ausencias, nóminas, evaluaciones y evaluaciones 360°"
   },
   "notif": {
     "markRead": "Marcar leída",

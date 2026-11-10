@@ -111,7 +111,10 @@
     "respond": "Tanggapi",
     "report": "Laporan",
     "withheld": "Ditahan di bawah 3 tanggapan",
-    "requests": "Permintaan 360 saya"
+    "requests": "Permintaan 360 saya",
+    "hint": "Penilaian 360° mengumpulkan masukan dari atasan, rekan, dan bawahan, selain dari orang itu sendiri. Sebutkan kompetensinya, buat yang baru, nominasikan setidaknya tiga penilai, lalu mulai mengumpulkan. Kelompok dengan kurang dari tiga tanggapan tidak pernah ditampilkan.",
+    "competencies": "Kompetensi (dipisahkan koma, paling banyak dua belas)",
+    "recordLink": "Catatan saya: cuti, slip gaji, tinjauan, dan penilaian 360°"
   },
   "notif": {
     "markRead": "Tandai dibaca",

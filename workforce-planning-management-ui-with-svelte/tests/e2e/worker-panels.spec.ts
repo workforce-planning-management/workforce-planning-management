@@ -235,6 +235,24 @@ test.describe("Worker page panels", () => {
     expect(writes[2]).toContain('"to":"collecting"');
   });
 
+  test("a new 360 asks about the competencies the person names (WPM-T485)", async ({
+    page,
+  }) => {
+    const writes: string[] = [];
+    await json(page, `${W}/appraisals`, []);
+    await record(page, `${W}/appraisals`, writes);
+    await page.goto(`/workers/${WORKER.pid}#appraisals`);
+    const panel = page.getByTestId("appraisals");
+    await expect(page.locator("h2#appraisals")).toBeVisible();
+    const field = panel.getByTestId("appraisal-competencies");
+    await field.fill("listening, , planning ");
+    await panel.getByTestId("appraisal-new").click();
+    await expect.poll(() => writes.length).toBe(1);
+    expect(writes[0]).toContain('"competencies":["listening","planning"]');
+    await field.fill(" , ");
+    await expect(panel.getByTestId("appraisal-new")).toBeDisabled();
+  });
+
   test("answers a request to rate someone else", async ({ page }) => {
     const writes: string[] = [];
     await record(page, "**/api/proxy/appraisals/a9/responses", writes, {});

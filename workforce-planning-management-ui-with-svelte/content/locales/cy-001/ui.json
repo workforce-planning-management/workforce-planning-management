@@ -111,7 +111,10 @@
     "respond": "Ymateb",
     "report": "Adroddiad",
     "withheld": "Wedi'i atal o dan 3 ymateb",
-    "requests": "Fy ngheisiadau 360"
+    "requests": "Fy ngheisiadau 360",
+    "hint": "Mae 360° yn casglu adborth gan reolwr, cymheiriaid ac adroddiadau yn ogystal â'r person. Enwch y cymwyseddau, dechreuwch un newydd, enwebwch o leiaf dri graddiwr, yna dechreuwch gasglu. Ni ddangosir byth grŵp gyda llai na thri ymateb.",
+    "competencies": "Cymwyseddau (wedi'u gwahanu gan atalnodau, hyd at ddeuddeg)",
+    "recordLink": "Fy nghofnod: absenoldeb, slipiau cyflog, adolygiadau ac arfarniadau 360°"
   },
   "notif": {
     "markRead": "Marcio fel darllenwyd",

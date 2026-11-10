@@ -37,3 +37,31 @@ Acceptance criteria:
   setting nobody uses would be a promise nobody tests.
 - **What to try is chosen from the catalogue's own failure sentences**, not from the service's message, so it is in the reader's
   language and says nothing the page does not know.
+
+## Uploading an appraisal: an open question (WPM-T485)
+
+"Make it easy to upload appraisals" has more than one reading, and none of them is settled by the spec. What WPM has today:
+
+- **360° appraisals** (WPM-R29, WPM-D21): an appraisal, its raters and their scores per competency, entered in the app; the report is
+  a group aggregate with a floor. Before WPM-T485 the only way in was the subject's worker page, which nothing on `/me` linked to,
+  and the "New 360" button fixed three competencies.
+- **Performance reviews** with a 1–5 rating, and the **PADR** (WPM-R172, WPM-D176), written and signed in the app.
+- **No file store at all.** WPM keeps no documents: "No certificate is stored: the evidence is a reference to where it is held"
+  (WPM-R171), and review content is high sensitivity (`auth.md`).
+
+The readings, and what each would need:
+
+1. **Attach a completed appraisal document** (a PDF of a paper appraisal). Needs a document store, which WPM has deliberately never
+   had; review content is high sensitivity, so it would also need erasure, subject access, retention and audit for files. It runs
+   against the WPM-R171 stance. Not built.
+2. **Record an appraisal done elsewhere**, as mandatory learning records a completion done elsewhere (WPM-R170): the date, the kind
+   (performance review or PADR), who held it, and a **reference to where the document is held**, no file. This is the smallest
+   fit with the privacy rules, and it would let a paper PADR count toward the pay-step standard (WPM-R173). It needs a table and a
+   migration, which this task's limits did not allow. Not built.
+3. **Import appraisal records in bulk** (a CSV of 360° responses or review ratings from another system). Responses carry the
+   rater's identity procedurally and the floor is the protection (WPM-D21); a bulk import would bypass "once per rater" and
+   needs a decision on who may do it. Not built.
+
+**Built (WPM-T485):** only what makes the existing path easy to find and use: `/me` links to the person's own record at its
+appraisals, the panel says how a 360 runs, and the person running a 360 names its competencies (up to twelve, as the service
+allows) instead of the three the button fixed. The maintainer is asked which reading is meant; reading 2 is the recommendation.

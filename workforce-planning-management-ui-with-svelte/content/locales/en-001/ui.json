@@ -111,7 +111,10 @@
     "respond": "Respond",
     "report": "Report",
     "withheld": "Withheld below 3 responses",
-    "requests": "My 360 requests"
+    "requests": "My 360 requests",
+    "hint": "A 360° gathers feedback from a manager, peers and reports as well as the person. Name the competencies, start a new one, nominate at least three raters, then start collecting. A group with fewer than three responses is never shown.",
+    "competencies": "Competencies (comma separated, up to twelve)",
+    "recordLink": "My record: leave, payslips, reviews and 360° appraisals"
   },
   "notif": {
     "markRead": "Mark read",

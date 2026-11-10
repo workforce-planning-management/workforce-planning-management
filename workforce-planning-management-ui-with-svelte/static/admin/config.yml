@@ -169,6 +169,9 @@ collections:
               - { name: "report", label: "Report", widget: string, required: false, i18n: true }
               - { name: "withheld", label: "Withheld", widget: string, required: false, i18n: true }
               - { name: "requests", label: "Requests", widget: string, required: false, i18n: true }
+              - { name: "hint", label: "Hint", widget: text, required: false, i18n: true }
+              - { name: "competencies", label: "Competencies", widget: string, required: false, i18n: true }
+              - { name: "recordLink", label: "Record Link", widget: string, required: false, i18n: true }
           - name: "notif"
             label: "Notif"
             widget: object

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — 360° appraisals easier to find and start (WPM-T485)
+
+`/me` links to the person's own record at its appraisals; "New 360" asks which competencies (up to twelve). 3 strings in 13 locales.
+
 ### Added — getting help (WPM-R243, WPM-T484)
 
 A Help link in the header, a public `/help` page, a next step and a help link under every error (`ErrorNote`), and a not-found page

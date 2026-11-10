@@ -111,7 +111,10 @@
     "respond": "Antworten senden",
     "report": "Bericht",
     "withheld": "Unter 3 Antworten zurückgehalten",
-    "requests": "Meine 360-Anfragen"
+    "requests": "Meine 360-Anfragen",
+    "hint": "Ein 360°-Feedback sammelt Rückmeldungen von Führungskraft, Kolleginnen und Kollegen und Mitarbeitenden sowie von der Person selbst. Nennen Sie die Kompetenzen, legen Sie ein neues an, nominieren Sie mindestens drei Bewertende und starten Sie dann die Sammlung. Eine Gruppe mit weniger als drei Antworten wird nie angezeigt.",
+    "competencies": "Kompetenzen (durch Kommas getrennt, höchstens zwölf)",
+    "recordLink": "Meine Akte: Abwesenheit, Gehaltsabrechnungen, Beurteilungen und 360°-Feedback"
   },
   "notif": {
     "markRead": "Als gelesen markieren",

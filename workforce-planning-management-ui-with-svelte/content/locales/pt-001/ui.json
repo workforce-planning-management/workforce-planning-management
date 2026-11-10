@@ -111,7 +111,10 @@
     "respond": "Responder",
     "report": "Relatório",
     "withheld": "Retido abaixo de 3 respostas",
-    "requests": "Minhas solicitações 360"
+    "requests": "Minhas solicitações 360",
+    "hint": "Uma avaliação 360° recolhe opiniões de uma chefia, de colegas e de subordinados, além da própria pessoa. Indique as competências, crie uma nova, nomeie pelo menos três avaliadores e comece a recolher respostas. Um grupo com menos de três respostas nunca é mostrado.",
+    "competencies": "Competências (separadas por vírgulas, até doze)",
+    "recordLink": "O meu registo: ausências, recibos de vencimento, avaliações e avaliações 360°"
   },
   "notif": {
     "markRead": "Marcar como lida",

@@ -77,6 +77,9 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
       </label>
     </p>
   {/if}
+  <p>
+    <a href={l(`/workers/${workerPid}#appraisals`)} data-testid="my-record-link">{t("ap.recordLink")}</a>
+  </p>
   <p class="muted">
     {t("pages.me.say_what_you_do_now_in_each")}
   </p>
