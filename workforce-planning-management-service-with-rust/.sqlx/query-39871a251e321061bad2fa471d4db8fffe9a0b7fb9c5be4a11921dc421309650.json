@@ -1,0 +1,180 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO development_plan_benefits (pid, plan_pid, worker_pid, year, amount_minor, currency, source, stated_by,\n                                                  stated_on, deleted_at)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, plan_pid, worker_pid, year,\n                     amount_minor, currency, source, stated_by, stated_on, deleted_at AS \"deleted_at: _\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "plan_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "plan_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "year",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "year"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "amount_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "amount_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "stated_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "stated_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "stated_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "stated_on"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "development_plan_benefits",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "39871a251e321061bad2fa471d4db8fffe9a0b7fb9c5be4a11921dc421309650"
+}

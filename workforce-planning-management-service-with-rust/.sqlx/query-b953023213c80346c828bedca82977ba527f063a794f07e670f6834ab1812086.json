@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO change_initiatives (pid, name, description, kind, status, starts_on, deleted_at)\n         VALUES ($1, $2, $3, $4, 'draft', $5, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b953023213c80346c828bedca82977ba527f063a794f07e670f6834ab1812086"
+}

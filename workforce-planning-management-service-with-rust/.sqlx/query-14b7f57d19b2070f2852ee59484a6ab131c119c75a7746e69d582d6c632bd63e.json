@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT gross_minor FROM payslips WHERE run_pid = ANY($1) AND worker_pid = $2 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "gross_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "payslips",
+            "name": "gross_minor"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "14b7f57d19b2070f2852ee59484a6ab131c119c75a7746e69d582d6c632bd63e"
+}

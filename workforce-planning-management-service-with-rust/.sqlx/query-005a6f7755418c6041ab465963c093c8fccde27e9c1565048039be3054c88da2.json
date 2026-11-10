@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT level, description, attributes, retired_in FROM sfia_skill_levels WHERE code = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "level"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "description",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "description"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "attributes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "attributes"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "retired_in",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "sfia_skill_levels",
+            "name": "retired_in"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "005a6f7755418c6041ab465963c093c8fccde27e9c1565048039be3054c88da2"
+}

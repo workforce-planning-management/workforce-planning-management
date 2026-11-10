@@ -15,46 +15,50 @@ use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::oversight_packs::ensure_may_freeze;
 use super::{ensure_valid, key_person, rotas, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    cutover_pools, cutover_roles, cutovers, role_profiles, rotas as rota_table, skill_courses,
-    skill_pool_members, skill_pools, training_enrollments, worker_framework_roles, workers,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{cutovers, rotas as rota_table};
 use crate::models::records;
 use crate::rules::cutover as rules;
 use crate::rules::metrics::is_employed_on;
 use crate::validation::Problems;
-
-async fn audit<C: ConnectionTrait>(
-    db: &C,
-    caller: &MaybeAuthUser,
-    kind: &str,
-    pid: Uuid,
-    action: &str,
-) -> Result<()> {
-    Audit::record(db, kind, pid, action, caller.actor(), None).await?;
-    Ok(())
-}
 
 async fn cutover_in_scope(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<cutovers::Model> {
-    let row = cutovers::Entity::find()
-        .filter(cutovers::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let row = sqlx::query_as!(
+        cutovers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, programme_ref,
+                  name, site, window_start, window_end, rota_pid, site_aliases
+             FROM cutovers WHERE pid = $1"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &row.organization_ref).await?;
     Ok(row)
+}
+
+/// A live rota by pid.
+async fn live_rota(ctx: &AppContext, pid: Uuid) -> Result<Option<rota_table::Model>> {
+    Ok(sqlx::query_as!(
+        rota_table::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, name,
+                  description, period_days, starts_on, deleted_at AS "deleted_at: _"
+             FROM rotas WHERE pid = $1 AND deleted_at IS NULL"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 fn cutover_json(c: &cutovers::Model) -> serde_json::Value {
@@ -125,54 +129,47 @@ async fn create(
     ensure_org_in_scope(&ctx, &caller, &p.organization_ref).await?;
     ensure_may_freeze(&ctx, &caller, &p.organization_ref).await?;
     if let Some(rota) = p.rota_pid {
-        let found = rota_table::Entity::find()
-            .filter(rota_table::Column::Pid.eq(rota))
-            .filter(rota_table::Column::DeletedAt.is_null())
-            .one(&crate::db::orm(&ctx))
-            .await?;
+        let found = live_rota(&ctx, rota).await?;
         if found.is_none_or(|r| r.organization_ref != p.organization_ref) {
             return Err(unprocessable(
                 "that rota is not one of this organization's rotas",
             ));
         }
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = cutovers::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        programme_ref: ActiveValue::set(p.programme_ref),
-        name: ActiveValue::set(p.name),
-        site: ActiveValue::set(p.site),
-        window_start: ActiveValue::set(p.window_start),
-        window_end: ActiveValue::set(p.window_end),
-        rota_pid: ActiveValue::set(p.rota_pid),
-        site_aliases: ActiveValue::set(json!(aliases)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        cutovers::Model,
+        r#"INSERT INTO cutovers (pid, organization_ref, programme_ref, name, site, window_start, window_end, rota_pid,
+                                 site_aliases)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref,
+                     programme_ref, name, site, window_start, window_end, rota_pid, site_aliases"#,
+        Uuid::new_v4(),
+        p.organization_ref,
+        p.programme_ref,
+        p.name,
+        p.site,
+        p.window_start,
+        p.window_end,
+        p.rota_pid,
+        json!(aliases),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    audit(&txn, &caller, "cutover", row.pid, "created").await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "cutover", row.pid, "created", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(cutover_json(&row))
 }
 
 /// Whether the learning records know the course: a catalogue entry or any enrollment carries the reference.
 async fn course_known(ctx: &AppContext, course_ref: &str) -> Result<bool> {
-    let catalogued = skill_courses::Entity::find()
-        .filter(skill_courses::Column::CourseRef.eq(course_ref))
-        .filter(skill_courses::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .is_some();
-    if catalogued {
-        return Ok(true);
-    }
-    Ok(training_enrollments::Entity::find()
-        .filter(training_enrollments::Column::CourseRef.eq(course_ref))
-        .filter(training_enrollments::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .is_some())
+    Ok(sqlx::query_scalar!(
+        r#"SELECT (EXISTS (SELECT 1 FROM skill_courses WHERE course_ref = $1 AND deleted_at IS NULL)
+                OR EXISTS (SELECT 1 FROM training_enrollments WHERE course_ref = $1 AND deleted_at IS NULL)) AS "known!""#,
+        course_ref,
+    )
+    .fetch_one(db::pool(ctx))
+    .await?)
 }
 
 /// `POST /api/cutovers/{pid}/roles` body.
@@ -205,41 +202,46 @@ async fn add_role(
     if p.required_headcount < 1 {
         return Err(unprocessable("required_headcount must be at least 1"));
     }
-    let profile = role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.eq(p.role_profile_pid))
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?;
+    let profile = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM role_profiles WHERE pid = $1 AND deleted_at IS NULL"#,
+        p.role_profile_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     if profile.is_none() {
         return Err(unprocessable("that role profile does not exist"));
     }
-    let taken = cutover_roles::Entity::find()
-        .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
-        .filter(cutover_roles::Column::RoleProfilePid.eq(p.role_profile_pid))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM cutover_roles WHERE cutover_pid = $1 AND role_profile_pid = $2"#,
+        c.pid,
+        p.role_profile_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .is_some();
     if taken {
         return Err(unprocessable(
             "that role is already listed for this cutover",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = cutover_roles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        cutover_pid: ActiveValue::set(c.pid),
-        role_profile_pid: ActiveValue::set(p.role_profile_pid),
-        course_ref: ActiveValue::set(p.course_ref),
-        required_headcount: ActiveValue::set(p.required_headcount),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO cutover_roles (pid, cutover_pid, role_profile_pid, course_ref, required_headcount)
+         VALUES ($1, $2, $3, $4, $5)",
+        pid,
+        c.pid,
+        p.role_profile_pid,
+        p.course_ref,
+        p.required_headcount,
+    )
+    .execute(&mut *tx)
     .await?;
-    audit(&txn, &caller, "cutover_role", row.pid, "added").await?;
-    txn.commit().await?;
+    db::audit(&mut tx, "cutover_role", pid, "added", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(json!({
-        "pid": row.pid, "cutover_pid": row.cutover_pid, "role_profile_pid": row.role_profile_pid,
-        "course_ref": row.course_ref, "lms_url": super::lms::course_url(&row.course_ref), "required_headcount": row.required_headcount,
+        "pid": pid, "cutover_pid": c.pid, "role_profile_pid": p.role_profile_pid,
+        "course_ref": p.course_ref, "lms_url": super::lms::course_url(&p.course_ref), "required_headcount": p.required_headcount,
     }))
 }
 
@@ -259,41 +261,43 @@ async fn add_pool(
 ) -> Result<Response> {
     let c = cutover_in_scope(&ctx, &caller, &pid).await?;
     ensure_may_freeze(&ctx, &caller, &c.organization_ref).await?;
-    let pool = skill_pools::Entity::find()
-        .filter(skill_pools::Column::Pid.eq(p.pool_pid))
-        .filter(skill_pools::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(&ctx))
-        .await?;
-    if pool.is_none_or(|x| x.organization_ref != c.organization_ref) {
+    let pool_org = sqlx::query_scalar!(
+        "SELECT organization_ref FROM skill_pools WHERE pid = $1 AND deleted_at IS NULL",
+        p.pool_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
+    if pool_org.is_none_or(|org| org != c.organization_ref) {
         return Err(unprocessable(
             "that pool is not one of this organization's pools",
         ));
     }
-    let taken = cutover_pools::Entity::find()
-        .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
-        .filter(cutover_pools::Column::PoolPid.eq(p.pool_pid))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM cutover_pools WHERE cutover_pid = $1 AND pool_pid = $2"#,
+        c.pid,
+        p.pool_pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .is_some();
     if taken {
         return Err(unprocessable(
             "that pool is already listed for this cutover",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = cutover_pools::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        cutover_pid: ActiveValue::set(c.pid),
-        pool_pid: ActiveValue::set(p.pool_pid),
-        ..Default::default()
-    }
-    .insert(&txn)
-    .await?;
-    audit(&txn, &caller, "cutover_pool", row.pid, "added").await?;
-    txn.commit().await?;
-    format::json(
-        json!({ "pid": row.pid, "cutover_pid": row.cutover_pid, "pool_pid": row.pool_pid }),
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO cutover_pools (pid, cutover_pid, pool_pid) VALUES ($1, $2, $3)",
+        pid,
+        c.pid,
+        p.pool_pid,
     )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(&mut tx, "cutover_pool", pid, "added", caller.actor(), None).await?;
+    tx.commit().await?;
+    format::json(json!({ "pid": pid, "cutover_pid": c.pid, "pool_pid": p.pool_pid }))
 }
 
 /// `DELETE /api/cutovers/{pid}` — the cutover with its roles and pools.
@@ -305,18 +309,18 @@ async fn remove(
 ) -> Result<Response> {
     let c = cutover_in_scope(&ctx, &caller, &pid).await?;
     ensure_may_freeze(&ctx, &caller, &c.organization_ref).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    cutover_roles::Entity::delete_many()
-        .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM cutover_roles WHERE cutover_pid = $1", c.pid)
+        .execute(&mut *tx)
         .await?;
-    cutover_pools::Entity::delete_many()
-        .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
-        .exec(&txn)
+    sqlx::query!("DELETE FROM cutover_pools WHERE cutover_pid = $1", c.pid)
+        .execute(&mut *tx)
         .await?;
-    cutovers::Entity::delete_by_id(c.id).exec(&txn).await?;
-    audit(&txn, &caller, "cutover", c.pid, "removed").await?;
-    txn.commit().await?;
+    sqlx::query!("DELETE FROM cutovers WHERE id = $1", c.id)
+        .execute(&mut *tx)
+        .await?;
+    db::audit(&mut tx, "cutover", c.pid, "removed", caller.actor(), None).await?;
+    tx.commit().await?;
     format::json(json!({ "removed": c.pid }))
 }
 
@@ -339,46 +343,72 @@ async fn list(
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let select = cutovers::Entity::find()
-        .filter(cutovers::Column::OrganizationRef.eq(&org))
-        .order_by_asc(cutovers::Column::WindowStart)
-        .order_by_asc(cutovers::Column::Id);
-    super::paged_select(&ctx, select, window, |c| Ok(cutover_json(c))).await
+    let (limit, offset) = window.bounds();
+    let rows = sqlx::query_as!(
+        cutovers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, programme_ref,
+                  name, site, window_start, window_end, rota_pid, site_aliases
+             FROM cutovers WHERE organization_ref = $1 ORDER BY window_start, id LIMIT $2 OFFSET $3"#,
+        org,
+        limit,
+        offset,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    Ok(window.respond(rows.iter().map(cutover_json).collect::<Vec<_>>()))
+}
+
+/// What the trained-staff check reads of a worker.
+struct Staff {
+    pid: Uuid,
+    job_title: String,
+    location: Option<String>,
+    hired_on: NaiveDate,
+    terminated_on: Option<NaiveDate>,
 }
 
 /// The trained-staff check: for each required role, the people of the role at the site who completed
 /// the course and hold it through the window, and the people of the role with no site on file.
 async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::Check> {
-    let roles = cutover_roles::Entity::find()
-        .filter(cutover_roles::Column::CutoverPid.eq(c.pid))
-        .order_by_asc(cutover_roles::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let roles = sqlx::query!(
+        "SELECT role_profile_pid, course_ref, required_headcount FROM cutover_roles WHERE cutover_pid = $1 ORDER BY id",
+        c.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     if roles.is_empty() {
         return Ok(rules::trained_staff(&[]));
     }
-    let staff: Vec<workers::Model> = workers::Entity::find()
-        .filter(workers::Column::OrganizationRef.eq(&c.organization_ref))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .filter(|w| is_employed_on(c.window_start, w.hired_on, w.terminated_on))
-        .collect();
+    let staff: Vec<Staff> = sqlx::query_as!(
+        Staff,
+        "SELECT pid, job_title, location, hired_on, terminated_on FROM workers
+          WHERE organization_ref = $1 AND deleted_at IS NULL ORDER BY id",
+        c.organization_ref,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .filter(|w| is_employed_on(c.window_start, w.hired_on, w.terminated_on))
+    .collect();
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
-    let profiles: BTreeMap<Uuid, role_profiles::Model> = role_profiles::Entity::find()
-        .filter(role_profiles::Column::Pid.is_in(roles.iter().map(|r| r.role_profile_pid)))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|p| (p.pid, p))
-        .collect();
+    let role_pids: Vec<Uuid> = roles.iter().map(|r| r.role_profile_pid).collect();
+    // Every profile a role names, soft-deleted or not, as before.
+    let profiles: BTreeMap<Uuid, String> = sqlx::query!(
+        "SELECT pid, job_title FROM role_profiles WHERE pid = ANY($1)",
+        &role_pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|p| (p.pid, p.job_title))
+    .collect();
     let mut chosen: HashMap<Uuid, BTreeSet<Uuid>> = HashMap::new();
-    for row in worker_framework_roles::Entity::find()
-        .filter(worker_framework_roles::Column::WorkerPid.is_in(pids.clone()))
-        .filter(worker_framework_roles::Column::EndedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?
+    for row in sqlx::query!(
+        "SELECT worker_pid, role_profile_pid FROM worker_framework_roles WHERE worker_pid = ANY($1) AND ended_at IS NULL",
+        &pids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
     {
         if let Some(role) = row.role_profile_pid {
             chosen.entry(row.worker_pid).or_default().insert(role);
@@ -387,11 +417,11 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     let names = site_names(c);
     let mut out = Vec::new();
     for role in &roles {
-        let Some(profile) = profiles.get(&role.role_profile_pid) else {
+        let Some(job_title) = profiles.get(&role.role_profile_pid) else {
             continue;
         };
-        let title = profile.job_title.trim().to_lowercase();
-        let of_role: Vec<&workers::Model> = staff
+        let title = job_title.trim().to_lowercase();
+        let of_role: Vec<&Staff> = staff
             .iter()
             .filter(|w| {
                 chosen
@@ -400,21 +430,23 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
                     || w.job_title.trim().to_lowercase() == title
             })
             .collect();
-        let done: BTreeSet<Uuid> = training_enrollments::Entity::find()
-            .filter(training_enrollments::Column::CourseRef.eq(&role.course_ref))
-            .filter(training_enrollments::Column::Status.eq("completed"))
-            .filter(training_enrollments::Column::DeletedAt.is_null())
-            .filter(training_enrollments::Column::WorkerPid.is_in(of_role.iter().map(|w| w.pid)))
-            .all(&crate::db::orm(ctx))
-            .await?
-            .into_iter()
-            .filter(|e| e.completed_on.is_some_and(|d| d <= c.window_start))
-            .filter(|e| e.certificate_expires_on.is_none_or(|d| d >= c.window_end))
-            .map(|e| e.worker_pid)
-            .collect();
-        let at = |w: &&workers::Model| rules::at_site(w.location.as_deref(), &names);
-        let unplaced = |w: &&workers::Model| rules::unplaced(w.location.as_deref());
-        let count = |f: &dyn Fn(&&workers::Model) -> bool| {
+        let of_role_pids: Vec<Uuid> = of_role.iter().map(|w| w.pid).collect();
+        let done: BTreeSet<Uuid> = sqlx::query!(
+            "SELECT worker_pid, completed_on, certificate_expires_on FROM training_enrollments
+              WHERE course_ref = $1 AND status = 'completed' AND deleted_at IS NULL AND worker_pid = ANY($2)",
+            role.course_ref,
+            &of_role_pids,
+        )
+        .fetch_all(db::pool(ctx))
+        .await?
+        .into_iter()
+        .filter(|e| e.completed_on.is_some_and(|d| d <= c.window_start))
+        .filter(|e| e.certificate_expires_on.is_none_or(|d| d >= c.window_end))
+        .map(|e| e.worker_pid)
+        .collect();
+        let at = |w: &&Staff| rules::at_site(w.location.as_deref(), &names);
+        let unplaced = |w: &&Staff| rules::unplaced(w.location.as_deref());
+        let count = |f: &dyn Fn(&&Staff) -> bool| {
             u32::try_from(
                 of_role
                     .iter()
@@ -425,7 +457,7 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
             .unwrap_or(u32::MAX)
         };
         out.push((
-            profile.job_title.clone(),
+            job_title.clone(),
             rules::RoleCount {
                 required: u32::try_from(role.required_headcount).unwrap_or(u32::MAX),
                 trained: count(&at),
@@ -442,12 +474,7 @@ async fn hypercare_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules:
     let Some(rota_pid) = c.rota_pid else {
         return Ok(rules::hypercare(false, &[]));
     };
-    let rota = rota_table::Entity::find()
-        .filter(rota_table::Column::Pid.eq(rota_pid))
-        .filter(rota_table::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?;
-    let Some(rota) = rota else {
+    let Some(rota) = live_rota(ctx, rota_pid).await? else {
         return Ok(rules::hypercare(false, &[]));
     };
     let (_, _, assignments, _) = rotas::compute(ctx, &rota, c.window_start, c.window_end).await?;
@@ -461,24 +488,24 @@ async fn hypercare_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules:
 
 /// The key-person check over the skills of the listed pools.
 async fn key_person_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::Check> {
-    let pools: Vec<Uuid> = cutover_pools::Entity::find()
-        .filter(cutover_pools::Column::CutoverPid.eq(c.pid))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|p| p.pool_pid)
-        .collect();
+    let pools: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT pool_pid FROM cutover_pools WHERE cutover_pid = $1",
+        c.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     if pools.is_empty() {
         return Ok(rules::key_person(false, &[]));
     }
-    let wanted: BTreeSet<Uuid> = skill_pool_members::Entity::find()
-        .filter(skill_pool_members::Column::PoolPid.is_in(pools))
-        .filter(skill_pool_members::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .filter_map(|m| m.skill_pid)
-        .collect();
+    let wanted: BTreeSet<Uuid> = sqlx::query_scalar!(
+        "SELECT skill_pid FROM skill_pool_members WHERE pool_pid = ANY($1) AND deleted_at IS NULL",
+        &pools,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .flatten()
+    .collect();
     let scope = [c.organization_ref.clone()];
     let (rows, _) = key_person::rows(ctx, Some(&scope), Some(&site_names(c))).await?;
     let skills: Vec<(String, _, usize)> = rows

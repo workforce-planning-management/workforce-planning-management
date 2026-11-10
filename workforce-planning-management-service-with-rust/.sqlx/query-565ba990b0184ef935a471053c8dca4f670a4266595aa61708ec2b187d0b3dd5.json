@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT holder_worker_pid, overtime_status FROM positions\n          WHERE holder_worker_pid = ANY($1) AND state <> 'abolished' ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "holder_worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "holder_worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "overtime_status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "overtime_status"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "565ba990b0184ef935a471053c8dca4f670a4266595aa61708ec2b187d0b3dd5"
+}

@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT chain_seq AS \"chain_seq!\" FROM (\n               SELECT chain_seq, prev_hash, entry_hash,\n                      audit_entry_hash(prev_hash, chain_seq, entity, entity_pid, action, actor, snapshot, created_at) AS recomputed,\n                      lag(entry_hash) OVER (ORDER BY chain_seq) AS previous,\n                      lag(chain_seq) OVER (ORDER BY chain_seq) AS previous_seq\n                 FROM audit_logs\n           ) t\n           WHERE entry_hash <> recomputed\n              OR prev_hash <> COALESCE(previous, repeat('0', 64))\n              OR chain_seq <> COALESCE(previous_seq, 0) + 1\n           ORDER BY chain_seq LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chain_seq!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "audit_logs",
+            "name": "chain_seq"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "44d0cd4c8f8d602797c023b3062df03203fd11561b53c67c1c55083717af4736"
+}

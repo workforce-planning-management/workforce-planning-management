@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM oversight_readings\n          WHERE measure_pid IN (SELECT pid FROM oversight_measures WHERE criterion_pid = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0808f8f4b480a41aebf0a516b279b17a491112c08ea45ce4e7791f35171bb626"
+}

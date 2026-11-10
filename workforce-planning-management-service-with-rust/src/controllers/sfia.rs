@@ -7,22 +7,42 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use sea_orm::{ActiveValue, ConnectionTrait, TransactionTrait};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 use super::{ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
-use crate::models::_entities::{
-    capability_frameworks, role_profiles, role_skill_requirements, sfia_skill_levels, sfia_skills,
-    sfiaplus_resources, skill_external_refs, skills,
-};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
 use crate::rules::esco::normalise_label;
 use crate::rules::sfia as rules;
 use crate::tasks::import_sfia::SFIA_SLUG;
 use crate::validation::Problems;
+
+/// Whatever the helpers below can read through: the context, the pool, or, while callers outside this module still hold one,
+/// the `SeaORM` handle over the same pool (WPM-T466). The last goes when `SeaORM` does.
+pub(crate) trait OnPool {
+    /// The `sqlx` pool underneath.
+    fn on_pool(&self) -> &sqlx::PgPool;
+}
+
+impl OnPool for sqlx::PgPool {
+    fn on_pool(&self) -> &sqlx::PgPool {
+        self
+    }
+}
+
+impl OnPool for AppContext {
+    fn on_pool(&self) -> &sqlx::PgPool {
+        db::pool(self)
+    }
+}
+
+impl OnPool for sea_orm::DatabaseConnection {
+    fn on_pool(&self) -> &sqlx::PgPool {
+        self.get_postgres_connection_pool()
+    }
+}
 
 /// A level stated on a framework's own scale, with WPM's 1–5 figure for it.
 #[derive(Debug, Clone)]
@@ -38,7 +58,7 @@ pub(crate) struct Native {
 /// # Errors
 /// 422 when only one of the two is given, the framework is not recorded, or the level is outside its scale.
 pub(crate) async fn resolve_native(
-    db: &impl ConnectionTrait,
+    db: &impl OnPool,
     framework: Option<&str>,
     level: Option<i32>,
 ) -> Result<Option<Native>> {
@@ -47,11 +67,13 @@ pub(crate) async fn resolve_native(
         (Some(f), Some(l)) if !f.is_empty() => (f, l),
         _ => return Err(unprocessable("give framework and framework_level together")),
     };
-    let row = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(framework))
-        .one(db)
-        .await?
-        .ok_or_else(|| unprocessable(&format!("unknown framework {framework:?}")))?;
+    let row = sqlx::query!(
+        "SELECT slug, scale_max FROM capability_frameworks WHERE slug = $1 LIMIT 1",
+        framework,
+    )
+    .fetch_optional(db.on_pool())
+    .await?
+    .ok_or_else(|| unprocessable(&format!("unknown framework {framework:?}")))?;
     let wpm = rules::to_wpm(level, row.scale_max).map_err(|e| unprocessable(&e))?;
     Ok(Some(Native {
         framework: row.slug,
@@ -62,13 +84,14 @@ pub(crate) async fn resolve_native(
 }
 
 /// The SFIA code a catalogue skill is known by, if any.
-async fn sfia_code(db: &impl ConnectionTrait, skill_pid: Uuid) -> Result<Option<String>> {
-    Ok(skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::SkillPid.eq(skill_pid))
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-        .one(db)
-        .await?
-        .map(|r| r.reference))
+async fn sfia_code(db: &impl OnPool, skill_pid: Uuid) -> Result<Option<String>> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT "ref" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 ORDER BY id LIMIT 1"#,
+        skill_pid,
+        SFIA_SLUG,
+    )
+    .fetch_optional(db.on_pool())
+    .await?)
 }
 
 /// A skill known in SFIA may only be stated at a level SFIA defines for it (a level is never invented).
@@ -76,7 +99,7 @@ async fn sfia_code(db: &impl ConnectionTrait, skill_pid: Uuid) -> Result<Option<
 /// # Errors
 /// 422 when the skill has a SFIA code and that code has no current definition at this level.
 pub(crate) async fn check_defined(
-    db: &impl ConnectionTrait,
+    db: &impl OnPool,
     skill_pid: Uuid,
     native: &Native,
 ) -> Result<()> {
@@ -86,13 +109,14 @@ pub(crate) async fn check_defined(
     let Some(code) = sfia_code(db, skill_pid).await? else {
         return Ok(());
     };
-    let defined = sfia_skill_levels::Entity::find()
-        .filter(sfia_skill_levels::Column::Code.eq(&code))
-        .filter(sfia_skill_levels::Column::Level.eq(native.level))
-        .filter(sfia_skill_levels::Column::RetiredIn.is_null())
-        .one(db)
-        .await?
-        .is_some();
+    let defined = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM sfia_skill_levels WHERE code = $1 AND level = $2 AND retired_in IS NULL LIMIT 1"#,
+        code,
+        native.level,
+    )
+    .fetch_optional(db.on_pool())
+    .await?
+    .is_some();
     if defined {
         Ok(())
     } else {
@@ -107,13 +131,30 @@ pub(crate) async fn check_defined(
 ///
 /// # Errors
 /// A database error.
-pub(crate) async fn framework_names(db: &impl ConnectionTrait) -> Result<BTreeMap<String, String>> {
-    Ok(capability_frameworks::Entity::find()
-        .all(db)
-        .await?
-        .into_iter()
-        .map(|f| (f.slug, f.name))
-        .collect())
+pub(crate) async fn framework_names(db: &impl OnPool) -> Result<BTreeMap<String, String>> {
+    Ok(
+        sqlx::query!("SELECT slug, name FROM capability_frameworks ORDER BY id")
+            .fetch_all(db.on_pool())
+            .await?
+            .into_iter()
+            .map(|f| (f.slug, f.name))
+            .collect(),
+    )
+}
+
+/// The SFIA codes of these catalogue skills, by skill.
+async fn sfia_codes(db: &impl OnPool, skills: &[Uuid]) -> Result<BTreeMap<Uuid, String>> {
+    Ok(sqlx::query!(
+        r#"SELECT skill_pid, "ref" AS reference FROM skill_external_refs
+            WHERE framework_slug = $1 AND skill_pid = ANY($2) ORDER BY id"#,
+        SFIA_SLUG,
+        skills,
+    )
+    .fetch_all(db.on_pool())
+    .await?
+    .into_iter()
+    .map(|r| (r.skill_pid, r.reference))
+    .collect())
 }
 
 /// The framework's own wording for each `(skill, level)` stated on SFIA, so a native level can be shown with what it says.
@@ -121,7 +162,7 @@ pub(crate) async fn framework_names(db: &impl ConnectionTrait) -> Result<BTreeMa
 /// # Errors
 /// A database error.
 pub(crate) async fn native_descriptions(
-    db: &impl ConnectionTrait,
+    db: &impl OnPool,
     stated: &[(Uuid, Option<&str>, Option<i32>)],
 ) -> Result<BTreeMap<Uuid, String>> {
     let wanted: Vec<(Uuid, i32)> = stated
@@ -131,21 +172,18 @@ pub(crate) async fn native_descriptions(
     if wanted.is_empty() {
         return Ok(BTreeMap::new());
     }
-    let refs: BTreeMap<Uuid, String> = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-        .filter(skill_external_refs::Column::SkillPid.is_in(wanted.iter().map(|(p, _)| *p)))
-        .all(db)
-        .await?
-        .into_iter()
-        .map(|r| (r.skill_pid, r.reference))
-        .collect();
-    let levels: BTreeMap<(String, i32), String> = sfia_skill_levels::Entity::find()
-        .filter(sfia_skill_levels::Column::Code.is_in(refs.values().cloned()))
-        .all(db)
-        .await?
-        .into_iter()
-        .map(|l| ((l.code, l.level), l.description))
-        .collect();
+    let skill_pids: Vec<Uuid> = wanted.iter().map(|(p, _)| *p).collect();
+    let refs = sfia_codes(db, &skill_pids).await?;
+    let codes: Vec<String> = refs.values().cloned().collect();
+    let levels: BTreeMap<(String, i32), String> = sqlx::query!(
+        "SELECT code, level, description FROM sfia_skill_levels WHERE code = ANY($1) ORDER BY id",
+        &codes,
+    )
+    .fetch_all(db.on_pool())
+    .await?
+    .into_iter()
+    .map(|l| ((l.code, l.level), l.description))
+    .collect();
     Ok(wanted
         .into_iter()
         .filter_map(|(p, l)| Some((p, levels.get(&(refs.get(&p)?.clone(), l))?.clone())))
@@ -159,34 +197,31 @@ pub(crate) async fn native_descriptions(
 /// # Errors
 /// A database error.
 pub(crate) async fn pointers_for(
-    db: &impl ConnectionTrait,
+    db: &impl OnPool,
     wanted: &[(Uuid, i32)],
 ) -> Result<BTreeMap<Uuid, Vec<serde_json::Value>>> {
-    let Some(source) = capability_frameworks::Entity::find()
-        .filter(
-            capability_frameworks::Column::Slug.eq(crate::tasks::import_sfiaplus::SFIAPLUS_SLUG),
-        )
-        .one(db)
-        .await?
+    let Some(source) = sqlx::query_scalar!(
+        "SELECT name FROM capability_frameworks WHERE slug = $1 LIMIT 1",
+        crate::tasks::import_sfiaplus::SFIAPLUS_SLUG,
+    )
+    .fetch_optional(db.on_pool())
+    .await?
     else {
         return Ok(BTreeMap::new());
     };
-    let refs: BTreeMap<Uuid, String> = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-        .filter(skill_external_refs::Column::SkillPid.is_in(wanted.iter().map(|(p, _)| *p)))
-        .all(db)
-        .await?
-        .into_iter()
-        .map(|r| (r.skill_pid, r.reference))
-        .collect();
+    let skill_pids: Vec<Uuid> = wanted.iter().map(|(p, _)| *p).collect();
+    let refs = sfia_codes(db, &skill_pids).await?;
     if refs.is_empty() {
         return Ok(BTreeMap::new());
     }
-    let resources = sfiaplus_resources::Entity::find()
-        .filter(sfiaplus_resources::Column::Code.is_in(refs.values().cloned()))
-        .filter(sfiaplus_resources::Column::RetiredIn.is_null())
-        .all(db)
-        .await?;
+    let codes: Vec<String> = refs.values().cloned().collect();
+    let resources = sqlx::query!(
+        "SELECT code, level, kind, title, provider, url FROM sfiaplus_resources
+          WHERE code = ANY($1) AND retired_in IS NULL ORDER BY id",
+        &codes,
+    )
+    .fetch_all(db.on_pool())
+    .await?;
     let mut out: BTreeMap<Uuid, Vec<serde_json::Value>> = BTreeMap::new();
     for (skill, required) in wanted {
         let Some(code) = refs.get(skill) else {
@@ -199,7 +234,7 @@ pub(crate) async fn pointers_for(
             })
             .map(|r| {
                 serde_json::json!({
-                    "source": source.name, "sfia_code": r.code, "sfia_level": r.level,
+                    "source": source, "sfia_code": r.code, "sfia_level": r.level,
                     "kind": r.kind, "title": r.title, "provider": r.provider, "url": r.url,
                 })
             })
@@ -226,48 +261,53 @@ async fn search(
     if q.chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }
-    let levels = sfia_skill_levels::Entity::find()
-        .filter(sfia_skill_levels::Column::RetiredIn.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let out: Vec<serde_json::Value> = sfia_skills::Entity::find()
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .filter(|s| s.code.to_lowercase().contains(&q) || s.name.to_lowercase().contains(&q))
-        .take(50)
-        .map(|s| {
-            let mine: Vec<i32> = levels
-                .iter()
-                .filter(|l| l.code == s.code)
-                .map(|l| l.level)
-                .collect();
-            serde_json::json!({
-                "code": s.code, "name": s.name, "category": s.category,
-                "subcategory": s.subcategory, "retired_in": s.retired_in, "levels": mine,
-            })
+    let levels = sqlx::query!(
+        "SELECT code, level FROM sfia_skill_levels WHERE retired_in IS NULL ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let out: Vec<serde_json::Value> = sqlx::query!(
+        "SELECT code, name, category, subcategory, retired_in FROM sfia_skills ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .filter(|s| s.code.to_lowercase().contains(&q) || s.name.to_lowercase().contains(&q))
+    .take(50)
+    .map(|s| {
+        let mine: Vec<i32> = levels
+            .iter()
+            .filter(|l| l.code == s.code)
+            .map(|l| l.level)
+            .collect();
+        serde_json::json!({
+            "code": s.code, "name": s.name, "category": s.category,
+            "subcategory": s.subcategory, "retired_in": s.retired_in, "levels": mine,
         })
-        .collect();
+    })
+    .collect();
     format::json(out)
 }
 
 /// `GET /api/sfia/skills/{code}` — one skill with each level's wording and the mapping to WPM's 1–5.
 #[debug_handler]
 async fn show(State(ctx): State<AppContext>, Path(code): Path<String>) -> Result<Response> {
-    let skill = sfia_skills::Entity::find()
-        .filter(sfia_skills::Column::Code.eq(code.trim()))
-        .one(&crate::db::orm(&ctx))
+    let skill = sfia_skill(&ctx, code.trim())
         .await?
         .ok_or(Error::NotFound)?;
-    let levels = sfia_skill_levels::Entity::find()
-        .filter(sfia_skill_levels::Column::Code.eq(&skill.code))
-        .all(&crate::db::orm(&ctx))
-        .await?;
-    let resources = sfiaplus_resources::Entity::find()
-        .filter(sfiaplus_resources::Column::Code.eq(&skill.code))
-        .filter(sfiaplus_resources::Column::RetiredIn.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?;
+    let levels = sqlx::query!(
+        "SELECT level, description, attributes, retired_in FROM sfia_skill_levels WHERE code = $1 ORDER BY id",
+        skill.code,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let resources = sqlx::query!(
+        "SELECT level, kind, title, provider, url FROM sfiaplus_resources
+          WHERE code = $1 AND retired_in IS NULL ORDER BY id",
+        skill.code,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let mut levels: Vec<serde_json::Value> = levels
         .into_iter()
         .map(|l| {
@@ -290,6 +330,27 @@ async fn show(State(ctx): State<AppContext>, Path(code): Path<String>) -> Result
         "retired_in": skill.retired_in, "scale_max": rules::SFIA_SCALE_MAX,
         "mapping": rules::MAPPING_NAME, "levels": levels,
     }))
+}
+
+/// One skill of the imported catalogue.
+struct SfiaSkill {
+    code: String,
+    name: String,
+    category: String,
+    subcategory: String,
+    description: String,
+    retired_in: Option<String>,
+}
+
+/// The imported catalogue's skill with this code.
+async fn sfia_skill(ctx: &AppContext, code: &str) -> Result<Option<SfiaSkill>> {
+    Ok(sqlx::query_as!(
+        SfiaSkill,
+        "SELECT code, name, category, subcategory, description, retired_in FROM sfia_skills WHERE code = $1 ORDER BY id LIMIT 1",
+        code,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
 }
 
 /// One skill a role is to be started from.
@@ -348,20 +409,24 @@ async fn from_sfia(
             )));
         }
     }
-    let known: BTreeMap<String, sfia_skills::Model> = sfia_skills::Entity::find()
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|s| (s.code.clone(), s))
-        .collect();
-    let defined: BTreeSet<(String, i32)> = sfia_skill_levels::Entity::find()
-        .filter(sfia_skill_levels::Column::RetiredIn.is_null())
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|l| (l.code, l.level))
-        .collect();
-    let mut chosen: Vec<(&sfia_skills::Model, i32, i32)> = Vec::new();
+    // In id order, so a later row of the same code wins, as it did when read in table order.
+    let known: BTreeMap<String, SfiaSkill> = sqlx::query_as!(
+        SfiaSkill,
+        "SELECT code, name, category, subcategory, description, retired_in FROM sfia_skills ORDER BY id"
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    .into_iter()
+    .map(|s| (s.code.clone(), s))
+    .collect();
+    let defined: BTreeSet<(String, i32)> =
+        sqlx::query!("SELECT code, level FROM sfia_skill_levels WHERE retired_in IS NULL")
+            .fetch_all(db::pool(&ctx))
+            .await?
+            .into_iter()
+            .map(|l| (l.code, l.level))
+            .collect();
+    let mut chosen: Vec<(&SfiaSkill, i32, i32)> = Vec::new();
     for pick in &payload.skills {
         let code = pick.code.trim();
         let skill = known
@@ -382,61 +447,69 @@ async fn from_sfia(
             rules::to_wpm(pick.level, rules::SFIA_SCALE_MAX).map_err(|e| unprocessable(&e))?;
         chosen.push((skill, pick.level, wpm));
     }
-    let taken = role_profiles::Entity::find()
-        .filter(role_profiles::Column::DeletedAt.is_null())
-        .filter(role_profiles::Column::JobTitle.eq(&title))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .is_some();
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM role_profiles WHERE deleted_at IS NULL AND job_title = $1 LIMIT 1"#,
+        title,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .is_some();
     if taken {
         return Err(unprocessable(
             "a role profile with that job title already exists",
         ));
     }
 
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let profile = role_profiles::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        job_title: ActiveValue::set(title),
-        source_ref: ActiveValue::set(Some(format!("{SFIA_SLUG}:picked-skills"))),
-        management_track: ActiveValue::set(false),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let profile_pid = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO role_profiles (pid, job_title, source_ref, management_track, deleted_at)
+         VALUES ($1, $2, $3, false, NULL)",
+        profile_pid,
+        title,
+        format!("{SFIA_SLUG}:picked-skills"),
+    )
+    .execute(&mut *tx)
     .await?;
     let (mut created, mut linked, mut requirements) = (0usize, 0usize, 0usize);
-    let version = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(SFIA_SLUG))
-        .one(&txn)
-        .await?
-        .and_then(|f| f.version);
+    let version = sqlx::query_scalar!(
+        "SELECT version FROM capability_frameworks WHERE slug = $1 LIMIT 1",
+        SFIA_SLUG,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .flatten();
     for (sfia, level, wpm) in chosen {
-        let by_ref = skill_external_refs::Entity::find()
-            .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-            .filter(skill_external_refs::Column::Reference.eq(&sfia.code))
-            .one(&txn)
-            .await?;
-        let skill_pid = if let Some(r) = by_ref {
-            r.skill_pid
+        let by_ref = sqlx::query_scalar!(
+            r#"SELECT skill_pid FROM skill_external_refs WHERE framework_slug = $1 AND "ref" = $2 ORDER BY id LIMIT 1"#,
+            SFIA_SLUG,
+            sfia.code,
+        )
+        .fetch_optional(&mut *tx)
+        .await?;
+        let skill_pid = if let Some(skill_pid) = by_ref {
+            skill_pid
         } else {
             let wanted = normalise_label(&sfia.name);
-            let same_name: Vec<skills::Model> = skills::Entity::find()
-                .filter(skills::Column::DeletedAt.is_null())
-                .all(&txn)
-                .await?
-                .into_iter()
-                .filter(|s| normalise_label(&s.name) == wanted)
-                .collect();
+            let same_name: Vec<Uuid> =
+                sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL ORDER BY id")
+                    .fetch_all(&mut *tx)
+                    .await?
+                    .into_iter()
+                    .filter(|s| normalise_label(&s.name) == wanted)
+                    .map(|s| s.pid)
+                    .collect();
             let reused = match same_name.as_slice() {
                 [one] => {
-                    let has_ref = skill_external_refs::Entity::find()
-                        .filter(skill_external_refs::Column::SkillPid.eq(one.pid))
-                        .filter(skill_external_refs::Column::FrameworkSlug.eq(SFIA_SLUG))
-                        .one(&txn)
-                        .await?
-                        .is_some();
-                    (!has_ref).then_some(one.pid)
+                    let has_ref = sqlx::query_scalar!(
+                        r#"SELECT 1 AS "one!" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 LIMIT 1"#,
+                        *one,
+                        SFIA_SLUG,
+                    )
+                    .fetch_optional(&mut *tx)
+                    .await?
+                    .is_some();
+                    (!has_ref).then_some(*one)
                 }
                 _ => None,
             };
@@ -444,77 +517,84 @@ async fn from_sfia(
                 linked += 1;
                 pid
             } else {
-                let taken_name = skills::Entity::find()
-                    .filter(skills::Column::Name.eq(&sfia.name))
-                    .one(&txn)
-                    .await?
-                    .is_some();
+                let taken_name = sqlx::query_scalar!(
+                    r#"SELECT 1 AS "one!" FROM skills WHERE name = $1 LIMIT 1"#,
+                    sfia.name,
+                )
+                .fetch_optional(&mut *tx)
+                .await?
+                .is_some();
                 let name = if taken_name {
                     format!("{} (SFIA)", sfia.name)
                 } else {
                     sfia.name.clone()
                 };
                 created += 1;
-                skills::ActiveModel {
-                    pid: ActiveValue::set(Uuid::new_v4()),
-                    name: ActiveValue::set(name),
-                    category: ActiveValue::set(category.to_string()),
-                    deleted_at: ActiveValue::set(None),
-                    ..Default::default()
-                }
-                .insert(&txn)
-                .await?
-                .pid
+                let pid = Uuid::new_v4();
+                sqlx::query!(
+                    "INSERT INTO skills (pid, name, category, deleted_at) VALUES ($1, $2, $3, NULL)",
+                    pid,
+                    name,
+                    category,
+                )
+                .execute(&mut *tx)
+                .await?;
+                pid
             };
-            skill_external_refs::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                skill_pid: ActiveValue::set(pid),
-                framework_slug: ActiveValue::set(SFIA_SLUG.to_string()),
-                reference: ActiveValue::set(sfia.code.clone()),
-                label: ActiveValue::set(Some(sfia.name.clone())),
-                version: ActiveValue::set(version.clone()),
-                ..Default::default()
-            }
-            .insert(&txn)
+            sqlx::query!(
+                r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version)
+                   VALUES ($1, $2, $3, $4, $5, $6)"#,
+                Uuid::new_v4(),
+                pid,
+                SFIA_SLUG,
+                sfia.code,
+                sfia.name,
+                version,
+            )
+            .execute(&mut *tx)
             .await?;
             pid
         };
-        let exists = role_skill_requirements::Entity::find()
-            .filter(role_skill_requirements::Column::RoleProfilePid.eq(profile.pid))
-            .filter(role_skill_requirements::Column::SkillPid.eq(skill_pid))
-            .one(&txn)
-            .await?
-            .is_some();
+        let exists = sqlx::query_scalar!(
+            r#"SELECT 1 AS "one!" FROM role_skill_requirements WHERE role_profile_pid = $1 AND skill_pid = $2 LIMIT 1"#,
+            profile_pid,
+            skill_pid,
+        )
+        .fetch_optional(&mut *tx)
+        .await?
+        .is_some();
         if exists {
             continue;
         }
-        role_skill_requirements::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            role_profile_pid: ActiveValue::set(profile.pid),
-            skill_pid: ActiveValue::set(skill_pid),
-            min_proficiency: ActiveValue::set(wpm),
-            importance: ActiveValue::set(importance.to_string()),
-            source_framework: ActiveValue::set(Some(SFIA_SLUG.to_string())),
-            source_level: ActiveValue::set(Some(level)),
-            source_scale_max: ActiveValue::set(Some(rules::SFIA_SCALE_MAX)),
-            ..Default::default()
-        }
-        .insert(&txn)
+        sqlx::query!(
+            "INSERT INTO role_skill_requirements (pid, role_profile_pid, skill_pid, min_proficiency, importance,
+                                                  source_framework, source_level, source_scale_max)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            Uuid::new_v4(),
+            profile_pid,
+            skill_pid,
+            wpm,
+            importance,
+            SFIA_SLUG,
+            level,
+            rules::SFIA_SCALE_MAX,
+        )
+        .execute(&mut *tx)
         .await?;
         requirements += 1;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "role_profile",
-        profile.pid,
+        profile_pid,
         "seeded_from_sfia",
         caller.actor(),
         Some(serde_json::json!({ "requirements": requirements })),
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(serde_json::json!({
-        "pid": profile.pid,
+        "pid": profile_pid,
         "requirements_created": requirements,
         "skills_created": created,
         "skills_linked": linked,

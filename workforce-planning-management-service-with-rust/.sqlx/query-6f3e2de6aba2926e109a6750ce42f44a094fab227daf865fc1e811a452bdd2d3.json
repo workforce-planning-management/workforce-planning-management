@@ -1,0 +1,160 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, criterion_pid, name, origin,\n                  derivation, unit, threshold, direction, sustain\n             FROM oversight_measures WHERE pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "criterion_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "criterion_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "origin",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "origin"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "derivation",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "derivation"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "unit",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "unit"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "threshold",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "threshold"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "direction",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "direction"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "sustain",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_measures",
+            "name": "sustain"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6f3e2de6aba2926e109a6750ce42f44a094fab227daf865fc1e811a452bdd2d3"
+}

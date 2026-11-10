@@ -1,0 +1,150 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, period_start,\n                  period_end, status, approved_by, notes, deleted_at AS \"deleted_at: _\"\n             FROM payroll_runs\n            WHERE deleted_at IS NULL AND ($1::text[] IS NULL OR organization_ref = ANY($1))\n            ORDER BY id LIMIT $2 OFFSET $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "period_start",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "period_start"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "period_end",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "period_end"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "approved_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "approved_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "notes",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "notes"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "9d958c56ab6db33c8a674e98a0a5520d17fd8acddc90c383f0259c49d6da61ff"
+}

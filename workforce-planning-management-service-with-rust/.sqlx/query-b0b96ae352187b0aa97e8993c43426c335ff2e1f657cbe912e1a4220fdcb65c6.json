@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, hours_per_level FROM skills",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "hours_per_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "skills",
+            "name": "hours_per_level"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "b0b96ae352187b0aa97e8993c43426c335ff2e1f657cbe912e1a4220fdcb65c6"
+}

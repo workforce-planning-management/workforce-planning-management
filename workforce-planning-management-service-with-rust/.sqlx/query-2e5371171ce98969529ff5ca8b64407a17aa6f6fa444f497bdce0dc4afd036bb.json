@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \"ref\" FROM skill_external_refs WHERE skill_pid = $1 AND framework_slug = $2 ORDER BY id LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2e5371171ce98969529ff5ca8b64407a17aa6f6fa444f497bdce0dc4afd036bb"
+}

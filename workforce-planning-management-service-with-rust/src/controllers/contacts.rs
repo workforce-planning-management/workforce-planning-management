@@ -22,15 +22,14 @@ use crate::rules::phone as phone_rules;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::{record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{emergency_contacts, leave_requests, worker_backups, workers};
-use crate::models::audit_logs::Model as Audit;
+use crate::db;
+use crate::models::_entities::{emergency_contacts, worker_backups, workers};
 use crate::models::{memberships, records};
 use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::emergency as rules;
@@ -81,14 +80,22 @@ pub(crate) async fn list_contacts_for(
     ctx: &AppContext,
     worker: &workers::Model,
 ) -> Result<Response> {
-    let rows = emergency_contacts::Entity::find()
-        .filter(emergency_contacts::Column::WorkerPid.eq(worker.pid))
-        .filter(emergency_contacts::Column::DeletedAt.is_null())
-        .order_by_asc(emergency_contacts::Column::Priority)
-        .order_by_asc(emergency_contacts::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let rows = live_contacts(ctx, worker.pid).await?;
     format::json(rows.iter().map(contact_row).collect::<Vec<_>>())
+}
+
+/// The worker's live contacts, first-to-call first.
+async fn live_contacts(ctx: &AppContext, worker: Uuid) -> Result<Vec<emergency_contacts::Model>> {
+    Ok(sqlx::query_as!(
+        emergency_contacts::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, relationship,
+                  phone, alt_phone, email, priority, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _",
+                  phone_digits, phone_e164, alt_phone_digits, alt_phone_e164
+             FROM emergency_contacts WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY priority, id"#,
+        worker,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `POST` body.
@@ -128,11 +135,7 @@ pub(crate) async fn add_contact_for(
     worker: &workers::Model,
     payload: ContactPayload,
 ) -> Result<Response> {
-    let existing = emergency_contacts::Entity::find()
-        .filter(emergency_contacts::Column::WorkerPid.eq(worker.pid))
-        .filter(emergency_contacts::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let existing = live_contacts(ctx, worker.pid).await?;
     if existing.len() >= rules::MAX_CONTACTS {
         return Err(unprocessable(&format!(
             "at most {} emergency contacts",
@@ -154,38 +157,38 @@ pub(crate) async fn add_contact_for(
         priority,
     )
     .map_err(|e| unprocessable(&e))?;
-    let txn = crate::db::orm(ctx).begin().await?;
-    let row = emergency_contacts::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        name: ActiveValue::set(payload.name.trim().to_string()),
-        relationship: ActiveValue::set(payload.relationship.trim().to_string()),
-        phone: ActiveValue::set(payload.phone.trim().to_string()),
-        phone_digits: ActiveValue::set(phone_rules::ascii_digits(payload.phone.trim())),
-        phone_e164: ActiveValue::set(phone_rules::e164(payload.phone.trim(), None)),
-        alt_phone_digits: ActiveValue::set(
-            alt_phone.as_deref().and_then(phone_rules::ascii_digits),
-        ),
-        alt_phone_e164: ActiveValue::set(
-            alt_phone
-                .as_deref()
-                .and_then(|p| phone_rules::e164(p, None)),
-        ),
-        alt_phone: ActiveValue::set(alt_phone),
-        email: ActiveValue::set(email),
-        priority: ActiveValue::set(priority),
-        note: ActiveValue::set(clean(payload.note)),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(caller, &worker.person_ref)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let phone = payload.phone.trim();
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO emergency_contacts (pid, worker_pid, name, relationship, phone, phone_digits, phone_e164,
+                                         alt_phone_digits, alt_phone_e164, alt_phone, email, priority, note, recorded_by,
+                                         on_behalf, deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL)",
+        pid,
+        worker.pid,
+        payload.name.trim(),
+        payload.relationship.trim(),
+        phone,
+        phone_rules::ascii_digits(phone),
+        phone_rules::e164(phone, None),
+        alt_phone.as_deref().and_then(phone_rules::ascii_digits),
+        alt_phone
+            .as_deref()
+            .and_then(|p| phone_rules::e164(p, None)),
+        alt_phone,
+        email,
+        priority,
+        clean(payload.note),
+        caller.actor(),
+        auth::acting_for_other(caller, &worker.person_ref),
+    )
+    .execute(&mut *tx)
     .await?;
     // The audit entry names no contact detail: that is the point of keeping it
     // to the worker and HR.
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "emergency_contact_added",
@@ -193,8 +196,8 @@ pub(crate) async fn add_contact_for(
         None,
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// `PUT` body — any of these may change.
@@ -217,12 +220,17 @@ pub(crate) struct ContactUpdate {
 }
 
 pub(crate) async fn find_contact(ctx: &AppContext, pid: &str) -> Result<emergency_contacts::Model> {
-    emergency_contacts::Entity::find()
-        .filter(emergency_contacts::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(emergency_contacts::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        emergency_contacts::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, relationship,
+                  phone, alt_phone, email, priority, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _",
+                  phone_digits, phone_e164, alt_phone_digits, alt_phone_e164
+             FROM emergency_contacts WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/emergency-contacts/{pid}` — change a contact's details.
@@ -270,27 +278,37 @@ pub(crate) async fn update_contact_for(
     let note = payload
         .note
         .map_or_else(|| row.note.clone(), |v| clean(Some(v)));
-    let mut active: emergency_contacts::ActiveModel = row.into();
-    active.name = ActiveValue::set(name.trim().to_string());
-    active.relationship = ActiveValue::set(relationship.trim().to_string());
-    active.phone = ActiveValue::set(phone.trim().to_string());
-    active.phone_digits = ActiveValue::set(phone_rules::ascii_digits(phone.trim()));
-    active.phone_e164 = ActiveValue::set(phone_rules::e164(phone.trim(), None));
-    active.alt_phone_digits =
-        ActiveValue::set(alt_phone.as_deref().and_then(phone_rules::ascii_digits));
-    active.alt_phone_e164 = ActiveValue::set(
+    let phone = phone.trim();
+    let mut tx = db::pool(ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        emergency_contacts::Model,
+        r#"UPDATE emergency_contacts
+              SET name = $2, relationship = $3, phone = $4, phone_digits = $5, phone_e164 = $6, alt_phone_digits = $7,
+                  alt_phone_e164 = $8, alt_phone = $9, email = $10, priority = $11, note = $12, updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, name, relationship,
+                  phone, alt_phone, email, priority, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _",
+                  phone_digits, phone_e164, alt_phone_digits, alt_phone_e164"#,
+        row.id,
+        name.trim(),
+        relationship.trim(),
+        phone,
+        phone_rules::ascii_digits(phone),
+        phone_rules::e164(phone, None),
+        alt_phone.as_deref().and_then(phone_rules::ascii_digits),
         alt_phone
             .as_deref()
             .and_then(|p| phone_rules::e164(p, None)),
-    );
-    active.alt_phone = ActiveValue::set(alt_phone);
-    active.email = ActiveValue::set(email);
-    active.priority = ActiveValue::set(priority);
-    active.note = ActiveValue::set(note);
-    let txn = crate::db::orm(ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+        alt_phone,
+        email,
+        priority,
+        note,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "emergency_contact_updated",
@@ -298,7 +316,7 @@ pub(crate) async fn update_contact_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(contact_row(&updated))
 }
 
@@ -321,12 +339,15 @@ pub(crate) async fn delete_contact_for(
     worker: &workers::Model,
     row: emergency_contacts::Model,
 ) -> Result<Response> {
-    let mut active: emergency_contacts::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = crate::db::orm(ctx).begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE emergency_contacts SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "emergency_contact_removed",
@@ -334,7 +355,7 @@ pub(crate) async fn delete_contact_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -368,24 +389,32 @@ async fn backup_workers(
     rows: &[worker_backups::Model],
 ) -> Result<HashMap<Uuid, workers::Model>> {
     let ids: Vec<Uuid> = rows.iter().map(|b| b.backup_pid).collect();
-    Ok(workers::Entity::find()
-        .filter(workers::Column::Pid.is_in(ids))
-        .filter(workers::Column::DeletedAt.is_null())
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|w| (w.pid, w))
-        .collect())
+    Ok(sqlx::query_as!(
+        workers::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  upstream_worker_ref, organization_ref, worker_number, display_name, status, employment_type,
+                  fte_percent, department, job_title, location, work_jurisdiction, manager_pid, salary_minor,
+                  salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _"
+             FROM workers WHERE pid = ANY($1) AND deleted_at IS NULL"#,
+        &ids,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|w| (w.pid, w))
+    .collect())
 }
 
 async fn live_backups(ctx: &AppContext, worker: Uuid) -> Result<Vec<worker_backups::Model>> {
-    Ok(worker_backups::Entity::find()
-        .filter(worker_backups::Column::WorkerPid.eq(worker))
-        .filter(worker_backups::Column::DeletedAt.is_null())
-        .order_by_asc(worker_backups::Column::Priority)
-        .order_by_asc(worker_backups::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?)
+    Ok(sqlx::query_as!(
+        worker_backups::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, backup_pid, priority,
+                  starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM worker_backups WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY priority, id"#,
+        worker,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 /// `GET /api/workers/{pid}/backups` — who covers for this worker, in the
@@ -470,24 +499,26 @@ async fn add_backup(
     {
         return Err(unprocessable("that backup is outside your organizations"));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = worker_backups::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        backup_pid: ActiveValue::set(backup.pid),
-        priority: ActiveValue::set(priority),
-        starts_on: ActiveValue::set(payload.starts_on),
-        ends_on: ActiveValue::set(payload.ends_on),
-        note: ActiveValue::set(clean(payload.note)),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        on_behalf: ActiveValue::set(auth::acting_for_other(&caller, &worker.person_ref)),
-        deleted_at: ActiveValue::set(None),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO worker_backups (pid, worker_pid, backup_pid, priority, starts_on, ends_on, note, recorded_by, on_behalf,
+                                     deleted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)",
+        pid,
+        worker.pid,
+        backup.pid,
+        priority,
+        payload.starts_on,
+        payload.ends_on,
+        clean(payload.note),
+        caller.actor(),
+        auth::acting_for_other(&caller, &worker.person_ref),
+    )
+    .execute(&mut *tx)
     .await?;
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "backup_added",
@@ -495,8 +526,8 @@ async fn add_backup(
         Some(serde_json::json!({ "backup_pid": backup.pid })),
     )
     .await?;
-    txn.commit().await?;
-    format::json(serde_json::json!({ "pid": row.pid }))
+    tx.commit().await?;
+    format::json(serde_json::json!({ "pid": pid }))
 }
 
 /// `PUT` body — rank, window or note.
@@ -513,12 +544,16 @@ struct BackupUpdate {
 }
 
 async fn find_backup(ctx: &AppContext, pid: &str) -> Result<worker_backups::Model> {
-    worker_backups::Entity::find()
-        .filter(worker_backups::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(worker_backups::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)
+    sqlx::query_as!(
+        worker_backups::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, backup_pid, priority,
+                  starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
+             FROM worker_backups WHERE pid = $1 AND deleted_at IS NULL"#,
+        records::parse_pid(pid)?,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)
 }
 
 /// `PUT /api/backups/{pid}` — change a backup's rank, window or note.
@@ -539,15 +574,24 @@ async fn update_backup(
     let note = payload
         .note
         .map_or_else(|| row.note.clone(), |v| clean(Some(v)));
-    let mut active: worker_backups::ActiveModel = row.into();
-    active.priority = ActiveValue::set(priority);
-    active.starts_on = ActiveValue::set(starts_on);
-    active.ends_on = ActiveValue::set(ends_on);
-    active.note = ActiveValue::set(note);
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let updated = active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    let updated = sqlx::query_as!(
+        worker_backups::Model,
+        r#"UPDATE worker_backups SET priority = $2, starts_on = $3, ends_on = $4, note = $5, updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, backup_pid, priority,
+                  starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _""#,
+        row.id,
+        priority,
+        starts_on,
+        ends_on,
+        note,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "backup_updated",
@@ -555,7 +599,7 @@ async fn update_backup(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     let who = records::worker_by_pid(&ctx, updated.backup_pid).await.ok();
     format::json(backup_row(&updated, who.as_ref()))
 }
@@ -569,12 +613,15 @@ async fn delete_backup(
 ) -> Result<Response> {
     let row = find_backup(&ctx, &pid).await?;
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
-    let mut active: worker_backups::ActiveModel = row.into();
-    active.deleted_at = ActiveValue::set(Some(Utc::now().into()));
-    let txn = crate::db::orm(&ctx).begin().await?;
-    active.update(&txn).await?;
-    Audit::record(
-        &txn,
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE worker_backups SET deleted_at = now(), updated_at = now() WHERE id = $1",
+        row.id
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "backup_removed",
@@ -582,7 +629,7 @@ async fn delete_backup(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::empty_json()
 }
 
@@ -615,17 +662,14 @@ async fn cover(
     let rows = live_backups(&ctx, worker.pid).await?;
     let who = backup_workers(&ctx, &rows).await?;
     let ids: Vec<Uuid> = rows.iter().map(|b| b.backup_pid).collect();
-    let on_leave: Vec<Uuid> = leave_requests::Entity::find()
-        .filter(leave_requests::Column::WorkerPid.is_in(ids))
-        .filter(leave_requests::Column::Status.eq("approved"))
-        .filter(leave_requests::Column::DeletedAt.is_null())
-        .filter(leave_requests::Column::StartOn.lte(on))
-        .filter(leave_requests::Column::EndOn.gte(on))
-        .all(&crate::db::orm(&ctx))
-        .await?
-        .into_iter()
-        .map(|l| l.worker_pid)
-        .collect();
+    let on_leave: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT worker_pid FROM leave_requests
+          WHERE worker_pid = ANY($1) AND status = 'approved' AND deleted_at IS NULL AND start_on <= $2 AND end_on >= $2",
+        &ids,
+        on,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let candidates: Vec<Candidate> = rows
         .iter()
         .map(|b| {

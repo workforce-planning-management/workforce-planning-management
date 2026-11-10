@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pool_pid FROM cutover_pools WHERE cutover_pid = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "cutover_pools",
+            "name": "pool_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e96f269828b110643faced39321eb79516e74fcd08b3cb6ca9124c9d1503cbce"
+}

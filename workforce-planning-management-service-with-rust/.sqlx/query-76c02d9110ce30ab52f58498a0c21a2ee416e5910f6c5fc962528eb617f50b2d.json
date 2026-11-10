@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO initiative_role_impacts (pid, initiative_pid, role_profile_pid, impact, timeframe, note)\n         VALUES ($1, $2, $3, $4, $5, $6)\n         ON CONFLICT (initiative_pid, role_profile_pid)\n         DO UPDATE SET impact = EXCLUDED.impact, timeframe = EXCLUDED.timeframe, note = EXCLUDED.note, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "76c02d9110ce30ab52f58498a0c21a2ee416e5910f6c5fc962528eb617f50b2d"
+}

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (EXISTS (SELECT 1 FROM skill_courses WHERE course_ref = $1 AND deleted_at IS NULL)\n                OR EXISTS (SELECT 1 FROM training_enrollments WHERE course_ref = $1 AND deleted_at IS NULL)) AS \"known!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "known!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "479dff48e1db5e2ab7c0f32f13611126693d2e57367854ed0c8b9bf3a5b9f630"
+}

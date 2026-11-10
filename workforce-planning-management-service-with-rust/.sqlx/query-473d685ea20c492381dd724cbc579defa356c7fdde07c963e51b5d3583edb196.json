@@ -1,0 +1,158 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, job_title, currency, min_minor,\n                  median_minor, max_minor, source, as_of, deleted_at AS \"deleted_at: _\"\n             FROM benchmarks WHERE deleted_at IS NULL ORDER BY id LIMIT 500",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "job_title",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "job_title"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "currency",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "min_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "min_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "median_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "median_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "max_minor",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "max_minor"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "source",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "source"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "as_of",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "as_of"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "benchmarks",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "473d685ea20c492381dd724cbc579defa356c7fdde07c963e51b5d3583edb196"
+}

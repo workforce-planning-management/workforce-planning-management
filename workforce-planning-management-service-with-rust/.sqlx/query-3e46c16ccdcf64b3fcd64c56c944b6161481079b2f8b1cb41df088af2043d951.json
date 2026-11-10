@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT worker_pid, course_ref FROM training_enrollments\n          WHERE deleted_at IS NULL AND status = 'completed' AND completed_on >= $1 AND completed_on <= $2\n            AND worker_pid = ANY($3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "training_enrollments",
+            "name": "course_ref"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3e46c16ccdcf64b3fcd64c56c944b6161481079b2f8b1cb41df088af2043d951"
+}

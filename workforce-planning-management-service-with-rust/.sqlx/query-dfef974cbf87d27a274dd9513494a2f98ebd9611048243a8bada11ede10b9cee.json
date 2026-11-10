@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (EXISTS (SELECT 1 FROM oversight_positions WHERE level_pid = $1)\n                OR EXISTS (SELECT 1 FROM oversight_criteria WHERE level_pid = $1)) AS \"used!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "used!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "dfef974cbf87d27a274dd9513494a2f98ebd9611048243a8bada11ede10b9cee"
+}

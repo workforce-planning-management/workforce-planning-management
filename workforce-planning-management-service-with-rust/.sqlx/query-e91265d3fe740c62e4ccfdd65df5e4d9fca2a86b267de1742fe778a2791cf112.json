@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO flexible_working_requests (pid, worker_pid, kind, requested_on, proposed_start, proposed_fte_percent,\n                                                effect_on_team, how_to_manage, status, decide_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Date",
+        "Date",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e91265d3fe740c62e4ccfdd65df5e4d9fca2a86b267de1742fe778a2791cf112"
+}

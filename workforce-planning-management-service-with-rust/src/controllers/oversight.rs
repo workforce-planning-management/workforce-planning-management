@@ -14,17 +14,17 @@ use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::Datelike;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::{ensure_valid, oversight_derived, unprocessable};
 use crate::auth::MaybeAuthUser;
+use crate::db;
 use crate::models::_entities::{
     oversight_criteria as criteria, oversight_levels as levels, oversight_measures as measures,
-    oversight_positions as positions, oversight_readings as readings,
+    oversight_positions as positions,
 };
-use crate::models::audit_logs::Model as Audit;
 use crate::models::records;
 use crate::rules::derived;
 use crate::rules::oversight as rules;
@@ -40,27 +40,21 @@ fn org_problems(org: &str) -> Result<()> {
     ensure_valid(&problems.into_vec())
 }
 
-async fn audit<C: ConnectionTrait>(
-    db: &C,
-    caller: &MaybeAuthUser,
-    kind: &str,
-    pid: Uuid,
-    action: &str,
-) -> Result<()> {
-    Audit::record(db, kind, pid, action, caller.actor(), None).await?;
-    Ok(())
-}
-
 async fn level_in_scope(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<levels::Model> {
-    let level = levels::Entity::find()
-        .filter(levels::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let level = sqlx::query_as!(
+        levels::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, ordinal, name,
+                  synthetic
+             FROM oversight_levels WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     ensure_org_in_scope(ctx, caller, &level.organization_ref).await?;
     Ok(level)
 }
@@ -70,11 +64,15 @@ async fn criterion_in_scope(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<criteria::Model> {
-    let c = criteria::Entity::find()
-        .filter(criteria::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let c = sqlx::query_as!(
+        criteria::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, level_pid, name, synthetic
+             FROM oversight_criteria WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     level_in_scope(ctx, caller, c.level_pid).await?;
     Ok(c)
 }
@@ -84,13 +82,31 @@ async fn measure_in_scope(
     caller: &MaybeAuthUser,
     pid: Uuid,
 ) -> Result<measures::Model> {
-    let m = measures::Entity::find()
-        .filter(measures::Column::Pid.eq(pid))
-        .one(&crate::db::orm(ctx))
-        .await?
-        .ok_or(Error::NotFound)?;
+    let m = sqlx::query_as!(
+        measures::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, criterion_pid, name, origin,
+                  derivation, unit, threshold, direction, sustain
+             FROM oversight_measures WHERE pid = $1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?
+    .ok_or(Error::NotFound)?;
     criterion_in_scope(ctx, caller, m.criterion_pid).await?;
     Ok(m)
+}
+
+/// The measures behind one criterion, or behind any of several, in the order they were added.
+async fn measures_of(ctx: &AppContext, criteria: &[Uuid]) -> Result<Vec<measures::Model>> {
+    Ok(sqlx::query_as!(
+        measures::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, criterion_pid, name, origin,
+                  derivation, unit, threshold, direction, sustain
+             FROM oversight_measures WHERE criterion_pid = ANY($1) ORDER BY id"#,
+        criteria,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?)
 }
 
 // ─── Levels ─────────────────────────────────────────────────────────────────
@@ -118,27 +134,39 @@ async fn create_level(
         return Err(unprocessable("ordinal must be 1 to 20"));
     }
     ensure_org_in_scope(&ctx, &caller, &p.organization_ref).await?;
-    let taken = levels::Entity::find()
-        .filter(levels::Column::OrganizationRef.eq(&p.organization_ref))
-        .filter(levels::Column::Ordinal.eq(p.ordinal))
-        .one(&crate::db::orm(&ctx))
-        .await?;
+    let taken = sqlx::query_scalar!(
+        r#"SELECT 1 AS "one!" FROM oversight_levels WHERE organization_ref = $1 AND ordinal = $2 LIMIT 1"#,
+        p.organization_ref,
+        p.ordinal,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?;
     if taken.is_some() {
         return Err(unprocessable("that ordinal is already on the scale"));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = levels::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        ordinal: ActiveValue::set(p.ordinal),
-        name: ActiveValue::set(p.name),
-        synthetic: ActiveValue::set(false),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        levels::Model,
+        r#"INSERT INTO oversight_levels (pid, organization_ref, ordinal, name, synthetic) VALUES ($1, $2, $3, $4, false)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, ordinal, name,
+                     synthetic"#,
+        Uuid::new_v4(),
+        p.organization_ref,
+        p.ordinal,
+        p.name,
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    audit(&txn, &caller, "oversight_level", row.pid, "created").await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "oversight_level",
+        row.pid,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(level_json(&row))
 }
 
@@ -154,25 +182,32 @@ async fn delete_level(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let level = level_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
-    let used = positions::Entity::find()
-        .filter(positions::Column::LevelPid.eq(level.pid))
-        .one(&crate::db::orm(&ctx))
-        .await?
-        .is_some()
-        || criteria::Entity::find()
-            .filter(criteria::Column::LevelPid.eq(level.pid))
-            .one(&crate::db::orm(&ctx))
-            .await?
-            .is_some();
+    let used = sqlx::query_scalar!(
+        r#"SELECT (EXISTS (SELECT 1 FROM oversight_positions WHERE level_pid = $1)
+                OR EXISTS (SELECT 1 FROM oversight_criteria WHERE level_pid = $1)) AS "used!""#,
+        level.pid,
+    )
+    .fetch_one(db::pool(&ctx))
+    .await?;
     if used {
         return Err(unprocessable(
             "a level with a recorded position or a criterion cannot be removed; remove the criteria first, and a recorded position stays on the record",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    levels::Entity::delete_by_id(level.id).exec(&txn).await?;
-    audit(&txn, &caller, "oversight_level", level.pid, "removed").await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!("DELETE FROM oversight_levels WHERE id = $1", level.id)
+        .execute(&mut *tx)
+        .await?;
+    db::audit(
+        &mut tx,
+        "oversight_level",
+        level.pid,
+        "removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "removed": level.pid }))
 }
 
@@ -208,21 +243,33 @@ async fn record_position(
             "that level is on another organization's scale",
         ));
     }
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = positions::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        organization_ref: ActiveValue::set(p.organization_ref),
-        level_pid: ActiveValue::set(level.pid),
-        effective_on: ActiveValue::set(p.effective_on),
-        deciding_body: ActiveValue::set(p.deciding_body),
-        reason: ActiveValue::set(p.reason),
-        recorded_by: ActiveValue::set(caller.actor().map(ToString::to_string)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        positions::Model,
+        r#"INSERT INTO oversight_positions (pid, organization_ref, level_pid, effective_on, deciding_body, reason, recorded_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, level_pid,
+                     effective_on, deciding_body, reason, recorded_by"#,
+        Uuid::new_v4(),
+        p.organization_ref,
+        level.pid,
+        p.effective_on,
+        p.deciding_body,
+        p.reason,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    audit(&txn, &caller, "oversight_position", row.pid, "recorded").await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "oversight_position",
+        row.pid,
+        "recorded",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(position_json(&row, Some(&level)))
 }
 
@@ -254,19 +301,27 @@ async fn create_criterion(
     problems.require_text("name", &p.name);
     ensure_valid(&problems.into_vec())?;
     let level = level_in_scope(&ctx, &caller, p.level_pid).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = criteria::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        level_pid: ActiveValue::set(level.pid),
-        name: ActiveValue::set(p.name),
-        synthetic: ActiveValue::set(false),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO oversight_criteria (pid, level_pid, name, synthetic) VALUES ($1, $2, $3, false)",
+        pid,
+        level.pid,
+        p.name,
+    )
+    .execute(&mut *tx)
     .await?;
-    audit(&txn, &caller, "oversight_criterion", row.pid, "created").await?;
-    txn.commit().await?;
-    format::json(json!({ "pid": row.pid, "level_pid": row.level_pid, "name": row.name }))
+    db::audit(
+        &mut tx,
+        "oversight_criterion",
+        pid,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(json!({ "pid": pid, "level_pid": level.pid, "name": p.name }))
 }
 
 /// `DELETE /api/oversight/criteria/{pid}` — with its measures and their readings.
@@ -277,24 +332,33 @@ async fn delete_criterion(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let c = criterion_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
-    let ms = measures::Entity::find()
-        .filter(measures::Column::CriterionPid.eq(c.pid))
-        .all(&crate::db::orm(&ctx))
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "DELETE FROM oversight_readings
+          WHERE measure_pid IN (SELECT pid FROM oversight_measures WHERE criterion_pid = $1)",
+        c.pid,
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM oversight_measures WHERE criterion_pid = $1",
+        c.pid
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!("DELETE FROM oversight_criteria WHERE id = $1", c.id)
+        .execute(&mut *tx)
         .await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    for m in &ms {
-        readings::Entity::delete_many()
-            .filter(readings::Column::MeasurePid.eq(m.pid))
-            .exec(&txn)
-            .await?;
-    }
-    measures::Entity::delete_many()
-        .filter(measures::Column::CriterionPid.eq(c.pid))
-        .exec(&txn)
-        .await?;
-    criteria::Entity::delete_by_id(c.id).exec(&txn).await?;
-    audit(&txn, &caller, "oversight_criterion", c.pid, "removed").await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "oversight_criterion",
+        c.pid,
+        "removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "removed": c.pid }))
 }
 
@@ -333,23 +397,35 @@ async fn create_measure(
     }
     check_derivation(&p)?;
     let c = criterion_in_scope(&ctx, &caller, p.criterion_pid).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = measures::ActiveModel {
-        pid: ActiveValue::set(Uuid::new_v4()),
-        criterion_pid: ActiveValue::set(c.pid),
-        name: ActiveValue::set(p.name),
-        origin: ActiveValue::set(p.origin),
-        derivation: ActiveValue::set(p.derivation),
-        unit: ActiveValue::set(p.unit),
-        threshold: ActiveValue::set(p.threshold),
-        direction: ActiveValue::set(p.direction),
-        sustain: ActiveValue::set(i32::try_from(p.sustain).unwrap_or(1)),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    let row = sqlx::query_as!(
+        measures::Model,
+        r#"INSERT INTO oversight_measures (pid, criterion_pid, name, origin, derivation, unit, threshold, direction, sustain)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, criterion_pid, name, origin,
+                     derivation, unit, threshold, direction, sustain"#,
+        Uuid::new_v4(),
+        c.pid,
+        p.name,
+        p.origin,
+        p.derivation,
+        p.unit,
+        p.threshold,
+        p.direction,
+        i32::try_from(p.sustain).unwrap_or(1),
+    )
+    .fetch_one(&mut *tx)
     .await?;
-    audit(&txn, &caller, "oversight_measure", row.pid, "created").await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "oversight_measure",
+        row.pid,
+        "created",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(measure_json(&row))
 }
 
@@ -408,14 +484,26 @@ async fn delete_measure(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let m = measure_in_scope(&ctx, &caller, records::parse_pid(&pid)?).await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    readings::Entity::delete_many()
-        .filter(readings::Column::MeasurePid.eq(m.pid))
-        .exec(&txn)
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "DELETE FROM oversight_readings WHERE measure_pid = $1",
+        m.pid
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!("DELETE FROM oversight_measures WHERE id = $1", m.id)
+        .execute(&mut *tx)
         .await?;
-    measures::Entity::delete_by_id(m.id).exec(&txn).await?;
-    audit(&txn, &caller, "oversight_measure", m.pid, "removed").await?;
-    txn.commit().await?;
+    db::audit(
+        &mut tx,
+        "oversight_measure",
+        m.pid,
+        "removed",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({ "removed": m.pid }))
 }
 
@@ -460,36 +548,35 @@ async fn put_reading(
         .period_on
         .with_day(1)
         .ok_or_else(|| unprocessable("period_on is not a date"))?;
-    let by = caller.actor().map(ToString::to_string);
-    let existing = readings::Entity::find()
-        .filter(readings::Column::MeasurePid.eq(m.pid))
-        .filter(readings::Column::PeriodOn.eq(month))
-        .one(&crate::db::orm(&ctx))
-        .await?;
-    let txn = crate::db::orm(&ctx).begin().await?;
-    let row = if let Some(row) = existing {
-        let mut a: readings::ActiveModel = row.into();
-        a.value = ActiveValue::set(p.value);
-        a.evidence = ActiveValue::set(p.evidence);
-        a.source_document = ActiveValue::set(p.source_document);
-        a.recorded_by = ActiveValue::set(by);
-        a.update(&txn).await?
-    } else {
-        readings::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            measure_pid: ActiveValue::set(m.pid),
-            period_on: ActiveValue::set(month),
-            value: ActiveValue::set(p.value),
-            evidence: ActiveValue::set(p.evidence),
-            source_document: ActiveValue::set(p.source_document),
-            recorded_by: ActiveValue::set(by),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?
-    };
-    audit(&txn, &caller, "oversight_reading", row.pid, "entered").await?;
-    txn.commit().await?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    // One reading per measure and month: a second one replaces the first and keeps its pid.
+    let row = sqlx::query!(
+        "INSERT INTO oversight_readings (pid, measure_pid, period_on, value, evidence, source_document, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (measure_pid, period_on)
+         DO UPDATE SET value = EXCLUDED.value, evidence = EXCLUDED.evidence, source_document = EXCLUDED.source_document,
+                       recorded_by = EXCLUDED.recorded_by, updated_at = now()
+         RETURNING pid, measure_pid, period_on, value, evidence, source_document",
+        Uuid::new_v4(),
+        m.pid,
+        month,
+        p.value,
+        p.evidence,
+        p.source_document,
+        caller.actor(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "oversight_reading",
+        row.pid,
+        "entered",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
     format::json(json!({
         "pid": row.pid, "measure_pid": row.measure_pid, "period_on": row.period_on, "value": row.value,
         "evidence": row.evidence, "source_document": row.source_document,
@@ -523,17 +610,19 @@ pub(super) async fn measure_readings(
         let periods: Vec<i64> = (first..=latest).collect();
         return oversight_derived::readings(ctx, org, key, &periods).await;
     }
-    Ok(readings::Entity::find()
-        .filter(readings::Column::MeasurePid.eq(m.pid))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .map(|r| rules::Reading {
-            period: rules::month_period(r.period_on.year(), r.period_on.month()),
-            value: r.value,
-            origin: rules::Origin::Reported,
-        })
-        .collect())
+    Ok(sqlx::query!(
+        "SELECT period_on, value FROM oversight_readings WHERE measure_pid = $1 ORDER BY id",
+        m.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .into_iter()
+    .map(|r| rules::Reading {
+        period: rules::month_period(r.period_on.year(), r.period_on.month()),
+        value: r.value,
+        origin: rules::Origin::Reported,
+    })
+    .collect())
 }
 
 /// The measures behind the criteria of the level the organization is at on `today` (none when no
@@ -543,26 +632,24 @@ pub(super) async fn current_measures(
     org: &str,
     today: chrono::NaiveDate,
 ) -> Result<Vec<measures::Model>> {
-    let current = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(org))
-        .filter(positions::Column::EffectiveOn.lte(today))
-        .order_by_desc(positions::Column::EffectiveOn)
-        .order_by_desc(positions::Column::Id)
-        .one(&crate::db::orm(ctx))
-        .await?;
-    let Some(position) = current else {
+    let current = sqlx::query_scalar!(
+        "SELECT level_pid FROM oversight_positions WHERE organization_ref = $1 AND effective_on <= $2
+          ORDER BY effective_on DESC, id DESC LIMIT 1",
+        org,
+        today,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?;
+    let Some(level_pid) = current else {
         return Ok(Vec::new());
     };
-    let cs = criteria::Entity::find()
-        .filter(criteria::Column::LevelPid.eq(position.level_pid))
-        .all(&crate::db::orm(ctx))
-        .await?;
-    let pids: Vec<Uuid> = cs.iter().map(|c| c.pid).collect();
-    Ok(measures::Entity::find()
-        .filter(measures::Column::CriterionPid.is_in(pids))
-        .order_by_asc(measures::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?)
+    let pids: Vec<Uuid> = sqlx::query_scalar!(
+        "SELECT pid FROM oversight_criteria WHERE level_pid = $1",
+        level_pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
+    measures_of(ctx, &pids).await
 }
 
 // ─── The status ─────────────────────────────────────────────────────────────
@@ -597,33 +684,38 @@ pub(super) async fn status_json(
     org: &str,
     today: chrono::NaiveDate,
 ) -> Result<serde_json::Value> {
-    let scale = levels::Entity::find()
-        .filter(levels::Column::OrganizationRef.eq(org))
-        .order_by_asc(levels::Column::Ordinal)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    // The scale by ordinal; an ordinal is unique on an organization's scale, and the id breaks any tie.
+    let scale = sqlx::query_as!(
+        levels::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, ordinal, name,
+                  synthetic
+             FROM oversight_levels WHERE organization_ref = $1 ORDER BY ordinal, id"#,
+        org,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     let by_pid: BTreeMap<Uuid, &levels::Model> = scale.iter().map(|l| (l.pid, l)).collect();
-    let history = positions::Entity::find()
-        .filter(positions::Column::OrganizationRef.eq(org))
-        .order_by_desc(positions::Column::EffectiveOn)
-        .order_by_desc(positions::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let history = sqlx::query_as!(
+        positions::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, level_pid,
+                  effective_on, deciding_body, reason, recorded_by
+             FROM oversight_positions WHERE organization_ref = $1 ORDER BY effective_on DESC, id DESC"#,
+        org,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     let current = history.iter().find(|p| p.effective_on <= today);
     let latest = last_complete_month(today);
     let mut verdicts = Vec::new();
     if let Some(level) = current.and_then(|p| by_pid.get(&p.level_pid)) {
-        let cs = criteria::Entity::find()
-            .filter(criteria::Column::LevelPid.eq(level.pid))
-            .order_by_asc(criteria::Column::Id)
-            .all(&crate::db::orm(ctx))
-            .await?;
+        let cs = sqlx::query!(
+            "SELECT pid, name FROM oversight_criteria WHERE level_pid = $1 ORDER BY id",
+            level.pid,
+        )
+        .fetch_all(db::pool(ctx))
+        .await?;
         for c in &cs {
-            let ms = measures::Entity::find()
-                .filter(measures::Column::CriterionPid.eq(c.pid))
-                .order_by_asc(measures::Column::Id)
-                .all(&crate::db::orm(ctx))
-                .await?;
+            let ms = measures_of(ctx, &[c.pid]).await?;
             let mut input = Vec::new();
             let mut shown: Vec<serde_json::Value> = Vec::new();
             for m in &ms {

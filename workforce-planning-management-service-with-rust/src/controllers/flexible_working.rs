@@ -16,15 +16,14 @@ use super::forbidden;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use chrono::{NaiveDate, Utc};
-use sea_orm::{ActiveValue, QueryOrder, TransactionTrait};
 use serde::Deserialize;
 use serde_json::json;
+use uuid::Uuid;
 
 use super::unprocessable;
 use crate::auth::{self, MaybeAuthUser};
+use crate::db;
 use crate::models::_entities::{flexible_working_requests as requests, workers};
-use crate::models::audit_logs::Model as Audit;
-use crate::models::notifications::Model as Notification;
 use crate::models::{memberships, records};
 use crate::need_to_know::facts_for;
 use crate::rules::access::Relation;
@@ -221,13 +220,15 @@ pub(crate) async fn create_for(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
-    let previous: Vec<(NaiveDate, Status)> = requests::Entity::find()
-        .filter(requests::Column::WorkerPid.eq(worker.pid))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .iter()
-        .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
-        .collect();
+    let previous: Vec<(NaiveDate, Status)> = sqlx::query!(
+        "SELECT requested_on, status FROM flexible_working_requests WHERE worker_pid = $1",
+        worker.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?
+    .iter()
+    .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
+    .collect();
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let per_year = requests_per_year(Some(&scope), today);
     let limit = per_year.value;
@@ -239,37 +240,40 @@ pub(crate) async fn create_for(
     let months = decision_months(Some(&scope), today);
     let decide_by = rules::decide_by(today, months.value)
         .ok_or_else(|| unprocessable("the decision date runs past the supported calendar"))?;
-    let txn = crate::db::orm(ctx).begin().await?;
-    let row = requests::ActiveModel {
-        pid: ActiveValue::set(uuid::Uuid::new_v4()),
-        worker_pid: ActiveValue::set(worker.pid),
-        kind: ActiveValue::set(payload.kind.clone()),
-        requested_on: ActiveValue::set(today),
-        proposed_start: ActiveValue::set(payload.proposed_start),
-        proposed_fte_percent: ActiveValue::set(payload.proposed_fte_percent),
-        effect_on_team: ActiveValue::set(clean(payload.effect_on_team.as_ref())),
-        how_to_manage: ActiveValue::set(clean(payload.how_to_manage.as_ref())),
-        status: ActiveValue::set(Status::Requested.as_str().to_string()),
-        decide_by: ActiveValue::set(decide_by),
-        ..Default::default()
-    }
-    .insert(&txn)
+    let pid = Uuid::new_v4();
+    let mut tx = db::pool(ctx).begin().await?;
+    sqlx::query!(
+        "INSERT INTO flexible_working_requests (pid, worker_pid, kind, requested_on, proposed_start, proposed_fte_percent,
+                                                effect_on_team, how_to_manage, status, decide_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        pid,
+        worker.pid,
+        payload.kind,
+        today,
+        payload.proposed_start,
+        payload.proposed_fte_percent,
+        clean(payload.effect_on_team.as_ref()),
+        clean(payload.how_to_manage.as_ref()),
+        Status::Requested.as_str(),
+        decide_by,
+    )
+    .execute(&mut *tx)
     .await?;
     if let Some(manager) = worker.manager_pid {
-        Notification::push(
-            &txn,
+        db::notify(
+            &mut tx,
             manager,
             "flexible_working_requested",
             &format!(
                 "{} asked for a flexible working arrangement.",
                 worker.display_name
             ),
-            json!({ "worker_pid": worker.pid, "request_pid": row.pid, "decide_by": decide_by }),
+            json!({ "worker_pid": worker.pid, "request_pid": pid, "decide_by": decide_by }),
         )
         .await?;
     }
-    Audit::record(
-        &txn,
+    db::audit(
+        &mut tx,
         "worker",
         worker.pid,
         "flexible_working_requested",
@@ -277,9 +281,9 @@ pub(crate) async fn create_for(
         None,
     )
     .await?;
-    txn.commit().await?;
+    tx.commit().await?;
     format::json(json!({
-        "pid": row.pid,
+        "pid": pid,
         "decide_by": decide_by,
         // Where the period and the limit came from: the worker's profile, the setting or the default (WPM-D153).
         "basis": { "decision_months": months.came_from, "requests_per_year": per_year.came_from },
@@ -289,11 +293,17 @@ pub(crate) async fn create_for(
 /// The worker's own requests, newest first. Shared with `/api/me/flexible-working`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
     let today = Utc::now().date_naive();
-    let rows = requests::Entity::find()
-        .filter(requests::Column::WorkerPid.eq(worker.pid))
-        .order_by_desc(requests::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let rows = sqlx::query_as!(
+        requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
+                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
+                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
+                  appeal_note, appeal_decided_by
+             FROM flexible_working_requests WHERE worker_pid = $1 ORDER BY id DESC"#,
+        worker.pid,
+    )
+    .fetch_all(db::pool(ctx))
+    .await?;
     let appeal_days = appeal_days_for(ctx, worker, today).await?;
     format::json(
         rows.iter()
@@ -307,32 +317,214 @@ async fn own_request(
     worker: &workers::Model,
     pid: &str,
 ) -> Result<requests::Model> {
-    requests::Entity::find()
-        .filter(requests::Column::Pid.eq(records::parse_pid(pid)?))
-        .filter(requests::Column::WorkerPid.eq(worker.pid))
-        .one(&crate::db::orm(ctx))
+    request_by_pid(ctx, records::parse_pid(pid)?, Some(worker.pid))
         .await?
         .ok_or(Error::NotFound)
+}
+
+/// A request by its pid, and, when `worker_pid` is given, only if it is that worker's.
+async fn request_by_pid(
+    ctx: &AppContext,
+    pid: Uuid,
+    worker_pid: Option<Uuid>,
+) -> Result<Option<requests::Model>> {
+    Ok(sqlx::query_as!(
+        requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
+                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
+                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
+                  appeal_note, appeal_decided_by
+             FROM flexible_working_requests WHERE pid = $1 AND ($2::uuid IS NULL OR worker_pid = $2)"#,
+        pid,
+        worker_pid,
+    )
+    .fetch_optional(db::pool(ctx))
+    .await?)
+}
+
+/// The audit of one move, by its event: one literal action per arm.
+#[allow(clippy::too_many_lines)] // one arm per kind, so each action is a literal the audit guard can read
+async fn audit_move(
+    tx: &mut sqlx::PgConnection,
+    worker_pid: Uuid,
+    event: Event,
+    actor: Option<&str>,
+) -> Result<()> {
+    let connection = tx;
+    match event {
+        Event::Withdrawn => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_withdrawn",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::Accepted => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_accepted",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::Declined => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_declined",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::Appealed => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_appealed",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::Approved => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_approved",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::Refused => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_refused",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::CounterProposed => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_counter_proposed",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::AppealUpheld => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_appeal_upheld",
+                actor,
+                None,
+            )
+            .await
+        }
+        Event::AppealDismissed => {
+            db::audit(
+                connection,
+                "worker",
+                worker_pid,
+                "flexible_working_appeal_dismissed",
+                actor,
+                None,
+            )
+            .await
+        }
+    }?;
+    Ok(())
+}
+
+/// What a move records in the audit trail.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Event {
+    Withdrawn,
+    Accepted,
+    Declined,
+    Appealed,
+    Approved,
+    Refused,
+    CounterProposed,
+    AppealUpheld,
+    AppealDismissed,
 }
 
 async fn move_to(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     worker: &workers::Model,
-    row: requests::Model,
+    mut row: requests::Model,
     action: Action,
-    event: &str,
-    apply: impl FnOnce(&mut requests::ActiveModel),
+    event: Event,
+    apply: impl FnOnce(&mut requests::Model),
 ) -> Result<requests::Model> {
     let to = rules::next(status_of(&row)?, action).map_err(|e| unprocessable(&e))?;
-    let mut active: requests::ActiveModel = row.into();
-    active.status = ActiveValue::set(to.as_str().to_string());
-    apply(&mut active);
-    let txn = crate::db::orm(ctx).begin().await?;
-    let saved = active.update(&txn).await?;
-    Audit::record(&txn, "worker", worker.pid, event, caller.actor(), None).await?;
-    txn.commit().await?;
+    to.as_str().clone_into(&mut row.status);
+    apply(&mut row);
+    let mut tx = db::pool(ctx).begin().await?;
+    let saved = sqlx::query_as!(
+        requests::Model,
+        r#"UPDATE flexible_working_requests
+              SET status = $2, decided_on = $3, decided_by = $4, decision_reason = $5, decision_note = $6,
+                  counter_note = $7, counter_fte_percent = $8, trial_until = $9, appealed_on = $10, appeal_note = $11,
+                  appeal_decided_by = $12, updated_at = now()
+            WHERE id = $1
+        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
+                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
+                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
+                  appeal_note, appeal_decided_by"#,
+        row.id,
+        row.status,
+        row.decided_on,
+        row.decided_by,
+        row.decision_reason,
+        row.decision_note,
+        row.counter_note,
+        row.counter_fte_percent,
+        row.trial_until,
+        row.appealed_on,
+        row.appeal_note,
+        row.appeal_decided_by,
+    )
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or(Error::NotFound)?;
+    audit_move(&mut tx, worker.pid, event, caller.actor()).await?;
+    tx.commit().await?;
     Ok(saved)
+}
+
+/// Tell `to` something outside a transaction, as the request's answer is told after its move.
+async fn tell(
+    ctx: &AppContext,
+    to: Uuid,
+    kind: &str,
+    body: &str,
+    data: serde_json::Value,
+) -> Result<()> {
+    let mut connection = db::pool(ctx).acquire().await?;
+    db::notify(&mut connection, to, kind, body, data).await?;
+    Ok(())
 }
 
 /// Withdraw. Shared with `/api/me/flexible-working/{pid}/withdraw`.
@@ -349,7 +541,7 @@ pub(crate) async fn withdraw_for(
         worker,
         row,
         Action::Withdraw,
-        "flexible_working_withdrawn",
+        Event::Withdrawn,
         |_| {},
     )
     .await?;
@@ -383,9 +575,9 @@ pub(crate) async fn respond_for(
     };
     let row = own_request(ctx, worker, pid).await?;
     let event = if action == Action::Accept {
-        "flexible_working_accepted"
+        Event::Accepted
     } else {
-        "flexible_working_declined"
+        Event::Declined
     };
     let saved = move_to(ctx, caller, worker, row, action, event, |_| {}).await?;
     let today = Utc::now().date_naive();
@@ -435,16 +627,16 @@ pub(crate) async fn appeal_for(
         worker,
         row,
         Action::Appeal,
-        "flexible_working_appealed",
+        Event::Appealed,
         |a| {
-            a.appealed_on = ActiveValue::set(Some(today));
-            a.appeal_note = ActiveValue::set(note);
+            a.appealed_on = Some(today);
+            a.appeal_note = note;
         },
     )
     .await?;
     if let Some(manager) = worker.manager_pid {
-        Notification::push(
-            &crate::db::orm(ctx),
+        tell(
+            ctx,
             manager,
             "flexible_working_appeal",
             &format!(
@@ -491,9 +683,7 @@ async fn request_and_worker(
     caller: &MaybeAuthUser,
     pid: &str,
 ) -> Result<(requests::Model, workers::Model)> {
-    let row = requests::Entity::find()
-        .filter(requests::Column::Pid.eq(records::parse_pid(pid)?))
-        .one(&crate::db::orm(ctx))
+    let row = request_by_pid(ctx, records::parse_pid(pid)?, None)
         .await?
         .ok_or(Error::NotFound)?;
     let worker = records::worker_by_pid(ctx, row.worker_pid).await?;
@@ -545,9 +735,9 @@ async fn decide(
     super::ensure_valid(&problems.into_vec())?;
     let today = Utc::now().date_naive();
     let (action, event) = match payload.outcome.as_str() {
-        "approve" => (Action::Approve, "flexible_working_approved"),
-        "refuse" => (Action::Refuse, "flexible_working_refused"),
-        "counter" => (Action::Counter, "flexible_working_counter_proposed"),
+        "approve" => (Action::Approve, Event::Approved),
+        "refuse" => (Action::Refuse, Event::Refused),
+        "counter" => (Action::Counter, Event::CounterProposed),
         _ => return Err(unprocessable("outcome must be approve, refuse or counter")),
     };
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
@@ -594,17 +784,17 @@ async fn decide(
         payload.trial_until.filter(|_| action == Action::Approve),
     );
     let saved = move_to(&ctx, &caller, &worker, row, action, event, |a| {
-        a.decided_on = ActiveValue::set(Some(today));
-        a.decided_by = ActiveValue::set(actor);
-        a.decision_reason = ActiveValue::set(reason);
-        a.decision_note = ActiveValue::set(note);
-        a.counter_note = ActiveValue::set(counter_note);
-        a.counter_fte_percent = ActiveValue::set(counter_fte);
-        a.trial_until = ActiveValue::set(trial);
+        a.decided_on = Some(today);
+        a.decided_by = actor;
+        a.decision_reason = reason;
+        a.decision_note = note;
+        a.counter_note = counter_note;
+        a.counter_fte_percent = counter_fte;
+        a.trial_until = trial;
     })
     .await?;
-    Notification::push(
-        &crate::db::orm(&ctx),
+    tell(
+        &ctx,
         worker.pid,
         "flexible_working_decided",
         "Your flexible working request has an answer.",
@@ -636,8 +826,8 @@ async fn decide_appeal(
     let (row, worker) = request_and_worker(&ctx, &caller, &pid).await?;
     ensure_decider(&ctx, &caller, &worker).await?;
     let (action, event) = match payload.outcome.as_str() {
-        "uphold" => (Action::Uphold, "flexible_working_appeal_upheld"),
-        "dismiss" => (Action::Dismiss, "flexible_working_appeal_dismissed"),
+        "uphold" => (Action::Uphold, Event::AppealUpheld),
+        "dismiss" => (Action::Dismiss, Event::AppealDismissed),
         _ => return Err(unprocessable("outcome must be uphold or dismiss")),
     };
     let actor = caller.actor().map(ToString::to_string);
@@ -654,14 +844,14 @@ async fn decide_appeal(
     let note = clean(payload.note.as_ref());
     let today = Utc::now().date_naive();
     let saved = move_to(&ctx, &caller, &worker, row, action, event, |a| {
-        a.appeal_decided_by = ActiveValue::set(actor);
+        a.appeal_decided_by = actor;
         if note.is_some() {
-            a.decision_note = ActiveValue::set(note);
+            a.decision_note = note;
         }
     })
     .await?;
-    Notification::push(
-        &crate::db::orm(&ctx),
+    tell(
+        &ctx,
         worker.pid,
         "flexible_working_decided",
         "Your flexible working appeal has an answer.",
@@ -700,22 +890,26 @@ async fn list(
         return Err(unprocessable("unknown status"));
     }
     let today = Utc::now().date_naive();
-    let mut select = requests::Entity::find().order_by_asc(requests::Column::DecideBy);
-    if let Some(s) = &query.status {
-        select = select.filter(requests::Column::Status.eq(s));
-    }
+    let rows = sqlx::query_as!(
+        requests::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
+                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
+                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
+                  appeal_note, appeal_decided_by
+             FROM flexible_working_requests WHERE ($1::text IS NULL OR status = $1) ORDER BY decide_by, id"#,
+        query.status,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     // Each worker's appeal window is from their own chain; an organization's profile is loaded once.
     let mut profiles: std::collections::BTreeMap<String, Scope> = std::collections::BTreeMap::new();
     let mut out = Vec::new();
-    for row in select.all(&crate::db::orm(&ctx)).await? {
-        let Some(worker) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(row.worker_pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&crate::db::orm(&ctx))
-            .await?
-        else {
-            continue;
+    for row in rows {
+        let worker = match records::worker_by_pid(&ctx, row.worker_pid).await {
+            Ok(worker) => worker,
+            Err(Error::NotFound) => continue,
+            Err(e) => return Err(e),
         };
         if scope
             .as_ref()

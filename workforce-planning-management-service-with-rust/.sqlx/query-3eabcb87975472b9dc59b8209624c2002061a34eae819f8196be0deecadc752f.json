@@ -1,0 +1,42 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, period_end FROM payroll_runs\n              WHERE organization_ref = $1 AND status IN ('approved', 'paid') AND period_end < $2 AND pid <> $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "period_end",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "payroll_runs",
+            "name": "period_end"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "3eabcb87975472b9dc59b8209624c2002061a34eae819f8196be0deecadc752f"
+}

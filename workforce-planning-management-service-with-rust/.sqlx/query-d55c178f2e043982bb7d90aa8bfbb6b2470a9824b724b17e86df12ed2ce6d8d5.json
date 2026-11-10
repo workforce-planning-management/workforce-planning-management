@@ -1,0 +1,136 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, level_pid,\n                  effective_on, deciding_body, reason, recorded_by\n             FROM oversight_positions WHERE organization_ref = $1 ORDER BY effective_on DESC, id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "level_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "level_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "effective_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "effective_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "deciding_body",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "deciding_body"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "reason",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "oversight_positions",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d55c178f2e043982bb7d90aa8bfbb6b2470a9824b724b17e86df12ed2ce6d8d5"
+}

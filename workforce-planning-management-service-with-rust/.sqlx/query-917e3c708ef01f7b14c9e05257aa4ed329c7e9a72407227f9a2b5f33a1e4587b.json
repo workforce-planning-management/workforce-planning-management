@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO emergency_contacts (pid, worker_pid, name, relationship, phone, phone_digits, phone_e164,\n                                         alt_phone_digits, alt_phone_e164, alt_phone, email, priority, note, recorded_by,\n                                         on_behalf, deleted_at)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NULL)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "917e3c708ef01f7b14c9e05257aa4ed329c7e9a72407227f9a2b5f33a1e4587b"
+}
