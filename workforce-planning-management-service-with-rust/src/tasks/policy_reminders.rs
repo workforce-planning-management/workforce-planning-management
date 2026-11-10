@@ -9,14 +9,9 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use sea_orm::QueryOrder;
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
-use crate::models::_entities::{
-    notifications, policies, policy_acknowledgements, policy_versions, workers,
-};
-use crate::models::notifications::Model as Notification;
 use crate::rules::metrics as metric_rules;
 use crate::rules::policy as rules;
 
@@ -65,28 +60,29 @@ impl Task for PolicyReminders {
 pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64) -> Result<usize> {
     let mut sent = 0;
     // Versions already reminded, per worker: (worker, version).
-    let told: BTreeSet<(Uuid, String)> = notifications::Entity::find()
-        .filter(notifications::Column::Kind.eq("policy_due"))
-        .all(&crate::db::orm(ctx))
-        .await?
-        .into_iter()
-        .filter_map(|n| {
-            Some((
-                n.worker_pid,
-                n.data.get("version_pid")?.as_str()?.to_string(),
-            ))
-        })
-        .collect();
-    for policy in policies::Entity::find()
-        .order_by_asc(policies::Column::Id)
-        .all(&crate::db::orm(ctx))
+    let told: BTreeSet<(Uuid, String)> =
+        sqlx::query!("SELECT worker_pid, data FROM notifications WHERE kind = 'policy_due'")
+            .fetch_all(crate::db::pool(ctx))
+            .await?
+            .into_iter()
+            .filter_map(|n| {
+                Some((
+                    n.worker_pid,
+                    n.data.get("version_pid")?.as_str()?.to_string(),
+                ))
+            })
+            .collect();
+    for policy in sqlx::query!("SELECT pid, organization_ref, name FROM policies ORDER BY id")
+        .fetch_all(crate::db::pool(ctx))
         .await?
     {
-        let versions = policy_versions::Entity::find()
-            .filter(policy_versions::Column::PolicyPid.eq(policy.pid))
-            .order_by_asc(policy_versions::Column::Version)
-            .all(&crate::db::orm(ctx))
-            .await?;
+        let versions = sqlx::query!(
+            "SELECT pid, version, effective_on, audience_kind, audience_value, acknowledge_within_days
+               FROM policy_versions WHERE policy_pid = $1 ORDER BY version",
+            policy.pid,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?;
         let facts: Vec<rules::Fact> = versions
             .iter()
             .map(|v| rules::Fact {
@@ -98,18 +94,21 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
             continue;
         };
         let version = &versions[i];
-        let acknowledged: BTreeSet<Uuid> = policy_acknowledgements::Entity::find()
-            .filter(policy_acknowledgements::Column::VersionPid.eq(version.pid))
-            .all(&crate::db::orm(ctx))
-            .await?
-            .into_iter()
-            .map(|a| a.worker_pid)
-            .collect();
-        let staff = workers::Entity::find()
-            .filter(workers::Column::OrganizationRef.eq(&policy.organization_ref))
-            .filter(workers::Column::DeletedAt.is_null())
-            .all(&crate::db::orm(ctx))
-            .await?;
+        let acknowledged: BTreeSet<Uuid> = sqlx::query_scalar!(
+            "SELECT worker_pid FROM policy_acknowledgements WHERE version_pid = $1",
+            version.pid,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?
+        .into_iter()
+        .collect();
+        let staff = sqlx::query!(
+            "SELECT pid, department, job_title, hired_on, terminated_on
+               FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL",
+            policy.organization_ref,
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?;
         for worker in staff {
             if !metric_rules::is_employed_on(as_of, worker.hired_on, worker.terminated_on)
                 || !rules::in_audience(
@@ -137,8 +136,8 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
                 }
                 rules::Standing::Done { .. } => continue,
             };
-            Notification::push(
-                &crate::db::orm(ctx),
+            crate::db::notify(
+                &mut *crate::db::pool(ctx).acquire().await?,
                 worker.pid,
                 "policy_due",
                 &format!(

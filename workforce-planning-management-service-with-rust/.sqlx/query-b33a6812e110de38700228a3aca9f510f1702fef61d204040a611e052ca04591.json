@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ref AS \"reference\", skill_pid FROM skill_external_refs WHERE framework_slug = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "reference",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "ref"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "skill_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "skill_external_refs",
+            "name": "skill_pid"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b33a6812e110de38700228a3aca9f510f1702fef61d204040a611e052ca04591"
+}

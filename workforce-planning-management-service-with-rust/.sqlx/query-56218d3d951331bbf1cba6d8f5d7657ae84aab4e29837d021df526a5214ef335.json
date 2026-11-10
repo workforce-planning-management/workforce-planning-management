@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO capability_frameworks\n             (pid, slug, name, source_url, licence, attribution, scale_max, scale_labels, imported_on, note)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n         ON CONFLICT (slug) DO UPDATE SET imported_on = EXCLUDED.imported_on",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Varchar",
+        "Date",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "56218d3d951331bbf1cba6d8f5d7657ae84aab4e29837d021df526a5214ef335"
+}

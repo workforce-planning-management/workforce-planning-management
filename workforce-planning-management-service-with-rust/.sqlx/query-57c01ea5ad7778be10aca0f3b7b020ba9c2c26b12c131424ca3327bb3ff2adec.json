@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO skills (pid, name, category) VALUES ($1, $2, 'other')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "57c01ea5ad7778be10aca0f3b7b020ba9c2c26b12c131424ca3327bb3ff2adec"
+}

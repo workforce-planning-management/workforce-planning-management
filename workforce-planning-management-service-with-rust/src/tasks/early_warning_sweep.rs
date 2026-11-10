@@ -10,7 +10,6 @@ use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
 
 use crate::controllers::early_warning::sweep;
-use crate::models::_entities::{oversight_positions, skill_pools};
 
 /// The sweep task.
 pub struct EarlyWarningSweep;
@@ -33,20 +32,14 @@ impl Task for EarlyWarningSweep {
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
             Err(_) => chrono::Utc::now().date_naive(),
         };
-        let mut orgs: BTreeSet<String> = BTreeSet::new();
-        for p in skill_pools::Entity::find()
-            .filter(skill_pools::Column::DeletedAt.is_null())
-            .all(&crate::db::orm(ctx))
-            .await?
-        {
-            orgs.insert(p.organization_ref);
-        }
-        for p in oversight_positions::Entity::find()
-            .all(&crate::db::orm(ctx))
-            .await?
-        {
-            orgs.insert(p.organization_ref);
-        }
+        let orgs: BTreeSet<String> = sqlx::query_scalar!(
+            r#"SELECT organization_ref AS "organization_ref!" FROM skill_pools WHERE deleted_at IS NULL
+               UNION SELECT organization_ref FROM oversight_positions"#
+        )
+        .fetch_all(crate::db::pool(ctx))
+        .await?
+        .into_iter()
+        .collect();
         for org in &orgs {
             let r = sweep(ctx, org, as_of).await?;
             tracing::info!(%org, %as_of, opened = r.opened, cleared = r.cleared, told = r.told, "early warning sweep");

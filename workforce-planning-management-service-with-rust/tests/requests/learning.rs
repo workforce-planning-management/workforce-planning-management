@@ -569,12 +569,12 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         activate!(&request, &a).await;
 
         let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
-        let written = run_snapshot(&workforce_planning_management::db::orm(&ctx), first_day)
+        let written = run_snapshot(workforce_planning_management::db::pool(&ctx), first_day)
             .await
             .expect("first snapshot");
         assert!(written >= 1, "the seeded worker's department is recorded");
         assert_eq!(
-            run_snapshot(&workforce_planning_management::db::orm(&ctx), first_day)
+            run_snapshot(workforce_planning_management::db::pool(&ctx), first_day)
                 .await
                 .expect("re-run"),
             0,
@@ -601,7 +601,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
 
         // A later snapshot measures starters/leavers from the earlier one.
         run_snapshot(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
         )
         .await
@@ -1414,7 +1414,7 @@ async fn capability_framework_import_and_progression() {
         let fixture =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
         let report = import_pcf(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             &fixture,
             LevelMapping::Identity,
             false,
@@ -1435,7 +1435,7 @@ async fn capability_framework_import_and_progression() {
 
         // Idempotent: a second run creates nothing and refreshes everything.
         let again = import_pcf(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             &fixture,
             LevelMapping::Identity,
             false,
@@ -1522,7 +1522,7 @@ async fn capability_framework_import_and_progression() {
             .await
             .assert_status_ok();
         import_pcf(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             &fixture,
             LevelMapping::Identity,
             false,
@@ -1547,7 +1547,7 @@ async fn capability_framework_import_and_progression() {
             "the planner's level is not overwritten"
         );
         import_pcf(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             &fixture,
             LevelMapping::Identity,
             true,
@@ -1579,7 +1579,7 @@ async fn capability_framework_import_and_progression() {
             .await
             .assert_status_ok();
         import_pcf(
-            &workforce_planning_management::db::orm(&ctx),
+            workforce_planning_management::db::pool(&ctx),
             &fixture,
             LevelMapping::Identity,
             false,
@@ -1715,12 +1715,12 @@ async fn esco_import_search_and_seeding() {
                 .assert_status_ok();
         }
         let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/esco-mini");
-        let report = import_esco(&workforce_planning_management::db::orm(&ctx), &fixture, "en", "v-test").await.expect("import");
+        let report = import_esco(workforce_planning_management::db::pool(&ctx), &fixture, "en", "v-test").await.expect("import");
         assert_eq!((report.skills, report.occupations, report.relations), (5, 2, 4));
         assert_eq!(report.relations_dangling, 1, "the relation to a skill not in the file");
         assert_eq!(report.catalogue_linked, 2, "exact normalised labels, one match each");
         assert_eq!(report.catalogue_ambiguous, 1, "two ESCO skills share the label: not guessed");
-        let again = import_esco(&workforce_planning_management::db::orm(&ctx), &fixture, "en", "v-test").await.expect("re-import");
+        let again = import_esco(workforce_planning_management::db::pool(&ctx), &fixture, "en", "v-test").await.expect("re-import");
         assert_eq!((again.skills, again.relations), (5, 4), "replaced, not duplicated");
         assert_eq!(again.catalogue_linked, 0, "already linked");
 
@@ -1907,8 +1907,8 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&workforce_planning_management::db::orm(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&workforce_planning_management::db::orm(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(workforce_planning_management::db::pool(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(workforce_planning_management::db::pool(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
 
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
@@ -2017,8 +2017,8 @@ async fn career_history_and_aspirations() {
 
     crate::requests::request_open(|request, ctx| async move {
         let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
-        import_pcf(&workforce_planning_management::db::orm(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
-        import_esco(&workforce_planning_management::db::orm(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        import_pcf(workforce_planning_management::db::pool(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(workforce_planning_management::db::pool(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
         let org = an_org();
         let me = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &me).await;

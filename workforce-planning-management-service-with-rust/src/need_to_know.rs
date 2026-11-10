@@ -16,11 +16,10 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use uuid::Uuid;
 
 use crate::auth::{self, MaybeAuthUser};
-use crate::models::_entities::{reviews, workers};
+use crate::models::_entities::workers;
 use crate::models::{confederations, memberships};
 use crate::rules::access::{self, Audience, Facts, MAX_MANAGER_DEPTH, Relation};
 use crate::rules::org_access;
@@ -98,11 +97,12 @@ pub(crate) async fn is_line_manager(
         let Some(pid) = next else {
             return Ok(false);
         };
-        let Some(manager) = workers::Entity::find()
-            .filter(workers::Column::Pid.eq(pid))
-            .filter(workers::Column::DeletedAt.is_null())
-            .one(&crate::db::orm(ctx))
-            .await?
+        let Some(manager) = sqlx::query!(
+            "SELECT person_ref, manager_pid FROM workers WHERE pid = $1 AND deleted_at IS NULL",
+            pid,
+        )
+        .fetch_optional(crate::db::pool(ctx))
+        .await?
         else {
             return Ok(false);
         };
@@ -153,11 +153,11 @@ pub(crate) async fn facts_for(
 }
 
 async fn live_worker(ctx: &AppContext, pid: Uuid) -> Result<Option<workers::Model>> {
-    Ok(workers::Entity::find()
-        .filter(workers::Column::Pid.eq(pid))
-        .filter(workers::Column::DeletedAt.is_null())
-        .one(&crate::db::orm(ctx))
-        .await?)
+    match crate::models::records::worker_by_pid(ctx, pid).await {
+        Ok(worker) => Ok(Some(worker)),
+        Err(Error::NotFound) => Ok(None),
+        Err(e) => Err(e),
+    }
 }
 
 /// The decision for one request: `Ok(true)` to let it through.
@@ -201,9 +201,8 @@ async fn allowed(
             else {
                 return Ok(true);
             };
-            let Some(review) = reviews::Entity::find()
-                .filter(reviews::Column::Pid.eq(pid))
-                .one(&crate::db::orm(ctx))
+            let Some(review) = sqlx::query!("SELECT worker_pid FROM reviews WHERE pid = $1", pid)
+                .fetch_optional(crate::db::pool(ctx))
                 .await?
             else {
                 return Ok(true);

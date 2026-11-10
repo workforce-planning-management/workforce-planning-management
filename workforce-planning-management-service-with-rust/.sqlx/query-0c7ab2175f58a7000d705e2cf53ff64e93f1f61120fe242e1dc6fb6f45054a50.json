@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE idempotency_keys\n            SET status_code = $3, content_type = $4, response_body = $5, updated_at = now()\n          WHERE actor = $1 AND idem_key = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Int4",
+        "Varchar",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0c7ab2175f58a7000d705e2cf53ff64e93f1f61120fe242e1dc6fb6f45054a50"
+}

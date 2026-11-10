@@ -10,11 +10,8 @@
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
 use chrono::NaiveDate;
-use sea_orm::{ActiveValue, QueryOrder};
 use serde_json::json;
 
-use crate::models::_entities::{coverage_evidence, coverage_reminders, organization_memberships};
-use crate::models::notifications::Model as Notification;
 use crate::rules::qualification::{self as rules, Reminder};
 
 /// The reminder task.
@@ -69,12 +66,12 @@ pub struct Report {
 /// A database error.
 pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
     let mut report = Report::default();
-    let held = coverage_evidence::Entity::find()
-        .filter(coverage_evidence::Column::ValidTo.is_not_null())
-        .filter(coverage_evidence::Column::RetiredOn.is_null())
-        .order_by_asc(coverage_evidence::Column::Id)
-        .all(&crate::db::orm(ctx))
-        .await?;
+    let held = sqlx::query!(
+        "SELECT pid, organization_ref, kind, jurisdiction, valid_to FROM coverage_evidence
+          WHERE valid_to IS NOT NULL AND retired_on IS NULL ORDER BY id"
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     for record in held {
         let Some(valid_to) = record.valid_to else {
             continue;
@@ -82,13 +79,14 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         let Some(reminder) = rules::reminder_for(valid_to, as_of, window) else {
             continue;
         };
-        let already = coverage_reminders::Entity::find()
-            .filter(coverage_reminders::Column::CoveragePid.eq(record.pid))
-            .filter(coverage_reminders::Column::ValidTo.eq(valid_to))
-            .filter(coverage_reminders::Column::Kind.eq(reminder.as_str()))
-            .one(&crate::db::orm(ctx))
-            .await?
-            .is_some();
+        let already = sqlx::query_scalar!(
+            r#"SELECT EXISTS (SELECT 1 FROM coverage_reminders WHERE coverage_pid = $1 AND valid_to = $2 AND kind = $3) AS "e!""#,
+            record.pid,
+            valid_to,
+            reminder.as_str(),
+        )
+        .fetch_one(crate::db::pool(ctx))
+        .await?;
         if already {
             continue;
         }
@@ -111,27 +109,30 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             ),
         };
         let data = json!({ "coverage_pid": record.pid, "valid_to": valid_to });
-        for member in organization_memberships::Entity::find()
-            .filter(organization_memberships::Column::OrganizationRef.eq(&record.organization_ref))
-            .filter(organization_memberships::Column::Role.eq("hr_admin"))
-            .filter(organization_memberships::Column::DeletedAt.is_null())
-            .all(&crate::db::orm(ctx))
-            .await?
+        let mut tx = crate::db::pool(ctx).begin().await?;
+        for pid in sqlx::query_scalar!(
+            "SELECT worker_pid FROM organization_memberships
+              WHERE organization_ref = $1 AND role = 'hr_admin' AND deleted_at IS NULL",
+            record.organization_ref,
+        )
+        .fetch_all(&mut *tx)
+        .await?
+        .into_iter()
+        .flatten()
         {
-            if let Some(pid) = member.worker_pid {
-                Notification::push(&crate::db::orm(ctx), pid, kind, &body, data.clone()).await?;
-                report.told += 1;
-            }
+            crate::db::notify(&mut tx, pid, kind, &body, data.clone()).await?;
+            report.told += 1;
         }
-        coverage_reminders::ActiveModel {
-            coverage_pid: ActiveValue::set(record.pid),
-            valid_to: ActiveValue::set(valid_to),
-            kind: ActiveValue::set(reminder.as_str().to_string()),
-            reminded_on: ActiveValue::set(as_of),
-            ..Default::default()
-        }
-        .insert(&crate::db::orm(ctx))
+        sqlx::query!(
+            "INSERT INTO coverage_reminders (coverage_pid, valid_to, kind, reminded_on) VALUES ($1, $2, $3, $4)",
+            record.pid,
+            valid_to,
+            reminder.as_str(),
+            as_of,
+        )
+        .execute(&mut *tx)
         .await?;
+        tx.commit().await?;
         match reminder {
             Reminder::Expiring => report.expiring += 1,
             Reminder::Expired => report.expired += 1,

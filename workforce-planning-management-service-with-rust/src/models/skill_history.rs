@@ -88,7 +88,7 @@ pub async fn record_in(
     }
     if open.is_some() {
         sqlx::query!(
-            "UPDATE worker_skill_history SET ended_at = now(), updated_at = now()
+            "UPDATE worker_skill_history SET ended_at = now()
               WHERE worker_pid = $1 AND skill_pid = $2 AND ended_at IS NULL",
             worker_pid,
             skill_pid,

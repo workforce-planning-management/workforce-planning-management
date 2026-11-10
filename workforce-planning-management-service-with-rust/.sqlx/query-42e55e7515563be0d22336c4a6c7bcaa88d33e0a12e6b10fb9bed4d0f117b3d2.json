@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO job_level_frameworks (slug, name, organization, track, source, version, redistribution)\n         VALUES ($1, $2, $3, $4, $5, $6, $7)\n         ON CONFLICT (slug) DO UPDATE\n            SET name = EXCLUDED.name, organization = EXCLUDED.organization, track = EXCLUDED.track,\n                source = EXCLUDED.source, version = EXCLUDED.version, redistribution = EXCLUDED.redistribution",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42e55e7515563be0d22336c4a6c7bcaa88d33e0a12e6b10fb9bed4d0f117b3d2"
+}

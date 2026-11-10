@@ -17,7 +17,6 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, Value};
 
 use crate::auth::MaybeAuthUser;
 use crate::rules::idempotency::{self as rules, Decision, Existing};
@@ -29,23 +28,19 @@ pub const REPLAYED: &str = "idempotent-replayed";
 /// The largest response buffered to be stored; a larger one on a keyed request is an error.
 const MAX_BUFFERED_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
 
-fn sql(text: &str, values: impl IntoIterator<Item = Value>) -> Statement {
-    Statement::from_sql_and_values(DatabaseBackend::Postgres, text, values)
-}
-
 fn refuse(status: StatusCode, message: &str) -> Response {
     (status, message.to_string()).into_response()
 }
 
 /// Delete what is older than the keep period.
-async fn purge(ctx: &AppContext) -> Result<(), sea_orm::DbErr> {
+async fn purge(ctx: &AppContext) -> Result<(), sqlx::Error> {
     let days = i32::try_from(rules::KEEP_CALENDAR_DAYS).unwrap_or(1);
-    crate::db::orm(ctx)
-        .execute_raw(sql(
-            "DELETE FROM idempotency_keys WHERE created_at < now() - make_interval(days => $1)",
-            [days.into()],
-        ))
-        .await?;
+    sqlx::query!(
+        "DELETE FROM idempotency_keys WHERE created_at < now() - make_interval(days => $1)",
+        days,
+    )
+    .execute(crate::db::pool(ctx))
+    .await?;
     Ok(())
 }
 
@@ -55,15 +50,17 @@ async fn claim(
     actor: &str,
     key: &str,
     fingerprint: &str,
-) -> Result<bool, sea_orm::DbErr> {
-    Ok(crate::db::orm(ctx)
-        .query_one_raw(sql(
-            "INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ($1, $2, $3)
-             ON CONFLICT (actor, idem_key) DO NOTHING RETURNING id",
-            [actor.into(), key.into(), fingerprint.into()],
-        ))
-        .await?
-        .is_some())
+) -> Result<bool, sqlx::Error> {
+    Ok(sqlx::query_scalar!(
+        "INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ($1, $2, $3)
+         ON CONFLICT (actor, idem_key) DO NOTHING RETURNING id",
+        actor,
+        key,
+        fingerprint,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
+    .is_some())
 }
 
 /// What is held under the key, with the stored response if there is one.
@@ -74,38 +71,39 @@ struct Held {
     body: Option<Vec<u8>>,
 }
 
-async fn held(ctx: &AppContext, actor: &str, key: &str) -> Result<Option<Held>, sea_orm::DbErr> {
-    let Some(row) = crate::db::orm(ctx)
-        .query_one_raw(sql(
-            "SELECT fingerprint, status_code, content_type, response_body,
-                    EXTRACT(EPOCH FROM (now() - created_at))::BIGINT AS age
-               FROM idempotency_keys WHERE actor = $1 AND idem_key = $2",
-            [actor.into(), key.into()],
-        ))
-        .await?
+async fn held(ctx: &AppContext, actor: &str, key: &str) -> Result<Option<Held>, sqlx::Error> {
+    let Some(row) = sqlx::query!(
+        r#"SELECT fingerprint, status_code, content_type, response_body,
+                  EXTRACT(EPOCH FROM (now() - created_at))::BIGINT AS "age!"
+             FROM idempotency_keys WHERE actor = $1 AND idem_key = $2"#,
+        actor,
+        key,
+    )
+    .fetch_optional(crate::db::pool(ctx))
+    .await?
     else {
         return Ok(None);
     };
-    let status: Option<i32> = row.try_get("", "status_code")?;
     Ok(Some(Held {
         existing: Existing {
-            fingerprint: row.try_get("", "fingerprint")?,
-            finished: status.is_some(),
-            age_seconds: row.try_get("", "age")?,
+            fingerprint: row.fingerprint,
+            finished: row.status_code.is_some(),
+            age_seconds: row.age,
         },
-        status,
-        content_type: row.try_get("", "content_type")?,
-        body: row.try_get("", "response_body")?,
+        status: row.status_code,
+        content_type: row.content_type,
+        body: row.response_body,
     }))
 }
 
-async fn release(ctx: &AppContext, actor: &str, key: &str) -> Result<(), sea_orm::DbErr> {
-    crate::db::orm(ctx)
-        .execute_raw(sql(
-            "DELETE FROM idempotency_keys WHERE actor = $1 AND idem_key = $2",
-            [actor.into(), key.into()],
-        ))
-        .await?;
+async fn release(ctx: &AppContext, actor: &str, key: &str) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "DELETE FROM idempotency_keys WHERE actor = $1 AND idem_key = $2",
+        actor,
+        key,
+    )
+    .execute(crate::db::pool(ctx))
+    .await?;
     Ok(())
 }
 
@@ -116,21 +114,19 @@ async fn finish(
     status: u16,
     content_type: Option<&str>,
     body: &[u8],
-) -> Result<(), sea_orm::DbErr> {
-    crate::db::orm(ctx)
-        .execute_raw(sql(
-            "UPDATE idempotency_keys
-                SET status_code = $3, content_type = $4, response_body = $5, updated_at = now()
-              WHERE actor = $1 AND idem_key = $2",
-            [
-                actor.into(),
-                key.into(),
-                i32::from(status).into(),
-                content_type.map(ToString::to_string).into(),
-                body.to_vec().into(),
-            ],
-        ))
-        .await?;
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        "UPDATE idempotency_keys
+            SET status_code = $3, content_type = $4, response_body = $5, updated_at = now()
+          WHERE actor = $1 AND idem_key = $2",
+        actor,
+        key,
+        i32::from(status),
+        content_type,
+        body,
+    )
+    .execute(crate::db::pool(ctx))
+    .await?;
     Ok(())
 }
 
@@ -157,7 +153,7 @@ fn replay(h: &Held) -> Response {
     response
 }
 
-fn unavailable(error: &sea_orm::DbErr) -> Response {
+fn unavailable(error: &sqlx::Error) -> Response {
     tracing::error!(%error, "idempotency: could not check the key, refusing");
     refuse(
         StatusCode::SERVICE_UNAVAILABLE,

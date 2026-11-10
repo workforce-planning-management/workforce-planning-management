@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO coverage_reminders (coverage_pid, valid_to, kind, reminded_on) VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5ba44b149b4e64fb21d08b02a86da365584fe498f739dc928aa77f94dbce9824"
+}

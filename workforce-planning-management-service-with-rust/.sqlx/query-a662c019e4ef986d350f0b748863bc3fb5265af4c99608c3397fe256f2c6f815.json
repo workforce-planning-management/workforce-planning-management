@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO qualification_reminders (worker_pid, qualification_pid, expires_on, kind, reminded_on)\n             VALUES ($1, $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a662c019e4ef986d350f0b748863bc3fb5265af4c99608c3397fe256f2c6f815"
+}

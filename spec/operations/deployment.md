@@ -57,7 +57,7 @@ not a statement that your deployment is under that regime.
 | `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
 | `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
 | `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
-| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | A request running longer is answered `408` |
+| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | In production, a request running longer is answered `408`; rounded up to whole seconds. Production reads this and not `axa`'s `REQUEST_TIMEOUT_SECONDS`. Outside production there is no limit unless `REQUEST_TIMEOUT_SECONDS` sets one, and the container demo has none |
 | `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
 | `WPM_PASETO_KEYS_URL` or `WPM_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WPM_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |
 | `WPM_TOKEN_ISSUER`, `WPM_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
@@ -69,6 +69,8 @@ not a statement that your deployment is under that regime.
 | `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
 | `KEEP_ALIVE_TIMEOUT_SECONDS` | no | `75` | How long an idle connection is kept, counted from the last byte written. A load balancer that keeps idle connections longer needs a higher value, or it can reuse one as it closes and answer `502` |
 | `SEND_STALL_TIMEOUT_SECONDS` | no | `60` | How long a response may wait on a client that has stopped reading before the connection is dropped. Any byte that goes through starts it again, so a slow download is unaffected (`axa` 0.7) |
+| `HTTP_REQUEST_HEADER_READ_TIMEOUT_SECONDS` | no | `30` | How long a client may take to send a request's headers before the connection is dropped (`axa` 0.11; it was `HEADER_READ_TIMEOUT_SECONDS`) |
+| `SHUTDOWN_DRAIN_SECONDS` | no | `0` | After `SIGTERM`, how long `/_health/ready` answers `503` while the service still serves, so a load balancer stops sending it requests first (`axa` 0.11). On Kubernetes set a little more than the cluster takes to remove a pod, and keep `terminationGracePeriodSeconds` above it plus `SHUTDOWN_TIMEOUT_SECONDS` |
 | `SHUTDOWN_TIMEOUT_SECONDS` | no | `25` | How long to wait for requests in flight after `SIGTERM`. Keep it under the orchestrator's own limit; `0` waits for as long as they take |
 | `AXA_DESTROY_DATA` | no | off | Confirms `db down`, `db reset` or `db truncate` in development or test. They are refused elsewhere (WPM-R237) |
 

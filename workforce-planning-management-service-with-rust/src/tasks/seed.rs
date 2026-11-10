@@ -5,13 +5,7 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use sea_orm::ActiveValue;
 use uuid::Uuid;
-
-use crate::models::_entities::{
-    benchmarks, benefit_plans, leave_entitlements, oversight_criteria, oversight_levels,
-    oversight_measures, oversight_positions, requisitions, workers,
-};
 
 /// The demo-organization seed task.
 pub struct Seed;
@@ -35,7 +29,7 @@ impl Task for Seed {
 
     #[allow(clippy::too_many_lines)] // one linear walk building the demo org
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
-        let db = &crate::db::orm(ctx);
+        let mut tx = crate::db::pool(ctx).begin().await?;
         let org = format!("organization:{}", Uuid::new_v4());
         let departments = ["engineering", "clinical", "operations", "finance"];
         let titles = [
@@ -50,92 +44,75 @@ impl Task for Seed {
             // One department head (no manager), then nine reports.
             let head = Uuid::new_v4();
             n += 1;
-            workers::ActiveModel {
-                pid: ActiveValue::set(head),
-                person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                upstream_worker_ref: ActiveValue::set(Some(format!("worker:{}", Uuid::new_v4()))),
-                organization_ref: ActiveValue::set(org.clone()),
-                work_jurisdiction: ActiveValue::set(Some("GB".to_string())),
-                worker_number: ActiveValue::set(format!("E-{n:04}")),
-                display_name: ActiveValue::set(format!("Test Head {n:03}")),
-                status: ActiveValue::set("active".to_string()),
-                employment_type: ActiveValue::set("permanent".to_string()),
-                fte_percent: ActiveValue::set(100),
-                department: ActiveValue::set(department.to_string()),
-                job_title: ActiveValue::set("Head of Department".to_string()),
-                manager_pid: ActiveValue::set(None),
-                salary_minor: ActiveValue::set(Some(6_500_000)),
-                salary_currency: ActiveValue::set(Some("GBP".to_string())),
-                hired_on: ActiveValue::set(
-                    chrono::NaiveDate::from_ymd_opt(2020, 1, 6).ok_or_else(|| {
+            sqlx::query!(
+                "INSERT INTO workers (pid, person_ref, upstream_worker_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+                head,
+                format!("person:{}", Uuid::new_v4()),
+                Some(format!("worker:{}", Uuid::new_v4())),
+                org.clone(),
+                Some("GB".to_string()),
+                format!("E-{n:04}"),
+                format!("Test Head {n:03}"),
+                "active".to_string(),
+                "permanent".to_string(),
+                100,
+                department.to_string(),
+                "Head of Department".to_string(),
+                Some(6_500_000),
+                Some("GBP".to_string()),
+                chrono::NaiveDate::from_ymd_opt(2020, 1, 6).ok_or_else(|| {
                         Error::string("seed data: invalid department-head hired_on date")
                     })?,
-                ),
-                terminated_on: ActiveValue::set(None),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+            )
+            .execute(&mut *tx)
             .await?;
             for i in 0..9 {
                 n += 1;
                 let (title, salary) = titles[usize::try_from(n).unwrap_or(0) % titles.len()];
                 let pid = Uuid::new_v4();
-                workers::ActiveModel {
-                    pid: ActiveValue::set(pid),
-                    person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                    upstream_worker_ref: ActiveValue::set(None),
-                    organization_ref: ActiveValue::set(org.clone()),
-                    work_jurisdiction: ActiveValue::set(Some("GB".to_string())),
-                    worker_number: ActiveValue::set(format!("E-{n:04}")),
-                    display_name: ActiveValue::set(format!("Test Worker {n:03}")),
-                    status: ActiveValue::set(
-                        if i == 8 { "onboarding" } else { "active" }.to_string(),
-                    ),
-                    employment_type: ActiveValue::set(
-                        if i % 4 == 3 {
+                sqlx::query!(
+                    "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, manager_pid, salary_minor, salary_currency, hired_on, engagement_ends_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+                    pid,
+                    format!("person:{}", Uuid::new_v4()),
+                    org.clone(),
+                    Some("GB".to_string()),
+                    format!("E-{n:04}"),
+                    format!("Test Worker {n:03}"),
+                    if i == 8 { "onboarding" } else { "active" }.to_string(),
+                    if i % 4 == 3 {
                             "fixed_term"
                         } else {
                             "permanent"
                         }
                         .to_string(),
-                    ),
-                    fte_percent: ActiveValue::set(if i % 5 == 4 { 60 } else { 100 }),
-                    department: ActiveValue::set(department.to_string()),
-                    job_title: ActiveValue::set(title.to_string()),
-                    manager_pid: ActiveValue::set(Some(head)),
-                    salary_minor: ActiveValue::set(Some(salary)),
-                    salary_currency: ActiveValue::set(Some("GBP".to_string())),
-                    hired_on: ActiveValue::set(
-                        chrono::NaiveDate::from_ymd_opt(2023, 3, 1).ok_or_else(|| {
+                    if i % 5 == 4 { 60 } else { 100 },
+                    department.to_string(),
+                    title.to_string(),
+                    Some(head),
+                    Some(salary),
+                    Some("GBP".to_string()),
+                    chrono::NaiveDate::from_ymd_opt(2023, 3, 1).ok_or_else(|| {
                             Error::string("seed data: invalid worker hired_on date")
                         })?,
-                    ),
-                    terminated_on: ActiveValue::set(None),
                     // A fixed-term engagement needs an end date (WPM-R79).
-                    engagement_ends_on: ActiveValue::set(
-                        (i % 4 == 3)
+                    (i % 4 == 3)
                             .then(|| chrono::NaiveDate::from_ymd_opt(2028, 3, 1))
                             .flatten(),
-                    ),
-                    deleted_at: ActiveValue::set(None),
-                    ..Default::default()
-                }
-                .insert(db)
+                )
+                .execute(&mut *tx)
                 .await?;
                 // Annual + sick entitlements for the current year.
                 for (kind, days) in [("annual", 25), ("sick", 10)] {
-                    leave_entitlements::ActiveModel {
-                        pid: ActiveValue::set(Uuid::new_v4()),
-                        worker_pid: ActiveValue::set(pid),
-                        kind: ActiveValue::set(kind.to_string()),
-                        year: ActiveValue::set(2026),
-                        entitled_days: ActiveValue::set(days),
-                        used_days: ActiveValue::set(0),
-                        deleted_at: ActiveValue::set(None),
-                        ..Default::default()
-                    }
-                    .insert(db)
+                    sqlx::query!(
+                        "INSERT INTO leave_entitlements (pid, worker_pid, kind, year, entitled_days, used_days) VALUES ($1, $2, $3, $4, $5, $6)",
+                        Uuid::new_v4(),
+                        pid,
+                        kind.to_string(),
+                        2026,
+                        days,
+                        0,
+                    )
+                    .execute(&mut *tx)
                     .await?;
                 }
             }
@@ -147,25 +124,24 @@ impl Task for Seed {
             ("operations", "Scheduler", "draft"),
             ("finance", "Payroll Analyst", "offer"),
         ] {
-            requisitions::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                organization_ref: ActiveValue::set(org.clone()),
-                department: ActiveValue::set(department.to_string()),
-                job_title: ActiveValue::set(title.to_string()),
-                headcount: ActiveValue::set(1),
-                salary_min_minor: ActiveValue::set(Some(2_800_000)),
-                salary_max_minor: ActiveValue::set(Some(5_000_000)),
-                salary_currency: ActiveValue::set(Some("GBP".to_string())),
-                status: ActiveValue::set(status.to_string()),
-                opened_on: ActiveValue::set(Some(
+            sqlx::query!(
+                "INSERT INTO requisitions (pid, organization_ref, department, job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+                Uuid::new_v4(),
+                org.clone(),
+                department.to_string(),
+                title.to_string(),
+                1,
+                Some(2_800_000),
+                Some(5_000_000),
+                Some("GBP".to_string()),
+                status.to_string(),
+                Some(
                     chrono::NaiveDate::from_ymd_opt(2026, 6, 1).ok_or_else(|| {
                         Error::string("seed data: invalid requisition opened_on date")
                     })?,
-                )),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+                ),
+            )
+            .execute(&mut *tx)
             .await?;
         }
         // Benefit plans + benchmarks.
@@ -173,18 +149,17 @@ impl Task for Seed {
             ("Pension 5%", "pension", 15_000_i64, 30_000_i64),
             ("Health Cover", "health", 8_000, 20_000),
         ] {
-            benefit_plans::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                name: ActiveValue::set(name.to_string()),
-                kind: ActiveValue::set(kind.to_string()),
-                provider: ActiveValue::set("Demo Provider Ltd".to_string()),
-                worker_cost_minor: ActiveValue::set(worker_cost),
-                employer_cost_minor: ActiveValue::set(employer_cost),
-                currency: ActiveValue::set("GBP".to_string()),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+            sqlx::query!(
+                "INSERT INTO benefit_plans (pid, name, kind, provider, worker_cost_minor, employer_cost_minor, currency) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                Uuid::new_v4(),
+                name.to_string(),
+                kind.to_string(),
+                "Demo Provider Ltd".to_string(),
+                worker_cost,
+                employer_cost,
+                "GBP".to_string(),
+            )
+            .execute(&mut *tx)
             .await?;
         }
         for (title, min, median, max) in [
@@ -192,22 +167,19 @@ impl Task for Seed {
             ("Nurse", 2_900_000, 3_300_000, 3_900_000),
             ("Analyst", 2_600_000, 3_100_000, 3_700_000),
         ] {
-            benchmarks::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                job_title: ActiveValue::set(title.to_string()),
-                currency: ActiveValue::set("GBP".to_string()),
-                min_minor: ActiveValue::set(min),
-                median_minor: ActiveValue::set(median),
-                max_minor: ActiveValue::set(max),
-                source: ActiveValue::set("Demo Salary Survey 2026".to_string()),
-                as_of: ActiveValue::set(
-                    chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+            sqlx::query!(
+                "INSERT INTO benchmarks (pid, job_title, currency, min_minor, median_minor, max_minor, source, as_of) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+                Uuid::new_v4(),
+                title.to_string(),
+                "GBP".to_string(),
+                min,
+                median,
+                max,
+                "Demo Salary Survey 2026".to_string(),
+                chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
                         .ok_or_else(|| Error::string("seed data: invalid benchmark as_of date"))?,
-                ),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+            )
+            .execute(&mut *tx)
             .await?;
         }
         // Not only GBP (WPM-T385): money in currencies of other ISO 4217 exponents beside the
@@ -223,53 +195,46 @@ impl Task for Seed {
             ("Coordinator", 4_400_000),
         ] {
             n += 1;
-            workers::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                upstream_worker_ref: ActiveValue::set(None),
-                organization_ref: ActiveValue::set(yen_org.clone()),
-                work_jurisdiction: ActiveValue::set(Some("JP".to_string())),
-                worker_number: ActiveValue::set(format!("E-{n:04}")),
-                display_name: ActiveValue::set(format!("Test Worker {n:03}")),
-                status: ActiveValue::set("active".to_string()),
-                employment_type: ActiveValue::set("permanent".to_string()),
-                fte_percent: ActiveValue::set(100),
-                department: ActiveValue::set("engineering".to_string()),
-                job_title: ActiveValue::set(title.to_string()),
-                manager_pid: ActiveValue::set(None),
-                salary_minor: ActiveValue::set(Some(salary)),
-                salary_currency: ActiveValue::set(Some("JPY".to_string())),
-                hired_on: ActiveValue::set(
-                    chrono::NaiveDate::from_ymd_opt(2024, 4, 1).ok_or_else(|| {
+            sqlx::query!(
+                "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+                Uuid::new_v4(),
+                format!("person:{}", Uuid::new_v4()),
+                yen_org.clone(),
+                Some("JP".to_string()),
+                format!("E-{n:04}"),
+                format!("Test Worker {n:03}"),
+                "active".to_string(),
+                "permanent".to_string(),
+                100,
+                "engineering".to_string(),
+                title.to_string(),
+                Some(salary),
+                Some("JPY".to_string()),
+                chrono::NaiveDate::from_ymd_opt(2024, 4, 1).ok_or_else(|| {
                         Error::string("seed data: invalid yen worker hired_on date")
                     })?,
-                ),
-                terminated_on: ActiveValue::set(None),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+            )
+            .execute(&mut *tx)
             .await?;
         }
-        requisitions::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            organization_ref: ActiveValue::set(yen_org.clone()),
-            department: ActiveValue::set("engineering".to_string()),
-            job_title: ActiveValue::set("Platform Engineer".to_string()),
-            headcount: ActiveValue::set(1),
-            salary_min_minor: ActiveValue::set(Some(5_500_000)),
-            salary_max_minor: ActiveValue::set(Some(8_000_000)),
-            salary_currency: ActiveValue::set(Some("JPY".to_string())),
-            status: ActiveValue::set("open".to_string()),
-            opened_on: ActiveValue::set(Some(
+        sqlx::query!(
+            "INSERT INTO requisitions (pid, organization_ref, department, job_title, headcount, salary_min_minor, salary_max_minor, salary_currency, status, opened_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            Uuid::new_v4(),
+            yen_org.clone(),
+            "engineering".to_string(),
+            "Platform Engineer".to_string(),
+            1,
+            Some(5_500_000),
+            Some(8_000_000),
+            Some("JPY".to_string()),
+            "open".to_string(),
+            Some(
                 chrono::NaiveDate::from_ymd_opt(2026, 6, 1).ok_or_else(|| {
                     Error::string("seed data: invalid yen requisition opened_on date")
                 })?,
-            )),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(db)
+            ),
+        )
+        .execute(&mut *tx)
         .await?;
         for (title, currency, min, median, max) in [
             (
@@ -281,36 +246,32 @@ impl Task for Seed {
             ),
             ("Analyst", "KWD", 7_800_000, 9_000_000, 10_800_000),
         ] {
-            benchmarks::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                job_title: ActiveValue::set(title.to_string()),
-                currency: ActiveValue::set(currency.to_string()),
-                min_minor: ActiveValue::set(min),
-                median_minor: ActiveValue::set(median),
-                max_minor: ActiveValue::set(max),
-                source: ActiveValue::set("Demo Salary Survey 2026".to_string()),
-                as_of: ActiveValue::set(
-                    chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+            sqlx::query!(
+                "INSERT INTO benchmarks (pid, job_title, currency, min_minor, median_minor, max_minor, source, as_of) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+                Uuid::new_v4(),
+                title.to_string(),
+                currency.to_string(),
+                min,
+                median,
+                max,
+                "Demo Salary Survey 2026".to_string(),
+                chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
                         .ok_or_else(|| Error::string("seed data: invalid benchmark as_of date"))?,
-                ),
-                deleted_at: ActiveValue::set(None),
-                ..Default::default()
-            }
-            .insert(db)
+            )
+            .execute(&mut *tx)
             .await?;
         }
-        benefit_plans::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            name: ActiveValue::set("Health Cover (dinars)".to_string()),
-            kind: ActiveValue::set("health".to_string()),
-            provider: ActiveValue::set("Demo Provider Ltd".to_string()),
-            worker_cost_minor: ActiveValue::set(12_500),
-            employer_cost_minor: ActiveValue::set(30_000),
-            currency: ActiveValue::set("KWD".to_string()),
-            deleted_at: ActiveValue::set(None),
-            ..Default::default()
-        }
-        .insert(db)
+        sqlx::query!(
+            "INSERT INTO benefit_plans (pid, name, kind, provider, worker_cost_minor, employer_cost_minor, currency) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            Uuid::new_v4(),
+            "Health Cover (dinars)".to_string(),
+            "health".to_string(),
+            "Demo Provider Ltd".to_string(),
+            12_500,
+            30_000,
+            "KWD".to_string(),
+        )
+        .execute(&mut *tx)
         .await?;
         // A synthetic oversight scale (WPM-D48): the product ships no real framework, so this one is
         // labelled synthetic in its names and its flag, and exists only to make the views demonstrable.
@@ -322,60 +283,58 @@ impl Task for Seed {
         ] {
             let pid = Uuid::new_v4();
             level_pids.push(pid);
-            oversight_levels::ActiveModel {
-                pid: ActiveValue::set(pid),
-                organization_ref: ActiveValue::set(org.clone()),
-                ordinal: ActiveValue::set(ordinal),
-                name: ActiveValue::set(name.to_string()),
-                synthetic: ActiveValue::set(true),
-                ..Default::default()
-            }
-            .insert(db)
+            sqlx::query!(
+                "INSERT INTO oversight_levels (pid, organization_ref, ordinal, name, synthetic) VALUES ($1, $2, $3, $4, $5)",
+                pid,
+                org.clone(),
+                ordinal,
+                name.to_string(),
+                true,
+            )
+            .execute(&mut *tx)
             .await?;
         }
-        oversight_positions::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            organization_ref: ActiveValue::set(org.clone()),
-            level_pid: ActiveValue::set(level_pids[1]),
-            effective_on: ActiveValue::set(
-                chrono::NaiveDate::from_ymd_opt(2026, 1, 1)
+        sqlx::query!(
+            "INSERT INTO oversight_positions (pid, organization_ref, level_pid, effective_on, deciding_body, reason) VALUES ($1, $2, $3, $4, $5, $6)",
+            Uuid::new_v4(),
+            org.clone(),
+            level_pids[1],
+            chrono::NaiveDate::from_ymd_opt(2026, 1, 1)
                     .ok_or_else(|| Error::string("seed data: invalid position date"))?,
-            ),
-            deciding_body: ActiveValue::set("Synthetic oversight panel".to_string()),
-            reason: ActiveValue::set("Synthetic demonstration position.".to_string()),
-            ..Default::default()
-        }
-        .insert(db)
+            "Synthetic oversight panel".to_string(),
+            "Synthetic demonstration position.".to_string(),
+        )
+        .execute(&mut *tx)
         .await?;
         let criterion = Uuid::new_v4();
-        oversight_criteria::ActiveModel {
-            pid: ActiveValue::set(criterion),
-            level_pid: ActiveValue::set(level_pids[1]),
-            name: ActiveValue::set("Synthetic criterion: staffing is stable".to_string()),
-            synthetic: ActiveValue::set(true),
-            ..Default::default()
-        }
-        .insert(db)
+        sqlx::query!(
+            "INSERT INTO oversight_criteria (pid, level_pid, name, synthetic) VALUES ($1, $2, $3, $4)",
+            criterion,
+            level_pids[1],
+            "Synthetic criterion: staffing is stable".to_string(),
+            true,
+        )
+        .execute(&mut *tx)
         .await?;
-        oversight_measures::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            criterion_pid: ActiveValue::set(criterion),
-            name: ActiveValue::set("Synthetic vacancy rate".to_string()),
-            origin: ActiveValue::set("reported".to_string()),
-            unit: ActiveValue::set("basis points".to_string()),
-            threshold: ActiveValue::set(800),
-            direction: ActiveValue::set("at_most".to_string()),
-            sustain: ActiveValue::set(3),
-            ..Default::default()
-        }
-        .insert(db)
+        sqlx::query!(
+            "INSERT INTO oversight_measures (pid, criterion_pid, name, origin, unit, threshold, direction, sustain) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            Uuid::new_v4(),
+            criterion,
+            "Synthetic vacancy rate".to_string(),
+            "reported".to_string(),
+            "basis points".to_string(),
+            800,
+            "at_most".to_string(),
+            3,
+        )
+        .execute(&mut *tx)
         .await?;
-        seed_profile(db, &org, &example_profile_gb()).await?;
+        seed_profile(&mut tx, &org, &example_profile_gb()).await?;
         // The EU Directive's values as an example supranational profile (WPM-T384). No seed worker works in the EU and no seed
         // organization's home is under it, so these rows resolve for no one here: the GBP organization's organization-level readers
         // still take the defaults, which are the same values, and the demo's behaviour is unchanged.
-        seed_profile(db, &org, &example_profile_eu()).await?;
-        seed_profile(db, &yen_org, &example_profile_jp()).await?;
+        seed_profile(&mut tx, &org, &example_profile_eu()).await?;
+        seed_profile(&mut tx, &yen_org, &example_profile_jp()).await?;
         // A third organization (WPM-T385), paid in rupees, works under the example India profile, in a state with no rows of its own,
         // so its limits come from the country's layer through the chain.
         let rupee_org = format!("organization:{}", Uuid::new_v4());
@@ -385,41 +344,41 @@ impl Task for Seed {
             ("Coordinator", 90_000_000),
         ] {
             n += 1;
-            workers::ActiveModel {
-                pid: ActiveValue::set(Uuid::new_v4()),
-                person_ref: ActiveValue::set(format!("person:{}", Uuid::new_v4())),
-                organization_ref: ActiveValue::set(rupee_org.clone()),
-                work_jurisdiction: ActiveValue::set(Some("IN-MH".to_string())),
-                worker_number: ActiveValue::set(format!("E-{n:04}")),
-                display_name: ActiveValue::set(format!("Test Worker {n:03}")),
-                status: ActiveValue::set("active".to_string()),
-                employment_type: ActiveValue::set("permanent".to_string()),
-                fte_percent: ActiveValue::set(100),
-                department: ActiveValue::set("engineering".to_string()),
-                job_title: ActiveValue::set(title.to_string()),
-                salary_minor: ActiveValue::set(Some(salary)),
-                salary_currency: ActiveValue::set(Some("INR".to_string())),
-                hired_on: ActiveValue::set(
-                    chrono::NaiveDate::from_ymd_opt(2025, 4, 1).ok_or_else(|| {
+            sqlx::query!(
+                "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
+                Uuid::new_v4(),
+                format!("person:{}", Uuid::new_v4()),
+                rupee_org.clone(),
+                Some("IN-MH".to_string()),
+                format!("E-{n:04}"),
+                format!("Test Worker {n:03}"),
+                "active".to_string(),
+                "permanent".to_string(),
+                100,
+                "engineering".to_string(),
+                title.to_string(),
+                Some(salary),
+                Some("INR".to_string()),
+                chrono::NaiveDate::from_ymd_opt(2025, 4, 1).ok_or_else(|| {
                         Error::string("seed data: invalid rupee worker hired_on date")
                     })?,
-                ),
-                ..Default::default()
-            }
-            .insert(db)
+            )
+            .execute(&mut *tx)
             .await?;
         }
-        seed_profile(db, &rupee_org, &example_profile_in()).await?;
+        seed_profile(&mut tx, &rupee_org, &example_profile_in()).await?;
         // Each organization's home jurisdiction (WPM-D153): the country of the example legal entity.
         for (organization, home) in [(&org, "GB"), (&yen_org, "JP"), (&rupee_org, "IN")] {
-            db.execute_raw(sea_orm::Statement::from_sql_and_values(
-                sea_orm::DbBackend::Postgres,
+            sqlx::query!(
                 "INSERT INTO organization_settings (organization_ref, home_jurisdiction) VALUES ($1, $2)
                  ON CONFLICT (organization_ref) DO NOTHING",
-                [organization.as_str().into(), home.into()],
-            ))
+                organization.as_str(),
+                home,
+            )
+            .execute(&mut *tx)
             .await?;
         }
+        tx.commit().await?;
         tracing::info!(organization = %org, yen_organization = %yen_org, workers = n, "seeded synthetic demo organizations");
         println!(
             "seeded: organization {org} (GBP, example GB profile), {yen_org} (JPY, example JP profile) and {rupee_org} (INR, example IN profile), {n} workers in all"
@@ -702,25 +661,22 @@ pub const fn example_profile_jp() -> ExampleProfile {
 /// # Errors
 ///
 /// A database error, or a row the registry refuses.
-pub async fn seed_profile<C: sea_orm::ConnectionTrait>(
-    db: &C,
+pub async fn seed_profile(
+    connection: &mut sqlx::PgConnection,
     organization: &str,
     profile: &ExampleProfile,
 ) -> Result<()> {
-    use sea_orm::{DbBackend, Statement};
     for (code, layer, parent, name) in profile.codes {
-        db.execute_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
+        sqlx::query!(
             "INSERT INTO jurisdictions (organization_ref, code, layer, parent_code, name) VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (organization_ref, code) DO NOTHING",
-            [
-                organization.into(),
-                (*code).into(),
-                (*layer).into(),
-                parent.map(str::to_string).into(),
-                (*name).into(),
-            ],
-        ))
+            organization,
+            code,
+            layer,
+            *parent,
+            name,
+        )
+        .execute(&mut *connection)
         .await?;
     }
     for (code, key, value, from, source) in profile.rows {
@@ -729,20 +685,18 @@ pub async fn seed_profile<C: sea_orm::ConnectionTrait>(
         let value = crate::rules::jurisdiction::validate(key, &raw).map_err(Error::Message)?;
         let from = chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d")
             .map_err(|e| Error::Message(e.to_string()))?;
-        db.execute_raw(Statement::from_sql_and_values(
-            DbBackend::Postgres,
+        sqlx::query!(
             "INSERT INTO jurisdiction_parameters (pid, organization_ref, code, key, value, effective_from, source, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7, 'example')",
-            [
-                Uuid::new_v4().into(),
-                organization.into(),
-                (*code).into(),
-                (*key).into(),
-                serde_json::to_value(value).unwrap_or_default().into(),
-                from.into(),
-                (*source).into(),
-            ],
-        ))
+            Uuid::new_v4(),
+            organization,
+            code,
+            key,
+            serde_json::to_value(value).unwrap_or_default(),
+            from,
+            source,
+        )
+        .execute(&mut *connection)
         .await?;
     }
     Ok(())

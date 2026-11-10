@@ -855,12 +855,12 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
             assert_eq!(r.status_code(), 200, "{}", r.text());
         }
         let date = |m, d| chrono::NaiveDate::from_ymd_opt(2025, m, d).unwrap();
-        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(1, 1)).await.unwrap();
+        run_snapshot(workforce_planning_management::db::pool(&ctx), date(1, 1)).await.unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "insufficient_history", "one date is not a trend");
         assert!(v["trend"]["points"].as_array().unwrap().is_empty());
-        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(2, 15)).await.unwrap();
-        run_snapshot(&workforce_planning_management::db::orm(&ctx), date(4, 1)).await.unwrap();
+        run_snapshot(workforce_planning_management::db::pool(&ctx), date(2, 15)).await.unwrap();
+        run_snapshot(workforce_planning_management::db::pool(&ctx), date(4, 1)).await.unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "ok");
         let points = v["trend"]["points"].as_array().unwrap();

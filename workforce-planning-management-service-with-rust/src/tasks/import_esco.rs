@@ -18,21 +18,14 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use sea_orm::{ActiveValue, DatabaseConnection, TransactionTrait};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use uuid::Uuid;
 
-use crate::models::_entities::{
-    capability_frameworks, esco_occupation_skills, esco_occupations, esco_skills,
-    skill_external_refs, skills,
-};
 use crate::rules::esco as rules;
 
 /// The framework slug ESCO is recorded under.
 pub const ESCO_SLUG: &str = "esco";
-
-const BATCH: usize = 2000;
 
 /// The ESCO import task.
 pub struct ImportEsco;
@@ -55,7 +48,7 @@ impl Task for ImportEsco {
         let version = vars
             .cli_arg("version")
             .map_or("unspecified", String::as_str);
-        let report = import_esco(&crate::db::orm(ctx), Path::new(dir), lang, version).await?;
+        let report = import_esco(crate::db::pool(ctx), Path::new(dir), lang, version).await?;
         // The catalogue changed, so searches cached from the old one are orphaned. With the Redis
         // provider this reaches every instance; with the in-memory one they expire within the hour.
         let cache =
@@ -96,7 +89,7 @@ fn read(dir: &Path, name: &str) -> Result<String> {
 /// A filesystem, parse, or database error.
 #[allow(clippy::too_many_lines)] // read → parse → replace → link, linearly
 pub async fn import_esco(
-    db: &DatabaseConnection,
+    pool: &sqlx::PgPool,
     dir: &Path,
     lang: &str,
     version: &str,
@@ -128,88 +121,95 @@ pub async fn import_esco(
         ..Report::default()
     };
 
-    let txn = db.begin().await?;
-    // Replace wholesale, so the copy is exactly one ESCO version.
-    esco_occupation_skills::Entity::delete_many()
-        .exec(&txn)
+    let mut tx = pool.begin().await?;
+    // Replace wholesale, so the copy is exactly one ESCO version. Each table is one insert of arrays, so no statement
+    // carries more than four binds however large the file.
+    sqlx::query!("DELETE FROM esco_occupation_skills")
+        .execute(&mut *tx)
         .await?;
-    esco_occupations::Entity::delete_many().exec(&txn).await?;
-    esco_skills::Entity::delete_many().exec(&txn).await?;
-    for chunk in skills_csv.chunks(BATCH) {
-        esco_skills::Entity::insert_many(chunk.iter().map(|s| esco_skills::ActiveModel {
-            uri: ActiveValue::set(s.uri.clone()),
-            label: ActiveValue::set(s.label.clone()),
-            skill_type: ActiveValue::set(s.skill_type.clone()),
-            reuse_level: ActiveValue::set(s.reuse_level.clone()),
-            ..Default::default()
-        }))
-        .exec(&txn)
+    sqlx::query!("DELETE FROM esco_occupations")
+        .execute(&mut *tx)
         .await?;
-    }
-    for chunk in occupations_csv.chunks(BATCH) {
-        esco_occupations::Entity::insert_many(chunk.iter().map(|o| {
-            esco_occupations::ActiveModel {
-                uri: ActiveValue::set(o.uri.clone()),
-                label: ActiveValue::set(o.label.clone()),
-                isco_code: ActiveValue::set(o.isco_code.clone()),
-                description: ActiveValue::set(o.description.clone()),
-                ..Default::default()
-            }
-        }))
-        .exec(&txn)
+    sqlx::query!("DELETE FROM esco_skills")
+        .execute(&mut *tx)
         .await?;
-    }
-    for chunk in relations.chunks(BATCH) {
-        esco_occupation_skills::Entity::insert_many(chunk.iter().map(|r| {
-            esco_occupation_skills::ActiveModel {
-                occupation_uri: ActiveValue::set(r.occupation_uri.clone()),
-                skill_uri: ActiveValue::set(r.skill_uri.clone()),
-                relation: ActiveValue::set(r.relation.as_str().to_string()),
-                ..Default::default()
-            }
-        }))
-        .exec(&txn)
-        .await?;
-    }
+    let column = |values: Vec<&str>| {
+        values
+            .into_iter()
+            .map(str::to_string)
+            .collect::<Vec<String>>()
+    };
+    sqlx::query!(
+        "INSERT INTO esco_skills (uri, label, skill_type, reuse_level)
+         SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[])",
+        &column(skills_csv.iter().map(|s| s.uri.as_str()).collect()),
+        &column(skills_csv.iter().map(|s| s.label.as_str()).collect()),
+        &skills_csv
+            .iter()
+            .map(|s| s.skill_type.clone())
+            .collect::<Vec<_>>() as &[Option<String>],
+        &skills_csv
+            .iter()
+            .map(|s| s.reuse_level.clone())
+            .collect::<Vec<_>>() as &[Option<String>],
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "INSERT INTO esco_occupations (uri, label, isco_code, description)
+         SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[], $4::text[])",
+        &column(occupations_csv.iter().map(|o| o.uri.as_str()).collect()),
+        &column(occupations_csv.iter().map(|o| o.label.as_str()).collect()),
+        &occupations_csv
+            .iter()
+            .map(|o| o.isco_code.clone())
+            .collect::<Vec<_>>() as &[Option<String>],
+        &occupations_csv
+            .iter()
+            .map(|o| o.description.clone())
+            .collect::<Vec<_>>() as &[Option<String>],
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "INSERT INTO esco_occupation_skills (occupation_uri, skill_uri, relation)
+         SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[])",
+        &column(
+            relations
+                .iter()
+                .map(|r| r.occupation_uri.as_str())
+                .collect()
+        ),
+        &column(relations.iter().map(|r| r.skill_uri.as_str()).collect()),
+        &column(relations.iter().map(|r| r.relation.as_str()).collect()),
+    )
+    .execute(&mut *tx)
+    .await?;
 
-    // The framework row: attribution and the version pinned.
+    // The framework row: attribution and the version pinned. A later import changes only the day and the pinned version.
     let note = "ESCO has no proficiency scale: it says which skills an occupation needs \
                 and whether each is essential or optional. Required levels are set by the \
                 planner on WPM's own 1–5 scale.";
     let attribution = "© European Union. ESCO (European Skills, Competences, Qualifications \
                        and Occupations), reused under Commission Decision 2011/833/EU with \
                        the source acknowledged.";
-    let existing = capability_frameworks::Entity::find()
-        .filter(capability_frameworks::Column::Slug.eq(ESCO_SLUG))
-        .one(&txn)
-        .await?;
     let today = chrono::Utc::now().date_naive();
-    if let Some(row) = existing {
-        let mut active: capability_frameworks::ActiveModel = row.into();
-        active.imported_on = ActiveValue::set(today);
-        active.note = ActiveValue::set(Some(format!("{note} Pinned version: {version}.")));
-        active.update(&txn).await?;
-    } else {
-        capability_frameworks::ActiveModel {
-            pid: ActiveValue::set(Uuid::new_v4()),
-            slug: ActiveValue::set(ESCO_SLUG.to_string()),
-            name: ActiveValue::set(
-                "ESCO — European Skills, Competences, Qualifications and Occupations".to_string(),
-            ),
-            source_url: ActiveValue::set(Some("https://esco.ec.europa.eu/".to_string())),
-            licence: ActiveValue::set(Some(
-                "Reuse under Commission Decision 2011/833/EU (attribution required)".to_string(),
-            )),
-            attribution: ActiveValue::set(Some(attribution.to_string())),
-            scale_max: ActiveValue::set(5),
-            scale_labels: ActiveValue::set(None),
-            imported_on: ActiveValue::set(today),
-            note: ActiveValue::set(Some(format!("{note} Pinned version: {version}."))),
-            ..Default::default()
-        }
-        .insert(&txn)
-        .await?;
-    }
+    sqlx::query!(
+        "INSERT INTO capability_frameworks
+             (pid, slug, name, source_url, licence, attribution, scale_max, scale_labels, imported_on, note)
+         VALUES ($1, $2, $3, $4, $5, $6, 5, NULL, $7, $8)
+         ON CONFLICT (slug) DO UPDATE SET imported_on = EXCLUDED.imported_on, note = EXCLUDED.note",
+        Uuid::new_v4(),
+        ESCO_SLUG,
+        "ESCO — European Skills, Competences, Qualifications and Occupations",
+        "https://esco.ec.europa.eu/",
+        "Reuse under Commission Decision 2011/833/EU (attribution required)",
+        attribution,
+        today,
+        format!("{note} Pinned version: {version}."),
+    )
+    .execute(&mut *tx)
+    .await?;
 
     // Link catalogue skills by exact normalised label, never by guess.
     let mut by_label: BTreeMap<String, Vec<&rules::EscoSkill>> = BTreeMap::new();
@@ -219,25 +219,18 @@ pub async fn import_esco(
             .or_default()
             .push(skill);
     }
-    let referenced_uris: BTreeSet<String> = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .all(&txn)
-        .await?
-        .into_iter()
-        .map(|r| r.reference)
-        .collect();
-    let already_linked: BTreeSet<Uuid> = skill_external_refs::Entity::find()
-        .filter(skill_external_refs::Column::FrameworkSlug.eq(ESCO_SLUG))
-        .all(&txn)
-        .await?
-        .into_iter()
-        .map(|r| r.skill_pid)
-        .collect();
-    let mut taken = referenced_uris;
-    let catalogue = skills::Entity::find()
-        .filter(skills::Column::DeletedAt.is_null())
-        .all(&txn)
-        .await?;
+    let refs = sqlx::query!(
+        r#"SELECT ref AS "reference", skill_pid FROM skill_external_refs WHERE framework_slug = $1"#,
+        ESCO_SLUG,
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    let already_linked: BTreeSet<Uuid> = refs.iter().map(|r| r.skill_pid).collect();
+    let mut taken: BTreeSet<String> = refs.into_iter().map(|r| r.reference).collect();
+    let catalogue =
+        sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL ORDER BY id")
+            .fetch_all(&mut *tx)
+            .await?;
     for skill in &catalogue {
         if already_linked.contains(&skill.pid) {
             continue;
@@ -248,16 +241,17 @@ pub async fn import_esco(
         match candidates.as_slice() {
             [only] if !taken.contains(&only.uri) => {
                 taken.insert(only.uri.clone());
-                skill_external_refs::ActiveModel {
-                    pid: ActiveValue::set(Uuid::new_v4()),
-                    skill_pid: ActiveValue::set(skill.pid),
-                    framework_slug: ActiveValue::set(ESCO_SLUG.to_string()),
-                    reference: ActiveValue::set(only.uri.clone()),
-                    label: ActiveValue::set(Some(only.label.clone())),
-                    version: ActiveValue::set(Some(version.to_string())),
-                    ..Default::default()
-                }
-                .insert(&txn)
+                sqlx::query!(
+                    r#"INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, "ref", label, version)
+                       VALUES ($1, $2, $3, $4, $5, $6)"#,
+                    Uuid::new_v4(),
+                    skill.pid,
+                    ESCO_SLUG,
+                    only.uri,
+                    only.label,
+                    version,
+                )
+                .execute(&mut *tx)
                 .await?;
                 report.catalogue_linked += 1;
             }
@@ -265,6 +259,6 @@ pub async fn import_esco(
             _ => {}
         }
     }
-    txn.commit().await?;
+    tx.commit().await?;
     Ok(report)
 }

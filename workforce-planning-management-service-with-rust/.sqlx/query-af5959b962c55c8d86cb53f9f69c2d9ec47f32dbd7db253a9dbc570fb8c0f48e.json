@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO oversight_positions (pid, organization_ref, level_pid, effective_on, deciding_body, reason) VALUES ($1, $2, $3, $4, $5, $6)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Date",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "af5959b962c55c8d86cb53f9f69c2d9ec47f32dbd7db253a9dbc570fb8c0f48e"
+}
