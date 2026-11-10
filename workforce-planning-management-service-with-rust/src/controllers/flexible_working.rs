@@ -704,7 +704,7 @@ async fn list(
     if let Some(s) = &query.status {
         select = select.filter(requests::Column::Status.eq(s));
     }
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     // Each worker's appeal window is from their own chain; an organization's profile is loaded once.
     let mut profiles: std::collections::BTreeMap<String, Scope> = std::collections::BTreeMap::new();
     let mut out = Vec::new();

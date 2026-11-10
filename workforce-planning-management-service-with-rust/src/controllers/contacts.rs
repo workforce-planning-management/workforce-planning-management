@@ -465,7 +465,7 @@ async fn add_backup(
     if !metric_rules::is_employed_on(today, backup.hired_on, backup.terminated_on) {
         return Err(unprocessable("that backup is not currently employed"));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await?
         && !refs.contains(&backup.organization_ref)
     {
         return Err(unprocessable("that backup is outside your organizations"));

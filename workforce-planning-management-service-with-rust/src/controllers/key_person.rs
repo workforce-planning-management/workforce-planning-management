@@ -290,7 +290,7 @@ async fn scope_for(
     caller: &MaybeAuthUser,
     query: &OrgQuery,
 ) -> Result<Option<Vec<String>>> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     let Some(org) = query.organization.as_deref() else {
         return Ok(scope);
     };

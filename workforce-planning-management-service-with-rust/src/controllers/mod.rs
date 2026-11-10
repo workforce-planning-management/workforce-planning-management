@@ -258,7 +258,7 @@ pub(crate) async fn ensure_org_in_scope(
     org: &str,
 ) -> Result<()> {
     if let Some(refs) =
-        crate::models::memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
+        crate::models::memberships::scope_organization_refs(ctx, caller.claims()).await?
         && !refs.iter().any(|r| r == org)
     {
         return Err(Error::NotFound);

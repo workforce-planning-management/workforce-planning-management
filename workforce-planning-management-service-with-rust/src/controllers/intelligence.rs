@@ -578,7 +578,7 @@ async fn headcount_history(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
 ) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let rows = sqlx::query!(
         "SELECT as_of, organization_ref, department, headcount, fte_percent_total, starters, leavers
            FROM headcount_snapshots

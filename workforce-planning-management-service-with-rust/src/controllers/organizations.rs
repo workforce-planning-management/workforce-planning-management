@@ -50,7 +50,7 @@ use crate::validation::Problems;
 ///
 /// Any query error from resolving the caller's own memberships.
 async fn may_manage_membership(
-    db: &sea_orm::DatabaseConnection,
+    ctx: &AppContext,
     caller: &MaybeAuthUser,
     organization_ref: &str,
     target_role: &str,
@@ -70,7 +70,7 @@ async fn may_manage_membership(
     if is_operator {
         return Ok(true);
     }
-    let mine = memberships::caller_memberships(db, claims).await?;
+    let mine = memberships::caller_memberships(ctx, claims).await?;
     Ok(mine.iter().any(|m| {
         m.organization_ref == organization_ref
             && org_access::can_manage_membership(&m.role, target_role)
@@ -96,7 +96,7 @@ fn not_privileged() -> Error {
 ///
 /// Any query error from resolving the caller's own memberships.
 async fn may_manage_confederation(
-    db: &sea_orm::DatabaseConnection,
+    ctx: &AppContext,
     caller: &MaybeAuthUser,
     parent_organization_ref: &str,
 ) -> Result<bool> {
@@ -115,7 +115,7 @@ async fn may_manage_confederation(
     if is_operator {
         return Ok(true);
     }
-    let mine = memberships::caller_memberships(db, claims).await?;
+    let mine = memberships::caller_memberships(ctx, claims).await?;
     Ok(mine
         .iter()
         .any(|m| m.organization_ref == parent_organization_ref && m.role == "org_admin"))
@@ -200,7 +200,7 @@ async fn my_organization_scope(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
 ) -> Result<Response> {
-    format::json(memberships::caller_scope_refs(&ctx.db, caller.claims()).await?)
+    format::json(memberships::caller_scope_refs(&ctx, caller.claims()).await?)
 }
 
 /// `GET /api/organization-memberships?person_ref=` — the admin/HR
@@ -281,7 +281,7 @@ async fn grant(
     }
     ensure_valid(&problems.into_vec())?;
 
-    if !may_manage_membership(&ctx.db, &caller, &payload.organization_ref, &payload.role).await? {
+    if !may_manage_membership(&ctx, &caller, &payload.organization_ref, &payload.role).await? {
         return Err(not_privileged());
     }
 
@@ -361,7 +361,7 @@ async fn revoke(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = records::find_organization_membership(&ctx.db, records::parse_pid(&pid)?).await?;
-    if !may_manage_membership(&ctx.db, &caller, &row.organization_ref, &row.role).await? {
+    if !may_manage_membership(&ctx, &caller, &row.organization_ref, &row.role).await? {
         return Err(not_privileged());
     }
     let pid = row.pid;
@@ -502,11 +502,11 @@ async fn grant_confederation(
     }
     ensure_valid(&problems.into_vec())?;
 
-    if !may_manage_confederation(&ctx.db, &caller, &payload.parent_organization_ref).await? {
+    if !may_manage_confederation(&ctx, &caller, &payload.parent_organization_ref).await? {
         return Err(not_privileged_for_confederation());
     }
 
-    let edges = confederations::live_edges(&ctx.db).await?;
+    let edges = confederations::live_edges(&ctx).await?;
     if org_access::would_create_cycle(
         &edges,
         &payload.parent_organization_ref,
@@ -579,7 +579,7 @@ async fn revoke_confederation(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = records::find_organization_confederation(&ctx.db, records::parse_pid(&pid)?).await?;
-    if !may_manage_confederation(&ctx.db, &caller, &row.parent_organization_ref).await? {
+    if !may_manage_confederation(&ctx, &caller, &row.parent_organization_ref).await? {
         return Err(not_privileged_for_confederation());
     }
     let pid = row.pid;

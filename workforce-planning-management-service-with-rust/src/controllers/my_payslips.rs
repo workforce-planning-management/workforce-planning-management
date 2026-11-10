@@ -243,8 +243,7 @@ async fn list_queries(
     if !["open", "closed"].contains(&wanted) {
         return Err(unprocessable("status is open or closed"));
     }
-    let scope =
-        crate::models::memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = crate::models::memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let rows = sqlx::query_as!(
         payslip_queries::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",

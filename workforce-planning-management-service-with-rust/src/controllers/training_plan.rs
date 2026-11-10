@@ -517,7 +517,7 @@ async fn training_demand(
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<DemandQuery>,
 ) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let department = q.department.as_deref();
     // Only people below a need can add hours, so only they are read whole; everyone else is counted.

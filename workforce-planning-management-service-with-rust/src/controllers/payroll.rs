@@ -215,7 +215,7 @@ async fn list_runs(
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let mut query = payroll_runs::Entity::find().filter(payroll_runs::Column::DeletedAt.is_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await? {
         query = query.filter(payroll_runs::Column::OrganizationRef.is_in(refs));
     }
     super::paged_select(
@@ -707,7 +707,7 @@ async fn benchmark_comparison(
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::OrganizationRef.eq(&params.organization))
         .filter(workers::Column::SalaryMinor.is_not_null());
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await? {
         // `params.organization` outside the caller's scope ANDs down to
         // zero rows here — no separate 403 needed for this read.
         staff_query = staff_query.filter(workers::Column::OrganizationRef.is_in(refs));

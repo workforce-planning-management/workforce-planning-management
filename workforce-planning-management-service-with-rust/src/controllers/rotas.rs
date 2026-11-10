@@ -347,7 +347,7 @@ async fn create_rota(
 /// on call today.
 #[debug_handler]
 async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let all = rotas_in(&ctx, scope.as_deref()).await?;
     let today = Utc::now().date_naive();
     let mut out = Vec::with_capacity(all.len());
@@ -676,7 +676,7 @@ async fn worker_on_call(
 ) -> Result<Response> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(&pid)?).await?;
     let (from, to) = window(q.from, q.to)?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut out: BTreeMap<(NaiveDate, String), serde_json::Value> = BTreeMap::new();
     for rota in rotas_in(&ctx, scope.as_deref()).await? {
         let (_, _, assignments, _) = compute(&ctx, &rota, from, to).await?;
@@ -709,7 +709,7 @@ pub(super) async fn on_call_today(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
 ) -> Result<HashMap<Uuid, Vec<String>>> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let mut out: HashMap<Uuid, Vec<String>> = HashMap::new();
     // By name, as before: a worker on call in several rotas lists them in name order.

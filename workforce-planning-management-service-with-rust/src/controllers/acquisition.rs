@@ -246,7 +246,7 @@ async fn list_requisitions(
     if let Some(status) = &params.status {
         query = query.filter(requisitions::Column::Status.eq(status));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await? {
         query = query.filter(requisitions::Column::OrganizationRef.is_in(refs));
     }
     super::paged_select(

@@ -197,7 +197,7 @@ async fn summary(
             "that category is not monitored on this deployment",
         ));
     }
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let staff: Vec<_> = sqlx::query!(
         "SELECT pid, organization_ref, department, hired_on, terminated_on

@@ -507,7 +507,7 @@ async fn missing_end_date(
     if let Some(org) = &query.organization {
         select = select.filter(workers::Column::OrganizationRef.eq(org));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await? {
         select = select.filter(workers::Column::OrganizationRef.is_in(refs));
     }
     let rows = select

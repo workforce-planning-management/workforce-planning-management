@@ -50,7 +50,7 @@ async fn staff_among(
     pids: &[Uuid],
 ) -> Result<BTreeMap<Uuid, Person>> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     Ok(sqlx::query_as!(
         Person,
         "SELECT pid, display_name, job_title, department, manager_pid FROM workers
@@ -75,7 +75,7 @@ async fn staff_below(
     manager: Uuid,
 ) -> Result<BTreeMap<Uuid, Person>> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     Ok(sqlx::query_as!(
         Person,
         r#"WITH RECURSIVE staff AS (
@@ -108,7 +108,7 @@ async fn visible_worker(
     pid: &str,
 ) -> Result<workers::Model> {
     let worker = records::find_worker(&ctx.db, records::parse_pid(pid)?).await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     if scope.is_some_and(|refs| !refs.contains(&worker.organization_ref)) {
         return Err(Error::NotFound);
     }

@@ -510,7 +510,7 @@ async fn clearance(
                 .is_none_or(|p| r.pid.to_string() == p)
         })
         .collect();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut out = Vec::new();
     for worker in workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
@@ -616,7 +616,7 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     }
     let today = Utc::now().date_naive();
     let requirements = live_requirements(&ctx).await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut rows: Vec<(String, String, bool)> = Vec::new();
     for worker in workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())

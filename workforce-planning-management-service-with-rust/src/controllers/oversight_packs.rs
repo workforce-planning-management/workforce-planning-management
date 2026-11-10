@@ -53,8 +53,7 @@ pub(crate) async fn ensure_org_administrator(
     }
     if let Some(claims) = caller.claims()
         && (has_privileged_attrs(claims)
-            || memberships::has_role_in(&ctx.db, Some(claims), org, &["hr_admin", "org_admin"])
-                .await?)
+            || memberships::has_role_in(ctx, Some(claims), org, &["hr_admin", "org_admin"]).await?)
     {
         return Ok(());
     }

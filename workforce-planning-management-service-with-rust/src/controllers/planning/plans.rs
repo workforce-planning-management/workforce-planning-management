@@ -127,7 +127,7 @@ pub(super) async fn list_plans(
     caller: MaybeAuthUser,
     axa::extract::Query(query): axa::extract::Query<PlanListQuery>,
 ) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     // Each plan with its line count, counted by the database, where every line of every plan was read.
     let out: Vec<serde_json::Value> = sqlx::query!(
         r#"SELECT p.pid, p.name, p.organization_ref, p.horizon_start, p.horizon_end, p.status, p.attrition_bp,

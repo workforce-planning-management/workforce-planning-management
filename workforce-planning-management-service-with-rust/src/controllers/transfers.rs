@@ -55,14 +55,14 @@ async fn transfer(
     if payload.organization_ref == worker.organization_ref {
         return Err(unprocessable("the worker is already in that organization"));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await?
         && !refs.contains(&payload.organization_ref)
     {
         return Err(unprocessable(
             "you cannot move a worker to that organization",
         ));
     }
-    let graph = crate::models::confederations::live_edges(&ctx.db).await?;
+    let graph = crate::models::confederations::live_edges(&ctx).await?;
     let mut tx = pool(&ctx).begin().await?;
     let open = sqlx::query!(
         "SELECT pid, group_pid FROM group_members WHERE worker_pid = $1 AND left_at IS NULL",

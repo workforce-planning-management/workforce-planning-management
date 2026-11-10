@@ -21,7 +21,7 @@ const MONTHS: u32 = 12;
 #[debug_handler]
 async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let funded = sqlx::query!(
         "SELECT worker_pid, programme_ref, ends_on FROM post_fundings WHERE programme_ref IS NOT NULL"
     )

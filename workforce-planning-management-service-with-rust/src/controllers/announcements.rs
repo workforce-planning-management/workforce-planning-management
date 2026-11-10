@@ -37,7 +37,7 @@ async fn can_edit(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result
     if !auth::require_auth() {
         return Ok(true);
     }
-    memberships::has_role_in(&ctx.db, caller.claims(), org, rules::EDITOR_ROLES).await
+    memberships::has_role_in(ctx, caller.claims(), org, rules::EDITOR_ROLES).await
 }
 
 async fn require_editor(ctx: &AppContext, caller: &MaybeAuthUser, org: &str) -> Result<()> {
@@ -161,7 +161,7 @@ async fn feed(
     page: Page,
 ) -> Result<Response> {
     let window = super::resolve(&page, FEED_DEFAULT_LIMIT)?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let mut rows = sqlx::query_as!(
         announcements::Model,

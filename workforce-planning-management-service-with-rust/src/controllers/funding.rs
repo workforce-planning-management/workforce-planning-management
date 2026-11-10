@@ -320,7 +320,7 @@ async fn contingent_list(
         )));
     }
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let staff = employed(&ctx, scope.as_deref(), today, None, false).await?;
     let mut found: Vec<_> = engagements_of(&ctx, &staff)
         .await?
@@ -384,7 +384,7 @@ async fn snapshot_trend(
 #[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = chrono::Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let db = db::pool(&ctx);
     // Grouped by the database: department, basis and FTE with the number of people who share them.
     let groups: Vec<(String, String, i32, usize)> = sqlx::query!(

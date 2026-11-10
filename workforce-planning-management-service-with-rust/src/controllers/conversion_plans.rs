@@ -118,7 +118,7 @@ async fn list_open(
 ) -> Result<Response> {
     let window = super::window(&page)?;
     let as_of = Utc::now().date_naive();
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let in_scope = |w: &workers::Model| {
         query
             .organization

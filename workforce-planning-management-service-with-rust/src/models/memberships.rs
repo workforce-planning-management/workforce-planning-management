@@ -10,7 +10,6 @@
 
 use authentication_verifier::Claims;
 use axa::prelude::*;
-use sea_orm::{ConnectionTrait, QueryOrder};
 
 use super::_entities::organization_memberships;
 
@@ -30,8 +29,8 @@ fn is_live(row: &organization_memberships::Model, today: chrono::NaiveDate) -> b
 /// # Errors
 ///
 /// Any query error.
-pub async fn caller_memberships<C: ConnectionTrait>(
-    db: &C,
+pub async fn caller_memberships(
+    ctx: &AppContext,
     claims: Option<&Claims>,
 ) -> Result<Vec<organization_memberships::Model>> {
     let Some(claims) = claims else {
@@ -39,12 +38,17 @@ pub async fn caller_memberships<C: ConnectionTrait>(
     };
     let person_ref = format!("person:{}", claims.sub);
     let today = chrono::Utc::now().date_naive();
-    let rows = organization_memberships::Entity::find()
-        .filter(organization_memberships::Column::PersonRef.eq(person_ref))
-        .filter(organization_memberships::Column::DeletedAt.is_null())
-        .order_by_asc(organization_memberships::Column::Id)
-        .all(db)
-        .await?;
+    let rows = sqlx::query_as!(
+        organization_memberships::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
+                  organization_ref, worker_pid, role, starts_on, ends_on, deleted_at AS "deleted_at: _"
+             FROM organization_memberships
+            WHERE person_ref = $1 AND deleted_at IS NULL
+            ORDER BY id"#,
+        person_ref,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     Ok(rows.into_iter().filter(|r| is_live(r, today)).collect())
 }
 
@@ -62,15 +66,12 @@ pub async fn caller_memberships<C: ConnectionTrait>(
 /// # Errors
 ///
 /// Any query error.
-pub async fn caller_scope_refs<C: ConnectionTrait>(
-    db: &C,
-    claims: Option<&Claims>,
-) -> Result<Vec<String>> {
-    let memberships = caller_memberships(db, claims).await?;
+pub async fn caller_scope_refs(ctx: &AppContext, claims: Option<&Claims>) -> Result<Vec<String>> {
+    let memberships = caller_memberships(ctx, claims).await?;
     if memberships.is_empty() {
         return Ok(Vec::new());
     }
-    let edges = crate::models::confederations::live_edges(db).await?;
+    let edges = crate::models::confederations::live_edges(ctx).await?;
     let mut refs: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for m in &memberships {
         refs.insert(m.organization_ref.clone());
@@ -92,14 +93,14 @@ pub async fn caller_scope_refs<C: ConnectionTrait>(
 /// # Errors
 ///
 /// Any query error.
-pub async fn scope_organization_refs<C: ConnectionTrait>(
-    db: &C,
+pub async fn scope_organization_refs(
+    ctx: &AppContext,
     claims: Option<&Claims>,
 ) -> Result<Option<Vec<String>>> {
     if !crate::auth::require_auth() {
         return Ok(None);
     }
-    Ok(Some(caller_scope_refs(db, claims).await?))
+    Ok(Some(caller_scope_refs(ctx, claims).await?))
 }
 
 /// Whether any of this caller's live memberships in `organization_ref`
@@ -110,13 +111,13 @@ pub async fn scope_organization_refs<C: ConnectionTrait>(
 /// # Errors
 ///
 /// Any query error.
-pub async fn has_role_in<C: ConnectionTrait>(
-    db: &C,
+pub async fn has_role_in(
+    ctx: &AppContext,
     claims: Option<&Claims>,
     organization_ref: &str,
     roles: &[&str],
 ) -> Result<bool> {
-    let memberships = caller_memberships(db, claims).await?;
+    let memberships = caller_memberships(ctx, claims).await?;
     Ok(memberships
         .iter()
         .any(|m| m.organization_ref == organization_ref && roles.contains(&m.role.as_str())))

@@ -164,7 +164,7 @@ async fn directory(
 ) -> Result<Response> {
     let window = super::resolve(&page, DIRECTORY_DEFAULT_LIMIT)?;
 
-    let refs = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let refs = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let refs = refs.as_deref();
     let today = chrono::Utc::now().date_naive();
     let on_call = super::rotas::on_call_today(&ctx, &caller).await?;

@@ -72,13 +72,8 @@ async fn gate(ctx: &AppContext, caller: &MaybeAuthUser, claimant: &workers::Mode
             .is_some_and(|m| career::is_self(&claims.sub, &m.person_ref)),
         None => false,
     };
-    let hr = memberships::has_role_in(
-        &ctx.db,
-        caller.claims(),
-        &claimant.organization_ref,
-        HR_ROLES,
-    )
-    .await?;
+    let hr = memberships::has_role_in(ctx, caller.claims(), &claimant.organization_ref, HR_ROLES)
+        .await?;
     Ok(Gate(Some(Standing {
         claimant: is_claimant,
         manager,
@@ -642,7 +637,7 @@ async fn queue(
                     .map(|w| w.pid),
             );
         }
-        let hr_orgs: Vec<String> = memberships::caller_memberships(&ctx.db, caller.claims())
+        let hr_orgs: Vec<String> = memberships::caller_memberships(&ctx, caller.claims())
             .await?
             .into_iter()
             .filter(|m| HR_ROLES.contains(&m.role.as_str()))

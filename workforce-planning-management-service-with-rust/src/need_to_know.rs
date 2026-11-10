@@ -62,7 +62,7 @@ pub(crate) async fn privileged_by_membership(
     claims: &Claims,
     organization_ref: Option<&str>,
 ) -> Result<bool> {
-    let held = memberships::caller_memberships(&ctx.db, Some(claims)).await?;
+    let held = memberships::caller_memberships(ctx, Some(claims)).await?;
     let held: Vec<_> = held
         .into_iter()
         .filter(|m| PRIVILEGED_ROLES.contains(&m.role.as_str()))
@@ -73,7 +73,7 @@ pub(crate) async fn privileged_by_membership(
     if held.is_empty() {
         return Ok(false);
     }
-    let edges = confederations::live_edges(&ctx.db).await?;
+    let edges = confederations::live_edges(ctx).await?;
     Ok(held.iter().any(|m| {
         m.organization_ref == target
             || org_access::descendants_of(&edges, &m.organization_ref)
@@ -137,7 +137,7 @@ pub(crate) async fn facts_for(
     }
     let relation = if is_line_manager(ctx, worker, &claims.sub).await? {
         Relation::Manager
-    } else if memberships::caller_scope_refs(&ctx.db, Some(claims))
+    } else if memberships::caller_scope_refs(ctx, Some(claims))
         .await?
         .iter()
         .any(|r| r == &worker.organization_ref)
@@ -236,7 +236,7 @@ pub async fn need_to_know_mw(
     if path.starts_with("/api/")
         && let Some(claims) = caller.claims()
     {
-        match memberships::caller_memberships(&ctx.db, Some(claims)).await {
+        match memberships::caller_memberships(&ctx, Some(claims)).await {
             Ok(held) => {
                 let roles: Vec<&str> = held.iter().map(|m| m.role.as_str()).collect();
                 if access::is_partner_only(&roles) && !access::partner_may(is_read, &path) {

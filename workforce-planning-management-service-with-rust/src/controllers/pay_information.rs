@@ -159,8 +159,7 @@ pub(crate) async fn list_requests(
     {
         return Err(unprocessable("status is open, overdue or answered"));
     }
-    let scope =
-        crate::models::memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = crate::models::memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     // One read with the asker, in the caller's organizations (and the one asked for); a removed worker's is left out.
     let rows = sqlx::query!(

@@ -379,7 +379,7 @@ async fn list(
             "status must be logged, withdrawn, accepted or rescinded",
         ));
     }
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     // One read with its workers, in the caller's organizations; a removed worker's is left out.
     let out: Vec<serde_json::Value> = sqlx::query!(
         "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,
@@ -413,7 +413,7 @@ async fn list(
 /// enough, by reason. Groups below the floor are withheld. Privileged callers only.
 #[debug_handler]
 async fn summary(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let counted: Vec<(String, Option<String>)> = sqlx::query!(
         "SELECT w.department, r.reason
            FROM resignations r JOIN workers w ON w.pid = r.worker_pid

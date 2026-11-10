@@ -318,7 +318,7 @@ async fn workforce_gaps(
     axa::extract::Query(q): axa::extract::Query<WorkforceQuery>,
 ) -> Result<Response> {
     let limit = q.limit.unwrap_or(25).clamp(1, 100);
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let department = q.department.as_deref();
     // Counted by the database (see `gap_sql`): the same grading as `Evidence::gaps_for`, for everyone at once.

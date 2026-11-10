@@ -302,7 +302,7 @@ async fn list_workers(
     if let Some(status) = &params.status {
         query = query.filter(workers::Column::Status.eq(status));
     }
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await? {
         query = query.filter(workers::Column::OrganizationRef.is_in(refs));
     }
     let (limit, offset) = window.bounds();
@@ -740,7 +740,7 @@ async fn org_chart_people(
     let mut query = workers::Entity::find()
         .filter(workers::Column::DeletedAt.is_null())
         .filter(workers::Column::OrganizationRef.eq(organization));
-    if let Some(refs) = memberships::scope_organization_refs(&ctx.db, caller.claims()).await? {
+    if let Some(refs) = memberships::scope_organization_refs(ctx, caller.claims()).await? {
         // `organization` outside the caller's scope ANDs down to
         // zero rows here — no separate 403 needed for this read.
         query = query.filter(workers::Column::OrganizationRef.is_in(refs));

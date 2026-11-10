@@ -178,6 +178,7 @@ jobs:
       - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_engagements -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_duplicates -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
       - run: cargo test --locked --test learning_economics -- --ignored --test-threads=1

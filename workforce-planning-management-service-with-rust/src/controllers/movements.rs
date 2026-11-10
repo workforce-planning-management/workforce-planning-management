@@ -262,7 +262,7 @@ async fn list_movements(
         .order_by_asc(movements::Column::Id)
         .all(&ctx.db)
         .await?;
-    let scope = memberships::scope_organization_refs(&ctx.db, caller.claims()).await?;
+    let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = Utc::now().date_naive();
     let mut out = Vec::new();
     for m in rows {

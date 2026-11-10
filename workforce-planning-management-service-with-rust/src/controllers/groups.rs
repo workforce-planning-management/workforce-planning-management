@@ -37,7 +37,7 @@ fn group_json(g: &groups::Model, members: usize) -> serde_json::Value {
 
 /// The organizations the caller may read (`None` = unrestricted).
 async fn scope(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Option<Vec<String>>> {
-    memberships::scope_organization_refs(&ctx.db, caller.claims()).await
+    memberships::scope_organization_refs(ctx, caller.claims()).await
 }
 
 fn in_scope(scope: Option<&Vec<String>>, organization_ref: &str) -> bool {
@@ -56,7 +56,7 @@ fn can_read(allowed: Option<&Vec<String>>, g: &groups::Model, edges: &[(String, 
 }
 
 async fn edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
-    crate::models::confederations::live_edges(&ctx.db).await
+    crate::models::confederations::live_edges(ctx).await
 }
 
 /// A live group in one of the caller's organizations; one elsewhere is `404`.

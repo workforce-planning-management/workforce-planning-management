@@ -6,7 +6,6 @@
 //! pure-core/DB-touching-model split.
 
 use axa::prelude::*;
-use sea_orm::ConnectionTrait;
 
 use super::_entities::organization_confederations;
 
@@ -27,12 +26,18 @@ fn is_live(row: &organization_confederations::Model, today: chrono::NaiveDate) -
 /// # Errors
 ///
 /// Any query error.
-pub async fn live_edges<C: ConnectionTrait>(db: &C) -> Result<Vec<(String, String)>> {
+pub async fn live_edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
     let today = chrono::Utc::now().date_naive();
-    let rows = organization_confederations::Entity::find()
-        .filter(organization_confederations::Column::DeletedAt.is_null())
-        .all(db)
-        .await?;
+    let rows = sqlx::query_as!(
+        organization_confederations::Model,
+        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid,
+                  parent_organization_ref, child_organization_ref, starts_on, ends_on,
+                  deleted_at AS "deleted_at: _"
+             FROM organization_confederations
+            WHERE deleted_at IS NULL"#,
+    )
+    .fetch_all(crate::db::pool(ctx))
+    .await?;
     Ok(rows
         .into_iter()
         .filter(|r| is_live(r, today))

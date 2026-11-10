@@ -35,7 +35,7 @@ fn today() -> NaiveDate {
 
 /// The organizations the caller may see: `None` when unrestricted.
 async fn scope(ctx: &AppContext, caller: &MaybeAuthUser) -> Result<Option<Vec<String>>> {
-    memberships::scope_organization_refs(&ctx.db, caller.claims()).await
+    memberships::scope_organization_refs(ctx, caller.claims()).await
 }
 
 async fn live_pool(
