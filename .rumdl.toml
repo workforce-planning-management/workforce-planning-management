@@ -1,0 +1,156 @@
+# rumdl configuration for Workforce Planning Management
+# Rust Markdown Linter - https://github.com/rhysd/rumdl
+
+# Essential rules - these catch real issues
+[MD009]
+# Trailing spaces should be removed
+enabled = true
+
+[MD010]
+# No tabs
+enabled = true
+
+[MD042]
+# No empty links
+enabled = true
+
+[MD047]
+# File should end with a single newline
+enabled = true
+
+# Optional rules - disabled for now, can be enabled gradually
+[MD012]
+enabled = false
+maximum = 2
+
+[MD013]
+# Line length - start with 200 to accommodate existing content
+enabled = false
+line-length = 200
+
+[MD033]
+# Allow HTML for Lily Design System components
+enabled = false
+
+[MD034]
+# Allow bare URLs
+enabled = false
+
+# All other rules disabled
+[MD001]
+enabled = false
+
+[MD003]
+enabled = false
+
+[MD004]
+enabled = false
+
+[MD005]
+enabled = false
+
+[MD007]
+enabled = false
+
+[MD011]
+enabled = false
+
+[MD014]
+enabled = false
+
+[MD018]
+enabled = false
+
+[MD019]
+enabled = false
+
+[MD020]
+enabled = false
+
+[MD021]
+enabled = false
+
+[MD022]
+enabled = false
+
+[MD023]
+enabled = false
+
+[MD024]
+enabled = false
+
+[MD025]
+enabled = false
+
+[MD026]
+enabled = false
+
+[MD027]
+enabled = false
+
+[MD028]
+enabled = false
+
+[MD029]
+enabled = false
+
+[MD030]
+enabled = false
+
+[MD031]
+enabled = false
+
+[MD032]
+enabled = false
+
+[MD035]
+enabled = false
+
+[MD036]
+enabled = false
+
+[MD037]
+enabled = false
+
+[MD038]
+enabled = false
+
+[MD039]
+enabled = false
+
+[MD040]
+enabled = false
+
+[MD041]
+enabled = false
+
+[MD043]
+enabled = false
+
+[MD044]
+enabled = false
+
+[MD045]
+enabled = false
+
+[MD046]
+enabled = false
+
+[MD048]
+enabled = false
+
+[MD057]
+# Relative link validation - disable as links are relative to content root
+enabled = false
+
+[MD058]
+enabled = false
+
+[MD064]
+enabled = false
+
+[MD076]
+enabled = false
+
+[MD077]
+enabled = false

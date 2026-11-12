@@ -35,6 +35,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Install rumdl
+        run: cargo install rumdl
+      - name: Markdown lint (rumdl)
+        run: rumdl check --config .rumdl.toml .
       - name: Markdown links resolve
         run: python3 scripts/check-links.py
       - name: durations say calendar days or business days

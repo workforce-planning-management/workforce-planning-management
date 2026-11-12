@@ -1,0 +1,41 @@
+#!/bin/bash
+# Pre-commit hook for Workforce Planning Management
+# Runs rumdl markdown linter on staged changes
+
+set -euo pipefail
+
+# Check if rumdl is installed
+if ! command -v rumdl &> /dev/null; then
+    echo "rumdl is not installed. Install with: cargo install rumdl"
+    echo "Skipping markdown linting."
+    exit 0
+fi
+
+# Get the list of staged markdown files
+STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.md$' || true)
+
+if [ -z "$STAGED_MD_FILES" ]; then
+    echo "No markdown files staged for commit."
+    exit 0
+fi
+
+echo "Running rumdl on staged markdown files..."
+FAILED=false
+for file in $STAGED_MD_FILES; do
+    if [ -f "$file" ]; then
+        if ! rumdl check --config .rumdl.toml "$file"; then
+            echo ""
+            echo "ERROR: rumdl found issues in $file"
+            echo "Run 'rumdl check --config .rumdl.toml $file' to see the issues."
+            echo "Run 'rumdl fmt --config .rumdl.toml $file' to auto-fix."
+            FAILED=true
+        fi
+    fi
+done
+
+if [ "$FAILED" = true ]; then
+    exit 1
+fi
+
+echo "All staged markdown files pass rumdl linting."
+exit 0
