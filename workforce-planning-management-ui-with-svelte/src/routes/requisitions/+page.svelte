@@ -122,9 +122,18 @@
       <input data-testid="req-org" bind:value={org} required />
     {/if}
   </label>
-  <label>{t("common.department")} <input data-testid="req-department" bind:value={department} required /></label>
-  <label>{t("common.jobTitle")} <input data-testid="req-title" bind:value={jobTitle} required /></label>
-  <label>{t("req.headcount")} <input data-testid="req-headcount" type="number" min="1" bind:value={headcount} required /></label>
+  <label>
+    {t("common.department")}
+    <input data-testid="req-department" bind:value={department} required />
+  </label>
+  <label>
+    {t("common.jobTitle")}
+    <input data-testid="req-title" bind:value={jobTitle} required />
+  </label>
+  <label>
+    {t("req.headcount")}
+    <input data-testid="req-headcount" type="number" min="1" bind:value={headcount} required />
+  </label>
   <label>
     {t("engagement.basis")}
     <select data-testid="req-basis" bind:value={basis}>
@@ -137,9 +146,24 @@
       <input data-testid="req-months" type="number" min="1" max="120" bind:value={months} required={basis !== "intern"} />
     </label>
   {/if}
-  <label>{t("plan.programmeOptional")} <input data-testid="req-programme" bind:value={programme} /></label>
+  <label>
+    {t("plan.programmeOptional")}
+    <input data-testid="req-programme" bind:value={programme} />
+  </label>
   <button type="submit" data-testid="req-create">{t("req.create")}</button>
 </form>
+
+<style>
+  form[data-testid="requisition-form"] label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+  form[data-testid="requisition-form"] button {
+    margin-top: 0.5rem;
+  }
+</style>
 
 {#if list.error}
   <ErrorNote testid="error" prefixed message={list.error} />
