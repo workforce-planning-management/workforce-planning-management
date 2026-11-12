@@ -1,7 +1,18 @@
-# Repository tasks. Each target delegates to a script in bin/.
+.PHONY: demo test test-github-discussions
 
-.PHONY: github-pages
+# Start both service and UI for the demo
+# Note: The service runs on port 1241, the UI connects to it
+demo:
+	@echo "Starting WPM service in background..."
+	cd workforce-planning-management-service-with-rust && make demo &
+	sleep 5
+	@echo "Starting WPM UI..."
+	cd workforce-planning-management-ui-with-svelte && make demo
 
-# Publish workforce-planning-management.github.io/ to the github-pages remote (git subtree push).
-github-pages:
-	bin/make-github-pages
+# Run GitHub Discussions tests
+test-github-discussions:
+	@echo "Running GitHub Discussions tests..."
+	./bin/test-github-discussions
+
+# Run all tests
+test: test-github-discussions
