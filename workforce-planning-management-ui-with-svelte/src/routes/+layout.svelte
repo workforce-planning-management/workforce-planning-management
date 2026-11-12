@@ -17,7 +17,6 @@
   } from "#lib/i18n.svelte.js";
   import PickerBar from "@lilydesignsystem/svelte-picker-bar";
   import type { ComponentProps } from "svelte";
-  import { stepAt } from "#lib/demoTour.js";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
 
   let { children } = $props();
@@ -277,26 +276,7 @@
   </div>
 </nav>
 
-{#if page.data.demo && !page.url.pathname.includes('/signin')}
-  {@const here = stepAt(splitLocale(page.url.pathname).rest)}
-  <aside class="demo-banner" aria-label={t("demo.label")} data-testid="demo-banner">
-    <strong>{t("demo.banner")}</strong>
-    {#if here}
-      <span class="demo-step" data-testid="demo-step">
-        {tf("demo.step", { n: here.index + 1, total: here.total })}
-      </span>
-      {#if here.previous}
-        <a href={l(here.previous.path)} data-testid="demo-previous">{t("demo.previous")}</a>
-      {/if}
-      {#if here.next}
-        <a class="demo-next" href={l(here.next.path)} data-testid="demo-next">{t("demo.next")}</a>
-      {:else}
-        <a class="demo-next" href={l("/demo")} data-testid="demo-finish">{t("demo.finish")}</a>
-      {/if}
-    {/if}
-    <a href={l("/demo")} data-testid="demo-tour-link">{t("demo.tour")}</a>
-  </aside>
-{/if}
+
 
 {#if navOpen}
   <div class="overlay-container" aria-hidden="true" onclick={closeNav}></div>
@@ -430,20 +410,6 @@
   }
   .linklike:hover {
     text-decoration: underline;
-  }
-  .demo-banner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
-    padding: 0.4rem 1rem;
-    border-bottom: 1px solid var(--line);
-    background: color-mix(in srgb, var(--state-reserved) 18%, var(--panel));
-    color: var(--ink);
-    font-size: 0.9rem;
-  }
-  .demo-next {
-    font-weight: 600;
   }
   .chrome :global(.theme-picker-list),
   .chrome :global(.locale-picker-list),
