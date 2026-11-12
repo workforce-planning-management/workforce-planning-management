@@ -277,7 +277,7 @@
   </div>
 </nav>
 
-{#if page.data.demo}
+{#if page.data.demo && !page.url.pathname.includes('/signin')}
   {@const here = stepAt(splitLocale(page.url.pathname).rest)}
   <aside class="demo-banner" aria-label={t("demo.label")} data-testid="demo-banner">
     <strong>{t("demo.banner")}</strong>
