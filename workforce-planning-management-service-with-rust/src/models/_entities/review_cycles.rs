@@ -1,25 +1,20 @@
-//! `SeaORM` Entity — `review_cycles`. One performance review cycle (WPM-R10).
+//! Row type — `review_cycles`. One performance review cycle (WPM-R10).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "review_cycles")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub name: String,
-    pub period_start: Date,
-    pub period_end: Date,
+    pub period_start: NaiveDate,
+    pub period_end: NaiveDate,
     pub status: String,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

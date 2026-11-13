@@ -1,27 +1,21 @@
-//! `SeaORM` Entity — `appraisals`. One 360° appraisal (WPM-R29): a subject worker, the declared competencies, the lifecycle.
+//! Row type — `appraisals`. One 360° appraisal (WPM-R29): a subject worker, the declared competencies, the lifecycle.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "appraisals")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
-    pub competencies: Json,
+    pub competencies: Value,
     pub status: String,
-    pub shared_on: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub shared_on: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `role_qualification_requirements`. A qualification a role profile asks for (WPM-R171).
+//! Row type — `role_qualification_requirements`. A qualification a role profile asks for (WPM-R171).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "role_qualification_requirements")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub role_profile_pid: Uuid,
     pub title: String,
@@ -21,8 +19,3 @@ pub struct Model {
     pub min_level: Option<i32>,
     pub recorded_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

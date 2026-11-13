@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `worker_aspirations`. A future role or skill target: an aspiration, learning goal, or growth idea.
+//! Row type — `worker_aspirations`. A future role or skill target: an aspiration, learning goal, or growth idea.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "worker_aspirations")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
     pub kind: String,
@@ -28,10 +26,5 @@ pub struct Model {
     pub visibility: String,
     pub recorded_by: Option<String>,
     pub on_behalf: bool,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

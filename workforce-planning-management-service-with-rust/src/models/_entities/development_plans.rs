@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `development_plans`. One worker's upskilling or reskilling plan (WPM-R21).
+//! Row type — `development_plans`. One worker's upskilling or reskilling plan (WPM-R21).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "development_plans")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
     pub kind: String,
@@ -20,10 +18,7 @@ pub struct Model {
     pub target_department: Option<String>,
     pub rationale: Option<String>,
     pub status: String,
-    pub started_on: Option<Date>,
-    pub target_on: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub started_on: Option<NaiveDate>,
+    pub target_on: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

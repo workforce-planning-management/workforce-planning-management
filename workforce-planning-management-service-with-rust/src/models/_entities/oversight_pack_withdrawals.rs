@@ -1,26 +1,18 @@
-//! `SeaORM` Entity — `oversight_pack_withdrawals`. A mark that a frozen pack was withdrawn, with the date and the reason; the pack itself is never changed (WPM-R69).
+//! Row type — `oversight_pack_withdrawals`. A mark that a frozen pack was withdrawn, with the date and the reason; the pack itself is never changed (WPM-R69).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "oversight_pack_withdrawals")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
-    #[sea_orm(unique)]
     pub pack_pid: Uuid,
-    pub withdrawn_on: Date,
+    pub withdrawn_on: NaiveDate,
     pub reason: String,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

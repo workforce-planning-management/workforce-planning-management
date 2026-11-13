@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `worker_contact_details`. A worker's own address, telephone numbers and personal e-mail (WPM-R124).
+//! Row type — `worker_contact_details`. A worker's own address, telephone numbers and personal e-mail (WPM-R124).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "worker_contact_details")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub worker_pid: Uuid,
     pub address_line1: Option<String>,
     pub address_line2: Option<String>,
@@ -31,8 +29,3 @@ pub struct Model {
     pub recorded_by: Option<String>,
     pub on_behalf: bool,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

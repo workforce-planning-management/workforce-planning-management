@@ -1,19 +1,17 @@
-//! `SeaORM` Entity — `coverage_evidence`. An organization's workers' compensation or employer's liability cover in one jurisdiction
+//! Row type — `coverage_evidence`. An organization's workers' compensation or employer's liability cover in one jurisdiction
 //! (WPM-R220, WPM-D154): a record of the fact and its dates, with a reference to the certificate, never a copy.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "coverage_evidence")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub organization_ref: String,
     pub jurisdiction: String,
@@ -22,14 +20,9 @@ pub struct Model {
     pub policy_reference: Option<String>,
     pub minimum_cover_minor: Option<i64>,
     pub currency: Option<String>,
-    pub valid_from: Option<Date>,
-    pub valid_to: Option<Date>,
+    pub valid_from: Option<NaiveDate>,
+    pub valid_to: Option<NaiveDate>,
     pub certificate_ref: Option<String>,
     pub recorded_by: Option<String>,
-    pub retired_on: Option<Date>,
+    pub retired_on: Option<NaiveDate>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

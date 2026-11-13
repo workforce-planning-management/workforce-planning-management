@@ -1,32 +1,27 @@
-//! `SeaORM` Entity — `injury_records`. An incident: the proof that reports were owed and a pointer to the statutory record, with no description and no medical detail (WPM-R221, WPM-D179).
+//! Row type — `injury_records`. An incident: the proof that reports were owed and a pointer to the statutory record, with no description and no medical detail (WPM-R221, WPM-D179).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "injury_records")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub organization_ref: String,
     pub jurisdiction: String,
     pub kind: String,
     pub worker_pid: Option<Uuid>,
-    pub occurred_at: DateTimeWithTimeZone,
-    pub learned_at: Option<DateTimeWithTimeZone>,
+    pub occurred_at: DateTime<FixedOffset>,
+    pub learned_at: Option<DateTime<FixedOffset>>,
     pub class: String,
     pub absence_days: Option<i32>,
     pub people_affected: i32,
     pub statutory_record_ref: Option<String>,
-    pub keep_until: Option<Date>,
+    pub keep_until: Option<NaiveDate>,
     pub recorded_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

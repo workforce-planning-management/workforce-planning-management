@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `workers`. One employment relationship: the single source of employment truth (WPM-R7). Identities are `EntityRef` URNs; salary is minor units (sensitive).
+//! Row type — `workers`. One employment relationship: the single source of employment truth (WPM-R7). Identities are `EntityRef` URNs; salary is minor units (sensitive).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "workers")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub person_ref: String,
     pub upstream_worker_ref: Option<String>,
@@ -29,11 +27,8 @@ pub struct Model {
     pub manager_pid: Option<Uuid>,
     pub salary_minor: Option<i64>,
     pub salary_currency: Option<String>,
-    pub hired_on: Date,
-    pub terminated_on: Option<Date>,
-    pub engagement_ends_on: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub hired_on: NaiveDate,
+    pub terminated_on: Option<NaiveDate>,
+    pub engagement_ends_on: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

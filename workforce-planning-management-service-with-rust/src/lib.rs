@@ -19,7 +19,7 @@
 //! - [`rules`] — the **pure core**: lifecycle machines, leave / time
 //!   arithmetic, org-chart cycle check, payslip arithmetic, benchmark
 //!   flags. DB-free and exhaustively unit-tested.
-//! - [`models`] — `SeaORM` entities + CRUD helpers.
+//! - [`models`] — row types (one per table) + record helpers.
 //! - [`clients`] — upstream service lookups (stub-first).
 //! - [`auth`] — bearer-token verification (PASETO or Keycloak JWT,
 //!   `paseto`/`keycloak` Cargo feature) + ABAC + masking.

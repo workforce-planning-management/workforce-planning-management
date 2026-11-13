@@ -1,25 +1,19 @@
-//! `SeaORM` Entity — `qualification_reminders`. That the person and their manager were told about one expiry date of one qualification, once (WPM-T435).
+//! Row type — `qualification_reminders`. That the person and their manager were told about one expiry date of one qualification, once (WPM-T435).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "qualification_reminders")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
     pub worker_pid: Uuid,
     pub qualification_pid: Uuid,
-    pub expires_on: Date,
+    pub expires_on: NaiveDate,
     pub kind: String,
-    pub reminded_on: Date,
+    pub reminded_on: NaiveDate,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

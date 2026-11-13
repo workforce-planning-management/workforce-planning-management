@@ -1,6 +1,6 @@
 # Backend (Rust, Axum and axa)
 
-`workforce-planning-management-service-with-rust` — Axum + PostgreSQL, with queries moving from SeaORM to `sqlx` (WPM-D184, WPM-T466),
+`workforce-planning-management-service-with-rust` — Axum + PostgreSQL, with every query in `sqlx` (WPM-D184, WPM-T466),
 `#![forbid(unsafe_code)]`, `#![warn(clippy::pedantic)]`. Stack-level agreements:
 [the service's AGENTS.md](../workforce-planning-management-service-with-rust/AGENTS.md).
 

@@ -132,8 +132,7 @@ async fn latest_locked(
     .ok_or(Error::NotFound)
 }
 
-/// A PADR's objectives (WPM-R225): the person's live goals in its period, withdrawn ones left out. The `sqlx` twin of
-/// `individual_goals::objectives_of`, which is still `SeaORM`.
+/// A PADR's objectives (WPM-R225): the person's live goals in its period, withdrawn ones left out.
 async fn objectives_of(
     connection: &mut sqlx::PgConnection,
     worker: Uuid,
@@ -155,7 +154,7 @@ async fn objectives_of(
     .collect())
 }
 
-/// What a signed PADR keeps of a goal (WPM-R225). The `sqlx` twin of `individual_goals::goal_snapshot`, which is still `SeaORM`.
+/// What a signed PADR keeps of a goal (WPM-R225).
 pub(super) async fn goal_snapshot(
     connection: &mut sqlx::PgConnection,
     goal: &worker_goals::Model,

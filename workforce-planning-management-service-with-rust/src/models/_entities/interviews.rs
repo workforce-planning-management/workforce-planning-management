@@ -1,26 +1,21 @@
-//! `SeaORM` Entity — `interviews`. One scheduled interview on an application (WPM-R2).
+//! Row type — `interviews`. One scheduled interview on an application (WPM-R2).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "interviews")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub application_pid: Uuid,
-    pub scheduled_at: DateTimeWithTimeZone,
+    pub scheduled_at: DateTime<FixedOffset>,
     pub interviewer_ref: String,
     pub outcome: String,
     pub notes: Option<String>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

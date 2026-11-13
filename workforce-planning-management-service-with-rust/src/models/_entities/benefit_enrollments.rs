@@ -1,25 +1,20 @@
-//! `SeaORM` Entity — `benefit_enrollments`. One worker's enrolment in one plan (WPM-R9).
+//! Row type — `benefit_enrollments`. One worker's enrolment in one plan (WPM-R9).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "benefit_enrollments")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub plan_pid: Uuid,
     pub worker_pid: Uuid,
-    pub starts_on: Date,
-    pub ends_on: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub starts_on: NaiveDate,
+    pub ends_on: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

@@ -1341,7 +1341,7 @@ fn answer_schemas() -> Value {
 }
 
 /// The answers that are a stored row, a record built by a helper, or a view: shapes read off the handlers (WPM-T263).
-/// A row from `row_json` is the `SeaORM` model without `id` and `deleted_at`, so it keeps both timestamps.
+/// A row from `row_json` is the table's row type (`models::_entities`) without `id` and `deleted_at`, so it keeps both timestamps.
 #[allow(clippy::too_many_lines)] // one literal
 fn record_schemas() -> Value {
     let uuid = json!({ "type": "string", "format": "uuid" });

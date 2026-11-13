@@ -6,7 +6,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, HashMap};
@@ -48,7 +48,7 @@ async fn find_record(ctx: &AppContext, pid: Uuid) -> Result<injury_records::Mode
     .ok_or(Error::NotFound)
 }
 
-fn utc(at: DateTimeWithTimeZone) -> DateTime<Utc> {
+fn utc(at: DateTime<FixedOffset>) -> DateTime<Utc> {
     at.with_timezone(&Utc)
 }
 

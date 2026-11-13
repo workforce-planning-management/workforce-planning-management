@@ -7,7 +7,7 @@ through WPM-T479.)
 ## What this project is
 
 A **back-end JSON API**, written in Rust on Axum and [axa](https://crates.io/crates/axa)
-(Axum + PostgreSQL; queries moving from SeaORM to `sqlx`, WPM-D184), for workforce planning management across
+(Axum + PostgreSQL; every query is `sqlx`, WPM-D184), for workforce planning management across
 the whole employment lifecycle:
 
 - **Hiring and the worker record** — requisitions, the applicant pipeline,

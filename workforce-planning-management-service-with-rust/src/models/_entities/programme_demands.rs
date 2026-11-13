@@ -1,33 +1,26 @@
-//! `SeaORM` Entity — `programme_demands`. A programme's claim on a pool for one month, in hundredths of an FTE (WPM-R57).
+//! Row type — `programme_demands`. A programme's claim on a pool for one month, in hundredths of an FTE (WPM-R57).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "programme_demands")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub programme_ref: String,
     pub pool_pid: Uuid,
-    pub month: Date,
+    pub month: NaiveDate,
     pub fte_centi: i64,
     pub status: String,
     pub source: String,
     pub peer_event_id: Option<String>,
-    pub received_at: Option<DateTimeWithTimeZone>,
-    pub peer_sent_at: Option<DateTimeWithTimeZone>,
-    pub peer_withdrawn_at: Option<DateTimeWithTimeZone>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub received_at: Option<DateTime<FixedOffset>>,
+    pub peer_sent_at: Option<DateTime<FixedOffset>>,
+    pub peer_withdrawn_at: Option<DateTime<FixedOffset>>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,23 +1,21 @@
-//! `SeaORM` Entity — `plan_demand_lines`. Planned headcount for a department (and optionally a role) at a date.
+//! Row type — `plan_demand_lines`. Planned headcount for a department (and optionally a role) at a date.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "plan_demand_lines")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub plan_pid: Uuid,
     pub department: String,
     pub role_profile_pid: Option<Uuid>,
-    pub target_on: Date,
+    pub target_on: NaiveDate,
     pub target_headcount: i32,
     pub note: Option<String>,
     /// The programme the demand serves (`thing:` URN), if any.
@@ -27,10 +25,5 @@ pub struct Model {
     /// The engagement basis of the demand.
     pub basis: String,
     /// The last day the demanded engagements run, for a basis that ends.
-    pub expected_ends_on: Option<Date>,
+    pub expected_ends_on: Option<NaiveDate>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

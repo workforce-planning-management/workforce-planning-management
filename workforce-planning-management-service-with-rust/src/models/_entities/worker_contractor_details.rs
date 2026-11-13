@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `worker_contractor_details`. A contractor's supplier, route and rate (WPM-R80). The rate is masked like salary.
+//! Row type — `worker_contractor_details`. A contractor's supplier, route and rate (WPM-R80). The rate is masked like salary.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "worker_contractor_details")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub worker_pid: Uuid,
     pub supplier_ref: Option<String>,
     pub supplier_contact_ref: Option<String>,
@@ -22,8 +20,3 @@ pub struct Model {
     pub rate_basis: Option<String>,
     pub recorded_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,26 +1,22 @@
-//! `SeaORM` Entity — `review_goal_outcomes`. A goal in a review: the outcome the reviewer and the reviewee each record, and the snapshot frozen when the review is shared (WPM-R225, WPM-D165).
+//! Row type — `review_goal_outcomes`. A goal in a review: the outcome the reviewer and the reviewee each record, and the snapshot frozen when the review is shared (WPM-R225, WPM-D165).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "review_goal_outcomes")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub review_pid: Uuid,
     pub goal_pid: Uuid,
     pub worker_pid: Uuid,
     pub reviewer_outcome: Option<String>,
     pub reviewee_outcome: Option<String>,
-    pub snapshot: Option<Json>,
+    pub snapshot: Option<Value>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

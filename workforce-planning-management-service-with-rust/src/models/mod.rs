@@ -1,4 +1,4 @@
-//! Model layer: `SeaORM` entities (`_entities/`) plus helpers.
+//! Model layer: row types (`_entities/`, one per table) plus helpers.
 //!
 //! WPM owns a **normalized relational schema** (WPM-D2) — not the
 //! matcher-DTO-as-JSONB shape of the entity registries — because its

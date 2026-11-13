@@ -514,9 +514,6 @@ async fn unique_name_in(tx: &mut sqlx::PgConnection, label: &str) -> Result<Stri
     Err(super::internal("cannot find a free skill name"))
 }
 
-// The SeaORM forms below serve `framework_roles.rs`, whose declaration handler still runs one SeaORM transaction
-// (WPM-T466). They go when it moves to the `sqlx` forms above.
-
 /// How an ESCO skill was resolved to a catalogue skill.
 pub(crate) enum Resolution {
     /// Already linked to this ESCO skill.

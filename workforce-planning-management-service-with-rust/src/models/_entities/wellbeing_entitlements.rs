@@ -1,18 +1,17 @@
-//! `SeaORM` Entity — `wellbeing_entitlements`. One configurable health-entitlement rule (WPM-R25): non-clinical predicates only (age band, departments, job titles) per WPM-D17.
+//! Row type — `wellbeing_entitlements`. One configurable health-entitlement rule (WPM-R25): non-clinical predicates only (age band, departments, job titles) per WPM-D17.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "wellbeing_entitlements")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub name: String,
     pub kind: String,
@@ -21,15 +20,10 @@ pub struct Model {
     pub info_url: Option<String>,
     pub min_age: Option<i32>,
     pub max_age: Option<i32>,
-    pub departments: Json,
-    pub job_titles: Json,
+    pub departments: Value,
+    pub job_titles: Value,
     pub doses: i32,
-    pub active_from: Option<Date>,
-    pub active_until: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub active_from: Option<NaiveDate>,
+    pub active_until: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

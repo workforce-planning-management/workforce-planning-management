@@ -1,19 +1,17 @@
-//! `SeaORM` Entity — `webhook_subscriptions`. An endpoint, the event kinds it wants and the name of the environment variable
+//! Row type — `webhook_subscriptions`. An endpoint, the event kinds it wants and the name of the environment variable
 //! holding its signing secret (WPM-R151). The secret itself is never stored.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "webhook_subscriptions")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub name: String,
     pub url: String,
@@ -22,8 +20,3 @@ pub struct Model {
     pub active: bool,
     pub created_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

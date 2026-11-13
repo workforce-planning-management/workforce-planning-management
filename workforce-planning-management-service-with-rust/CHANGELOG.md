@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `sqlx` is the only database library; SeaORM is gone (WPM-D184, WPM-T466)
+
+The table row types in `src/models/_entities/` are plain structs that `sqlx::query_as!` reads into, with the same fields, types and
+JSON as before. The `sea-orm` crate and `axa`'s `sea-orm` feature are removed, and with them about 900 lines of `Cargo.lock`.
+Nothing a client or an operator sees changes. A database that a `SeaORM` release migrated is still adopted (WPM-D193).
+
 ### Changed — the migrations are SQL files that `sqlx` runs (WPM-D193, WPM-T466)
 
 The 133 migrations are `migrations/*.sql`, statement for statement the same. A database a `SeaORM` release migrated is adopted on

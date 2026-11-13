@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `ergonomic_items`. One DSE checklist item (WPM-R32): `ok`/`issue` + an **equipment** note (WPM-D24 — no symptom field exists).
+//! Row type — `ergonomic_items`. One DSE checklist item (WPM-R32): `ok`/`issue` + an **equipment** note (WPM-D24 — no symptom field exists).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "ergonomic_items")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub assessment_pid: Uuid,
     pub name: String,
@@ -20,10 +18,5 @@ pub struct Model {
     pub item_key: Option<String>,
     pub ok: Option<bool>,
     pub note: Option<String>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,27 +1,20 @@
-//! `SeaORM` Entity — `engagement_decisions`. A person's decision about an engagement that is ending: extend, convert or end (WPM-R81, WPM-D66).
+//! Row type — `engagement_decisions`. A person's decision about an engagement that is ending: extend, convert or end (WPM-R81, WPM-D66).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "engagement_decisions")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
-    pub ends_on: Date,
+    pub ends_on: NaiveDate,
     pub decision: String,
     pub decided_by: Option<String>,
-    pub decided_on: Date,
+    pub decided_on: NaiveDate,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

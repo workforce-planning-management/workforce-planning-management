@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `emergency_contacts`. A person a worker names to be reached in an emergency (third-party personal data).
+//! Row type — `emergency_contacts`. A person a worker names to be reached in an emergency (third-party personal data).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "emergency_contacts")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
     pub name: String,
@@ -24,14 +22,9 @@ pub struct Model {
     pub note: Option<String>,
     pub recorded_by: Option<String>,
     pub on_behalf: bool,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
     pub phone_digits: Option<String>,
     pub phone_e164: Option<String>,
     pub alt_phone_digits: Option<String>,
     pub alt_phone_e164: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

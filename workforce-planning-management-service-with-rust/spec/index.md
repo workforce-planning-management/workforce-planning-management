@@ -17,8 +17,8 @@ this edition.
 
 Per [architecture](../../spec/architecture.md) and the family
 rust-axum-stack:
-Rust 2024, Axum (axa + SeaORM), PostgreSQL 18, crate-root
-`migration/`, `src/controllers/` layout, pure
+Rust 2024, Axum (axa + `sqlx`), PostgreSQL 18, SQL migrations in
+`migrations/`, `src/controllers/` layout, pure
 `src/rules/` core, stub-first upstream clients, offline PASETO +
 ABAC, OpenAPI/Swagger, `Accepts-version` header versioning,
 tracing + OTLP, Podman.

@@ -1,26 +1,21 @@
-//! `SeaORM` Entity — `candidates`. One retained applicant profile, consent-bounded (WPM-R2, WPM-D8).
+//! Row type — `candidates`. One retained applicant profile, consent-bounded (WPM-R2, WPM-D8).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "candidates")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub person_ref: Option<String>,
     pub display_name: String,
     pub email: String,
     pub source: String,
-    pub consent_until: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub consent_until: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

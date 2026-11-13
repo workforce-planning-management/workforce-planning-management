@@ -1,25 +1,20 @@
-//! `SeaORM` Entity — `shifts`. One planned shift for a department (WPM-R6).
+//! Row type — `shifts`. One planned shift for a department (WPM-R6).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "shifts")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub department: String,
-    pub starts_at: DateTimeWithTimeZone,
-    pub ends_at: DateTimeWithTimeZone,
+    pub starts_at: DateTime<FixedOffset>,
+    pub ends_at: DateTime<FixedOffset>,
     pub required_headcount: i32,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

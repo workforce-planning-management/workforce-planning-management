@@ -1,4 +1,4 @@
-//! `SeaORM` entity definitions, one module per table.
+//! Row types, one module per table: each `Model` is what a `sqlx::query_as!` reads a row into (WPM-D184).
 
 pub mod adjustment_requests;
 pub mod ai_register_entries;
@@ -125,7 +125,6 @@ pub mod policy_acknowledgements;
 pub mod policy_versions;
 pub mod positions;
 pub mod post_fundings;
-pub mod prelude;
 pub mod professional_registrations;
 pub mod program_placements;
 pub mod programme_demands;

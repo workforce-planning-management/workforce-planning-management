@@ -1,31 +1,26 @@
-//! `SeaORM` Entity — `assessments`. One administration of one instrument to one candidate or worker (WPM-R20).
+//! Row type — `assessments`. One administration of one instrument to one candidate or worker (WPM-R20).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "assessments")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub instrument_pid: Uuid,
     pub subject_kind: String,
     pub subject_pid: Uuid,
     pub application_pid: Option<Uuid>,
     pub status: String,
-    pub scheduled_on: Option<Date>,
-    pub completed_on: Option<Date>,
-    pub expires_on: Option<Date>,
+    pub scheduled_on: Option<NaiveDate>,
+    pub completed_on: Option<NaiveDate>,
+    pub expires_on: Option<NaiveDate>,
     pub administered_by: Option<String>,
     pub notes: Option<String>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

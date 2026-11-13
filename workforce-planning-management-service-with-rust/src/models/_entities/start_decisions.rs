@@ -1,18 +1,16 @@
-//! `SeaORM` Entity — `start_decisions`. A recorded decision to start or defer a programme, with its reason (WPM-R60, WPM-D50).
+//! Row type — `start_decisions`. A recorded decision to start or defer a programme, with its reason (WPM-R60, WPM-D50).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "start_decisions")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub organization_ref: String,
     pub programme_ref: String,
@@ -23,8 +21,3 @@ pub struct Model {
     pub wip_exceeds: Option<bool>,
     pub decided_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,28 +1,23 @@
-//! `SeaORM` Entity — `organization_confederations`. One direct
+//! Row type — `organization_confederations`. One direct
 //! parent→child organization edge; arbitrary-depth nesting is chained
 //! edges, walked in Rust (`crate::rules::org_access::descendants_of`),
 //! not recursive SQL.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "organization_confederations")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub parent_organization_ref: String,
     pub child_organization_ref: String,
-    pub starts_on: Date,
-    pub ends_on: Option<Date>,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub starts_on: NaiveDate,
+    pub ends_on: Option<NaiveDate>,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

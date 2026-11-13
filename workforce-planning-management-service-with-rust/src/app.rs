@@ -694,7 +694,7 @@ impl App {
     /// # Errors
     /// Propagates a database failure.
     pub async fn truncate(ctx: &AppContext) -> Result<()> {
-        // One `DELETE` per table, in this order (children first), as the `SeaORM` truncation did; a `TRUNCATE` would need a
+        // One `DELETE` per table, in this order (children first); a `TRUNCATE` would need a
         // privilege the runtime role does not hold.
         for table in TRUNCATED {
             sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {table}")))

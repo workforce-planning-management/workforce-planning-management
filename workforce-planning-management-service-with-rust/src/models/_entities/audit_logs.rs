@@ -1,25 +1,25 @@
-//! `SeaORM` Entity — `audit_logs`. One row per mutation or sensitive
+//! Row type — `audit_logs`. One row per mutation or sensitive
 //! read (who / what / when + a snapshot), across every record kind.
 
-// SeaORM-generated entity: the field-level shape is documented by the
+// A row type: the field-level shape is documented by the
 // migration and the `audit_logs` table, not by per-field rustdoc.
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "audit_logs")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i64,
     pub entity: String,
     pub entity_pid: Uuid,
     pub action: String,
     pub actor: Option<String>,
-    pub snapshot: Option<Json>,
+    pub snapshot: Option<Value>,
     /// Place in the hash chain (WPM-R115); assigned by the database.
     pub chain_seq: i64,
     /// The previous entry's hash (64 zeros for the first).
@@ -27,6 +27,3 @@ pub struct Model {
     /// The hash of this entry's content and `prev_hash`.
     pub entry_hash: String,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

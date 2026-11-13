@@ -1,16 +1,14 @@
-//! `SeaORM` Entity — `handover_actions`. The audit trail of a leaver handover: what was held and where it went.
+//! Row type — `handover_actions`. The audit trail of a leaver handover: what was held and where it went.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "handover_actions")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    #[sea_orm(primary_key)]
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub movement_pid: Uuid,
     pub kind: String,
@@ -21,10 +19,5 @@ pub struct Model {
     pub action: String,
     pub note: Option<String>,
     pub performed_by: Option<String>,
-    pub performed_at: DateTimeWithTimeZone,
+    pub performed_at: DateTime<FixedOffset>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

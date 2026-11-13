@@ -128,8 +128,6 @@ fn assert_no_leak(body: &str) {
     for word in [
         "postgres",
         "sqlx",
-        "sea_orm",
-        "seaorm",
         "loco:loco",
         "password",
         "127.0.0.1",

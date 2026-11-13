@@ -11,7 +11,7 @@
     "counts_from": "spec/implementation-status.md"
   },
   "stack": {
-    "api": "Rust, Axum, axa (Axum + SeaORM), PostgreSQL 18",
+    "api": "Rust, Axum, axa, sqlx, PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
       "service_unit_declared": 1299,

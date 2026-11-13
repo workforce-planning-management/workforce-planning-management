@@ -81,7 +81,7 @@ async fn find_succession_plan(ctx: &AppContext, pid: Uuid) -> Result<succession_
 }
 
 /// Freeze the goals of a review as it is shared (WPM-D165): each goal in the cycle's period gets a snapshot beside its outcomes,
-/// in the transaction that shares it. The `sqlx` twin of `individual_goals::freeze_review_goals`, which is still `SeaORM`.
+/// in the transaction that shares it.
 async fn freeze_review_goals(
     connection: &mut sqlx::PgConnection,
     review: &reviews::Model,

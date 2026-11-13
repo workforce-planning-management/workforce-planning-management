@@ -20,7 +20,7 @@ data behind a **CEO dashboard**, workforce **metrics and insights**, **skills ga
 analysis** with **training time recommendations**, and **joiners and leavers**
 with a last-day handover.
 Implemented in Rust on Axum and [axa](https://crates.io/crates/axa) (PostgreSQL, through
-`sqlx` and, until WPM-T466 is done, SeaORM). No built-in UI — the
+`sqlx`). No built-in UI — the
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 provides the HR, manager, and worker self-service client.
 
@@ -118,14 +118,14 @@ run with `WPM_REQUIRE_AUTH=0` (the service warns while it is off).
 
 ## Upgrading across the 2026-07-23 rename
 
-This project was renamed from *human capital management* (`HCM`) to
+This project was renamed from _human capital management_ (`HCM`) to
 **workforce planning management** (`WPM`). Three of the four changes are
 handled for you; one needs an operator action.
 
 | Change | What happens |
 |---|---|
 | Env prefix `HCM_*` → `WPM_*` | **Automatic.** The old names still work and log a one-off deprecation warning naming the replacement (`src/compat.rs`). Rename them at your leisure; the fallback will be removed. |
-| ABAC entity `"hcm"` → `"wpm"` | **Automatic.** A mounted policy whose rules key on `entity: "hcm"` is rewritten at load and warn-logged. This one matters: a stale entity condition would *silently stop matching* and fall through to the default decision. |
+| ABAC entity `"hcm"` → `"wpm"` | **Automatic.** A mounted policy whose rules key on `entity: "hcm"` is rewritten at load and warn-logged. This one matters: a stale entity condition would _silently stop matching_ and fall through to the default decision. |
 | Front-end theme / locale | **Automatic.** A returning user's `mxi.hcm.*` localStorage values are adopted under `mxi.wpm.*` on their next visit, so nobody's language or theme resets. |
 | **Database name** | **Manual — see below.** |
 
@@ -221,7 +221,7 @@ curl -s "localhost:5150/api/workforce/working-time?department=engineering" \
 curl -s localhost:5150/api/ergonomics/issues | jq .by_department
 ```
 
-*(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers hired as in step 1.)*
+_(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers hired as in step 1.)_
 
 **6. Who is on call, and who covers?** A rota rotates every N calendar days, skips
 whoever is on approved leave, and says so when nobody can:

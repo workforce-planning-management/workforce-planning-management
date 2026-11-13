@@ -1,19 +1,17 @@
-//! `SeaORM` Entity — `assignments`. A contract a worker holds (WPM-R161): job title, department, location, optional categories
+//! Row type — `assignments`. A contract a worker holds (WPM-R161): job title, department, location, optional categories
 //! (`None` is unknown), the FTE the contract says, and the days it runs. One primary is open at a time.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "assignments")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub worker_pid: Uuid,
     pub job_title: String,
@@ -27,12 +25,7 @@ pub struct Model {
     pub cost_centre: Option<String>,
     pub fte_percent: i32,
     pub is_primary: bool,
-    pub starts_on: Date,
-    pub ends_on: Option<Date>,
+    pub starts_on: NaiveDate,
+    pub ends_on: Option<NaiveDate>,
     pub recorded_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}

@@ -1,26 +1,21 @@
-//! `SeaORM` Entity — `goal_check_ins`. A dated entry on a goal: how it stands and a short note (WPM-R224).
+//! Row type — `goal_check_ins`. A dated entry on a goal: how it stands and a short note (WPM-R224).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(table_name = "goal_check_ins")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub goal_pid: Uuid,
     pub worker_pid: Uuid,
-    pub checked_on: Date,
+    pub checked_on: NaiveDate,
     pub status: String,
     pub note: Option<String>,
     pub recorded_by: Option<String>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

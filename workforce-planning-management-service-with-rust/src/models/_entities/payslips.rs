@@ -1,30 +1,26 @@
-//! `SeaORM` Entity — `payslips`. One worker's payslip in one run: gross, deduction lines (JSONB), net (WPM-R13).
+//! Row type — `payslips`. One worker's payslip in one run: gross, deduction lines (JSONB), net (WPM-R13).
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "payslips")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub run_pid: Uuid,
     pub worker_pid: Uuid,
     pub currency: String,
     pub gross_minor: i64,
-    pub deductions: Json,
+    pub deductions: Value,
     pub net_minor: i64,
     pub statutory_overtime_minor: i64,
     pub employer_cost_minor: i64,
-    pub employer_costs: Json,
-    pub deleted_at: Option<DateTimeWithTimeZone>,
+    pub employer_costs: Value,
+    pub deleted_at: Option<DateTime<FixedOffset>>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}

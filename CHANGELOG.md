@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the service uses `sqlx` alone; SeaORM is gone (WPM-D184, WPM-T466, 2026-11-13)
+
+The last of the move from SeaORM to `sqlx`: the table row types are plain structs, and the `sea-orm` crate is no longer a dependency.
+Nothing a client or an operator sees changes. See the service's `CHANGELOG.md`.
+
 ### Added — an employee's mandatory training and certifications in one place (WPM-R245, WPM-D192, WPM-T487, 2026-11-10)
 
 `/me/required`, first on My profile: what is mandatory, what is due or overdue, which certifications the role requires and when

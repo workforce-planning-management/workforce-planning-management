@@ -1,23 +1,21 @@
-//! `SeaORM` Entity — `headcount_snapshots`. Append-only aggregate
+//! Row type — `headcount_snapshots`. Append-only aggregate
 //! history of employed headcount per organization × department × date.
 
 #![allow(missing_docs)]
 
-use sea_orm::entity::prelude::*;
+use chrono::{DateTime, FixedOffset, NaiveDate};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "headcount_snapshots")]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTimeWithTimeZone,
-    pub updated_at: DateTimeWithTimeZone,
-    #[sea_orm(primary_key)]
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
     pub id: i32,
-    #[sea_orm(unique)]
     pub pid: Uuid,
     pub organization_ref: String,
     pub department: String,
-    pub as_of: Date,
+    pub as_of: NaiveDate,
     pub headcount: i32,
     pub fte_percent_total: i64,
     pub starters: Option<i32>,
@@ -28,8 +26,3 @@ pub struct Model {
     pub fixed_term_headcount: Option<i32>,
     pub fixed_term_fte_percent_total: Option<i64>,
 }
-
-#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
-
-impl ActiveModelBehavior for ActiveModel {}
