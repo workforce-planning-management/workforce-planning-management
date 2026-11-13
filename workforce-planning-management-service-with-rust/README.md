@@ -24,8 +24,8 @@ Implemented in Rust on Axum and [axa](https://crates.io/crates/axa) (PostgreSQL,
 [Svelte sibling](../workforce-planning-management-ui-with-svelte/)
 provides the HR, manager, and worker self-service client.
 
-> ⚠️ **Demo software.** Not a production HR or payroll system;
-> statutory calculations are illustrative stubs; synthetic data
+> ⚠️ **Demo software, not yet ready for production use** ([the path to
+> production](../locales/en-001/path-to-production/index.md)); statutory calculations are illustrative stubs; synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status (2026-10-30):** the original demonstration through WPM-T97 (2026-07-18 → 2026-10-07), and

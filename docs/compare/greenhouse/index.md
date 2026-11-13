@@ -2,7 +2,7 @@
 
 This page compares Greenhouse with Workforce Planning Management (WPM). It is a general orientation, not a benchmark.
 
-> **WPM is demo software.** It is not a production HR or payroll system and uses synthetic data only.
+> **WPM is demo software, not yet ready for production use.** It uses synthetic data only. [The path to production](../../../locales/en-001/path-to-production/index.md) says what production use would need and how ready each part is.
 
 ## Summary
 

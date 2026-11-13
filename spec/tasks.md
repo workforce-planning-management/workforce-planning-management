@@ -5875,3 +5875,31 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 - [x] (2026-11-05) WPM-T451 **Learning spend against a budget.** *(WPM-R227)* A learning budget per department and year and the recorded fees against it, per currency, over the recorded spend only (no actuals are invented). **Done (2026-11-05).** `learning_budgets`, at the current catalogue fee and the person's current department; no historic fee is kept. Read by HR and payroll. **Verified:** 33 pure tests, three scenarios in `tests/learning_economics.rs` on PostgreSQL 18 under the reference policy, and Playwright with a stubbed API.
 - [ ] WPM-T452 **Bridge to the project portfolio.** *(WPM-R230)* A plan's cost and viability offered to the project portfolio service as an investment line for a project that needs the capability; the portfolio's `UE-` tasks consume it. Owner decision on the contract first. (M, blocked)
 - [x] (2026-11-05) WPM-T453 **Screens.** The cost, train-or-hire and viability on the plan and seat pages, in 13 locales (AI-written, unreviewed), with Playwright and axe. **Done (2026-11-05).** `/me/development` (new), a panel on `/positions` and on `/learning`, the fee on the catalogue. **Verified:** 5 Playwright tests and axe on `/me/development`; 330 vitest; svelte-check clean. 79 strings in 13 locales, AI-written, unreviewed. `/me/development` looked at in a screenshot at 390 wide. **Not checked:** the `/positions` and `/learning` panels were not looked at by eye; amounts are typed in minor units; no person has reviewed the strings.
+
+## The path to production ([github-pages-site.md](github-pages-site.md), WPM-R246, WPM-D194), 2026-11-13
+
+- [x] (2026-11-13) WPM-T488 **The path to production, with a readiness slider on every item.** *(WPM-R246, WPM-D194)* Builds on WPM-T454.
+      `locales/<locale>/path-to-production/index.md` in all 21 locales (en-001, en-gb, en-gb-oxendict and en-us respelled; cy-gb, zh-cn,
+      ar-001, hi-in, de-001, es-001, fr-001, pt-001, id-001, ru-001, bn-001 and ur-001 AI-written, with cy-001, zh-001, hi-001, de-de and es-es
+      copies; the build fails if a locale has none), with a `README.md` symlink and one `.locale-peer-id`. It says what production use means,
+      the case it is measured against and the three kinds of evidence, then 18 items in three groups (the software; checks by people other than the
+      author; the deployer's part), each with the author's estimate as of 2026-11-13, what it rests on and what remains, drawn from the readiness
+      assessment and the task entries it cites. The site renders `- **NN%** **Name.** …` lists as cards with a Lily `Slider` (0 to 100, step 5) at the
+      estimate, an `aria-valuetext` and an `<output>` in the page's locale, and the author's value beside the reader's once moved (`#lib/ReadinessList.svelte`,
+      `renderSegments` in `#lib/server/content.ts`); the build fails on an estimate above 100 or an item without a name. Route, sitemap, search, the
+      language picker's alternates and the pages picker entry; four catalogue strings in the five catalogues. Reworded to "not yet ready for production
+      use" with a link to the page: the 11 locale homes, `AGENTS.md`, `README.md`, `index.md`, `spec/index.md`, `regulatory.md`, `deployment.md`,
+      `readiness-assessment.md`, `governance/threat-model.md`, `locales-x-for-roles/index.md`, both subprojects' README and AGENTS, the 11 comparison
+      pages, the DTAC notes, `llms.json` and `scripts/llms.py` (so `llms.txt`).
+      **Verified:** `svelte-check` 0 errors and 0 warnings; the build prerenders the page in all 11 locales with 18 sliders each; the svelte autofixer on the
+      two new components (it reports only the `{@html}` of build-time, escaped Markdown, as in `Doc.svelte`); Playwright on `PW_PORT=4197`, 377 passed of 381:
+      every new page passes axe in light and dark, `/ar-001/path-to-production/` fits 390 px and passes axe, each page's sliders equal the Markdown's
+      estimates and are named, a keyboard move shows the reader's value beside the author's, storage is unchanged and a reload restores 75%, and each
+      home's notice links to its own page. After the other 10 locales (2026-11-13): every locale's page passes axe in light and dark, `/ur-001/path-to-production/`
+      fits 390 px, the sitemap counts 317 addresses, 71 related tests pass, and each translation has the English page's headings, 18 estimates with
+      the same values, links and date (checked by script); on a locale without a catalogue the English note carries its own `lang` and `dir`.
+      **The 4 failures are not this task's:** the brief count (233, not 231: two untracked `en-001` briefs in the working
+      tree) and three tests broken by uncommitted edits made before it (the `en-001` home's "Suitable for production use" row, the CEO brief's
+      2026-10-11 date, the header's Home link). **Not done:** the application's own `home.demoNotice` (13 locales) is unchanged (WPM-D194); historical
+      records (`CHANGELOG.md`, `NEWS.md`, `tasks.md`, `docs/audits/index.md`) keep their wording; the translations are not reviewed (WPM-T155); no screen
+      reader was used; the estimates are one author's judgement.

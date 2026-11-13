@@ -12,6 +12,7 @@
     "worldwide": "Worldwide",
     "briefs": "Role briefs",
     "start": "Tutorial",
+    "production": "Path to production",
     "docs": "Documentation",
     "compare": "Compare"
   },
@@ -54,6 +55,11 @@
   },
   "translations": "Translations:",
   "source": "Source:",
+  "readiness": {
+    "note": "Each slider starts at the author's estimate. Move one to try your own; nothing is saved or sent.",
+    "label": "Readiness estimate: {name}",
+    "author": "author's estimate: {value}"
+  },
   "search": {
     "title": "Search",
     "label": "Words to find",

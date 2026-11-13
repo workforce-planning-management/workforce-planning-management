@@ -4,7 +4,8 @@ Requirements WPM-R114–R123, decisions WPM-D71–D73, tasks WPM-T187–T203 (se
 section L and [tasks.md](tasks.md) Phase 20). Generic by design: no organization is named, and the
 standards named are public examples a deployer's own assurance team may replace.
 
-> ⚠️ **Verdict: not ready.** This is demonstration software, and this assessment says what stands between
+> ⚠️ **Verdict: not ready.** This is demonstration software ([the path to production](../locales/en-001/path-to-production/index.md)
+> gives each item below a readiness estimate), and this assessment says what stands between
 > it and a deployment where the records are those of patients' carers and public employees. One finding
 > (section 2) was a **blocker** and is fixed in WPM-T188; the others are listed with evidence, and the
 > things only people can do are listed as gates. Nothing here is legal advice or a certification.

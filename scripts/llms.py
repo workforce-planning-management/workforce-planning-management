@@ -63,9 +63,10 @@ def render(data: dict) -> str:
     out += [
         "> An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,",
         "> in Rust (Axum, axa, sqlx, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17",
-        "> locales. **Demo software — not a production HR or payroll system; synthetic",
-        "> data only.** WPM owns the employment relationship and references identities",
-        "> (person, worker, organization, course services) by EntityRef URN.",
+        "> locales. **Demo software, not yet ready for production use; synthetic data",
+        "> only** (locales/en-001/path-to-production/index.md). WPM owns the",
+        "> employment relationship and references identities (person, worker,",
+        "> organization, course services) by EntityRef URN.",
         "",
         "Start with the specification: it is the single source of truth, and no code",
         "lands without it. A change is a requirement (WPM-R*), a design decision",

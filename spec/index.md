@@ -5,7 +5,8 @@ Workforce Planning Management (WPM) specification, shared by both editions.
 Each subproject's own `spec/` adds stack-specific detail and links back
 here.
 
-> ⚠️ **Demo software, not a production HR system.** This project models
+> ⚠️ **Demo software, not yet ready for production use** ([the path to
+> production](../locales/en-001/path-to-production/index.md)). This project models
 > WPM practice for demonstration and integration purposes. It is not
 > a payroll system of record, not employment-law advice, and holds no
 > real personal data. See [regulatory.md](regulatory.md).

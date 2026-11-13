@@ -10,8 +10,9 @@ planning, joiners and leavers, announcements, a one-screen CEO dashboard, and
 payroll & compensation — in **17 locales**. See
 [spec/index.md](spec/index.md) for the full specification.
 
-> ⚠️ **Demo software.** Not a production HR or payroll system;
-> statutory calculations are illustrative stubs; no real personal
+> ⚠️ **Demo software, not yet ready for production use** ([the path to
+> production](locales/en-001/path-to-production/index.md) says what it would
+> need and how ready each part is); statutory calculations are illustrative stubs; no real personal
 > data anywhere in the repository. See
 > [spec/regulatory.md](spec/regulatory.md).
 

@@ -4,7 +4,7 @@
 
 Mae Rheoli Cynllunio'r Gweithlu (Workforce Planning Management, WPM) yn cyfuno recriwtio, amser ac absenoldeb, datblygu gweithwyr, cynllunio'r gweithlu a chyflogres mewn un rhaglen. Meddalwedd arddangos ydyw, at ddibenion gwerthuso ac fel dyluniad cyfeirio.
 
-> **Meddalwedd arddangos.** Nid yw WPM yn system adnoddau dynol na chyflogres ar gyfer defnydd cynhyrchu. Mae'n defnyddio data synthetig yn unig, ac enghreifftiau yw ei gyfrifiadau statudol. Peidiwch â rhoi data personol go iawn ynddo. Gweler [y sefyllfa reoleiddiol](../../spec/regulatory.md) (Saesneg).
+> **Meddalwedd arddangos, nad yw'n barod eto ar gyfer defnydd cynhyrchu.** Mae [y llwybr i ddefnydd cynhyrchu](path-to-production/index.md) yn dweud beth fyddai ei angen a pha mor barod yw pob rhan. Mae'n defnyddio data synthetig yn unig, ac enghreifftiau yw ei gyfrifiadau statudol. Peidiwch â rhoi data personol go iawn ynddo. Gweler [y sefyllfa reoleiddiol](../../spec/regulatory.md) (Saesneg).
 
 [Rhedeg yr arddangosiad](start/index.md) [Dogfennau rôl](for/index.md) [Cod ffynhonnell ar GitHub](https://github.com/workforce-planning-management/workforce-planning-management)
 

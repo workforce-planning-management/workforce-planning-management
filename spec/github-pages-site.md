@@ -112,6 +112,50 @@ Acceptance criteria:
   all 57 themes.
 - **`/` shows `en-001`'s landing page**; the repository's document index moved to `/docs/`.
 
+## WPM-R246 — The path to production, with a readiness estimate on every item
+
+**As** a reader deciding whether WPM could carry real work (a chief officer, an assessor, a deployer), **I want**
+one page that says what production use would mean and lists, honestly, what stands between WPM and it, **so
+that** "demo software" is a list I can check rather than a label.
+
+Acceptance criteria:
+
+1. `/<locale>/path-to-production/` for every locale (all 21), from
+   `locales/<locale>/path-to-production/index.md`, with a `README.md` symlink and a `.locale-peer-id`; the
+   language picker opens the same page in another locale, and the build fails if a locale has none.
+2. The page says what production use means (real people's records, pay that is paid, daily sign-in to
+   sensitive reads, accountability to a regulator), the case it is measured against (the
+   [readiness assessment](readiness-assessment.md)) and the three kinds of evidence (software, a deployer,
+   people other than the author), before it lists anything.
+3. Every item of the honest list carries the author's readiness estimate from 0 to 100 per cent, what the
+   estimate rests on and what remains. No item is at 100 per cent, and the estimates are not averaged.
+4. Each item has a Lily `Slider` (`@lilydesignsystem/svelte-headless`) from 0 to 100 in steps of 5 that starts
+   at the author's estimate, with an accessible name that names the item and a value text in the page's
+   locale. A reader may move it; the page then shows the reader's value beside the author's. Nothing is saved
+   or sent, and a reload restores the estimates.
+5. Every notice that says WPM is not production software says "not yet ready for production use" and links to
+   the page: the locale homes, the root documents, the subproject READMEs and agent guides, the comparison
+   pages, the DTAC notes, the readiness assessment, the threat model and `llms.txt`.
+6. Axe finds no serious or critical violation on every locale's page in light and dark, and the Arabic page
+   fits a phone.
+
+## WPM-D194 — Estimates are Markdown, judged and dated; the slider is the reader's
+
+- **The estimate is in the document, not the code.** An item is `- **75%** **Name.** …`: the estimate in bold
+  ASCII digits, then the item's name in bold. It reads the same on GitHub as on the site, a translator keeps
+  the number and translates the rest, and the build fails on an estimate above 100 or an item with no name.
+- **An estimate is a judgement, said to be one.** The page dates it, says what each rests on, and says it is
+  neither a measurement nor a certification (rule 3: an estimate says what it rests on). It is the author's,
+  so a reader's own view needs a place: the slider.
+- **The slider changes nothing.** It is for a reader to try their own estimate while reading. Storing it
+  would make the page a record of something nobody reviewed, so it keeps nothing and sends nothing.
+- **No average.** One item at 0 per cent keeps WPM out of production whatever the others say, so the page
+  shows no total.
+- **The in-app notice is not changed here.** The application's own home notice (`home.demoNotice`, 13
+  locales) links nowhere yet; every one of its locales now has a site page it could link to.
+- **The site's own words stay in five catalogues.** On a locale without a catalogue (WPM-D175) the note above
+  the list and the slider's name prefix are English around the translated page.
+
 ## Not done
 
 Machine translations (Welsh, Mandarin, Arabic, Hindi) have had no native-speaker review. The other 10

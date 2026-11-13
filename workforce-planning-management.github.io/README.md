@@ -128,6 +128,9 @@ Every later publish is step 4 again (and a `git pull` in the sibling export).
 
 ## Not done
 
+- `/<locale>/path-to-production/` (WPM-R246): the readiness estimates are the author's, and the sliders keep nothing. In the 10
+  locales without a site catalogue the note above the list and the slider's name prefix are English.
+
 - The site's own words are in English, Welsh and Mandarin only. The other 13 locales
   have no landing page or tutorial, and README, Install, the specification and
   `/compare/` are English. Theme names are English.

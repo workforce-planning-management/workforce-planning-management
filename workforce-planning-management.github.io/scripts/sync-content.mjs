@@ -62,6 +62,18 @@ function homes() {
     }));
 }
 
+// Each locale's path to production, locales/<locale>/path-to-production/index.md (every locale has one).
+function productions() {
+  return readdirSync(join(ROOT, "locales"))
+    .sort()
+    .filter((locale) => existsSync(join(ROOT, "locales", locale, "path-to-production", "index.md")))
+    .map((locale) => ({
+      locale,
+      path: `locales/${locale}/path-to-production/index.md`,
+      peer: peer(`locales/${locale}/path-to-production`),
+    }));
+}
+
 // The comparison pages, docs/compare/index.md and docs/compare/<slug>/index.md.
 function compares() {
   const root = join(ROOT, "docs", "compare");
@@ -72,13 +84,14 @@ function compares() {
 function render() {
   const { lists, pages } = briefs();
   const home = homes();
+  const production = productions();
   /** @type {Record<string, string>} */
   const files = {};
-  for (const p of [...DOCS, ...compares(), ...home.flatMap((h) => [h.path, h.start]), ...lists.map((l) => l.path), ...pages.map((b) => b.path)])
+  for (const p of [...DOCS, ...compares(), ...home.flatMap((h) => [h.path, h.start]), ...production.map((p) => p.path), ...lists.map((l) => l.path), ...pages.map((b) => b.path)])
     files[p] = readFileSync(join(ROOT, p), "utf8");
   return (
     JSON.stringify(
-      { generated: "by scripts/sync-content.mjs from the monorepo; do not edit by hand", homes: home, lists, briefs: pages, files },
+      { generated: "by scripts/sync-content.mjs from the monorepo; do not edit by hand", homes: home, productions: production, lists, briefs: pages, files },
       null,
       2,
     ) + "\n"

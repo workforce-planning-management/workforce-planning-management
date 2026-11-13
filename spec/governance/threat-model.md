@@ -4,7 +4,8 @@ A starting threat model for a deployer's security team to adapt, not a security 
 wrong at each boundary, the control that answers it **as built**, and where there is a gap. Every control
 named exists and was exercised in the session that wrote this; a control the author did not check is marked
 **not assessed**. Written alongside [the readiness assessment](../readiness-assessment.md), whose verdict is
-that the software is not ready for production use in a high-assurance organization.
+that the software is not yet ready for production use in a high-assurance organization ([the path to
+production](../../locales/en-001/path-to-production/index.md) lists what remains).
 
 > ⚠️ **Demo software.** A deployer completes their own model for their environment, and has it tested by
 > people who did not write the software (WPM-T201).

@@ -13,7 +13,8 @@ delivery, workforce metrics and insights, an employee directory, an on-call
 rota, announcements, skill gaps with a training plan, joiners and leavers, and a
 **one-screen CEO dashboard** sized for an iPad.
 
-> ⚠️ **Demo software.** Not a production HR system; synthetic data
+> ⚠️ **Demo software, not yet ready for production use** ([the path to
+> production](../locales/en-001/path-to-production/index.md)); synthetic data
 > only. See [spec/regulatory](../spec/regulatory.md).
 
 **Status (2026-10-30):** the original demonstration through WPM-T97, and the

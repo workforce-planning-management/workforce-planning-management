@@ -22,7 +22,8 @@ calls none of their routes. Money, numbers, dates and plurals go through the pag
 (`src/lib/money.ts`, `src/lib/locale-format.ts`, `tn`; [worldwide](../spec/worldwide.md)). The app owns no data; every page round-trips through the API, and
 masked fields render as first-class masked states, never errors or fake zeros.
 
-> ⚠️ Demo software, not a production HR system. See
+> ⚠️ Demo software, not yet ready for production use. See
+> [the path to production](../locales/en-001/path-to-production/index.md) and
 > [regulatory](../spec/regulatory.md).
 
 ## Ground rules

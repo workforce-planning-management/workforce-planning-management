@@ -29,7 +29,8 @@ For each `index.md`, `README.md` is a symlink to it (the same convention as the 
   the specification), how to read the numbers, what it will not do, the open limits, the decisions that are the
   reader's, and a dated statement of how current it is.
 - Each page begins from the [readiness assessment](../readiness-assessment.md) verdict where it matters: the software
-  is demonstration software and is not ready for production use in a high-assurance organization.
+  is demonstration software and is not yet ready for production use in a high-assurance organization, and
+  [the path to production](../../locales/en-001/path-to-production/index.md) lists what remains.
 - A page states only what the specification or the code shows. A thing planned or not built is said to be so.
 - No organization is named. No legal advice is given.
 - A further locale is a translation of these pages under its own `locales/<locale>/for/`, with the same folder names.

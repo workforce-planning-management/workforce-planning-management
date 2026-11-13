@@ -1,6 +1,7 @@
 # Regulatory posture
 
-> ⚠️ **Demo software.** Not a production HR/payroll system; no real
+> ⚠️ **Demo software, not yet ready for production use** ([the path to
+> production](../locales/en-001/path-to-production/index.md)); no real
 > personal data; statutory calculations are illustrative stubs.
 
 The design rules below hold wherever WPM is deployed. The law it was read against is recorded **by region** at the end of this file

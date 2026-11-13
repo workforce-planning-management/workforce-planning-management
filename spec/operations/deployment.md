@@ -1,6 +1,6 @@
 # Deployment guide (WPM-R90)
 
-> ⚠️ **Demo software.** Not a production HR or payroll system; synthetic data only.
+> ⚠️ **Demo software, not yet ready for production use** ([the path to production](../../locales/en-001/path-to-production/index.md)); synthetic data only.
 > [regulatory.md](../regulatory.md) lists what production would additionally need.
 
 ## Two ways to run it

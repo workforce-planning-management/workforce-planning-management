@@ -389,7 +389,7 @@
       {
         "title": "spec/regulatory.md",
         "path": "spec/regulatory.md",
-        "description": "regulatory position: demo software, not a production HR or payroll system"
+        "description": "regulatory position: demo software, not yet ready for production use"
       },
       {
         "title": "spec/roadmap.md",

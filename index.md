@@ -8,7 +8,8 @@ synthetic data only. This page is the way in to its documents; it is also the
 documentation page of the website
 ([`workforce-planning-management.github.io/`](workforce-planning-management.github.io/README.md)).
 
-> ⚠️ **Demo software.** Not a production HR or payroll system. See
+> ⚠️ **Demo software, not yet ready for production use.** See
+> [the path to production](locales/en-001/path-to-production/index.md) and
 > [spec/regulatory.md](spec/regulatory.md).
 
 ## Start here
@@ -36,7 +37,8 @@ documentation page of the website
 - **[spec/worldwide.md](spec/worldwide.md)**: the target is worldwide, not the
   US or the UK; jurisdiction is data, and every locale is equal.
 - **[spec/readiness-assessment.md](spec/readiness-assessment.md)**: the
-  verdict for a high-assurance organization (not ready for production use).
+  verdict for a high-assurance organization (not yet ready for production use;
+  [the path to production](locales/en-001/path-to-production/index.md) lists what remains).
 
 ## Role briefs
 

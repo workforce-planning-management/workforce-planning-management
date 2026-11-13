@@ -12,6 +12,7 @@
     "worldwide": "全球",
     "briefs": "角色文档",
     "start": "教程",
+    "production": "走向生产使用之路",
     "docs": "文档",
     "compare": "比较"
   },
@@ -54,6 +55,11 @@
   },
   "translations": "译文：",
   "source": "来源：",
+  "readiness": {
+    "note": "每个滑块都从作者的估计开始。移动滑块即可尝试你自己的估计；不会保存或发送任何内容。",
+    "label": "就绪程度估计：{name}",
+    "author": "作者的估计：{value}"
+  },
   "search": {
     "title": "搜索",
     "label": "要查找的词",

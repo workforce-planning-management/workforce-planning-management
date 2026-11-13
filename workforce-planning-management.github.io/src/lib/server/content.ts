@@ -14,6 +14,8 @@ import {
   localeLanding,
   routeOfRepoPath,
   type BriefLocale,
+  type ReadinessItem,
+  type Segment,
 } from "#lib/site.js";
 import type { SearchDoc } from "#lib/search.js";
 import { formatDate, formatDateRange, isCivilDate } from "#lib/locale-format.js";
@@ -25,6 +27,7 @@ const FILES: Record<string, string> = docs.files;
 const LISTS: Entry[] = docs.lists;
 const BRIEFS: Brief[] = docs.briefs;
 const HOMES: (Entry & { start: string })[] = docs.homes;
+const PRODUCTIONS: Entry[] = docs.productions;
 
 // The copy and the site must name the same locales: a locale added to `locales/` without a line in
 // `BRIEF_LOCALES` (or the reverse) fails the build here instead of silently missing from the switcher.
@@ -32,6 +35,9 @@ const HOMES: (Entry & { start: string })[] = docs.homes;
   const copied = LISTS.map((l) => l.locale).join(",");
   if (copied !== BRIEF_LOCALES.join(","))
     throw new Error(`src/content/docs.json has locales ${copied}; src/lib/site.ts BRIEF_LOCALES has ${BRIEF_LOCALES.join(",")}`);
+  const productions = PRODUCTIONS.map((p) => p.locale).join(",");
+  if (productions !== BRIEF_LOCALES.join(","))
+    throw new Error(`src/content/docs.json has a path to production for ${productions}; every locale in BRIEF_LOCALES needs one`);
   const homes = HOMES.map((h) => h.locale).join(",");
   if (homes !== HOME_LOCALES.join(","))
     throw new Error(`src/content/docs.json has homes ${homes}; src/lib/site.ts HOME_LOCALES has ${HOME_LOCALES.join(",")}`);
@@ -177,6 +183,11 @@ export function localiseDates(text: string, locale: string): string {
 
 export type Rendered = { title: string; html: string };
 
+// A readiness item begins with its estimate in bold, ASCII digits and a per cent sign, then its name in bold:
+// `- **75%** **Sign-in and need-to-know access.** …`. The form reads the same on GitHub as on the site.
+const ESTIMATE = /^(\d{1,3})%$/;
+const SEGMENT = /<!--readiness:(\d+)-->/;
+
 /** A home page divided before its first section, so the "Translations:" line can close the hero. */
 export function splitHero(html: string): { hero: string; rest: string } {
   const at = html.indexOf("<h2");
@@ -187,7 +198,12 @@ export function splitHero(html: string): { hero: string; rest: string } {
  * Render one repository document. Raw HTML in the Markdown is shown as text, never passed through. `locale` is the
  * page's locale: the dates in its text are shown in that locale's form.
  */
-export function render(path: string, route: (r: string) => string, locale: string): Rendered {
+export function render(
+  path: string,
+  route: (r: string) => string,
+  locale: string,
+  readiness?: ReadinessItem[][],
+): Rendered {
   let text = source(path);
   text = text.replace(/^---\n[\s\S]*?\n---\n/, "");
   const seen = new Map<string, number>();
@@ -221,6 +237,34 @@ export function render(path: string, route: (r: string) => string, locale: strin
         const actions = parts.length > 1 && parts.every((t) => t.type === "link");
         return `<p${actions ? ' class="actions"' : ""}>${this.parser.parseInline(token.tokens)}</p>\n`;
       },
+      list(token) {
+        // Only on the path-to-production page, and only a list whose every item carries an estimate: it becomes a
+        // marker that `renderSegments` replaces with sliders. Any other list is rendered as usual.
+        if (!readiness) return false;
+        const items: ReadinessItem[] = [];
+        for (const item of token.items) {
+          const first = item.tokens[0];
+          const inline = first && "tokens" in first ? (first.tokens ?? []) : [];
+          const mark = inline[0];
+          const m = mark?.type === "strong" ? ESTIMATE.exec((mark as Tokens.Strong).text) : null;
+          if (!m) return false;
+          const estimate = Number(m[1]);
+          if (estimate > 100) throw new Error(`${path}: an estimate of ${estimate}% is above 100%`);
+          inline.shift();
+          const next = inline[0];
+          if (next?.type === "text") {
+            (next as Tokens.Text).text = (next as Tokens.Text).text.replace(/^\s+/, "");
+            (next as Tokens.Text).raw = (next as Tokens.Text).raw.replace(/^\s+/, "");
+            if (!(next as Tokens.Text).text) inline.shift();
+          }
+          const name = inline[0];
+          if (name?.type !== "strong") throw new Error(`${path}: a readiness item has no name in bold after its estimate`);
+          const title = (name as Tokens.Strong).text.replace(/[`*_]/g, "").replace(/[\s.:。۔।]+$/u, "").trim();
+          items.push({ estimate, title, html: this.parser.parse(item.tokens) });
+        }
+        readiness.push(items);
+        return `<!--readiness:${readiness.length - 1}-->\n`;
+      },
       checkbox(token) {
         // A task list's box is a record, not a control: disabled, with a name so it is not an unlabelled input (axe).
         const state = token.checked ? "checked " : "";
@@ -245,6 +289,28 @@ export function render(path: string, route: (r: string) => string, locale: strin
   return { title: title || path, html };
 }
 
+/**
+ * Render a path-to-production page as prose and readiness lists. The markers are HTML comments, which a document
+ * cannot write itself because its raw HTML is escaped.
+ */
+export function renderSegments(path: string, route: (r: string) => string, locale: string): { title: string; segments: Segment[] } {
+  const lists: ReadinessItem[][] = [];
+  const { title, html } = render(path, route, locale, lists);
+  const segments: Segment[] = [];
+  const parts = html.split(SEGMENT);
+  parts.forEach((part, i) => {
+    if (i % 2 === 1) segments.push({ kind: "readiness", items: lists[Number(part)] ?? [] });
+    else if (part.trim()) segments.push({ kind: "html", html: part });
+  });
+  if (lists.length === 0) throw new Error(`${path}: no readiness list (every item of one begins **NN%** **Name.**)`);
+  return { title, segments };
+}
+
+/** The path to production in every locale: every locale has one. */
+export function productionAlternates(): Partial<Record<BriefLocale, string>> {
+  return Object.fromEntries(BRIEF_LOCALES.map((l) => [l, `/${l}/path-to-production/`]));
+}
+
 const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
 
 /** The index /search/ reads: every page's title and plain text, as a reader sees them, documents first. */
@@ -264,6 +330,7 @@ export function searchDocs(): SearchDoc[] {
     ...COMPARE_SLUGS.map((c) => entry(`/compare/${c}/`, `docs/compare/${c}/index.md`, "en", SITE_LOCALE)),
     ...HOMES.map((h) => entry(`/${h.locale}/`, h.path, h.locale, h.locale)),
     ...HOMES.map((h) => entry(`/${h.locale}/start/`, h.start, h.locale, h.locale)),
+    ...PRODUCTIONS.map((p) => entry(`/${p.locale}/path-to-production/`, p.path, p.locale, p.locale)),
     ...LISTS.map((l) => entry(briefRoute(l.locale as BriefLocale, null), l.path, l.locale, l.locale)),
     ...BRIEFS.map((b) => entry(briefRoute(b.locale as BriefLocale, b.slug), b.path, b.locale, b.locale)),
   ];
@@ -272,7 +339,11 @@ export function searchDocs(): SearchDoc[] {
 /** Every page's route for a sitemap: the whole site, or one locale's pages. */
 export function sitemapRoutes(locale?: BriefLocale): string[] {
   const homes = HOME_LOCALES.filter((l) => !locale || l === locale);
-  const routes = [...homes.map((l) => `/${l}/`), ...homes.map((l) => `/${l}/start/`)];
+  const routes = [
+    ...homes.map((l) => `/${l}/`),
+    ...homes.map((l) => `/${l}/start/`),
+    ...BRIEF_LOCALES.filter((l) => !locale || l === locale).map((l) => `/${l}/path-to-production/`),
+  ];
   routes.push(...LISTS.filter((l) => !locale || l.locale === locale).map((l) => briefRoute(l.locale as BriefLocale, null)));
   routes.push(...BRIEFS.filter((b) => !locale || b.locale === locale).map((b) => briefRoute(b.locale as BriefLocale, b.slug)));
   if (locale) return [...routes, `/${locale}/search/`];

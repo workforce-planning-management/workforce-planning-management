@@ -48,8 +48,9 @@ organization-service, training courses course-service — always as EntityRef
 URNs (`person:<uuid>`), never duplicated demographics
 ([scope boundary](../spec/scope.md)).
 
-> ⚠️ Demo software, not a production HR/payroll system. Synthetic data
-> only. See [regulatory](../spec/regulatory.md).
+> ⚠️ Demo software, not yet ready for production use. Synthetic data
+> only. See [the path to production](../locales/en-001/path-to-production/index.md)
+> and [regulatory](../spec/regulatory.md).
 
 ## Ground rules
 

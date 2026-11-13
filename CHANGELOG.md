@@ -19,6 +19,13 @@ use port 1241. **An operator must act:** move whatever names 5150, or set `PORT=
 The last of the move from SeaORM to `sqlx`: the table row types are plain structs, and the `sea-orm` crate is no longer a dependency.
 Nothing a client or an operator sees changes. See the service's `CHANGELOG.md`.
 
+### Added — the path to production, with a readiness slider on every item (WPM-R246, WPM-D194, WPM-T488, 2026-11-13)
+
+`/<locale>/path-to-production/` on the site, from `locales/<locale>/path-to-production/index.md` in all 21 locales: what production use would
+mean for WPM, and 18 items between WPM and it, each with the author's dated estimate from 0 to 100 per cent, what it rests on and what remains, shown
+with a Lily slider that a reader may move (nothing is saved). Every "not a production HR or payroll system" notice now says "not yet ready for
+production use" and links to the page. Not done: the application's own home notice, and a review of the translations.
+
 ### Added — an employee's mandatory training and certifications in one place (WPM-R245, WPM-D192, WPM-T487, 2026-11-10)
 
 `/me/required`, first on My profile: what is mandatory, what is due or overdue, which certifications the role requires and when

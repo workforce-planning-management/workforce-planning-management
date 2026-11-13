@@ -12,6 +12,7 @@
     "worldwide": "Ledled y byd",
     "briefs": "Dogfennau rôl",
     "start": "Tiwtorial",
+    "production": "Y llwybr i gynhyrchu",
     "docs": "Dogfennaeth",
     "compare": "Cymharu"
   },
@@ -54,6 +55,11 @@
   },
   "translations": "Cyfieithiadau:",
   "source": "Ffynhonnell:",
+  "readiness": {
+    "note": "Mae pob llithrydd yn dechrau ar amcangyfrif yr awdur. Symudwch un i roi cynnig ar eich amcangyfrif eich hun; nid oes dim yn cael ei gadw na'i anfon.",
+    "label": "Amcangyfrif parodrwydd: {name}",
+    "author": "amcangyfrif yr awdur: {value}"
+  },
   "search": {
     "title": "Chwilio",
     "label": "Geiriau i'w canfod",

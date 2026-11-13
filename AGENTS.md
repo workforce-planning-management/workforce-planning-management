@@ -6,8 +6,10 @@ also has its own [API](workforce-planning-management-service-with-rust/AGENTS.md
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
 stack-level detail. (Updated 2026-11-09, through WPM-T479; the site, WPM-T392.)
 
-> ⚠️ **Demo software.** Not a production HR or payroll system; synthetic data
-> only. See [spec/regulatory.md](spec/regulatory.md).
+> ⚠️ **Demo software, not yet ready for production use.** Synthetic data only.
+> [The path to production](locales/en-001/path-to-production/index.md) says what
+> production use would need and how ready each part is; see also
+> [spec/regulatory.md](spec/regulatory.md).
 
 ## The five rules everything else follows from
 

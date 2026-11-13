@@ -46,6 +46,7 @@
 | **Payslip**         | Per-employee output of a payroll run: gross, deduction lines, net                                |
 | **Persona**         | An ABAC policy profile (employee / manager / HR / payroll), not a code role                      |
 | **Pulse**           | A periodic anonymous 1–5 wellbeing survey; responses store no author (WPM-D20)                   |
+| **Readiness estimate** | The author's dated judgement, 0 to 100 per cent, of how ready one item on the path to production is, with what it rests on (WPM-R246) |
 | **Readiness**       | Succession rating: `ready_now` / `ready_1y` / `ready_2y`                                         |
 | **Requisition**     | A funded job opening with headcount and a hiring pipeline                                        |
 | **Retention horizon** | `WPM_RETENTION_DAYS` (default 365, floor 30) — soft-deletes past it are swept                  |

@@ -4,6 +4,7 @@
   import { ui } from "#lib/i18n.js";
 
   // A landing page passes its `hero` and the rest as `html`, and the `Translations` line as children, between the two.
+  // A page with components among its prose (the path to production) passes them as `body` instead of `html`.
   let {
     html,
     path,
@@ -11,6 +12,7 @@
     hero = "",
     landing = false,
     children,
+    body,
   }: {
     html: string;
     path: string;
@@ -18,6 +20,7 @@
     hero?: string;
     landing?: boolean;
     children?: Snippet;
+    body?: Snippet;
   } = $props();
   const s = $derived(ui(locale));
 
@@ -35,8 +38,12 @@
       {@render children?.()}
     </div>
   {/if}
-  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-  {@html html}
+  {#if body}
+    {@render body()}
+  {:else}
+    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+    {@html html}
+  {/if}
 </article>
 {#if !landing}
   <p class="source" lang={s.locale} dir={isRtl(s.locale) ? "rtl" : "ltr"}>

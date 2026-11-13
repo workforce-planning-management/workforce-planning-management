@@ -179,6 +179,8 @@ export function routeOfRepoPath(path: string, hasBrief: (locale: BriefLocale, sl
   if (compare?.[1] && (COMPARE_SLUGS as readonly string[]).includes(compare[1])) return `/compare/${compare[1]}/`;
   const start = /^locales\/([^/]+)\/start(?:\/(?:index|README)\.md)?$/.exec(clean);
   if (start?.[1] && hasHome(start[1])) return `/${start[1]}/start/`;
+  const production = /^locales\/([^/]+)\/path-to-production(?:\/(?:index|README)\.md)?$/.exec(clean);
+  if (production?.[1] && isBriefLocale(production[1])) return `/${production[1]}/path-to-production/`;
   const home = /^locales\/([^/]+)(?:\/(?:index|README)\.md)?$/.exec(clean);
   if (home?.[1] && hasHome(home[1])) return `/${home[1]}/`;
   const m = /^locales\/([^/]+)\/for(?:\/([^/]+))?(?:\/(?:index|README)\.md)?$/.exec(clean);
@@ -188,3 +190,12 @@ export function routeOfRepoPath(path: string, hasBrief: (locale: BriefLocale, sl
   }
   return null;
 }
+
+/**
+ * One item of a readiness list on `/<locale>/path-to-production/`: the author's estimate (0 to 100), the item's name
+ * (its first bold phrase, for the slider's accessible name) and the rest of the item as HTML.
+ */
+export type ReadinessItem = { estimate: number; title: string; html: string };
+
+/** A path-to-production page divided into its prose and its readiness lists, in document order. */
+export type Segment = { kind: "html"; html: string } | { kind: "readiness"; items: ReadinessItem[] };

@@ -2,9 +2,10 @@
 
 > An open-source, spec-driven, all-in-one HR platform demo: hiring to retirement,
 > in Rust (Axum, axa, sqlx, PostgreSQL) and SvelteKit (Svelte 5 runes), in 17
-> locales. **Demo software — not a production HR or payroll system; synthetic
-> data only.** WPM owns the employment relationship and references identities
-> (person, worker, organization, course services) by EntityRef URN.
+> locales. **Demo software, not yet ready for production use; synthetic data
+> only** (locales/en-001/path-to-production/index.md). WPM owns the
+> employment relationship and references identities (person, worker,
+> organization, course services) by EntityRef URN.
 
 Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
@@ -86,7 +87,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/github-pages-site.md](spec/github-pages-site.md): The static documentation site: what it shows, the locale switcher, dates in the page's locale, the subtree export; published 2026-11-04 (WPM-R217, WPM-D150, WPM-T392, WPM-T399)
 - [spec/cross-app-bridges.md](spec/cross-app-bridges.md): bridges to CRM and PPM: the family contract (2026-10-30), references and counts only, the caller's token (WPM-R206 to R213)
 - [spec/mhra.md](spec/mhra.md): the MHRA as a named UK regulator; its workforce questions left open until its guidance is read (WPM-R212)
-- [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not a production HR or payroll system
+- [spec/regulatory.md](spec/regulatory.md): regulatory position: demo software, not yet ready for production use
 - [spec/roadmap.md](spec/roadmap.md): what is beyond the task queue: decisions, dependencies and follow-ups
 - [spec/testing.md](spec/testing.md): how to run each suite, the PostgreSQL and Podman setup
 - [spec/tolerances.md](spec/tolerances.md): WPM-R140 and WPM-D93: tolerances on a workforce plan in time, cost, resources and risk, red, amber or green, an unknown is never green

@@ -63,12 +63,14 @@
   ]);
   // The header names only the few places a newcomer wants; the pages picker lists them all.
   const allPages = $derived([
+    { label: s.nav.production, route: `/${locale ?? ROOT_HOME_LOCALE}/path-to-production/` },
     ...nav,
     ...DOC_PAGES.filter((d) => d.key !== "docs").map((d) => ({ label: s.nav[d.key], route: `/${d.slug}/` })),
   ]);
   function current(route: string): boolean {
     if (route.endsWith("/for/")) return /\/for\//.test(page.url.pathname);
     if (route === "/compare/") return /\/compare\//.test(page.url.pathname);
+    if (route.endsWith("/path-to-production/")) return /\/path-to-production\/$/.test(page.url.pathname);
     if (route.endsWith("/start/")) return /\/start\/$/.test(page.url.pathname);
     return page.url.pathname === new URL(href(route), page.url.href).pathname;
   }

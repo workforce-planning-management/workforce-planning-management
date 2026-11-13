@@ -27,8 +27,8 @@ records, leave and rota, recruitment, learning, performance, payroll (illustrati
 planning and delivery capacity. It holds **no patient data, takes no clinical input and gives no clinical
 output.** It is open-source software the buyer deploys and operates (a Rust JSON API and a SvelteKit web client
 over PostgreSQL); the maintainer does not host it, has no access to any deployment, and receives no telemetry.
-It is **demonstration software** ([regulatory.md](../../../../../spec/regulatory.md)): not a production HR or payroll
-system, and its own [readiness assessment](../../../../../spec/readiness-assessment.md) says it is **not ready**
+It is **demonstration software**, not yet ready for production use ([regulatory.md](../../../../../spec/regulatory.md),
+[the path to production](../../../../../locales/en-001/path-to-production/index.md)), and its own [readiness assessment](../../../../../spec/readiness-assessment.md) says it is **not ready**
 for production use in a large medical or governmental organization.
 
 ## Where it stands
@@ -181,8 +181,9 @@ close in code**, and C2 and C1 each depend on a decision for someone else.
 6. **A.** A legal entity, address and phone number, or a statement that the buyer is contracting with an
    individual.
 
-Separately, the product's own [readiness assessment](../../../../../spec/readiness-assessment.md) records that it is not
-ready for production use in a large medical or governmental organization, whatever DTAC says.
+Separately, the product's own [readiness assessment](../../../../../spec/readiness-assessment.md) records that it is not yet
+ready for production use in a large medical or governmental organization, whatever DTAC says; [the path to
+production](../../../../../locales/en-001/path-to-production/index.md) lists what remains.
 
 ## Limits of this assessment
 

@@ -19,6 +19,7 @@ const THEMES = readdirSync("static/assets/themes").map((f) => f.replace(/\.css$/
 const compareRoutes = ["/compare/", ...COMPARE_SLUGS.map((c) => `/compare/${c}/`)];
 const docRoutes = ["/", ...DOC_PAGES.map((d) => `/${d.slug}/`), ...compareRoutes];
 const homeRoutes = HOME_LOCALES.flatMap((l) => [`/${l}/`, `/${l}/start/`]);
+const productionRoutes = BRIEF_LOCALES.map((l) => `/${l}/path-to-production/`);
 const listRoutes = BRIEF_LOCALES.map((l) => `/${l}/for/`);
 const briefRoute = (b: Brief) => `/${b.locale}/for/${b.slug}/`;
 const briefRoutes = BRIEFS.map(briefRoute);
@@ -35,6 +36,7 @@ function brief(locale: string, peerOf: string): Brief {
 const audited = [
   ...docRoutes,
   ...homeRoutes,
+  ...productionRoutes,
   ...listRoutes,
   ...BRIEF_LOCALES.map((l, i) => {
     const own = BRIEFS.filter((b) => b.locale === l);
@@ -68,8 +70,8 @@ async function overflow(page: Page): Promise<number> {
 }
 
 test("every page is built and answers 200", async ({ request }) => {
-  const all = [...docRoutes, ...homeRoutes, ...listRoutes, ...briefRoutes];
-  expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + BRIEF_LOCALES.length + BRIEFS.length);
+  const all = [...docRoutes, ...homeRoutes, ...productionRoutes, ...listRoutes, ...briefRoutes];
+  expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + 2 * BRIEF_LOCALES.length + BRIEFS.length);
   expect(BRIEFS.length).toBe(BRIEF_LOCALES.length * 11);
   for (const route of all) {
     const res = await request.get(encodeURI(route));
@@ -450,13 +452,71 @@ test("an Arabic page is right to left in its chrome and left to right in its cod
   await expect(page.locator('section[lang="ar-001"]')).toHaveAttribute("dir", "rtl");
 });
 
+// The estimates as the Markdown writes them: `- **75%** **Name.** …`, one slider each.
+function estimatesOf(locale: string): number[] {
+  const text = (docs.files as Record<string, string>)[`locales/${locale}/path-to-production/index.md`] ?? "";
+  return [...text.matchAll(/^- \*\*(\d{1,3})%\*\* \*\*/gm)].map((m) => Number(m[1]));
+}
+
+for (const locale of BRIEF_LOCALES)
+  test(`/${locale}/path-to-production/ has a Lily slider at the author's estimate for every item`, async ({ page }) => {
+    const s = ui(locale);
+    const estimates = estimatesOf(locale);
+    expect(estimates.length).toBeGreaterThanOrEqual(10);
+    expect(estimates.every((n) => n >= 0 && n < 100)).toBe(true);
+    await open(page, `/${locale}/path-to-production/`, "light");
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    const sliders = page.locator('main input[type="range"]');
+    await expect(sliders).toHaveCount(estimates.length);
+    expect(await sliders.evaluateAll((els) => els.map((e) => Number((e as HTMLInputElement).value)))).toEqual(estimates);
+    const prefix = s.readiness.label.split("{name}")[0] ?? "";
+    for (const label of await sliders.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? "")))
+      expect(label.startsWith(prefix) && label.length > prefix.length, label).toBe(true);
+    await expect(page.locator("main .readiness-note")).toHaveText(s.readiness.note);
+    // No item claims to be done, and the page says what production means before it lists anything.
+    await expect(page.locator("main h2").first()).toBeVisible();
+  });
+
+test("moving a readiness slider shows the reader's value beside the author's estimate, and saves nothing", async ({ page }) => {
+  await open(page, "/en-001/path-to-production/", "light");
+  const first = page.locator("main .readiness li").first();
+  const slider = first.locator('input[type="range"]');
+  await expect(slider).toHaveValue("75");
+  await expect(first.locator("output")).toHaveText("75%");
+  const stored = () => page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));
+  const before = await stored();
+  await slider.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(slider).toHaveValue("80");
+  await expect(slider).toHaveAttribute("aria-valuetext", "80%");
+  await expect(first.locator("output")).toContainText("80%");
+  await expect(first.locator("output")).toContainText("(author's estimate: 75%)");
+  await page.keyboard.press("Home");
+  await expect(first.locator("output strong")).toHaveText("0%");
+  expect(await stored()).toBe(before);
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator('main .readiness input[type="range"]').first()).toHaveValue("75");
+});
+
+test("each home's demo notice links to its path to production, and the pages picker lists it", async ({ page }) => {
+  for (const locale of HOME_LOCALES) {
+    await page.goto(`/${locale}/`);
+    const link = page.locator("main .landing-hero blockquote a").first();
+    await expect(link, locale).toHaveAttribute("href", new RegExp(`/${locale}/path-to-production/$`));
+  }
+  await page.goto("/cy-001/path-to-production/");
+  await expect(page.locator("main h1")).toHaveText("Y llwybr i ddefnydd cynhyrchu");
+  await page.getByRole("button", { name: ui("cy-001").pickers.pages, exact: true }).click();
+  await expect(page.locator(".link-picker-link").filter({ hasText: ui("cy-001").nav.production })).toBeVisible();
+});
+
 test("the footer ends its sentence in the language's own punctuation", async ({ page }) => {
   await page.goto("/hi-in/");
   await expect(page.locator("footer")).toContainText(`${ui("hi-in").footer.countsEnd} ${ui("hi-in").footer.notice}`);
   expect(ui("hi-in").footer.countsEnd).toBe("।");
 });
 
-for (const route of ["/ar-001/", "/ar-001/start/", "/hi-in/", "/hi-001/start/"])
+for (const route of ["/ar-001/", "/ar-001/start/", "/ar-001/path-to-production/", "/ur-001/path-to-production/", "/hi-in/", "/hi-001/start/"])
   test(`${route} fits a phone and passes axe`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, route, "light");
@@ -532,7 +592,7 @@ test("the sitemaps list the whole site and each locale's pages, in plain XML", a
   expect(whole.startsWith("<?xml")).toBe(true);
   const urls = [...whole.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1] ?? "");
   expect(new Set(urls).size).toBe(urls.length);
-  expect(urls.length).toBe(docRoutes.length + homeRoutes.length + listRoutes.length + briefRoutes.length + 1);
+  expect(urls.length).toBe(docRoutes.length + homeRoutes.length + productionRoutes.length + listRoutes.length + briefRoutes.length + 1);
   expect(urls.every((u) => u.startsWith("https://workforce-planning-management.github.io/"))).toBe(true);
   const cy = await (await request.get("/cy-001/sitemap.xml")).text();
   expect(cy).toContain("/cy-001/</loc>");
