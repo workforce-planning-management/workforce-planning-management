@@ -4,7 +4,7 @@
 Run it once, after `cargo run -- task seed`, against a service started with WPM_REQUIRE_AUTH=0 that holds
 nothing real (it is for the guided tour: sign in as example@example.com, see `ui AGENTS.md`):
 
-    python3 scripts/demo-data.py [http://localhost:5150]
+    python3 scripts/demo-data.py [http://localhost:1241]
 
 It only talks to the public API (so every rule that guards a write still applies) and uses the standard
 library only. Every name is obviously fictitious. Writes are rate-limited by the service (429); the script
@@ -18,7 +18,7 @@ import urllib.error
 import urllib.request
 import uuid
 
-BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:5150").rstrip("/") + "/api"
+BASE = (sys.argv[1] if len(sys.argv) > 1 else "http://localhost:1241").rstrip("/") + "/api"
 TODAY = dt.date.today()
 failures = []
 

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the service listens on port 1241, not 5150
+
+**An operator must act:** the default `PORT` and the production port are `1241`, and so are the container's `EXPOSE`, `compose.yaml`
+and the UI's default API address. Move any probe, proxy or firewall rule that names 5150, or set `PORT=5150` to keep the old port.
+
 ### Changed — `sqlx` is the only database library; SeaORM is gone (WPM-D184, WPM-T466)
 
 The table row types in `src/models/_entities/` are plain structs that `sqlx::query_as!` reads into, with the same fields, types and

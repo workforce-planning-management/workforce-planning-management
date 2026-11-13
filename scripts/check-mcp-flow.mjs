@@ -9,13 +9,13 @@
 // service must run with sign-in ON.
 //
 //     node scripts/check-mcp-flow.mjs --print-env       # the settings to start the service with (a throwaway key; never a secret)
-//     node scripts/check-mcp-flow.mjs [http://localhost:5150]
+//     node scripts/check-mcp-flow.mjs [http://localhost:1241]
 import { createHash, createPrivateKey, createPublicKey, sign, randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
-const API = (process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:5150").replace(/\/$/, "");
+const API = (process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:1241").replace(/\/$/, "");
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PINNED = "2025-11-25";
 

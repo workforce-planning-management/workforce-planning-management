@@ -9,7 +9,7 @@
 // revokes it and 1 after. It also checks that an altered credential and a credential under another key do not verify.
 //
 //     node scripts/check-credential-flow.mjs --print-env     # the settings to start the service with (a throwaway key; never a secret)
-//     node scripts/check-credential-flow.mjs [http://localhost:5150]
+//     node scripts/check-credential-flow.mjs [http://localhost:1241]
 //
 // This needs sign-in ON (the worker acts as themself through /api/me), so the service is started with the printed settings against a database
 // holding nothing real. The script mints its own test tokens with the throwaway key.
@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
-const API = (process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:5150").replace(/\/$/, "");
+const API = (process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:1241").replace(/\/$/, "");
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 // Throwaway keys: one mints test tokens (PASETO v4.public), one signs credentials. They protect nothing.

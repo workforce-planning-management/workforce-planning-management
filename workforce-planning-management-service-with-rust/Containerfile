@@ -42,9 +42,9 @@ WORKDIR /app
 COPY --from=build /src/target/release/workforce-planning-management /app/
 COPY config /app/config
 ENV APP_ENV=production \
-    PORT=5150
+    PORT=1241
 USER wpm
-EXPOSE 5150
+EXPOSE 1241
 # No HEALTHCHECK: the slim runtime has no HTTP client. Probe GET /_health/live from
 # the orchestrator.
 ENTRYPOINT ["/app/workforce-planning-management"]

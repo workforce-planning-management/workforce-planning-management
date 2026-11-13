@@ -288,8 +288,8 @@ fn setting(name: &str, get: impl Fn(&str) -> Option<String>) -> Option<String> {
 fn defaults() -> Defaults {
     Defaults {
         database: "workforce_planning_management",
-        port: 5150,
-        production_port: Some(5150),
+        port: 1241,
+        production_port: Some(1241),
         body_limit: 2 * MB,
         max_connections: 20,
         ..Defaults::default()

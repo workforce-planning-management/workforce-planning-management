@@ -21,7 +21,7 @@ UI of the later tasks in [../spec/tasks.md](../spec/tasks.md) (57 pages).
 `pnpm lint` and svelte-check clean (0 errors, 0 warnings); **308 vitest and 335
 Playwright tests** pass, 19 skipped (`page.route`-stubbed — runs without the Rust
 service); the production build is green. Quick start: `pnpm install && pnpm dev` (expects the API
-sibling on :5150; `pnpm test` / `pnpm exec playwright test`).
+sibling on :1241; `pnpm test` / `pnpm exec playwright test`).
 
 ## Environment variables
 
@@ -31,12 +31,12 @@ See `.env.example`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `WPM_API_URL` | `http://localhost:5150` | workforce-planning-management root URL (no `/api`); the proxy forwards `/api/proxy/x` to `<root>/api/x` |
-| `AUTH_API_URL` | `http://localhost:5150` | authentication-service base URL — magic-link login + session→PASETO exchange |
+| `WPM_API_URL` | `http://localhost:1241` | workforce-planning-management root URL (no `/api`); the proxy forwards `/api/proxy/x` to `<root>/api/x` |
+| `AUTH_API_URL` | `http://localhost:1241` | authentication-service base URL — magic-link login + session→PASETO exchange |
 | `WPM_PUBLIC_URL` | _(blank)_ | public address of this site for `/sitemap.xml` and `/robots.txt`; blank = the request origin (set it behind a proxy) |
 
 Both default to the same port because every family service defaults
-to `:5150`; point them at distinct ports/hosts when running the
+to `:1241`; point them at distinct ports/hosts when running the
 auth service and this service side by side.
 
 ## Stack

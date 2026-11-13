@@ -6,7 +6,7 @@ of "<t>.<body>">`) and the payload (`{id, kind, subject, occurred_at}`, plus `da
 no code with the service. It subscribes to `worker_activated`, which has no `data`, and checks that a delivery is signed and fresh, that
 the body holds nothing but those four fields, that a 5xx is retried with a back-off and a 4xx is not repeated.
 
-    WPM_WEBHOOK_SECRET_E2E=some-secret python3 scripts/check-webhook-flow.py [http://localhost:5150] [--retry]
+    WPM_WEBHOOK_SECRET_E2E=some-secret python3 scripts/check-webhook-flow.py [http://localhost:1241] [--retry]
 
 Start the service first with the SAME variable and `WPM_REQUIRE_AUTH=0` (a demo posture, a database holding nothing real); this script
 creates one subscription and a few workers there. It runs `cargo run -q -- task webhook_deliver` in the service folder to send what is
@@ -15,7 +15,7 @@ queued, so it needs the same DATABASE_URL in its environment. `--retry` also wai
 import hashlib, hmac, json, os, subprocess, sys, threading, time, urllib.request, uuid
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-API = next((a for a in sys.argv[1:] if a.startswith("http")), "http://localhost:5150").rstrip("/") + "/api"
+API = next((a for a in sys.argv[1:] if a.startswith("http")), "http://localhost:1241").rstrip("/") + "/api"
 RETRY = "--retry" in sys.argv
 SECRET = os.environ.get("WPM_WEBHOOK_SECRET_E2E", "")
 SERVICE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "workforce-planning-management-service-with-rust")

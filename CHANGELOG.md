@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the API's port is 1241, not 5150 (2026-11-13)
+
+The service, its container and `compose.yaml`, the UI's default API address, CI, the check and demo scripts, and every document
+use port 1241. **An operator must act:** move whatever names 5150, or set `PORT=5150`. See the service's `CHANGELOG.md`.
+
 ### Changed — the service uses `sqlx` alone; SeaORM is gone (WPM-D184, WPM-T466, 2026-11-13)
 
 The last of the move from SeaORM to `sqlx`: the table row types are plain structs, and the `sea-orm` crate is no longer a dependency.

@@ -42,7 +42,7 @@ export DATABASE_URL=postgres://localhost:5432/wpm_tutorial   # an empty database
 cargo run -- db migrate
 export WPM_REQUIRE_AUTH=0                   # never on a service that holds real data
 export WPM_WEBHOOK_SECRET_CRM=tutorial-only-secret
-cargo run -- start &                        # the API on :5150
+cargo run -- start &                        # the API on :1241
 ```
 
 In another shell, make an organization reference and a few workers in one
@@ -51,7 +51,7 @@ person-service records). A worker created by HR starts `onboarding`; the
 function makes each one `active`:
 
 ```sh
-API=localhost:5150/api
+API=localhost:1241/api
 ORG="organization:$(uuidgen | tr A-Z a-z)"
 hire() {  # hire <worker number> -> prints the worker's pid
   local pid

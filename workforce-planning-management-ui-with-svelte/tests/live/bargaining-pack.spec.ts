@@ -9,7 +9,7 @@ test.skip(
   "needs a running service: set WPM_LIVE_API=1",
 );
 
-const api = "http://localhost:5150/api";
+const api = "http://localhost:1241/api";
 const org = `organization:${crypto.randomUUID()}`;
 
 test("a pack over twelve people shows counts, never a name; recording a score names the gate to consult", async ({

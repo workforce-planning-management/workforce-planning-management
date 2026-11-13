@@ -3,7 +3,7 @@
 `live.spec.ts` drives the built UI against a running API. It is skipped unless `WPM_LIVE_API=1`.
 
 1. Start Postgres and the API with enforcement off (a demo posture, never for production):
-   `WPM_REQUIRE_AUTH=0 DATABASE_URL=… cargo run -- start` (port 5150).
+   `WPM_REQUIRE_AUTH=0 DATABASE_URL=… cargo run -- start` (port 1241).
 2. Seed it: `cargo run -- task seed`, then add contingent data through the API: at least ten contractors and ten fixed-term
    people in one department, each with a programme funding (`PUT /api/workers/{pid}/funding`), a plan with demand lines of
    more than one basis and a programme, a fixed-term requisition with a duration, and three
@@ -38,5 +38,5 @@ whose gap is withheld). It writes assessment records, so clear them (`DELETE FRO
 `bargaining.spec.ts` (bargaining, consultations, decision gates) needs no seed data: it uses its own organization reference (the scope call is
 stubbed to name it) and creates a body, a unit, facility time, a consultation and a gate, so a rerun adds a new organization's records.
 
-`bargaining-pack.spec.ts` makes twelve workers, a body, a unit and a gate through the API (port 5150, enforcement off) in its own organization, then reads
+`bargaining-pack.spec.ts` makes twelve workers, a body, a unit and a gate through the API (port 1241, enforcement off) in its own organization, then reads
 the pack in the UI and records AI-register feature S1 to see the gate pointer. Clear `ai_register_entries` or seed again to rerun.

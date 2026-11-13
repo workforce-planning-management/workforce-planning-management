@@ -150,29 +150,29 @@ the default and is unaffected either way.
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/workforce_planning_management_development
 cargo run -- db migrate       # create the schema
 cargo run -- task seed        # synthetic demo org (40 workers)
-cargo run -- start            # serve on :5150
-curl "localhost:5150/api/org-chart?organization=<org-urn>" | jq .
+cargo run -- start            # serve on :1241
+curl "localhost:1241/api/org-chart?organization=<org-urn>" | jq .
 ```
 
-Interactive docs: `http://localhost:5150/swagger-ui/` (OpenAPI at
+Interactive docs: `http://localhost:1241/swagger-ui/` (OpenAPI at
 `/api-docs/openapi.json`).
 
 ## Tutorial — a worked tour
 
-All examples assume the server on `:5150` and `jq`. Every endpoint
+All examples assume the server on `:1241` and `jq`. Every endpoint
 also negotiates `Accepts-version: 1.0` (optional today).
 
 **1. Hire someone.**
 
 ```bash
 ORG="organization:$(uuidgen)"
-EMP=$(curl -s localhost:5150/api/workers -H 'content-type: application/json' -d '{
+EMP=$(curl -s localhost:1241/api/workers -H 'content-type: application/json' -d '{
   "person_ref": "person:'$(uuidgen)'", "organization_ref": "'$ORG'",
   "worker_number": "E-1001", "display_name": "Ada Lovelace",
   "employment_type": "permanent", "department": "engineering",
   "job_title": "Engineer", "salary_minor": 3600000,
   "salary_currency": "GBP", "hired_on": "2026-01-05" }' | jq -r .pid)
-curl -s localhost:5150/api/workers/$EMP/status \
+curl -s localhost:1241/api/workers/$EMP/status \
   -H 'content-type: application/json' -d '{"to":"active"}' | jq .status
 ```
 
@@ -180,45 +180,45 @@ curl -s localhost:5150/api/workers/$EMP/status \
 acknowledges it, HR sees only counts:
 
 ```bash
-RULE=$(curl -s localhost:5150/api/wellbeing-entitlements -H 'content-type: application/json' -d '{
+RULE=$(curl -s localhost:1241/api/wellbeing-entitlements -H 'content-type: application/json' -d '{
   "name": "Seasonal flu vaccination", "kind": "health",
   "description": "Free NHS flu jab for frontline staff.",
   "departments": ["engineering"], "doses": 2 }' | jq -r .pid)
-curl -s localhost:5150/api/workers/$EMP/wellbeing-prompts | jq '.prompts[].name'
-curl -s localhost:5150/api/workers/$EMP/wellbeing-acknowledgements \
+curl -s localhost:1241/api/workers/$EMP/wellbeing-prompts | jq '.prompts[].name'
+curl -s localhost:1241/api/workers/$EMP/wellbeing-acknowledgements \
   -H 'content-type: application/json' \
   -d '{"entitlement_pid":"'$RULE'","response":"booked"}' | jq .response
-curl -s localhost:5150/api/wellbeing/uptake | jq '.entitlements[0].uptake_rate'
+curl -s localhost:1241/api/wellbeing/uptake | jq '.entitlements[0].uptake_rate'
 ```
 
 **3. A 360°.** Draft → nominate 3+ raters → collect (raters are
 notified) → respond → share → the group-floored report:
 
 ```bash
-A=$(curl -s localhost:5150/api/workers/$EMP/appraisals \
+A=$(curl -s localhost:1241/api/workers/$EMP/appraisals \
   -H 'content-type: application/json' \
   -d '{"competencies":["communication","delivery"]}' | jq -r .pid)
 # … nominate manager/peer raters (POST /api/appraisals/$A/nominations),
 # move to collecting, then each rater:
 #   POST /api/appraisals/$A/responses {"rater_pid":…,"scores":{…}}
 # and their own pending list is GET /api/workers/{pid}/appraisal-requests
-curl -s localhost:5150/api/appraisals/$A | jq '.nominations[] | {display_name, group, responded}'
+curl -s localhost:1241/api/appraisals/$A | jq '.nominations[] | {display_name, group, responded}'
 ```
 
 **4. Subject rights.** Everything WPM holds, in one document, with
 its exclusions named:
 
 ```bash
-curl -s localhost:5150/api/workers/$EMP/subject-access | jq 'keys, .exclusions'
-curl -s localhost:5150/api/retention | jq '{horizon_days, expired_consent_candidates}'
+curl -s localhost:1241/api/workers/$EMP/subject-access | jq 'keys, .exclusions'
+curl -s localhost:1241/api/retention | jq '{horizon_days, expired_consent_candidates}'
 ```
 
 **5. Guardrails.** Advisory only — nothing is refused:
 
 ```bash
-curl -s "localhost:5150/api/workforce/working-time?department=engineering" \
+curl -s "localhost:1241/api/workforce/working-time?department=engineering" \
   | jq '{workers_checked, flagged: [.flagged[].display_name]}'
-curl -s localhost:5150/api/ergonomics/issues | jq .by_department
+curl -s localhost:1241/api/ergonomics/issues | jq .by_department
 ```
 
 _(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers hired as in step 1.)_
@@ -227,33 +227,33 @@ _(Steps 6–8 assume `$OTHER` and `$SUCCESSOR` are the pids of two more workers 
 whoever is on approved leave, and says so when nobody can:
 
 ```bash
-ROTA=$(curl -s localhost:5150/api/rotas -H 'content-type: application/json' -d '{
+ROTA=$(curl -s localhost:1241/api/rotas -H 'content-type: application/json' -d '{
   "organization_ref": "'$ORG'", "name": "Platform on-call", "period_days": 7,
   "starts_on": "2026-10-05", "members": ["'$EMP'", "'$OTHER'"] }' | jq -r .pid)
-curl -s localhost:5150/api/rotas/$ROTA/on-call | jq '{name, source}'
-curl -s "localhost:5150/api/rotas/$ROTA" | jq '.runs[] | {from, to, worker_name, source}'
-curl -s "localhost:5150/api/workers/$EMP/cover" | jq .covered_by_name   # null = nobody
+curl -s localhost:1241/api/rotas/$ROTA/on-call | jq '{name, source}'
+curl -s "localhost:1241/api/rotas/$ROTA" | jq '.runs[] | {from, to, worker_name, source}'
+curl -s "localhost:1241/api/workers/$EMP/cover" | jq .covered_by_name   # null = nobody
 ```
 
 **7. Skill gaps and a training plan.** Unknown skills have no number, and the
 plan says what its hours rest on:
 
 ```bash
-curl -s localhost:5150/api/workers/$EMP/skill-gaps | jq '.gaps[] | {skill, shortfall, priority, sources}'
-curl -s "localhost:5150/api/workers/$EMP/training-plan?weekly_hours=4" \
+curl -s localhost:1241/api/workers/$EMP/skill-gaps | jq '.gaps[] | {skill, shortfall, priority, sources}'
+curl -s "localhost:1241/api/workers/$EMP/training-plan?weekly_hours=4" \
   | jq '{total_hours, finish_on, assess_first: [.assess_first[].skill]}'
-curl -s localhost:5150/api/workforce-intelligence/skill-gaps | jq '.skills[0]'   # counts only
+curl -s localhost:1241/api/workforce-intelligence/skill-gaps | jq '.skills[0]'   # counts only
 ```
 
 **8. A leaver's last day.** Open the record, see what they hold, hand it over:
 
 ```bash
-MV=$(curl -s localhost:5150/api/workers/$EMP/movements -H 'content-type: application/json' -d '{
+MV=$(curl -s localhost:1241/api/workers/$EMP/movements -H 'content-type: application/json' -d '{
   "kind": "leaver", "effective_on": "2026-11-30", "reason": "resignation" }' | jq -r .pid)
-curl -s localhost:5150/api/movements/$MV/handover | jq '{remaining, counts}'
-curl -s localhost:5150/api/movements/$MV/handover/all -H 'content-type: application/json' \
+curl -s localhost:1241/api/movements/$MV/handover | jq '{remaining, counts}'
+curl -s localhost:1241/api/movements/$MV/handover/all -H 'content-type: application/json' \
   -d '{"to_worker_pid":"'$SUCCESSOR'"}' | jq .       # access is revoked, not handed over
-curl -s localhost:5150/api/movements/$MV/handover/actions | jq '.[] | {kind, action, to_worker_name}'
+curl -s localhost:1241/api/movements/$MV/handover/actions | jq '.[] | {kind, action, to_worker_name}'
 ```
 
 ## Auth activation (production)

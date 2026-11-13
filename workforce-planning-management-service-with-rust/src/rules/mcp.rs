@@ -851,8 +851,8 @@ mod tests {
             "https://wpm.example/.well-known/oauth-protected-resource/mcp"
         );
         assert_eq!(
-            metadata_url("http://localhost:5150/mcp").unwrap(),
-            "http://localhost:5150/.well-known/oauth-protected-resource/mcp"
+            metadata_url("http://localhost:1241/mcp").unwrap(),
+            "http://localhost:1241/.well-known/oauth-protected-resource/mcp"
         );
         for bad in [
             "http://wpm.example/mcp",

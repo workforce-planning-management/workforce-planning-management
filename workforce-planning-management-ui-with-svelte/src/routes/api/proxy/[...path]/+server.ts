@@ -8,7 +8,7 @@
 // started with `WPM_REQUIRE_AUTH=0` (a demo) accepts the unauthenticated
 // forward, and then the exchange is simply not needed.
 //
-// `WPM_API_URL` is the service ROOT (`http://localhost:5150`); the service
+// `WPM_API_URL` is the service ROOT (`http://localhost:1241`); the service
 // serves its API under `/api/`, so `/api/proxy/workers` goes to `<root>/api/workers`.
 
 import type { RequestHandler } from "./$types";

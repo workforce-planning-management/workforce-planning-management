@@ -36,7 +36,7 @@ WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 Mewn ail derfynell, o wraidd yr ystorfa:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:5150
+python3 scripts/demo-data.py http://localhost:1241
 ```
 
 ## Cam 4: Cychwyn y rhaglen
@@ -44,7 +44,7 @@ python3 scripts/demo-data.py http://localhost:5150
 ```sh
 cd workforce-planning-management-ui-with-svelte
 pnpm install
-WPM_DEMO_API_URL=http://localhost:5150 pnpm dev
+WPM_DEMO_API_URL=http://localhost:1241 pnpm dev
 ```
 
 ## Cam 5: Dilyn y daith

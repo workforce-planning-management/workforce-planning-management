@@ -36,7 +36,7 @@ WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 In a second terminal, from the repository root:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:5150
+python3 scripts/demo-data.py http://localhost:1241
 ```
 
 ## Step 4: Start the application
@@ -44,7 +44,7 @@ python3 scripts/demo-data.py http://localhost:5150
 ```sh
 cd workforce-planning-management-ui-with-svelte
 pnpm install
-WPM_DEMO_API_URL=http://localhost:5150 pnpm dev
+WPM_DEMO_API_URL=http://localhost:1241 pnpm dev
 ```
 
 ## Step 5: Follow the tour

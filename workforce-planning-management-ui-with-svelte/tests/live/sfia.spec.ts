@@ -11,7 +11,7 @@ test.skip(
   "needs a running service: set WPM_LIVE_API=1",
 );
 
-const api = "http://localhost:5150/api";
+const api = "http://localhost:1241/api";
 const org = `organization:${crypto.randomUUID()}`;
 const tag = crypto.randomUUID().slice(0, 6);
 const shots = process.env.PAGE_SHOTS;

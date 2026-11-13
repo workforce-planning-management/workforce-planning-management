@@ -90,7 +90,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         );
         std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES);
         std::env::set_var("WPM_EQUALITY_FLOOR", "5");
-        std::env::set_var("WPM_CREDENTIAL_ISSUER", "http://localhost:5150");
+        std::env::set_var("WPM_CREDENTIAL_ISSUER", "http://localhost:1241");
         std::env::set_var(
             "WPM_CREDENTIAL_SIGNING_KEY",
             "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
@@ -492,14 +492,14 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.get("/.well-known/oauth-protected-resource").await.status_code(), 404, "not configured: not described");
         // OAuth protected-resource metadata (RFC 9728, WPM-T304): public once configured, and the 401 on /mcp points at it.
         unsafe {
-            std::env::set_var("WPM_MCP_RESOURCE", "http://localhost:5150/mcp");
+            std::env::set_var("WPM_MCP_RESOURCE", "http://localhost:1241/mcp");
             std::env::set_var("WPM_MCP_AUTHORIZATION_SERVERS", "https://login.example/realms/wpm, https://other.example");
         }
         for path in ["/.well-known/oauth-protected-resource/mcp", "/.well-known/oauth-protected-resource"] {
             let meta = if path.ends_with("/mcp") { request.get("/.well-known/oauth-protected-resource/mcp").await } else { request.get("/.well-known/oauth-protected-resource").await };
             assert_eq!(meta.status_code(), 200, "{path} is public: {}", meta.text());
             let doc: Value = meta.json();
-            assert_eq!(doc["resource"], "http://localhost:5150/mcp");
+            assert_eq!(doc["resource"], "http://localhost:1241/mcp");
             assert_eq!(doc["authorization_servers"], json!(["https://login.example/realms/wpm", "https://other.example"]));
             assert_eq!(doc["bearer_methods_supported"], json!(["header"]));
         }
@@ -512,7 +512,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(pointed.status_code(), 401);
         assert_eq!(
             pointed.header("www-authenticate").to_str().unwrap(),
-            "Bearer resource_metadata=\"http://localhost:5150/.well-known/oauth-protected-resource/mcp\""
+            "Bearer resource_metadata=\"http://localhost:1241/.well-known/oauth-protected-resource/mcp\""
         );
         let other = request.get("/api/workers").await;
         assert_eq!(other.status_code(), 401);

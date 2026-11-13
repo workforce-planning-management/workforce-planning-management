@@ -128,7 +128,7 @@ describe("the proxy handler", () => {
       locals: {},
       fetch: fetchStub,
     } as unknown as Parameters<typeof GET>[0]);
-    expect(target).toBe("http://localhost:5150/api/workers?status=active");
+    expect(target).toBe("http://localhost:1241/api/workers?status=active");
   });
 
   async function forwarded(key: string | null) {

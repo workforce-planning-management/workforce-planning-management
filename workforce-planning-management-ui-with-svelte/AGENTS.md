@@ -96,7 +96,7 @@ masked fields render as first-class masked states, never errors or fake zeros.
 
 ```bash
 pnpm install
-pnpm dev                    # expects the API sibling on :5150
+pnpm dev                    # expects the API sibling on :1241
 pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm lint                   # eslint, then prettier --check
 pnpm test                   # vitest (313 in 37 files, 2026-10-30)

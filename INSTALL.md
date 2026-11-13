@@ -10,10 +10,10 @@ start it with `WPM_REQUIRE_AUTH=0` (and, since a tour clicks quickly, `WPM_RATE_
 fill it from the repository root:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:5150
+python3 scripts/demo-data.py http://localhost:1241
 ```
 
-Start the UI with `WPM_DEMO_API_URL=http://localhost:5150`. On the sign-in page, sign in as
+Start the UI with `WPM_DEMO_API_URL=http://localhost:1241`. On the sign-in page, sign in as
 **example@example.com** (no email is sent): you land on `/demo`, a tour of every page, and a banner on each
 page says the data is fictitious and offers Previous and Next. With `WPM_DEMO_API_URL` unset there is no
 demo and that address signs in like any other. Never point `WPM_DEMO_API_URL` at a service that holds real
@@ -38,7 +38,7 @@ data: a demo session reaches only that service, with no authentication.
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate    # apply migrations
 cargo run -- task seed     # synthetic orgs: ~40 employees paid in GBP, 3 in JPY
-WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 5150; sign-in enforcement is on by default,
+WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 1241; sign-in enforcement is on by default,
                                          # so local development without an identity service opts out
 ```
 
@@ -83,7 +83,7 @@ podman compose -f compose.test.yaml down
 ```sh
 cd workforce-planning-management-ui-with-svelte
 cp .env.example .env       # WPM_API_URL / AUTH_API_URL — both default
-                            # to http://localhost:5150
+                            # to http://localhost:1241
 pnpm install
 pnpm dev                   # expects the service running (stub mode is fine)
 ```
@@ -121,7 +121,7 @@ From a fresh clone, with no sibling repositories:
 
 ```sh
 podman compose up --build
-curl http://localhost:5150/_health/live
+curl http://localhost:1241/_health/live
 ```
 
 This starts PostgreSQL, Redis, a demo mail server (Stalwart: a catch-all for `wpm.test` that delivers nothing

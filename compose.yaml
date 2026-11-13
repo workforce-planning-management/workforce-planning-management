@@ -1,8 +1,8 @@
 # A demo of the service from a fresh clone, with no sibling repositories:
 #
 #   podman compose up --build
-#   curl http://localhost:5150/_health/live
-#   open http://localhost:5150/swagger-ui/
+#   curl http://localhost:1241/_health/live
+#   open http://localhost:1241/swagger-ui/
 #
 # DEMO ONLY. The demo has no identity service, so it turns sign-in enforcement
 # OFF with an explicit `WPM_REQUIRE_AUTH=0`: anyone who can reach the port can
@@ -78,4 +78,4 @@ services:
       WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
       WPM_CORS_ORIGIN: http://localhost:5173
     ports:
-      - "127.0.0.1:5150:5150"
+      - "127.0.0.1:1241:1241"

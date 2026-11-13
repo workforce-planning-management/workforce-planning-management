@@ -63,7 +63,7 @@ not a statement that your deployment is under that regime.
 | `WPM_TOKEN_ISSUER`, `WPM_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
 | `WPM_KEYCLOAK_ISSUER`, `WPM_KEYCLOAK_AUDIENCE` | with the OIDC backend | none | Expected `iss` and `aud` |
 | `WPM_ABAC_POLICY_FILE` or `WPM_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
-| `PORT`, `HOST` | no | `5150`, `http://localhost` | Listen port; the host used in links |
+| `PORT`, `HOST` | no | `1241`, `http://localhost` | Listen port; the host used in links |
 | `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `5000`, `600000` | Pool sizes, and timeouts in milliseconds |
 | `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DB_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
 | `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
