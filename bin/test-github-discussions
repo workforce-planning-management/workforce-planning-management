@@ -10,36 +10,42 @@ cd "$REPO_ROOT"
 echo "Testing GitHub Discussions..."
 echo ""
 
-# Define the expected files
+# Each post: the title on line 1, a blank line, then the body, which starts
+# with the category it belongs to (see the github-discussion-first-post-for-*
+# skills).
 FILES=(
-    "locales/en-us/communications/github-discussions/announcements.txt:Announcements: Updates from maintainers"
-    "locales/en-us/communications/github-discussions/general.txt:General: Chat about anything and everything here"
-    "locales/en-us/communications/github-discussions/ideas.txt:Ideas: Share ideas for new features"
-    "locales/en-us/communications/github-discussions/polls.txt:Polls: Take a vote from the community"
-    "locales/en-us/communications/github-discussions/qa.txt:Q&A: Ask the community for help"
-    "locales/en-us/communications/github-discussions/show-and-tell.txt:Show and tell: Show off something you've made"
+    "locales/en-us/communications/github-discussions/announcements.txt:Announcements"
+    "locales/en-us/communications/github-discussions/general.txt:General"
+    "locales/en-us/communications/github-discussions/ideas.txt:Ideas"
+    "locales/en-us/communications/github-discussions/polls.txt:Polls"
+    "locales/en-us/communications/github-discussions/qa.txt:Q&A"
+    "locales/en-us/communications/github-discussions/show-and-tell.txt:Show and tell"
 )
 
-# Test 1: Verify each file exists and has correct content
+# Test 1: Verify each file exists and has the post shape
 echo "=== Test 1: Verifying files ==="
-for file_content in "${FILES[@]}"; do
-    file="${file_content%%:*}"
-    expected="${file_content#*:}"
-    
+for file_category in "${FILES[@]}"; do
+    file="${file_category%%:*}"
+    category="${file_category#*:}"
+
     if [ ! -f "$file" ]; then
         echo "FAIL: File does not exist: $file"
         exit 1
     fi
-    
-    actual=$(cat "$file")
-    if [ "$actual" != "$expected" ]; then
-        echo "FAIL: File $file has incorrect content"
-        echo "  Expected: $expected"
-        echo "  Actual: $actual"
+
+    title=$(sed -n 1p "$file")
+    blank=$(sed -n 2p "$file")
+    category_line=$(sed -n 3p "$file")
+    if [ -z "$title" ] || [ -n "$blank" ] || [ "$category_line" != "Category: $category" ]; then
+        echo "FAIL: File $file is not a title, a blank line, then \"Category: $category\""
         exit 1
     fi
-    
-    echo "PASS: $file exists with correct content"
+    if [ "$(wc -l < "$file")" -lt 5 ]; then
+        echo "FAIL: File $file has no body"
+        exit 1
+    fi
+
+    echo "PASS: $file is the $category post: $title"
 done
 
 echo ""

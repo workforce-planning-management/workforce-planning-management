@@ -1,1 +1,18 @@
-General: Chat about anything and everything here
+Say hello and tell us what brought you to WPM
+
+Category: General
+
+Welcome to Discussions for Workforce Planning Management (WPM). General is for conversation that fits nowhere else: introductions, use cases, and opinions about the project.
+
+I'm Joel, the maintainer. I started WPM to show how an HR platform can handle the whole employee lifecycle, from hire to retire, with privacy built in: what must not be stored gets no column, and an unknown is never shown as a zero. It is demo software with synthetic data only, and the path to production page says how far it is from real use: https://workforce-planning-management.github.io/en-us/path-to-production/
+
+**One question for you:** what brought you to WPM? A sentence or two is plenty, whether you work in HR, build software, or are just curious.
+
+## Where other topics belong
+
+- **Questions:** Q&A.
+- **Suggestions:** Ideas.
+- **Something you built or tried:** Show and tell.
+- **Bugs:** the issue tracker, https://github.com/workforce-planning-management/workforce-planning-management/issues
+
+Please never paste real personal data. Thank you for stopping by. I'll reply to the first comments.

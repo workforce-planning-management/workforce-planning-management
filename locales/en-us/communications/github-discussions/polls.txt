@@ -1,1 +1,21 @@
-Polls: Take a vote from the community
+Which path-to-production item should WPM work on next?
+
+Category: Polls
+
+Description:
+
+Workforce Planning Management (WPM) is demo software and not yet ready for production use. The path to production page lists what stands between WPM and real use, with the maintainer's readiness estimate for each item: https://workforce-planning-management.github.io/en-us/path-to-production/
+
+This poll asks which of four low-scoring items matters most to you. The result is advisory: it helps the maintainer choose what to do next, but it does not commit the project to an order or a date. The poll has no closing date.
+
+Please say why in a comment. Votes show what matters, and comments show why.
+
+Poll question: Which item should WPM work on next?
+
+Options:
+
+1. An independent penetration test (estimated 0% ready)
+2. An independent accessibility audit with people who use assistive technology (estimated 0% ready)
+3. Statutory calculations for a real workplace, written and checked by a qualified person (estimated 10% ready)
+4. A professional review of the translations (estimated 20% ready)
+5. Something else (explain in a comment)

@@ -1,1 +1,37 @@
-Ideas: Share ideas for new features
+How to suggest an idea for WPM
+
+Category: Ideas
+
+Ideas is where you propose a change or a feature for Workforce Planning Management (WPM) before anyone writes code. A good idea starts with the problem it solves, because a solution without a problem is hard to judge.
+
+## How to suggest an idea
+
+Start a new discussion in Ideas, one idea per discussion, and copy these headings:
+
+### Problem
+
+Who is affected, and when? What can't they do today, or what goes wrong?
+
+### Proposal
+
+What would change, in plain terms? Use a short list if it has parts.
+
+### Alternatives
+
+What else could solve it, including a workaround today or doing nothing?
+
+### Costs
+
+What would it cost in complexity, compatibility, maintenance, or privacy? WPM has firm privacy rules: if something must not be stored, it gets no column, and if it must not be disclosed, it gets no endpoint. An idea that needs one of those will be hard to accept.
+
+### Open questions
+
+What would you like readers to tell you?
+
+## What happens next
+
+The maintainer reads every idea. Replying or upvoting helps show which ideas solve a real problem, but it does not commit the project to building anything. An idea that is taken up becomes a requirement, a decision, and a task in the spec (https://github.com/workforce-planning-management/workforce-planning-management/blob/main/spec/tasks.md), then code and tests. Many planned changes are already listed there, so it is worth a quick look before you post.
+
+Bugs belong in the issue tracker, https://github.com/workforce-planning-management/workforce-planning-management/issues, and questions belong in Q&A.
+
+**Your turn:** what problem would you most like WPM to solve? Start a discussion with the headings above.

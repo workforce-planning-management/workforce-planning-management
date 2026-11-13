@@ -1,1 +1,49 @@
-Q&A: Ask the community for help
+How to ask a question about WPM
+
+Category: Q&A
+
+Q&A is for questions about Workforce Planning Management (WPM) that have an answer: how to install it, run the demo, configure sign-in, or read the spec. When a reply solves your question, mark it as the answer so the next person can find it.
+
+## Before you ask
+
+- Search Discussions, because your question may already have an answer.
+- Read INSTALL.md for setup and the demo tour: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/INSTALL.md
+- Remember that WPM is demo software with synthetic data only. The path to production page says what it would need for real use: https://workforce-planning-management.github.io/en-us/path-to-production/
+
+## How to ask
+
+Start one discussion per question, with a title that names the problem, such as "Why does the service refuse to start in production?" rather than "Help". Then copy these headings:
+
+### Goal
+
+What are you trying to do, in one sentence?
+
+### What I tried
+
+The steps you took, in order.
+
+### Expected
+
+What you expected to happen.
+
+### Actual
+
+What happened instead. Paste exact error text in a code block, not a screenshot.
+
+### Environment
+
+The WPM version or commit, your operating system, and the versions of Rust, Node, pnpm, PostgreSQL, or Podman involved.
+
+### Minimal example
+
+The smallest set of commands or code that still shows the problem.
+
+## Keep it safe
+
+Remove tokens, keys, and passwords from logs. Never paste real personal data.
+
+## Where else to go
+
+- **A bug, where WPM does something wrong:** the issue tracker, https://github.com/workforce-planning-management/workforce-planning-management/issues
+- **A security vulnerability:** email, as SECURITY.md says, not a public post: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/SECURITY.md
+- **A suggestion:** Ideas.

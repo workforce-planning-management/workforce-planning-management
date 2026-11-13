@@ -1,1 +1,32 @@
-Show and tell: Show off something you've made
+Show what you built or tried with WPM
+
+Category: Show and tell
+
+Show and tell is for sharing what you have made with or around Workforce Planning Management (WPM): a deployment experiment, an integration, a tutorial, a translation, or a screenshot of the demo. Here is a template, then an example of my own.
+
+## Template
+
+- **What it is**, in one sentence, with a link.
+- **Why you made it**, in two or three sentences.
+- **Something to look at:** a screenshot, a short code sample, or a demo link.
+- **How to try it**, in a few steps.
+- **One thing that was hard or surprising.**
+- **What you'd like back:** feedback, help, or other people's examples.
+
+## Example: the path to production page
+
+**What it is.** A page on the WPM site that says what production use would mean and lists what stands between WPM and that use, each with a readiness estimate: https://workforce-planning-management.github.io/en-us/path-to-production/
+
+**Why I made it.** The project kept saying "not a production system" without saying what was missing. Now each item says what its estimate rests on and what remains, so a reader can judge for themselves.
+
+**Something to look at.** Each item has a slider, built with the Lily design system, set to my estimate. You can move it to try your own view; nothing is saved.
+
+**How to try it.** Open the page, pick your language from the menu, and move a slider with the mouse or the arrow keys.
+
+**What was surprising.** No item reaches 100%, and the estimates are deliberately not averaged: one low item is enough to keep WPM out of production use.
+
+**What I'd like back.** Tell me which estimate you think is wrong, and why.
+
+## Your turn
+
+Start a discussion in Show and tell using the template. If you want to try WPM first, INSTALL.md shows how to run the demo with fictitious data: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/INSTALL.md

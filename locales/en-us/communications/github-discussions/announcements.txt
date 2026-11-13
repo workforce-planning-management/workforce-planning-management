@@ -1,1 +1,31 @@
-Announcements: Updates from maintainers
+Welcome to Workforce Planning Management Discussions
+
+Category: Announcements
+
+Discussions are now open for Workforce Planning Management (WPM), an open-source HR platform covering the employee lifecycle from hire to retire. This is the place to ask questions, suggest ideas, and share what you build, without having to open an issue.
+
+WPM is demo software and not yet ready for production use. It holds synthetic data only. The path to production page says what production use would need and how ready each part is: https://workforce-planning-management.github.io/en-us/path-to-production/
+
+## What this means for you
+
+- You can ask a question and get an answer that the next person can find.
+- You can suggest a change and talk it through before anyone writes code.
+- You can see news from the maintainer here, in Announcements.
+
+## Where to go for what
+
+- **Questions:** Q&A.
+- **Suggestions and features:** Ideas.
+- **Something you built or tried with WPM:** Show and tell.
+- **Votes on a choice:** Polls.
+- **Anything else, including introductions:** General.
+- **Bugs:** the issue tracker, https://github.com/workforce-planning-management/workforce-planning-management/issues
+- **Security vulnerabilities:** email, as SECURITY.md says, not a public post: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/SECURITY.md
+
+## Community expectations
+
+Be kind, and never paste real personal data: WPM holds synthetic data only. The contributing guide explains how changes land: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/CONTRIBUTING.md
+
+## Next step
+
+Say hello in General and tell us what brought you to WPM. Only the maintainer can start a post in Announcements, but anyone can reply here or react.
