@@ -17,7 +17,7 @@ categories = ["development-tools", "rust-patterns"]
 include = ["src/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.11", features = ["cursor-pagination", "problem", "ratelimit", "sqlx"] }
+axa = { version = "0.12.1", features = ["cursor-pagination", "problem", "ratelimit", "postgres-sqlx"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —
@@ -45,7 +45,7 @@ cron = { version = "0.17" }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
-tokio = { version = "1.54", default-features = false, features = [
+tokio = { version = "1.54.1", default-features = false, features = [
   "macros",
   "process",
   "rt-multi-thread",
@@ -69,13 +69,13 @@ sqlx = { version = "0.9", default-features = false, features = [
   "tls-rustls-ring-webpki",
   "uuid",
 ] }
-chrono = { version = "0.4" }
-uuid = { version = "1.29", features = ["v4", "serde"] }
+chrono = { version = "0.4.45" }
+uuid = { version = "1.29.2", features = ["v4", "serde"] }
 mimalloc = { version = "0.1.52" }
-prometheus = { version = "0.14" }
+prometheus = { version = "0.14.0" }
 # Upstream display-name lookups (`http` client mode only; stub is the
 # default). Same minimal reqwest configuration as the verifier's fetch.
-reqwest = { version = "0.13", default-features = false, features = [
+reqwest = { version = "0.13.5", default-features = false, features = [
   "rustls",
   "json",
 ] }
@@ -119,11 +119,11 @@ required-features = []
 
 [dev-dependencies]
 axa = { workspace = true }
-axa-test = { version = "0.2" }
+axa-test = { version = "0.3.0" }
 # Name `axum_test::TestResponse` in shared request-test helpers (the same
 # version `axa-test` uses).
 axum-test = { version = "21.1.0" }
-tokio = { version = "1.54", default-features = false, features = [
+tokio = { version = "1.54.1", default-features = false, features = [
   "rt-multi-thread",
   "macros",
   "net",
@@ -138,7 +138,7 @@ rusty_paseto = { version = "0.10", default-features = false, features = ["v4_pub
 # Real Keycloak in a container for `tests/keycloak.rs` (Podman via DOCKER_HOST).
 testcontainers = { version = "0.28" }
 # The `keycloak` and `oidc_entra` tests build requests with `.query` and `.form`; the service itself needs neither feature.
-reqwest = { version = "0.13", default-features = false, features = ["query", "form"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["query", "form"] }
 
 # Needs the `keycloak` backend (mutually exclusive with the default `paseto`).
 [[test]]

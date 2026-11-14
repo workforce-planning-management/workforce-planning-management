@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.12 (WPM-T489)
+
+`axa` 0.11.0 to 0.12.1, with `axa-test` 0.3.0. For a service on PostgreSQL the upgrade is renaming: the `sqlx` feature is
+`postgres-sqlx`, and its module is `axa::postgres_sqlx`. Nothing a client or an operator sees changes.
+
 ### Changed — the service listens on port 1241, not 5150
 
 **An operator must act:** the default `PORT` and the production port are `1241`, and so are the container's `EXPOSE`, `compose.yaml`

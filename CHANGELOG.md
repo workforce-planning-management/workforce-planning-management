@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the service is on `axa` 0.12 (WPM-T489, 2026-11-14)
+
+From 0.11.0 to 0.12.1, with `axa-test` 0.3.0: renamed features and modules, and nothing a client or an operator sees changes. See
+the service's `CHANGELOG.md`.
+
 ### Changed — the API's port is 1241, not 5150 (2026-11-13)
 
 The service, its container and `compose.yaml`, the UI's default API address, CI, the check and demo scripts, and every document

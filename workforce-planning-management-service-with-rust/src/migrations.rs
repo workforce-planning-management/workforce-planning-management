@@ -130,8 +130,8 @@ pub async fn up(pool: &PgPool) -> Result<()> {
 ///
 /// # Errors
 /// A database error.
-pub async fn status(pool: &PgPool) -> Result<Vec<axa::sqlx::MigrationStatus>> {
-    Ok(axa::sqlx::status(pool, &MIGRATOR).await?)
+pub async fn status(pool: &PgPool) -> Result<Vec<axa::postgres_sqlx::MigrationStatus>> {
+    Ok(axa::postgres_sqlx::status(pool, &MIGRATOR).await?)
 }
 
 /// Drop every table and enum type, then migrate from nothing: a test's empty schema. **This destroys all data.**
@@ -139,7 +139,7 @@ pub async fn status(pool: &PgPool) -> Result<Vec<axa::sqlx::MigrationStatus>> {
 /// # Errors
 /// A database error or a failed migration.
 pub async fn fresh(pool: &PgPool) -> Result<()> {
-    axa::sqlx::dangerously_recreate(pool, &MIGRATOR)
+    axa::postgres_sqlx::dangerously_recreate(pool, &MIGRATOR)
         .await
         .map_err(|e| Error::string(&e.to_string()))
 }
