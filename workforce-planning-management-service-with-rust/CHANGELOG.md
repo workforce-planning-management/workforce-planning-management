@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.13 (WPM-T490)
+
+`axa` 0.12.1 to 0.13.0, with `axa-test` 0.4.0. No code changes. **An operator may need to act:** a browser that writes to the
+service from another site is refused with `403`, code `cross_site_write_refused` (or `origin_mismatch` with no `sec-fetch-site`),
+unless its origin is in `CORS_ALLOWED_ORIGINS`. This is `/api` only: `/mcp` is outside `axa`'s stack and keeps its own
+`WPM_MCP_ALLOWED_ORIGINS`. The UI is unaffected: its server proxy sends neither header. **A client may notice:** a compressed request body (`gzip`, `deflate`, `br`, `zstd`) is decoded,
+and the body limit counts the decoded bytes; a JSON body with a value of the wrong type gets `errors: [{"pointer": …}]` in its
+`422`; `DB_URL_FILE` may hold the database URL, and setting it beside `DB_URL` or `DATABASE_URL` stops the boot.
+
 ### Changed — axa 0.12 (WPM-T489)
 
 `axa` 0.11.0 to 0.12.1, with `axa-test` 0.3.0. For a service on PostgreSQL the upgrade is renaming: the `sqlx` feature is

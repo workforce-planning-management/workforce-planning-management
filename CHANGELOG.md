@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the service is on `axa` 0.13 (WPM-T490, 2026-11-14)
+
+From 0.12.1 to 0.13.0, with `axa-test` 0.4.0. **An operator may need to act:** a browser on another site that writes to the
+service is refused unless its origin is in `CORS_ALLOWED_ORIGINS`. The UI, which calls the service through its own server, is
+unaffected. See the service's `CHANGELOG.md`.
+
 ### Changed — the service is on `axa` 0.12 (WPM-T489, 2026-11-14)
 
 From 0.11.0 to 0.12.1, with `axa-test` 0.3.0: renamed features and modules, and nothing a client or an operator sees changes. See
