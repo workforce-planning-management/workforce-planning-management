@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Playwright 1.65 (WPM-T491)
+
+`@playwright/test` 1.64.1 to 1.65.1, for the browser tests only.
+
 ### Added — my mandatory training and certifications (WPM-R245, WPM-T487)
 
 `/me/required`, first on `/me`: training that applies and certifications the role asks for, most urgent first, with expiry days and

@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Playwright 1.65 (WPM-T491, 2026-11-15)
+
+`@playwright/test` 1.64.1 to 1.65.1 in the UI and the site, for their browser tests only. Nothing a user sees changes.
+
 ### Changed — the service is on `axa` 0.13 (WPM-T490, 2026-11-14)
 
 From 0.12.1 to 0.13.0, with `axa-test` 0.4.0. **An operator may need to act:** a browser on another site that writes to the
