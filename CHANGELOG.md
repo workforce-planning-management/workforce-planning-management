@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the site and the UI ask for the same TypeScript (WPM-T501, 2026-11-15)
+
+The site asked for `typescript` `6.0.3` exactly and the UI for `^6.0.3`; both now ask for `^6.0.3`, and `syncpack lint` is
+clean. The installed version is still 6.0.3.
+
 ### Fixed — error text is red again (WPM-T500, 2026-11-15)
 
 Since WPM-T497 an error in the UI read almost as body text. It is red again in light and dark, and still holds WCAG contrast.
