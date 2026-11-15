@@ -4,7 +4,7 @@
 name = "workforce-planning-management-matcher"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.97"
+rust-version = "1.98"
 authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
 description = "Worker record matcher for workforce planning: deterministic and probabilistic matching of names, dates of birth, emails, phones and employer worker numbers, with nickname and diacritic handling and an explainable per-field breakdown. Pure, stateless, no database, no clock."
 license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
@@ -19,11 +19,11 @@ name = "workforce_planning_management_matcher"
 path = "src/lib.rs"
 
 [dependencies]
-chrono = { version = "0.4", default-features = false, features = ["serde"] }
+chrono = { version = "0.4.45", default-features = false, features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 strsim = "0.11"
 thiserror = "2.0"
-unicode-normalization = "0.1"
+unicode-normalization = "0.1.26"
 
 [dev-dependencies]
 serde_json = "1.0"

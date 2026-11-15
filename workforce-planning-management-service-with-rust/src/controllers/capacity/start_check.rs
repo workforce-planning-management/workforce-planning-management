@@ -98,8 +98,7 @@ pub(super) async fn run_start_check(
     let active = constraint
         .as_ref()
         .and_then(|key| capacity.demand.get(key))
-        .map(|d| rules::programmes_drawing(d))
-        .unwrap_or_default();
+        .map_or_default(|d| rules::programmes_drawing(d));
     let candidate = rules::Candidate {
         programme: payload.programme_ref.clone(),
         lines,

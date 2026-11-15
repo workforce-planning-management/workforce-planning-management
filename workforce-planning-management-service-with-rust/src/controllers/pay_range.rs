@@ -143,7 +143,7 @@ async fn pay_range(
                 salary_minor: w
                     .salary_minor
                     .filter(|_| currency.is_some() && w.salary_currency == currency),
-                band: position.map(|p| p.band.clone()).unwrap_or_default(),
+                band: position.map_or_default(|p| p.band.clone()),
                 range: band.filter(|_| comparable).and_then(|b| {
                     Some(Range {
                         min: b.steps.first()?.annual_minor,

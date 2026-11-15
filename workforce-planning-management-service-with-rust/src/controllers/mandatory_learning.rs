@@ -37,12 +37,11 @@ fn strings(value: &Value, key: &str) -> Vec<String> {
     value
         .get(key)
         .and_then(Value::as_array)
-        .map(|a| {
+        .map_or_default(|a| {
             a.iter()
                 .filter_map(|v| v.as_str().map(ToString::to_string))
                 .collect()
         })
-        .unwrap_or_default()
 }
 
 fn audience_of(value: &Value) -> rules::Audience {

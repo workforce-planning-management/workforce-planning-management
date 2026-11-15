@@ -89,14 +89,11 @@ fn requirement_json(r: &health_requirements::Model) -> serde_json::Value {
 }
 
 fn departments_of(r: &health_requirements::Model) -> Vec<String> {
-    r.departments
-        .as_array()
-        .map(|a| {
-            a.iter()
-                .filter_map(|v| v.as_str().map(ToString::to_string))
-                .collect()
-        })
-        .unwrap_or_default()
+    r.departments.as_array().map_or_default(|a| {
+        a.iter()
+            .filter_map(|v| v.as_str().map(ToString::to_string))
+            .collect()
+    })
 }
 
 async fn live_requirements(ctx: &AppContext) -> Result<Vec<health_requirements::Model>> {

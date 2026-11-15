@@ -773,14 +773,11 @@ fn build_org_node(
     let reports = if depth > 32 {
         Vec::new() // corrupt-cycle guard; the write path prevents cycles
     } else {
-        children
-            .get(&Some(node.pid))
-            .map(|kids| {
-                kids.iter()
-                    .map(|k| build_org_node(k, children, depth + 1, as_of))
-                    .collect()
-            })
-            .unwrap_or_default()
+        children.get(&Some(node.pid)).map_or_default(|kids| {
+            kids.iter()
+                .map(|k| build_org_node(k, children, depth + 1, as_of))
+                .collect()
+        })
     };
     OrgNode {
         pid: node.pid.to_string(),
@@ -858,14 +855,11 @@ async fn org_chart(
         children.entry(e.manager_pid).or_default().push(e);
     }
     let as_of = chrono::Utc::now().date_naive();
-    let roots: Vec<OrgNode> = children
-        .get(&None)
-        .map(|top| {
-            top.iter()
-                .map(|n| build_org_node(n, &children, 0, as_of))
-                .collect()
-        })
-        .unwrap_or_default();
+    let roots: Vec<OrgNode> = children.get(&None).map_or_default(|top| {
+        top.iter()
+            .map(|n| build_org_node(n, &children, 0, as_of))
+            .collect()
+    });
     format::json(roots)
 }
 

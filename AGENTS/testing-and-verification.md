@@ -13,7 +13,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo test --test chaos -- --ignored --nocapture` | database faults through a proxy; the seed is printed |
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |
 | Service | `cargo clippy --all-targets -- -D warnings` | clean (pedantic) |
-| Service | `cargo +1.97 check --locked -p workforce-planning-management-migration -p entity-ref` | the MSRV (CI's `msrv` job; the matcher likewise in its own directory) |
+| Service | `cargo +1.98 check --locked -p entity-ref` | the MSRV (CI's `msrv` job; the matcher likewise in its own directory) |
 | UI | `pnpm lint` | ESLint, then Prettier: clean |
 | UI | `pnpm check` | svelte-check: 0 errors, 0 warnings |
 | UI | `pnpm test` | 320 vitest in 38 files |

@@ -87,7 +87,7 @@ pub fn to_csv(lines: &[Line]) -> String {
             field(&line.display_name),
             line.last_day.to_string(),
             field(line.reason_code.as_deref().unwrap_or_default()),
-            line.final_pay_on.map(|d| d.to_string()).unwrap_or_default(),
+            line.final_pay_on.map_or_default(|d| d.to_string()),
             field(line.pay_summary_ref.as_deref().unwrap_or_default()),
             field(&gaps.join(" ")),
         ]));

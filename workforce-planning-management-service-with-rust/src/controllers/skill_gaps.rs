@@ -173,9 +173,8 @@ impl Evidence {
                 });
             }
         }
-        let declared: BTreeMap<Uuid, i32> = mine
-            .map(|m| m.iter().map(|(s, (p, _))| (*s, *p)).collect())
-            .unwrap_or_default();
+        let declared: BTreeMap<Uuid, i32> =
+            mine.map_or_default(|m| m.iter().map(|(s, (p, _))| (*s, *p)).collect());
         rules::merge(&needs, &declared)
     }
 }
@@ -229,8 +228,7 @@ async fn worker_gaps(
     let own: BTreeMap<Uuid, i32> = evidence
         .declared
         .get(&worker.pid)
-        .map(|m| m.iter().map(|(s, (p, _))| (*s, *p)).collect())
-        .unwrap_or_default();
+        .map_or_default(|m| m.iter().map(|(s, (p, _))| (*s, *p)).collect());
     let applied = crosswalk::apply(&mut gaps, &own, &mappings);
     rules::rank(&mut gaps);
     let index = skill_index(&ctx).await?;

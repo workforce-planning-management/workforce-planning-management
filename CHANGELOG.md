@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — Rust 1.100; the MSRV is 1.98 (WPM-T492, 2026-11-15)
+
+The pinned toolchain is 1.100.0. The matcher and `entity-ref` declare 1.98, stable minus two, and CI checks them on it; the
+service still declares 1.99 (WPM-T390). Nothing a user sees changes.
+
 ### Changed — Playwright 1.65 (WPM-T491, 2026-11-15)
 
 `@playwright/test` 1.64.1 to 1.65.1 in the UI and the site, for their browser tests only. Nothing a user sees changes.

@@ -133,6 +133,6 @@ after a restore; and the imports `import_framework`, `import_esco`, `import_sfia
 [testing](../spec/testing.md) for running the suites (`entity-ref` is vendored in `crates/`;
 `authentication-verifier` comes from crates.io).
 
-**MSRV.** The policy is stable minus two (1.97 while stable is 1.99), checked by CI's `msrv` job for the
-migration crate and `entity-ref`. This crate still declares 1.99 because the published matcher 0.1.0
-does; lower it when a matcher declaring 1.97 is published (WPM-T390).
+**MSRV.** The policy is stable minus two (1.98 while stable is 1.100), checked by CI's `msrv` job for the
+matcher and `entity-ref`. This crate still declares 1.99 because the published matcher 0.1.0
+does; lower it when a matcher declaring 1.98 is published (WPM-T390).

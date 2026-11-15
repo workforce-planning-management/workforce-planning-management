@@ -174,8 +174,7 @@ pub async fn import_pcf(
             continue;
         }
         let baselines = std::fs::read_to_string(assessments.join(format!("{slug}.md")))
-            .map(|t| rules::parse_baselines(&t))
-            .unwrap_or_default();
+            .map_or_default(|t| rules::parse_baselines(&t));
         items.push(Item {
             slug,
             parts,

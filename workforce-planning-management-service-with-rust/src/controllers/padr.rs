@@ -212,8 +212,7 @@ async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uui
     for review in &live {
         let offs: Vec<SignOffs> = by_review
             .get(&review.pid)
-            .map(|rows| rows.iter().map(sign_offs).collect())
-            .unwrap_or_default();
+            .map_or_default(|rows| rows.iter().map(sign_offs).collect());
         if let Some(day) = rules::completed_on(&offs) {
             let entry = last.entry(review.worker_pid).or_insert(day);
             *entry = (*entry).max(day);

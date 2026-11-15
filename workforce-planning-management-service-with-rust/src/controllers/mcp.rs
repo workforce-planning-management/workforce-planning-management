@@ -32,14 +32,12 @@ pub struct Mcp {
 }
 
 fn allowed_origins() -> Vec<String> {
-    crate::compat::env_var("WPM_MCP_ALLOWED_ORIGINS")
-        .map(|v| {
-            v.split(',')
-                .map(|o| o.trim().to_string())
-                .filter(|o| !o.is_empty())
-                .collect()
-        })
-        .unwrap_or_default()
+    crate::compat::env_var("WPM_MCP_ALLOWED_ORIGINS").map_or_default(|v| {
+        v.split(',')
+            .map(|o| o.trim().to_string())
+            .filter(|o| !o.is_empty())
+            .collect()
+    })
 }
 
 fn json_status(status: StatusCode, body: &Value) -> Response {

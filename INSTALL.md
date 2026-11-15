@@ -22,8 +22,8 @@ data: a demo session reaches only that service, with no authentication.
 ## Prerequisites
 
 - **Rust** — stable. The service declares `rust-version = "1.99"` in
-  `workforce-planning-management-service-with-rust/Cargo.toml`; the matcher, the migration
-  crate and `entity-ref` declare 1.97, the project's N-2 policy (see WPM-T390 for why the
+  `workforce-planning-management-service-with-rust/Cargo.toml`; the matcher and
+  `entity-ref` declare 1.98, the project's N-2 policy (see WPM-T390 for why the
   service is not there yet).
 - **Podman** (not Docker) — for the service's test database and Redis.
 - **PostgreSQL 18 and Redis 8** — provided by
