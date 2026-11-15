@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the service is on `axa` 0.14 (WPM-T498, 2026-11-15)
+
+From 0.13.0 to 0.14.0, with `axa-test` 0.5.0. No code changes and nothing for an operator to do: the release adds tenant
+support and MySQL settings that WPM does not use. See the service's `CHANGELOG.md`.
+
 ### Changed — light and dark must pass; other themes are the reader's choice (WPM-T497, 2026-11-15)
 
 Axe checks every UI page and the website in the light and the dark theme, and a violation there fails the run. Any other

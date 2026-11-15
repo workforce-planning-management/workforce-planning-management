@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.14 (WPM-T498)
+
+`axa` 0.13.0 to 0.14.0, with `axa-test` 0.5.0 and `axa-cursor-pagination` 0.1.2. No code changes. The release carries a tenant
+on outbox events, jobs, cursors, rate-limit keys and, with `HTTP_LOG_TENANT`, the request span, and adds MySQL session
+settings; WPM uses none of those parts, so nothing changes for an operator.
+
 ### Changed — axa 0.13 (WPM-T490)
 
 `axa` 0.12.1 to 0.13.0, with `axa-test` 0.4.0. No code changes. **An operator may need to act:** a browser that writes to the
