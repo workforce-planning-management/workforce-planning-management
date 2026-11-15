@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — the demo banner is back (WPM-T493, 2026-11-15)
+
+Every demo page again says the data is fictitious, with the tour's Step n of 34, and the demo user is a real demo worker.
+See the UI's `CHANGELOG.md`.
+
 ### Changed — Rust 1.100; the MSRV is 1.98 (WPM-T492, 2026-11-15)
 
 The pinned toolchain is 1.100.0. The matcher and `entity-ref` declare 1.98, stable minus two, and CI checks them on it; the

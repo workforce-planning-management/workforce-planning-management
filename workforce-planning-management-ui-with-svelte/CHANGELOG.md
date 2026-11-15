@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the demo banner is back (WPM-T493)
+
+Every demo page again says the data is fictitious and walks the tour with Step n of 34, Previous and Next, and the demo
+user is again a real worker in the demo data, an administrator of its organizations. Both were removed on 2026-11-12.
+
 ### Changed — Playwright 1.65 (WPM-T491)
 
 `@playwright/test` 1.64.1 to 1.65.1, for the browser tests only.

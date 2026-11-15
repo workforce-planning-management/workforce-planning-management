@@ -28,32 +28,55 @@ export const isDemoSession = (id: string | null | undefined): boolean =>
 
 /** The demo user's memberships, made up from the demo service's own people: the demo has no sign-in at the
  *  authentication service, so nothing there says who the demo user is. They are an administrator of the
- *  organization the demo data belongs to, and the first permanent worker is "me".
- *
- *  To allow the guided tour to run without a database connection, we return static demo memberships
- *  instead of fetching from the API. This means the tour can work even when the demo service
- *  doesn't have a database. */
+ *  organization the demo data belongs to, and the first permanent worker is "me". */
 export async function demoMemberships(
-  _fetchFn: typeof fetch,
-  _demoApiUrl: string,
+  fetchFn: typeof fetch,
+  demoApiUrl: string,
 ): Promise<Array<Record<string, unknown>>> {
-  // Return static demo membership data that doesn't require a database connection
-  // The demo user is an administrator of a sample organization
-  const demoOrgRef = "demo-org";
-  const demoWorkerPid = "00000000-0000-4000-8000-00000000d3a1";
-  const demoPersonRef = "person:00000000-0000-4000-8000-00000000d3a1";
-  const hiredOn = "2024-01-01";
-
+  const response = await fetchFn(`${demoApiUrl}/api/workers`);
+  if (!response.ok) return [];
+  const people = (await response.json()) as Array<{
+    pid: string;
+    organization_ref: string;
+    employment_type: string;
+    status: string;
+    hired_on: string;
+  }>;
+  const me =
+    people.find(
+      (w) => w.employment_type === "permanent" && w.status === "active",
+    ) ?? people[0];
+  if (!me) return [];
+  // The demo user is an administrator of every organization in the demo: those that have people, and the
+  // parents that contain them (a membership in a parent reads as one in every organization beneath it).
+  const parents: string[] = [];
+  for (const child of new Set(people.map((w) => w.organization_ref))) {
+    const edges = await fetchFn(
+      `${demoApiUrl}/api/organization-confederations?child_organization_ref=${encodeURIComponent(child)}`,
+    );
+    if (!edges.ok) continue;
+    for (const e of (await edges.json()) as Array<{
+      parent_organization_ref?: string;
+    }>) {
+      if (typeof e.parent_organization_ref === "string")
+        parents.push(e.parent_organization_ref);
+    }
+  }
+  const others = [
+    ...new Set([...people.map((w) => w.organization_ref), ...parents]),
+  ].filter((ref) => ref !== me.organization_ref);
+  const make = (ref: string, n: number, worker: string | null) => ({
+    pid: `00000000-0000-4000-8000-00000000d3${(0xa0 + n).toString(16)}`,
+    person_ref: "person:00000000-0000-4000-8000-00000000d3a1",
+    organization_ref: ref,
+    worker_pid: worker,
+    employed: worker !== null,
+    role: "hr_admin",
+    starts_on: me.hired_on,
+    ends_on: null,
+  });
   return [
-    {
-      pid: `00000000-0000-4000-8000-00000000d3a0`,
-      person_ref: demoPersonRef,
-      organization_ref: demoOrgRef,
-      worker_pid: demoWorkerPid,
-      employed: true,
-      role: "hr_admin",
-      starts_on: hiredOn,
-      ends_on: null,
-    },
+    make(me.organization_ref, 0, me.pid),
+    ...others.map((ref, i) => make(ref, i + 1, null)),
   ];
 }
