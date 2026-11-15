@@ -354,10 +354,14 @@ form.row {
   flex-wrap: wrap;
   align-items: center;
 }
-/* Lily's error text, which each theme mixes toward its reading colour so it
-   holds 4.5:1; the fixed closed-bed red is 1.8:1 on a dark panel (WPM-R247). */
+/* Error text: the theme's error colour with 40 per cent of its reading colour
+   mixed in, so it still reads as red. Unmixed, Lily's error red is 2.7:1 on
+   light's page; Lily's own --lily-error-text keeps only 22 per cent of it and
+   reads as body text. At 60 per cent it is 5.8:1 on light's page and 8.5:1 on
+   dark's (WPM-R247). Mixed in oklab, not oklch: an oklch mix turns the hue
+   toward the reading colour's, and the red came out plum. */
 .error {
-  color: var(--lily-error-text, var(--state-closed));
+  color: color-mix(in oklab, var(--color-error, #8a1d2d) 60%, var(--ink));
   font-size: 0.88rem;
 }
 .muted {

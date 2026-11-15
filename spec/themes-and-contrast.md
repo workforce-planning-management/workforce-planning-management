@@ -1,6 +1,6 @@
 # Themes and contrast
 
-WPM-R247, WPM-D196; tasks WPM-T497 and WPM-T499. Applies to the UI (`workforce-planning-management-ui-with-svelte/`) and the website
+WPM-R247, WPM-D196; tasks WPM-T497, WPM-T499 and WPM-T500. Applies to the UI (`workforce-planning-management-ui-with-svelte/`) and the website
 (`workforce-planning-management.github.io/`). The theme picker itself is
 [lily-design-system-svelte-with-picker-bar](lily-design-system-svelte-with-picker-bar/index.md).
 
@@ -48,7 +48,9 @@ Acceptance criteria:
   - link text is `--link`, the theme's primary mixed 65 per cent with the reading colour;
   - a filled control (`button.primary`, `a.btn.primary`) is the reading and panel colours inverted, as on the website
     (WPM-D175);
-  - error text is Lily's `--lily-error-text`, which each theme already mixes toward its reading colour.
+  - error text is the theme's error colour mixed 60 per cent with the reading colour in oklab (5.8:1 on light's
+    page, 8.5:1 on dark's), so it still reads as red; Lily's own `--lily-error-text` keeps 22 per cent and reads
+    as body text (WPM-T500). An oklch mix was tried and turned the red plum.
 - **Rejected:** overriding Lily's `dark.css` (it is copied from the package, and the next update would undo it);
   testing every theme in the UI and allowing failures (69 pages by 57 themes is 3,933 runs to report what no one
   is held to); dropping the themes that fail (the owner wants them kept, on 2026-11-15).

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — error text is red again (WPM-T500)
+
+Error text is the theme's error colour mixed 60 per cent with the reading colour, in oklab: red in light and in dark, at
+5.8:1 and 8.5:1. Since WPM-T497 it had been Lily's own error text colour, which reads almost as body text.
+
 ### Changed — the theme follows the browser's light/dark setting (WPM-T499)
 
 With no saved theme, the page is Lily `dark` when the browser asks for dark, and `light` otherwise; before, it was always

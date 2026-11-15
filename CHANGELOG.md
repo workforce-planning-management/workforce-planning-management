@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — error text is red again (WPM-T500, 2026-11-15)
+
+Since WPM-T497 an error in the UI read almost as body text. It is red again in light and dark, and still holds WCAG contrast.
+
 ### Changed — the UI follows the browser's light/dark setting (WPM-T499, 2026-11-15)
 
 A reader who has not chosen a theme gets light or dark from the browser's setting, as on the website; a theme chosen in
