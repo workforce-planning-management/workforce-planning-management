@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — an hour's soak (WPM-T502, 2026-11-15)
+
+At 10,000 workers under mixed reads and writes for an hour, no request failed, memory rose to 40 MiB and fell back to 35 MiB,
+and the database connections held at the pool's size. Results are in `BENCHMARKS.md`.
+
 ### Changed — the site and the UI ask for the same TypeScript (WPM-T501, 2026-11-15)
 
 The site asked for `typescript` `6.0.3` exactly and the UI for `^6.0.3`; both now ask for `^6.0.3`, and `syncpack lint` is

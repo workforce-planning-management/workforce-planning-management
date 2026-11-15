@@ -68,16 +68,31 @@ failed.
 
 **Soak** (`LOAD_SOAK=300`, 10,000 workers, the mixed traffic for five minutes, a sample every 5 s): no request failed and every stream
 met the bar (writes p95 16 ms, forecast 106 ms). The service's resident memory went from 23 MiB to 39 MiB, its highest at the last sample,
-so five minutes does not tell a plateau from a slow climb; a run of an hour or more is the next step before claiming no leak. The
+so five minutes does not tell a plateau from a slow climb. The
 database's client connections went from 3 to 21 (the pool's 20 and the sampler's own) and stayed there: the pool fills and holds, and
 nothing returns a connection late enough to exhaust it.
+
+**An hour's soak** (`LOAD_SOAK=3600`, 10,000 workers, the same traffic, a sample every 30 s, 119 samples; WPM-T502, on `axa` 0.14):
+
+| endpoint | connections | requests/s | p50 ms | p95 ms | p99 ms | non-2xx |
+|---|---:|---:|---:|---:|---:|---:|
+| worker list | 8 | 1,799 | 4.1 | 6.7 | 9.3 | 0 |
+| directory | 8 | 245 | 31 | 40 | 65 | 0 |
+| workforce metrics | 8 | 608 | 12 | 17 | 26 | 0 |
+| plan forecast | 8 | 167 | 46 | 59 | 96 | 0 |
+| `POST /api/workforce-plans` | 2 | 289 | 6.3 | 11 | 16 | 0 |
+
+No request failed and every stream met the bar. Resident memory went from 23 MiB to a peak of 40 MiB and ended at 35 MiB: it rose,
+then fell back, rather than climbing to the end, so an hour shows no leak at this load. The script keeps only the first, last and
+peak samples, so when the peak came is not recorded. Connections again went to 21 and held. The forecast's p95 is 59 ms here and was 106 ms
+in the five-minute soak; why was not looked into, and with one run of each the difference is not a trend.
 
 **CI's smoke** (`load-smoke`: `LOAD_MIX` at 1,000 workers, 4 connections, 10 s, the **debug** build, `LOAD_BAR_MS=0`): five streams, no
 failed request. It gates failures, never timings.
 
 What it does **not** show: sign-in enforcement (a token check on every request); rate limits; more than one service instance; a
 database on another host or a managed one; 200,000 workers for the ramp, the mix or the soak (the per-route survey at 200,000 is below);
-a soak longer than five minutes; and a spread, since each figure is one run.
+a soak longer than an hour, or at 50,000; and a spread, since each figure is one run.
 
 ## Load test (WPM-R120, WPM-T196)
 
