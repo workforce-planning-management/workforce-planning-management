@@ -1,6 +1,6 @@
 # Themes and contrast
 
-WPM-R247, WPM-D196; task WPM-T497. Applies to the UI (`workforce-planning-management-ui-with-svelte/`) and the website
+WPM-R247, WPM-D196; tasks WPM-T497 and WPM-T499. Applies to the UI (`workforce-planning-management-ui-with-svelte/`) and the website
 (`workforce-planning-management.github.io/`). The theme picker itself is
 [lily-design-system-svelte-with-picker-bar](lily-design-system-svelte-with-picker-bar/index.md).
 
@@ -16,9 +16,10 @@ Acceptance criteria:
    `dark` theme, has no violation that axe's automated WCAG A and AA rules find. The UI is checked with axe's
    `wcag2a` and `wcag2aa` tags on every page route (`tests/e2e/a11y-routes.spec.ts`); the website with its WCAG 2.2 AA
    tags, failing on a serious or critical violation (WPM-R217). A violation in either theme fails the run.
-2. **Light and dark are the defaults.** A reader who has not chosen a theme gets light or dark: the website
-   matches the browser's colour scheme; the UI starts in light whatever the browser asks for (checked 2026-11-15;
-   following the browser there is not yet built).
+2. **Light and dark are the defaults, from the browser's setting.** A reader who has not chosen a theme gets light
+   or dark, whichever the browser's light/dark setting (`prefers-color-scheme`) asks for, in the UI and on the
+   website; with no setting, light. A theme the reader chose in the picker wins over the browser's setting.
+   The UI's `tests/e2e/theme-default.spec.ts` holds this.
 3. **Every other Lily theme stays on offer and is not held to (1).** A reader may choose any theme the picker
    lists. A violation in a theme other than light or dark does not fail a run and is not a defect; the website's
    tests report it on the test as an annotation, so it can be read. No theme is removed because it fails.
@@ -29,6 +30,9 @@ Acceptance criteria:
 
 ## WPM-D196 — WPM vouches for two themes, and the reader owns the rest
 
+- **The browser's setting chooses between them.** The reader has already said light or dark once, to the
+  browser or the operating system; asking again would be a second place to keep it. Lily's `ThemePicker` reads
+  it (`detectFromSystem`) and falls back to light.
 - **Two themes are vouched for.** Light and dark are what a reader sees without choosing, so they are the themes
   WPM is accountable for. Holding all 57 to WCAG would mean either removing most of them or overriding their colours
   until they stopped being themselves.

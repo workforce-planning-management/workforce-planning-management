@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the UI follows the browser's light/dark setting (WPM-T499, 2026-11-15)
+
+A reader who has not chosen a theme gets light or dark from the browser's setting, as on the website; a theme chosen in
+the picker still wins.
+
 ### Changed — the service is on `axa` 0.14 (WPM-T498, 2026-11-15)
 
 From 0.13.0 to 0.14.0, with `axa-test` 0.5.0. No code changes and nothing for an operator to do: the release adds tenant

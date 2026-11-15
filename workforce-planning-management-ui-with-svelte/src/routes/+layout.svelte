@@ -255,7 +255,7 @@
         share: t("nav.share"),
       }}
       themesUrl="/assets/themes/"
-      themeProps={{ storageKey: THEME_KEY }}
+      themeProps={{ storageKey: THEME_KEY, detectFromSystem: true, defaultValue: "light" }}
       locales={[...LOCALES]}
       localeProps={{
         value: i18n.locale,

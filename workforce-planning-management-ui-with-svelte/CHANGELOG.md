@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the theme follows the browser's light/dark setting (WPM-T499)
+
+With no saved theme, the page is Lily `dark` when the browser asks for dark, and `light` otherwise; before, it was always
+light. A theme chosen in the picker still wins.
+
 ### Fixed — the dark theme passes axe on every page (WPM-T497)
 
 Links, filled buttons and error text failed WCAG contrast in Lily's dark theme. Links are now the theme's primary mixed
