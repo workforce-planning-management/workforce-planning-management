@@ -336,6 +336,30 @@ OpenAPI document, the UI's `/api/proxy/*` calls and bookmarks do not change when
 changes only the representation. **Not claimed:** only version `1.0` exists, so no request has yet been served a different representation;
 the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 
+## WPM-D195 — Benchmarks measure the pure core, the load test measures the service, and CI runs both but times neither
+
+The owner asked for comprehensive load and benchmark tests on 2026-11-15 (WPM-T495, WPM-T496; WPM-R120, WPM-R142).
+
+- **Benchmarks are Criterion suites of the pure functions a view runs once per worker**: `benches/rules.rs` in the service
+  (capacity supply, the pay gap report, the plan projection and contract FTE, rest breaches by worker, possible duplicates) and
+  `benches/matching.rs` in the matcher (one pair, one record against everyone held, the string scorers), at the load test's sizes of
+  1,000, 10,000 and 50,000 workers. Their inputs are made from an index, so two runs measure the same work. They show how a rule grows
+  with the organization, without a database or a network in the number.
+- **The load test is `scripts/load-test.sh`, with scenarios on the same seed**: every path alone (as before); a concurrency ramp
+  (`LOAD_RAMP`); reads and writes at once (`LOAD_MIX`: four reads while two connections create workforce plans, a write with an audit
+  row in the hash chain and an outbox event); a soak (`LOAD_SOAK`) that samples the service's resident memory and the database's
+  connections, so a leak or a connection never returned shows as a climb; and `LOAD_CHECK`, which turns the bar of WPM-D95 (p95 at most
+  2 seconds and no failed request) into an exit status.
+- **CI runs each benchmark once (`cargo test --bench`) and a load smoke (`LOAD_MIX` at 1,000 workers, `LOAD_BAR_MS=0`)**, which fails on
+  any failed request and on nothing slow. A benchmark that panics or no longer builds, and a write that fails under concurrent reads, are
+  caught; a timing is not, because shared runners are too noisy to compare. Measured timings are recorded by hand in `BENCHMARKS.md`.
+
+**Rejected:** a separate Rust load-test crate (`tests/load/`, untracked, never run against this service: its routes were guessed and its
+"distributed" mode ran locally), because `oha` already drives the measured runs and every recorded result came from the script; a latency
+gate in CI, for the noise; and a benchmark of a handler with its database, which the load test measures with the real one.
+**Not claimed:** sign-in enforcement under load (a token check adds work to every request; the load test runs with it off), more than one
+service instance, and a database on another host.
+
 ## WPM-R242 — A client address can be locked out after its failed sign-ins
 
 - `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` sets how many `401`s one client address may earn in 15 minutes. At that count, every request from that address is refused with `429`, `Retry-After` and the `RateLimit-*` headers until the 15 minutes end, whatever its token, whatever the route, the probes (`/_ping`, `/_health`, `/_readiness`) excepted.

@@ -109,7 +109,9 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 `tests/requests/mod.rs::request_open`, which also turns the rate limits off; the
 `security` binary runs with the defaults and low limits to prove them.
 
-**Load** (`scripts/load-test.sh`, WPM-R120): seeds one organization at 1k, 10k and 50k workers in a throwaway Postgres and drives four routes with `oha`. It is run by hand, not in CI (shared runners are too noisy to compare), and its results and limits are in [`BENCHMARKS.md`](../BENCHMARKS.md). The ceiling it led to is checked by `tests/requests/scale.rs`.
+**Load** (`scripts/load-test.sh`, WPM-R120, WPM-D195): seeds one organization at 1k, 10k and 50k workers (or any size given) in a throwaway Postgres 18 and drives the routes that read an organization with `oha`. Scenarios on the same seed: every path alone, a concurrency ramp (`LOAD_RAMP`), reads and writes at once (`LOAD_MIX`), a soak that samples memory and database connections (`LOAD_SOAK`), and `LOAD_CHECK`, which exits 1 when a stream has a failed request or a p95 over `LOAD_BAR_MS` (2,000 by default, the bar of WPM-D95). CI's `load-smoke` job runs `LOAD_MIX` at 1,000 workers and fails on a failed request only; timings are measured by hand, since shared runners are too noisy to compare, and recorded in [`BENCHMARKS.md`](../BENCHMARKS.md). The ceiling it led to is checked by `tests/requests/scale.rs`.
+
+**Benchmarks** (Criterion, WPM-D195): `cargo bench --bench rules` in the service and `cargo bench --bench matching` in the matcher measure the pure functions a view runs once per worker, at 1,000, 10,000 and 50,000. CI runs each once with `cargo test --bench`, so a benchmark that panics or stops building fails; the timings are in [`BENCHMARKS.md`](../BENCHMARKS.md).
 
 **Chaos** (`tests/chaos.rs`, WPM-R137): a TCP proxy between the app and Postgres resets, swallows or slows connections, and a seeded monkey flips it
 at random during writes. It asserts every request ends soon as a plain `5xx` that leaks no connection detail, that a refused write leaves

@@ -1,7 +1,83 @@
 # Benchmarks
 
-One measurement exists: the load test below (WPM-T196, 2026-10-20). There is no Criterion suite
-(no `benches/`); this file is where results live.
+Two kinds of measurement live here: the load test (`scripts/load-test.sh`, from WPM-T196, 2026-10-20), which drives the
+service and its database, and the Criterion benchmarks of the pure rules (`benches/`, from WPM-T495, 2026-11-15), which show how
+a rule grows with the organization without a database in the number (WPM-D195). The latest of each is first; the history follows.
+
+## Criterion benchmarks (WPM-T495, 2026-11-15)
+
+`cargo bench --bench rules` (the service) and `cargo bench --bench matching` (the matcher), Criterion 0.8.2, its defaults
+(3 s warm-up, 100 samples), Rust 1.100.0, the bench profile, one Apple M-series laptop (16 cores), nothing else running. The middle
+of Criterion's estimate; inputs are synthetic and made from each worker's index.
+
+| Benchmark | 1,000 | 10,000 | 50,000 | Grows |
+|---|---:|---:|---:|---|
+| capacity pool supply (`pool_supply_centi`: a role and a skill member, a third on leave) | 15 µs | 151 µs | 780 µs | linearly (66 M workers/s throughout) |
+| pay gap report (four declared groups, five categories, variable pay) | 40 µs | 484 µs | 5.6 ms | faster than the size (25 down to 9 M workers/s) |
+| plan projection by basis | 3.2 µs | 23 µs | 120 µs | linearly |
+| contract FTE | 0.78 µs | 8.8 µs | 44 µs | linearly |
+| rest breaches by worker (20 shifts each, 11 h rest) | 0.76 ms | 15 ms | 90 ms | faster than the size (26 down to 11 M shifts/s) |
+| possible duplicates (one new worker against everyone held) | 1.9 ms | 22 ms | 220 ms | faster than the size, with a wide spread (±12%) |
+| matcher, one record against everyone held (`rank_one_to_many`) | 2.9 ms | 19 ms | 81 ms | linearly or better |
+
+One matcher comparison (`match_workers`, a pair) is 1.2 µs; the string scorers are 44 to 180 ns a pair.
+
+What it shows: every rule a view runs per worker costs less than a millisecond at 50,000 except three. **Possible duplicates** is the
+one to watch: 220 ms at 50,000 is on every worker created or imported, and it grows faster than the organization, so at 200,000 it
+would approach a second before any database work. **The pay gap report** and **rest breaches** also grow faster than the size (sorting
+and a map keyed by worker), but stay small at 50,000. What it does **not** show: any database, network or serialisation cost, which the
+load test measures; 200,000 (not run, to keep a full run to minutes); a second machine; and run-to-run spread beyond Criterion's own
+interval. CI runs each benchmark once (`cargo test --bench`), so a benchmark that panics or stops building fails; it times none.
+
+## Load scenarios (WPM-T496, 2026-11-15)
+
+`scripts/load-test.sh` with its scenarios (WPM-D195), Postgres 18 in Podman on the same laptop, the release build, 20 database
+connections, sign-in enforcement and rate limits off. The bar is WPM-D95's: p95 at most 2 seconds and no failed request
+(`LOAD_CHECK=1`). oha's own cancellation of the requests in flight when a timed stream ends is not counted as a failure.
+
+**Concurrency ramp** (`LOAD_RAMP="8 16 32 64"`, 10,000 workers, 5 s per route; p95 ms, no request failed at any step):
+
+| Route | 8 | 16 | 32 | 64 |
+|---|---:|---:|---:|---:|
+| worker list (50) | 3 | 4 | 9 | 18 |
+| directory | 19 | 38 | 165 | 155 |
+| capacity | 152 | 412 | 1,001 | **1,779** |
+| plan forecast / cost | 28 / 21 | 55 / 25 | 225 / 130 | 209 / 140 |
+| CPD overview | 20 | 22 | 168 | 118 |
+| workforce overview / metrics / insights | 27 / 7 / 5 | 39 / 10 / 13 | 201 / 30 / 24 | 245 / 47 / 114 |
+| key-person register | 59 | 176 | 293 | 542 |
+| working time | 179 | 379 | 1,095 | **1,341** |
+| `/_health/live` (requests/s) | 25,080 | 33,698 | 35,881 | 36,679 |
+
+All 48 streams meet the bar. Throughput stops rising at about 16 connections for most routes (the worker list holds about 5,000
+requests/s from 16 to 64), so past that point more connections only queue: **capacity** (p95 1.78 s at 64, 61 requests/s) and **working
+time** (1.34 s) are the two closest to the bar, and would be the first to miss it at more connections or a larger organization.
+
+**Reads and writes at once** (`LOAD_MIX=1`, 10 s): four reads at 8 connections each while 2 connections create workforce plans.
+
+| Workers | Stream | requests/s | p50 ms | p95 ms | p99 ms | Failed |
+|---:|---|---:|---:|---:|---:|---:|
+| 50,000 | worker list | 712 | 10 | 20 | 29 | 0 |
+| 50,000 | directory | 56 | 139 | 207 | 241 | 0 |
+| 50,000 | workforce metrics | 140 | 53 | 94 | 122 | 0 |
+| 50,000 | plan forecast | 28 | 280 | 413 | 474 | 0 |
+| 50,000 | `POST /api/workforce-plans` | 129 | 14 | 27 | 39 | 0 |
+
+Writes (validation, an insert, an audit row in the hash chain and an outbox event) keep a p95 of 27 ms while the reads run; no request
+failed.
+
+**Soak** (`LOAD_SOAK=300`, 10,000 workers, the mixed traffic for five minutes, a sample every 5 s): no request failed and every stream
+met the bar (writes p95 16 ms, forecast 106 ms). The service's resident memory went from 23 MiB to 39 MiB, its highest at the last sample,
+so five minutes does not tell a plateau from a slow climb; a run of an hour or more is the next step before claiming no leak. The
+database's client connections went from 3 to 21 (the pool's 20 and the sampler's own) and stayed there: the pool fills and holds, and
+nothing returns a connection late enough to exhaust it.
+
+**CI's smoke** (`load-smoke`: `LOAD_MIX` at 1,000 workers, 4 connections, 10 s, the **debug** build, `LOAD_BAR_MS=0`): five streams, no
+failed request. It gates failures, never timings.
+
+What it does **not** show: sign-in enforcement (a token check on every request); rate limits; more than one service instance; a
+database on another host or a managed one; 200,000 workers for the ramp, the mix or the soak (the per-route survey at 200,000 is below);
+a soak longer than five minutes; and a spread, since each figure is one run.
 
 ## Load test (WPM-R120, WPM-T196)
 
@@ -102,10 +178,10 @@ not throughput or latency.
 
 ## If you add a benchmark
 
-Prefer Criterion (`cargo bench`) for the service; assert the property
-you care about in a test where possible — a number nobody compares is
-not a gate. Record the method and any measured results here, with the
-task id from [spec/tasks.md](spec/tasks.md) that motivated it.
+Add it to `benches/rules.rs` (or the matcher's `benches/matching.rs`), at the same three sizes, with inputs made from an index;
+`cargo test --bench rules` must pass, as CI runs it. Assert the property you care about in a test where possible — a number nobody
+compares is not a gate. Record the method and the measured results here, with the task id from [spec/tasks.md](spec/tasks.md) that
+motivated it.
 
 ## Baseline at 200,000 workers (WPM-R142, WPM-D95)
 
@@ -211,7 +287,7 @@ After (8 connections, 20 database connections, 8 seconds each):
 
 The standard set, run again: worker list 22 ms, directory 108, capacity 1,204 (p95 1,389, the slowest), plan forecast 204, cost 111, CPD overview 164,
 workforce overview 188, metrics 34, insights 43, key-person register 612 (p95 722), working time 740 (p95 964). **All 24 measured routes meet the
-bar.** 
+bar.**
 
 ### Routes that take an id (WPM-T244)
 

@@ -4748,6 +4748,7 @@ dependencies = [
  "base64 0.23.1",
  "chrono",
  "clap",
+ "criterion",
  "cron",
  "ed25519-dalek 3.0.0",
  "entity-ref",

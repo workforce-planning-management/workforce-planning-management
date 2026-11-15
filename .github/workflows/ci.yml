@@ -98,6 +98,8 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked --lib
+      # Each Criterion benchmark once (WPM-T495): it runs, it does not measure; timings on shared runners are noise.
+      - run: cargo test --locked --bench rules
 
   matcher:
     name: matcher crate · fmt, clippy, tests
@@ -116,6 +118,8 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
+      # Each Criterion benchmark once (WPM-T495).
+      - run: cargo test --locked --bench matching
 
   # spec/rust-msrv-n-minus-2: the MSRV is the current stable minus two (1.100 - 2 = 1.98 on 2026-11-15).
   # The matcher and the vendored entity-ref declare 1.98 and are checked on it here. The service still
@@ -316,6 +320,35 @@ jobs:
           # the service reads config/ from its working directory
           cd workforce-planning-management-service-with-rust
           ../scripts/restore-drill.sh
+
+  load-smoke:
+    name: api · load smoke (mixed reads and writes, no failed request)
+    runs-on: ubuntu-latest
+    # scripts/load-test.sh with LOAD_MIX at 1,000 workers (WPM-T496): four reads and two writers at once for ten
+    # seconds, in its own Postgres 18 under Podman. It fails on any failed request, never on a latency: timings on
+    # shared runners are noise, and BENCHMARKS.md holds the measured ones. A debug build, as the drill uses.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: workforce-planning-management-service-with-rust
+      - uses: taiki-e/install-action@682ce6c3c696a4cd5168a05f98e51aa02b877941 # v2.89.1
+        with:
+          tool: oha@1.16.0
+      - name: build the service
+        working-directory: workforce-planning-management-service-with-rust
+        run: cargo build --locked --bin workforce-planning-management
+      - name: mixed load at 1,000 workers; fails on any failed request
+        env:
+          LOAD_BIN: ${{ github.workspace }}/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management
+          LOAD_MIX: "1"
+          LOAD_CHECK: "1"
+          LOAD_BAR_MS: "0"
+          LOAD_SECONDS: "10"
+          LOAD_CONCURRENCY: "4"
+        run: scripts/load-test.sh 1000
 
   api-keycloak:
     name: api · Keycloak suite

@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — load scenarios and benchmarks (WPM-T495, WPM-T496, 2026-11-15)
+
+`scripts/load-test.sh` has a concurrency ramp, reads and writes at once, a soak and `LOAD_CHECK`, which fails a run that misses
+the bar; CI's `load-smoke` job fails on any failed request under mixed load. Criterion benchmarks measure the rules a view runs
+per worker and the matcher; CI runs each once. Results are in `BENCHMARKS.md`.
+
 ### Added — syncpack, for dependency versions across the UI and the site (WPM-T494, 2026-11-15)
 
 A root `package.json`, for tooling only, holds `syncpack`; `pnpm exec syncpack lint` at the root says where the UI and the site ask

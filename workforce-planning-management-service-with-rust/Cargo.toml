@@ -140,6 +140,13 @@ testcontainers = { version = "0.28" }
 # The `keycloak` and `oidc_entra` tests build requests with `.query` and `.form`; the service itself needs neither feature.
 reqwest = { version = "0.13.5", default-features = false, features = ["query", "form"] }
 
+# Benchmarks of the pure rules a view runs per worker (WPM-T495); `cargo bench --bench rules`.
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "rules"
+harness = false
+
 # Needs the `keycloak` backend (mutually exclusive with the default `paseto`).
 [[test]]
 name = "keycloak"
