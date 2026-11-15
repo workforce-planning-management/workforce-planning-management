@@ -442,3 +442,9 @@ deployer would point it at its own service desk ([help-and-learning.md](help-and
 
 No new endpoint; the standing is the service's, and the page only finds which held record answers a requirement, to show its
 expiry ([help-and-learning.md](help-and-learning.md)).
+
+## WPM-D196 — WPM vouches for light and dark; the reader owns any other theme
+
+Only light and dark fail a run on an axe violation; another theme's result is reported on the website and unchecked in the UI.
+The UI's link, filled-control and error text use tokens that hold 4.5:1 rather than a theme's fill colours
+([themes-and-contrast.md](themes-and-contrast.md)).

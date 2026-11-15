@@ -84,7 +84,7 @@
     margin: 0 auto;
   }
   .tourpage-eyebrow {
-    color: var(--accent);
+    color: var(--link);
     font-weight: 600;
     font-size: 0.82rem;
     text-transform: uppercase;

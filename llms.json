@@ -432,6 +432,11 @@
         "description": "WPM-R243–R245, WPM-D191–D192 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean"
       },
       {
+        "title": "spec/themes-and-contrast.md",
+        "path": "spec/themes-and-contrast.md",
+        "description": "WPM-R247, WPM-D196 and WPM-T497: light and dark must pass axe on every page of the UI and the website; every other Lily theme stays on offer and is not held to it, because the reader chose it"
+      },
+      {
         "title": "spec/local-ci-cd.md",
         "path": "spec/local-ci-cd.md",
         "description": "WPM-D171 and WPM-T436–T445 (proposed): local-first CI/CD: the options assessed (a shared entry point, a pre-push gate, an attestation and commit status, self-managed runners, act, Dagger, Forgejo), the risks, and the order to do them in"

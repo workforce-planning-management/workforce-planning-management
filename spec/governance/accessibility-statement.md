@@ -13,8 +13,9 @@ and no automated accessibility test (such as axe) has been run on this software.
 - Semantic structure from Svelte components, labelled form controls, and 35 ARIA
   attributes across the pages and components.
 - **Text size**: a picker offers seven sizes, remembered per browser.
-- **Themes**: a picker offers forty-five themes, including accessible (high-contrast and
-  government design-system) variants. Contrast has not been measured across them.
+- **Themes**: a picker offers every Lily theme (57 as of 2026-11-15), including government
+  design-system variants. Light and dark are checked by axe on every page and must pass; any
+  other theme is the reader's choice and is not held to WCAG ([WPM-R247](../themes-and-contrast.md)).
 - **Language and direction**: the page declares its language, and right-to-left languages
   (Arabic, Urdu) set the page direction.
 - **Responsive layout**: checked by the end-to-end tests for overflow at phone and desktop
@@ -27,7 +28,8 @@ and no automated accessibility test (such as axe) has been run on this software.
 - **No skip-to-content link.**
 - **No automated accessibility check** in the test suite, so regressions would not be caught.
 - **No screen-reader, keyboard-only or voice-control test** has been done on any page.
-- **Contrast** has not been measured for all forty-five themes.
+- **Contrast** is checked by axe's automated rules in light and dark only; in any other theme
+  it may fail, by design (WPM-R247).
 - **Translations are unreviewed.** Every page's text is in the catalogue in 13 languages, but all
   of it except the English was written by an AI assistant and no person has reviewed it
   ([official-language statement](official-language-statement.md)). Messages the server sends are

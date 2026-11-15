@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the dark theme passes axe on every page (WPM-T497)
+
+Links, filled buttons and error text failed WCAG contrast in Lily's dark theme. Links are now the theme's primary mixed
+toward the reading colour, a filled button is the reading and panel colours inverted, and error text is Lily's own error
+text colour. The axe spec runs every page in light and dark.
+
 ### Fixed — the demo banner is back (WPM-T493)
 
 Every demo page again says the data is fictitious and walks the tour with Step n of 34, Previous and Next, and the demo

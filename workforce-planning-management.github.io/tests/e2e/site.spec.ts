@@ -1,5 +1,5 @@
 // The built site: every page is there; every picker in the Lily picker bar works; the search finds pages; axe finds no serious or critical WCAG 2.2 AA violation under the light and the
-// dark theme; the locale switcher opens the same brief in another locale; an Arabic or Urdu page is laid out from the
+// dark theme (another theme's result is reported, not failed: WPM-R247); the locale switcher opens the same brief in another locale; an Arabic or Urdu page is laid out from the
 // right without overflowing; dates read as the WPM UI's locale-format.ts shows them; and the content security policy
 // blocks nothing the site itself does.
 import { test, expect, type Page } from "@playwright/test";
@@ -600,9 +600,12 @@ test("the sitemaps list the whole site and each locale's pages, in plain XML", a
   expect(cy).not.toContain("/zh-001/");
 });
 
+// WPM-R247: light and dark must pass axe; any other theme is the reader's choice, so its axe result is reported
+// (as an annotation on the test) and does not fail the run. Every theme must load with no CSP error.
+const VOUCHED = new Set(["light", "dark"]);
 for (const theme of THEMES)
   for (const route of ["/", "/docs/"])
-  test(`the ${theme} theme on ${route} loads with no CSP error and passes axe`, async ({ page }) => {
+  test(`the ${theme} theme on ${route} loads with no CSP error${VOUCHED.has(theme) ? " and passes axe" : ""}`, async ({ page }, info) => {
     const csp: string[] = [];
     page.on("console", (m) => {
       if (/Content Security Policy/i.test(m.text())) csp.push(m.text());
@@ -610,6 +613,8 @@ for (const theme of THEMES)
     await page.addInitScript((t) => localStorage.setItem("mxi.wpm.theme", t), theme);
     await page.goto(route, { waitUntil: "networkidle" });
     await page.waitForFunction((t) => document.documentElement.dataset.theme === t, theme);
-    expect(await axe(page)).toEqual([]);
+    const found = await axe(page);
+    if (VOUCHED.has(theme)) expect(found).toEqual([]);
+    else for (const v of found) info.annotations.push({ type: "axe (reader's theme, not a failure)", description: v });
     expect(csp).toEqual([]);
   });

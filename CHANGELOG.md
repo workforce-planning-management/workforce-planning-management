@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — light and dark must pass; other themes are the reader's choice (WPM-T497, 2026-11-15)
+
+Axe checks every UI page and the website in the light and the dark theme, and a violation there fails the run. Any other
+Lily theme stays on offer and is not held to it; the website reports its violations without failing. The UI's links,
+filled buttons and error text now hold contrast in dark ([spec/themes-and-contrast.md](spec/themes-and-contrast.md)).
+
 ### Added — load scenarios and benchmarks (WPM-T495, WPM-T496, 2026-11-15)
 
 `scripts/load-test.sh` has a concurrency ramp, reads and writes at once, a soak and `LOAD_CHECK`, which fails a run that misses

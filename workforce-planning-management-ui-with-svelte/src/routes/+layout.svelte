@@ -421,7 +421,7 @@
     border: 0;
     padding: 0;
     font: inherit;
-    color: var(--accent);
+    color: var(--link);
     cursor: pointer;
   }
   /* Help is in every header, signed in or not, and reads a little stronger than its neighbours (WPM-R243). */

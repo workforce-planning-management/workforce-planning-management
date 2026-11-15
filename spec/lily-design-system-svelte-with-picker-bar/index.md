@@ -20,6 +20,8 @@ In global top header navigation area use:
 - Use all Lily default themes (not any application-specific custom themes)
 - Sort themes alphabetetically
 - Sort UK & US themes at the end, after all the non-national themes
+- Light and dark must pass WCAG AA; every other theme stays on offer even if it does not pass, because the reader
+  chose it ([themes-and-contrast.md](../themes-and-contrast.md), WPM-R247)
 
 ## Lily LocalePicker
 

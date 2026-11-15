@@ -19,6 +19,12 @@
   --muted: var(--lily-text-muted, #5b6774);
   --line: var(--lily-border, #dde2e8);
   --accent: var(--color-primary, #1b5fae);
+  /* Link text: the theme's primary pulled a third of the way toward its
+     reading colour. A theme's own primary is a fill colour, and Lily's
+     dark primary on dark's panel is 3.39:1, under WCAG's 4.5:1 for text;
+     the mix holds it in light and dark (WPM-R247), and keeps a link the
+     theme's hue in every other theme. */
+  --link: color-mix(in oklch, var(--accent) 65%, var(--ink));
   /* Bed states */
   --state-available: #1d8a4e;
   --state-reserved: #b57e10;
@@ -73,7 +79,7 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
 }
 a:hover {
@@ -317,13 +323,16 @@ button,
 }
 button:hover {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--link);
 }
+/* A filled control is the theme's reading and panel colours inverted, as on
+   the website (WPM-D175): Lily dark's primary under its own content colour is
+   4.12:1, under WCAG's 4.5:1 for text (WPM-R247). */
 button.primary,
 a.btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--color-primary-content, #fff);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--panel);
 }
 a.btn.primary:hover {
   color: var(--color-primary-content, #fff);
@@ -345,8 +354,10 @@ form.row {
   flex-wrap: wrap;
   align-items: center;
 }
+/* Lily's error text, which each theme mixes toward its reading colour so it
+   holds 4.5:1; the fixed closed-bed red is 1.8:1 on a dark panel (WPM-R247). */
 .error {
-  color: var(--state-closed);
+  color: var(--lily-error-text, var(--state-closed));
   font-size: 0.88rem;
 }
 .muted {

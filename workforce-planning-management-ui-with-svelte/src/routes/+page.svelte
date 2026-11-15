@@ -279,7 +279,7 @@
     padding: 1.5rem 0 0.5rem;
   }
   .home-eyebrow {
-    color: var(--accent);
+    color: var(--link);
     font-weight: 600;
     font-size: 0.82rem;
     text-transform: uppercase;

@@ -1,6 +1,6 @@
 # The GitHub Pages website
 
-WPM-R217, WPM-R231, WPM-D150, WPM-D175; tasks WPM-T454, WPM-T392 (built) and WPM-T399 (published 2026-11-04, at
+WPM-R217, WPM-R231, WPM-D150, WPM-D175 (themes: WPM-R247, WPM-D196); tasks WPM-T454, WPM-T392 (built) and WPM-T399 (published 2026-11-04, at
 <https://workforce-planning-management.github.io/>). The family pattern is [monorepo-github-pages](monorepo-github-pages/index.md);
 this file says how WPM applies it. The site itself is
 [`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md).
@@ -35,8 +35,9 @@ Acceptance criteria:
    (WPM-T375, WPM-T377): `formatDate` in the page's locale, two dates as one
    `formatDateRange`, inside `<time datetime>`; a date in code is left as written.
    The site's own figures are `formatInteger`.
-6. Axe finds no serious or critical WCAG 2.2 AA violation in light and dark, and on
-   the home page and `/docs/` in each of Lily's themes;
+6. Axe finds no serious or critical WCAG 2.2 AA violation in light and dark; on
+   the home page and `/docs/` each other Lily theme loads, and its axe result is reported, not failed
+   ([themes-and-contrast.md](themes-and-contrast.md), WPM-R247);
    a content security policy with no inline script except SvelteKit's own, by
    hash, and no `style` attribute.
 7. `make github-pages` runs the POSIX script `bin/make-github-pages`, which runs
@@ -59,7 +60,7 @@ Acceptance criteria:
   Welsh, Mandarin, Arabic and Hindi have a catalogue; every other locale's pages keep English
   chrome around their documents.
 - **All of Lily's themes.** Superseded by WPM-D175: the picker bar offers all 57, and
-  the tests audit each one.
+  the tests audit each one; since WPM-D196 only light and dark fail the run.
 - **The CSP is a meta tag.** GitHub Pages sends no custom headers, so the policy
   is SvelteKit's `<meta http-equiv>` (no `frame-ancestors`). It is stricter than the
   UI's in one way: no `unsafe-inline` styles.
