@@ -1,0 +1,12 @@
+{
+  "name": "workforce-planning-management-root",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository tooling only (syncpack keeps dependency versions in step across the UI and the site); not a package.",
+  "engines": {
+    "node": "=26"
+  },
+  "devDependencies": {
+    "syncpack": "^15.3.3"
+  }
+}

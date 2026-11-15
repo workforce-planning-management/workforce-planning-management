@@ -1,0 +1,8 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "source": [
+    "package.json",
+    "workforce-planning-management-ui-with-svelte/package.json",
+    "workforce-planning-management.github.io/package.json"
+  ]
+}

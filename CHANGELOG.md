@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — syncpack, for dependency versions across the UI and the site (WPM-T494, 2026-11-15)
+
+A root `package.json`, for tooling only, holds `syncpack`; `pnpm exec syncpack lint` at the root says where the UI and the site ask
+for different versions of the same package. Not in CI yet.
+
 ### Fixed — the demo banner is back (WPM-T493, 2026-11-15)
 
 Every demo page again says the data is fictitious, with the tour's Step n of 34, and the demo user is a real demo worker.
