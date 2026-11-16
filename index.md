@@ -20,6 +20,9 @@ documentation page of the website
 - **[The family bridges tutorial](docs/tutorials/family-bridges.md)**: seven
   steps with `curl` through the bridges to the sibling project-portfolio-management
   and contact-relationship-management apps.
+- **[The website's privacy notice](docs/website-privacy-notice.md)**: what the
+  website keeps in your browser (your theme and text size, and scroll positions
+  for a tab), why, and how to remove it.
 
 ## Getting help
 

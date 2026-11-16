@@ -23,9 +23,38 @@
   } from "#lib/site.js";
   import type { LayoutProps } from "./$types";
 
-  // The WPM UI's storage keys, so the choices read the same way (each origin keeps its own).
+  // The WPM UI's storage keys, so the choices read the same way (each origin keeps its own). The theme is kept twice:
+  // in localStorage and in a first-party cookie, so either one alone brings it back (WPM-R253). Both are written only
+  // when the reader chooses, never on a first visit; the privacy notice (/privacy/) names each one.
   const THEME_KEY = "mxi.wpm.theme";
+  const THEME_COOKIE = "wpm-theme";
   const TEXT_SIZE_KEY = "mxi.wpm.text-size";
+
+  // TextSizePicker 0.3.2 writes its storage key when it first applies a size as well as when the reader picks one, so
+  // a first visit would keep "normal". The site keeps a text size only when the reader chooses (WPM-R253), so it
+  // reads the key itself as the picker's starting size (which the picker reads once) and writes it on every apply
+  // after the first, which is the start, not a choice.
+  function keptTextSize(sizes: Record<string, string>): string {
+    if (typeof window === "undefined") return "normal";
+    try {
+      const kept = localStorage.getItem(TEXT_SIZE_KEY) ?? "";
+      return Object.hasOwn(sizes, kept) ? kept : "normal";
+    } catch {
+      return "normal";
+    }
+  }
+  let textSizeStarted = false;
+  function keepTextSize(size: string) {
+    if (!textSizeStarted) {
+      textSizeStarted = true;
+      return;
+    }
+    try {
+      localStorage.setItem(TEXT_SIZE_KEY, size);
+    } catch {
+      // A browser that refuses storage keeps the size for this page only.
+    }
+  }
 
   let { data, children }: LayoutProps & { children: Snippet } = $props();
 
@@ -153,7 +182,7 @@
         share: s.pickers.share,
       }}
       {themesUrl}
-      themeProps={{ storageKey: THEME_KEY, detectFromSystem: true, defaultValue: "light" }}
+      themeProps={{ storageKey: THEME_KEY, cookieName: THEME_COOKIE, detectFromSystem: true, defaultValue: "light" }}
       locales={pickable}
       localeProps={{
         value: locale ?? SITE_LOCALE,
@@ -161,7 +190,7 @@
         applyDir: false,
         onChange: switchLocale,
       }}
-      textSizeProps={{ storageKey: TEXT_SIZE_KEY, sizeLabels: s.textSizes }}
+      textSizeProps={{ defaultValue: keptTextSize(s.textSizes), sizeLabels: s.textSizes, onChange: keepTextSize }}
       {shareTargets}
       shareProps={{
         title: pageTitle,
@@ -187,6 +216,7 @@
     >{s.footer.countsEnd}
     {s.footer.notice}
     {fill(s.footer.export, { directory: SITE_DIRECTORY, tool: "git subtree" })}
+    <a href={href("/privacy/")} data-testid="privacy-link">{s.nav.privacy}</a>
   </p>
 </footer>
 

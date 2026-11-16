@@ -23,6 +23,7 @@ const DOCS = [
   "docs/tutorials/family-bridges.md",
   "spec/index.md",
   "spec/worldwide.md",
+  "docs/website-privacy-notice.md",
 ];
 
 /** @param {string} dir */

@@ -31,6 +31,7 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 | `/family-bridges/` | [`docs/tutorials/family-bridges.md`](../docs/tutorials/family-bridges.md) |
 | `/spec/` | [`spec/index.md`](../spec/index.md) |
 | `/worldwide/` | [`spec/worldwide.md`](../spec/worldwide.md) |
+| `/privacy/` | [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md), linked from every page's footer |
 | `/<locale>/for/` | a locale's list of role briefs (21 locales) |
 | `/<locale>/for/<role>/` | a role brief (11 roles in each locale; the directory name is translated) |
 | `/search/`, `/<locale>/search/` | search, in the browser, over the static `/search-index.json` |

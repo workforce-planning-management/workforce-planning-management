@@ -14,7 +14,8 @@
     "start": "Tutorial",
     "production": "Path to production",
     "docs": "Documentation",
-    "compare": "Compare"
+    "compare": "Compare",
+    "privacy": "Privacy"
   },
   "pickers": {
     "pages": "Pages",

@@ -448,3 +448,9 @@ expiry ([help-and-learning.md](help-and-learning.md)).
 Only light and dark fail a run on an axe violation; another theme's result is reported on the website and unchecked in the UI.
 The UI's link, filled-control and error text use tokens that hold 4.5:1 rather than a theme's fill colours
 ([themes-and-contrast.md](themes-and-contrast.md)).
+
+## WPM-D201 — The website keeps a choice in two places, only when it is made, and names every key
+
+The theme is kept in `localStorage` and a first-party cookie, so either alone restores it; nothing is written until the reader
+chooses; a test checks the privacy notice names every key the browser holds; no consent banner, because nothing kept identifies
+anyone ([github-pages-site.md](github-pages-site.md)).

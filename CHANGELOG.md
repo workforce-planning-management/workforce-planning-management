@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the website's privacy notice, and a theme kept in a cookie as well (WPM-T522, 2026-11-16)
+
+The website keeps a chosen theme in `localStorage` and in a first-party cookie, so either alone brings it back, and keeps a
+chosen text size in `localStorage`. Nothing is kept until the reader chooses; a first visit used to keep the theme and
+the text size it started with. A new page, `/privacy/`, linked from every footer, says what the site keeps, why, and how to remove it. The site's
+picker bar is 0.7.0 (theme picker 0.4.0); the UI's is unchanged.
+
 ### Changed — every Lily package to its latest, and 63 themes (WPM-T505, 2026-11-16)
 
 In the UI and the site. The theme picker offers six more themes: Australia agriculture, Brazil, Canada, the European Union,

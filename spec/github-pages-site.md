@@ -1,6 +1,6 @@
 # The GitHub Pages website
 
-WPM-R217, WPM-R231, WPM-D150, WPM-D175 (themes: WPM-R247, WPM-D196); tasks WPM-T454, WPM-T392 (built) and WPM-T399 (published 2026-11-04, at
+WPM-R217, WPM-R231, WPM-D150, WPM-D175 (themes: WPM-R247, WPM-D196; what is kept: WPM-R253, WPM-D201); tasks WPM-T454, WPM-T392 (built) and WPM-T399 (published 2026-11-04, at
 <https://workforce-planning-management.github.io/>). The family pattern is [monorepo-github-pages](monorepo-github-pages/index.md);
 this file says how WPM applies it. The site itself is
 [`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md).
@@ -23,7 +23,8 @@ Acceptance criteria:
 2. Pages from the root [`index.md`](../index.md) (at `/docs/`; the home page is
    WPM-R231's), `README.md`,
    `INSTALL.md`, [`docs/tutorials/family-bridges.md`](../docs/tutorials/family-bridges.md),
-   [`spec/index.md`](index.md), [`spec/worldwide.md`](worldwide.md), and every
+   [`spec/index.md`](index.md), [`spec/worldwide.md`](worldwide.md),
+   [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md) (at `/privacy/`, WPM-R253), and every
    locale's list and role briefs under `locales/<locale>/for/` (21 locales, 11
    briefs each, as of 2026-10-30).
 3. A locale switcher on every list and brief that opens **the same page** in the
@@ -156,6 +157,60 @@ Acceptance criteria:
   locales) links nowhere yet; every one of its locales now has a site page it could link to.
 - **The site's own words stay in five catalogues.** On a locale without a catalogue (WPM-D175) the note above
   the list and the slider's name prefix are English around the translated page.
+
+## WPM-R253 — The site keeps a reader's choices only when they make them, and its privacy notice says what and why
+
+**As** a reader of the website, **I want** my theme and text size to stay as I chose them, and to be told
+exactly what the site keeps in my browser and why, **so that** the site reads the way I asked and I can trust
+that it keeps nothing about me.
+
+Acceptance criteria:
+
+1. The theme picker is Lily's `ThemePicker` (in `PickerBar`, 0.4.0 or later). It keeps a chosen theme in
+   `localStorage` (`mxi.wpm.theme`, the WPM UI's key) **and** in a first-party cookie (`wpm-theme`: `Path=/`,
+   `SameSite=Lax`, `Secure` on HTTPS, 400 calendar days), and reads the cookie first, then `localStorage`, then
+   the browser's light or dark setting, then light. Either store alone brings the theme back; a cookie that
+   names no theme is ignored.
+2. A chosen text size is kept in `localStorage` (`mxi.wpm.text-size`) and comes back on the next page; a kept
+   value that names no size is ignored.
+3. **Nothing is kept until the reader chooses.** A first visit writes no theme, no text size and no cookie. The
+   language and locale are in the address and are not kept.
+4. `/privacy/`, from [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md), says what is kept
+   (each choice and each storage name, and SvelteKit's per-tab `sveltekit:` session keys for scroll
+   positions), why, that none of it identifies the reader, who receives it (the cookie goes to the web host
+   with each request; no program of WPM's reads it), how long it lasts, how to remove it, and why there is no
+   consent banner. Every page's footer links to it, in the page's catalogue language, and the pages picker
+   lists it.
+5. A test chooses a theme and a text size, collects every `localStorage`, `sessionStorage` and cookie name the
+   site then holds, and fails if the notice does not name each one; so a new key cannot be added without the
+   notice.
+
+## WPM-D201 — Keep a choice in two places, only when it is made, and name every key
+
+- **Cookie and `localStorage`, both.** A browser may clear one and keep the other (a cookie-only clean-up, or
+  storage partitioning in a private window). Keeping the theme in both means either alone restores it, and
+  the cookie is what a server would need to send a page in the reader's theme before any script runs. GitHub
+  Pages runs no server program, so on this site the cookie only restores; it costs a few bytes per request.
+  Text size is kept in `localStorage` only, because Lily's `TextSizePicker` offers no cookie.
+- **Only a choice is kept.** A value kept on a first visit is not the reader's choice, and keeping it would
+  make the site's storage something nobody asked for. `ThemePicker` 0.4.0 writes only on a change.
+  `TextSizePicker` 0.3.2 also writes when it first applies a size, so the site reads and writes the text-size
+  key itself (`keptTextSize`, `keepTextSize` in `src/routes/+layout.svelte`) until a Lily release stops that.
+- **The notice is tested against the browser.** A notice written from memory goes stale the first time a
+  dependency adds a key. The test reads what the browser actually holds after the choices are made and checks
+  the notice names each key. SvelteKit's `sveltekit:` session keys are listed because they are there, though
+  no reader chose them.
+- **No consent banner.** Each item is kept at the reader's request to show the site the way they asked, holds
+  only the name of a theme or a size, and identifies no one: the user-interface customisation that the
+  ePrivacy Directive and the UK's Privacy and Electronic Communications Regulations treat as strictly
+  necessary. The notice says this is the project's reading, not legal advice.
+- **Rejected:** keeping nothing (every page would start in the default theme and size, which fails readers who
+  need a larger size or a dark page); a cookie only (a reader who clears cookies loses the choice, and the
+  UI's `localStorage` key would differ); a consent banner (it asks a question about storage that holds
+  nothing about the reader, on every first visit); a hand-written list of keys (stale on the next upgrade).
+- **The WPM application is not changed here.** It keeps the same kinds of choices (theme, text size and
+  language); its privacy notice is the deployer's ([assessment checklist](governance/assessment-checklist.md),
+  question 3.10). It still uses the earlier picker bar.
 
 ## Not done
 

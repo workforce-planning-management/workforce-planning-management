@@ -5972,3 +5972,25 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
   failure, real commands, "roll back rather than debug forward", and a "before you call it done" checklist. Built from
   [operations/runbook.md](operations/runbook.md) and the restore drill. (S)
 
+
+## The website's privacy notice ([github-pages-site.md](github-pages-site.md), WPM-R253, WPM-D201), 2026-11-16
+
+- [x] (2026-11-16) WPM-T522 **The site keeps a theme in a cookie and in `localStorage`, only when chosen, and says so in a privacy
+      notice.** *(WPM-R253, WPM-D201)* The site's `@lilydesignsystem/svelte-picker-bar` 0.6.0 → 0.7.0, which brings
+      `svelte-theme-picker` 0.4.0 (both excluded from the minimum release age in `pnpm-workspace.yaml`, published 2026-11-16).
+      `themeProps` gains `cookieName: "wpm-theme"` beside `storageKey: "mxi.wpm.theme"`. The text size is read and written by the
+      site (`keptTextSize`, `keepTextSize` in `src/routes/+layout.svelte`), because `TextSizePicker` 0.3.2 writes its key on first
+      load. New [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md) at `/privacy/` (`DOC_PAGES`, the document
+      copy, `nav.privacy` in the five catalogues), linked from every footer and listed by the pages picker; `index.md`, the site's
+      README and `llms.json` list it. Six new tests in `tests/e2e/site.spec.ts`: a first visit keeps nothing; a chosen theme is in
+      `localStorage` and in a `Path=/`, `SameSite=Lax`, cookie lasting about 400 calendar days; the cookie alone and `localStorage` alone each bring
+      it back; a cookie naming no theme loads no stylesheet; a chosen text size is kept, comes back, and an unknown one falls back to
+      normal; every key the browser holds after choosing (including SvelteKit's `sveltekit:` session keys) is named in the notice,
+      and the footer links to it on an English, a Welsh and an Arabic page.
+      **Verified:** `svelte-check` 0 errors and 0 warnings; the build prerenders `/privacy/`; Playwright on `PW_PORT=4196` with
+      `CI=true`, 431 passed (412 before, the six new tests and the new page's own checks from `DOC_PAGES`, among them axe in light
+      and dark); the document copy, links, days, llms, status and rumdl checks pass.
+      **Not done:** the WPM UI is unchanged: it still uses picker bar 0.6.0, so its theme and text size are written on a first
+      visit, and its privacy notice is the deployer's (assessment checklist 3.10). The `Secure` attribute is set by the picker on
+      HTTPS and was not checked (the tests run over HTTP). No lawyer has read the notice's reading of the cookie rules. The footer
+      link's label is AI-translated in Welsh, Mandarin, Arabic and Hindi.

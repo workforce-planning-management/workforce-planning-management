@@ -631,4 +631,5 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R248–R252** configuration checked whole at start, given-up webhook deliveries shown and replayed in a batch an
   administrator chooses, every built requirement cited by a test, and a frozen catalogue of metric and log-event names —
   [lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md) (proposed; WPM-T508–T521).
+- **WPM-R253** the website keeps a reader's theme (in `localStorage` and a first-party cookie) and text size only when they choose them, and its privacy notice at `/privacy/` names everything it keeps, why, and how to remove it — [github-pages-site.md](github-pages-site.md) (WPM-D201; WPM-T522).
 - **WPM-R245** an employee finds their mandatory training and the certifications their role requires in one place from `/me`, most urgent first, with expiry days and a link to act — [help-and-learning.md](help-and-learning.md).

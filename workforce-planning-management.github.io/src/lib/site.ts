@@ -4,7 +4,7 @@
 export const REPO_URL = "https://github.com/workforce-planning-management/workforce-planning-management";
 
 /** A page made from one repository document. `slug` is the route under the site root; `key` names its label in the catalogue (`#lib/i18n.ts`). */
-export type DocPage = { slug: string; path: string; key: "docs" | "readme" | "install" | "familyBridges" | "spec" | "worldwide" };
+export type DocPage = { slug: string; path: string; key: "docs" | "readme" | "install" | "familyBridges" | "spec" | "worldwide" | "privacy" };
 
 export const DOC_PAGES: readonly DocPage[] = [
   { slug: "docs", path: "index.md", key: "docs" },
@@ -13,6 +13,7 @@ export const DOC_PAGES: readonly DocPage[] = [
   { slug: "family-bridges", path: "docs/tutorials/family-bridges.md", key: "familyBridges" },
   { slug: "spec", path: "spec/index.md", key: "spec" },
   { slug: "worldwide", path: "spec/worldwide.md", key: "worldwide" },
+  { slug: "privacy", path: "docs/website-privacy-notice.md", key: "privacy" },
 ];
 
 /**

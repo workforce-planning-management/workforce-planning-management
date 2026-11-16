@@ -620,3 +620,94 @@ for (const theme of THEMES)
     else for (const v of found) info.annotations.push({ type: "axe (reader's theme, not a failure)", description: v });
     expect(csp).toEqual([]);
   });
+
+// WPM-R253: the theme is kept in localStorage and in a first-party cookie, only once the reader chooses; either one
+// alone brings it back; and the privacy notice names everything the site keeps.
+// SvelteKit keeps scroll positions in sessionStorage under `sveltekit:` keys as the reader moves between pages; they
+// are not a choice, so they are left out here and checked against the notice on their own.
+const SVELTEKIT = /^sveltekit:/;
+const kept = (page: Page) =>
+  page.evaluate(
+    (prefix) => ({
+      local: { ...localStorage },
+      session: Object.fromEntries(Object.entries({ ...sessionStorage }).filter(([k]) => !new RegExp(prefix).test(k))),
+      cookie: document.cookie,
+    }),
+    SVELTEKIT.source,
+  );
+
+test("a first visit keeps nothing; choosing a theme keeps it in localStorage and in a cookie", async ({ page }) => {
+  await open(page, "/readme/", "light");
+  expect(await kept(page)).toEqual({ local: {}, session: {}, cookie: "" });
+  await page.getByRole("button", { name: "Theme", exact: true }).click();
+  await page.locator(".theme-picker-option", { hasText: /^\s*Dark\s*$/ }).click();
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  const after = await kept(page);
+  expect(after.local).toEqual({ "mxi.wpm.theme": "dark" });
+  expect(after.session).toEqual({});
+  expect(after.cookie).toBe("wpm-theme=dark");
+  const [cookie] = await page.context().cookies();
+  expect(cookie).toMatchObject({ name: "wpm-theme", value: "dark", path: "/", sameSite: "Lax", httpOnly: false });
+  // About 400 days: a browser may round or cap the lifetime it was given.
+  expect(cookie!.expires * 1000 - Date.now()).toBeGreaterThan(399 * 24 * 3600 * 1000);
+});
+
+test("the theme comes back from the cookie alone, and from localStorage alone", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "wpm-theme", value: "dark", url: baseURL! }]);
+  await page.goto("/readme/", { waitUntil: "networkidle" });
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  await context.clearCookies();
+  await page.evaluate(() => localStorage.setItem("mxi.wpm.theme", "dark"));
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+});
+
+test("a cookie naming no theme is ignored", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "wpm-theme", value: "..%2Fevil", url: baseURL! }]);
+  await open(page, "/readme/", "light");
+  expect(await page.evaluate(() => [...document.styleSheets].map((s) => s.href ?? "").filter((h) => /evil/.test(h)))).toEqual([]);
+});
+
+test("the privacy notice names everything the site keeps, and every page's footer links to it", async ({ page }) => {
+  await open(page, "/readme/", "light");
+  await page.getByRole("button", { name: "Theme", exact: true }).click();
+  await page.locator(".theme-picker-option", { hasText: /^\s*Dark\s*$/ }).click();
+  await page.getByRole("button", { name: "Text size", exact: true }).click();
+  await page.locator(".text-size-picker-option", { hasText: /^\s*Large\s*$/ }).click();
+  const state = await kept(page);
+  const names = [
+    ...Object.keys(state.local),
+    ...Object.keys(state.session),
+    ...state.cookie.split(";").map((c) => c.split("=")[0]!.trim()).filter(Boolean),
+  ];
+  expect(names.sort()).toEqual(["mxi.wpm.text-size", "mxi.wpm.theme", "wpm-theme"]);
+  await page.getByTestId("privacy-link").click();
+  await expect(page).toHaveURL(/\/privacy\/$/);
+  // SvelteKit writes its keys when a page is left, so load the notice again from the address.
+  await page.goto("/privacy/", { waitUntil: "networkidle" });
+  const framework = await page.evaluate(() => Object.keys({ ...sessionStorage }));
+  expect(framework.length).toBeGreaterThan(0);
+  for (const key of framework) expect(key).toMatch(SVELTEKIT);
+  const notice = await page.locator("main").innerText();
+  for (const name of [...names, ...framework]) expect(notice, name).toContain(name);
+  for (const route of ["/", "/cy-001/", "/ar-001/for/"]) {
+    await page.goto(route);
+    await expect(page.getByTestId("privacy-link"), route).toHaveAttribute("href", /\/privacy\/$/);
+  }
+});
+
+test("a text size is kept only when chosen, and comes back on the next page", async ({ page }) => {
+  await open(page, "/readme/", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-text-size", "normal");
+  await page.goto("/docs/", { waitUntil: "networkidle" });
+  expect(await kept(page)).toEqual({ local: {}, session: {}, cookie: "" });
+  await page.getByRole("button", { name: "Text size", exact: true }).click();
+  await page.locator(".text-size-picker-option", { hasText: /^\s*Larger\s*$/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-text-size", "larger");
+  expect((await kept(page)).local).toEqual({ "mxi.wpm.text-size": "larger" });
+  await page.goto("/readme/", { waitUntil: "networkidle" });
+  await expect(page.locator("html")).toHaveAttribute("data-text-size", "larger");
+  await page.evaluate(() => localStorage.setItem("mxi.wpm.text-size", "enormous"));
+  await page.reload({ waitUntil: "networkidle" });
+  await expect(page.locator("html")).toHaveAttribute("data-text-size", "normal");
+});
