@@ -629,6 +629,11 @@
       "description": "The family pattern for a GitHub Pages site exported with git subtree; WPM applies it in spec/github-pages-site.md"
     },
     {
+      "title": "github-discussions-for-organization-repository spec",
+      "path": "spec/github-discussions-for-organization-repository/index.md",
+      "description": "GitHub Discussions on the organization, and how to check that the repository's discussions redirect there"
+    },
+    {
       "title": "spec/uk-gdad-pcf/index.md",
       "path": "spec/uk-gdad-pcf/index.md",
       "description": "the UK Government Digital and Data Profession Capability Framework WPM imports"

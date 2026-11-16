@@ -6,12 +6,12 @@
 
 | Concern | What exists | Read |
 | --- | --- | --- |
-| Payroll | Runs, payslips, benchmarking, year-end close, and audit trail | [payroll.md](../../../../spec/payroll.md) |
-| Financial reporting | Accruals, commitments, and Actuals vs Budget by department | [metrics.md](../../../../spec/metrics.md) |
-| Budgeting | Workforce plans, headcount forecasting, and scenario modeling | [planning.md](../../../../spec/planning.md) |
-| Compliance | Tax calculations (illustrative stubs), regulatory reporting | [compliance.md](../../../../spec/compliance.md) |
-| Cost analysis | Time and leave costs, contractor spend, training investment | [workforce-intelligence.md](../../../../spec/workforce-intelligence.md) |
-| Value | Skills gap analysis, training ROI, succession readiness | [skills-gap.md](../../../../spec/skills-gap.md) |
+| Payroll | Runs, payslips, benchmarking, year-end close, and audit trail | [payroll-compensation.md](../../../../spec/payroll-compensation.md) |
+| Financial reporting | Accruals, commitments, and Actuals vs Budget by department | [human-capital-reporting.md](../../../../spec/human-capital-reporting.md) |
+| Budgeting | Workforce plans, headcount forecasting, and scenario modeling | [strategic-workforce-planning.md](../../../../spec/strategic-workforce-planning.md) |
+| Compliance | Tax calculations (illustrative stubs), regulatory reporting | [regulatory.md](../../../../spec/regulatory.md) |
+| Cost analysis | Time and leave costs, contractor spend, training investment | [workforce-measures.md](../../../../spec/workforce-measures.md) |
+| Value | Skills gap analysis, training ROI, succession readiness | [skills-and-training.md](../../../../spec/skills-and-training.md) |
 
 ## How to contribute
 

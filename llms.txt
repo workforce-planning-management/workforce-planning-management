@@ -153,6 +153,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 ## Optional
 
 - [spec/monorepo-github-pages/index.md](spec/monorepo-github-pages/index.md): The family pattern for a GitHub Pages site exported with git subtree; WPM applies it in spec/github-pages-site.md
+- [spec/github-discussions-for-organization-repository/index.md](spec/github-discussions-for-organization-repository/index.md): GitHub Discussions on the organization, and how to check that the repository's discussions redirect there
 - [spec/uk-gdad-pcf/index.md](spec/uk-gdad-pcf/index.md): the UK Government Digital and Data Profession Capability Framework WPM imports
 - [spec/esco/index.md](spec/esco/index.md): the ESCO skills classification WPM imports
 - [workforce-planning-management-service-with-rust/CHANGELOG.md](workforce-planning-management-service-with-rust/CHANGELOG.md): the service's detailed history
