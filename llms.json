@@ -432,6 +432,11 @@
         "description": "WPM-R243–R245, WPM-D191–D192 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean"
       },
       {
+        "title": "spec/lessons-from-a-rust-rewrite.md",
+        "path": "spec/lessons-from-a-rust-rewrite.md",
+        "description": "Proposed 2026-11-16: 16 engineering ideas from an HL7 v2 integration hub rewritten in Rust, assessed for WPM (configuration checked at start, leak markers, requirement trace, fuzzing, golden files, webhook replay); WPM-R248-R252, WPM-D197-D200, WPM-T508-T521"
+      },
+      {
         "title": "spec/themes-and-contrast.md",
         "path": "spec/themes-and-contrast.md",
         "description": "WPM-R247, WPM-D196 and WPM-T497: light and dark must pass axe on every page of the UI and the website; every other Lily theme stays on offer and is not held to it, because the reader chose it"

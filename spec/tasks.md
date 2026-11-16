@@ -5922,3 +5922,53 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       2026-10-11 date, the header's Home link). **Not done:** the application's own `home.demoNotice` (13 locales) is unchanged (WPM-D194); historical
       records (`CHANGELOG.md`, `NEWS.md`, `tasks.md`, `docs/audits/index.md`) keep their wording; the translations are not reviewed (WPM-T155); no screen
       reader was used; the estimates are one author's judgement.
+
+## Lessons from a Rust rewrite ([lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md)), proposed 2026-11-16
+
+- [ ] WPM-T508 **A time limit on every CI job.** Set `timeout-minutes` on every job in `ci.yml` and `release.yml`, about twice
+  its slowest recent run, and add a check to `check-actions-pinned.py` (or a sibling) that fails on a job without one. (S)
+- [ ] WPM-T509 **The configuration checked whole at start** (WPM-R248, WPM-D199). Replace the first-error returns in
+  `app.rs` with a pass that collects every problem and prints them one per line before a port opens. A `Secret` type
+  renders as `<redacted>`, and a test checks it. Parsers take values, not variable names, so the tests leave the process
+  environment alone. (M)
+- [ ] WPM-T510 **No setting read during a request** (WPM-R248). Move `WPM_PADR_FIRST_AFTER_MONTHS`
+  (`controllers/padr.rs`), `WPM_LEARNING_DUE_SOON_DAYS` (`controllers/mandatory_learning.rs`) and the bridge base URLs
+  (`clients.rs`) into the configuration read at start, and add a test that fails if `std::env::var` appears outside the
+  configuration module. Needs WPM-T509. (S)
+- [ ] WPM-T511 **A planted marker never leaks.** For each module that can put text from a request or a record into an
+  error, a log or a webhook, a test sends a distinctive marker through every failure path and asserts it is in neither
+  the response nor the captured log. While doing so, scope each database assertion to the run's own keys, with a row
+  count. (M)
+- [ ] WPM-T512 **List the requirements no test cites** (WPM-R251). `scripts/trace.py` reads the WPM-R ids marked built and
+  the citations in `tests/`, `src/**/tests` and the UI's tests, and prints those with none. Report only, so the first run
+  shows the size of the gap. (M)
+- [ ] WPM-T513 **The trace in CI.** Fail on a built requirement with no citing test, with a short allowlist for each
+  exception and its reason; `status.py` reports the traced count beside the test counts. Needs WPM-T512 and the gaps it
+  finds. (S)
+- [ ] WPM-T514 **Property fuzzing** (WPM-D200). A `fuzz/` crate outside the workspace, on nightly, with one target for
+  each of: the matcher's normalisers, the CSV and ESCO import, the cursor decoder, the ABAC policy reader and the
+  configuration readers. Each asserts properties only. Crash inputs are kept as seeds, CI replays the seeds on stable
+  through a test, and a scheduled job fuzzes for a fixed time. (M)
+- [ ] WPM-T515 **Golden files for what WPM sends.** Committed examples of the payroll exports, SCIM payloads, webhook
+  bodies and the worked statutory examples, compared in canonical form. The spec says a golden file changes only with a
+  decision or a spec change. (M)
+- [ ] WPM-T516 **Three outcomes, and a given-up state** (WPM-R249, WPM-D197). Webhook and SCIM deliveries classify each
+  answer as accepted, rejected or deferred. A rejected delivery is not retried, and a deferred one that runs out of retries
+  is marked given up. The webhook admin screen lists given-up deliveries with the reason, the last answer and the attempt
+  count, never the payload. (M)
+- [ ] WPM-T517 **Replay a chosen batch** (WPM-R250, WPM-D198). An administrator selects given-up deliveries and replays
+  them. Each keeps its event id and gains a replay id; the replay is audited and safe to run again; no payload is logged.
+  Needs WPM-T516. (M)
+- [ ] WPM-T518 **A catalogue of metric and log-event names** (WPM-R252). List every metric and event, with its labels, in
+  [rust-tracing-stack.md](rust-tracing-stack.md). A test asserts the emitted names match the list exactly, and that no
+  label value comes from a person's data. Flag any listed metric that nothing emits. (M)
+- [ ] WPM-T519 **A register of deliberate departures.** One table of where WPM departs on purpose from a statute, a
+  standard (SCIM, ESCO, SFIA) or a sibling app's contract: what the rule says, what WPM does, why, where it is specified,
+  and an empty "confirmed by, date, decision" column for the accountable person. (S)
+- [ ] WPM-T520 **The MSRV read from its declaration.** CI reads `rust-version` from each `Cargo.toml` and checks with that
+  toolchain, instead of writing `1.98` by hand. (S)
+- [ ] WPM-T521 **An upgrade and rollback runbook in the hub's shape.** It starts from the property that must hold throughout
+  (a rollback needs no data migration, or the step is a migration and says so). Then: the steps in order of least costly
+  failure, real commands, "roll back rather than debug forward", and a "before you call it done" checklist. Built from
+  [operations/runbook.md](operations/runbook.md) and the restore drill. (S)
+

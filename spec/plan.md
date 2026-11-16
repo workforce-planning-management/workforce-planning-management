@@ -1024,3 +1024,18 @@ Research and advice are in [local-ci-cd.md](local-ci-cd.md); the tasks are WPM-T
 ## Learning, upskilling and economic viability (2026-11-04)
 
 [learning-economics.md](learning-economics.md): WPM knows what people need to learn but not what learning costs or returns. Proposed: a course fee (unknown is never free), the cost of the hours beside the fees, a train-or-hire comparison, and a stated benefit with payback and net present value (no benefit is unmeasured, never not viable). Tasks WPM-T446 to WPM-T453 in [tasks.md](tasks.md). Not taken: valuing a skill from market pay, attributing a business result to a course, ranking people by return on training.
+
+## V. Lessons from a Rust rewrite (proposed 2026-11-16)
+
+[lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md) assesses 16 engineering and process ideas from an HL7 v2
+integration hub being rewritten in Rust, spec-driven as WPM is. **Advised order:**
+
+1. The cheap safety rules: a time limit on every CI job; the whole configuration checked at start, with every error
+   reported together; and a planted marker that never reaches a response or a log.
+2. What makes the spec checkable: a list of requirements no test cites; property fuzzing of the pure code that reads
+   untrusted input; and golden files for what WPM sends to other systems.
+3. The missing operational feature: given-up webhook deliveries, shown and replayed in a batch an administrator chooses.
+
+The hub's single gate and run record fold into the local-first CI work already planned (WPM-T437, WPM-T441). Proposed
+WPM-R248 to WPM-R252 and WPM-D197 to WPM-D200; tasks WPM-T508 to WPM-T521. Every decision is the owner's.
+
