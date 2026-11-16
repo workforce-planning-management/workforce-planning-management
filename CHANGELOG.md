@@ -23,6 +23,10 @@ clean. The installed version is still 6.0.3.
 
 Since WPM-T497 an error in the UI read almost as body text. It is red again in light and dark, and still holds WCAG contrast.
 
+### Changed — Lily's ThemePicker 0.3.2 in the UI and the site (WPM-T504, 2026-11-16)
+
+From 0.3.0 to 0.3.2, in both lockfiles. Nothing a reader sees changes: the release adds two options that WPM does not turn on.
+
 ### Changed — the service is on `axa` 0.15 (WPM-T503, 2026-11-16)
 
 From 0.14.0 to 0.15.0, with `axa-test` 0.6.0. No code changes and nothing for an operator to do: the release adds unique

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Lily's ThemePicker 0.3.2 (WPM-T504)
+
+`@lilydesignsystem/svelte-theme-picker` 0.3.0 to 0.3.2, through `svelte-picker-bar` 0.5.1. The picker looks and behaves as
+before; 0.3.2 adds a `themeColor` option and a native-select variant, neither turned on here.
+
 ### Fixed — error text is red again (WPM-T500)
 
 Error text is the theme's error colour mixed 60 per cent with the reading colour, in oklab: red in light and in dark, at

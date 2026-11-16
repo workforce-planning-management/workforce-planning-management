@@ -126,10 +126,11 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
-  '@lilydesignsystem/svelte-theme-picker@0.3.0':
-    resolution: {integrity: sha512-gxp1Yo5rG/H1qD5muWcECQVTKRV5aB2FjCGAnLiUPKCFz44byD1bbzYKcFmr2ILIE7yu6sQyo0G2VFPJSFb8Pg==}
-    engines: {node: '=26'}
+  '@lilydesignsystem/svelte-theme-picker@0.3.2':
+    resolution: {integrity: sha512-bX/FESig8sTrLL31C6HjR6U0FVacFmUqIqQ+ZnngotW5Rmthn7ifncy1DCy09vWStpSMCFDnLJXVhZqTJhLQRg==}
+    engines: {node: '>=26'}
     peerDependencies:
+      '@lilydesignsystem/svelte-headless': '>=0.4.0 <1.0.0'
       svelte: ^5.0.0
 
   '@lilydesignsystem/svelte-time-zone-picker@0.2.0':
@@ -654,7 +655,7 @@ snapshots:
       '@lilydesignsystem/svelte-search-picker': 0.2.0(svelte@5.57.3)
       '@lilydesignsystem/svelte-share-picker': 0.3.0(svelte@5.57.3)
       '@lilydesignsystem/svelte-text-size-picker': 0.3.0(svelte@5.57.3)
-      '@lilydesignsystem/svelte-theme-picker': 0.3.0(svelte@5.57.3)
+      '@lilydesignsystem/svelte-theme-picker': 0.3.2(@lilydesignsystem/svelte-headless@0.6.1(svelte@5.57.3))(svelte@5.57.3)
       '@lilydesignsystem/svelte-time-zone-picker': 0.2.0(@lilydesignsystem/svelte-headless@0.6.1(svelte@5.57.3))(svelte@5.57.3)
       svelte: 5.57.3
 
@@ -673,9 +674,9 @@ snapshots:
       '@lilydesignsystem/svelte-headless': 0.4.0(svelte@5.57.3)
       svelte: 5.57.3
 
-  '@lilydesignsystem/svelte-theme-picker@0.3.0(svelte@5.57.3)':
+  '@lilydesignsystem/svelte-theme-picker@0.3.2(@lilydesignsystem/svelte-headless@0.6.1(svelte@5.57.3))(svelte@5.57.3)':
     dependencies:
-      '@lilydesignsystem/svelte-headless': 0.4.0(svelte@5.57.3)
+      '@lilydesignsystem/svelte-headless': 0.6.1(svelte@5.57.3)
       svelte: 5.57.3
 
   '@lilydesignsystem/svelte-time-zone-picker@0.2.0(@lilydesignsystem/svelte-headless@0.6.1(svelte@5.57.3))(svelte@5.57.3)':
