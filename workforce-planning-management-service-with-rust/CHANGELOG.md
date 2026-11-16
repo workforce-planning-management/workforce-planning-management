@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa 0.15 (WPM-T503)
+
+`axa` 0.14.0 to 0.15.0, with `axa-test` 0.6.0. No code changes. The release adds unique jobs and cron schedules to the job
+queues, `axa::mail` and `axa::storage`, and changes only the MySQL job queue's `enqueue_on`; WPM uses none of those parts, so
+nothing changes for an operator.
+
 ### Changed — axa 0.14 (WPM-T498)
 
 `axa` 0.13.0 to 0.14.0, with `axa-test` 0.5.0 and `axa-cursor-pagination` 0.1.2. No code changes. The release carries a tenant

@@ -23,6 +23,11 @@ clean. The installed version is still 6.0.3.
 
 Since WPM-T497 an error in the UI read almost as body text. It is red again in light and dark, and still holds WCAG contrast.
 
+### Changed — the service is on `axa` 0.15 (WPM-T503, 2026-11-16)
+
+From 0.14.0 to 0.15.0, with `axa-test` 0.6.0. No code changes and nothing for an operator to do: the release adds unique
+and cron jobs, mail and object storage, which WPM does not use. See the service's `CHANGELOG.md`.
+
 ### Changed — the UI follows the browser's light/dark setting (WPM-T499, 2026-11-15)
 
 A reader who has not chosen a theme gets light or dark from the browser's setting, as on the website; a theme chosen in
