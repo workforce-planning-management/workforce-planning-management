@@ -432,8 +432,8 @@
         "description": "WPM-R243–R245, WPM-D191–D192 and WPM-T484–T487: getting help everywhere (a Help link, a help page, every error saying what to try), walkthroughs for an employee, a manager and HR, an employee's one list of required training and certifications, and what uploading an appraisal could mean"
       },
       {
-        "title": "spec/lessons-from-a-rust-rewrite.md",
-        "path": "spec/lessons-from-a-rust-rewrite.md",
+        "title": "spec/lessons/integration-hub-rewrite-it-in-rust/index.md",
+        "path": "spec/lessons/integration-hub-rewrite-it-in-rust/index.md",
         "description": "Proposed 2026-11-16: 16 engineering ideas from an HL7 v2 integration hub rewritten in Rust, assessed for WPM (configuration checked at start, leak markers, requirement trace, fuzzing, golden files, webhook replay); WPM-R248-R252, WPM-D197-D200, WPM-T508-T521"
       },
       {

@@ -5923,7 +5923,7 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       records (`CHANGELOG.md`, `NEWS.md`, `tasks.md`, `docs/audits/index.md`) keep their wording; the translations are not reviewed (WPM-T155); no screen
       reader was used; the estimates are one author's judgement.
 
-## Lessons from a Rust rewrite ([lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md)), proposed 2026-11-16
+## Lessons from a Rust rewrite ([lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md)), proposed 2026-11-16
 
 - [ ] WPM-T508 **A time limit on every CI job.** Set `timeout-minutes` on every job in `ci.yml` and `release.yml`, about twice
   its slowest recent run, and add a check to `check-actions-pinned.py` (or a sibling) that fails on a job without one. (S)

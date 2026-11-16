@@ -171,7 +171,7 @@ announcement read receipts are counts, never names (WPM-D35).
   authorization-attributes,
   security
 - **Local-first CI/CD (proposed):** [local-ci-cd.md](local-ci-cd.md).
-- **Lessons from a Rust rewrite (proposed):** [lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md).
+- **Lessons from a Rust rewrite (proposed):** [lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md).
 - **Learning, upskilling and economic viability:** [learning-economics.md](learning-economics.md).
 - **Help, learning to use WPM, and what is required of me:** [help-and-learning.md](help-and-learning.md).
 - **Themes and contrast (light and dark must pass; any other theme is the reader's choice):** [themes-and-contrast.md](themes-and-contrast.md).

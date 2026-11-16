@@ -1027,7 +1027,7 @@ Research and advice are in [local-ci-cd.md](local-ci-cd.md); the tasks are WPM-T
 
 ## V. Lessons from a Rust rewrite (proposed 2026-11-16)
 
-[lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md) assesses 16 engineering and process ideas from an HL7 v2
+[lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md) assesses 16 engineering and process ideas from an HL7 v2
 integration hub being rewritten in Rust, spec-driven as WPM is. **Advised order:**
 
 1. The cheap safety rules: a time limit on every CI job; the whole configuration checked at start, with every error

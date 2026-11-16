@@ -630,5 +630,5 @@ acceptance criteria and traces to the tasks that delivered it:
 - **WPM-R247** the light and the dark theme pass axe's WCAG A and AA rules on every page of the UI and the website; a reader who has not chosen gets the one the browser's light/dark setting asks for; every other Lily theme stays on offer and is not held to it, because the reader chose it — [themes-and-contrast.md](themes-and-contrast.md).
 - **WPM-R248–R252** configuration checked whole at start, given-up webhook deliveries shown and replayed in a batch an
   administrator chooses, every built requirement cited by a test, and a frozen catalogue of metric and log-event names —
-  [lessons-from-a-rust-rewrite.md](lessons-from-a-rust-rewrite.md) (proposed; WPM-T508–T521).
+  [lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md) (proposed; WPM-T508–T521).
 - **WPM-R245** an employee finds their mandatory training and the certifications their role requires in one place from `/me`, most urgent first, with expiry days and a link to act — [help-and-learning.md](help-and-learning.md).
