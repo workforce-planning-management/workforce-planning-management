@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-16
+
+### Fixed
+
+The published package now includes `migrations/`, which `sqlx::migrate!` and `include_str!` read at compile time. Without it
+`cargo publish` could not verify the package tarball.
+
 ### Changed — axa 0.15 (WPM-T503)
 
 `axa` 0.14.0 to 0.15.0, with `axa-test` 0.6.0. No code changes. The release adds unique jobs and cron schedules to the job
