@@ -187,7 +187,7 @@ The landing pages, tutorial and comparison pages read as a business analyst's de
 
 ### Added — the GitHub Pages documentation site is published (WPM-T399, WPM-R217, WPM-D150, 2026-11-04)
 
-The site built in WPM-T392 is live at <https://workforce-planning-management.github.io/>, exported with `make github-pages` to the new repository `workforce-planning-management/workforce-planning-management.github.io` and deployed by its GitHub Actions workflow. Not done: a sibling clone of the export, and a `404.html` for the site.
+The site built in WPM-T392 is live at <https://workforce-planning-management.github.io/>, exported with `make publish-github-pages` to the new repository `workforce-planning-management/workforce-planning-management.github.io` and deployed by its GitHub Actions workflow. Not done: a sibling clone of the export, and a `404.html` for the site.
 
 ### Added — an advisory statutory-overtime check for a payroll run (WPM-R219, WPM-D157, WPM-T418, WPM-T419, 2026-11-03)
 
@@ -389,8 +389,8 @@ two cannot be told apart (spec/worldwide.md, WPM-T400).
 New subproject `workforce-planning-management.github.io/` (SvelteKit `adapter-static`, Svelte 5 runes, Lily pickers): the root
 `index.md` (new; the repository had none), README, INSTALL, the family bridges tutorial, the spec index, `spec/worldwide.md` and the
 231 role briefs in 21 locales, with a locale switcher that opens the same brief by its `.locale-peer-id`, dates in the page's locale
-as the UI's `locale-format.ts` shows them, and Arabic and Urdu laid out from the right. `make github-pages` runs
-`bin/make-github-pages` (`git subtree push`); CI job `site` (content copy, svelte-check, build, Playwright with axe). **Not done:** no
+as the UI's `locale-format.ts` shows them, and Arabic and Urdu laid out from the right. `make publish-github-pages` runs
+`bin/publish-github-pages` (`git subtree push`); CI job `site` (content copy, svelte-check, build, Playwright with axe). **Not done:** no
 `github-pages` remote, no exported repository and no push (WPM-T399, the maintainer's); the exported repository's deploy workflow
 has never run; the site's own words are English only; 210 of the 231 briefs are not axe-audited.
 

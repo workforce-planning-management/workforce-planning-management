@@ -1,8 +1,8 @@
 # Governance, Risk, Compliance
 
-**The questions you are likely asking:** who is accountable for what, what could go wrong and what stops it, and
+**Perspective:** who is accountable for what, what could go wrong and what stops it, and
 what evidence can I show an assessor? This page gathers the governance, risk and compliance material in one place.
-The role pages for the [Chief Risk Officer](../chief-risk-officer/index.md) and [Chief Legal Officer](../chief-legal-officer/index.md) cover the
+The role pages for the Chief Risk Officer and Chief Legal Officer cover the
 same ground by role.
 
 ## Governance: who decides, and how it is recorded
@@ -53,8 +53,4 @@ on your platform, a professional review of the translations, and your approval o
 The tables point at documents. Whether each document is true of your deployment is for you and your assessor.
 The author's tests are not an independent review, and nothing here is legal advice or a certification.
 
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Counts that change are
-in [implementation-status.md](../../../../spec/implementation-status.md), which a script generates. This is demonstration software
-with synthetic data.
+<Footer>

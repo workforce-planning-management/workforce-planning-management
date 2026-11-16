@@ -1,0 +1,58 @@
+[package]
+name = "wpm-load-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.54.1", features = ["full"] }
+
+# HTTP client
+reqwest = { version = "0.13.5", features = ["json", "rustls"] }
+
+# Random data generation
+rand = "0.8"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# CLI
+clap = { version = "4.6", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Metrics and observability
+metrics = "0.24.6"
+metrics-exporter-prometheus = { version = "0.18.3", optional = true }
+
+# UUID
+uuid = { version = "1.29.2", features = ["v4", "serde"] }
+
+# Time
+chrono = "0.4.45"
+
+# For distributed coordination
+tokio-stream = "0.1"
+
+[dev-dependencies]
+criterion = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+
+
+[features]
+default = []
+distributed = []
+prometheus = ["metrics-exporter-prometheus"]

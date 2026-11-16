@@ -106,7 +106,7 @@ const text = render();
 if (process.argv.includes("--check")) {
   const current = existsSync(OUT) ? readFileSync(OUT, "utf8") : "";
   if (current !== text) {
-    console.error("src/content/docs.json is stale: run `pnpm run sync` (node scripts/sync-content.mjs)");
+    console.error("src/content/docs.json is stale: run `cd workforce-planning-management.github.io && pnpm run sync`");
     process.exit(1);
   }
   console.log("src/content/docs.json is current");

@@ -15,7 +15,7 @@ from hire/termination is roadmap ([integrations.md](integrations.md)).
 
 Employment data is constraint-heavy (unique employee numbers,
 balances, pipelines, payslip totals), so the schema is normalized
-SeaORM tables — not DTO-as-JSONB. All-plural table names (the older
+Rust + Axum + Axa — not DTO-as-JSONB. All-plural table names (the older
 `create_table` pluralization lesson).
 
 ## WPM-D3 — Every lifecycle is a pure-core state machine

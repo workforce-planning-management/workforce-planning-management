@@ -1,6 +1,6 @@
 # Independent security testing
 
-**The question you are likely asking:** how do we get people who did not write this software to attack it, what should
+**Perspective:** how do we get people who did not write this software to attack it, what should
 we point them at, and what do we do with what they find?
 
 No independent test has been done. The [threat model](../../../../spec/governance/threat-model.md) was written by the
@@ -65,18 +65,15 @@ Fill these in with your own security and legal teams. None is decided here.
 
 ## What a clean report does and does not mean
 
-A test with no findings shows that these testers, in this window, with this scope and these identities, found nothing.
-It does not show the absence of flaws, it does not cover a configuration you changed afterwards, and it does not
-replace the other gates: an accessibility audit, your data protection impact assessment signed off, and a restore drill on
-your platform.
+A test with no findings shows that these testers, in this window, with this scope and these
+identities, found nothing.
+It does not show the absence of flaws, it does not cover a configuration you changed afterwards,
+and it does not replace the other gates: an accessibility audit, your data protection impact
+assessment signed off, and a restore drill on your platform.
 
 ## What this page does not do
 
 It does not name a supplier, set a price or promise a standard. Which scheme or accreditation your sector expects of a
 tester is for you to decide.
 
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Counts that change are in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration
-software with synthetic data. Nothing here is legal advice.
+<Footer>

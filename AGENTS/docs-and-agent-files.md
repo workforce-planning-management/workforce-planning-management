@@ -14,7 +14,7 @@
 site is built in
 [`workforce-planning-management.github.io/`](../workforce-planning-management.github.io/README.md)
 ([github-pages-site](../spec/github-pages-site.md), WPM-T392) and published to its
-read-only exported repository with `make github-pages` (WPM-T399). After editing a document the site shows (the root
+read-only exported repository with `make publish-github-pages` (WPM-T399). After editing a document the site shows (the root
 `index.md`, `README.md`, `INSTALL.md`, the tutorial, `spec/index.md`,
 `spec/worldwide.md`, a locale's `index.md` or `start/index.md`, `docs/compare/`, any role brief), run `pnpm run sync` in that directory, or
 CI's `site` job fails. `.claude/settings.local.json` is a local tool file, not an

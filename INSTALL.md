@@ -1,22 +1,22 @@
 # Install
 
-How to build and run both WPM subprojects from source.
+How to build and run both Workforce Planning Management subprojects from source.
 
 ## Try the demo (a guided tour with fictitious data)
 
 The demo needs a **separate** service instance that holds nothing real, because it runs with authentication
 off. In the service directory: create an empty database, `cargo run -- db migrate`, `cargo run -- task seed`,
-start it with `WPM_REQUIRE_AUTH=0` (and, since a tour clicks quickly, `WPM_RATE_LIMIT_PER_MINUTE=6000`), then
+start it with `WORKFORCE_REQUIRE_AUTH=0` (and, since a tour clicks quickly, `WORKFORCE_RATE_LIMIT_PER_MINUTE=6000`), then
 fill it from the repository root:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:1241
+workforce-load-demo-data http://localhost:1241
 ```
 
-Start the UI with `WPM_DEMO_API_URL=http://localhost:1241`. On the sign-in page, sign in as
+Start the UI with `WORKFORCE_DEMO_API_URL=http://localhost:1241`. On the sign-in page, sign in as
 **example@example.com** (no email is sent): you land on `/demo`, a tour of every page, and a banner on each
-page says the data is fictitious and offers Previous and Next. With `WPM_DEMO_API_URL` unset there is no
-demo and that address signs in like any other. Never point `WPM_DEMO_API_URL` at a service that holds real
+page says the data is fictitious and offers Previous and Next. With `WORKFORCE_DEMO_API_URL` unset there is no
+demo and that address signs in like any other. Never point `WORKFORCE_DEMO_API_URL` at a service that holds real
 data: a demo session reaches only that service, with no authentication.
 
 ## Prerequisites
@@ -38,7 +38,7 @@ data: a demo session reaches only that service, with no authentication.
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate    # apply migrations
 cargo run -- task seed     # synthetic orgs: ~40 employees paid in GBP, 3 in JPY
-WPM_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 1241; sign-in enforcement is on by default,
+WORKFORCE_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 1241; sign-in enforcement is on by default,
                                          # so local development without an identity service opts out
 ```
 
@@ -56,11 +56,11 @@ start **one** next to the server:
 
 ```sh
 cargo run -- scheduler --tag wpm     # webhooks, headcount snapshot, warnings, reminders, audit-chain check
-cargo run -- scheduler --tag scim    # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
+cargo run -- scheduler --tag scim    # only where WORKFORCE_SCIM_BASE_URL and WORKFORCE_SCIM_TOKEN are set
 cargo run -- scheduler --list        # what is scheduled, and when
 ```
 
-The mandatory-learning "due soon" window is 90 calendar days; set `WPM_LEARNING_DUE_SOON_DAYS` (1 to 366) on the service to change it.
+The mandatory-learning "due soon" window is 90 calendar days; set `WORKFORCE_LEARNING_DUE_SOON_DAYS` (1 to 366) on the service to change it.
 
 Or schedule the same tasks yourself (cron, a systemd timer, a Kubernetes CronJob) with `cargo run -- task <name>`; the table in
 [spec/operations/deployment.md](spec/operations/deployment.md) says how often each one wants to run.
@@ -73,7 +73,7 @@ Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
 
 ```sh
 podman compose -f compose.test.yaml up -d --wait
-export WPM_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
+export WORKFORCE_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
 cargo test --test mod -- --ignored --test-threads=1   # serial: the tests share one database
 podman compose -f compose.test.yaml down
 ```
@@ -82,7 +82,7 @@ podman compose -f compose.test.yaml down
 
 ```sh
 cd workforce-planning-management-ui-with-svelte
-cp .env.example .env       # WPM_API_URL / AUTH_API_URL — both default
+cp .env.example .env       # WORKFORCE_API_URL / AUTH_API_URL — both default
                             # to http://localhost:1241
 pnpm install
 pnpm dev                   # expects the service running (stub mode is fine)
@@ -125,11 +125,10 @@ curl http://localhost:1241/_health/live
 ```
 
 This starts PostgreSQL, Redis, a demo mail server (Stalwart: a catch-all for `wpm.test` that delivers nothing
-outside; read it with `python3 scripts/demo-mailbox.py`) and the API. **It turns sign-in enforcement off**
-(`WPM_REQUIRE_AUTH: "0"` in `compose.yaml`, with a warning in the log) because
+outside; read it with `workforce-demo-mailbox`) and the API. **It turns sign-in enforcement off**
+(`WORKFORCE_REQUIRE_AUTH: "0"` in `compose.yaml`, with a warning in the log) because
 the demo has no identity service; use synthetic data only. The UI is not
-containerized. Not yet verified: the image build, because the maintainer's
-machine could not pull base images when this was written.
+containerized.
 
 ## Running the service tests
 
@@ -141,13 +140,13 @@ suite runs serially, and each of the other test binaries in its own process):
 ```sh
 cd workforce-planning-management-service-with-rust
 podman compose -f compose.test.yaml up -d --wait
-export WPM_TEST_REDIS_URL=redis://localhost:6379   # Postgres on 5432, Redis on 6379; both have port overrides
+export WORKFORCE_TEST_REDIS_URL=redis://localhost:6379   # Postgres on 5432, Redis on 6379; both have port overrides
 cargo test                                   # unit tests, no database
 cargo test --test mod -- --ignored --test-threads=1
 cargo test --test enforcement -- --ignored --test-threads=1
 cargo test --test enforcement_expenses -- --ignored --test-threads=1
 cargo test --test security -- --ignored --test-threads=1
-cargo test --test chaos -- --ignored --nocapture   # database faults; WPM_CHAOS_SEED=<n> replays a run
+cargo test --test chaos -- --ignored --nocapture   # database faults; WORKFORCE_CHAOS_SEED=<n> replays a run
 scripts/verify-db-roles.sh                         # the request tests as the least-privilege role (postgres-roles/roles.sql); a few minutes
 podman compose -f compose.test.yaml down
 ```
@@ -163,9 +162,11 @@ the sibling apps with `curl` against a throwaway service.
 
 ## Auth
 
-The service enforces sign-in **by default** (`WPM_REQUIRE_AUTH`; only an
+The service enforces sign-in **by default** (`WORKFORCE_REQUIRE_AUTH`; only an
 explicit `0` disables it, and `production` refuses to start that way). See
 [spec/auth.md](spec/auth.md) to point it at your token keys and mount a real
 ABAC policy, and
 [SECURITY.md](SECURITY.md) before exposing either subproject to
 untrusted callers.
+
+<Footer>

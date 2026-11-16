@@ -28,7 +28,7 @@ Mae'r gwasanaeth yn darllen `DATABASE_URL`. Ei ragosodiad yw `postgres://postgre
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate
 cargo run -- task seed
-WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
+WORKFORCE_REQUIRE_AUTH=0 WORKFORCE_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 ```
 
 ## Cam 3: Llwytho'r data ffug
@@ -36,7 +36,7 @@ WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 Mewn ail derfynell, o wraidd yr ystorfa:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:1241
+workforce-demo-data http://localhost:1241
 ```
 
 ## Cam 4: Cychwyn y rhaglen
@@ -44,7 +44,7 @@ python3 scripts/demo-data.py http://localhost:1241
 ```sh
 cd workforce-planning-management-ui-with-svelte
 pnpm install
-WPM_DEMO_API_URL=http://localhost:1241 pnpm dev
+WORKFORCE_DEMO_API_URL=http://localhost:1241 pnpm dev
 ```
 
 ## Cam 5: Dilyn y daith

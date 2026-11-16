@@ -1,6 +1,6 @@
 # For the Chief Risk Officer
 
-**The question you are likely asking:** what could go wrong with this system, what stops it, and what has nobody
+**Perspective:** what could go wrong with this system, what stops it, and what has nobody
 checked?
 
 ## The honest starting point
@@ -35,12 +35,4 @@ An independent penetration test, an independent accessibility audit, the deploye
 a restore drill on your platform, and approval of equality impact assessments. The repository states these
 as gates and does not mark them done.
 
-See also [Chief Information Officer](../chief-information-officer/index.md) and [Chief Legal Officer](../chief-legal-officer/index.md).
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Figures that change
-(tests, migrations, tasks done) are not copied here; read them in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software
-with synthetic data: this page says what it does and does not do, and is not a claim that it is fit for your
-organization. Nothing here is legal advice.
+<Footer>

@@ -75,6 +75,13 @@ lint-markdown:
 	@bash scripts/lint-markdown.sh check --quiet
 
 ##
+# make publish-github-pages: Publish the website subproject to its own sibling repository.
+##
+.PHONY: publish-github-pages
+publish-github-pages:
+	bin/publish-github-pages
+
+##
 # make run-demo: Start the demo.
 ##
 .PHONY: run-demo

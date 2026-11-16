@@ -55,7 +55,6 @@
 
   const home = $derived(locale && hasHome(locale) ? `/${locale}/` : "/");
   const nav = $derived([
-    { label: s.nav.home, route: home },
     { label: s.nav.start, route: `/${locale && hasHome(locale) ? locale : ROOT_HOME_LOCALE}/start/` },
     { label: s.nav.briefs, route: `/${locale ?? DEFAULT_BRIEF_LOCALE}/for/` },
     { label: s.nav.compare, route: "/compare/" },
@@ -63,15 +62,15 @@
   ]);
   // The header names only the few places a newcomer wants; the pages picker lists them all.
   const allPages = $derived([
-    { label: s.nav.production, route: `/${locale ?? ROOT_HOME_LOCALE}/path-to-production/` },
     ...nav,
+    { label: s.nav.production, route: `/${locale ?? ROOT_HOME_LOCALE}/path-to-production/` },
     ...DOC_PAGES.filter((d) => d.key !== "docs").map((d) => ({ label: s.nav[d.key], route: `/${d.slug}/` })),
   ]);
   function current(route: string): boolean {
     if (route.endsWith("/for/")) return /\/for\//.test(page.url.pathname);
     if (route === "/compare/") return /\/compare\//.test(page.url.pathname);
-    if (route.endsWith("/path-to-production/")) return /\/path-to-production\/$/.test(page.url.pathname);
     if (route.endsWith("/start/")) return /\/start\/$/.test(page.url.pathname);
+    if (route.endsWith("/path-to-production/")) return /\/path-to-production\/$/.test(page.url.pathname);
     return page.url.pathname === new URL(href(route), page.url.href).pathname;
   }
 
@@ -335,12 +334,14 @@
     inset-block-start: 100%;
     z-index: 50;
     pointer-events: none;
-    white-space: nowrap;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.75rem;
+    white-space: normal;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
     border-radius: 0.25rem;
     background: var(--ink);
     color: var(--panel);
+    min-width: fit-content;
+    overflow: visible;
   }
   main {
     max-width: 60rem;
@@ -354,8 +355,8 @@
     max-width: 60rem;
     margin-inline: auto;
     padding: 1rem 1.25rem 2rem;
+    border-block-start: 1px solid var(--line);
     color: var(--muted);
     font-size: 0.875rem;
-    border-block-start: 1px solid var(--line);
   }
 </style>

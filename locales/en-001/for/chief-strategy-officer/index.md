@@ -1,6 +1,6 @@
 # For the Chief Strategy Officer
 
-**The question you are likely asking:** is our workforce shaped to serve the strategy, what will we need, and what
+**Perspective:** is our workforce shaped to serve the strategy, what will we need, and what
 should we do about the gap?
 
 ## What you get
@@ -30,11 +30,4 @@ should we do about the gap?
 - Critical chain and critical path scheduling belong to project-portfolio-management, not here.
 - No user interface exists yet for funding or conversion plans.
 
-See also the [Chief Executive Officer](../chief-executive-officer/index.md) and
-[Chief Operating Officer](../chief-operating-officer/index.md) pages.
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Counts that change are in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software with
-synthetic data. Nothing here is legal advice.
+<Footer>

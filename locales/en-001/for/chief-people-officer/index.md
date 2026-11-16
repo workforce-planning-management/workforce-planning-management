@@ -1,6 +1,6 @@
 # For the Chief People Officer
 
-**The question you are likely asking:** does this support the whole employee lifecycle, and can I use it without
+**Perspective:** does this support the whole employee lifecycle, and can I use it without
 holding more about people than I should?
 
 ## What you get
@@ -37,12 +37,4 @@ holding more about people than I should?
 - Collective agreements and recognized bodies are research and proposal only ([worker-unions.md](../../../../spec/worker-unions.md)).
 - Payroll tax is a stub.
 
-See also [Chief Legal Officer](../chief-legal-officer/index.md) and [Chief Executive Officer](../chief-executive-officer/index.md).
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Figures that change
-(tests, migrations, tasks done) are not copied here; read them in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software
-with synthetic data: this page says what it does and does not do, and is not a claim that it is fit for your
-organization. Nothing here is legal advice.
+<Footer>

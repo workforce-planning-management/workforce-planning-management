@@ -108,10 +108,10 @@ step 3. Every later publish is step 4.
 4. Commit any change to this directory, then from the monorepo root run:
 
    ```sh
-   make github-pages
+   make publish-github-pages
    ```
 
-   which runs `bin/make-github-pages`: it checks that the remote exists, that
+   which runs `bin/publish-github-pages`: it checks that the remote exists, that
    `src/content/docs.json` is current and that this directory has no uncommitted
    change, then runs
    `git subtree push --prefix=workforce-planning-management.github.io github-pages main`.

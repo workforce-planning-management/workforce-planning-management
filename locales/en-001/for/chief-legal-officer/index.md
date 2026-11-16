@@ -1,6 +1,6 @@
 # For the Chief Legal Officer
 
-**The question you are likely asking:** what legal duties does this software create or help with, and what must
+**Perspective:** what legal duties does this software create or help with, and what must
 we decide before real data goes in?
 
 > Nothing here is legal advice. The specification states a posture, not a conclusion about any jurisdiction.
@@ -33,12 +33,4 @@ Statutory calculations such as payroll tax are not implemented.
 Lawful basis for each processing purpose, the data protection impact assessment and its sign-off, processor
 agreements, the retention schedule you adopt, and whether to turn on any special-category feature.
 
-See also [Chief People Officer](../chief-people-officer/index.md) and [Chief Risk Officer](../chief-risk-officer/index.md).
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Figures that change
-(tests, migrations, tasks done) are not copied here; read them in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software
-with synthetic data: this page says what it does and does not do, and is not a claim that it is fit for your
-organization. Nothing here is legal advice.
+<Footer>

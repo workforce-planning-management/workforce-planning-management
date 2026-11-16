@@ -1,6 +1,6 @@
 # For the Chief Executive Officer
 
-**The question you are likely asking:** what is the state of our workforce, what needs my attention, and can we
+**Perspective:** what is the state of our workforce, what needs my attention, and can we
 deliver what we have promised with the people we have?
 
 ## What you get
@@ -35,13 +35,4 @@ deliver what we have promised with the people we have?
   protection impact assessment signed off by your officer, and a restore drill on your platform.
 - Which equality impact assessments you approve before any scoring is used ([equality-impact/](../../../../spec/equality-impact/template.md)).
 
-See also the pages for the [Chief Operating Officer](../chief-operating-officer/index.md), [Chief People Officer](../chief-people-officer/index.md) and
-[Chief Risk Officer](../chief-risk-officer/index.md).
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Figures that change
-(tests, migrations, tasks done) are not copied here; read them in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software
-with synthetic data: this page says what it does and does not do, and is not a claim that it is fit for your
-organization. Nothing here is legal advice.
+<Footer>

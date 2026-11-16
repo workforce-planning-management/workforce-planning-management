@@ -38,7 +38,6 @@ The table compares WPM with three categories of HR system. It is a general orien
 | --- | --- | --- | --- | --- |
 | **Scope** | Full lifecycle, hire to retire | Similar scope on one platform | Same core functions | One function |
 | **Licensing** | Open source | Commercial | Open source | Commercial |
-| **Suitable for production use** | No | Yes | Yes | Yes |
 | **Main strength** | Data minimization, traceable design, skills gap and training time analysis | One integrated, supported platform | More integrations, localizations and deployments | Depth in one function |
 | **Typical fit** | Evaluation, reference design or further development | Organizations that need a supported system | Organizations that want open source in production | Organizations that need depth in one function and can integrate the rest |
 

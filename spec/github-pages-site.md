@@ -40,7 +40,7 @@ Acceptance criteria:
    ([themes-and-contrast.md](themes-and-contrast.md), WPM-R247);
    a content security policy with no inline script except SvelteKit's own, by
    hash, and no `style` attribute.
-7. `make github-pages` runs the POSIX script `bin/make-github-pages`, which runs
+7. `make publish-github-pages` runs the POSIX script `bin/publish-github-pages`, which runs
    `git subtree push --prefix=workforce-planning-management.github.io github-pages main`
    after checking that the remote exists, that the document copy is current and
    that the directory has no uncommitted change.

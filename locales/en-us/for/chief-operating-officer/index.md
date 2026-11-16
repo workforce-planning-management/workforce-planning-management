@@ -1,6 +1,6 @@
 # For the Chief Operating Officer
 
-**The question you are likely asking:** do we have the right people, in the right place, at the right time, and
+**Perspective:** do we have the right people, in the right place, at the right time, and
 what breaks if someone is away?
 
 ## What you get

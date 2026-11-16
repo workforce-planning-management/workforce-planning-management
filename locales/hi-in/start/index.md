@@ -28,7 +28,7 @@ cd workforce-planning-management
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate
 cargo run -- task seed
-WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
+WORKFORCE_REQUIRE_AUTH=0 WORKFORCE_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 ```
 
 ## चरण 3: काल्पनिक डेटा लोड करें
@@ -36,7 +36,7 @@ WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 दूसरे टर्मिनल में, रिपॉज़िटरी के मूल से:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:1241
+workforce-demo-data http://localhost:1241
 ```
 
 ## चरण 4: एप्लिकेशन शुरू करें
@@ -44,7 +44,7 @@ python3 scripts/demo-data.py http://localhost:1241
 ```sh
 cd workforce-planning-management-ui-with-svelte
 pnpm install
-WPM_DEMO_API_URL=http://localhost:1241 pnpm dev
+WORKFORCE_DEMO_API_URL=http://localhost:1241 pnpm dev
 ```
 
 ## चरण 5: टूर का पालन करें

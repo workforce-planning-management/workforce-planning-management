@@ -1,6 +1,6 @@
 # For the Chief People Officer
 
-**The question you are likely asking:** does this support the whole employee lifecycle, and can I use it without
+**Perspective:** does this support the whole employee lifecycle, and can I use it without
 holding more about people than I should?
 
 ## What you get

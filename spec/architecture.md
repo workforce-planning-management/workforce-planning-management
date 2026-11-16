@@ -7,7 +7,7 @@
  workforce-planning-management-ui-with-svelte  (SvelteKit BFF)
         │  Authorization: Bearer v4.public.…
         ▼
- workforce-planning-management-service-with-rust  (Axum + axa + SeaORM + PostgreSQL)
+ workforce-planning-management-service-with-rust  (Rust + Axum + Axa + PostgreSQL)
         │  EntityRef lookups (read-only, cached, stub-able)
         ▼
  person / worker / organization / course / authentication services

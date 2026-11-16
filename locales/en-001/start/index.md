@@ -28,7 +28,7 @@ The service reads `DATABASE_URL`. Its default is `postgres://postgres:postgres@l
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate
 cargo run -- task seed
-WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
+WORKFORCE_REQUIRE_AUTH=0 WORKFORCE_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 ```
 
 ## Step 3: Load the fictitious data
@@ -36,7 +36,7 @@ WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run -- start
 In a second terminal, from the repository root:
 
 ```sh
-python3 scripts/demo-data.py http://localhost:1241
+workforce-demo-data http://localhost:1241
 ```
 
 ## Step 4: Start the application
@@ -44,7 +44,7 @@ python3 scripts/demo-data.py http://localhost:1241
 ```sh
 cd workforce-planning-management-ui-with-svelte
 pnpm install
-WPM_DEMO_API_URL=http://localhost:1241 pnpm dev
+WORKFORCE_DEMO_API_URL=http://localhost:1241 pnpm dev
 ```
 
 ## Step 5: Follow the tour

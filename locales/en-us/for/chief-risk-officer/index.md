@@ -1,6 +1,6 @@
 # For the Chief Risk Officer
 
-**The question you are likely asking:** what could go wrong with this system, what stops it, and what has nobody
+**Perspective:** what could go wrong with this system, what stops it, and what has nobody
 checked?
 
 ## The honest starting point

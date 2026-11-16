@@ -1,6 +1,6 @@
-# For the Chief Security Officer
+# For the Chief Information Security Officer
 
-**The question you are likely asking:** how is this protected, how would we know if it were attacked or misused, and
+**Perspective:** how is this protected, how would we know if it were attacked or misused, and
 what has nobody tested?
 
 ## What you get
@@ -36,11 +36,4 @@ Commission the independent penetration test, review the threat model for your en
 your platform, and set branch protection on the hosting platform. See the
 [readiness assessment](../../../../spec/readiness-assessment.md), whose verdict is **not ready** for a high-assurance deployment.
 
-See also the [Chief Risk Officer](../chief-risk-officer/index.md) and
-[Chief Information Officer](../chief-information-officer/index.md) pages.
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Counts that change are in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software with
-synthetic data. Nothing here is legal advice.
+<Footer>

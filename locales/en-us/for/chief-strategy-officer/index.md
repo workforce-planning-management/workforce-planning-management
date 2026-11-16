@@ -1,6 +1,6 @@
 # For the Chief Strategy Officer
 
-**The question you are likely asking:** is our workforce shaped to serve the strategy, what will we need, and what
+**Perspective:** is our workforce shaped to serve the strategy, what will we need, and what
 should we do about the gap?
 
 ## What you get

@@ -1,6 +1,6 @@
 # For the Chief Legal Officer
 
-**The question you are likely asking:** what legal duties does this software create or help with, and what must
+**Perspective:** what legal duties does this software create or help with, and what must
 we decide before real data goes in?
 
 > Nothing here is legal advice. The specification states a posture, not a conclusion about any jurisdiction.

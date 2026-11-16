@@ -1,6 +1,6 @@
 # For the Chief Information Officer
 
-**The question you are likely asking:** how does this fit our estate, who can sign in, where does the data live,
+**Perspective:** how does this fit our estate, who can sign in, where does the data live,
 and how do we run and recover it?
 
 ## What you get

@@ -1,6 +1,6 @@
 # Independent security testing
 
-**The question you are likely asking:** how do we get people who did not write this software to attack it, what should
+**Perspective:** how do we get people who did not write this software to attack it, what should
 we point them at, and what do we do with what they find?
 
 No independent test has been done. The [threat model](../../../../spec/governance/threat-model.md) was written by the

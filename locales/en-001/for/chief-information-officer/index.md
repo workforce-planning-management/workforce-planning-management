@@ -1,6 +1,6 @@
 # For the Chief Information Officer
 
-**The question you are likely asking:** how does this fit our estate, who can sign in, where does the data live,
+**Perspective:** how does this fit our estate, who can sign in, where does the data live,
 and how do we run and recover it?
 
 ## What you get
@@ -27,13 +27,4 @@ and how do we run and recover it?
 - No load measurement exists, and some views read an organization into memory.
 - The image build and compose file were written but should be tried first in your environment.
 
-See [readiness-assessment.md](../../../../spec/readiness-assessment.md) for the full list of gaps and the verdict, and the
-[Chief Technology Officer](../chief-technology-officer/index.md) page for the engineering view.
-
-## How current this is
-
-Written on 2026-10-11 from the specification, not from a run of the software for this page. Figures that change
-(tests, migrations, tasks done) are not copied here; read them in
-[implementation-status.md](../../../../spec/implementation-status.md), which a script generates. WPM is demonstration software
-with synthetic data: this page says what it does and does not do, and is not a claim that it is fit for your
-organization. Nothing here is legal advice.
+<Footer>

@@ -1,4 +1,4 @@
-# Documentation for chief roles
+# For your
 
 One page for each leadership role, saying what Workforce Planning Management gives that role, how to read what it
 shows, what it will not do, and what is still open. Each page links into the [specification](../../../spec/index.md)
@@ -14,9 +14,9 @@ rather than restating it.
 | Chief Legal Officer | [chief-legal-officer](chief-legal-officer/index.md) |
 | Chief People Officer | [chief-people-officer](chief-people-officer/index.md) |
 | Chief Strategy Officer | [chief-strategy-officer](chief-strategy-officer/index.md) |
-| Chief Security Officer | [chief-security-officer](chief-security-officer/index.md) |
+| Chief Information Security Officer | [chief-security-officer](chief-security-officer/index.md) |
 | Governance, Risk, Compliance | [governance-risk-compliance](governance-risk-compliance/index.md) |
 | Independent security testing (a brief for commissioning it) | [independent-security-tester](independent-security-tester/index.md) |
 
 Start with the [readiness assessment](../../../spec/readiness-assessment.md): the verdict is that this is
-demonstration software and not ready for production use in a high-assurance organization.
+demonstration software and  in a high-assurance organization.

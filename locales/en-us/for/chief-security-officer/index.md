@@ -1,6 +1,6 @@
-# For the Chief Security Officer
+# For the Chief Information Security Officer
 
-**The question you are likely asking:** how is this protected, how would we know if it were attacked or misused, and
+**Perspective:** how is this protected, how would we know if it were attacked or misused, and
 what has nobody tested?
 
 ## What you get

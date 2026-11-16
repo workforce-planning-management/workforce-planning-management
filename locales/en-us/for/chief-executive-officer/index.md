@@ -1,6 +1,6 @@
 # For the Chief Executive Officer
 
-**The question you are likely asking:** what is the state of our workforce, what needs my attention, and can we
+**Perspective:** what is the state of our workforce, what needs my attention, and can we
 deliver what we have promised with the people we have?
 
 ## What you get
