@@ -72,7 +72,8 @@ async function overflow(page: Page): Promise<number> {
 test("every page is built and answers 200", async ({ request }) => {
   const all = [...docRoutes, ...homeRoutes, ...productionRoutes, ...listRoutes, ...briefRoutes];
   expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + 2 * BRIEF_LOCALES.length + BRIEFS.length);
-  expect(BRIEFS.length).toBe(BRIEF_LOCALES.length * 11);
+  // Every locale has the 11 shared briefs; en-001 also has the chief finance officer's and the workforce planning manager's.
+  for (const l of BRIEF_LOCALES) expect(BRIEFS.filter((b) => b.locale === l).length, l).toBe(l === "en-001" ? 13 : 11);
   for (const route of all) {
     const res = await request.get(encodeURI(route));
     expect(res.status(), route).toBe(200);
@@ -144,7 +145,7 @@ test("dates read as the WPM UI shows them: the page's locale, a range with the l
   const fmt = (loc: string, iso: string) =>
     new Intl.DateTimeFormat(loc, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${iso}T00:00:00Z`));
   for (const l of ["de-001", "ar-001", "zh-001", "en-001"]) {
-    await page.goto(encodeURI(briefRoute(brief(l, "chief-executive-officer"))));
+    await page.goto(encodeURI(briefRoute(brief(l, "chief-risk-officer"))));
     const time = page.locator('main time[datetime="2026-10-11"]').first();
     await expect(time, l).toHaveText(fmt(l, "2026-10-11"));
   }
@@ -541,7 +542,8 @@ for (const slug of COMPARE_SLUGS)
 test("/compare/ links to every comparison, and the landing page links to /compare/", async ({ page }) => {
   await open(page, "/compare/", "light");
   for (const slug of COMPARE_SLUGS) await expect(page.locator(`main a[href$="/${slug}/"]`)).toBeVisible();
-  await page.locator(".site-header nav").getByRole("link", { name: "Home", exact: true }).click();
+  // The header has no Home link; the brand is the way home.
+  await page.locator(".site-header .brand").click();
   await expect(page.locator('main a[href$="compare/"]')).toBeVisible();
 });
 
@@ -566,7 +568,7 @@ test("the root home has the hero and Translations line, and the language picker 
   await open(page, "/", "light");
   await expect(page.locator("main h1")).toHaveText("Workforce Planning Management");
   await expect(page.getByRole("heading", { name: "Comparison", exact: true })).toBeVisible();
-  await expect(page.locator("main table")).toContainText("Suitable for production use");
+  await expect(page.locator("main table")).toContainText("Typical fit");
   await expect(page.getByTestId("translations")).toContainText("Translations: العربية, Cymraeg, English, हिन्दी, 中文");
   await page.getByTestId("translations").getByRole("link", { name: "中文" }).click();
   await expect(page).toHaveURL(/\/zh-001\/$/);
