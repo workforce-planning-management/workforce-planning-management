@@ -1804,7 +1804,7 @@
   "info": {
     "description": "WPM across the worker lifecycle: requisitions/ATS, onboarding, worker records + org chart, time & attendance, leave, shifts, benefits, reviews, training, succession, payroll runs with derived payslips, benchmarking. Identities are EntityRef URNs (person:/worker:/organization:/course:). Money is minor units + ISO-4217. Validation failures return 422. API version is negotiated with the Accepts-version header (1.0).",
     "title": "Workforce Planning Management Service API",
-    "version": "0.1.3"
+    "version": "0.1.4"
   },
   "openapi": "3.0.3",
   "paths": {
