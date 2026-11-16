@@ -101,7 +101,7 @@ Benchmark (job_title × currency)
   (`open` \| `calibrating` \| `closed`).
 - **Review** — cycle × employee, `status`
   (`draft → submitted → calibrated → shared`), `rating` (1–5),
-  `summary`; **Goal** rows (`title`, `due?`, `status`); 
+  `summary`; **Goal** rows (`title`, `due?`, `status`);
   **FeedbackEntry** rows (`author_ref?`, `text`, continuous —
   attachable outside cycles too).
 - **TrainingEnrollment** — employee × `course_ref`

@@ -478,5 +478,5 @@ The project is **NOT READY for production deployment** in high-assurance organiz
 ---
 
 **Audit Completed:** 2026-11-11  
-**Next Audit Due:** 2026-12-11 (30 days)  
+**Next Audit Due:** 2026-12-11 (30 calendar days)  
 **Responsible Owner:** Project Maintainers

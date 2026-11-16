@@ -5678,18 +5678,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       tutorial, `spec/index.md`, `spec/worldwide.md`, and 21 locale lists with 231 briefs. Dates in running text go through a port of the UI's `locale-format.ts` (`formatDate`, `formatDateRange`,
       `formatInteger`; `src/lib/locale-format.ts`) in the page's locale inside `<time datetime>`; `<html lang dir>` are the page's locale in the prerendered HTML and the CSS is logical only, so
       `ar-001` and `ur-001` are laid out from the right. The UI's colour tokens; a meta CSP with SvelteKit's hashes and no `style` attribute. `scripts/sync-content.mjs` copies the documents into
-      `src/content/docs.json` (CI checks it) so the exported repository builds alone; the exported repository deploys with its own pinned `.github/workflows/deploy.yml`. `make github-pages` runs
-      [`bin/make-github-pages`](../bin/make-github-pages) (`git subtree push --prefix=workforce-planning-management.github.io github-pages main`, after checking the remote, the copy and a clean
+      `src/content/docs.json` (CI checks it) so the exported repository builds alone; the exported repository deploys with its own pinned `.github/workflows/deploy.yml`. `make publish-github-pages` runs
+      [`bin/publish-github-pages`](../bin/publish-github-pages) (`git subtree push --prefix=workforce-planning-management.github.io github-pages main`, after checking the remote, the copy and a clean
       directory). CI job `site`; a Dependabot entry; `check-licenses.py` reads the site's `package.json`. The structure follows PPM's site (its GP-1) so the family's sites build alike.
       **Verified (2026-10-30):** `svelte-check` 0 errors and 0 warnings; `pnpm run build`; Playwright 111 passed on `PW_PORT=4197` (every page answers 200; axe WCAG 2.2 AA, serious and critical, on the
       6 documents, the 21 lists and one brief per locale in light and dark, with no CSP console error; the switcher en-001 → cy-001 → ar-001 on a brief and de-001 → fr-001 on a list; dates in de-001,
       ar-001, zh-001 and en-001 and a range on the README equal `Intl`'s; no date formatted inside code; `ar-001` and `ur-001` right to left with the brand on the right, no overflow and axe clean in both
-      themes; no sideways scroll at 390 px; no `style` attribute); the svelte autofixer on every `.svelte` file; `make github-pages` stops with the missing-remote message; `shellcheck` on the script;
+      themes; no sideways scroll at 390 px; no `style` attribute); the svelte autofixer on every `.svelte` file; `make publish-github-pages` stops with the missing-remote message; `shellcheck` on the script;
       screenshots read (home light, an Arabic brief dark, the Arabic list at phone width). **Not done:** no `github-pages` remote, no exported repository, no push, no sibling clone (WPM-T399, the
       owner's); the deploy workflow has never run. The site's own words are English only; the Bengali briefs write dates in Bengali digits, so they are left as written; two themes only; the first paint
       uses the light fallback tokens; 210 of the 231 briefs are not axe-audited.
 - [x] (2026-11-04) WPM-T399 **Publish the GitHub Pages site.** *(WPM-R217, WPM-D150)* At the maintainer's direction: created the public repository `workforce-planning-management/workforce-planning-management.github.io`, set
-      its Pages source to GitHub Actions, added the `github-pages` remote and ran `make github-pages`; the first run of the deploy workflow passed, and the site is at <https://workforce-planning-management.github.io/>.
+      its Pages source to GitHub Actions, added the `github-pages` remote and ran `make publish-github-pages`; the first run of the deploy workflow passed, and the site is at <https://workforce-planning-management.github.io/>.
       **Verified:** before the push the content copy was current, `svelte-check` found 0 errors, the build wrote 258 pages and all 111 Playwright and axe tests passed. On the live site a crawl of every internal link reached 258 pages
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
