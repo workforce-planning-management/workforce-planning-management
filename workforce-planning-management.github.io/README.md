@@ -40,7 +40,7 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 - A link between two of these documents stays on the site; a link to any other
   file in the repository goes to that file on GitHub. Raw HTML in the Markdown is
   shown as text.
-- The header is the full Lily `PickerBar`: pages, search, theme (all 57), language,
+- The header is the full Lily `PickerBar`: pages, search, theme (all 63), language,
   text size (all 7) and share. Choosing a language opens the same page in that
   locale, matched by its `.locale-peer-id`; a page with no translation of itself opens
   the locale's landing page, or its list of briefs.

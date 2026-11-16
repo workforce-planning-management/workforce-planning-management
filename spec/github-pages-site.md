@@ -59,7 +59,7 @@ Acceptance criteria:
 - **The site's own words are in catalogues.** Superseded in part by WPM-D175: English,
   Welsh, Mandarin, Arabic and Hindi have a catalogue; every other locale's pages keep English
   chrome around their documents.
-- **All of Lily's themes.** Superseded by WPM-D175: the picker bar offers all 57, and
+- **All of Lily's themes.** Superseded by WPM-D175: the picker bar offers all 63 (57 before WPM-T505), and
   the tests audit each one; since WPM-D196 only light and dark fail the run.
 - **The CSP is a meta tag.** GitHub Pages sends no custom headers, so the policy
   is SvelteKit's `<meta http-equiv>` (no `frame-ancestors`). It is stricter than the
@@ -110,7 +110,7 @@ Acceptance criteria:
 - **The header names four or five places**; the pages picker lists them all.
 - **A filled control is the theme's text and panel colours inverted**, and link and muted
   text are mostly the text colour, because a theme's own primary does not hold 4.5:1 in
-  all 57 themes.
+  all 63 themes.
 - **`/` shows `en-001`'s landing page**; the repository's document index moved to `/docs/`.
 
 ## WPM-R246 — The path to production, with a readiness estimate on every item

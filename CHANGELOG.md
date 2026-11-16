@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — every Lily package to its latest, and 63 themes (WPM-T505, 2026-11-16)
+
+In the UI and the site. The theme picker offers six more themes: Australia agriculture, Brazil, Canada, the European Union,
+Japan and Singapore. Nothing else a reader sees changes.
+
 ### Added — an hour's soak (WPM-T502, 2026-11-15)
 
 At 10,000 workers under mixed reads and writes for an hour, no request failed, memory rose to 40 MiB and fell back to 35 MiB,

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — every Lily package to its latest (WPM-T505)
+
+`svelte-calendar` 0.7.2, `svelte-data-grid` 0.11.2, `svelte-gantt-chart` 0.8.2, `svelte-headless` 0.9.0, `svelte-kanban-board`
+0.8.3, `svelte-picker-bar` 0.6.0 and `themes` 0.6.2. The theme picker offers 63 themes, six more than before. No code changes.
+
 ### Changed — Lily's ThemePicker 0.3.2 (WPM-T504)
 
 `@lilydesignsystem/svelte-theme-picker` 0.3.0 to 0.3.2, through `svelte-picker-bar` 0.5.1. The picker looks and behaves as

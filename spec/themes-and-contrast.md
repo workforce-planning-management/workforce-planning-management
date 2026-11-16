@@ -34,7 +34,7 @@ Acceptance criteria:
   browser or the operating system; asking again would be a second place to keep it. Lily's `ThemePicker` reads
   it (`detectFromSystem`) and falls back to light.
 - **Two themes are vouched for.** Light and dark are what a reader sees without choosing, so they are the themes
-  WPM is accountable for. Holding all 57 to WCAG would mean either removing most of them or overriding their colours
+  WPM is accountable for. Holding all 63 to WCAG would mean either removing most of them or overriding their colours
   until they stopped being themselves.
 - **A chosen theme is the reader's decision.** A reader who picks a theme with low contrast, or a decorative one,
   has chosen how the page looks to them. The picker shows every Lily theme
@@ -52,5 +52,5 @@ Acceptance criteria:
     page, 8.5:1 on dark's), so it still reads as red; Lily's own `--lily-error-text` keeps 22 per cent and reads
     as body text (WPM-T500). An oklch mix was tried and turned the red plum.
 - **Rejected:** overriding Lily's `dark.css` (it is copied from the package, and the next update would undo it);
-  testing every theme in the UI and allowing failures (69 pages by 57 themes is 3,933 runs to report what no one
+  testing every theme in the UI and allowing failures (69 pages by 63 themes is 4,347 runs to report what no one
   is held to); dropping the themes that fail (the owner wants them kept, on 2026-11-15).
