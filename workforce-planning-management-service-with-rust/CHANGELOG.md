@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `axa` 0.17 (WPM-T524)
+
+`axa` 0.15.0 to 0.17.0 and `axa-test` 0.6.0 to 0.8.0. `workforce-planning-management health [--ready] [--port PORT]` asks the
+service on this machine for `/_health/live` (or `/_health/ready`) and exits non-zero unless it answers `2xx` in 5 seconds, for an
+image with no `curl`. A trailing slash on a mounted path is now a `308` to the path without it, not a `404`. `INTERNAL_PORT` and
+`PROXY_PROTOCOL_FROM` are new, optional settings.
+
 ### Added — the AI Act's date in the jurisdiction profile (WPM-T409, part)
 
 A `date` shape in the parameter registry and the key `ai_act.applies_from`. `GET /api/ai-register?organization=` gives the date

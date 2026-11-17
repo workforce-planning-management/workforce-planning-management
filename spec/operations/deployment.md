@@ -72,6 +72,8 @@ not a statement that your deployment is under that regime.
 | `SEND_STALL_TIMEOUT_SECONDS` | no | `60` | How long a response may wait on a client that has stopped reading before the connection is dropped. Any byte that goes through starts it again, so a slow download is unaffected (`axa` 0.7) |
 | `HTTP_REQUEST_HEADER_READ_TIMEOUT_SECONDS` | no | `30` | How long a client may take to send a request's headers before the connection is dropped (`axa` 0.11; it was `HEADER_READ_TIMEOUT_SECONDS`) |
 | `SHUTDOWN_DRAIN_SECONDS` | no | `0` | After `SIGTERM`, how long `/_health/ready` answers `503` while the service still serves, so a load balancer stops sending it requests first (`axa` 0.11). On Kubernetes set a little more than the cluster takes to remove a pod, and keep `terminationGracePeriodSeconds` above it plus `SHUTDOWN_TIMEOUT_SECONDS` |
+| `INTERNAL_PORT` | no | none | A second listener for the health probes and `/metrics.prom` alone, which the main port then answers `404`; `health` asks it (`axa` 0.16, WPM-T524). Not yet tried with WPM |
+| `PROXY_PROTOCOL_FROM` | no | none | Address ranges whose connections start with a PROXY protocol header (version 1 or 2) naming the client, for a layer-4 load balancer; a connection from them without one is closed (`axa` 0.16, WPM-T524). Not yet tried with WPM |
 | `SHUTDOWN_TIMEOUT_SECONDS` | no | `25` | How long to wait for requests in flight after `SIGTERM`. Keep it under the orchestrator's own limit; `0` waits for as long as they take |
 | `AXA_DESTROY_DATA` | no | off | Confirms `db down`, `db reset` or `db truncate` in development or test. They are refused elsewhere (WPM-R237) |
 
@@ -173,6 +175,8 @@ set: it migrates as `wpm_migrator`, shows `wpm_app` is refused each schema and a
 `/_ping` and `/_readiness` now answer `404`, so move a liveness or readiness probe, a load balancer or an uptime check
 before the upgrade, or the orchestrator restarts the service again and again. `GET /metrics.prom`
 needs a bearer token; give the scraper a service token.
+`workforce-planning-management health` (with `--ready` for readiness, `--port` for another port) asks the service on the same machine
+and exits non-zero unless it answers `2xx` in 5 seconds, for a container probe in an image with no `curl` (`axa` 0.16, WPM-T524).
 
 ## Logs and the audit feed (WPM-R122, WPM-T197)
 

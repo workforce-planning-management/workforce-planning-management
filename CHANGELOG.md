@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — `axa` 0.17 (WPM-T524, 2026-11-17)
+
+The service moves from `axa` 0.15 to 0.17, inside the minimum publish age at the owner's request. It gains a `health` command,
+and a trailing slash on an API path redirects instead of answering `404`.
+
 ### Added — the privacy notice in every locale, and the app's footer links to it (WPM-T523, 2026-11-17)
 
 The notice now covers the WPM application as well as the website: the application keeps the theme, text size and language,

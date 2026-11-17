@@ -461,6 +461,20 @@ impl App {
             }
             return Ok(());
         }
+        if let Command::Health { ready, port } = cli.command {
+            // `service health` (axa 0.16) on WPM's own config, as `check` is, so it asks the port WPM listens on.
+            let port = port
+                .or(config.server.internal_port)
+                .unwrap_or(config.server.port);
+            let path = if ready {
+                axa::health::READY
+            } else {
+                axa::health::LIVE
+            };
+            axa::cli::probe(&config.server.binding, port, path, axa::cli::HEALTH_TIMEOUT).await?;
+            println!("{path}: ok");
+            return Ok(());
+        }
         config.apply_cli(&cli);
         let ctx = Self::context(environment, config).await?;
         axa::logger::init(env!("CARGO_CRATE_NAME"), &ctx.config.logger);
@@ -484,7 +498,7 @@ impl App {
                 };
                 tasks.run(&name, &ctx, &parse_vars(&params)?).await
             }
-            Command::Check => Ok(()), // answered above
+            Command::Check | Command::Health { .. } => Ok(()), // answered above
         }
     }
 
