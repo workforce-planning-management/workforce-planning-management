@@ -137,6 +137,11 @@
         "description": "skill pools, programme demand, partner commitments, the capacity view, the constraint pool, the start check and start decisions (WPM-R56–R60)"
       },
       {
+        "title": "spec/deliberate-departures.md",
+        "path": "spec/deliberate-departures.md",
+        "description": "where WPM departs on purpose from a statute, a standard or a sibling app's contract, with a column for sign-off (WPM-T519)"
+      },
+      {
         "title": "spec/pay-scales.md",
         "path": "spec/pay-scales.md",
         "description": "A national public-sector pay scale, salary placement and progression lookup, a worker's band and step (WPM-R51, R54)"

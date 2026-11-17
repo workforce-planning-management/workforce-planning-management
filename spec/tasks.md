@@ -5996,9 +5996,16 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 - [ ] WPM-T518 **A catalogue of metric and log-event names** (WPM-R252). List every metric and event, with its labels, in
   [rust-tracing-stack.md](rust-tracing-stack.md). A test asserts the emitted names match the list exactly, and that no
   label value comes from a person's data. Flag any listed metric that nothing emits. (M)
-- [ ] WPM-T519 **A register of deliberate departures.** One table of where WPM departs on purpose from a statute, a
+- [x] (2026-11-17) WPM-T519 **A register of deliberate departures.** One table of where WPM departs on purpose from a statute, a
   standard (SCIM, ESCO, SFIA) or a sibling app's contract: what the rule says, what WPM does, why, where it is specified,
   and an empty "confirmed by, date, decision" column for the accountable person. (S)
+  *The owner said next on 2026-11-17; read as confirming this one, with WPM-T508, WPM-T512 and WPM-T520.* Done:
+  [deliberate-departures.md](deliberate-departures.md), three tables (20 statutes and regulations, 10 standards, 6 sibling
+  contracts) and 8 items to confirm, which the files do not plainly frame as chosen. Found by a search agent over `spec/`, then
+  25 of its quotations checked against the files (all there, some across a line break) and every cited WPM-R and WPM-D
+  checked for a definition; one wrong id (WPM-D178 on the separation documents) was taken out. The "Where" column names files and
+  ids, not line numbers, which move. **Not done:** no row is confirmed, and none is reviewed against the law or a standard's
+  own text; a departure the specification does not write down is not here.
 - [x] (2026-11-17) WPM-T520 **The MSRV read from its declaration.** CI reads `rust-version` from each `Cargo.toml` and checks with that
   toolchain, instead of writing `1.98` by hand. (S)
   *The owner said next on 2026-11-17; read as confirming this one, with WPM-T508.* Done: the `msrv` job reads `rust-version`

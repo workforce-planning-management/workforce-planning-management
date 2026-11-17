@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a register of deliberate departures (WPM-T519, 2026-11-17)
+
+[spec/deliberate-departures.md](spec/deliberate-departures.md) lists 36 places where WPM departs on purpose from a statute, a
+standard or a sibling app's contract, and 8 more to confirm, each with a column for the accountable person's sign-off.
+
 ### Added — a report of the requirements no test cites (WPM-T512, 2026-11-17)
 
 `scripts/trace.py` lists each requirement a done task cites that no test names. Report only: the first run finds 111 of 231.
