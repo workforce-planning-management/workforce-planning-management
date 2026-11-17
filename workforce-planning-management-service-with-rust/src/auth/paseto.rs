@@ -822,6 +822,8 @@ mod tests {
     /// fallback verifier has no keys (the fetched key set wins).
     #[tokio::test]
     async fn fetch_or_fetched_key_set_wins() {
+        // reqwest is built with no rustls provider of its own; the service installs `ring` at boot, so a test must too.
+        crate::shared_cache::install_tls_provider();
         let (keys, kid) = test_keys_and_kid();
         let url = serve_keys(keys).await;
         let verifier = fetch_or(&url, ISSUER, AUDIENCE, empty_verifier(ISSUER, AUDIENCE)).await;
@@ -838,6 +840,8 @@ mod tests {
     /// so the service always boots.
     #[tokio::test]
     async fn fetch_or_unreachable_url_falls_back() {
+        // reqwest is built with no rustls provider of its own; the service installs `ring` at boot, so a test must too.
+        crate::shared_cache::install_tls_provider();
         let (keys, kid) = test_keys_and_kid();
         let fallback = Verifier::from_paseto_keys_value(&keys, ISSUER, AUDIENCE).unwrap();
         let verifier = fetch_or("http://127.0.0.1:1/", ISSUER, AUDIENCE, fallback).await;

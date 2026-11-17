@@ -530,9 +530,9 @@ pub fn enforce(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ring::signature::KeyPair;
     use base64::Engine;
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use ring::signature::KeyPair;
 
     const ISSUER: &str = "https://keycloak.example/realms/wpm";
     const AUDIENCE: &str = "wpm-service";
