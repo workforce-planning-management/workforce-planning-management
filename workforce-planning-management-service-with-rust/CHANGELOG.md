@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the matcher 0.2 (WPM-T532)
+
+The domain crate depends on `workforce-planning-management-matcher` 0.2.0; the service's unused direct dependencies on the
+matcher and on `unicode-normalization` are removed. The service builds no `chrono`; its tests still do, through `axum-test`.
+
 ### Changed — `croner` in place of `cron` (WPM-T531)
 
 The schedule's six-field expressions are parsed by `croner` 4.0.3 (`jiff` feature, no default features): seconds required, an

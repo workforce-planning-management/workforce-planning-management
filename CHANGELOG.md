@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the matcher 0.2.0, published, and no chrono in the service (WPM-T532, 2026-11-17)
+
+`workforce-planning-management-matcher` 0.2.0, on jiff, is on crates.io, and the domain crate uses it. chrono is now in neither
+the service's normal nor its build graph; it remains only as a test dependency, through `axum-test`.
+
 ### Changed — the scheduler's cron expressions on jiff (WPM-T531, 2026-11-17)
 
 `cron` is replaced by `croner` 4.0.3 with its `jiff` feature, so the scheduler is jiff from end to end and the service has no

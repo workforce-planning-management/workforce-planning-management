@@ -5699,11 +5699,21 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
-- [~] (2026-11-17) WPM-T532 **The matcher 0.2.0, on jiff, and the service on it.** *The owner chose this on 2026-11-17 (option B: take chrono out of the build).*
-      **Part done:** the matcher's version is 0.2.0 and its changelog has the release section (the breaking change of WPM-T528:
-      `WorkerRecord::date_of_birth` is a `jiff::civil::Date`; the MSRV 1.98; the WPM-T526 tests). `cargo publish --dry-run`
-      packages and builds it; 58 tests pass. **Left:** `cargo publish`, then the service and the domain crate on `0.2`, so that
-      chrono leaves the build.
+- [x] (2026-11-17) WPM-T532 **The matcher 0.2.0, on jiff, and the service on it.** *The owner chose this on 2026-11-17 (option B: take chrono out of the build), which included the publish.*
+      The matcher's version is 0.2.0, with its changelog's release section (`WorkerRecord::date_of_birth` is a
+      `jiff::civil::Date`, breaking, WPM-T528; the MSRV 1.98; the WPM-T526 tests); committed and on `main` (`bd5583e6`) before it
+      was published, as `AI_STATEMENT.md` §6 asks. **Published** to crates.io on 2026-11-17 after a clean `cargo publish
+      --dry-run` from the main checkout. The domain crate, the only user of the matcher since WPM-T529, asks for `0.2`, resolved
+      with `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow` since it was minutes old; nothing in WPM reads `date_of_birth`. The
+      service's own matcher and `unicode-normalization` dependencies, unused since the rules moved, are gone. **Result: chrono is
+      in neither the normal nor the build graph** of the service, on every target, under both auth backends (`cargo tree -i chrono
+      -e normal,build --target all`: nothing to print). **What is left:** chrono is still a dev-dependency, through `axum-test`
+      21.1.0, whose `expect-json` requires it with no feature to turn it off (and 22.0.0-rc.1 likewise), both directly and through
+      `axa-test`. `cargo deny` checks dev-dependencies, so its advisories still fail on RUSTSEC-2026-0543 until the owner
+      decides: accept it as test-only, set `exclude-dev` in `deny.toml`, or wait for `expect-json`. **Verified:** clippy with
+      `-D warnings` on every target under both backends; 1,305 lib tests across the workspace (12, 167 and 1,126); the benchmark
+      run; `cargo deny` bans, licences and sources.
+
 - [x] (2026-11-17) WPM-T531 **The scheduler's cron expressions on jiff.** *The owner chose, on 2026-11-17, to take chrono out of the build rather than accept RUSTSEC-2026-0543.* *(WPM-D202)*
       `cron` 0.17, whose schedule takes and gives `chrono` instants, is replaced by `croner` 4.0.3 (published 2026-11-04,
       outside the minimum publish age) with `default-features = false` and its `jiff` feature, which is for `jiff` 0.2, the

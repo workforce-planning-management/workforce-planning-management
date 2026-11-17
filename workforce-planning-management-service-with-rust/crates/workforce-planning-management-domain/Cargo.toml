@@ -28,4 +28,4 @@ serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precisio
 sha2 = { version = "0.11" }
 unicode-normalization = { version = "0.1.26" }
 uuid = { version = "1.29.2", features = ["v4", "serde"] }
-workforce-planning-management-matcher = "0.1"
+workforce-planning-management-matcher = "0.2"
