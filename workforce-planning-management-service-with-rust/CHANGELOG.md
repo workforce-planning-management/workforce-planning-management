@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — chrono accepted as test-only (WPM-T535)
+
+`deny.toml` accepts RUSTSEC-2026-0543 (chrono, unmaintained), which now reaches only the tests, through `axum-test`'s
+`expect-json`; the service builds none. `cargo deny check` passes.
+
 ### Changed — two test binaries where there were nineteen (WPM-T534)
 
 `cargo test --test main` (was `--test mod`) runs the request suites with `-- --ignored` and the source and configuration checks
