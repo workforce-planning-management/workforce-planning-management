@@ -5963,9 +5963,19 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
   error, a log or a webhook, a test sends a distinctive marker through every failure path and asserts it is in neither
   the response nor the captured log. While doing so, scope each database assertion to the run's own keys, with a row
   count. (M)
-- [ ] WPM-T512 **List the requirements no test cites** (WPM-R251). `scripts/trace.py` reads the WPM-R ids marked built and
+- [x] (2026-11-17) WPM-T512 **List the requirements no test cites** (WPM-R251). `scripts/trace.py` reads the WPM-R ids marked built and
   the citations in `tests/`, `src/**/tests` and the UI's tests, and prints those with none. Report only, so the first run
   shows the size of the gap. (M)
+  *The owner said next on 2026-11-17; read as confirming this one, with WPM-T508 and WPM-T520.* Done: `scripts/trace.py`
+  (`--json` for the same as JSON), report only, always exit 0. **What "built" means here:** no requirement carries a mark
+  of its own, so a requirement is built when a task marked done cites it anywhere in its entry; a requirement is one with a
+  `## WPM-R<n>` heading or a `- **WPM-R<n>` item anywhere in `spec/`. A test cites it when its id is in the service's,
+  the matcher's, the UI's or the site's test files, or in a service or matcher source file after its first `#[cfg(test)]`;
+  a range such as `WPM-R1–R3` cites each id in it. **The first run:** 250 requirements defined, 231 built, 120 of them
+  cited by a test and **111 cited by none** (WPM-R251 among them, built by this entry); every id a done task cites is defined, and the numbers with no definition
+  (R18, R19, R71) are ones never used or withdrawn. A citation is a name, not a check, so the count is where the trace is
+  missing, not how well anything is tested. **Not done:** failing CI on a gap (WPM-T513, which needs these 111 sorted into
+  tests to write and exceptions to allow), and the count in `status.py` (also WPM-T513).
 - [ ] WPM-T513 **The trace in CI.** Fail on a built requirement with no citing test, with a short allowlist for each
   exception and its reason; `status.py` reports the traced count beside the test counts. Needs WPM-T512 and the gaps it
   finds. (S)

@@ -23,7 +23,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | UI | `pnpm build` | green |
 | UI | `pnpm exec playwright test tests/e2e/a11y-routes.spec.ts` | axe (WCAG 2 A and AA) on every page route; add a new page to `tests/e2e/axe-routes.ts` or `pnpm test` fails |
 | Site | `node scripts/sync-content.mjs --check`, `pnpm run check`, `pnpm run build`, `PW_PORT=<free port> CI=true pnpm exec playwright test` in `workforce-planning-management.github.io/` | copy current; 0 errors; 258 pages; 111 pass (axe light and dark, locale switch, `ar-001` and `ur-001` right to left, dates) |
-| Repo | `python3 scripts/status.py --check`, `llms.py --check`, `check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`, `check-job-timeouts.py` | each clean; CI's `docs` job runs them |
+| Repo | `python3 scripts/status.py --check`, `llms.py --check`, `check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`, `check-job-timeouts.py` (and `trace.py`, a report of built requirements no test cites, not a gate) | each clean; CI's `docs` job runs them |
 
 `CONTRIBUTING.md` also asks for `cargo fmt --check`, `cargo clippy --all-targets
 -- -D warnings` and `pnpm lint` (`eslint .` then `prettier --check` over `src`, `tests`,

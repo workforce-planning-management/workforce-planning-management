@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a report of the requirements no test cites (WPM-T512, 2026-11-17)
+
+`scripts/trace.py` lists each requirement a done task cites that no test names. Report only: the first run finds 111 of 231.
+
 ### Changed — the MSRV job reads `rust-version` (WPM-T520, 2026-11-17)
 
 CI checks the matcher and `entity-ref` on the toolchain each `Cargo.toml` declares, so raising a crate's `rust-version` moves
