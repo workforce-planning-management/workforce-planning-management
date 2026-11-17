@@ -28,6 +28,13 @@ because the demo has none. A deployer must replace "not yet measurable" with the
 | S9 | **Risk of loss** (flight risk) | not built | | | | |
 | S10 | Stated skill level counted on WPM's 1–5 (SFIA's seven levels, a PCF level) | mapping | rules (`linear`, pinned) | gap, plan and requirement views | the worker, their line managers and HR | `rules::sfia::to_wpm`, `rules::framework::map_level` |
 
+**The statutory pay checks score no one** (WPM-T424). The minimum-wage check (WPM-R218), the overtime check (WPM-R219) and
+the exempt salary check compare pay with a figure the law or an agreement sets and say, for each payslip, whether the pay meets it
+(the minimum-wage check answers `below`, `near`, `ok` or `unknown`). They rank no one, inform no decision about a person's merit, and change no pay; the outcome is about whether the
+employer paid enough. The minimum-wage check reads a date of birth only to pick an age band (WPM-D156), so a younger worker's
+lower floor is the law's distinction, not WPM's. They are not in the register for that reason; if one were ever used to choose
+whom to keep or promote, it would become a score and need an assessment.
+
 **S9 is deliberately not built.** An individual risk-of-loss score predicts who might leave, so it
 quietly decides who gets attention, retention pay and development. It is exposed to the worst
 proxy problems (age, caring, sickness, part-time, pay gaps, a recent adjustment) and to use as a

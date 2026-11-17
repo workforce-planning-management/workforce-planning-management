@@ -49,6 +49,12 @@ variables above) and every organization's profile: a profile can make the sweep 
   `oversight_readings`), which are an organization's own configuration and evidence, not records of a person, and are not
   soft-deleted: a level, criterion or measure is removed at once (a measure with its readings), and a recorded position stays on the
   record (WPM-T113).
+- **Does not cover** the injury record (`injury_records`, `injury_reports`) or the separation record (`separation_records`), which are
+  not soft-deleted (WPM-T421, WPM-T422). An injury record may carry a `keep_until` date, entered by HR from the law that applies and
+  never guessed, because the retention of the report itself was not found for seven of the eleven jurisdictions read
+  ([injury-and-separation-duties.md](../injury-and-separation-duties.md)); **nothing acts on it yet**, so removing a record after that
+  date is the deployer's process. Erasure removes an injury record's worker reference and keeps the row, which then names no one; it
+  deletes the separation record.
 - **Does not cover** the audit log (`audit_logs`), the headcount snapshots (aggregates, no
   names; since WPM-T139 they also hold contractor and fixed-term headcount and FTE per department and date, which are counts, and
   are kept as the history a trend needs), the erasure ledger (a pid and a time, which no longer identifies anyone) or
