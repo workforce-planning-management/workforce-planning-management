@@ -4,7 +4,7 @@
 // default currency: a caller always passes the one the record carries or the one the person chose.
 //
 // The exponent (0 for JPY, 2 for EUR, 3 for KWD, 4 for CLF) comes from the ISO 4217 table below, the same table as
-// the service's `src/rules/currency.rs` (tests/unit/money.test.ts reads that file and holds the two equal); `Intl`
+// the service's `crates/workforce-planning-management-domain/src/currency.rs` (tests/unit/money.test.ts reads that file and holds the two equal); `Intl`
 // is only the fallback for a code the table does not hold, and 2 when neither knows it. `Intl` takes its digits from
 // Unicode CLDR, which differs from ISO 4217 for 16 codes (AFN, ALL, COP, HUF, IDR, IQD, IRR, KPW, LAK, LBP, MGA, MMK,
 // PKR, SOS, SYP, YER: CLDR shows 0 places, ISO 4217 has 2, or 3 for IQD). Taking the exponent from `Intl`, as
@@ -26,7 +26,7 @@ export function currentLocale(): string {
 }
 
 /**
- * ISO 4217 minor-unit exponents: the active codes, exactly as in the service's `src/rules/currency.rs` (a unit
+ * ISO 4217 minor-unit exponents: the active codes, exactly as in the service's `crates/workforce-planning-management-domain/src/currency.rs` (a unit
  * test compares the two). Funds and metals with no minor unit are left out.
  */
 // prettier-ignore

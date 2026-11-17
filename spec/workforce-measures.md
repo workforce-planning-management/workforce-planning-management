@@ -51,7 +51,7 @@ whether to build, not about what is meant.
    part-time workers is counted in their scheduled days only.
 2. **Anonymous pulse** (`pulse_favourable`, basis points). The share of responses to a named pulse
    question in the month that are on the favourable side of the scale, using the pulse's existing
-   k-floor ([`rules::pulse`](../workforce-planning-management-service-with-rust/src/rules/pulse.rs),
+   k-floor ([`rules::pulse`](../workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/src/pulse.rs),
    WPM-D20). Absent when the responses are below the floor, which discloses nothing, not even the
    count. Open question: which question and which side is favourable is a choice for the
    organization, so the measure must name the question rather than assume one.

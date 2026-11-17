@@ -29,7 +29,7 @@ that slept is the usual cause), set the clock first: the receiver rejects a stal
 signature on purpose, and WPM marks that delivery `failed` after one attempt and does
 not retry it: only a network failure, 408, 429 and 5xx are retried (up to 10 tries, with
 back-off); any other answer counts as the subscriber saying no (`after_attempt` in
-`src/rules/webhook.rs`). After fixing the clock, make a new event.
+`crates/workforce-planning-management-domain/src/webhook.rs`). After fixing the clock, make a new event.
 
 ## 0. Start a throwaway service
 

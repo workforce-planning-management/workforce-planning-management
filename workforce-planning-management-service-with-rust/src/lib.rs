@@ -38,12 +38,14 @@
 extern crate self as workforce_planning_management;
 
 pub mod app;
+pub mod audit_export;
 pub mod auth;
 pub mod clients;
 /// Backward-compatibility shims for the 2026-07-23 `HCM` → `WPM` rename.
 pub mod compat;
 pub mod controllers;
-pub mod dates;
+/// The date helpers, from the domain crate (WPM-D203).
+pub use workforce_planning_management_domain::dates;
 pub mod db;
 pub mod hardening;
 pub mod idempotency;
@@ -54,7 +56,8 @@ pub mod need_to_know;
 pub mod openapi;
 pub mod problem;
 pub mod request_log;
-pub mod rules;
+/// The **pure core**: the domain logic and business rules, in their own crate (WPM-D203).
+pub use workforce_planning_management_domain as rules;
 pub mod scheduler;
 pub mod security;
 pub mod shared_cache;
@@ -66,7 +69,7 @@ pub mod validation;
 /// Header-based API versioning (`Accepts-version`) for the REST surface.
 pub mod version;
 
-/// The pure core names no country (WPM-T369): a source-text check over `src/rules/`.
+/// The pure core names no country (WPM-T369): a source-text check over `crates/workforce-planning-management-domain/src/`.
 #[cfg(test)]
 mod jurisdiction_neutrality;
 
@@ -90,10 +93,10 @@ mod source_text_guards {
     #[test]
     fn no_line_of_source_ends_in_a_doubled_backslash() {
         let mut files = Vec::new();
-        rust_files(
-            &Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
-            &mut files,
-        );
+        // The service's own source and the domain crate's (WPM-D203).
+        for dir in ["src", "crates/workforce-planning-management-domain/src"] {
+            rust_files(&Path::new(env!("CARGO_MANIFEST_DIR")).join(dir), &mut files);
+        }
         let mut found = Vec::new();
         for file in files {
             let text = std::fs::read_to_string(&file).expect("readable source");

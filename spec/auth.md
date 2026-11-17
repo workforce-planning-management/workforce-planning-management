@@ -94,7 +94,7 @@ The policy engine decides by *action*, and the reference policy lets every signe
 only money). So a caller holding no attributes could read a colleague's sick-leave request with its
 reason, their time-entry notes, every applicant's e-mail address and the audit trail. A guard now sits inside
 the sign-in guard and decides each `GET` under `/api` from a table in code
-([`rules/access.rs`](../workforce-planning-management-service-with-rust/src/rules/access.rs)):
+([`rules/access.rs`](../workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/src/access.rs)):
 
 | Audience | Who may read |
 | --- | --- |

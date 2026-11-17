@@ -623,7 +623,7 @@ no role check either. That was wrong: the request-level policy in `require_auth_
   `ratio_json` ×6, about 9 hand-built 403s, `BATCH` constants beside `find_in`.
 - About 46 responses serialize raw rows (`development.rs`, `workforce.rs`, `hr_core.rs` and others),
   exposing internal `id`, `deleted_at` and any future column.
-- Arithmetic in controllers that belongs in `src/rules` (three fixed-point-to-display copies; the
+- Arithmetic in controllers that belongs in the pure core, now the domain crate (three fixed-point-to-display copies; the
   bodies of `working_time`, `planning/forecast.rs`, `planning/cost.rs`).
 - About 68 of 78 list handlers are unpaged; `intelligence.rs` and `groups.rs` load whole tables to
   count.

@@ -146,7 +146,7 @@ sign-in enforcement explicitly off** (see its header).
   `Idempotency-Key` header: a random UUID, or 128 random bits in hexadecimal where `crypto.randomUUID` is missing.
   A read never carries one. The key names one user action, so a retry passes the original key back; two different
   actions never share one. The same-origin proxy forwards the header only when it is a plain token.
-- The API acts on it (`src/idempotency.rs`, rules in `src/rules/idempotency.rs`, table `idempotency_keys`). A key is
+- The API acts on it (`src/idempotency.rs`, rules in `crates/workforce-planning-management-domain/src/idempotency.rs`, table `idempotency_keys`). A key is
   16 to 64 letters, digits, hyphens or underscores, else `422`. The first request under a caller's key runs and, if it
   succeeds, its response (at most 256 KiB) is kept for **one calendar day**. A repeat of the same method, path, query and
   body from the same caller gets that response again with `Idempotent-Replayed: true` and runs nothing. The same key

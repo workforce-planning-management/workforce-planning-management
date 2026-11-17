@@ -71,9 +71,11 @@ def build():
         ("Highest task number marked done", f"WPM-T{last_done}"),
         ("Database migrations", len(paths(f"{API}/migrations/2*.sql"))),
         ("Controllers", len(paths(f"{API}/src/controllers/*.rs")) - 1),
-        ("Pure rule modules", len(paths(f"{API}/src/rules/*.rs")) - 1),
+        ("Pure rule modules", len(paths(f"{API}/crates/workforce-planning-management-domain/src/*.rs")) - 2),  # less lib.rs and dates.rs
         ("OpenAPI paths", count_in(f"{API}/src/openapi.rs", r'^\s*"/[^"]*":\s*\{', re.M)),
-        ("Rust unit tests (`#[test]` in `src/`)", count_in(f"{API}/src/**/*.rs", r"#\[test\]")),
+        # The service's `src/` and, since WPM-D203, the domain crate's (the pure rules).
+        ("Rust unit tests (`#[test]` in `src/`)", count_in(f"{API}/src/**/*.rs", r"#\[test\]")
+         + count_in(f"{API}/crates/workforce-planning-management-domain/src/**/*.rs", r"#\[test\]")),
         (
             "Rust request tests (`tests/requests/`)",
             count_in(f"{API}/tests/requests/*.rs", r"#\[tokio::test\]"),

@@ -42,11 +42,11 @@ describe("exponentOf", () => {
 });
 
 describe("the ISO 4217 table (WPM-T400)", () => {
-  it("is exactly the service's (src/rules/currency.rs), so both mean the same minor unit", () => {
+  it("is exactly the service's (crates/workforce-planning-management-domain/src/currency.rs), so both mean the same minor unit", () => {
     const rust = readFileSync(
       join(
         __dirname,
-        "../../../workforce-planning-management-service-with-rust/src/rules/currency.rs",
+        "../../../workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/src/currency.rs",
       ),
       "utf8",
     );

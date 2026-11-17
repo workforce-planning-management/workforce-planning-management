@@ -19,7 +19,7 @@ Per [architecture](../../spec/architecture.md) and the family
 rust-axum-stack:
 Rust 2024, Axum (axa + `sqlx`), PostgreSQL 18, SQL migrations in
 `migrations/`, `src/controllers/` layout, pure
-`src/rules/` core, stub-first upstream clients, offline PASETO +
+`crates/workforce-planning-management-domain/src/` core, stub-first upstream clients, offline PASETO +
 ABAC, OpenAPI/Swagger, `Accepts-version` header versioning,
 tracing + OTLP, Podman.
 
@@ -46,7 +46,7 @@ tracing + OTLP, Podman.
 
 - **Layout**: `src/{app,auth,clients,compat,metrics,openapi,
 streaming,validation,version}.rs` (+ `auth/{paseto,keycloak}.rs`, the two
-  verification backends, exactly one per build), `src/rules/` (pure core, ~46
+  verification backends, exactly one per build), `crates/workforce-planning-management-domain/src/` (pure core, ~46
   modules — one per subsystem), `src/models/` (+`_entities/`, ~90 entities, the
   notifications `push` helper), ~40 controllers (`src/controllers/`),
   `src/tasks/` (`seed`, `snapshot_headcount`, `rota_reminders`,

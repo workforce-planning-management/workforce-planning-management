@@ -16,9 +16,9 @@ State as of 2026-10-07 (WPM-T97).
   (dated windows, ties, "nobody available", "unknown is not zero", completion
   gating). Each new rule module is written and tested before its controller.
 - **Source-text checks** (in `cargo test --lib`; 1,026 unit tests in all as of 2026-10-30): no line ends in a doubled backslash
-  (`src/lib.rs`), and **`src/rules/` names no country, region or single-jurisdiction law in an identifier or string literal**
+  (`src/lib.rs`), and **`crates/workforce-planning-management-domain/src/` names no country, region or single-jurisdiction law in an identifier or string literal**
   (`src/jurisdiction_neutrality.rs`, WPM-T369): an allow-list entry per file and word with its reason, a stale entry fails, and a
-  planted name is caught. Beside it, `src/rules/second_profile.rs` runs each rule that takes a jurisdiction's limits as parameters with
+  planted name is caught. Beside it, `crates/workforce-planning-management-domain/src/second_profile.rs` runs each rule that takes a jurisdiction's limits as parameters with
   a second, synthetic profile of a different shape ([worldwide](worldwide.md)).
 - **Request tests** (Postgres, `#[ignore]`d, `cargo test -- --ignored` —
   **62 tests in 24 files**): the hire journey; leave and shift conflicts;
@@ -116,13 +116,13 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 **Mutation testing** (`cargo-mutants` 27.1.0, WPM-T526): a mutant is a small change to the code (a `>` made `>=`, a match arm
 deleted, a function made to return a default), and a test suite that still passes against it has a gap. Until WPM-T526 this was
 done by hand: a task broke its code on purpose and recorded "mutation-checked". Now each Rust crate has a `.cargo/mutants.toml`.
-The **service's** examines only the pure core (`src/rules/`, and `src/security.rs`) against the lib's unit tests (`--lib`),
+The **service's** examines only the pure core (`crates/workforce-planning-management-domain/src/`, and `src/security.rs`) against the lib's unit tests (`--lib`),
 because a controller is tested by the database-backed suites, which a mutant run cannot afford. The **matcher's** examines the
 whole crate, and leaves out one equivalent mutant (a mutant no test can tell from the code), with its reason. CI's `mutants` job runs
 `scripts/mutants-diff.sh`: the mutants in the lines a push or pull request changed, failing on any that survives or hangs, and
 sampling an even slice when there are more than the crate's cap (15 for the service, 40 for the matcher). Both run in place, because
 the service's unit tests read files from `spec/`, outside the crate, so a copy of the crate does not build. A full run is
-`cargo mutants` in a crate's directory; it is not in CI, since the service's 6,177 mutants take hours. **Results (2026-11-17):** the matcher, every mutant: 195 found, one left out as equivalent, 2 unviable, and of the rest 19 survived the first run; nine new tests (presets, an equal review and match threshold, a zero weight, one-sided emails and phones, different given names, the engine's configuration, the letters NFKD leaves alone, Soundex's l, m and n) kill all 19, so all 192 viable mutants are caught. The service, `src/security.rs` (the rest of the pure rules not yet run: at about a minute a mutant on a shared laptop, they take hours): 33 found; 6 survived in the security-header middleware and `is_https`, which only the database-backed `security` binary drove, and two new unit tests through a router kill them; 6 more, in the rate-limit middleware, the posture probe and the route table, need the database and are left out in `.cargo/mutants.toml` with that reason; the other 22 are caught and 5 unviable.
+`cargo mutants --workspace` in a crate's directory (the service's examines the domain crate, WPM-D203); it is not in CI, since the service's 6,177 mutants take hours. **Results (2026-11-17):** the matcher, every mutant: 195 found, one left out as equivalent, 2 unviable, and of the rest 19 survived the first run; nine new tests (presets, an equal review and match threshold, a zero weight, one-sided emails and phones, different given names, the engine's configuration, the letters NFKD leaves alone, Soundex's l, m and n) kill all 19, so all 192 viable mutants are caught. The service, `src/security.rs` (the rest of the pure rules not yet run: at about a minute a mutant on a shared laptop, they take hours): 33 found; 6 survived in the security-header middleware and `is_https`, which only the database-backed `security` binary drove, and two new unit tests through a router kill them; 6 more, in the rate-limit middleware, the posture probe and the route table, need the database and are left out in `.cargo/mutants.toml` with that reason; the other 22 are caught and 5 unviable.
 
 **Chaos** (`tests/chaos.rs`, WPM-R137): a TCP proxy between the app and Postgres resets, swallows or slows connections, and a seeded monkey flips it
 at random during writes. It asserts every request ends soon as a plain `5xx` that leaks no connection detail, that a refused write leaves

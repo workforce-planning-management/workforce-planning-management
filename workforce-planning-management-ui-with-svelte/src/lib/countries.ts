@@ -3,7 +3,7 @@
 // a code ISO 3166-1 lacks (such as XK): the service lists them (`GET /api/me/countries`) from the organization's national
 // jurisdiction codes, and refuses a country that is neither.
 //
-// The list is the service's `src/rules/data/iso-3166-1-alpha-2.txt` (249 officially assigned codes, written from the AI
+// The list is the service's `crates/workforce-planning-management-domain/src/data/iso-3166-1-alpha-2.txt` (249 officially assigned codes, written from the AI
 // assistant's knowledge and not read against ISO's own platform); `tests/unit/countries.test.ts` fails if they differ.
 
 import { compareText } from "./locale-format.js";

@@ -110,7 +110,7 @@ async fn export(
     .fetch_all(db::pool(&ctx))
     .await?;
     let next = rows.last().map_or(after, |r| r.chain_seq);
-    let body: String = rows.iter().map(crate::rules::audit_export::line).collect();
+    let body: String = rows.iter().map(crate::audit_export::line).collect();
     Ok((
         [
             (

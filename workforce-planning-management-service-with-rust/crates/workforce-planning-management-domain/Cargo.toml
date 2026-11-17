@@ -1,0 +1,31 @@
+[package]
+name = "workforce-planning-management-domain"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+publish = true
+authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
+description = "Workforce Planning Management (WPM): the domain logic and business rules, DB-free and clock-free, apart from the web routes and the database storage of the service."
+readme = "README.md"
+repository = "https://github.com/workforce-planning-management/workforce-planning-management/workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain"
+license = "MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only"
+keywords = ["wpm", "hr", "payroll", "workforce", "rules"]
+categories = ["rust-patterns"]
+
+[lib]
+name = "workforce_planning_management_domain"
+path = "src/lib.rs"
+
+# The pure core (WPM-D3–D5, WPM-D203): no database, web framework, runtime or clock. Each dependency here is a value type,
+# a parser or a hash the rules compute with; the service brings everything else.
+[dependencies]
+base64 = { version = "0.23" }
+ed25519-dalek = { version = "3.0.0" }
+entity-ref = { path = "../entity-ref", version = "0.2" }
+jiff = { version = "0.2.44", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
+sha2 = { version = "0.11" }
+unicode-normalization = { version = "0.1.26" }
+uuid = { version = "1.29.2", features = ["v4", "serde"] }
+workforce-planning-management-matcher = "0.1"

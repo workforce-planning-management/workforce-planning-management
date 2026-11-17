@@ -6,7 +6,7 @@
 //! WPM-D144 (`EU`, `GB`), what it rests on, and whether that source was read here. A default that is
 //! no regime's says so (`regime: None`), rather than passing as one.
 //!
-//! It lives outside `src/rules/` because it names jurisdictions, which the pure core does not
+//! It lives outside `crates/workforce-planning-management-domain/src/` because it names jurisdictions, which the pure core does not
 //! (WPM-T369). Where a setting has moved into the jurisdiction profiles (WPM-T384), `key` names its
 //! registry entry and `reader` whose chain it resolves over (WPM-D153): the profile is read first,
 //! then the setting, then the default here.

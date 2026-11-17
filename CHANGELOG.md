@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the domain logic and business rules are their own crate (WPM-T529, 2026-11-17)
+
+`src/rules/` is now `workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/`, a crate with
+no database, web framework, runtime or clock (WPM-D203). The service re-exports it as `rules`, so every path still works.
+Not a build speed-up: the separation is the point. CI's fmt, clippy and unit tests now cover the whole workspace.
+
 ### Changed — dates and times are jiff, not chrono (WPM-T528, 2026-11-17)
 
 The service and the matcher use `jiff` for every date and instant, as `spec/rust-axum-stack.md` asked (WPM-D202). An instant in

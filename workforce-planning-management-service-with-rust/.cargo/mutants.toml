@@ -1,9 +1,9 @@
 # cargo-mutants (WPM-T526; spec/testing.md, "Mutation testing").
 #
-# The pure core is where a mutant should die: the rules in `src/rules/` are DB-free and clock-free and tested exhaustively by
+# The pure core is where a mutant should die: the rules in the domain crate (`crates/workforce-planning-management-domain/src/`, WPM-D203) are DB-free and clock-free and tested exhaustively by
 # the lib's unit tests (AGENTS.md, rule 2), and `src/security.rs` holds the pure parts of the security settings. A controller is
 # tested by the database-backed suites, which a mutant run cannot afford, so the controllers are not examined here.
-examine_globs = ["src/rules/**/*.rs", "src/security.rs"]
+examine_globs = ["crates/workforce-planning-management-domain/src/**/*.rs", "src/security.rs"]
 
 # Axum wiring in `src/security.rs` that only the database-backed `tests/security.rs` binary drives (a limit refused with
 # `429`, the posture probe, the route table): a unit-test run cannot catch these mutants, so they are left out here and

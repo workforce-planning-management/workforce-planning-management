@@ -93,6 +93,8 @@ redis = { version = "1.8", default-features = false, features = ["tokio-rustls-c
 # Cross-service entity references (EntityRef URN + entity-type registry):
 # people/workers/organizations/courses are referenced, never duplicated.
 entity-ref = { path = "crates/entity-ref", version = "0.2" }
+# The domain logic and business rules, DB-free and clock-free (WPM-D203); re-exported as `rules`.
+workforce-planning-management-domain = { path = "crates/workforce-planning-management-domain", version = "0.1" }
 
 # Offline PASETO v4.public verification + the shared ABAC engine. The
 # `Claims`/`Policy`/`Action` types here are backend-agnostic (see the

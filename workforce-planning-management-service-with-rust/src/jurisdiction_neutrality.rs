@@ -1,5 +1,5 @@
 //! **The pure core names no country** (WPM-R214, WPM-D143, WPM-T369): a source-text check that fails when an
-//! identifier or a string literal in `src/rules/` names a country, a region, or a law or body of one jurisdiction.
+//! identifier or a string literal in the domain crate (`crates/workforce-planning-management-domain/src/`, formerly `crates/workforce-planning-management-domain/src/`) names a country, a region, or a law or body of one jurisdiction.
 //!
 //! A rule takes a jurisdiction's values as parameters; the values themselves are a deployer's profile. The few
 //! legitimate names (a worked example profile beside a second one, a code list, a framework's own identifier, a
@@ -97,7 +97,7 @@ const CODES: &[&str] = &[
     "SG", "PK", "BD",
 ];
 
-/// `(file under src/rules, the word or phrase as reported, why it is there)`. Every hit in that file for that word
+/// `(file under the domain crate's src, the word or phrase as reported, why it is there)`. Every hit in that file for that word
 /// is allowed; an entry with no hit fails the check, so the list cannot go stale.
 const ALLOWED: &[(&str, &str, &str)] = &[
     (
@@ -242,7 +242,7 @@ const ALLOWED: &[(&str, &str, &str)] = &[
     ),
 ];
 
-/// One hit: the file (relative to `src/rules`), the line, and the word or phrase found.
+/// One hit: the file (relative to the domain crate's `src`), the line, and the word or phrase found.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Hit {
     file: String,
@@ -409,7 +409,7 @@ fn scan(file: &str, source: &str) -> Vec<Hit> {
 
 fn rule_files() -> Vec<PathBuf> {
     fn walk(dir: &Path, out: &mut Vec<PathBuf>) {
-        for entry in std::fs::read_dir(dir).expect("src/rules is readable") {
+        for entry in std::fs::read_dir(dir).expect("the domain crate's src is readable") {
             let path = entry.expect("a directory entry").path();
             if path.is_dir() {
                 walk(&path, out);
@@ -420,7 +420,8 @@ fn rule_files() -> Vec<PathBuf> {
     }
     let mut out = Vec::new();
     walk(
-        &Path::new(env!("CARGO_MANIFEST_DIR")).join("src/rules"),
+        &Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("crates/workforce-planning-management-domain/src"),
         &mut out,
     );
     out.sort();
@@ -450,12 +451,13 @@ fn judge<'a>(
 
 #[test]
 fn the_pure_core_names_no_country_outside_the_allow_list() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/rules");
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("crates/workforce-planning-management-domain/src");
     let mut hits = Vec::new();
     for path in rule_files() {
         let name = path
             .strip_prefix(&root)
-            .expect("under src/rules")
+            .expect("under the domain crate's src")
             .to_string_lossy()
             .replace('\\', "/");
         let source = std::fs::read_to_string(&path).expect("readable source");
@@ -464,7 +466,7 @@ fn the_pure_core_names_no_country_outside_the_allow_list() {
     let (refused, unused) = judge(&hits, ALLOWED);
     assert!(
         refused.is_empty(),
-        "src/rules names a country or one jurisdiction's law in code (take it as a parameter, or add an ALLOWED \
+        "the domain crate names a country or one jurisdiction's law in code (take it as a parameter, or add an ALLOWED \
          entry with its reason): {refused:#?}"
     );
     assert!(

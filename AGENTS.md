@@ -51,7 +51,7 @@ stack-level detail. (Updated 2026-11-09, through WPM-T479; the site, WPM-T392.)
 
 - `spec/` — requirements (`WPM-R*`), decisions (`WPM-D*`), tasks (`WPM-T*`), topic files;
   [`spec/implementation-status.md`](spec/implementation-status.md) holds the counts (generated, never edited).
-- `workforce-planning-management-service-with-rust/` — Axum JSON API (`src/rules/`, `src/controllers/`, `migration/`, `tests/`,
+- `workforce-planning-management-service-with-rust/` — Axum JSON API (`src/controllers/`, the pure rules in the domain crate `crates/workforce-planning-management-domain/` (WPM-D203), `migration/`, `tests/`,
   `crates/entity-ref` vendored).
 - `workforce-planning-management-ui-with-svelte/` — SvelteKit client (`src/routes/`, `src/lib/`, `content/locales/`, `tests/`).
 - `workforce-planning-management-matcher-with-rust/` — the worker-record matcher crate, published to crates.io; the service

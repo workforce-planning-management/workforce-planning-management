@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the domain crate (WPM-T529, WPM-D203)
+
+The pure rules (`src/rules/`, 126 modules besides `audit_export`) and the date helpers (`src/dates.rs`) move to
+`crates/workforce-planning-management-domain`, a path and version dependency like `entity-ref`; `lib.rs` re-exports it as
+`rules` and `dates`. `audit_export` stays in the service (`src/audit_export.rs`), because it formats the audit row, and the MCP
+tools' route check moves to `openapi.rs`. The source-text guards and `tests/no_union_membership.rs` scan both crates; the
+domain's cross-checks of the service's code read it from `../../src`. `.cargo/mutants.toml` examines the domain crate, and
+`scripts/mutants-diff.sh` passes `--workspace`. Run the domain's tests alone with `cargo test -p workforce-planning-management-domain`.
+
 ### Changed — `jiff` in place of `chrono` (WPM-T528, WPM-D202)
 
 Every date and instant is `jiff::civil::Date` or `jiff::Timestamp`, with `jiff` 0.2.45 and `jiff-sqlx` 0.2.2. Rows hold the

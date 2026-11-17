@@ -78,10 +78,11 @@ URNs (`person:<uuid>`), never duplicated demographics
    which the query macros produce and expect (`sqlx.toml`): read the jiff value with `.get()`, bind with `SqlDate(d)` or
    `opt.map(SqlDate)`. A nullable date in a `query_as!` struct must be `Option<SqlDate>`, because the macro cannot lift `Into`
    through `Option`. `chrono` stays only in `scheduler.rs`, at the `cron` crate's edge.
-3. **Pure core first.** Rules live in DB-free, clock-free `src/rules/<area>.rs`
+3. **Pure core first.** Rules live in DB-free, clock-free `crates/workforce-planning-management-domain/src/<area>.rs`,
+   the domain crate (WPM-D203), which the service re-exports as `rules`, so `crate::rules::<area>` still names one,
    with exhaustive unit tests (dates and "today" are always supplied);
    controllers only load data, call the rule and write. Write and test the rule
-   module **before** its controller. There are 115 entries in `src/rules/`
+   module **before** its controller. There are 115 entries in `crates/workforce-planning-management-domain/src/`
    (2026-10-30), from `lifecycle`, `leave` and `working_time` to `capacity`,
    `bridge`, `people_impact`, `webhook` and `worker_fields`; look there before
    writing a new one.

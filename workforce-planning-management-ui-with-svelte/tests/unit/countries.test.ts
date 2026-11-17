@@ -15,7 +15,7 @@ describe("countries", () => {
     const rust = readFileSync(
       join(
         __dirname,
-        "../../../workforce-planning-management-service-with-rust/src/rules/data/iso-3166-1-alpha-2.txt",
+        "../../../workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/src/data/iso-3166-1-alpha-2.txt",
       ),
       "utf8",
     )

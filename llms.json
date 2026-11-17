@@ -496,7 +496,7 @@
       {
         "title": "workforce-planning-management-service-with-rust/",
         "path": "workforce-planning-management-service-with-rust/index.md",
-        "description": "the JSON API; pure rules in `src/rules/`, controllers in `src/controllers/`, migrations in `migration/`, request tests in `tests/requests/`"
+        "description": "the JSON API; pure rules in `crates/workforce-planning-management-domain/src/`, controllers in `src/controllers/`, migrations in `migration/`, request tests in `tests/requests/`"
       },
       {
         "title": "workforce-planning-management-ui-with-svelte/",

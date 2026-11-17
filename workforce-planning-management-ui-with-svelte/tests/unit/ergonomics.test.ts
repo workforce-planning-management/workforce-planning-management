@@ -12,7 +12,7 @@ import { LOCALES, STRINGS_BY_LOCALE } from "../../src/lib/i18n.svelte";
 const RULE = readFileSync(
   join(
     __dirname,
-    "../../../workforce-planning-management-service-with-rust/src/rules/ergonomics.rs",
+    "../../../workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/src/ergonomics.rs",
   ),
   "utf8",
 );

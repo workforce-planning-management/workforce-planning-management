@@ -1735,6 +1735,30 @@ fn components() -> Value {
 
 #[cfg(test)]
 mod tests {
+    /// WPM-D101: no tool without an endpoint. Every tool's route is a documented `GET` of the `OpenAPI` document and is
+    /// classified in the need-to-know table, so the API decides who may read it; its arguments are parameters of that
+    /// operation, not something the adapter invented. (Here, not in `rules::mcp`, because the document is the service's.)
+    #[test]
+    fn every_mcp_tool_maps_to_a_documented_get_route_that_is_classified() {
+        use crate::rules::mcp::{TOOLS, table_route};
+        let document = spec();
+        for t in TOOLS {
+            let operation = &document["paths"][t.route]["get"];
+            assert!(
+                operation.is_object(),
+                "{} ({}) is not a documented GET",
+                t.name,
+                t.route
+            );
+            let route = table_route(t);
+            assert!(
+                crate::rules::access::READS.iter().any(|(r, _)| *r == route),
+                "{} ({route}) is not in the need-to-know table",
+                t.name
+            );
+        }
+    }
+
     use super::{MUTATING, spec};
     use serde_json::Value;
 

@@ -5699,6 +5699,33 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T529 **The domain logic and business rules in their own crate.** *The owner asked on 2026-11-17 ("refactor into new subcrate workforce-planning-management-domain"), after a research pass on splitting the crate.* *(WPM-D203; [rust-axum-stack.md](rust-axum-stack.md))*
+      `src/rules/` (126 rule modules) and `src/dates.rs` are now
+      `workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/`, moved with `git mv`; the
+      service depends on it by path and version, as on `entity-ref`, and re-exports it (`pub use … as rules`, `pub use …::dates`),
+      so no caller, test or bench changed its paths. Its dependencies are value types, a parser and hashes: `jiff`, `serde`,
+      `serde_json`, `uuid`, `entity-ref`, the matcher, `unicode-normalization`, `sha2`, `base64` and `ed25519-dalek`; no sqlx,
+      Axum, `axa` or tokio, so the compiler now holds the pure core to WPM-D3–D5. **Moved the other way:** `audit_export` (it
+      formats the audit row) is `src/audit_export.rs`; the test that every MCP tool is a documented `GET` is in `openapi.rs`.
+      **Paths fixed:** the `include_str!` of the spec, migrations, fixtures and `scim_push.rs`; the domain's cross-checks of the
+      service's code (`access`, `self_service`, `health_requirements`, `equality_monitoring`) read it from `../../src`, and the
+      two "no other code reads this" tests walk both crates. **Guards that would have gone quiet:** the source-text guards in
+      `lib.rs`, the jurisdiction-neutrality check and `tests/no_union_membership.rs` scanned `src/` only; each now scans the domain
+      crate too, and the union guard asserts that a domain file is read. Mutation-checked: a planted `equality_declarations` in a
+      domain file and in a controller are both named. **CI:** `cargo fmt --all`, `clippy --workspace` (both auth backends) and
+      `cargo test --workspace --lib`, since a root package's commands cover only itself; `.cargo/mutants.toml` examines the domain
+      crate and `scripts/mutants-diff.sh` passes `--workspace` (6,125 mutants listed, 6,098 of them in the domain); `status.py`
+      counts the domain's tests. Docs: 23 files' `src/rules/` paths, leaving CRM's own `src/rules/currency.rs` and the historical
+      records alone. **Not a speed-up, and not claimed as one:** before the move a research agent built a rules-only crate and
+      measured, on a laptop loaded by other work, 34 s against 31 s for the whole crate after touching one rule. **Verified:** the
+      local CI gate, as in WPM-T528, on fresh PostgreSQL 18 and Redis 8: 1,293 lib tests across the workspace (1,126 in the domain,
+      167 in the service; 1,293 before), clippy clean on every target under both backends, the MSRV checks, the request suite, every
+      enforcement and security binary, chaos, the restore drill, Keycloak, Entra and the least-privilege roles: 1,590 passed.
+      **Failed:** `cargo fmt --all --check`, on `tests/no_union_membership.rs`, formatted after; `cargo deny`, on chrono
+      (RUSTSEC-2026-0543, as WPM-T528); and once in the full serial run, `audit_export::the_department_query_keeps_to_the_department_and_the_time`
+      (an empty answer), which passed in the roles drill's rerun of the suite and three times out of three alone on a fresh
+      database; its cause was not found. **Not done:** the domain crate is not published, so the service is not publishable
+      until it is; moving `benches/rules.rs` into the domain crate.
 - [x] (2026-11-17) WPM-T528 **Dates and times are jiff, not chrono.** *The owner asked on 2026-11-17 ("migrate from chrono to jiff").* *(WPM-D202; [rust-axum-stack.md](rust-axum-stack.md))*
       The stack already said "jiff NOT chrono"; chrono was also declared unmaintained that week (RUSTSEC-2026-0543). **The
       versions:** `jiff` 0.2.45 and `jiff-sqlx` 0.2.2, both outside the owner's two-day minimum publish age, so no exception was

@@ -158,6 +158,12 @@ fn the_guard_flags_what_it_should_and_nothing_else() {
 fn the_guard_reads_what_it_should() {
     let mut sources = Vec::new();
     files(&root().join("src"), &["rs"], &mut sources);
+    // The domain logic and business rules, in their own crate since WPM-D203.
+    files(
+        &root().join("crates/workforce-planning-management-domain/src"),
+        &["rs"],
+        &mut sources,
+    );
     files(&root().join("migrations"), &["sql"], &mut sources);
     assert!(
         sources.len() > 200,
@@ -169,6 +175,12 @@ fn the_guard_reads_what_it_should() {
             .iter()
             .any(|p| p.ends_with("models/_entities/workers.rs")),
         "the worker entity is scanned"
+    );
+    assert!(
+        sources
+            .iter()
+            .any(|p| p.ends_with("crates/workforce-planning-management-domain/src/leave.rs")),
+        "the domain crate's rules are scanned"
     );
     assert!(
         root()
@@ -187,6 +199,12 @@ fn the_guard_reads_what_it_should() {
 fn the_service_and_its_schema_name_no_membership() {
     let mut sources = Vec::new();
     files(&root().join("src"), &["rs"], &mut sources);
+    // The domain logic and business rules, in their own crate since WPM-D203.
+    files(
+        &root().join("crates/workforce-planning-management-domain/src"),
+        &["rs"],
+        &mut sources,
+    );
     files(&root().join("migrations"), &["sql"], &mut sources);
     files(&root().join("config"), &["yaml", "yml"], &mut sources);
     let found = scan(&sources, true);
@@ -241,9 +259,9 @@ fn facility_time_has_no_person_and_no_time_entry_kind() {
         );
     }
     for file in [
-        "src/rules/leave.rs",
-        "src/rules/time_off.rs",
-        "src/rules/working_time.rs",
+        "crates/workforce-planning-management-domain/src/leave.rs",
+        "crates/workforce-planning-management-domain/src/time_off.rs",
+        "crates/workforce-planning-management-domain/src/working_time.rs",
     ] {
         let text = fs::read_to_string(root().join(file))
             .unwrap()

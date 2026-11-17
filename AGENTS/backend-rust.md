@@ -6,7 +6,7 @@
 
 ## Order of work for a new capability
 
-1. **Pure rules** in `src/rules/<area>.rs` (register in `src/rules/mod.rs`):
+1. **Pure rules** in `crates/workforce-planning-management-domain/src/<area>.rs` (register in `crates/workforce-planning-management-domain/src/lib.rs`):
    DB-free, clock-free (dates are arguments), `serde` only for output types, unit
    tests alongside. Test the edges: ties, empty, "nobody", "unknown", windows,
    completion gating. Make orderings total (tie-break by id) so pages are stable.

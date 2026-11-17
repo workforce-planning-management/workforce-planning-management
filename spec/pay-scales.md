@@ -61,7 +61,7 @@ salary sits on a band and whether a step up is due.*
 - UI: `/pay-scales` — the table (entry, intermediate, top, with years; band 1
   marked closed), the allowances, and the lookup form.
 - **Reference data.** A new year is a new scale added in
-  `src/rules/pay_scale.rs` with its circular named in `source`; the old scale
+  `crates/workforce-planning-management-domain/src/pay_scale.rs` with its circular named in `source`; the old scale
   stays so past figures remain checkable.
 
 ## WPM-D38 — A scale is transcribed, dated and sourced; a lookup stores nothing
