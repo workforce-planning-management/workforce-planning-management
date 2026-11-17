@@ -76,12 +76,12 @@ prometheus = { version = "0.14.0" }
 # Upstream display-name lookups (`http` client mode only; stub is the
 # default). Same minimal reqwest configuration as the verifier's fetch.
 reqwest = { version = "0.13.5", default-features = false, features = [
-  "rustls",
+  "rustls-no-provider",
   "json",
 ] }
 
 # The shared cache's Redis client (`src/shared_cache.rs`). `tokio-rustls-comp` is what makes a `rediss://` REDIS_URL work (WPM-D78).
-# `ring` is the rustls provider this service chooses. Under `--features keycloak`, `jsonwebtoken` still brings `aws-lc-rs`
+# `ring` is the rustls provider this service chooses (reqwest is `rustls-no-provider`). Under `--features keycloak`, `jsonwebtoken` still brings `aws-lc-rs`
 # (it offers no `ring` backend), so two providers can be in the build and rustls cannot choose one itself;
 # `shared_cache::install_tls_provider` chooses `ring` at boot.
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
@@ -98,7 +98,7 @@ entity-ref = { path = "crates/entity-ref", version = "0.2" }
 workforce-planning-management-matcher = "0.1"
 # Script-aware name folding for the duplicate check (WPM-T381); already in the build through the matcher.
 unicode-normalization = { version = "0.1.26" }
-authentication-verifier = { version = "0.9", features = ["fetch"] }
+authentication-verifier = { version = "0.9.3", features = ["fetch"] }
 
 # `keycloak` feature only: direct verification of a Keycloak-issued JWT
 # against the realm's JWKS. `aws_lc_rs` is the ONLY crypto backend this
