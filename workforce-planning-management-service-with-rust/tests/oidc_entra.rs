@@ -304,6 +304,8 @@ fn url_pairs(query: &str) -> HashMap<String, String> {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --no-default-features --features keycloak --test oidc_entra -- --ignored`"]
 async fn entra_sign_in_gates_and_authorises() {
+    // The test's own reqwest clients: no rustls provider of their own, and two in this build (see `install_tls_provider`).
+    workforce_planning_management::shared_cache::install_tls_provider();
     let provider = start_provider().await;
 
     // ── Discovery, as an operator would configure the service from it.

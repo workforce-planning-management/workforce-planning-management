@@ -66,6 +66,8 @@ async fn start_keycloak() -> (ContainerAsync<GenericImage>, String) {
 
 /// A real access token for `username` (password grant, public client).
 async fn token_for(issuer: &str, username: &str) -> String {
+    // The test's own reqwest client: no rustls provider of its own, and two in this build (see `install_tls_provider`).
+    workforce_planning_management::shared_cache::install_tls_provider();
     let response: Value = reqwest::Client::new()
         .post(format!("{issuer}/protocol/openid-connect/token"))
         .form(&[

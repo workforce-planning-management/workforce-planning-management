@@ -190,6 +190,8 @@ async fn fetch_display_name(entity_ref: &EntityRef) -> Option<String> {
 /// Minimal GET-JSON helper: short timeout, no redirects (SSRF posture,
 /// security invariant 7). Errors ⇒ `None` (best-effort).
 async fn reqwest_get_json(url: &str) -> Option<serde_json::Value> {
+    // reqwest has no rustls provider of its own: choose `ring` before building a client, whatever ran first (idempotent).
+    crate::shared_cache::install_tls_provider();
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(3))
         .redirect(reqwest::redirect::Policy::none())

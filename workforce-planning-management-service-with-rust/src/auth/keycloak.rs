@@ -294,6 +294,8 @@ pub fn verifier() -> &'static Reloadable<KeyMaterial> {
 /// posture as this crate's other upstream fetch
 /// (`clients::reqwest_get_json`, security invariant 7).
 async fn fetch_jwks(url: &str) -> Option<JwkSet> {
+    // reqwest has no rustls provider of its own: choose `ring` before building a client, whatever ran first (idempotent).
+    crate::shared_cache::install_tls_provider();
     let Ok(client) = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(3))
         .redirect(reqwest::redirect::Policy::none())

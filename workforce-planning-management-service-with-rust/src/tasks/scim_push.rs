@@ -205,6 +205,7 @@ async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<
 /// # Errors
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
+#[allow(clippy::too_many_lines)] // load → classify → push each change → record the outcomes, linearly
 pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) -> Result<Summary> {
     let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
@@ -223,6 +224,7 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
         .into_iter()
         .map(|p| (p.worker_pid, p))
         .collect();
+    crate::shared_cache::install_tls_provider(); // see its doc: reqwest has no provider of its own
     let http = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(15))
         .build()

@@ -46,6 +46,8 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
     )
     .fetch_all(crate::db::pool(ctx))
     .await?;
+    // reqwest has no rustls provider of its own: choose `ring` before building a client, whatever ran first (idempotent).
+    crate::shared_cache::install_tls_provider();
     let http = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())
