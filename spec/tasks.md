@@ -5699,6 +5699,16 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T531 **The scheduler's cron expressions on jiff.** *The owner chose, on 2026-11-17, to take chrono out of the build rather than accept RUSTSEC-2026-0543.* *(WPM-D202)*
+      `cron` 0.17, whose schedule takes and gives `chrono` instants, is replaced by `croner` 4.0.3 (published 2026-11-04,
+      outside the minimum publish age) with `default-features = false` and its `jiff` feature, which is for `jiff` 0.2, the
+      version the service uses. `scheduler::next_after` parses with seconds required and an optional year (the six or seven
+      fields the schedule has always written) and searches from the instant as a UTC `Zoned`, not inclusive, as `cron`'s
+      `after` did; a search that finds nothing is `None`, as before. The `to_chrono` and `from_chrono` helpers and the service's
+      direct `chrono` dependency are gone. **Verified:** a scratch program with both crates compared the next run time of all
+      twelve expressions at 286,728 instants (every 7,919 seconds across three years from 2024-12-29, each on the second and half a
+      second past it): 0 differ. `tests/scheduler_config.rs` passes, and fails with seconds disallowed; clippy, fmt and the lib
+      tests pass. **Left:** chrono still comes in through the published matcher 0.1.0 (the next task).
 - [x] (2026-11-17) WPM-T530 **`axa` 0.19.** *The owner asked on 2026-11-17, approving the exception to the minimum publish age.* *([rust-axum-stack.md](rust-axum-stack.md))*
       From 0.17.0 to 0.19.0, with `axa-test` 0.8.0 to 0.10.0, both published that day; the lockfile changes only those two
       (`CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow cargo update -p axa -p axa-test`). **No code change:** 0.18 moves

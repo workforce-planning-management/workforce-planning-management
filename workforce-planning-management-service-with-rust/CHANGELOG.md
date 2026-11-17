@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `croner` in place of `cron` (WPM-T531)
+
+The schedule's six-field expressions are parsed by `croner` 4.0.3 (`jiff` feature, no default features): seconds required, an
+optional year, UTC. `next_after` takes and gives `jiff::Timestamp` with no conversion, and the direct `chrono` dependency is
+gone. Checked against `cron` 0.17 on all twelve expressions at 286,728 instants: the next run time is the same at every one.
+
 ### Changed — `axa` 0.19 (WPM-T530)
 
 `axa` 0.17.0 to 0.19.0 and `axa-test` 0.8.0 to 0.10.0; the lockfile changes only those two. No code change: 0.18 moves

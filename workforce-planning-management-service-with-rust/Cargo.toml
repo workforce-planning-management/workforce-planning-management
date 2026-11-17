@@ -40,8 +40,8 @@ sha2 = { version = "0.11" }
 ed25519-dalek = { version = "3.0.0" }
 base64 = { version = "0.23" }
 axa = { workspace = true }
-# The schedule's cron expressions (`src/scheduler.rs`).
-cron = { version = "0.17" }
+# The schedule's cron expressions (`src/scheduler.rs`), on jiff 0.2, the version the service uses (WPM-T531).
+croner = { version = "4.0.3", default-features = false, features = ["jiff"] }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
@@ -68,11 +68,10 @@ sqlx = { version = "0.9", default-features = false, features = [
   "tls-rustls-ring-webpki",
   "uuid",
 ] }
-# Dates and times are `jiff` (WPM-T528); `jiff-sqlx` gives `sqlx` its traits, through `sql_time`. `chrono` stays only
-# for `cron`, whose schedule API takes and returns `chrono` instants (`scheduler.rs` converts at that edge).
+# Dates and times are `jiff` (WPM-T528); `jiff-sqlx` gives `sqlx` its traits, through `sql_time`. The scheduler's cron
+# expressions are `croner` on jiff too (WPM-T531), so the service depends on no `chrono` of its own.
 jiff = { version = "0.2.44", features = ["serde"] }
 jiff-sqlx = { version = "0.2.2", features = ["postgres"] }
-chrono = { version = "0.4.45", default-features = false }
 uuid = { version = "1.29.2", features = ["v4", "serde"] }
 mimalloc = { version = "0.1.52" }
 prometheus = { version = "0.14.0" }

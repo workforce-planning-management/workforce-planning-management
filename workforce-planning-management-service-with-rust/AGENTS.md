@@ -77,7 +77,7 @@ URNs (`person:<uuid>`), never duplicated demographics
    `Timestamp`, which takes no calendar units) and `rfc3339_seconds`. A database row holds `sql_time::SqlTimestamp` or `SqlDate`,
    which the query macros produce and expect (`sqlx.toml`): read the jiff value with `.get()`, bind with `SqlDate(d)` or
    `opt.map(SqlDate)`. A nullable date in a `query_as!` struct must be `Option<SqlDate>`, because the macro cannot lift `Into`
-   through `Option`. `chrono` stays only in `scheduler.rs`, at the `cron` crate's edge.
+   through `Option`. The scheduler's cron expressions are `croner` on jiff (WPM-T531); the service depends on no `chrono`.
 3. **Pure core first.** Rules live in DB-free, clock-free `crates/workforce-planning-management-domain/src/<area>.rs`,
    the domain crate (WPM-D203), which the service re-exports as `rules`, so `crate::rules::<area>` still names one,
    with exhaustive unit tests (dates and "today" are always supplied);

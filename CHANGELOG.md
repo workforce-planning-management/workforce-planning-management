@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the scheduler's cron expressions on jiff (WPM-T531, 2026-11-17)
+
+`cron` is replaced by `croner` 4.0.3 with its `jiff` feature, so the scheduler is jiff from end to end and the service has no
+`chrono` dependency of its own; chrono now reaches it only through the published matcher 0.1.0.
+
 ### Changed — `axa` 0.19 (WPM-T530, 2026-11-17)
 
 `axa` 0.17.0 to 0.19.0 and `axa-test` 0.8.0 to 0.10.0, at the owner's request inside the minimum publish age. `axa` no longer
