@@ -166,3 +166,10 @@ required-features = ["keycloak"]
 # override rewrites Cargo.lock.
 # [patch.crates-io]
 # workforce-planning-management-matcher = { path = "../workforce-planning-management-matcher-with-rust" }
+
+# cargo-mutants builds every mutant once in a throwaway copy of the tree: no debug information and no
+# incremental state make each build quicker and smaller. `.cargo/mutants.toml` selects it.
+[profile.mutants]
+inherits = "test"
+debug = "none"
+incremental = false
