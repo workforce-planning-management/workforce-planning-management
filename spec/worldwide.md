@@ -618,7 +618,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `came_from`, an organization-level one over the home's chain, a worker-level one as a worker with no place recorded gets it, plus
   `by_place` for every code the organization keeps or has rows for; `/statutory-defaults` gains an organization picker, the home, a
   "came from" column, "read for" and "by place of work". **Not moved, and why:** `WPM_AI_ACT_APPLIES_FROM` (a date the registry has no
-  shape for, and one Regulation's, read by a deployment-wide register); `WPM_PAY_GAP_SEX_CATEGORY` (the name of a monitored category,
+  shape for, and one Regulation's, read by a deployment-wide register; *moved by WPM-T409, 2026-11-17*); `WPM_PAY_GAP_SEX_CATEGORY` (the name of a monitored category,
   not a regime's value); the payroll stub and `WPM_CONTRACTED_DAY_MINUTES` / `WPM_PAYROLL_MONTH_MINUTES` (D144's order of work moves
   deductions and payroll fields last, as statutory deduction schemes, not as a stub). They keep `key: null`. **Tests:** unit (the
   order with a two-layer profile: profile over setting, setting with no place, default with neither, no organization looks at no
@@ -652,8 +652,17 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   the organization-level settings from the default. **Not done:** what T384 did not move is WPM-T409 (below); no seed organization is
   placed under `EU` (the seed's example countries are not EU members, and a member state's own transposition was not read); the
   demo filler (`scripts/demo-data.py`) was not run.
-- [ ] WPM-T409 **The statutory settings WPM-T384 did not move.** *(WPM-R214, WPM-D143, WPM-D144, WPM-D153; row 36)* Not started.
-  `WPM_AI_ACT_APPLIES_FROM` needs a date shape in the registry and a reader with an organization (the AI register is deployment-wide);
+- [ ] WPM-T409 **The statutory settings WPM-T384 did not move.** *(WPM-R214, WPM-D143, WPM-D144, WPM-D153; row 36)*
+  **Part done (2026-11-17): the AI Act's date.** The registry gains a `date` shape (`YYYY-MM-DD`, a real day; a number or a word
+  is refused with 422) and the key `ai_act.applies_from` (`most_specific`). The register stays the deployment's, and its date is
+  the organization's when `GET /api/ai-register?organization=` names one in the caller's scope: the home jurisdiction's profile,
+  then `WPM_AI_ACT_APPLIES_FROM`, then the default, with `applies_from_came_from` saying which; with no organization there is no
+  profile to look at. `GET /api/statutory-defaults` lists it with `key` `ai_act.applies_from` and reader `organization`.
+  **Tests:** unit (the date shape: ISO and trimmed, 30 February, another format, a number and null refused; stored and read back
+  as the date itself; the spec's registry table equal to the code's), request (the home's date over the setting, the setting with
+  no organization, the default naming the EU, three bad dates refused, an organization that is not one refused, the
+  statutory-defaults row). **Not done:** no seed profile carries the date (no seed organization is placed under `EU`); the UI's
+  `/ai-register` passes no organization, so it shows the deployment's date. Still open:
   `WPM_PAY_GAP_SEX_CATEGORY` and the pay-gap page's female and male columns need the equality categories per jurisdiction (a `union`
   parameter, the design's `equality.categories`); the payroll stub (`WPM_PAYROLL_STUB_*`) with `WPM_CONTRACTED_DAY_MINUTES` and
   `WPM_PAYROLL_MONTH_MINUTES` becomes D144's statutory deduction schemes, the last step of its order of work, not a profile value. Each
@@ -953,6 +962,7 @@ key outside it is refused.
 
 | Key | Shape and unit | Combination |
 | --- | --- | --- |
+| `ai_act.applies_from` | a date, `YYYY-MM-DD`: the day the AI Act's duties for the deployer of a high-risk system (Annex III) apply, read over the organization's home (WPM-T409) | `most_specific` |
 | `calendar.week_start` | one ISO weekday, 1 (Monday) to 7 (Sunday) | `most_specific` |
 | `employer_contribution.class` | one lowercase token, the class the deployer sets for an organization's class-keyed employer rates (WPM-D170; an organization's layer) | `most_specific` |
 | `employer_contribution.lines` | a set of lines `name:rate_bp:wage_base_minor` or `name@class:rate_bp:wage_base_minor` (a wage base of 0 is no cap), or the one name `none`; a stub cost, never deducted from net (WPM-T423; a worker's chain) | `most_specific` |

@@ -107,8 +107,8 @@ pub const DEFAULTS: &[Default] = &[
         setting: "WPM_AI_ACT_APPLIES_FROM",
         area: "ai_register",
         default: "2027-12-02",
-        key: None,
-        reader: None,
+        key: Some("ai_act.applies_from"),
+        reader: Some(Reader::Organization),
         origin: AI_ACT,
     },
     Default {

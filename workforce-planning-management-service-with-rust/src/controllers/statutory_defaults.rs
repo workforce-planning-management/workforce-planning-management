@@ -126,7 +126,7 @@ fn value_of(setting: &str, scope: Option<&Scope>, as_of: NaiveDate) -> (Value, V
         (value, came_from)
     };
     match setting {
-        "WPM_AI_ACT_APPLIES_FROM" => fixed(json!(super::ai_register::applies_from())),
+        "WPM_AI_ACT_APPLIES_FROM" => shown(super::ai_register::applies_from_in(scope, as_of)),
         "WPM_PAY_GAP_SEX_CATEGORY" => fixed(json!(pay_transparency::sex_category())),
         "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS" => {
             shown(flexible_working::appeal_calendar_days(scope, as_of))

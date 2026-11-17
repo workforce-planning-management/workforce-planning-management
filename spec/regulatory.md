@@ -158,7 +158,8 @@ Official Journal), Article 26 puts duties on the **deployer**. The register reco
   `monitoring_evaluation`, or `not_high_risk`, which is the deployer's statement and not WPM's), the **overseer role** (a role; an
   address is refused), the date representatives were informed, the date workers were informed (neither in the future), and the log
   retention in months. A retention under six months needs a note naming the other law, and is flagged. A field with nothing
-  recorded is `unknown`. The date the duties apply is `WPM_AI_ACT_APPLIES_FROM`.
+  recorded is `unknown`. The date the duties apply is the organization's (`?organization=`: its home jurisdiction's
+  `ai_act.applies_from`, then `WPM_AI_ACT_APPLIES_FROM`, then the default, WPM-T409), and the register says which.
 - **Not built:** the per-decision explanation a person can read (Article 86; each score's factors for the person concerned); the
   link to the recognised body (Phase 18 is not built, so informing representatives is a date, not a link); `rules::scoring::REGISTER`
   of WPM-T166 is still not in code, so the features are listed in `rules::ai_register` and no test yet fails when a new scoring

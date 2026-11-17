@@ -93,7 +93,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. Any signed-in caller */
+        /** Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. With ?organization= (in scope), applies_from is the date for that organization: its home jurisdiction's profile (ai_act.applies_from), then WPM_AI_ACT_APPLIES_FROM, then the default; applies_from_came_from says which. Any signed-in caller */
         get: {
             parameters: {
                 query?: never;

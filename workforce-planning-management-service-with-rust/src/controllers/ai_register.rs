@@ -9,21 +9,53 @@ use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
-use super::unprocessable;
+use super::jurisdictions::Scope;
+use super::pay_transparency::organization_problems;
+use super::statutory_defaults::{InForce, pick};
+use super::{ensure_org_in_scope, ensure_valid, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::db::{self, pool};
 use crate::rules::ai_register::{self as rules, Entry};
+use crate::rules::jurisdiction::Value as ProfileValue;
 
-/// The date the Annex III duties apply: `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), else the default.
-pub(crate) fn applies_from() -> NaiveDate {
-    crate::compat::env_var("WPM_AI_ACT_APPLIES_FROM")
-        .and_then(|v| NaiveDate::parse_from_str(v.trim(), "%Y-%m-%d").ok())
-        .unwrap_or_else(rules::default_applies_from)
+/// The date the Annex III duties apply, with where it came from (WPM-D153, WPM-T409): for an organization, its home jurisdiction's
+/// profile (`ai_act.applies_from`), then `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), then the default. With no organization there is no
+/// profile to look at.
+pub(crate) fn applies_from_in(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<NaiveDate> {
+    let setting = crate::compat::env_var("WPM_AI_ACT_APPLIES_FROM")
+        .and_then(|v| NaiveDate::parse_from_str(v.trim(), "%Y-%m-%d").ok());
+    pick(
+        scope,
+        "WPM_AI_ACT_APPLIES_FROM",
+        as_of,
+        ProfileValue::as_date,
+        setting,
+        rules::default_applies_from(),
+    )
 }
 
-/// `GET /api/ai-register` — every scoring feature with what is recorded for it; what is not recorded is `unknown`.
+#[derive(Debug, Deserialize)]
+struct RegisterQuery {
+    organization: Option<String>,
+}
+
+/// `GET /api/ai-register?organization=` — every scoring feature with what is recorded for it; what is not recorded is `unknown`.
+/// The register is the deployment's; the date its duties apply is the organization's when one is given (its home jurisdiction's
+/// profile, WPM-T409), else the deployment's, and `applies_from_came_from` says which.
 #[debug_handler]
-async fn register(State(ctx): State<AppContext>) -> Result<Response> {
+async fn register(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axa::extract::Query(q): axa::extract::Query<RegisterQuery>,
+) -> Result<Response> {
+    let scope = match &q.organization {
+        Some(org) => {
+            ensure_valid(&organization_problems(org))?;
+            ensure_org_in_scope(&ctx, &caller, org).await?;
+            Some(Scope::for_organization(pool(&ctx), org).await?)
+        }
+        None => None,
+    };
     let held = sqlx::query!(
         "SELECT feature_id, annex_category, overseer_role, representatives_informed_on, workers_informed_on,
                 log_retention_months, retention_note
@@ -45,10 +77,12 @@ async fn register(State(ctx): State<AppContext>) -> Result<Response> {
             rules::row(f, entry.as_ref())
         })
         .collect();
-    let from = applies_from();
+    let today = Utc::now().date_naive();
+    let from = applies_from_in(scope.as_ref(), today);
     format::json(json!({
-        "applies_from": from,
-        "applies_now": Utc::now().date_naive() >= from,
+        "applies_from": from.value,
+        "applies_from_came_from": from.came_from,
+        "applies_now": today >= from.value,
         "features": rows,
         "categories": rules::CATEGORIES,
         "minimum_log_months": rules::MINIMUM_LOG_MONTHS,

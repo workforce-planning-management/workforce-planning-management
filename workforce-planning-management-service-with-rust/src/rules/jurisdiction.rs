@@ -197,6 +197,8 @@ pub enum Shape {
         /// The greatest bound allowed.
         max: i64,
     },
+    /// A calendar date, `YYYY-MM-DD` (WPM-T409: the day a law's duties apply).
+    Date,
 }
 
 /// One registry entry.
@@ -216,6 +218,13 @@ pub struct Parameter {
 
 /// The parameter registry, sorted by key. A key outside it is refused.
 pub const REGISTRY: &[Parameter] = &[
+    Parameter {
+        key: "ai_act.applies_from",
+        shape: Shape::Date,
+        unit: "",
+        combine: Combine::MostSpecific,
+        meaning: "the day the AI Act's duties for the deployer of a high-risk system (Annex III) apply",
+    },
     Parameter {
         key: "calendar.week_start",
         shape: Shape::Weekday,
@@ -662,9 +671,20 @@ pub enum Value {
         #[serde(skip_serializing_if = "Option::is_none")]
         max: Option<i64>,
     },
+    /// A calendar date (stored as `YYYY-MM-DD`).
+    Date(chrono::NaiveDate),
 }
 
 impl Value {
+    /// The date, if this is one.
+    #[must_use]
+    pub const fn as_date(&self) -> Option<chrono::NaiveDate> {
+        match self {
+            Self::Date(day) => Some(*day),
+            _ => None,
+        }
+    }
+
     /// The whole number, if this is one.
     #[must_use]
     pub const fn as_integer(&self) -> Option<i64> {
@@ -746,6 +766,11 @@ pub fn validate_entry(entry: &Parameter, raw: &serde_json::Value) -> Result<Valu
             .as_bool()
             .map(Value::Flag)
             .ok_or_else(|| format!("{key} must be true or false")),
+        Shape::Date => raw
+            .as_str()
+            .and_then(|text| chrono::NaiveDate::parse_from_str(text.trim(), "%Y-%m-%d").ok())
+            .map(Value::Date)
+            .ok_or_else(|| format!("{key} must be a date, YYYY-MM-DD")),
         Shape::Weekday => weekday(raw)
             .map(Value::Integer)
             .ok_or_else(|| format!("{key} must be an ISO weekday, 1 (Monday) to 7 (Sunday)")),
@@ -1271,6 +1296,33 @@ mod tests {
         }
         assert!(validate("calendar.week_start", &json!(7)).is_ok());
         assert!(validate("calendar.week_start", &json!(0)).is_err());
+        // A date (WPM-T409): ISO, trimmed, and a real day; a number or a word is not one.
+        assert_eq!(
+            validate("ai_act.applies_from", &json!(" 2027-12-02 ")).map(|v| v.as_date()),
+            Ok(chrono::NaiveDate::from_ymd_opt(2027, 12, 2))
+        );
+        for bad in [
+            json!("2027-02-30"),
+            json!("02/12/2027"),
+            json!(20_271_202),
+            json!(null),
+        ] {
+            assert!(validate("ai_act.applies_from", &bad).is_err(), "{bad}");
+        }
+        assert_eq!(
+            serde_json::to_value(Value::Date(
+                chrono::NaiveDate::from_ymd_opt(2027, 12, 2).unwrap()
+            ))
+            .unwrap(),
+            json!("2027-12-02"),
+            "stored as the date itself, so a stored row reads back"
+        );
+        assert_eq!(
+            serde_json::from_value::<Value>(json!("2027-12-02"))
+                .unwrap()
+                .as_date(),
+            chrono::NaiveDate::from_ymd_opt(2027, 12, 2)
+        );
         assert!(
             validate("no.such", &json!(1))
                 .unwrap_err()

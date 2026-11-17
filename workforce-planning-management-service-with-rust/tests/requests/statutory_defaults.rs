@@ -312,3 +312,64 @@ async fn an_organization_reader_takes_the_home_profile_then_the_setting_then_the
     })
     .await;
 }
+
+/// The AI Act's date in the jurisdiction profile (WPM-T409): for an organization, its home's `ai_act.applies_from`, then
+/// `WPM_AI_ACT_APPLIES_FROM`, then the default; the register says which. A date that is not one is refused.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn the_ai_act_date_comes_from_the_home_profile_then_the_setting_then_the_default() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let key = "ai_act.applies_from";
+        let org = an_org();
+        request
+            .post("/api/jurisdictions")
+            .json(&json!({ "organization_ref": org, "code": "XA", "layer": "national", "parent_code": null }))
+            .await
+            .assert_status_ok();
+        for bad in [json!("2028-13-40"), json!(20_280_115), json!("soon")] {
+            let refused = request
+                .post("/api/jurisdiction-parameters")
+                .json(&json!({ "organization_ref": org, "code": "XA", "key": key, "value": bad,
+                               "effective_from": "2000-01-01", "source": "synthetic test profile", "status": "example" }))
+                .await;
+            assert_eq!(refused.status_code(), 422, "{bad}: {}", refused.text());
+        }
+        profile_row(&request, &org, ("XA", "national", None), key, json!("2028-01-15")).await;
+        set_home(&request, &org, json!("XA")).await;
+
+        let register: Value = request.get(&format!("/api/ai-register?organization={org}")).await.json();
+        assert_eq!(register["applies_from"], "2028-01-15");
+        assert_eq!(register["applies_from_came_from"]["kind"], "profile");
+        assert_eq!(register["applies_from_came_from"]["from"][0]["code"], "XA");
+        // With no organization there is no profile: the default, and it names whose it is.
+        let deployment: Value = request.get("/api/ai-register").await.json();
+        assert_eq!(deployment["applies_from"], "2027-12-02");
+        assert_eq!(deployment["applies_from_came_from"]["kind"], "default");
+        assert_eq!(deployment["applies_from_came_from"]["default_from"]["regime"], "EU");
+        // The home's profile wins over the setting; without an organization the setting is used.
+        unsafe { std::env::set_var("WPM_AI_ACT_APPLIES_FROM", "2028-08-02") };
+        let with_org: Value = request.get(&format!("/api/ai-register?organization={org}")).await.json();
+        let without: Value = request.get("/api/ai-register").await.json();
+        let listed: Value = request.get(&format!("/api/statutory-defaults?organization={org}")).await.json();
+        unsafe { std::env::remove_var("WPM_AI_ACT_APPLIES_FROM") };
+        assert_eq!(with_org["applies_from"], "2028-01-15");
+        assert_eq!(without["applies_from"], "2028-08-02");
+        assert_eq!(without["applies_from_came_from"]["kind"], "setting");
+        let ai = listed["settings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|s| s["setting"] == "WPM_AI_ACT_APPLIES_FROM")
+            .unwrap()
+            .clone();
+        assert_eq!(ai["key"], key);
+        assert_eq!(ai["reader"], "organization");
+        assert_eq!(ai["value"], "2028-01-15");
+        assert_eq!(ai["came_from"]["kind"], "profile");
+        // An organization that is not one is refused.
+        assert_eq!(request.get("/api/ai-register?organization=nope").await.status_code(), 422);
+        set_home(&request, &org, Value::Null).await;
+    })
+    .await;
+}

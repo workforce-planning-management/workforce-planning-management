@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the AI Act's date in the jurisdiction profile (WPM-T409, part)
+
+A `date` shape in the parameter registry and the key `ai_act.applies_from`. `GET /api/ai-register?organization=` gives the date
+for that organization (its home's profile, then `WPM_AI_ACT_APPLIES_FROM`, then the default) and `applies_from_came_from`.
+Without `organization` the register answers as before, with `applies_from_came_from` added.
+
 ## [0.1.4] - 2026-11-16
 
 ### Fixed
