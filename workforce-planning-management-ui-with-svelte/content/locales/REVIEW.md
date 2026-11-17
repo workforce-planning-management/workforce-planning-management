@@ -90,3 +90,6 @@ by the right-to-left axe test of WPM-T377) copies each locale's existing `ceo.pe
 
 The 2026-11-17 addition (`footer.privacyNotice`, the footer's link to the privacy notice, WPM-T523) was written by the same assistant,
 also unreviewed.
+
+On 2026-11-17 the two `zh-001` strings that used the informal 你 (`home`'s "像你自己的" and the consultation intro's 你们的) were changed
+to the formal 您 and 贵组织, at the owner's request, so the Chinese catalogue is formal throughout. Still unreviewed.

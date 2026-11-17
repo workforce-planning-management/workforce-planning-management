@@ -6019,3 +6019,7 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       production uses Bengali ones; the application's pickers are unchanged (still picker bar 0.6.0, so they keep the theme
       and text size on a first visit); the footer link opens the project's website, so a deployment with its own notice must
       change `privacyNoticeUrl`; no lawyer has read the notice.
+      **Formal Chinese (2026-11-17, at the owner's request):** the Chinese notice (zh-cn, zh-001), the site's `zh-001` catalogue
+      and the two UI strings that said 你 now say 您, the formal "you" the rest of the UI already used (141 times); 你们的协议
+      became 贵组织的协议. Verified: no 你 is left in any Chinese text; UI vitest 362 passed; the site's catalogue and privacy
+      tests, 59, passed.
