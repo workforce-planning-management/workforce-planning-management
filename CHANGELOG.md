@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — `axa` 0.20 (WPM-T533, 2026-11-17)
+
+`axa` 0.19.0 to 0.20.0 and `axa-test` 0.10.0 to 0.11.0, at the owner's request inside the minimum publish age. Zstd is now an
+opt-in feature of `axa`, and WPM leaves it off: responses are compressed with gzip, Brotli or deflate, and the C zstd library
+is no longer built.
+
 ### Changed — the matcher 0.2.0, published, and no chrono in the service (WPM-T532, 2026-11-17)
 
 `workforce-planning-management-matcher` 0.2.0, on jiff, is on crates.io, and the domain crate uses it. chrono is now in neither

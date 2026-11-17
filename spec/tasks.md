@@ -5699,6 +5699,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T533 **`axa` 0.20.** *The owner asked on 2026-11-17, approving the exception to the minimum publish age.* *([rust-axum-stack.md](rust-axum-stack.md))*
+      From 0.19.0 to 0.20.0, with `axa-test` 0.10.0 to 0.11.0, published minutes before. **One change, and WPM takes the default:**
+      Zstd is now an opt-in `zstd` feature of `axa`, and WPM leaves it off, so a request body in `zstd` is a `415` and a client
+      that asks only for `zstd` gets an uncompressed answer; gzip, Brotli and deflate are as before. Nothing in WPM's spec, UI or
+      tests sends or asks for Zstd (searched). The lockfile drops `zstd`, `zstd-safe` and `zstd-sys`, so the C zstd library is no
+      longer built. No code change. **Verified:** the local CI gate on fresh PostgreSQL 18 and Redis 8, with the `kache` compiler
+      wrapper off (it failed under load, "cannot pin compiler task", and an earlier quick check did not run because of it): 44 of
+      45 steps, 1,591 tests passed, 0 failed; the failure is `cargo deny`'s advisories, on the test-only chrono (WPM-T532).
 - [x] (2026-11-17) WPM-T532 **The matcher 0.2.0, on jiff, and the service on it.** *The owner chose this on 2026-11-17 (option B: take chrono out of the build), which included the publish.*
       The matcher's version is 0.2.0, with its changelog's release section (`WorkerRecord::date_of_birth` is a
       `jiff::civil::Date`, breaking, WPM-T528; the MSRV 1.98; the WPM-T526 tests); committed and on `main` (`bd5583e6`) before it

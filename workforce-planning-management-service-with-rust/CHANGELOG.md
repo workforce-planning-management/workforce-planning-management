@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `axa` 0.20 (WPM-T533)
+
+`axa` 0.19.0 to 0.20.0 and `axa-test` 0.10.0 to 0.11.0. **Zstd is opt-in** in `axa` 0.20 and WPM does not turn it on: a
+request body in `zstd` is now a `415`, and a client that asks only for `zstd` gets an uncompressed answer; gzip, Brotli and
+deflate are unchanged. Nothing in WPM, its UI or its tests sends or asks for Zstd. The lockfile drops `zstd`, `zstd-safe` and
+`zstd-sys`. No code change.
+
 ### Changed — the matcher 0.2 (WPM-T532)
 
 The domain crate depends on `workforce-planning-management-matcher` 0.2.0; the service's unused direct dependencies on the
