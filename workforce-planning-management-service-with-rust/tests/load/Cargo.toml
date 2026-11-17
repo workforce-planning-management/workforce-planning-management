@@ -2,6 +2,7 @@
 name = "wpm-load-tests"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.98"
 publish = false
 
 [workspace]
@@ -34,14 +35,23 @@ metrics-exporter-prometheus = { version = "0.18.3", optional = true }
 # UUID
 uuid = { version = "1.29.2", features = ["v4", "serde"] }
 
-# Time
-chrono = "0.4.45"
-
 # For distributed coordination
 tokio-stream = "0.1"
 
 [dev-dependencies]
 criterion = "0.8"
+
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.mutants]
+inherits = "test"
+debug = "none"
+incremental = false
 
 [profile.release]
 opt-level = 3
