@@ -543,7 +543,7 @@
       {
         "title": "SECURITY.md",
         "path": "SECURITY.md",
-        "description": "how to report a vulnerability, and what to read before exposing either subproject"
+        "description": "the formal security policy: how to report a vulnerability, scope, supported versions, target times, coordinated disclosure, safe harbour, and what deployers must configure"
       },
       {
         "title": "docs/tutorials/family-bridges.md",

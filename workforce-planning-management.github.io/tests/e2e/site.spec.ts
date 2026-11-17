@@ -604,6 +604,21 @@ test("the sitemaps list the whole site and each locale's pages, in plain XML", a
   expect(cy).not.toContain("/zh-001/");
 });
 
+// WPM-T525: RFC 9116. The file is served from /.well-known/, names a contact and the policy, and has not expired.
+test("security.txt names the contact and the policy, and has not expired", async ({ request }) => {
+  const response = await request.get("/.well-known/security.txt");
+  expect(response.status()).toBe(200);
+  const text = await response.text();
+  const field = (name: string) => text.match(new RegExp(`^${name}: (.+)$`, "m"))?.[1] ?? "";
+  expect(field("Contact")).toBe("mailto:joel@joelparkerhenderson.com");
+  expect(field("Policy")).toMatch(/\/SECURITY\.md$/);
+  expect(field("Canonical")).toBe("https://workforce-planning-management.github.io/.well-known/security.txt");
+  const expires = Date.parse(field("Expires"));
+  expect(expires).toBeGreaterThan(Date.now());
+  // RFC 9116 asks for an expiry less than a year away; renewing it is part of the yearly review in SECURITY.md §11.
+  expect(expires - Date.now()).toBeLessThanOrEqual(366 * 24 * 60 * 60 * 1000);
+});
+
 // WPM-R247: light and dark must pass axe; any other theme is the reader's choice, so its axe result is reported
 // (as an annotation on the test) and does not fail the run. Every theme must load with no CSP error.
 const VOUCHED = new Set(["light", "dark"]);

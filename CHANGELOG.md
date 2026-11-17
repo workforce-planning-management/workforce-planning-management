@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a formal security policy (WPM-T525, 2026-11-17)
+
+`SECURITY.md` 2.0.0 sets out the scope and what is out of it, the supported versions, what a report contains, target times by
+severity, coordinated disclosure with advisories and CVE ids, credit, and a safe harbour. The site serves a matching
+`/.well-known/security.txt` (RFC 9116), and its deploy now includes that dot-directory.
+
 ### Added — a register of deliberate departures (WPM-T519, 2026-11-17)
 
 [spec/deliberate-departures.md](spec/deliberate-departures.md) lists 36 places where WPM departs on purpose from a statute, a

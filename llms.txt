@@ -137,7 +137,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [index.md](index.md): The documentation index: the way in to the documents, and the site's home page
 - [INSTALL.md](INSTALL.md): build, run and test both subprojects, the demo, the scheduled tasks (`config/scheduler.yaml`), translations, containers
 - [README.md](README.md): what WPM is, its status and subprojects, and where the documentation is
-- [SECURITY.md](SECURITY.md): how to report a vulnerability, and what to read before exposing either subproject
+- [SECURITY.md](SECURITY.md): the formal security policy: how to report a vulnerability, scope, supported versions, target times, coordinated disclosure, safe harbour, and what deployers must configure
 - [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md): tutorial: the bridges to PPM and CRM with curl (pool link, peer demand and supply, people impact, the hire webhook, the overlap check, the lean worker list)
 - [locales/en-001/privacy/index.md](locales/en-001/privacy/index.md): the privacy notice, in every locale (locales/<locale>/privacy/): what the website and the application keep in a browser (theme, text size, language, the sign-in cookie, SvelteKit's scroll positions), why, for how long and how to remove it; the application's footer links to it (WPM-R253)
 - [CONTRIBUTING.md](CONTRIBUTING.md): ground rules and how to contribute; the gates a change must pass

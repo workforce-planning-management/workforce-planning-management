@@ -37,6 +37,7 @@ does, and why, is [`../spec/github-pages-site.md`](../spec/github-pages-site.md)
 | `/search/`, `/<locale>/search/` | search, in the browser, over the static `/search-index.json` |
 | `/sitemap.xml`, `/<locale>/sitemap.xml` | the whole site, and one locale |
 | `/404.html` | the not-found page, in each catalogue's language |
+| `/.well-known/security.txt` | where to report a vulnerability (RFC 9116), pointing at [`SECURITY.md`](../SECURITY.md); `static/.well-known/` |
 
 - A link between two of these documents stays on the site; a link to any other
   file in the repository goes to that file on GitHub. Raw HTML in the Markdown is
