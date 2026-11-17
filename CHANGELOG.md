@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — a time limit on every CI job (WPM-T508, 2026-11-17)
+
+Every job in `ci.yml` and `release.yml` stops at about twice its slowest recent run, instead of GitHub's six hours, and
+`scripts/check-job-timeouts.py` fails CI on a job without a limit.
+
 ### Changed — `axa` 0.17 (WPM-T524, 2026-11-17)
 
 The service moves from `axa` 0.15 to 0.17, inside the minimum publish age at the owner's request. It gains a `health` command,

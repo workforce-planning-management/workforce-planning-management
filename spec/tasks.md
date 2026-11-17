@@ -5942,8 +5942,15 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 
 ## Lessons from a Rust rewrite ([lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md)), proposed 2026-11-16
 
-- [ ] WPM-T508 **A time limit on every CI job.** Set `timeout-minutes` on every job in `ci.yml` and `release.yml`, about twice
+- [x] (2026-11-17) WPM-T508 **A time limit on every CI job.** Set `timeout-minutes` on every job in `ci.yml` and `release.yml`, about twice
   its slowest recent run, and add a check to `check-actions-pinned.py` (or a sibling) that fails on a job without one. (S)
+  *The owner said next on 2026-11-17, after the four tasks that change no behaviour were offered; read as confirming this one.*
+  Done: every job has `timeout-minutes`, about twice the slowest of three green runs on 2026-11-16 and 2026-11-17 and at least
+  10: `api-db` 40 (17 to 19 minutes), `api-roles` 20 (up to 10), `docs`, `api-lint`, `ui`, `site` and `zap` 15 (up to 6), the
+  rest 10 (4 or under); `release` 25 (its last two green runs took 9 and 12 minutes). `scripts/check-job-timeouts.py`, a sibling of the
+  pinning check, fails on a job with neither `timeout-minutes` nor a job-level `uses`; CI's `docs` job runs it. **Verified:** the
+  check passes on both workflows and fails, naming the job, with the release job's limit taken out. **Not checked:** CI; a limit
+  that is too tight shows only as a cancelled job on a slow runner.
 - [ ] WPM-T509 **The configuration checked whole at start** (WPM-R248, WPM-D199). Replace the first-error returns in
   `app.rs` with a pass that collects every problem and prints them one per line before a port opens. A `Secret` type
   renders as `<redacted>`, and a test checks it. Parsers take values, not variable names, so the tests leave the process

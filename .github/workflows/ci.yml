@@ -31,6 +31,7 @@ jobs:
   docs:
     name: docs, links, days, licenses, status
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,6 +48,8 @@ jobs:
         run: python3 scripts/check-licenses.py
       - name: every action is pinned to a commit SHA
         run: python3 scripts/check-actions-pinned.py
+      - name: every job has a time limit
+        run: python3 scripts/check-job-timeouts.py
       - name: implementation status is current
         run: python3 scripts/status.py --check
       - name: llms.txt and llms.json are current and every path exists
@@ -55,6 +58,7 @@ jobs:
   secrets:
     name: secret scan (gitleaks, whole history)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -72,6 +76,7 @@ jobs:
   workflow-lint:
     name: workflow lint (zizmor)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -84,6 +89,7 @@ jobs:
   api-lint:
     name: api · fmt, clippy, unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
@@ -104,6 +110,7 @@ jobs:
   matcher:
     name: matcher crate · fmt, clippy, tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: workforce-planning-management-matcher-with-rust
@@ -129,6 +136,7 @@ jobs:
   msrv:
     name: MSRV · matcher and entity-ref on Rust 1.98
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -144,6 +152,7 @@ jobs:
   api-db:
     name: api · database, enforcement and security suites
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
@@ -225,6 +234,7 @@ jobs:
   api-oidc:
     name: api · sign in with an Entra-compatible OIDC provider
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
@@ -267,6 +277,7 @@ jobs:
   restore-drill:
     name: api · backup, restore and erasure replay (the drill)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # Restores a pg_dump into an empty database, checks every table's row
     # checksum, replays an erasure made after the backup, and starts the real
     # service on the restored copy (scripts/restore-drill.sh, WPM-R89). It is a
@@ -324,6 +335,7 @@ jobs:
   load-smoke:
     name: api · load smoke (mixed reads and writes, no failed request)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # scripts/load-test.sh with LOAD_MIX at 1,000 workers (WPM-T496): four reads and two writers at once for ten
     # seconds, in its own Postgres 18 under Podman. It fails on any failed request, never on a latency: timings on
     # shared runners are noise, and BENCHMARKS.md holds the measured ones. A debug build, as the drill uses.
@@ -353,6 +365,7 @@ jobs:
   api-keycloak:
     name: api · Keycloak suite
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     # First green on 2026-10-19 (run for d4ee6c6; it needed the same Postgres and Redis services as
     # the OIDC job). It uses Testcontainers on the runner's container socket. Green on the six runs
     # after that, so it is blocking and a required check.
@@ -396,6 +409,7 @@ jobs:
   api-roles:
     name: api · least-privilege database roles
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # postgres-roles/roles.sql makes a migrator and a runtime role; this migrates as the first and runs the request tests
     # as the second, which must be refused every schema change and every change to the audit trail (WPM-T199).
     services:
@@ -435,6 +449,7 @@ jobs:
   deny:
     name: api · supply chain (cargo deny)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: workforce-planning-management-service-with-rust
@@ -455,6 +470,7 @@ jobs:
   ui:
     name: ui · check, unit, build, lint, Playwright
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: workforce-planning-management-ui-with-svelte
@@ -485,6 +501,7 @@ jobs:
   site:
     name: site · GitHub Pages (content copy, check, build, Playwright and axe)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: workforce-planning-management.github.io
@@ -522,6 +539,7 @@ jobs:
   zap:
     name: api · OWASP ZAP baseline on the defaults
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # First green on 2026-10-19 (run for d4ee6c6), after `X-Powered-By` was removed. ZAP reports warnings for things this
     # service cannot fix as an API (for example a missing anti-CSRF token), so
     # the rules file `.zap/rules.tsv` lists each accepted rule with its reason. Green on the six runs
