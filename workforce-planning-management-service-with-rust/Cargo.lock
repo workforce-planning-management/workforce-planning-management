@@ -4677,6 +4677,7 @@ name = "workforce-planning-management-domain"
 version = "0.1.0"
 dependencies = [
  "base64 0.23.1",
+ "criterion",
  "ed25519-dalek 3.0.0",
  "entity-ref",
  "jiff",

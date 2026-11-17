@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — the rules' benchmarks move to the domain crate (WPM-T538)
+
+`benches/rules.rs` is now `crates/workforce-planning-management-domain/benches/rules.rs`, run with
+`cargo bench -p workforce-planning-management-domain --bench rules`, so it no longer builds the service. Criterion stays at
+0.8.2, its newest release.
+
 ### Added — `benches/requests.rs` (WPM-T527)
 
 Criterion benchmarks of what a request pays apart from the database: `access::classify_read`, `directory::search` and its JSON,

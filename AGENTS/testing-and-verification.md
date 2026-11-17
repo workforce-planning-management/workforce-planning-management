@@ -14,7 +14,7 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |
 | Service | `cargo clippy --all-targets -- -D warnings` | clean (pedantic) |
 | Service | `cargo +1.98 check --locked -p entity-ref` | the MSRV, the `rust-version` in `crates/entity-ref/Cargo.toml` (CI's `msrv` job reads it there; the matcher likewise in its own directory) |
-| Service | `cargo test --locked --bench rules` and `--bench requests` | each Criterion benchmark runs once (`cargo bench --bench …` measures; the matcher's is `matching`; `scripts/bench-compare.py` fails on a run slower than a saved baseline, on one quiet machine) |
+| Service | `cargo test --locked -p workforce-planning-management-domain --bench rules` and `cargo test --locked --bench requests` | each Criterion benchmark runs once (`cargo bench --bench …` measures; the matcher's is `matching`; `scripts/bench-compare.py` fails on a run slower than a saved baseline, on one quiet machine) |
 | Repo | `scripts/mutants-diff.sh [base]` | CI's `mutants`: every mutant in the changed lines of the service's rules and the matcher is caught (`cargo mutants` in a crate's directory is the full run; the script mutates files in place and puts each back) |
 | Repo | `LOAD_MIX=1 LOAD_CHECK=1 LOAD_BAR_MS=0 scripts/load-test.sh 1000` | CI's `load-smoke`: no failed request under mixed reads and writes (by hand, without `LOAD_BAR_MS=0`: the 2 s p95 bar) |
 | UI | `pnpm lint` | ESLint, then Prettier: clean |

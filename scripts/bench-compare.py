@@ -7,9 +7,9 @@ is above the threshold, so a change Criterion cannot tell from noise never fails
 running; shared CI runners are too noisy for this, so CI does not run it.
 
     # on the commit to compare against
-    cargo bench --bench rules -- --save-baseline before
+    cargo bench -p workforce-planning-management-domain --bench rules -- --save-baseline before   # or --bench requests
     # on the change
-    cargo bench --bench rules -- --baseline before
+    cargo bench -p workforce-planning-management-domain --bench rules -- --baseline before
     python3 scripts/bench-compare.py <criterion dir>            # default: the service's target/criterion
     python3 scripts/bench-compare.py <criterion dir> --threshold 5
 

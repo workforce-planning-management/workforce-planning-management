@@ -340,7 +340,7 @@ the header is checked on `/api/*` only (not `/metrics.prom` or `/api-docs`).
 
 The owner asked for comprehensive load and benchmark tests on 2026-11-15 (WPM-T495, WPM-T496; WPM-R120, WPM-R142).
 
-- **Benchmarks are Criterion suites of the pure functions a view runs once per worker**: `benches/rules.rs` in the service
+- **Benchmarks are Criterion suites of the pure functions a view runs once per worker**: `benches/rules.rs` in the domain crate (in the service until WPM-T538)
   (capacity supply, the pay gap report, the plan projection and contract FTE, rest breaches by worker, possible duplicates) and
   `benches/matching.rs` in the matcher (one pair, one record against everyone held, the string scorers), at the load test's sizes of
   1,000, 10,000 and 50,000 workers. Their inputs are made from an index, so two runs measure the same work. They show how a rule grows

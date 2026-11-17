@@ -106,7 +106,8 @@ jobs:
       # The service, the domain crate (the pure rules, WPM-D203) and entity-ref.
       - run: cargo test --locked --workspace --lib
       # Each Criterion benchmark once (WPM-T495): it runs, it does not measure; timings on shared runners are noise.
-      - run: cargo test --locked --bench rules
+      # The rules' benchmarks are the domain crate's (WPM-T538).
+      - run: cargo test --locked -p workforce-planning-management-domain --bench rules
       # What a request pays apart from the database (WPM-T527), once each.
       - run: cargo test --locked --bench requests
 

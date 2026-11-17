@@ -141,12 +141,8 @@ reqwest = { version = "0.13.5", default-features = false, features = ["query", "
 # Generates the EC test keypair in `src/auth/keycloak.rs`'s tests; already in the build through rustls.
 ring = { version = "0.17" }
 
-# Benchmarks of the pure rules a view runs per worker (WPM-T495); `cargo bench --bench rules`.
+# Benchmarks of what a request pays apart from the database (WPM-T527); the rules' own are in the domain crate (WPM-T538).
 criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
-
-[[bench]]
-name = "rules"
-harness = false
 
 # What a request pays apart from the database (WPM-T527); `cargo bench --bench requests`.
 [[bench]]

@@ -227,8 +227,9 @@ not throughput or latency.
 
 ## If you add a benchmark
 
-Add it to `benches/rules.rs` (or the matcher's `benches/matching.rs`), at the same three sizes, with inputs made from an index;
-`cargo test --bench rules` must pass, as CI runs it. Assert the property you care about in a test where possible — a number nobody
+Add a rule's to the domain crate's `benches/rules.rs`, a request's to the service's `benches/requests.rs`, a match's to the
+matcher's `benches/matching.rs`, at the same three sizes, with inputs made from an index; `cargo test -p workforce-planning-management-domain --bench rules`
+(or `--bench requests`) must pass, as CI runs it. Assert the property you care about in a test where possible — a number nobody
 compares is not a gate. Record the method and the measured results here, with the task id from [spec/tasks.md](spec/tasks.md) that
 motivated it.
 

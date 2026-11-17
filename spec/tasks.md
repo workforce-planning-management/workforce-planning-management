@@ -5699,6 +5699,15 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T538 **The rules' benchmarks in the domain crate.** *The owner asked on 2026-11-17 ("update benchmarking using `criterion` crate").* *([testing.md](testing.md))*
+      Criterion is already the newest release, 0.8.2 (2026-02-04), in the service and the matcher, so there was no version to
+      move. What was left over from WPM-T529: `benches/rules.rs` measures the rules, which live in the domain crate, but was a
+      bench of the service, so it built and linked the service to time a rule. It is now the domain crate's
+      `benches/rules.rs` (`criterion` a dev-dependency there, the lockfile adding only that edge), and runs with
+      `cargo bench -p workforce-planning-management-domain --bench rules`; the service keeps `benches/requests.rs`, which measures
+      the service's own code. CI, `scripts/bench-compare.py`'s examples, `BENCHMARKS.md`'s guidance, the testing guide and the spec
+      say so. **Verified:** both benches run once each (`cargo test … --bench`: 18 and 19); clippy with `-D warnings` on every
+      target; fmt; zizmor. **Not measured:** how much sooner the rules bench builds now.
 - [x] (2026-11-17) WPM-T527 **Benchmarks of what a request pays apart from the database, and a way to compare two runs.** *The owner asked on 2026-11-17 ("add performance benchmarks").* *(WPM-D195; [testing.md](testing.md))*
       Criterion benchmarks already covered the rules a view runs per worker (WPM-T495); `benches/requests.rs` adds the work around
       them: `access::classify_read` (every `GET`, at the first pattern, one near the end, and no match), `directory::search` (two

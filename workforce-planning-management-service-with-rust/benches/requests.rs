@@ -1,6 +1,6 @@
 //! Criterion benchmarks for what a request pays apart from the database (WPM-T527).
 //!
-//! `benches/rules.rs` measures the rules a view runs once per worker; this file measures the work around them: the read
+//! The domain crate's `benches/rules.rs` measures the rules a view runs once per worker; this file measures the work around them: the read
 //! classification every `GET` runs before its handler, the directory search and its JSON answer, the CSV import and
 //! export, and the hash a link token is looked up by. `cargo bench --bench requests` measures; `cargo test --bench
 //! requests` runs each once, as CI does. The sizes are the load test's (1,000, 10,000 and 50,000). Every input is synthetic
