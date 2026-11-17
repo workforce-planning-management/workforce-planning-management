@@ -4362,8 +4362,13 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       only when asked for). The other lists have no UI caller (cutovers, org-wide resignations and flexible working, a worker's notifications),
       so there is nothing to wire until a screen reads them. Verified: svelte-check 0, lint, 218 unit tests, Playwright all passing.
       **Not verified:** no screenshot; no paging test on `/contingent` (the shared control is tested on requisitions and payroll).
+      Part 7 done (2026-11-17): the 200,000-worker measurement, after only. `scripts/load-test.sh` gains `LOAD_LISTS=1`, which seeds a
+      requisition and an open leaver movement for one worker in ten; at 200,000 workers, 8 connections: requisitions p95 6.3 ms,
+      movements p95 348 ms (it reads every open movement before it cuts), the worker list p95 13.7 ms, none failed
+      ([BENCHMARKS.md](../BENCHMARKS.md), "The paged lists"). **Not measured:** the before (the old code was not rebuilt), so there is
+      no comparison; the bodies were not inspected; one run.
       **Still open:** per-worker lists (bounded by one person's history, left unpaged on purpose); the early-warning list (its totals
-      cover all rows); the seed-200k before/after in `BENCHMARKS.md` (no 200k seed was run). This task stays open for those.
+      cover all rows); the seed-200k before (part 7 measured only the after). This task stays open for those.
 - [x] WPM-T255 (2026-10-23) **Split the largest controllers.** `learning.rs` (1,433 lines) into a module folder as `planning/` is; a pure
       plan-builder out of `handover::apply` (235 lines) and `lms::apply` (178).
       Done: `controllers/learning.rs` (1,433 lines) is the folder `learning/` (`catalogue` 709, `paths` 204, `mentoring` 171,

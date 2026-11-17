@@ -308,3 +308,20 @@ bar.**
 
 60 `GET` routes under `/api/workers/{pid}` and `/api/workforce-plans/{pid}` were timed once at 200,000 workers. Four read every worker to answer for a few: upline, downline, reports and dotted-line (0.54 to 0.60 s each). They now read only the chain they need; under 8 connections: upline p95 1.4 ms, downline 2.5, reports 2.5, dotted-line 2.5, no failed request. The seed has no reporting hierarchy, so the chain walks were short; the downline and reports lists are capped (`limit`, default 5,000) with the totals of everyone.
 
+
+### The paged lists (WPM-T254, 2026-11-17)
+
+`LOAD_LISTS=1 LOAD_PATHS=<file> scripts/load-test.sh 200000` seeds, beside the 200,000 workers, a requisition and an open leaver
+movement for one worker in ten (20,000 of each), and times the lists, 8 seconds each at 8 connections, 20 database connections,
+the release build, one Apple M-series laptop (16 cores) with Postgres 18 in a container on it:
+
+| Route (first page of 500) | requests/s | p50 ms | p95 ms | p99 ms | Failed |
+|---|---:|---:|---:|---:|---:|
+| requisitions (counted and cut in SQL) | 1,948 | 3.8 | 6.3 | 8.6 | 0 |
+| movements (cut after the scope filter) | 43 | 172 | 348 | 564 | 0 |
+| worker list (for comparison) | 1,145 | 5.8 | 13.7 | 26.8 | 0 |
+
+Both meet the bar. Movements is 45 times slower than requisitions because it reads all 20,000 open movements and their progress
+before it cuts the page; it is the one to watch as the open movements grow. **Not measured:** the same lists before the paging
+(WPM-T254 part 2 landed on 2026-10-23, and the old code was not rebuilt to time it), so there is no before-and-after. The response
+bodies were not inspected; only the status (every one a `2xx`). One run, no spread.

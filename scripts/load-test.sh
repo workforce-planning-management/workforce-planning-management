@@ -15,6 +15,8 @@
 #                            are printed, so a leak or a connection that is never returned shows as a climb
 #   LOAD_CHECK=1             exit 1 when any measured stream has a failed request (anything not 2xx), or a p95 over
 #                            LOAD_BAR_MS (default 2000, the bar of WPM-R142); LOAD_BAR_MS=0 checks failures only
+#   LOAD_LISTS=1             also seed the paged lists (WPM-T254): a requisition and an open leaver movement for one worker
+#                            in ten, so /api/requisitions and /api/movements answer their first 500 out of n/10
 #   LOAD_BIN=<path>          the service binary (default: the release build); LOAD_OUT=<file> also writes the rows as JSON lines
 #
 # Needs: curl, podman (a Postgres container), oha, and a release build of the service
@@ -140,6 +142,17 @@ INSERT INTO time_entries (pid, worker_pid, worked_on, minutes, kind, status)
   WHERE w.id > $seeded AND EXTRACT(ISODOW FROM CURRENT_DATE - d) < 6;  -- weekdays: 20 entries, a 40-hour week is 2,400 minutes
 ANALYZE;
 SQL
+  if [ -n "${LOAD_LISTS:-}" ]; then
+    psql <<SQL
+INSERT INTO requisitions (pid, organization_ref, department, job_title, headcount, status, opened_on)
+  SELECT gen_random_uuid(), 'organization:00000000-0000-4000-8000-0000000000aa', 'dept-' || (g % 20), 'Engineer', 1, 'open', DATE '2026-01-01' + (g % 300)
+  FROM generate_series($seeded + 1, $n) g WHERE g % 10 = 0;
+INSERT INTO movements (pid, worker_pid, kind, effective_on, status)
+  SELECT gen_random_uuid(), w.pid, 'leaver', CURRENT_DATE + (w.id % 90), 'open'
+  FROM workers w WHERE w.id > $seeded AND w.id % 10 = 0;
+ANALYZE;
+SQL
+  fi
   seeded=$n
 
   # exec: the pid is the service itself, so the kill below stops it and not just a wrapper shell
