@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — coverage with cargo-tarpaulin (WPM-T539)
+
+`cargo tarpaulin --engine llvm`: the domain crate 97.21% from its own tests, held at 95% in CI; the service with its
+database-backed suites 95.61%, the controllers 95.6%. The figures and the least-covered files are in `spec/testing.md`.
+
 ### Changed — the rules' benchmarks move to the domain crate (WPM-T538)
 
 `benches/rules.rs` is now `crates/workforce-planning-management-domain/benches/rules.rs`, run with

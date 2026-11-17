@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — test coverage with cargo-tarpaulin (WPM-T539, 2026-11-17)
+
+CI's `coverage` job holds the domain crate and the matcher at 95% of lines (97.21% and 98.75% today); with every database-backed
+suite, the service as a whole is at 95.61%.
+
 ### Added — benchmarks of a request's own work, and a comparison script (WPM-T527, 2026-11-17)
 
 `cargo bench --bench requests` measures the read classification, the directory search and its JSON, the CSV import and export,

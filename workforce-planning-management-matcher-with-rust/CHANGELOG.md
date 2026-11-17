@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Coverage (WPM-T539): 98.75% of lines (317 of 321) with `cargo tarpaulin --engine llvm`; CI holds it at 95%.
+
 ## 0.2.0 - 2026-11-17
 
 - **Breaking:** `WorkerRecord::date_of_birth` is `Option<jiff::civil::Date>`, was `Option<chrono::NaiveDate>` (WPM-T528); the crate

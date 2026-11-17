@@ -5699,6 +5699,18 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T539 **Test coverage with cargo-tarpaulin.** *The owner asked on 2026-11-17 ("update test coverage using `tarpaulin` crate").* *([testing.md](testing.md))*
+      There was no coverage measurement before. `cargo-tarpaulin` 0.37.6 (2026-11-05, outside the minimum publish age), with the
+      `llvm` engine, which macOS needs and Linux also takes, so local and CI figures are made the same way. CI's new `coverage`
+      job (30-minute limit; the tool from the pinned `taiki-e/install-action`, which lists 0.37.6) holds the domain crate and the
+      matcher at **95% or more** and prints the service's unit-test figure. The domain's step restricts the report to its own files
+      (`--include-files`), because a `-p` run still lists the service's sources as uncovered: 94.39% that way, against 97.21%.
+      **Measured** (`spec/testing.md`): the domain crate 97.21% (7,984 of 8,213 lines), the matcher 98.75% (317 of 321), the
+      workspace's unit tests 27.41%, and with every database-backed suite **95.61%** (35,630 of 37,266; 2,895 tests passed, none
+      failed, in about 13 minutes): the controllers 95.6%, the rules 98.5%, the tasks 87.4%, `src/auth` 64.9%. The least covered
+      files are named there: `scheduler.rs`'s job loop, the demo seeder, the PASETO key fetch and refresh, `compat.rs`, start-up.
+      **Not done:** a floor for the whole service, which needs the database run in CI (about 13 minutes instrumented on this laptop,
+      under load); the `keycloak` feature's coverage; tests for the least-covered files. **Not checked:** the job in CI.
 - [x] (2026-11-17) WPM-T538 **The rules' benchmarks in the domain crate.** *The owner asked on 2026-11-17 ("update benchmarking using `criterion` crate").* *([testing.md](testing.md))*
       Criterion is already the newest release, 0.8.2 (2026-02-04), in the service and the matcher, so there was no version to
       move. What was left over from WPM-T529: `benches/rules.rs` measures the rules, which live in the domain crate, but was a
