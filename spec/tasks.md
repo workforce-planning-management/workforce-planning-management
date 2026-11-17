@@ -5980,7 +5980,7 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       `svelte-theme-picker` 0.4.0 (both excluded from the minimum release age in `pnpm-workspace.yaml`, published 2026-11-16).
       `themeProps` gains `cookieName: "wpm-theme"` beside `storageKey: "mxi.wpm.theme"`. The text size is read and written by the
       site (`keptTextSize`, `keepTextSize` in `src/routes/+layout.svelte`), because `TextSizePicker` 0.3.2 writes its key on first
-      load. New [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md) at `/privacy/` (`DOC_PAGES`, the document
+      load. New `docs/website-privacy-notice.md` (moved by WPM-T523 to [`locales/en-001/privacy/index.md`](../locales/en-001/privacy/index.md)) at `/privacy/` (`DOC_PAGES`, the document
       copy, `nav.privacy` in the five catalogues), linked from every footer and listed by the pages picker; `index.md`, the site's
       README and `llms.json` list it. Six new tests in `tests/e2e/site.spec.ts`: a first visit keeps nothing; a chosen theme is in
       `localStorage` and in a `Path=/`, `SameSite=Lax`, cookie lasting about 400 calendar days; the cookie alone and `localStorage` alone each bring
@@ -5994,3 +5994,28 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       visit, and its privacy notice is the deployer's (assessment checklist 3.10). The `Secure` attribute is set by the picker on
       HTTPS and was not checked (the tests run over HTTP). No lawyer has read the notice's reading of the cookie rules. The footer
       link's label is AI-translated in Welsh, Mandarin, Arabic and Hindi.
+- [x] (2026-11-17) WPM-T523 **The privacy notice in every locale, covering the application, and the app's footer links to it.**
+      *(WPM-R253, WPM-D201)* Builds on WPM-T522. The notice moves from `docs/website-privacy-notice.md` (`/privacy/`) to
+      [`locales/<locale>/privacy/index.md`](../locales/en-001/privacy/index.md) at `/<locale>/privacy/`, in all 21 locales with a
+      `README.md` symlink and one `.locale-peer-id`, and now has a second table for the application: `mxi.wpm.theme`,
+      `mxi.wpm.text-size`, `mxi.wpm.locale`, the `wpm-locale` cookie (365 calendar days), the sign-in cookie `__Host-mxi_session`
+      (`mxi_session` on local HTTP), `sveltia-cms.prefs` on `/admin`, SvelteKit's session keys, and the two pre-rename keys it
+      moves. It says the application keeps the theme and text size before the reader chooses. en-gb respelled; en-gb-oxendict
+      and en-us as en-001; ar-001, bn-001, cy-gb, de-001, es-001, fr-001, hi-in, id-001, pt-001, ru-001, ur-001 and zh-cn
+      AI-written, with cy-001, de-de, es-es, hi-001 and zh-001 copies; each says the checklist it links is in English, as the
+      path to production does. The site: a `[locale=locale]/privacy` route, the document copy (`privacies`, the build fails if
+      a locale has none), sitemap, search, the language picker's alternates, the pages picker, and the footer link to the
+      page's locale (English on the English documents). The UI: a footer on every page with `footer.privacyNotice` (13 base
+      catalogues; `REVIEW.md` notes it), `privacyNoticeUrl` in `src/lib/help.ts`, and the CMS config regenerated.
+      **Verified:** the site's `svelte-check` 0 errors and 0 warnings and Playwright (`CI=true`, `PW_PORT=4196`) 473 passed,
+      among them axe in light and dark on every locale's notice, a test that every translation has the English notice's
+      headings, list items, table rows, links and backticked names, the language picker opening the Welsh notice, and the
+      footer link from English, Welsh, Arabic and Urdu pages; the UI's `svelte-check` 0 errors, lint clean, vitest 362 passed
+      (a new test fails if an app locale has no notice on the website or a storage key or cookie name in the app's code is
+      missing from the notice) and Playwright (`PW_PORT=4199`) 521 passed and 19 skipped, among them the footer link's text
+      and address in English, Welsh, Arabic and German (`de-de`) and the axe sweep with the footer on every page; the docs
+      checks pass.
+      **Not done:** the translations are not reviewed (WPM-T155), and the Bengali notice keeps ASCII digits where its path to
+      production uses Bengali ones; the application's pickers are unchanged (still picker bar 0.6.0, so they keep the theme
+      and text size on a first visit); the footer link opens the project's website, so a deployment with its own notice must
+      change `privacyNoticeUrl`; no lawyer has read the notice.

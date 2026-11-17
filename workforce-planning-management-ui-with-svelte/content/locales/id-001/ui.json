@@ -3430,5 +3430,8 @@
     "certDeclaredHow": "HR belum memverifikasinya. Beri tahu HR di mana bukti disimpan.",
     "certExpiredHow": "Tambahkan yang sudah diperbarui beserta tanggal barunya.",
     "noExpiry": "Tidak kedaluwarsa"
+  },
+  "footer": {
+    "privacyNotice": "Pemberitahuan privasi"
   }
 }

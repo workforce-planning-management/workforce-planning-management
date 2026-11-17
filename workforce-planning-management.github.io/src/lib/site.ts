@@ -4,7 +4,7 @@
 export const REPO_URL = "https://github.com/workforce-planning-management/workforce-planning-management";
 
 /** A page made from one repository document. `slug` is the route under the site root; `key` names its label in the catalogue (`#lib/i18n.ts`). */
-export type DocPage = { slug: string; path: string; key: "docs" | "readme" | "install" | "familyBridges" | "spec" | "worldwide" | "privacy" };
+export type DocPage = { slug: string; path: string; key: "docs" | "readme" | "install" | "familyBridges" | "spec" | "worldwide" };
 
 export const DOC_PAGES: readonly DocPage[] = [
   { slug: "docs", path: "index.md", key: "docs" },
@@ -13,7 +13,6 @@ export const DOC_PAGES: readonly DocPage[] = [
   { slug: "family-bridges", path: "docs/tutorials/family-bridges.md", key: "familyBridges" },
   { slug: "spec", path: "spec/index.md", key: "spec" },
   { slug: "worldwide", path: "spec/worldwide.md", key: "worldwide" },
-  { slug: "privacy", path: "docs/website-privacy-notice.md", key: "privacy" },
 ];
 
 /**
@@ -182,6 +181,8 @@ export function routeOfRepoPath(path: string, hasBrief: (locale: BriefLocale, sl
   if (start?.[1] && hasHome(start[1])) return `/${start[1]}/start/`;
   const production = /^locales\/([^/]+)\/path-to-production(?:\/(?:index|README)\.md)?$/.exec(clean);
   if (production?.[1] && isBriefLocale(production[1])) return `/${production[1]}/path-to-production/`;
+  const privacy = /^locales\/([^/]+)\/privacy(?:\/(?:index|README)\.md)?$/.exec(clean);
+  if (privacy?.[1] && isBriefLocale(privacy[1])) return `/${privacy[1]}/privacy/`;
   const home = /^locales\/([^/]+)(?:\/(?:index|README)\.md)?$/.exec(clean);
   if (home?.[1] && hasHome(home[1])) return `/${home[1]}/`;
   const m = /^locales\/([^/]+)\/for(?:\/([^/]+))?(?:\/(?:index|README)\.md)?$/.exec(clean);

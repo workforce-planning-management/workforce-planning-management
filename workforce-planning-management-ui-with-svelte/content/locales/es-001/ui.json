@@ -3448,5 +3448,8 @@
     "certDeclaredHow": "RR. HH. aún no la ha verificado. Indique a RR. HH. dónde se conserva la prueba.",
     "certExpiredHow": "Añada la renovada con sus nuevas fechas.",
     "noExpiry": "No caduca"
+  },
+  "footer": {
+    "privacyNotice": "Aviso de privacidad"
   }
 }

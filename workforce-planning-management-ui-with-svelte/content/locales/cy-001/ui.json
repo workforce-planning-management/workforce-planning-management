@@ -3475,5 +3475,8 @@
     "certDeclaredHow": "Nid yw AD wedi'i wirio eto. Dywedwch wrth AD ble mae'r prawf yn cael ei gadw.",
     "certExpiredHow": "Ychwanegwch yr un a adnewyddwyd gyda'i ddyddiadau newydd.",
     "noExpiry": "Nid yw'n dod i ben"
+  },
+  "footer": {
+    "privacyNotice": "Hysbysiad preifatrwydd"
   }
 }

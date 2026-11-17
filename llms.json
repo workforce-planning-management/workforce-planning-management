@@ -546,9 +546,9 @@
         "description": "tutorial: the bridges to PPM and CRM with curl (pool link, peer demand and supply, people impact, the hire webhook, the overlap check, the lean worker list)"
       },
       {
-        "title": "docs/website-privacy-notice.md",
-        "path": "docs/website-privacy-notice.md",
-        "description": "the website's privacy notice: the theme (localStorage and a first-party cookie) and text size kept only when the reader chooses, SvelteKit's per-tab scroll positions, nothing that identifies anyone; why, for how long, and how to remove it (WPM-R253)"
+        "title": "locales/en-001/privacy/index.md",
+        "path": "locales/en-001/privacy/index.md",
+        "description": "the privacy notice, in every locale (locales/<locale>/privacy/): what the website and the application keep in a browser (theme, text size, language, the sign-in cookie, SvelteKit's scroll positions), why, for how long and how to remove it; the application's footer links to it (WPM-R253)"
       },
       {
         "title": "CONTRIBUTING.md",

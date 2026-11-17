@@ -23,8 +23,8 @@ Acceptance criteria:
 2. Pages from the root [`index.md`](../index.md) (at `/docs/`; the home page is
    WPM-R231's), `README.md`,
    `INSTALL.md`, [`docs/tutorials/family-bridges.md`](../docs/tutorials/family-bridges.md),
-   [`spec/index.md`](index.md), [`spec/worldwide.md`](worldwide.md),
-   [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md) (at `/privacy/`, WPM-R253), and every
+   [`spec/index.md`](index.md), [`spec/worldwide.md`](worldwide.md), each locale's privacy notice
+   (`locales/<locale>/privacy/index.md` at `/<locale>/privacy/`, WPM-R253), and every
    locale's list and role briefs under `locales/<locale>/for/` (21 locales, 11
    briefs each, as of 2026-10-30).
 3. A locale switcher on every list and brief that opens **the same page** in the
@@ -175,12 +175,22 @@ Acceptance criteria:
    value that names no size is ignored.
 3. **Nothing is kept until the reader chooses.** A first visit writes no theme, no text size and no cookie. The
    language and locale are in the address and are not kept.
-4. `/privacy/`, from [`docs/website-privacy-notice.md`](../docs/website-privacy-notice.md), says what is kept
-   (each choice and each storage name, and SvelteKit's per-tab `sveltekit:` session keys for scroll
-   positions), why, that none of it identifies the reader, who receives it (the cookie goes to the web host
-   with each request; no program of WPM's reads it), how long it lasts, how to remove it, and why there is no
-   consent banner. Every page's footer links to it, in the page's catalogue language, and the pages picker
-   lists it.
+4. `/<locale>/privacy/` in every locale (all 21), from `locales/<locale>/privacy/index.md` with a `README.md`
+   symlink and one `.locale-peer-id` ([the English notice](../locales/en-001/privacy/index.md)), says what is
+   kept, for the website and for the application, in two tables: each choice and each storage name, the
+   application's language keys and sign-in cookie, the content editor's settings, and SvelteKit's per-tab
+   `sveltekit:` session keys for scroll positions. It says why, which item stands for the reader (only the
+   application's sign-in cookie), who receives it (a cookie goes to the server that set it; no program of
+   WPM's reads the website's), how long each lasts, how to remove it, why there is no consent banner, and that
+   the records the application holds are the deployer's to give notice of. Every page's footer links to the
+   notice in the page's locale (English on the English documents), in the page's catalogue language; the
+   pages picker lists it, the language picker opens the same notice in another locale, and the build fails if
+   a locale has none. Every translation has the English notice's headings, list items, table rows, links and
+   backticked names (checked by a test).
+6. **The application's footer links to it.** Every page of the UI ends with a footer whose link, "Privacy
+   notice" (`footer.privacyNotice`, in every catalogue), opens `/<locale>/privacy/` on the website in the
+   app's locale (`privacyNoticeUrl` in `src/lib/help.ts`). A unit test fails if an app locale has no notice
+   on the website, or if a storage key or cookie name in the app's code is missing from the notice.
 5. A test chooses a theme and a text size, collects every `localStorage`, `sessionStorage` and cookie name the
    site then holds, and fails if the notice does not name each one; so a new key cannot be added without the
    notice.
@@ -208,9 +218,18 @@ Acceptance criteria:
   need a larger size or a dark page); a cookie only (a reader who clears cookies loses the choice, and the
   UI's `localStorage` key would differ); a consent banner (it asks a question about storage that holds
   nothing about the reader, on every first visit); a hand-written list of keys (stale on the next upgrade).
-- **The WPM application is not changed here.** It keeps the same kinds of choices (theme, text size and
-  language); its privacy notice is the deployer's ([assessment checklist](governance/assessment-checklist.md),
-  question 3.10). It still uses the earlier picker bar.
+- **One notice for the website and the application, on the website.** Both keep the same kinds of choices,
+  and a reader of either should find what is kept in one place, in their language. The application links to
+  the website rather than carrying its own copy, so there is one text to translate and keep current; a
+  deployment that writes its own notice points `privacyNoticeUrl` at it. The notice covers only what is kept
+  in a browser: the records the application holds are the deployer's
+  ([assessment checklist](governance/assessment-checklist.md), question 3.10).
+- **The application is described as it is.** It still uses the earlier picker bar, so it keeps the theme and
+  text size on a first visit, and it keeps the language of each page opened. The notice says so rather than
+  claiming the website's behaviour for both.
+- **Every locale has the notice, like the path to production.** It is a page in `locales/<locale>/` with a
+  peer id, so the language picker, sitemap and search treat it like every other translated page. The
+  translations were written by an AI assistant and are not reviewed (WPM-T155).
 
 ## Not done
 

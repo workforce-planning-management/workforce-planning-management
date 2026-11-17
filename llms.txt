@@ -138,7 +138,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [README.md](README.md): what WPM is, its status and subprojects, and where the documentation is
 - [SECURITY.md](SECURITY.md): how to report a vulnerability, and what to read before exposing either subproject
 - [docs/tutorials/family-bridges.md](docs/tutorials/family-bridges.md): tutorial: the bridges to PPM and CRM with curl (pool link, peer demand and supply, people impact, the hire webhook, the overlap check, the lean worker list)
-- [docs/website-privacy-notice.md](docs/website-privacy-notice.md): the website's privacy notice: the theme (localStorage and a first-party cookie) and text size kept only when the reader chooses, SvelteKit's per-tab scroll positions, nothing that identifies anyone; why, for how long, and how to remove it (WPM-R253)
+- [locales/en-001/privacy/index.md](locales/en-001/privacy/index.md): the privacy notice, in every locale (locales/<locale>/privacy/): what the website and the application keep in a browser (theme, text size, language, the sign-in cookie, SvelteKit's scroll positions), why, for how long and how to remove it; the application's footer links to it (WPM-R253)
 - [CONTRIBUTING.md](CONTRIBUTING.md): ground rules and how to contribute; the gates a change must pass
 - [CHANGELOG.md](CHANGELOG.md): repo-level change summary; each subproject's CHANGELOG.md is the detailed history
 - [NEWS.md](NEWS.md): milestones

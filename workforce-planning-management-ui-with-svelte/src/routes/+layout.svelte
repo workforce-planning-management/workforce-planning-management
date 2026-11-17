@@ -19,6 +19,7 @@
   import type { ComponentProps } from "svelte";
   import { stepAt } from "#lib/demoTour.js";
   import { Drawer } from "@lilydesignsystem/svelte-headless";
+  import { privacyNoticeUrl } from "#lib/help.js";
 
   let { children } = $props();
 
@@ -90,10 +91,7 @@
   // Drawer primitive only sets tabindex="-1" on its own root and leaves
   // focus management to the consumer.
   $effect(() => {
-    if (navOpen)
-      drawerNav
-        ?.querySelector<HTMLAnchorElement>("a")
-        ?.focus();
+    if (navOpen) drawerNav?.querySelector<HTMLAnchorElement>("a")?.focus();
   });
 
   // Share destinations for the Lily SharePicker. Lily ships no
@@ -115,7 +113,9 @@
   );
 
   // The type comes from the bar that uses it, so the two cannot drift apart.
-  type ShareTarget = NonNullable<ComponentProps<typeof PickerBar>["shareTargets"]>[number];
+  type ShareTarget = NonNullable<
+    ComponentProps<typeof PickerBar>["shareTargets"]
+  >[number];
   const SHARE_TARGETS: ShareTarget[] = [
     {
       id: "email",
@@ -217,18 +217,32 @@
     aria-expanded={navOpen}
     onclick={() => (navOpen = true)}
   >
-    <svg viewBox="0 0 16 16" aria-hidden="true" width="1.05rem" height="1.05rem" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      width="1.05rem"
+      height="1.05rem"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
       <path d="M2 4h12M2 8h12M2 12h12" />
     </svg>
   </button>
   <a class="brand" href={l("/")}>{t("brand.name")}</a>
   <span class="spacer"></span>
   <a href={l("/tour")}>{t("nav.tour")}</a>
-  <a href={l("/help")} class="help-link" data-testid="help-link">{t("nav.help")}</a>
+  <a href={l("/help")} class="help-link" data-testid="help-link"
+    >{t("nav.help")}</a
+  >
   {#if page.data.signedIn}
     <!-- A form, not a link: signing out changes state, so it is a POST (the route is not locale-prefixed). -->
     <form method="POST" action="/signout" class="signout">
-      <button type="submit" class="linklike" data-testid="signout">{t("nav.signout")}</button>
+      <button type="submit" class="linklike" data-testid="signout"
+        >{t("nav.signout")}</button
+      >
     </form>
   {:else}
     <a href={l("/signin")} data-testid="signin-link">{t("nav.signin")}</a>
@@ -255,7 +269,11 @@
         share: t("nav.share"),
       }}
       themesUrl="/assets/themes/"
-      themeProps={{ storageKey: THEME_KEY, detectFromSystem: true, defaultValue: "light" }}
+      themeProps={{
+        storageKey: THEME_KEY,
+        detectFromSystem: true,
+        defaultValue: "light",
+      }}
       locales={[...LOCALES]}
       localeProps={{
         value: i18n.locale,
@@ -277,21 +295,31 @@
   </div>
 </nav>
 
-{#if page.data.demo && !page.url.pathname.includes('/signin')}
+{#if page.data.demo && !page.url.pathname.includes("/signin")}
   {@const here = stepAt(splitLocale(page.url.pathname).rest)}
-  <aside class="demo-banner" aria-label={t("demo.label")} data-testid="demo-banner">
+  <aside
+    class="demo-banner"
+    aria-label={t("demo.label")}
+    data-testid="demo-banner"
+  >
     <strong>{t("demo.banner")}</strong>
     {#if here}
       <span class="demo-step" data-testid="demo-step">
         {tf("demo.step", { n: here.index + 1, total: here.total })}
       </span>
       {#if here.previous}
-        <a href={l(here.previous.path)} data-testid="demo-previous">{t("demo.previous")}</a>
+        <a href={l(here.previous.path)} data-testid="demo-previous"
+          >{t("demo.previous")}</a
+        >
       {/if}
       {#if here.next}
-        <a class="demo-next" href={l(here.next.path)} data-testid="demo-next">{t("demo.next")}</a>
+        <a class="demo-next" href={l(here.next.path)} data-testid="demo-next"
+          >{t("demo.next")}</a
+        >
       {:else}
-        <a class="demo-next" href={l("/demo")} data-testid="demo-finish">{t("demo.finish")}</a>
+        <a class="demo-next" href={l("/demo")} data-testid="demo-finish"
+          >{t("demo.finish")}</a
+        >
       {/if}
     {/if}
     <a href={l("/demo")} data-testid="demo-tour-link">{t("demo.tour")}</a>
@@ -310,12 +338,26 @@
       aria-label={t("nav.closeMenu")}
       onclick={closeNav}
     >
-      <svg viewBox="0 0 16 16" aria-hidden="true" width="1.05rem" height="1.05rem" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        width="1.05rem"
+        height="1.05rem"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
         <path d="M3 3l10 10M13 3L3 13" />
       </svg>
     </button>
   </div>
-  <nav class="menu drawer-links" aria-label={t("nav.menu")} bind:this={drawerNav}>
+  <nav
+    class="menu drawer-links"
+    aria-label={t("nav.menu")}
+    bind:this={drawerNav}
+  >
     {#each NAV_LINKS as [href, key] (href)}
       <a class="menu-item" href={l(href)} onclick={closeNav}>
         {t(key)}
@@ -328,9 +370,25 @@
   {@render children()}
 </main>
 
+<footer class="app-footer">
+  <a
+    href={privacyNoticeUrl(i18n.locale)}
+    rel="noopener"
+    data-testid="privacy-notice">{t("footer.privacyNotice")}</a
+  >
+</footer>
+
 <style>
   .spacer {
     flex: 1;
+  }
+
+  /* One line under every page: the privacy notice (WPM-R253). */
+  .app-footer {
+    padding-block: 1rem 2rem;
+    padding-inline: 1rem;
+    border-block-start: 1px solid var(--line);
+    font-size: 0.875rem;
   }
 
   /* The active Lily theme styles .hamburger-menu/-button and .drawer/

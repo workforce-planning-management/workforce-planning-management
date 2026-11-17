@@ -3448,5 +3448,8 @@
     "certDeclaredHow": "Os RH ainda não a verificaram. Diga aos RH onde está guardada a prova.",
     "certExpiredHow": "Adicione a renovada com as novas datas.",
     "noExpiry": "Não expira"
+  },
+  "footer": {
+    "privacyNotice": "Aviso de privacidade"
   }
 }

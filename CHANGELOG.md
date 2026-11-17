@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — the privacy notice in every locale, and the app's footer links to it (WPM-T523, 2026-11-17)
+
+The notice now covers the WPM application as well as the website: the application keeps the theme, text size and language,
+the sign-in cookie and the content editor's settings, and the notice says so, including that the application keeps the
+theme and text size before the reader chooses. It is at `/<locale>/privacy/` in all 21 locales (AI-written translations,
+not reviewed), moved from `docs/website-privacy-notice.md` and from `/privacy/`. Every page of the application ends with a
+footer linking to the notice in its language.
+
 ### Added — the website's privacy notice, and a theme kept in a cookie as well (WPM-T522, 2026-11-16)
 
 The website keeps a chosen theme in `localStorage` and in a first-party cookie, so either alone brings it back, and keeps a

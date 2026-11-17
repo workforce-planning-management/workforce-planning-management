@@ -3439,5 +3439,8 @@
     "certDeclaredHow": "HR hat sie noch nicht geprüft. Teilen Sie HR mit, wo der Nachweis aufbewahrt wird.",
     "certExpiredHow": "Fügen Sie die erneuerte mit ihren neuen Daten hinzu.",
     "noExpiry": "Läuft nicht ab"
+  },
+  "footer": {
+    "privacyNotice": "Datenschutzhinweis"
   }
 }

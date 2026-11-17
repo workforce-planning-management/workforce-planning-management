@@ -18,6 +18,15 @@ export const SECURITY_URL = `${REPOSITORY_URL}/blob/main/SECURITY.md`;
 export const DOCS_URL = "https://workforce-planning-management.github.io/";
 
 /**
+ * The privacy notice, on the website, in the app's language (WPM-R253): what the website and the application keep in a
+ * browser, and why. Every app locale has a notice there (`locales/<locale>/privacy/index.md`, checked by
+ * `tests/unit/privacy-notice.test.ts`). A deployment that writes its own notice would point this at it.
+ */
+export function privacyNoticeUrl(locale: string): string {
+  return `${DOCS_URL}${locale}/privacy/`;
+}
+
+/**
  * What to try next for a failure, chosen by which of the catalogue's failure sentences `message` is (see `errorKey` in
  * `write.ts`): a refusal or a missing record points to a manager or HR, a rejected entry to checking it, anything else to
  * trying again and reporting it if it persists.

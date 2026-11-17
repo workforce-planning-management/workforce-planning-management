@@ -3430,5 +3430,8 @@
     "certDeclaredHow": "人力资源尚未核实。请告知人力资源证明材料的存放位置。",
     "certExpiredHow": "添加续期后的证书及其新日期。",
     "noExpiry": "不会过期"
+  },
+  "footer": {
+    "privacyNotice": "隐私声明"
   }
 }

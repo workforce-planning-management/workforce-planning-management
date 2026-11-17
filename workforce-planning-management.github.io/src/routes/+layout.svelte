@@ -25,7 +25,7 @@
 
   // The WPM UI's storage keys, so the choices read the same way (each origin keeps its own). The theme is kept twice:
   // in localStorage and in a first-party cookie, so either one alone brings it back (WPM-R253). Both are written only
-  // when the reader chooses, never on a first visit; the privacy notice (/privacy/) names each one.
+  // when the reader chooses, never on a first visit; the privacy notice (/<locale>/privacy/) names each one.
   const THEME_KEY = "mxi.wpm.theme";
   const THEME_COOKIE = "wpm-theme";
   const TEXT_SIZE_KEY = "mxi.wpm.text-size";
@@ -83,6 +83,8 @@
   }
 
   const home = $derived(locale && hasHome(locale) ? `/${locale}/` : "/");
+  // The privacy notice in the page's locale, or in English on the English documents (WPM-R253).
+  const privacyRoute = $derived(`/${locale ?? ROOT_HOME_LOCALE}/privacy/`);
   const nav = $derived([
     { label: s.nav.start, route: `/${locale && hasHome(locale) ? locale : ROOT_HOME_LOCALE}/start/` },
     { label: s.nav.briefs, route: `/${locale ?? DEFAULT_BRIEF_LOCALE}/for/` },
@@ -93,6 +95,7 @@
   const allPages = $derived([
     ...nav,
     { label: s.nav.production, route: `/${locale ?? ROOT_HOME_LOCALE}/path-to-production/` },
+    { label: s.nav.privacy, route: privacyRoute },
     ...DOC_PAGES.filter((d) => d.key !== "docs").map((d) => ({ label: s.nav[d.key], route: `/${d.slug}/` })),
   ]);
   function current(route: string): boolean {
@@ -100,6 +103,7 @@
     if (route === "/compare/") return /\/compare\//.test(page.url.pathname);
     if (route.endsWith("/start/")) return /\/start\/$/.test(page.url.pathname);
     if (route.endsWith("/path-to-production/")) return /\/path-to-production\/$/.test(page.url.pathname);
+    if (route.endsWith("/privacy/")) return /\/privacy\/$/.test(page.url.pathname);
     return page.url.pathname === new URL(href(route), page.url.href).pathname;
   }
 
@@ -216,7 +220,7 @@
     >{s.footer.countsEnd}
     {s.footer.notice}
     {fill(s.footer.export, { directory: SITE_DIRECTORY, tool: "git subtree" })}
-    <a href={href("/privacy/")} data-testid="privacy-link">{s.nav.privacy}</a>
+    <a href={href(privacyRoute)} data-testid="privacy-link">{s.nav.privacy}</a>
   </p>
 </footer>
 

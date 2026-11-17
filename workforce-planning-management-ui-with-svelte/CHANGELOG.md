@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a footer that links to the privacy notice (WPM-T523)
+
+Every page ends with a "Privacy notice" link to the notice on the website, in the app's language
+(`https://workforce-planning-management.github.io/<locale>/privacy/`). The notice says what the app keeps in a browser: the
+theme, text size and language, the sign-in cookie, the content editor's settings and SvelteKit's scroll positions. A new
+string, `footer.privacyNotice`, in the 13 base catalogues.
+
 ### Changed — every Lily package to its latest (WPM-T505)
 
 `svelte-calendar` 0.7.2, `svelte-data-grid` 0.11.2, `svelte-gantt-chart` 0.8.2, `svelte-headless` 0.9.0, `svelte-kanban-board`

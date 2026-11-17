@@ -87,3 +87,6 @@ A review that finds problems is a success. Record what was fixed in the outcome 
 
 The 2026-10-30 addition `columns.period` (the payroll list's period column, which had no header and so a sort button with no name, found
 by the right-to-left axe test of WPM-T377) copies each locale's existing `ceo.period` word; nothing new was translated.
+
+The 2026-11-17 addition (`footer.privacyNotice`, the footer's link to the privacy notice, WPM-T523) was written by the same assistant,
+also unreviewed.

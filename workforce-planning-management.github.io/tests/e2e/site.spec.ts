@@ -20,6 +20,7 @@ const compareRoutes = ["/compare/", ...COMPARE_SLUGS.map((c) => `/compare/${c}/`
 const docRoutes = ["/", ...DOC_PAGES.map((d) => `/${d.slug}/`), ...compareRoutes];
 const homeRoutes = HOME_LOCALES.flatMap((l) => [`/${l}/`, `/${l}/start/`]);
 const productionRoutes = BRIEF_LOCALES.map((l) => `/${l}/path-to-production/`);
+const privacyRoutes = BRIEF_LOCALES.map((l) => `/${l}/privacy/`);
 const listRoutes = BRIEF_LOCALES.map((l) => `/${l}/for/`);
 const briefRoute = (b: Brief) => `/${b.locale}/for/${b.slug}/`;
 const briefRoutes = BRIEFS.map(briefRoute);
@@ -37,6 +38,7 @@ const audited = [
   ...docRoutes,
   ...homeRoutes,
   ...productionRoutes,
+  ...privacyRoutes,
   ...listRoutes,
   ...BRIEF_LOCALES.map((l, i) => {
     const own = BRIEFS.filter((b) => b.locale === l);
@@ -70,8 +72,8 @@ async function overflow(page: Page): Promise<number> {
 }
 
 test("every page is built and answers 200", async ({ request }) => {
-  const all = [...docRoutes, ...homeRoutes, ...productionRoutes, ...listRoutes, ...briefRoutes];
-  expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + 2 * BRIEF_LOCALES.length + BRIEFS.length);
+  const all = [...docRoutes, ...homeRoutes, ...productionRoutes, ...privacyRoutes, ...listRoutes, ...briefRoutes];
+  expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + 3 * BRIEF_LOCALES.length + BRIEFS.length);
   // Every locale has the 11 shared briefs; en-001 also has the chief finance officer's and the workforce planning manager's.
   for (const l of BRIEF_LOCALES) expect(BRIEFS.filter((b) => b.locale === l).length, l).toBe(l === "en-001" ? 13 : 11);
   for (const route of all) {
@@ -594,7 +596,7 @@ test("the sitemaps list the whole site and each locale's pages, in plain XML", a
   expect(whole.startsWith("<?xml")).toBe(true);
   const urls = [...whole.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1] ?? "");
   expect(new Set(urls).size).toBe(urls.length);
-  expect(urls.length).toBe(docRoutes.length + homeRoutes.length + productionRoutes.length + listRoutes.length + briefRoutes.length + 1);
+  expect(urls.length).toBe(docRoutes.length + homeRoutes.length + productionRoutes.length + privacyRoutes.length + listRoutes.length + briefRoutes.length + 1);
   expect(urls.every((u) => u.startsWith("https://workforce-planning-management.github.io/"))).toBe(true);
   const cy = await (await request.get("/cy-001/sitemap.xml")).text();
   expect(cy).toContain("/cy-001/</loc>");
@@ -682,17 +684,18 @@ test("the privacy notice names everything the site keeps, and every page's foote
   ];
   expect(names.sort()).toEqual(["mxi.wpm.text-size", "mxi.wpm.theme", "wpm-theme"]);
   await page.getByTestId("privacy-link").click();
-  await expect(page).toHaveURL(/\/privacy\/$/);
+  await expect(page).toHaveURL(/\/en-001\/privacy\/$/);
   // SvelteKit writes its keys when a page is left, so load the notice again from the address.
-  await page.goto("/privacy/", { waitUntil: "networkidle" });
+  await page.goto("/en-001/privacy/", { waitUntil: "networkidle" });
   const framework = await page.evaluate(() => Object.keys({ ...sessionStorage }));
   expect(framework.length).toBeGreaterThan(0);
   for (const key of framework) expect(key).toMatch(SVELTEKIT);
   const notice = await page.locator("main").innerText();
   for (const name of [...names, ...framework]) expect(notice, name).toContain(name);
-  for (const route of ["/", "/cy-001/", "/ar-001/for/"]) {
+  const footers = [["/", "en-001"], ["/readme/", "en-001"], ["/cy-001/", "cy-001"], ["/ar-001/for/", "ar-001"], ["/ur-001/path-to-production/", "ur-001"]] as const;
+  for (const [route, locale] of footers) {
     await page.goto(route);
-    await expect(page.getByTestId("privacy-link"), route).toHaveAttribute("href", /\/privacy\/$/);
+    await expect(page.getByTestId("privacy-link"), route).toHaveAttribute("href", new RegExp(`/${locale}/privacy/$`));
   }
 });
 
@@ -710,4 +713,32 @@ test("a text size is kept only when chosen, and comes back on the next page", as
   await page.evaluate(() => localStorage.setItem("mxi.wpm.text-size", "enormous"));
   await page.reload({ waitUntil: "networkidle" });
   await expect(page.locator("html")).toHaveAttribute("data-text-size", "normal");
+});
+
+// Every locale's notice is a translation of the English one: the same headings, list items and table rows, and every
+// name in backticks (each storage key, cookie attribute and example value) unchanged, so a key named in English is
+// named in every language. The language picker opens the same notice in another locale.
+const FILES = docs.files as Record<string, string>;
+const shape = (md: string) => ({
+  headings: md.split("\n").filter((l) => /^#{1,6} /.test(l)).map((l) => l.match(/^#+/)![0]),
+  items: md.split("\n").filter((l) => /^- /.test(l)).length,
+  rows: md.split("\n").filter((l) => /^\|/.test(l)).map((l) => l.split("|").length),
+  code: [...md.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort(),
+  links: [...md.matchAll(/\]\(([^)]+)\)|<(https:[^>]+)>/g)].map((m) => m[1] ?? m[2]).sort(),
+});
+test("every locale's privacy notice has the English notice's shape, names and links", () => {
+  const english = shape(FILES["locales/en-001/privacy/index.md"]!);
+  for (const l of BRIEF_LOCALES) {
+    const md = FILES[`locales/${l}/privacy/index.md`];
+    expect(md, l).toBeDefined();
+    expect(shape(md!), l).toEqual(english);
+  }
+});
+
+test("the language picker opens the same privacy notice in another locale", async ({ page }) => {
+  await open(page, "/en-001/privacy/", "light");
+  await page.getByRole("button", { name: "Language", exact: true }).click();
+  await page.locator(".locale-picker-option", { hasText: LOCALE_LABELS["cy-001"] }).click();
+  await expect(page).toHaveURL(/\/cy-001\/privacy\/$/);
+  await expect(page.locator("main")).toContainText("mxi.wpm.theme");
 });

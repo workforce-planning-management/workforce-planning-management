@@ -3439,5 +3439,8 @@
     "certDeclaredHow": "HR has not verified it yet. Tell HR where the proof is held.",
     "certExpiredHow": "Add the renewed one with its new dates.",
     "noExpiry": "Does not expire"
+  },
+  "footer": {
+    "privacyNotice": "Privacy notice"
   }
 }

@@ -3448,5 +3448,8 @@
     "certDeclaredHow": "Les RH ne l'ont pas encore vérifiée. Indiquez aux RH où la preuve est conservée.",
     "certExpiredHow": "Ajoutez la certification renouvelée avec ses nouvelles dates.",
     "noExpiry": "N'expire pas"
+  },
+  "footer": {
+    "privacyNotice": "Avis de confidentialité"
   }
 }

@@ -28,6 +28,7 @@ const LISTS: Entry[] = docs.lists;
 const BRIEFS: Brief[] = docs.briefs;
 const HOMES: (Entry & { start: string })[] = docs.homes;
 const PRODUCTIONS: Entry[] = docs.productions;
+const PRIVACIES: Entry[] = docs.privacies;
 
 // The copy and the site must name the same locales: a locale added to `locales/` without a line in
 // `BRIEF_LOCALES` (or the reverse) fails the build here instead of silently missing from the switcher.
@@ -38,6 +39,9 @@ const PRODUCTIONS: Entry[] = docs.productions;
   const productions = PRODUCTIONS.map((p) => p.locale).join(",");
   if (productions !== BRIEF_LOCALES.join(","))
     throw new Error(`src/content/docs.json has a path to production for ${productions}; every locale in BRIEF_LOCALES needs one`);
+  const privacies = PRIVACIES.map((p) => p.locale).join(",");
+  if (privacies !== BRIEF_LOCALES.join(","))
+    throw new Error(`src/content/docs.json has a privacy notice for ${privacies}; every locale in BRIEF_LOCALES needs one`);
   const homes = HOMES.map((h) => h.locale).join(",");
   if (homes !== HOME_LOCALES.join(","))
     throw new Error(`src/content/docs.json has homes ${homes}; src/lib/site.ts HOME_LOCALES has ${HOME_LOCALES.join(",")}`);
@@ -311,6 +315,11 @@ export function productionAlternates(): Partial<Record<BriefLocale, string>> {
   return Object.fromEntries(BRIEF_LOCALES.map((l) => [l, `/${l}/path-to-production/`]));
 }
 
+/** The privacy notice in every locale: every locale has one (WPM-R253). */
+export function privacyAlternates(): Partial<Record<BriefLocale, string>> {
+  return Object.fromEntries(BRIEF_LOCALES.map((l) => [l, `/${l}/privacy/`]));
+}
+
 const ENTITIES: Record<string, string> = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
 
 /** The index /search/ reads: every page's title and plain text, as a reader sees them, documents first. */
@@ -331,6 +340,7 @@ export function searchDocs(): SearchDoc[] {
     ...HOMES.map((h) => entry(`/${h.locale}/`, h.path, h.locale, h.locale)),
     ...HOMES.map((h) => entry(`/${h.locale}/start/`, h.start, h.locale, h.locale)),
     ...PRODUCTIONS.map((p) => entry(`/${p.locale}/path-to-production/`, p.path, p.locale, p.locale)),
+    ...PRIVACIES.map((p) => entry(`/${p.locale}/privacy/`, p.path, p.locale, p.locale)),
     ...LISTS.map((l) => entry(briefRoute(l.locale as BriefLocale, null), l.path, l.locale, l.locale)),
     ...BRIEFS.map((b) => entry(briefRoute(b.locale as BriefLocale, b.slug), b.path, b.locale, b.locale)),
   ];
@@ -343,6 +353,7 @@ export function sitemapRoutes(locale?: BriefLocale): string[] {
     ...homes.map((l) => `/${l}/`),
     ...homes.map((l) => `/${l}/start/`),
     ...BRIEF_LOCALES.filter((l) => !locale || l === locale).map((l) => `/${l}/path-to-production/`),
+    ...BRIEF_LOCALES.filter((l) => !locale || l === locale).map((l) => `/${l}/privacy/`),
   ];
   routes.push(...LISTS.filter((l) => !locale || l.locale === locale).map((l) => briefRoute(l.locale as BriefLocale, null)));
   routes.push(...BRIEFS.filter((b) => !locale || b.locale === locale).map((b) => briefRoute(b.locale as BriefLocale, b.slug)));
