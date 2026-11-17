@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `axa` 0.19 (WPM-T530)
+
+`axa` 0.17.0 to 0.19.0 and `axa-test` 0.8.0 to 0.10.0; the lockfile changes only those two. No code change: 0.18 moves
+`axa-http-client` to reqwest 0.13 and the system trust store, and 0.19 moves the job queues to jiff, and WPM uses neither the
+`http-client` nor the `queue` feature. `axa`'s sqlx no longer enables `chrono`, which leaves `cron` and the published matcher
+0.1.0 as chrono's only routes in (RUSTSEC-2026-0543).
+
 ### Changed — the domain crate (WPM-T529, WPM-D203)
 
 The pure rules (`src/rules/`, 126 modules besides `audit_export`) and the date helpers (`src/dates.rs`) move to

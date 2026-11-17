@@ -5699,6 +5699,17 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T530 **`axa` 0.19.** *The owner asked on 2026-11-17, approving the exception to the minimum publish age.* *([rust-axum-stack.md](rust-axum-stack.md))*
+      From 0.17.0 to 0.19.0, with `axa-test` 0.8.0 to 0.10.0, both published that day; the lockfile changes only those two
+      (`CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow cargo update -p axa -p axa-test`). **No code change:** 0.18 moves
+      `axa-http-client` to reqwest 0.13 and the system trust store and adds `SessionOptions::create_table`; 0.19 moves the job
+      queues to jiff; WPM uses neither the `http-client` nor the `queue` feature. **What it changes for WPM:** `axa`'s sqlx no
+      longer turns on sqlx's `chrono` feature, so chrono reaches the service only through `cron` and the published matcher 0.1.0
+      (RUSTSEC-2026-0543; WPM-T531 removes both). **Verified:** the local CI gate on fresh PostgreSQL 18 and Redis 8, 1,588 tests
+      passed and 3 failed: `shared_cache_upstream`, `oidc_entra` and `keycloak`, each with `No rustls crypto provider is
+      configured`. None is `axa`'s: since the move to `ring` (`41a104bf`) reqwest has no provider of its own, and those tests build
+      a client before anything installs one; they fail on `main` too, and the next commit fixes them. `cargo deny` advisories fail
+      on chrono, as before.
 - [x] (2026-11-17) WPM-T529 **The domain logic and business rules in their own crate.** *The owner asked on 2026-11-17 ("refactor into new subcrate workforce-planning-management-domain"), after a research pass on splitting the crate.* *(WPM-D203; [rust-axum-stack.md](rust-axum-stack.md))*
       `src/rules/` (126 rule modules) and `src/dates.rs` are now
       `workforce-planning-management-service-with-rust/crates/workforce-planning-management-domain/`, moved with `git mv`; the
