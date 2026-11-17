@@ -63,8 +63,8 @@ impl Namespace {
     }
 }
 
-/// Choose rustls's crypto provider for the process. Two are in the build, so rustls cannot pick one
-/// itself and a TLS connection (a `rediss://` cache) would panic. Safe to call more than once.
+/// Choose rustls's crypto provider for the process. Under the `keycloak` feature `aws-lc-rs` is in the build too
+/// (via `jsonwebtoken`), so rustls cannot pick one itself and a TLS connection (a `rediss://` cache) would panic. Safe to call more than once.
 pub fn install_tls_provider() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }

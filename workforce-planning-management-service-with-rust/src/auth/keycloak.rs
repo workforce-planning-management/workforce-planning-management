@@ -530,7 +530,7 @@ pub fn enforce(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aws_lc_rs::signature::KeyPair;
+    use ring::signature::KeyPair;
     use base64::Engine;
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 
@@ -623,15 +623,16 @@ mod tests {
     /// and the base64url `x`/`y` coordinates (for the matching JWKS
     /// entry `DecodingKey::from_jwk` verifies against).
     fn generate_es256_test_key() -> (Vec<u8>, String, String) {
-        let rng = aws_lc_rs::rand::SystemRandom::new();
-        let pkcs8 = aws_lc_rs::signature::EcdsaKeyPair::generate_pkcs8(
-            &aws_lc_rs::signature::ECDSA_P256_SHA256_FIXED_SIGNING,
+        let rng = ring::rand::SystemRandom::new();
+        let pkcs8 = ring::signature::EcdsaKeyPair::generate_pkcs8(
+            &ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING,
             &rng,
         )
         .expect("generate EC keypair");
-        let key_pair = aws_lc_rs::signature::EcdsaKeyPair::from_pkcs8(
-            &aws_lc_rs::signature::ECDSA_P256_SHA256_FIXED_SIGNING,
+        let key_pair = ring::signature::EcdsaKeyPair::from_pkcs8(
+            &ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING,
             pkcs8.as_ref(),
+            &rng,
         )
         .expect("parse generated keypair");
         let public = key_pair.public_key().as_ref();

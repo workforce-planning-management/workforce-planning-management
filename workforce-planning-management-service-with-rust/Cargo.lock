@@ -4754,7 +4754,6 @@ version = "0.1.4"
 dependencies = [
  "async-trait",
  "authentication-verifier",
- "aws-lc-rs",
  "axa",
  "axa-test",
  "axum",
@@ -4771,6 +4770,7 @@ dependencies = [
  "prometheus",
  "redis",
  "reqwest",
+ "ring",
  "rustls",
  "rusty_paseto",
  "serde",
