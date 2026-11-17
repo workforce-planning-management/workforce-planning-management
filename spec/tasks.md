@@ -5707,6 +5707,23 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       form as a second `Contact` (RFC 9116 allows several), and its test checks both. **Verified:** the endpoint's answer; the
       site's `security.txt` test passes. **Not checked:** a report through the form end to end; the site is not republished, so
       the live `security.txt` is unchanged until `make publish-github-pages`.
+||||||| parent of a448e063 (WPM-T536: no aws-lc-rs: jsonwebtoken on ring)
+- [x] (2026-11-17) WPM-T536 **No `aws-lc-rs`: `jsonwebtoken` on `ring`.** *The owner asked on 2026-11-17 ("eliminate aws-lc-rs dependency; jsonwebtoken pulls it into WPM's keycloak build").*
+      `jsonwebtoken` 11 has two backends: `aws_lc_rs`, which WPM used, and `rust_crypto`, which brings the `rsa` crate
+      (RUSTSEC-2023-0071). It also takes a `CryptoProvider` of the program's own, and `src/auth/jwt_ring.rs` is one, on `ring`,
+      which rustls already uses; it follows `jsonwebtoken`'s own `crypto::aws_lc` module (MIT, credited in the file), whose calls
+      `ring` mirrors. It signs and verifies RSA (`RS256`–`RS512`, `PS256`–`PS512`), ECDSA (`ES256`, `ES384`) and `EdDSA`. **It never
+      verifies HMAC** (`HS256`–`HS512`): WPM accepts only `RS256` and `ES256`, and refusing HMAC here as well shuts out an
+      algorithm-confusion token whatever a caller allows; it still signs HMAC, so the Entra test can make such a token and show it
+      refused. It cannot read RSA components from a DER public key (`ring` has no parser), which only `Jwk::from_encoding_key`
+      needs. `jsonwebtoken` is built with no features; `ring` becomes an optional dependency under `keycloak` (already in the build
+      for rustls). `auth::install_jwt_provider` is called before each verification and by the tests that sign. **Result:**
+      `aws-lc-rs` and `aws-lc-sys` are out of `Cargo.lock` entirely (66 lines), in every build and for the tests. **Verified:** a
+      real Keycloak 26 (`tests/keycloak.rs`, RS256 tokens from the realm) and the Entra suite (`tests/oidc_entra.rs`, RS256, an
+      expired token, a forged one and the HS256 confusion token) pass; the `keycloak` build's 170 lib tests, among them three for
+      the provider (ES256 signs and verifies and a changed signature fails; a key of another family is refused; HS256 is signed
+      but never verified); clippy with `-D warnings` on every target under both backends; the default build's lib tests;
+      `cargo deny check`. **Not checked:** `PS*`, `ES384` and `EdDSA` against a real issuer (Keycloak's keys are `RS256`).
 - [x] (2026-11-17) WPM-T535 **chrono accepted as a test-only advisory.** *The owner chose, on 2026-11-17, to accept RUSTSEC-2026-0543 for the test-only route that is left (option 1 of three: accept it, stop checking test dependencies, or wait).*
       After WPM-T530 to WPM-T532 the service, the domain crate and the matcher build no chrono; it remains only in the tests,
       through `axum-test` 21.1.0, whose `expect-json` 1.11.0 requires it with no feature to turn it off (22.0.0-rc.1 likewise),

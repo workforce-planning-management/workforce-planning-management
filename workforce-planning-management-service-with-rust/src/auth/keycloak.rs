@@ -418,6 +418,7 @@ pub fn bearer_claims(
         .ok_or_else(|| unauthorized("expected bearer token"))?
         .trim();
 
+    super::jwt_ring::install();
     let jwt_header: JwtHeader =
         jsonwebtoken::decode_header(token).map_err(|_| unauthorized("malformed token header"))?;
     let kid = jwt_header
@@ -667,6 +668,7 @@ mod tests {
     /// `KeycloakClaims`'s own `Deserialize` impl) as an ES256 JWT with
     /// `kid` in the header.
     fn sign(pkcs8_der: &[u8], kid: &str, claims: &serde_json::Value) -> String {
+        crate::auth::install_jwt_provider();
         let mut header = JwtHeader::new(Algorithm::ES256);
         header.kid = Some(kid.to_string());
         let key = jsonwebtoken::EncodingKey::from_ec_der(pkcs8_der);

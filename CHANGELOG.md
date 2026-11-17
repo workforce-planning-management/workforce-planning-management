@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — no `aws-lc-rs` in the Keycloak build (WPM-T536, 2026-11-17)
+
+`jsonwebtoken` signs and verifies through a small provider on `ring`, which the service already uses for TLS, so `aws-lc-rs`
+is gone from every build. The provider never verifies an HMAC token.
+
 ### Changed — GitHub's private vulnerability reporting is on (WPM-T537, 2026-11-17)
 
 A vulnerability can be reported privately through the repository's Security tab as well as by email. `SECURITY.md` 2.1.0 and

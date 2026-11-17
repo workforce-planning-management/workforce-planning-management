@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `jsonwebtoken` on `ring`, and no `aws-lc-rs` (WPM-T536)
+
+Under `--features keycloak`, `jsonwebtoken` uses `auth::jwt_ring`, a provider on `ring` (adapted from `jsonwebtoken`'s own
+`aws_lc` module, MIT), in place of its `aws_lc_rs` backend: RSA, ECDSA and EdDSA, and HMAC never verified. `aws-lc-rs` and
+`aws-lc-sys` leave the build, so `ring` is the only crypto library in either backend. The real-Keycloak and Entra suites pass.
+
 ### Changed — chrono accepted as test-only (WPM-T535)
 
 `deny.toml` accepts RUSTSEC-2026-0543 (chrono, unmaintained), which now reaches only the tests, through `axum-test`'s

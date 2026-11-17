@@ -56,6 +56,8 @@ const SIGNING_KEY_N: &str = "7PinPxL11AlNoGZwU6he0b9HoQ5aZAM3ENP2PkuCk0wgYhPispU
 /// The signing key from its PEM text: the PKCS#1 DER inside the armor. (The PEM
 /// helpers of the JWT crate are not enabled in this build.)
 fn rsa_encoding_key(pem: &str) -> EncodingKey {
+    // `jsonwebtoken` has no crypto backend of its own in this build (WPM-T536).
+    workforce_planning_management::auth::install_jwt_provider();
     let body: String = pem.lines().filter(|l| !l.starts_with("-----")).collect();
     let der = base64::engine::general_purpose::STANDARD
         .decode(body)

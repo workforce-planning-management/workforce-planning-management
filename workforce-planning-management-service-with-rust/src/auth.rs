@@ -91,7 +91,12 @@ mod paseto;
 pub use paseto::*;
 
 #[cfg(feature = "keycloak")]
+mod jwt_ring;
+#[cfg(feature = "keycloak")]
 mod keycloak;
+/// Choose `jsonwebtoken`'s provider, on `ring` (WPM-T536): call before signing or verifying a JWT outside the request path.
+#[cfg(feature = "keycloak")]
+pub use jwt_ring::install as install_jwt_provider;
 #[cfg(feature = "keycloak")]
 pub use keycloak::*;
 
