@@ -19,7 +19,7 @@ The load testing suite provides comprehensive testing capabilities:
 
 ### Prerequisites
 
-- Rust 1.99+ (stable)
+- Rust 1.98+ (stable)
 - PostgreSQL 18 (for test database)
 - WPM service running
 

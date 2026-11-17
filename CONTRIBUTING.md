@@ -20,6 +20,11 @@ issue reports, and feedback are welcome.
   - Front-end (`workforce-planning-management-ui-with-svelte`):
     `pnpm check` (svelte-check), `pnpm lint`, `pnpm test`, and
     `pnpm exec playwright test` where practical.
+- **Make targets.** From the repo root: `make check` (print tool
+  versions), `make test` (service, UI, Discussions and demo tests),
+  `make test-service`, `make test-ui`, `make run-demo` (service and UI),
+  `make lint` (Markdown), and `make test-minimum-supported-rust-version`.
+  `make help` lists them all.
 - **Branch per change.** Branch from `main`, merge back with
   `--no-ff`; never commit directly to `main`.
 - **No real personal data, ever** — fixtures and examples are
