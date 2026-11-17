@@ -5699,6 +5699,11 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [~] (2026-11-17) WPM-T532 **The matcher 0.2.0, on jiff, and the service on it.** *The owner chose this on 2026-11-17 (option B: take chrono out of the build).*
+      **Part done:** the matcher's version is 0.2.0 and its changelog has the release section (the breaking change of WPM-T528:
+      `WorkerRecord::date_of_birth` is a `jiff::civil::Date`; the MSRV 1.98; the WPM-T526 tests). `cargo publish --dry-run`
+      packages and builds it; 58 tests pass. **Left:** `cargo publish`, then the service and the domain crate on `0.2`, so that
+      chrono leaves the build.
 - [x] (2026-11-17) WPM-T531 **The scheduler's cron expressions on jiff.** *The owner chose, on 2026-11-17, to take chrono out of the build rather than accept RUSTSEC-2026-0543.* *(WPM-D202)*
       `cron` 0.17, whose schedule takes and gives `chrono` instants, is replaced by `croner` 4.0.3 (published 2026-11-04,
       outside the minimum publish age) with `default-features = false` and its `jiff` feature, which is for `jiff` 0.2, the
