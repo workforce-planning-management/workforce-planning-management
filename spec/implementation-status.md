@@ -9,8 +9,8 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 
 | Measure | Count |
 | --- | ---: |
-| Tasks done in `spec/tasks.md` | 425 |
-| Tasks not done (open or proposed) | 95 |
+| Tasks done in `spec/tasks.md` | 426 |
+| Tasks not done (open or proposed) | 94 |
 | Highest task number marked done | WPM-T524 |
 | Database migrations | 133 |
 | Controllers | 96 |

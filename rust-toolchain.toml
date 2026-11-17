@@ -2,7 +2,7 @@
 #
 # Every crate in this tree (the API service and the matcher) inherits this pin, so `cargo build`,
 # `cargo clippy` and especially `cargo fmt` give the same result on every machine and in CI. The MSRV job
-# (`cargo +1.98 ...`) names its own toolchain and is not affected. The same file is in the two sibling repositories.
+# (`cargo +<rust-version> ...`, read from each crate's `Cargo.toml`) names its own toolchain and is not affected. The same file is in the two sibling repositories.
 #
 # Bump deliberately (in one commit, re-running `cargo fmt` across all crates) rather than letting `rustup` float.
 [toolchain]

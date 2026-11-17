@@ -5989,8 +5989,14 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 - [ ] WPM-T519 **A register of deliberate departures.** One table of where WPM departs on purpose from a statute, a
   standard (SCIM, ESCO, SFIA) or a sibling app's contract: what the rule says, what WPM does, why, where it is specified,
   and an empty "confirmed by, date, decision" column for the accountable person. (S)
-- [ ] WPM-T520 **The MSRV read from its declaration.** CI reads `rust-version` from each `Cargo.toml` and checks with that
+- [x] (2026-11-17) WPM-T520 **The MSRV read from its declaration.** CI reads `rust-version` from each `Cargo.toml` and checks with that
   toolchain, instead of writing `1.98` by hand. (S)
+  *The owner said next on 2026-11-17; read as confirming this one, with WPM-T508.* Done: the `msrv` job reads `rust-version`
+  from the matcher's and `entity-ref`'s `Cargo.toml`, fails if either has none, installs those toolchains and checks each crate
+  with its own (the values reach the commands through `env`, not into the script). Both say 1.98 today. **Not covered:** the
+  service's own `rust-version` (1.99), as before: the service builds on the pinned 1.100 (`rust-toolchain.toml`) and the job
+  never checked it. **Verified:** the same `sed` reads 1.98 from both files; `cargo +1.98 check` passes for both crates; zizmor
+  finds nothing; the YAML parses. **Not checked:** CI.
 - [ ] WPM-T521 **An upgrade and rollback runbook in the hub's shape.** It starts from the property that must hold throughout
   (a rollback needs no data migration, or the step is a migration and says so). Then: the steps in order of least costly
   failure, real commands, "roll back rather than debug forward", and a "before you call it done" checklist. Built from

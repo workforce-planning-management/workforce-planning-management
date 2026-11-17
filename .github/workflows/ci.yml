@@ -134,20 +134,39 @@ jobs:
   # 1.98 (`cargo +1.98 check --all-targets --ignore-rust-version`), and is lowered once a matcher
   # declaring 1.98 is published (WPM-T390).
   msrv:
-    name: MSRV · matcher and entity-ref on Rust 1.98
+    name: MSRV · matcher and entity-ref on their declared rust-version
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: rustup toolchain install 1.98 --profile minimal
+      # Each crate's own `rust-version` (WPM-T520), so the check follows the declaration and is never written twice.
+      - name: read each crate's rust-version
+        id: msrv
+        run: |
+          read_msrv() { sed -n 's/^rust-version = "\(.*\)"$/\1/p' "$1" | head -1; }
+          matcher=$(read_msrv workforce-planning-management-matcher-with-rust/Cargo.toml)
+          entity_ref=$(read_msrv workforce-planning-management-service-with-rust/crates/entity-ref/Cargo.toml)
+          test -n "$matcher" && test -n "$entity_ref" || { echo "a crate declares no rust-version"; exit 1; }
+          echo "matcher=$matcher" >> "$GITHUB_OUTPUT"
+          echo "entity_ref=$entity_ref" >> "$GITHUB_OUTPUT"
+          echo "matcher $matcher, entity-ref $entity_ref"
+      - name: install those toolchains
+        env:
+          MATCHER_MSRV: ${{ steps.msrv.outputs.matcher }}
+          ENTITY_REF_MSRV: ${{ steps.msrv.outputs.entity_ref }}
+        run: rustup toolchain install "$MATCHER_MSRV" "$ENTITY_REF_MSRV" --profile minimal
       - name: matcher
         working-directory: workforce-planning-management-matcher-with-rust
-        run: cargo +1.98 check --locked --all-targets
+        env:
+          MSRV: ${{ steps.msrv.outputs.matcher }}
+        run: cargo "+$MSRV" check --locked --all-targets
       - name: entity-ref
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo +1.98 check --locked -p entity-ref
+        env:
+          MSRV: ${{ steps.msrv.outputs.entity_ref }}
+        run: cargo "+$MSRV" check --locked -p entity-ref
 
   api-db:
     name: api · database, enforcement and security suites
