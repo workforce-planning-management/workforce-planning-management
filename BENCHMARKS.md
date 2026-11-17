@@ -4,6 +4,40 @@ Two kinds of measurement live here: the load test (`scripts/load-test.sh`, from 
 service and its database, and the Criterion benchmarks of the pure rules (`benches/`, from WPM-T495, 2026-11-15), which show how
 a rule grows with the organization without a database in the number (WPM-D195). The latest of each is first; the history follows.
 
+## What a request pays apart from the database (WPM-T527, 2026-11-17)
+
+`cargo bench --bench requests` (the service), Criterion 0.8.2 with its defaults, Rust 1.100.0, the bench profile, one Apple
+M-series laptop (16 cores). **Not a quiet machine:** other work held its load average between about 16 and 36 during the run,
+so read these as orders of magnitude, not as figures to compare with WPM-T495's. The middle of Criterion's estimate.
+
+| Benchmark | 1,000 | 10,000 | 50,000 |
+|---|---:|---:|---:|
+| directory search, two terms in one department | 134 µs | 1.36 ms | 7.1 ms |
+| directory search, empty query (every entry, sorted) | 237 µs | 2.33 ms | 11.9 ms |
+| the directory's JSON | 176 µs | 1.77 ms | 21 ms |
+| CSV import (`parse_csv`, five fields, some quoted) | 0.95 ms | 4.2 ms | 48 ms |
+| CSV export (`row`, each row) | 115 µs | 0.53 ms | 5.4 ms |
+
+The read classification every `GET` runs before its handler: 15 ns for the first pattern in `READS`, 4.6 µs for one near the
+end, and 4.3 µs for a path no pattern matches (the whole list, about 300 patterns, scanned in order). A link token's SHA-256:
+0.66 µs.
+
+What it shows: none of these is what a request waits for, which is the database. The read classification is a linear scan,
+so its cost grows with the route table, but at about 5 µs it is far below a query. **An empty directory query costs more than
+a narrow one** because every entry is kept and sorted, and the sort lowercases both names for each comparison; at 50,000 that
+is 12 ms. The directory's JSON at 50,000 (21 ms) is a whole-organization answer, which a paged list avoids. What it does
+**not** show: figures on a quiet machine; 200,000; the database, network or the rest of serialisation, which the load test
+measures.
+
+### Comparing two runs
+
+Criterion reports a change against a saved baseline but never fails on one. `scripts/bench-compare.py` does: after
+`cargo bench --bench requests -- --save-baseline before` on one commit and `cargo bench --bench requests -- --baseline before`
+on the next, it prints each benchmark's change with its 95% interval and exits 1 when the whole interval is above the
+threshold (`--threshold`, 10% by default). It is for one quiet machine, and the first trial shows why: the same code, run
+again minutes later while the load rose from about 17 to 35, came out 42% to 116% slower on the three read-classification
+benchmarks, and the script failed, rightly, on what was only the machine. CI does not run it.
+
 ## Criterion benchmarks (WPM-T495, 2026-11-15)
 
 `cargo bench --bench rules` (the service) and `cargo bench --bench matching` (the matcher), Criterion 0.8.2, its defaults

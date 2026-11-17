@@ -5699,6 +5699,19 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T527 **Benchmarks of what a request pays apart from the database, and a way to compare two runs.** *The owner asked on 2026-11-17 ("add performance benchmarks").* *(WPM-D195; [testing.md](testing.md))*
+      Criterion benchmarks already covered the rules a view runs per worker (WPM-T495); `benches/requests.rs` adds the work around
+      them: `access::classify_read` (every `GET`, at the first pattern, one near the end, and no match), `directory::search` (two
+      terms in one department, and an empty query) and its JSON, `csv::parse_csv` and `csv::row`, and `link_token::hash`, at
+      1,000, 10,000 and 50,000 with inputs made from an index. CI's `api-lint` runs each once (`cargo test --bench requests`).
+      `scripts/bench-compare.py` fails when a benchmark is slower than a saved baseline, the whole 95% interval of its change above a
+      threshold (10% by default); for one quiet machine, not CI. **Measured** (`BENCHMARKS.md`): on a laptop under a load of about
+      16 to 36, so orders of magnitude only; the read classification is 15 ns to 4.6 µs, the directory search 7 to 12 ms at 50,000,
+      its JSON 21 ms, the CSV import 48 ms at 50,000. An empty directory query costs more than a narrow one, because it sorts
+      everyone with a lowercase per comparison. **Verified:** clippy with `-D warnings` and fmt; `cargo test --bench requests`
+      (19 run); the measurement; `bench-compare.py` on Criterion's real output (it failed, as it should, on the same code under a
+      rising load) and on made-up estimates (one slower among four: exit 1; the same at a 20% threshold: 0; nothing to compare: 2). **Not done:**
+      a run on a quiet machine; 200,000.
 - [x] (2026-11-17) WPM-T537 **GitHub's private vulnerability reporting is on.** *The owner asked on 2026-11-17.* *([special-files-for-public-repos](special-files-for-public-repos/index.md))*
       Turned on with `gh api -X PUT repos/workforce-planning-management/workforce-planning-management/private-vulnerability-reporting`;
       the same endpoint now answers `{"enabled":true}` (it said `false` in WPM-T525). `SECURITY.md` 2.1.0: §4 names both private

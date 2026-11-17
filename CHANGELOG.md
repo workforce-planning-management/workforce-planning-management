@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — benchmarks of a request's own work, and a comparison script (WPM-T527, 2026-11-17)
+
+`cargo bench --bench requests` measures the read classification, the directory search and its JSON, the CSV import and export,
+and a link token's hash; `scripts/bench-compare.py` fails on a run slower than a saved baseline, on one quiet machine.
+
 ### Changed — no `aws-lc-rs` in the Keycloak build (WPM-T536, 2026-11-17)
 
 `jsonwebtoken` signs and verifies through a small provider on `ring`, which the service already uses for TLS, so `aws-lc-rs`

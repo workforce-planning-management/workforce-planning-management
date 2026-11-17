@@ -107,6 +107,8 @@ jobs:
       - run: cargo test --locked --workspace --lib
       # Each Criterion benchmark once (WPM-T495): it runs, it does not measure; timings on shared runners are noise.
       - run: cargo test --locked --bench rules
+      # What a request pays apart from the database (WPM-T527), once each.
+      - run: cargo test --locked --bench requests
 
   matcher:
     name: matcher crate · fmt, clippy, tests

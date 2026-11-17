@@ -148,6 +148,11 @@ criterion = { version = "0.8.2", default-features = false, features = ["cargo_be
 name = "rules"
 harness = false
 
+# What a request pays apart from the database (WPM-T527); `cargo bench --bench requests`.
+[[bench]]
+name = "requests"
+harness = false
+
 # Needs the `keycloak` backend (mutually exclusive with the default `paseto`).
 [[test]]
 name = "keycloak"

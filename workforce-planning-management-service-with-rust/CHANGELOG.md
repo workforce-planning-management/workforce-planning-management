@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `benches/requests.rs` (WPM-T527)
+
+Criterion benchmarks of what a request pays apart from the database: `access::classify_read`, `directory::search` and its JSON,
+`csv::parse_csv` and `csv::row`, and `link_token::hash`. CI runs each once.
+
 ### Changed — `jsonwebtoken` on `ring`, and no `aws-lc-rs` (WPM-T536)
 
 Under `--features keycloak`, `jsonwebtoken` uses `auth::jwt_ring`, a provider on `ring` (adapted from `jsonwebtoken`'s own
