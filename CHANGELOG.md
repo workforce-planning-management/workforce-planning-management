@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the integration tests in fewer binaries (WPM-T534, 2026-11-17)
+
+`tests/main.rs` holds the request suites and the checks; `tests/enforcement/` holds every suite that needs only sign-in and the
+reference policy. 37 test binaries became 20, and relinking them after a library change is about a fifth quicker. The suites
+that need a setting of their own stay apart. `enforcement_payroll_checks`, which CI never ran, now runs.
+
 ### Changed — `axa` 0.20 (WPM-T533, 2026-11-17)
 
 `axa` 0.19.0 to 0.20.0 and `axa-test` 0.10.0 to 0.11.0, at the owner's request inside the minimum publish age. Zstd is now an

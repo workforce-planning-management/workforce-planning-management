@@ -38,7 +38,7 @@ State as of 2026-10-07 (WPM-T97).
   reminders sent once and naming no pay) and expense claims (draft to reimbursed, duplicates
   flagged, no amount in the audit or notification, erasure keeping amounts and dropping
   words). Unknown-pid 404s pinned throughout.
-- **Enforcement binary** (`tests/enforcement.rs`, own process — the OnceLock
+- **Enforcement binary** (`tests/enforcement/persona_matrix.rs`, in the `enforcement` binary — the OnceLock
   lesson): the persona matrix on the shipped reference policy file —
   401/403 splits, masking, `$sub` self-reads, destructive gating.
 - **Health requirements binary** (`tests/enforcement_health.rs`, own process): off until a lawful basis is recorded;
@@ -63,21 +63,21 @@ State as of 2026-10-07 (WPM-T97).
   that gives a line manager the power to write): the request limit and the decide-by date, who may decide (the
   line manager up the chain or HR, never the requester, never a manager outside the chain), refusal reasons from a
   deployer's list, an appeal decided by someone else, a counter-proposal, overdue, and that no contract changes.
-- **Individual goals binary** (`tests/individual_goals.rs`, own process, two scenarios): who proposes, agrees and reads; a measure and a check-in; a review's outcomes and frozen snapshot; export and erasure; the roll-up.
-- **PADR binary** (`tests/padr.rs`, own process, two scenarios): who opens, reads, writes and signs a PADR; objectives as goals and their frozen snapshot; a correction; the due date; the roll-up's floor; audit with no content; the export; who a waiting goal tells, a counter-proposal, and checked links.
-- **Injury record binary** (`tests/injury_record.rs`, own process, one scenario): HR only, no description in any field, several reports with their standings, the roll-up's floor, audit with no content, the export, and erasure that keeps the row.
-- **Course requests binary** (`tests/course_requests.rs`, own process, one scenario): a recorded zero enrols, a fee and an unknown fee wait, who may decide, one open request, approval enrols once, a decline enrols nobody, withdrawal.
-- **Separation record binary** (`tests/separation_record.rs`, own process, one scenario): HR only, what the leaver record supplies, named gaps, a cancelled leaver, the export and its formula guard, audit with no content.
-- **Learning economics binary** (`tests/learning_economics.rs`, own process, three scenarios): a plan's fees beside its hours, who may read them, what a masked reader gets, a stated benefit, train or hire with every input, and spend against a budget.
-- **`/api/me` binary** (`tests/enforcement_me.rs`, own process): a plain worker changes their own contact details and
+- **Individual goals binary** (`tests/enforcement/individual_goals.rs`, in the `enforcement` binary, two scenarios): who proposes, agrees and reads; a measure and a check-in; a review's outcomes and frozen snapshot; export and erasure; the roll-up.
+- **PADR binary** (`tests/enforcement/padr.rs`, in the `enforcement` binary, two scenarios): who opens, reads, writes and signs a PADR; objectives as goals and their frozen snapshot; a correction; the due date; the roll-up's floor; audit with no content; the export; who a waiting goal tells, a counter-proposal, and checked links.
+- **Injury record binary** (`tests/enforcement/injury_record.rs`, in the `enforcement` binary, one scenario): HR only, no description in any field, several reports with their standings, the roll-up's floor, audit with no content, the export, and erasure that keeps the row.
+- **Course requests binary** (`tests/enforcement/course_requests.rs`, in the `enforcement` binary, one scenario): a recorded zero enrols, a fee and an unknown fee wait, who may decide, one open request, approval enrols once, a decline enrols nobody, withdrawal.
+- **Separation record binary** (`tests/enforcement/separation_record.rs`, in the `enforcement` binary, one scenario): HR only, what the leaver record supplies, named gaps, a cancelled leaver, the export and its formula guard, audit with no content.
+- **Learning economics binary** (`tests/enforcement/learning_economics.rs`, in the `enforcement` binary, three scenarios): a plan's fees beside its hours, who may read them, what a masked reader gets, a stated benefit, train or hire with every input, and spend against a budget.
+- **`/api/me` binary** (`tests/enforcement/me.rs`, in the `enforcement` binary): a plain worker changes their own contact details and
   emergency contacts past a policy that lets only HR write; every other write stays refused; a neighbour, a person
   with no worker record and an unsigned request get nothing of another person's; the time-off view, in fixed
   past and future years.
-- **Need-to-know binary** (`tests/enforcement_need_to_know.rs`, own process): eleven kinds of caller against
+- **Need-to-know binary** (`tests/enforcement/need_to_know.rs`, in the `enforcement` binary): eleven kinds of caller against
   six classes of route (stranger, colleague, line manager, a manager higher up, the worker, HR by attribute,
   payroll, service, HR of the worker's organization, HR of another, an unknown token). A unit test scans the
   controllers so a new `GET` route fails the build until it is classified.
-- **Engagement enforcement binary** (`tests/enforcement_engagements.rs`, own process): a contractor's rate
+- **Engagement enforcement binary** (`tests/enforcement/engagements.rs`, in the `enforcement` binary): a contractor's rate
   is masked like salary against the shipped reference policy.
 - **Expense enforcement binary** (`tests/enforcement_expenses.rs`, own process — the auth
   flag is process-wide): with an open blanket policy so the *controller's* rule is what is
@@ -102,7 +102,7 @@ builds and tests with no scratch workspace. Start a throwaway Postgres 18 and a
 Redis 8 under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
 mounts `postgres-init/`; set `WPM_TEST_REDIS_URL=redis://localhost:6379` so the
 Redis-backed shared-cache tests run instead of skipping), then run `cargo test --lib`,
-`cargo test --test mod -- --ignored --test-threads=1` (serial — the tests share
+`cargo test --test main -- --ignored --test-threads=1` (serial — the tests share
 one database), and the enforcement, `enforcement_expenses` and `security`
 binaries, each in its own process. Sign-in enforcement is **on by default**
 (WPM-D52): the request suite opts out explicitly through
@@ -112,6 +112,8 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 **Load** (`scripts/load-test.sh`, WPM-R120, WPM-D195): seeds one organization at 1k, 10k and 50k workers (or any size given) in a throwaway Postgres 18 and drives the routes that read an organization with `oha`. Scenarios on the same seed: every path alone, a concurrency ramp (`LOAD_RAMP`), reads and writes at once (`LOAD_MIX`), a soak that samples memory and database connections (`LOAD_SOAK`), and `LOAD_CHECK`, which exits 1 when a stream has a failed request or a p95 over `LOAD_BAR_MS` (2,000 by default, the bar of WPM-D95). CI's `load-smoke` job runs `LOAD_MIX` at 1,000 workers and fails on a failed request only; timings are measured by hand, since shared runners are too noisy to compare, and recorded in [`BENCHMARKS.md`](../BENCHMARKS.md). The ceiling it led to is checked by `tests/requests/scale.rs`.
 
 **Benchmarks** (Criterion, WPM-D195): `cargo bench --bench rules` in the service and `cargo bench --bench matching` in the matcher measure the pure functions a view runs once per worker, at 1,000, 10,000 and 50,000. CI runs each once with `cargo test --bench`, so a benchmark that panics or stops building fails; the timings are in [`BENCHMARKS.md`](../BENCHMARKS.md).
+
+**Test binaries** (WPM-T534): one file under `tests/` is one binary, and each links the whole service, so tests that can share a process share one. `tests/main.rs` holds the request suites (`requests/`) and the checks (`checks/`: the source and schema guards, the route table, the schedule, the `health` command, the migration adoption); `tests/enforcement/` holds the twelve suites that need only sign-in and the reference policy, signing with one throwaway key. Sign-in, the ABAC policy and the PASETO verifier are each read once into a `OnceLock`, so a suite that needs another policy or setting stays a binary of its own: the eleven `enforcement_*.rs`, `security`, `retention_schedule`, `request_log`, `chaos`, `shared_cache_upstream`, and `keycloak` and `oidc_entra` under their feature. 37 binaries became 20; relinking them after a change to the library took a median of 15.1 s against 18.5 s before, measured back to back on one loaded laptop.
 
 **Mutation testing** (`cargo-mutants` 27.1.0, WPM-T526): a mutant is a small change to the code (a `>` made `>=`, a match arm
 deleted, a function made to return a default), and a test suite that still passes against it has a gap. Until WPM-T526 this was

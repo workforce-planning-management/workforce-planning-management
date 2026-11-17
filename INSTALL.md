@@ -44,7 +44,7 @@ WORKFORCE_REQUIRE_AUTH=0 cargo run -- start   # JSON API, port 1241; sign-in enf
 
 ```sh
 cargo test --lib           # DB-free unit tests (1,034 on 2026-10-30)
-cargo test --test mod -- --ignored --test-threads=1   # request tests (184; needs Postgres — see below)
+cargo test --test main -- --ignored --test-threads=1   # request tests (184; needs Postgres — see below)
 cargo test --test enforcement -- --ignored --test-threads=1   # auth persona matrix
 ```
 
@@ -74,7 +74,7 @@ Optional imports: `cargo run -- task import_framework` (UK GDAD PCF) and
 ```sh
 podman compose -f compose.test.yaml up -d --wait
 export WORKFORCE_TEST_REDIS_URL=redis://localhost:6379   # the Redis-backed tests skip without it
-cargo test --test mod -- --ignored --test-threads=1   # serial: the tests share one database
+cargo test --test main -- --ignored --test-threads=1   # serial: the tests share one database
 podman compose -f compose.test.yaml down
 ```
 
@@ -142,7 +142,7 @@ cd workforce-planning-management-service-with-rust
 podman compose -f compose.test.yaml up -d --wait
 export WORKFORCE_TEST_REDIS_URL=redis://localhost:6379   # Postgres on 5432, Redis on 6379; both have port overrides
 cargo test                                   # unit tests, no database
-cargo test --test mod -- --ignored --test-threads=1
+cargo test --test main -- --ignored --test-threads=1
 cargo test --test enforcement -- --ignored --test-threads=1
 cargo test --test enforcement_expenses -- --ignored --test-threads=1
 cargo test --test security -- --ignored --test-threads=1

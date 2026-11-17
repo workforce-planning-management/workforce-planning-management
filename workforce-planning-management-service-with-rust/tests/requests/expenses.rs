@@ -1,7 +1,7 @@
 //! Expense claims: a draft built from validated items, submitted, decided,
 //! reimbursed; duplicates flagged; the manager told and the claimant told of the
 //! outcome without any amount; exported, and on erasure the text goes but the
-//! amounts stay. (Who may do what under enforcement is in `tests/enforcement.rs`.)
+//! amounts stay. (Who may do what under enforcement is in `tests/enforcement/persona_matrix.rs`.)
 use serde_json::{Value, json};
 use serial_test::serial;
 

@@ -8,7 +8,7 @@
 //! with the password grant, points the service at the container's issuer
 //! and JWKS, boots the app, and hits secured routes with those tokens.
 //!
-//! Its own test binary (not part of `tests/mod.rs`) because the auth
+//! Its own test binary (not part of `tests/main.rs`) because the auth
 //! `OnceLock`s are process-wide and must be set before the app boots.
 //! Built only with `--no-default-features --features keycloak`.
 //!

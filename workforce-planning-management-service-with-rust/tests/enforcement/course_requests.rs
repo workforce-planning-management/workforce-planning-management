@@ -14,7 +14,7 @@ use workforce_planning_management::app::App;
 const ISSUER: &str = "authentication-service";
 const AUDIENCE: &str = "main-x-service";
 /// Throwaway Ed25519 seed — mints test tokens only, never a secret.
-const SEED: [u8; 32] = [12; 32];
+const SEED: [u8; 32] = [9; 32];
 const REFERENCE_POLICY_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/config/abac-policy.reference.json"
@@ -114,7 +114,7 @@ async fn course(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test course_requests -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
     let (keys, kid) = keys_and_kid();
     let (boss, me, other) = (

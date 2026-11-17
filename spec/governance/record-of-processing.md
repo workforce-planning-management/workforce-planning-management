@@ -33,7 +33,7 @@ complete; the other columns describe what this software does.
 | 22 | Completing a leaver's separation paperwork (WPM-R222) | Leavers | The final pay date and a reference to the pay summary (a pointer, never an amount), beside the last day and reason read from the leaver record | No | HR (a caller who may write the worker's record); the CSV export for a period | not in the sweep (not soft-deleted); deleted with the worker at erasure | deployer to complete |
 | 23 | Checking pay against the minimum wage (WPM-R218) | Workers on a payroll run | The date of birth, read from the person service only where a profile has age bands, to pick a band; the answer holds the band and the outcome, never an age, and is not stored | No (an age is personal data, not special category) | HR and payroll; the audit entry holds counts only | none: the result is not stored | deployer to complete |
 
-**Not processed**: trade-union membership and representative status. No activity above holds them, and none may (WPM-D68; `tests/no_union_membership.rs`). Where a deployer deducts union subscriptions (check-off), that stays in the deployer's own payroll process.
+**Not processed**: trade-union membership and representative status. No activity above holds them, and none may (WPM-D68; `tests/checks/no_union_membership.rs`). Where a deployer deducts union subscriptions (check-off), that stays in the deployer's own payroll process.
 **Transfers outside the controller's country**: none made by the software; follow the
 hosting, identity-provider and backup choices ([data-flow](data-flow.md)).
 **Automated decisions with legal or similarly significant effect**: none. Forecasts and

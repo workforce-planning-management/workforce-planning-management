@@ -2,7 +2,7 @@
 
 Every table that is keyed to a person, and what happens to it on a subject-access request and on erasure. **Generated** by
 `workforce-planning-management-service-with-rust/tests/personal_data_inventory.rs` from the migrations and `src/controllers/privacy.rs`;
-do not edit by hand. Rewrite it with `WPM_WRITE_INVENTORY=1 cargo test --test personal_data_inventory`; the test fails when it is out of date.
+do not edit by hand. Rewrite it with `WPM_WRITE_INVENTORY=1 cargo test --test main`; the test fails when it is out of date.
 
 - **Export**: the table is in `GET /api/workers/{pid}/subject-access` (or, for applicants, `GET /api/candidates/{pid}/subject-access`).
 - **Erasure**: a statement in `erasure_statements` deletes or scrubs it when a worker is erased (WPM-D22).

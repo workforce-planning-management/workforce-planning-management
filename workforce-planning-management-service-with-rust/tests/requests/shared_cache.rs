@@ -105,7 +105,7 @@ async fn redis_cache(uri: &str) -> cache::Cache {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires Redis: set WPM_TEST_REDIS_URL, run with `cargo test --test mod shared_cache -- --ignored`"]
+#[ignore = "requires Redis: set WPM_TEST_REDIS_URL, run with `cargo test --test main shared_cache -- --ignored`"]
 // Against a real Redis: a value is shared between two handles (two instances), invalidation reaches
 // both, and a Redis that is not there is a miss inside the time bound, never an error or a hang.
 async fn redis_is_shared_between_instances_and_fails_open() {

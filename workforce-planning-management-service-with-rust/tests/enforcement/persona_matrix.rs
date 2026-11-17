@@ -1,6 +1,6 @@
 //! Auth-activation persona matrix over the live routes (WPM-R15).
 //!
-//! Its own test binary (not part of `tests/mod.rs`) because
+//! Its own test binary (not part of `tests/main.rs`) because
 //! `WPM_REQUIRE_AUTH` and the key set are cached in process-wide
 //! `OnceLock`s — the flag must be set **before** the app boots, once
 //! per process. A throwaway Ed25519 key mints PASETO tokens + the

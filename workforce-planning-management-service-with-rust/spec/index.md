@@ -65,7 +65,7 @@ streaming,validation,version}.rs` (+ `auth/{paseto,keycloak}.rs`, the two
   transaction; only `approved` time entries feed overtime; benefit
   costs join only in the payslip currency; stub tax = 20% over a
   monthly allowance (documented demo stub).
-- **Enforcement tests** live in `tests/enforcement.rs` (own process,
+- **Enforcement tests** live in `tests/enforcement/persona_matrix.rs` (own process,
   OnceLock lesson) and mount the shipped reference policy file;
   request tests in `tests/requests/` are `#[ignore]`d — run with
   `cargo test -- --ignored`.

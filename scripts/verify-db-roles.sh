@@ -53,8 +53,9 @@ as wpm_app "$APP_PW" "$TEMPLATE" -c "SELECT count(*) FROM workers" >/dev/null &&
 
 echo "== the request tests, one fresh clone each, as wpm_app"
 cd "$SERVICE"
-cargo test --test mod --no-run -q 2>/dev/null
-TESTS="$(cargo test --test mod -- --ignored --list 2>/dev/null | sed -n 's/^\(.*\): test$/\1/p')"
+cargo test --test main --no-run -q 2>/dev/null
+# The request suites only (WPM-T534): `main` also holds `checks::migration_adoption`, which makes its own database.
+TESTS="$(cargo test --test main -- --ignored --list 2>/dev/null | sed -n 's/^\(requests::.*\): test$/\1/p')"
 # These two deliberately tamper with the audit trail through SQL. Run as wpm_app they must be refused by the database.
 TAMPER="requests::audit_chain::removing_an_entry_from_the_middle_is_found_and_the_tail_is_not requests::audit_chain::the_audit_trail_cannot_be_changed_and_a_tamper_is_found"
 passed=0; refused_ok=0; bad=0
@@ -66,7 +67,7 @@ for t in $TESTS; do
   out="$(APP_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
     WPM_TEST_DDL_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$RUN_DB" \
     DATABASE_URL="postgres://wpm_app:$APP_PW@$HOSTPORT/$RUN_DB" \
-    cargo test --test mod -q -- --ignored --exact "$t" --test-threads=1 2>&1)" && rc=0 || rc=$?
+    cargo test --test main -q -- --ignored --exact "$t" --test-threads=1 2>&1)" && rc=0 || rc=$?
   if [[ " $TAMPER " == *" $t "* ]]; then
     if [ "$rc" != 0 ] && grep -qE "must be owner of table audit_logs|permission denied for table audit_logs|append-only" <<<"$out"; then
       refused_ok=$((refused_ok+1)); echo "   refused by the database, as it should be: $t"

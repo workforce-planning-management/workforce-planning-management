@@ -14,7 +14,7 @@ use workforce_planning_management::app::App;
 const ISSUER: &str = "authentication-service";
 const AUDIENCE: &str = "main-x-service";
 /// Throwaway Ed25519 seed — mints test tokens only, never a secret.
-const SEED: [u8; 32] = [12; 32];
+const SEED: [u8; 32] = [9; 32];
 const REFERENCE_POLICY_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/config/abac-policy.reference.json"
@@ -102,7 +102,7 @@ fn a_goal() -> Value {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test individual_goals -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
     let (keys, kid) = keys_and_kid();
@@ -351,7 +351,7 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test individual_goals -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn the_rollup_counts_by_department_with_a_floor() {
     let (keys, kid) = keys_and_kid();
     unsafe {

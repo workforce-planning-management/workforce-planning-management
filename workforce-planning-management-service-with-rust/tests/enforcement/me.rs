@@ -76,7 +76,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot, the worker, a neighbour, a stranger with no record, and HR.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_worker_manages_only_their_own_details() {
     let (keys, kid) = keys_and_kid();
@@ -363,7 +363,7 @@ async fn a_worker_manages_only_their_own_details() {
 /// person into a leaver record, never ending employment by itself.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
     let (keys, kid) = keys_and_kid();
@@ -524,7 +524,7 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
 /// no amount.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
     let (keys, kid) = keys_and_kid();
@@ -775,7 +775,7 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
 /// or a search would tell the caller who manages whom.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_me -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn the_directory_search_stops_at_the_organizations_the_caller_can_read() {
     let (keys, kid) = keys_and_kid();
     unsafe {

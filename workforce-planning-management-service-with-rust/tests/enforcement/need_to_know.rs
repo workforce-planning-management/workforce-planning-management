@@ -78,7 +78,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot, every persona against every class.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_need_to_know -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one matrix read top to bottom
 async fn reads_are_need_to_know() {
     let (keys, kid) = keys_and_kid();

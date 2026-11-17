@@ -160,7 +160,7 @@ const TRUNCATED: &[&str] = &[
 
 /// The `workforce-planning-management` application.
 pub struct App;
-/// Every route group the service serves. Needs no database, so a test can read the list (`tests/route_coverage.rs`).
+/// Every route group the service serves. Needs no database, so a test can read the list (`tests/checks/route_coverage.rs`).
 #[must_use]
 pub fn route_groups() -> Vec<Routes> {
     vec![

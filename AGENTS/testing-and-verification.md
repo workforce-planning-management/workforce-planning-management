@@ -8,8 +8,8 @@ run is a defect. Current state and strategy: [`spec/testing.md`](../spec/testing
 | Where | Command | Expect (2026-10-30) |
 | --- | --- | --- |
 | Service | `cargo test --lib` | 1,063 unit tests |
-| Service | `cargo test --test mod -- --ignored --test-threads=1` | 190 request tests (need Postgres; **serial** — they share a database) |
-| Service | `cargo test --test <binary> -- --ignored --test-threads=1` | one test each: `enforcement` (the auth persona matrix) and the fourteen `enforcement_*` binaries, `security`, `retention_schedule`, `request_log`, `no_union_membership`, `personal_data_inventory`, `route_coverage`, `scheduler_config`; each its own process because the auth flags are process-wide (the list CI runs is in `.github/workflows/ci.yml`) |
+| Service | `cargo test --test main -- --ignored --test-threads=1` | 190 request tests (need Postgres; **serial** — they share a database) |
+| Service | `cargo test --test <binary> -- --ignored --test-threads=1` | `main` holds the request suites and the checks (`cargo test --test main` runs the checks alone); `enforcement` holds every suite that needs only sign-in on and the reference policy (the persona matrix among them); the eleven `enforcement_*` binaries, `security`, `retention_schedule`, `request_log`, `chaos` and `shared_cache_upstream` each need a policy or a setting of their own, so each is its own process, because the auth flags, the policy and the verifier are read once per process (WPM-T534; the list CI runs is in `.github/workflows/ci.yml`) |
 | Service | `cargo test --test chaos -- --ignored --nocapture` | database faults through a proxy; the seed is printed |
 | Service | `cargo test --no-default-features --features keycloak --test keycloak -- --ignored` | real Keycloak 26 via Testcontainers (`oidc_entra` likewise, with no container) |
 | Service | `cargo clippy --all-targets -- -D warnings` | clean (pedantic) |
@@ -54,7 +54,7 @@ database-backed suites:
    -e POSTGRES_DB=workforce_planning_management_test -p 55440:5432 --tmpfs
    /var/lib/postgresql <postgres-18-image>`; wait a few seconds.
 3. `DATABASE_URL=postgres://loco:loco@localhost:55440/workforce_planning_management_test
-   cargo test --test mod -- --ignored --test-threads=1` in the service directory.
+   cargo test --test main -- --ignored --test-threads=1` in the service directory.
    A local PostgreSQL works as well: `createdb -U postgres -O <you> <throwaway name>`, point
    `DATABASE_URL` at it, and `dropdb -U postgres <name>` afterwards. A database reused across
    runs can time out at boot (seen once in `skill_gaps`, WPM-T388); use a fresh one.

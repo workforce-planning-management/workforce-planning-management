@@ -15,7 +15,7 @@ use workforce_planning_management::app::App;
 const ISSUER: &str = "authentication-service";
 const AUDIENCE: &str = "main-x-service";
 /// Throwaway Ed25519 seed — mints test tokens only, never a secret.
-const SEED: [u8; 32] = [11; 32];
+const SEED: [u8; 32] = [9; 32];
 const REFERENCE_POLICY_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/config/abac-policy.reference.json"
@@ -144,7 +144,7 @@ async fn a_skill(request: &axa_test::TestServer, svc: &str) -> String {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
     let kid = enforce();
@@ -361,7 +361,7 @@ async fn a_plan_costs_fees_and_hours_for_the_person_and_hr_only() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
     let kid = enforce();
@@ -466,7 +466,7 @@ async fn train_or_hire_shows_every_input_and_a_gap_is_unknown() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test learning_economics -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn spend_is_recorded_fees_against_a_budget_per_currency() {
     let kid = enforce();

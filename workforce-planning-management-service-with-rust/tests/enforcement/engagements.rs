@@ -74,7 +74,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot, every persona.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_engagements -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn a_contractors_rate_is_masked_like_salary() {
     let (keys, kid) = keys_and_kid();
     unsafe {

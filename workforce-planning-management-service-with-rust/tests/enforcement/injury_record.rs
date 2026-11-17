@@ -15,7 +15,7 @@ use workforce_planning_management::app::App;
 const ISSUER: &str = "authentication-service";
 const AUDIENCE: &str = "main-x-service";
 /// Throwaway Ed25519 seed — mints test tokens only, never a secret.
-const SEED: [u8; 32] = [13; 32];
+const SEED: [u8; 32] = [9; 32];
 const REFERENCE_POLICY_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/config/abac-policy.reference.json"
@@ -103,7 +103,7 @@ async fn worker(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test injury_record -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn an_injury_record_proves_a_report_and_holds_no_description() {
     let (keys, kid) = keys_and_kid();

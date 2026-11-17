@@ -73,7 +73,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 /// One boot: a member of one organization, a namesake in another.
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_duplicates -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn a_member_is_checked_only_against_their_organizations() {
     let (keys, kid) = keys_and_kid();
     unsafe {

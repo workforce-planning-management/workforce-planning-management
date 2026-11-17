@@ -239,20 +239,11 @@ jobs:
       # The request suite turns sign-in and rate limits off explicitly; each
       # of the other binaries runs in its own process because the flags are
       # read once.
-      - run: cargo test --locked --test mod -- --ignored --test-threads=1
+      # WPM-T534: `main` is the request suites and the checks in one binary; `enforcement` is every suite that needs only sign-in
+      # and the reference policy. The `enforcement_*` binaries below need a policy or a setting of their own.
+      - run: cargo test --locked --test main -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_engagements -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_duplicates -- --ignored --test-threads=1
-      - run: cargo test --locked --test migration_adoption -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_need_to_know -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_me -- --ignored --test-threads=1
-      - run: cargo test --locked --test learning_economics -- --ignored --test-threads=1
-      - run: cargo test --locked --test individual_goals -- --ignored --test-threads=1
-      - run: cargo test --locked --test padr -- --ignored --test-threads=1
-      - run: cargo test --locked --test separation_record -- --ignored --test-threads=1
-      - run: cargo test --locked --test course_requests -- --ignored --test-threads=1
-      - run: cargo test --locked --test injury_record -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
       - run: cargo test --locked --test shared_cache_upstream
@@ -271,7 +262,7 @@ jobs:
       - run: cargo test --locked --test enforcement_pay_information -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_what_if -- --ignored --test-threads=1
       # Not #[ignore]d, so `--lib` above does not reach them and `--ignored` would run none of them (WPM-T396).
-      - run: cargo test --locked --test no_union_membership --test personal_data_inventory --test route_coverage --test scheduler_config --test health_command
+      - run: cargo test --locked --test main
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
       # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.

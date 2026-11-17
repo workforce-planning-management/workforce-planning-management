@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — two test binaries where there were nineteen (WPM-T534)
+
+`cargo test --test main` (was `--test mod`) runs the request suites with `-- --ignored` and the source and configuration checks
+without; `cargo test --test enforcement -- --ignored` runs the twelve suites that need only sign-in and the reference policy,
+signing with one test key. The other `enforcement_*`, `security`, `retention_schedule`, `request_log`, `chaos`,
+`shared_cache_upstream`, `keycloak` and `oidc_entra` binaries are unchanged, as each needs a setting of its own.
+
 ### Changed — `axa` 0.20 (WPM-T533)
 
 `axa` 0.19.0 to 0.20.0 and `axa-test` 0.10.0 to 0.11.0. **Zstd is opt-in** in `axa` 0.20 and WPM does not turn it on: a

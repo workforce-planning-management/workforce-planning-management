@@ -73,7 +73,7 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_payroll_checks -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
 async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() {
     let (keys, kid) = keys_and_kid();
     unsafe {

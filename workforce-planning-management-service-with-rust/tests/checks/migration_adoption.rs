@@ -2,7 +2,7 @@
 //! as applied, and only the newer migrations run.
 //!
 //! `#[ignore]`d: it needs PostgreSQL (`DATABASE_URL`, a role that may create a database). Run with
-//! `cargo test --test migration_adoption -- --ignored --test-threads=1`. It makes and drops its own database.
+//! `cargo test --test main -- --ignored --test-threads=1`. It makes and drops its own database.
 
 use std::borrow::Cow;
 
@@ -28,7 +28,7 @@ fn url_for(name: &str) -> String {
 }
 
 #[tokio::test]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test migration_adoption -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test main -- --ignored`"]
 async fn a_seaorm_history_is_adopted_and_only_the_newer_migrations_run() {
     let name = format!(
         "wpm_adoption_{}",
@@ -115,7 +115,7 @@ async fn a_seaorm_history_is_adopted_and_only_the_newer_migrations_run() {
 }
 
 #[tokio::test]
-#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test migration_adoption -- --ignored`"]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test main -- --ignored`"]
 async fn a_seaorm_history_with_a_gap_stops_the_boot() {
     let name = format!(
         "wpm_adoption_{}",

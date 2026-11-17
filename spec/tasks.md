@@ -5699,6 +5699,27 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T534 **The integration tests that can share a process, in one binary each.** *The owner asked on 2026-11-17 ("fold integration tests into one binary: `tests/main.rs` with mod declarations, because of speed").* *([testing.md](testing.md))*
+      Each file under `tests/` was its own binary, and each links the whole service. **`tests/main.rs`** (was `tests/mod.rs`) holds
+      the request suites and, under `tests/checks/`, six binaries that need no running service or only their own database:
+      `health_command`, `migration_adoption`, `no_union_membership`, `personal_data_inventory`, `route_coverage` and
+      `scheduler_config`. **`tests/enforcement/`** holds the twelve suites that need only sign-in on and the reference policy: the
+      persona matrix (was `tests/enforcement.rs`), `duplicates`, `engagements`, `me`, `need_to_know`, `payroll_checks`,
+      `course_requests`, `individual_goals`, `padr`, `separation_record`, `injury_record` and `learning_economics`; they now sign
+      with one throwaway seed (9; four used 11, 12 or 13), because the verifier keeps the first key it is given. **Not folded, and
+      why:** sign-in, the ABAC policy and the PASETO verifier are each read once into a `OnceLock`, so a suite that needs another
+      policy or setting keeps its own process: eleven `enforcement_*` binaries (an inline policy, or the equality, health or
+      refusal-reason settings), `security` (low limits, a lockout), `retention_schedule` (deliberately bad values), `request_log`,
+      `chaos` (a proxied database URL), `shared_cache_upstream` (the upstream mode), and `keycloak` and `oidc_entra` under their
+      feature. **37 binaries became 20.** **Found:** `enforcement_payroll_checks` was in no CI step; it now runs inside
+      `enforcement`. CI loses eleven steps; the checks are `cargo test --test main`; `scripts/verify-db-roles.sh` takes only the
+      `requests::` tests from `main`, since `checks::migration_adoption` makes its own database. Docs: about 30 files' paths and
+      commands; `spec/testing.md` says which suites share the `enforcement` process. **Measured:** relinking every test binary after
+      touching `src/lib.rs`, back to back on one loaded laptop: a median of 18.5 s before (17.5, 18.5, 23.3) and 15.1 s after (14.6,
+      15.1, 15.2). **Verified:** the local CI gate on fresh PostgreSQL 18 and Redis 8: every step but `cargo deny` (chrono, accepted
+      in WPM-T535 after this ran), 1,592 tests passed and none failed (1,591 before: `payroll_checks` now runs), the roles drill
+      among them; `cargo test --test main` runs the 14 checks with no database; 233 ignored tests in `main` (231 request tests and
+      2 adoption tests) and 20 in `enforcement`.
 - [x] (2026-11-17) WPM-T533 **`axa` 0.20.** *The owner asked on 2026-11-17, approving the exception to the minimum publish age.* *([rust-axum-stack.md](rust-axum-stack.md))*
       From 0.19.0 to 0.20.0, with `axa-test` 0.10.0 to 0.11.0, published minutes before. **One change, and WPM takes the default:**
       Zstd is now an opt-in `zstd` feature of `axa`, and WPM leaves it off, so a request body in `zstd` is a `415` and a client
