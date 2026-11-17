@@ -166,14 +166,14 @@ pub async fn import_sfiaplus(pool: &sqlx::PgPool, text: &str, licence: &Licence)
         "https://www.bcs.org/",
         "BCS SFIAplus licence held by the deployer (internal use)",
         rules::SFIA_SCALE_MAX,
-        chrono::Utc::now().date_naive(),
+        crate::sql_time::SqlDate(crate::dates::today()),
         "Loaded by the licensee from their own copy. Shown only as pointers: nothing is booked or bought from it. \
          WPM ships none of it; it must not be published or redistributed.",
         version,
         Redistribution::InternalOnly.token(),
         licence.holder,
         licence.reference,
-        checked_on,
+        crate::sql_time::SqlDate(checked_on),
     )
     .execute(&mut *tx)
     .await?;

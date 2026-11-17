@@ -3,11 +3,12 @@
 //! `positions.cost_centre` values that match nothing in the register are listed for HR, never matched by a guess or created silently.
 //! Reading the register is open to a signed-in caller in scope; keeping it is HR's. Spec: `spec/staff-records-and-pay.md`.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -23,8 +24,8 @@ fn as_rule(c: &cost_centres::Model) -> rules::CostCentre {
     rules::CostCentre {
         code: c.code.clone(),
         parent: c.parent_code.clone(),
-        valid_from: c.valid_from,
-        valid_to: c.valid_to,
+        valid_from: c.valid_from.get(),
+        valid_to: c.valid_to.map(SqlDate::get),
     }
 }
 
@@ -45,7 +46,7 @@ pub(crate) async fn ensure_open(
     ctx: &AppContext,
     organization: &str,
     code: &str,
-    on: NaiveDate,
+    on: Date,
 ) -> Result<()> {
     let rows: Vec<_> = register(ctx, organization)
         .await?
@@ -71,7 +72,7 @@ async fn list(
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
     let rows = register(&ctx, &q.organization).await?;
     let all: Vec<_> = rows.iter().map(as_rule).collect();
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut out = Vec::new();
     for (row, rule) in rows.iter().zip(&all) {
         let mut v = row_json(row)?;
@@ -91,7 +92,7 @@ struct CreatePayload {
     code: String,
     name: String,
     parent_code: Option<String>,
-    valid_from: Option<NaiveDate>,
+    valid_from: Option<Date>,
 }
 
 async fn hr_only(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<()> {
@@ -118,7 +119,7 @@ async fn create(
         .as_ref()
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty());
-    let from = p.valid_from.unwrap_or_else(|| Utc::now().date_naive());
+    let from = p.valid_from.unwrap_or_else(crate::dates::today);
     let mut problems = Vec::new();
     if !(1..=20).contains(&code.chars().count()) {
         problems.push("code must be 1 to 20 characters".to_string());
@@ -145,7 +146,7 @@ async fn create(
         code,
         p.name.trim(),
         parent,
-        from,
+        SqlDate(from),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -165,7 +166,7 @@ async fn create(
 
 #[derive(Debug, Deserialize)]
 struct ClosePayload {
-    valid_to: NaiveDate,
+    valid_to: Date,
 }
 
 /// `POST /api/cost-centres/{pid}/close` — close a cost centre on a day not before it opened. It is never deleted, and a closed one
@@ -197,7 +198,7 @@ async fn close(
     sqlx::query!(
         "UPDATE cost_centres SET valid_to = $2 WHERE pid = $1",
         pid,
-        p.valid_to,
+        SqlDate(p.valid_to),
     )
     .execute(&mut *tx)
     .await?;

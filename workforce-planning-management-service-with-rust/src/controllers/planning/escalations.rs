@@ -5,18 +5,24 @@
 //! record says what the decider was looking at. Nothing is raised automatically.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, Deserialize, Error, MaybeAuthUser, Response, Result, State, Uuid,
+    debug_handler, dimension_states, ensure_org_in_scope, format, records, scoped_plan,
+    unprocessable, workforce_plans,
+};
 use crate::db;
 use crate::models::_entities::plan_escalations;
 use crate::rules::escalation as esc;
 use crate::rules::tolerance as tol;
+#[allow(clippy::wildcard_imports)]
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
+use jiff::civil::Date;
 
 /// An escalation as the API shows it. `plan_name` is given by the inbox, which lists several plans.
 pub(super) fn escalation_json(
     e: &plan_escalations::Model,
-    today: chrono::NaiveDate,
+    today: Date,
     plan_name: Option<&str>,
 ) -> serde_json::Value {
     serde_json::json!({
@@ -30,7 +36,7 @@ pub(super) fn escalation_json(
         "raised_by": e.raised_by,
         "raised_on": e.raised_on,
         "level_raised_on": e.level_raised_on,
-        "days_open": (e.status == "open").then(|| esc::days_open(e.raised_on, today)),
+        "days_open": (e.status == "open").then(|| esc::days_open(e.raised_on.get(), today)),
         "note": e.note,
         "at_raise": { "rag": e.rag_at_raise, "deviation": e.deviation_at_raise, "limit": e.limit_at_raise },
         "decision": e.decision,
@@ -133,7 +139,7 @@ pub(super) async fn raise_escalation(
             "an escalation is already open for this dimension; raise its level or decide it",
         ));
     }
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let notify = administrators(&ctx, &plan.organization_ref).await?;
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
@@ -149,7 +155,7 @@ pub(super) async fn raise_escalation(
         dimension.as_str(),
         esc::Level::PlanOwner.number(),
         caller.actor(),
-        today,
+        SqlDate(today),
         note,
         if state.rag == tol::Rag::Red { "red" } else { "amber" },
         state.deviation,
@@ -209,7 +215,7 @@ pub(super) async fn raise_level(
     let next = esc::Level::from_number(e.level)
         .and_then(esc::Level::next)
         .ok_or_else(|| unprocessable("this escalation is already at the top level"))?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let notify = administrators(&ctx, &plan.organization_ref).await?;
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
@@ -220,7 +226,7 @@ pub(super) async fn raise_level(
                   decided_by, decided_on, decision_note, rag_at_decision, deviation_at_decision"#,
         e.id,
         next.number(),
-        today,
+        SqlDate(today),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -277,7 +283,7 @@ pub(super) async fn decide_escalation(
     // what the plan looks like as it is decided, kept with the decision
     let states = dimension_states(&ctx, &caller, &plan.pid.to_string(), &plan).await?;
     let now = states.iter().find(|s| s.dimension.as_str() == e.dimension);
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rag_at_decision = now
         .map(|s| serde_json::json!(s.rag))
         .and_then(|v| v.as_str().map(ToString::to_string));
@@ -293,7 +299,7 @@ pub(super) async fn decide_escalation(
         e.id,
         decision.as_str(),
         caller.actor(),
-        today,
+        SqlDate(today),
         note,
         rag_at_decision,
         now.and_then(|s| s.deviation),
@@ -324,7 +330,7 @@ pub(super) async fn list_plan_escalations(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     // Open first, then decided; newest first within each.
     let rows = sqlx::query_as!(
         plan_escalations::Model,
@@ -369,7 +375,7 @@ pub(super) async fn list_open_escalations(
     .into_iter()
     .map(|p| (p.pid, p.name))
     .collect();
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let plan_pids: Vec<Uuid> = plans.keys().copied().collect();
     let rows = sqlx::query_as!(
         plan_escalations::Model,

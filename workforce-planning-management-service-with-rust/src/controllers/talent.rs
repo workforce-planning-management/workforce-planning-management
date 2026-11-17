@@ -22,8 +22,10 @@
 //!   would be a false record of a regulated programme.
 
 use super::row_json;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -141,7 +143,7 @@ struct PlanPayload {
     #[serde(default)]
     rationale: Option<String>,
     #[serde(default)]
-    target_on: Option<chrono::NaiveDate>,
+    target_on: Option<Date>,
     /// The skill steps, declared inline.
     #[serde(default)]
     items: Vec<PlanItemPayload>,
@@ -157,7 +159,7 @@ struct PlanItemPayload {
     #[serde(default)]
     course_ref: Option<String>,
     #[serde(default)]
-    due_on: Option<chrono::NaiveDate>,
+    due_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/development-plans` — open a plan
@@ -240,7 +242,7 @@ async fn create_plan(
         payload.target_job_title,
         payload.target_department,
         payload.rationale,
-        payload.target_on,
+        payload.target_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -265,7 +267,7 @@ async fn create_plan(
             item.target_level,
             item.method,
             item.course_ref,
-            item.due_on,
+            item.due_on.map(SqlDate),
         )
         .execute(&mut *tx)
         .await?;
@@ -443,7 +445,7 @@ async fn plan_status(
 
     let from = plan.status.clone();
     let plan_pid = plan.pid;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let started_on = (payload.to == "active").then_some(today);
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
@@ -455,7 +457,7 @@ async fn plan_status(
                   deleted_at AS "deleted_at: _""#,
         plan.id,
         payload.to,
-        started_on,
+        started_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -689,7 +691,7 @@ async fn add_member(
         payload.subject_kind,
         payload.subject_pid,
         payload.readiness,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .execute(&mut *tx)
     .await?;
@@ -1001,9 +1003,9 @@ struct PlacementPayload {
     worker_pid: Uuid,
     #[serde(default)]
     supervisor_pid: Option<Uuid>,
-    started_on: chrono::NaiveDate,
+    started_on: Date,
     #[serde(default)]
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<Date>,
 }
 
 /// `POST /api/early-career-programs/{pid}/placements` — place an
@@ -1050,8 +1052,8 @@ async fn create_placement(
         program.pid,
         worker.pid,
         payload.supervisor_pid,
-        payload.started_on,
-        payload.ends_on,
+        SqlDate(payload.started_on),
+        payload.ends_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -1328,12 +1330,13 @@ pub fn routes() -> Routes {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::Timestamp;
 
     /// A stored plan item.
     fn an_item(skill: Uuid, target: i32, status: &str) -> development_plan_items::Model {
         development_plan_items::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             plan_pid: Uuid::new_v4(),
@@ -1350,8 +1353,8 @@ mod tests {
     /// A stored plan.
     fn a_plan(kind: &str) -> development_plans::Model {
         development_plans::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             worker_pid: Uuid::new_v4(),
@@ -1369,14 +1372,14 @@ mod tests {
     /// A stored placement.
     fn a_placement(status: &str, outcome: &str) -> program_placements::Model {
         program_placements::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             program_pid: Uuid::new_v4(),
             worker_pid: Uuid::new_v4(),
             supervisor_pid: None,
-            started_on: chrono::NaiveDate::from_ymd_opt(2026, 1, 6).expect("date"),
+            started_on: SqlDate(crate::dates::ymd(2026, 1, 6).expect("date")),
             ends_on: None,
             status: status.to_string(),
             off_the_job_hours: 0,

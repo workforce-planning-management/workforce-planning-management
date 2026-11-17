@@ -4,7 +4,7 @@
 //! terms WPM can use. It is tied to a bargaining unit, so who it applies to is *derived* from the unit's rules and is never recorded. That a
 //! worker is covered by an agreement is a fact about their job, not a statement that they belong to anything.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The longest title.
 pub const TITLE_MAX: usize = 120;
@@ -29,8 +29,8 @@ pub struct Terms<'a> {
 pub fn agreement_problems(
     title: &str,
     source: &str,
-    effective_from: NaiveDate,
-    effective_to: Option<NaiveDate>,
+    effective_from: Date,
+    effective_to: Option<Date>,
     terms: &Terms<'_>,
     known_scale: impl Fn(&str) -> bool,
 ) -> Vec<String> {
@@ -63,7 +63,7 @@ pub fn agreement_problems(
 
 /// Problems with adding a version: it must take effect after the newest version already held, so the history reads in order.
 #[must_use]
-pub fn version_problems(effective_from: NaiveDate, newest_from: Option<NaiveDate>) -> Vec<String> {
+pub fn version_problems(effective_from: Date, newest_from: Option<Date>) -> Vec<String> {
     match newest_from {
         Some(newest) if effective_from <= newest => {
             vec![
@@ -81,14 +81,14 @@ pub struct Version {
     /// The version number.
     pub version: i32,
     /// First day in force.
-    pub from: NaiveDate,
+    pub from: Date,
     /// Last day in force, or open.
-    pub to: Option<NaiveDate>,
+    pub to: Option<Date>,
 }
 
 /// The version in force on `on`: the highest-numbered one whose dates include the day; `None` when none is (not yet, or lapsed).
 #[must_use]
-pub fn in_force(versions: &[Version], on: NaiveDate) -> Option<i32> {
+pub fn in_force(versions: &[Version], on: Date) -> Option<i32> {
     versions
         .iter()
         .filter(|v| v.from <= on && v.to.is_none_or(|to| to >= on))
@@ -100,7 +100,7 @@ pub fn in_force(versions: &[Version], on: NaiveDate) -> Option<i32> {
 mod tests {
     use super::*;
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 

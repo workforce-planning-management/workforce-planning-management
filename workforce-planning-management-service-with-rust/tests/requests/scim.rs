@@ -1,13 +1,13 @@
 //! SCIM 2.0 outbound provisioning (WPM-R150, WPM-D102), against a stub SCIM server that records every call: managers first,
 //! idempotent, retried with back-off, deactivated on leaving, and no contact detail anywhere in a body.
 
+use jiff::{Timestamp, civil::Date};
 use std::sync::{Arc, Mutex};
 
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::{post, put};
 use axum::{Json, Router};
-use chrono::{Duration, NaiveDate, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::scim_push::{Config, Summary, run};
@@ -113,8 +113,8 @@ async fn hire(
     created["pid"].as_str().expect("pid").to_string()
 }
 
-fn today() -> NaiveDate {
-    Utc::now().date_naive()
+fn today() -> Date {
+    workforce_planning_management::dates::today()
 }
 
 #[tokio::test]
@@ -129,7 +129,7 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         let manager = hire(&request, &org, "S-1", None, "2020-01-05").await;
         let report = hire(&request, &org, "S-2", Some(&manager), "2020-01-05").await;
         let _later = hire(&request, &org, "S-3", Some(&manager), "2020-01-05").await;
-        let future = hire(&request, &org, "S-4", None, &(today() + Duration::days(30)).to_string()).await;
+        let future = hire(&request, &org, "S-4", None, &(today() + workforce_planning_management::dates::days(30)).to_string()).await;
         // Personal contact details exist, and must not leave.
         for pid in [&manager, &report] {
             sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
@@ -139,7 +139,7 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
                 .unwrap();
         }
         let cfg = Config { base_url: base, token: "scim-secret".into(), organization: Some(org.clone()) };
-        let now = Utc::now();
+        let now = Timestamp::now();
 
         // First run: three created, the not-yet-joined worker skipped, the manager first.
         let first = run(&ctx, &cfg, today(), now).await.unwrap();
@@ -168,7 +168,7 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
 
         // A change in title replaces one user; a leaver is deactivated.
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET job_title = 'Senior Engineer' WHERE pid = '{report}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
-        let left = (today() - Duration::days(1)).to_string();
+        let left = (today() - workforce_planning_management::dates::days(1)).to_string();
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET terminated_on = '{left}' WHERE worker_number = 'S-3'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let third = run(&ctx, &cfg, today(), now).await.unwrap();
         assert_eq!(third, Summary { replaced: 2, unchanged: 1, skipped: 1, ..Summary::default() });
@@ -180,35 +180,35 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
         }
 
         // The future joiner is sent once their first day comes.
-        let joined = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
+        let joined = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now).await.unwrap();
         assert_eq!(joined.created, 1, "{joined:?}");
         let _ = future;
 
         // A provider failure is recorded as a status and retried after a back-off; nothing of its body is kept.
         sqlx::raw_sql("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-4')").execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         *stub.fail.lock().unwrap() = Some(503);
-        let failed = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
+        let failed = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now).await.unwrap();
         assert_eq!(failed.failed, 1, "{failed:?}");
         let rows = sqlx::query("SELECT last_error, attempts FROM scim_pushes WHERE last_error IS NOT NULL").fetch_all(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         assert_eq!(rows.len(), 1);
         let error: String = rows[0].try_get("last_error").unwrap();
         assert_eq!(error, "HTTP 503");
         assert!(!error.contains("SECRET"));
-        let waiting = run(&ctx, &cfg, today() + Duration::days(30), now).await.unwrap();
+        let waiting = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now).await.unwrap();
         assert_eq!(waiting.waiting, 1, "inside the back-off nothing is sent");
         // The first retry is one minute away, as the spec says ("one minute doubling"): not yet at 59 seconds, due at 61.
-        let early = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::seconds(59)).await.unwrap();
+        let early = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now + jiff::SignedDuration::from_secs(59)).await.unwrap();
         assert_eq!(early.waiting, 1, "{early:?}");
-        let on_time = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::seconds(61)).await.unwrap();
+        let on_time = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now + jiff::SignedDuration::from_secs(61)).await.unwrap();
         assert_eq!(on_time.failed, 1, "one minute after the first failure it is tried again (and fails again, as the provider is still down): {on_time:?}");
         *stub.fail.lock().unwrap() = None;
-        let later = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::minutes(5)).await.unwrap();
+        let later = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now + jiff::SignedDuration::from_mins(5)).await.unwrap();
         assert_eq!(later.created, 1, "after the wait it is tried again and works: {later:?}");
 
         // A user the provider already has is found by externalId and replaced, not duplicated.
         sqlx::raw_sql("DELETE FROM scim_pushes WHERE worker_pid = (SELECT pid FROM workers WHERE worker_number = 'S-1')").execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         *stub.conflict.lock().unwrap() = true;
-        let again = run(&ctx, &cfg, today() + Duration::days(30), now + Duration::minutes(10)).await.unwrap();
+        let again = run(&ctx, &cfg, today() + workforce_planning_management::dates::days(30), now + jiff::SignedDuration::from_mins(10)).await.unwrap();
         assert_eq!(again.created, 1, "{again:?}");
         assert!(stub.calls.lock().unwrap().iter().any(|c| c.0 == "PUT" && c.1 == "/Users/idp-existing"));
     })

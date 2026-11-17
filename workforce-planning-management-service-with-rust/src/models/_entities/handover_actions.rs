@@ -2,7 +2,7 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,5 +19,5 @@ pub struct Model {
     pub action: String,
     pub note: Option<String>,
     pub performed_by: Option<String>,
-    pub performed_at: DateTime<FixedOffset>,
+    pub performed_at: SqlTimestamp,
 }

@@ -2,6 +2,7 @@
 //! demand, partner commitments, the capacity view, the start check and the recorded
 //! start decision.
 
+use jiff::civil::Date;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -803,11 +804,10 @@ async fn key_person_risk_counts_holders_backups_and_successors() {
 // Oversight (WPM-R65, WPM-R66, WPM-D48, WPM-D49): the organization's own scale, a recorded position, an exit
 // criterion with a reported measure, and a sustain rule that is met only by consecutive months of evidence.
 async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
-    use chrono::{Datelike, Months, Utc};
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
-        let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
-        let month = |back: u32| first_of_this_month - Months::new(back); // 1 = last complete month
+        let first_of_this_month = workforce_planning_management::dates::today().first_of_month();
+        let month = |back: u32| first_of_this_month - jiff::Span::new().months(back); // 1 = last complete month
         let status = || async {
             request.get(&format!("/api/oversight/status?organization={org}")).await.json::<Value>()
         };
@@ -897,11 +897,10 @@ async fn oversight_status_reports_the_sustain_rule_and_never_moves_the_level() {
 // Derived oversight measures (WPM-R67, WPM-T114): the service computes the reading itself, shows the
 // months it used, and a month the data cannot speak for is a null that is never a pass.
 async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a_pass() {
-    use chrono::{Datelike, Months, NaiveDate, Utc};
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
-        let first_of_this_month = Utc::now().date_naive().with_day(1).unwrap();
-        let month = |back: u32| first_of_this_month - Months::new(back);
+        let first_of_this_month = workforce_planning_management::dates::today().first_of_month();
+        let month = |back: u32| first_of_this_month - jiff::Span::new().months(back);
         let status = || async {
             request.get(&format!("/api/oversight/status?organization={org}")).await.json::<Value>()
         };
@@ -910,7 +909,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
         let keys: Vec<&str> = catalogue["derivations"].as_array().unwrap().iter().map(|d| d["key"].as_str().unwrap()).collect();
         assert_eq!(keys, ["turnover_rate", "contingent_share", "overcommitted_pools", "time_to_report"]);
         // Twenty people hired long ago; one of them leaves four days into last month but one.
-        let left_on = month(2) + chrono::Days::new(4);
+        let left_on = month(2) + jiff::Span::new().days(4);
         for n in 0..20 {
             sqlx::query(
                 "INSERT INTO workers (pid, person_ref, organization_ref, worker_number, display_name, status, employment_type, \
@@ -922,8 +921,8 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
             .bind(&org)
             .bind(format!("D{n:03}"))
             .bind(format!("Synthetic Worker {n}"))
-            .bind(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap())
-            .bind((n == 0).then_some(left_on))
+            .bind(workforce_planning_management::sql_time::SqlDate(workforce_planning_management::dates::ymd(2020, 1, 1).unwrap()))
+            .bind((n == 0).then_some(workforce_planning_management::sql_time::SqlDate(left_on)))
             .execute(workforce_planning_management::db::pool(&ctx))
             .await
             .unwrap();
@@ -937,7 +936,7 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
             )
             .bind(uuid::Uuid::new_v4())
             .bind(&org)
-            .bind(month(1) + chrono::Days::new(days))
+            .bind(workforce_planning_management::sql_time::SqlDate(month(1) + jiff::Span::new().days(days)))
             .bind(Some(contractor))
             .bind(Some(fixed))
             .execute(workforce_planning_management::db::pool(&ctx))
@@ -1028,13 +1027,12 @@ async fn derived_oversight_measures_are_computed_and_an_unknown_month_is_never_a
 // warning however often they are swept, close when they stop, and the time to report is the longest
 // time to acknowledge, unknown while any is open.
 async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_report() {
-    use chrono::{Datelike, Days, Months, Utc};
     use workforce_planning_management::controllers::early_warning::sweep;
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
-        let today = Utc::now().date_naive();
-        let this_month = today.with_day(1).unwrap();
-        let last_month = this_month - Months::new(1);
+        let today = workforce_planning_management::dates::today();
+        let this_month = today.first_of_month();
+        let last_month = this_month - jiff::Span::new().months(1);
         let hr: Value = request.post("/api/workers").json(&json!({
             "person_ref": super::a_person(), "organization_ref": org, "worker_number": "EW-HR",
             "display_name": "Synthetic HR", "employment_type": "permanent", "department": "people",
@@ -1092,7 +1090,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         let t = |s: &Value| s["criteria"][0]["measures"].as_array().unwrap().iter().find(|m| m["measure_pid"] == derived.as_str()).unwrap().clone();
         assert_eq!(t(&status().await)["derived_values"][0]["value"], Value::Null);
         // The pool warning was first seen last month (backdated here), the breach today.
-        let seen = last_month + Days::new(2);
+        let seen = last_month + jiff::Span::new().days(2);
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE early_warnings SET first_true_on = '{seen}' WHERE pid = '{pool_warning}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.assert_status_ok();
         assert_eq!(request.post(&format!("/api/early-warnings/{pool_warning}/acknowledge")).await.status_code(), 422, "once only");
@@ -1100,7 +1098,7 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         // Still one unacknowledged, so the overall figure is unknown; last month's, all acknowledged, is known.
         let after_one = list().await;
         assert_eq!(after_one["time_to_report_days"], Value::Null);
-        let expected = (today - seen).num_days();
+        let expected = workforce_planning_management::dates::days_between(seen, today);
         let w = after_one["warnings"].as_array().unwrap().iter().find(|w| w["pid"] == pool_warning.as_str()).unwrap().clone();
         assert_eq!(w["days_to_acknowledge"], expected);
         assert_eq!(t(&status().await)["derived_values"][0]["value"], expected);
@@ -1170,12 +1168,12 @@ async fn the_scheduled_freeze_is_idempotent_for_a_month() {
         request.post("/api/oversight/positions").json(&json!({ "organization_ref": org, "level_pid": level["pid"], "effective_on": "2026-01-01", "deciding_body": "Synthetic body", "reason": "Synthetic reason" })).await.assert_status_ok();
         let in_org = || async { request.get(&format!("/api/oversight/packs?organization={org}")).await.json::<Value>()["packs"].as_array().unwrap().len() };
         assert_eq!(in_org().await, 0);
-        let day = chrono::NaiveDate::from_ymd_opt(2026, 9, 2).unwrap();
+        let day = workforce_planning_management::dates::ymd(2026, 9, 2).unwrap();
         assert!(freeze_all(&ctx, day).await.unwrap() >= 1);
         assert_eq!(in_org().await, 1);
         freeze_all(&ctx, day).await.unwrap();
         assert_eq!(in_org().await, 1, "the same month is not frozen twice");
-        freeze_all(&ctx, chrono::NaiveDate::from_ymd_opt(2026, 10, 2).unwrap()).await.unwrap();
+        freeze_all(&ctx, workforce_planning_management::dates::ymd(2026, 10, 2).unwrap()).await.unwrap();
         assert_eq!(in_org().await, 2, "the next month is");
         // The deciding body is for the status route; the pack does not carry it.
         let list: Value = request.get(&format!("/api/oversight/packs?organization={org}")).await.json();
@@ -1198,8 +1196,8 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let site = format!("Synthetic Site {tag}");
         let course = format!("SYN-COURSE-{tag}");
         // Four people with the role "Engineer" (the title seed_worker gives), and a role profile for it.
@@ -1401,20 +1399,20 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
 /// equal, however it is computed (WPM-D95).
 fn walked_weighted_days(
     fte: i64,
-    hired: chrono::NaiveDate,
-    terminated: Option<chrono::NaiveDate>,
-    leave: &[(chrono::NaiveDate, chrono::NaiveDate)],
-    month: chrono::NaiveDate,
+    hired: Date,
+    terminated: Option<Date>,
+    leave: &[(Date, Date)],
+    month: Date,
 ) -> i64 {
     let mut days = 0;
     let mut day = month;
-    while chrono::Datelike::month(&day) == chrono::Datelike::month(&month) {
+    while day.month() == month.month() {
         let employed = hired <= day && terminated.is_none_or(|t| t > day);
         let away = leave.iter().any(|(s, e)| *s <= day && day <= *e);
         if employed && !away {
             days += 1;
         }
-        day += chrono::Duration::days(1);
+        day += workforce_planning_management::dates::days(1);
     }
     fte * days
 }
@@ -1425,8 +1423,7 @@ fn walked_weighted_days(
 // Supply by role and by skill: overlapping and month-spanning leave, a part-month start and end, a
 // pending and a withdrawn leave, a worker who qualifies twice — equal to walking the days.
 async fn capacity_supply_equals_walking_the_days() {
-    use chrono::NaiveDate;
-    let d = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    let d = |s: &str| s.parse::<Date>().unwrap();
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
@@ -1513,7 +1510,7 @@ async fn capacity_supply_equals_walking_the_days() {
                         walked_weighted_days(i64::from(*fte), d(hired), ended.map(d), &leave, *month)
                     }).sum()
                 };
-                let dim = i64::from(chrono::Datelike::day(&(*month + chrono::Months::new(1) - chrono::Duration::days(1))));
+                let dim = i64::from((*month + jiff::Span::new().months(1) - workforce_planning_management::dates::days(1)).day());
                 assert_eq!(cells[i]["supply_centi"], (2 * weighted + dim) / (2 * dim), "{kind} {month}");
             }
         }
@@ -2139,13 +2136,13 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let early = today + chrono::Days::new(90);
-        let end = today + chrono::Days::new(365);
+        let today = workforce_planning_management::dates::today();
+        let early = today + jiff::Span::new().days(90);
+        let end = today + jiff::Span::new().days(365);
         let programme = a_programme();
         let (title_a, title_b, title_c) = (format!("Impact A {tag}"), format!("Impact B {tag}"), format!("Impact C {tag}"));
         let mut pids = Vec::new();
-        let mut hire = async |title: &str, n: usize, basis: &str, ends: Option<chrono::NaiveDate>, funded_by: &str| {
+        let mut hire = async |title: &str, n: usize, basis: &str, ends: Option<Date>, funded_by: &str| {
             let mut body = json!({
                 "person_ref": super::a_person(), "organization_ref": org,
                 "worker_number": format!("PI-{}-{}{n}", &tag[..8], &title[7..8]), "display_name": format!("Hidden Name {n}"),
@@ -2192,7 +2189,7 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
             pools.push(pool);
         }
         // The programme claims far more of pool A next month than it has.
-        let next_month = chrono::Datelike::with_day(&today, 1).unwrap().checked_add_months(chrono::Months::new(1)).unwrap();
+        let next_month = today.first_of_month().checked_add(jiff::Span::new().months(1)).ok().unwrap();
         request
             .put("/api/programme-demands")
             .json(&json!({ "programme_ref": programme, "pool_pid": pools[0], "month": next_month, "fte_centi": 5000 }))

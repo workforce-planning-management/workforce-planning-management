@@ -5,10 +5,9 @@
 //! workers. Every input is synthetic and deterministic, made from the worker's index, so two runs measure the same work.
 //! Results, and what they do and do not show, go in `BENCHMARKS.md`.
 
-use std::hint::black_box;
-
-use chrono::{DateTime, Duration, NaiveDate, TimeZone, Utc};
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
+use jiff::{Timestamp, civil::Date};
+use std::hint::black_box;
 use uuid::Uuid;
 use workforce_planning_management::rules::{
     capacity::{self, Member, WorkerFacts},
@@ -21,8 +20,8 @@ use workforce_planning_management::rules::{
 
 const SIZES: [usize; 3] = [1_000, 10_000, 50_000];
 
-fn date(y: i32, m: u32, d: u32) -> NaiveDate {
-    NaiveDate::from_ymd_opt(y, m, d).expect("a valid date")
+fn date(y: i32, m: u32, d: u32) -> Date {
+    workforce_planning_management::dates::ymd(y, m, d).expect("a valid date")
 }
 
 fn id(n: u128) -> Uuid {
@@ -43,13 +42,15 @@ fn capacity_workers(n: usize) -> Vec<WorkerFacts> {
     (0..n)
         .map(|i| WorkerFacts {
             fte_percent: if i % 5 == 0 { 60 } else { 100 },
-            hired_on: date(2020, 1, 1) + Duration::days(i64::from(small(i, 1_500))),
+            hired_on: date(2020, 1, 1)
+                + workforce_planning_management::dates::days(i64::from(small(i, 1_500))),
             terminated_on: (i % 50 == 0).then(|| date(2026, 6, 15)),
             role_profiles: if i % 4 == 0 { vec![id(1)] } else { Vec::new() },
             skills: vec![(id(2), 1 + small(i, 5))],
             approved_leave: if i % 3 == 0 {
-                let start = month + Duration::days(i64::from(small(i, 20)));
-                vec![(start, start + Duration::days(4))]
+                let start =
+                    month + workforce_planning_management::dates::days(i64::from(small(i, 20)));
+                vec![(start, start + workforce_planning_management::dates::days(4))]
             } else {
                 Vec::new()
             },
@@ -124,11 +125,17 @@ fn plan_people(n: usize) -> Vec<Person> {
                 0..=6 => (Basis::Permanent, None),
                 7 => (
                     Basis::FixedTerm,
-                    Some(date(2027, 1, 1) + Duration::days(i64::from(small(i, 700)))),
+                    Some(
+                        date(2027, 1, 1)
+                            + workforce_planning_management::dates::days(i64::from(small(i, 700))),
+                    ),
                 ),
                 8 => (
                     Basis::Contractor,
-                    Some(date(2026, 9, 1) + Duration::days(i64::from(small(i, 400)))),
+                    Some(
+                        date(2026, 9, 1)
+                            + workforce_planning_management::dates::days(i64::from(small(i, 400))),
+                    ),
                 ),
                 _ => (Basis::Intern, None),
             };
@@ -172,21 +179,19 @@ fn bench_planning(c: &mut Criterion) {
 
 /// Twenty shifts a worker over four weeks; one worker in a hundred starts some shifts after only eight hours' rest.
 fn shifts(n: usize) -> Vec<(usize, working_time::Shift)> {
-    let base: DateTime<Utc> = Utc
-        .with_ymd_and_hms(2026, 6, 1, 8, 0, 0)
-        .single()
-        .expect("a valid instant");
+    let base: Timestamp =
+        workforce_planning_management::dates::utc(2026, 6, 1, 8, 0, 0).expect("a valid instant");
     let mut out = Vec::with_capacity(n * 20);
     for worker in 0..n {
         for day in 0..20_i64 {
             let early = worker % 100 == 0 && day % 5 == 1;
-            let start = base + Duration::days(day)
+            let start = base + workforce_planning_management::dates::days(day)
                 - if early {
-                    Duration::hours(8)
+                    jiff::SignedDuration::from_hours(8)
                 } else {
-                    Duration::zero()
+                    jiff::SignedDuration::ZERO
                 };
-            out.push((worker, (start, start + Duration::hours(8))));
+            out.push((worker, (start, start + jiff::SignedDuration::from_hours(8))));
         }
     }
     out

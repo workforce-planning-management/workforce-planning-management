@@ -9,8 +9,10 @@
 //! [`crate::rules::gap`].
 
 use super::ratio_json;
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -361,7 +363,7 @@ async fn withdraw_interest(
     let interest = sqlx::query_scalar!(
         "UPDATE mobility_interests SET deleted_at = $2 WHERE pid = $1 AND deleted_at IS NULL RETURNING pid",
         records::parse_pid(&pid)?,
-        chrono::Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .fetch_optional(&mut *tx)
     .await?

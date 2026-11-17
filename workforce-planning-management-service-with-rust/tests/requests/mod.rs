@@ -5,6 +5,7 @@
 //! [`assessments`], and the talent-strategy surface (development plans,
 //! pipelines, early careers, workforce intelligence) in [`talent`].
 
+use jiff::Timestamp;
 mod adjustments;
 mod ai_register;
 mod announcements;
@@ -133,8 +134,7 @@ pub fn text_without_ids(value: &serde_json::Value) -> String {
     fn blank(v: &serde_json::Value) -> serde_json::Value {
         match v {
             serde_json::Value::String(s)
-                if uuid::Uuid::parse_str(s).is_ok()
-                    || chrono::DateTime::parse_from_rfc3339(s).is_ok() =>
+                if uuid::Uuid::parse_str(s).is_ok() || s.parse::<Timestamp>().is_ok() =>
             {
                 serde_json::Value::String(String::new())
             }

@@ -4,10 +4,9 @@
 //! Every count is a [`Cell`]: shown from the floor, withheld under it, **and when exactly one cell of a breakdown is withheld the smallest shown
 //! one is withheld too**, because the total would otherwise give the hidden one away. No name, no salary, no one's band: only counts of groups.
 
-use std::collections::BTreeMap;
-
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 /// One count: shown from the floor, never under it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -34,13 +33,13 @@ pub struct Row {
     /// The pay band they sit in, when one is recorded.
     pub band: Option<String>,
     /// First day.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// Last day, when they have left.
-    pub terminated_on: Option<NaiveDate>,
+    pub terminated_on: Option<Date>,
 }
 
 impl Row {
-    fn in_work(&self, on: NaiveDate) -> bool {
+    fn in_work(&self, on: Date) -> bool {
         self.hired_on <= on && self.terminated_on.is_none_or(|end| end > on)
     }
 }
@@ -102,7 +101,7 @@ fn group_by(rows: &[&Row], key: impl Fn(&Row) -> String) -> Vec<(String, usize, 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pack {
     /// The day it is as of.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// Workers in work on that day whom the unit's rules cover; `None` under the floor, and then nothing else is given.
     pub headcount: Option<usize>,
     /// Headcount and FTE by department.
@@ -129,9 +128,9 @@ fn one_cell(n: usize, floor: usize) -> Cell {
 
 /// Build the pack from `rows` (every non-deleted worker the unit's rules cover, in work or not) as of `as_of`, with `floor` the fewest that may be counted.
 #[must_use]
-pub fn pack(rows: &[Row], as_of: NaiveDate, floor: usize) -> Pack {
+pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
     let working: Vec<&Row> = rows.iter().filter(|r| r.in_work(as_of)).collect();
-    let year_ago = as_of - Duration::days(365);
+    let year_ago = as_of - crate::dates::days(365);
     let starters = rows
         .iter()
         .filter(|r| r.hired_on > year_ago && r.hired_on <= as_of)
@@ -184,7 +183,7 @@ pub fn pack(rows: &[Row], as_of: NaiveDate, floor: usize) -> Pack {
 mod tests {
     use super::*;
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 

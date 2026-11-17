@@ -10,11 +10,12 @@
 //! person's pay follows the mask: a caller whose read is masked gets the fees and hours and `pay_withheld`, so the masked
 //! salary cannot be read back out of an hourly cost. An unmasked read of someone else's plan records a `salary_read`.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{Datelike, NaiveDate, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -194,7 +195,7 @@ fn hours_for(
     hours: u32,
     worker: &workers::Model,
     scope: &Scope,
-    today: NaiveDate,
+    today: Date,
 ) -> HoursCost {
     if !reader_sees_pay {
         return HoursCost::Unresolved {
@@ -221,7 +222,7 @@ async fn plan_cost(
 ) -> Result<Response> {
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
@@ -295,7 +296,7 @@ async fn state_benefit(
         payload.currency,
         payload.source.trim(),
         caller.actor(),
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -445,7 +446,7 @@ async fn plan_viability(
 ) -> Result<Response> {
     let (plan, worker) = plan_and_worker(&ctx, &pid).await?;
     let reader = plan_reader(&ctx, &caller, &worker).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
@@ -631,7 +632,7 @@ fn loaded(annual: i64, on_cost_bp: i64, fte_percent: i32) -> i64 {
 }
 
 /// The recruitment cost when it is stated in `currency`; it is never converted.
-fn recruitment_in(scope: &Scope, currency: &str, today: NaiveDate) -> Option<i64> {
+fn recruitment_in(scope: &Scope, currency: &str, today: Date) -> Option<i64> {
     let stated = match scope.resolve("recruitment.currency", today) {
         Resolution::Resolved { value, .. } => value.as_names()?,
         _ => return None,
@@ -651,7 +652,7 @@ async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i6
     .fetch_all(db::pool(ctx))
     .await?
     .iter()
-        .filter_map(|r| metrics::time_to_fill_days(r.opened_on, r.filled_on))
+        .filter_map(|r| metrics::time_to_fill_days(r.opened_on.map(SqlDate::get), r.filled_on.map(SqlDate::get)))
         .collect();
     #[allow(clippy::cast_possible_truncation)] // a median of day counts
     Ok(match metrics::fill_time_summary(&days) {
@@ -696,7 +697,7 @@ async fn train_or_hire(
     .map_err(record_rejection)?;
     let pay_visible = !obligations.iter().any(|o| o == "mask");
 
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &candidate).await?;
     let Some(currency) = candidate.salary_currency.clone() else {
         return format::json(serde_json::json!({
@@ -844,10 +845,12 @@ async fn learning_budget(
     axa::extract::Query(query): axa::extract::Query<BudgetQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let year = query.year.unwrap_or_else(|| Utc::now().year());
+    let year = query
+        .year
+        .unwrap_or_else(|| i32::from(crate::dates::today().year()));
     let (Some(start), Some(end)) = (
-        NaiveDate::from_ymd_opt(year, 1, 1),
-        NaiveDate::from_ymd_opt(year, 12, 31),
+        crate::dates::ymd(year, 1, 1),
+        crate::dates::ymd(year, 12, 31),
     ) else {
         return Err(unprocessable("year is out of range"));
     };
@@ -879,8 +882,8 @@ async fn learning_budget(
         "SELECT worker_pid, course_ref FROM training_enrollments
           WHERE deleted_at IS NULL AND status = 'completed' AND completed_on >= $1 AND completed_on <= $2
             AND worker_pid = ANY($3)",
-        start,
-        end,
+        SqlDate(start),
+        SqlDate(end),
         &pids,
     )
     .fetch_all(db::pool(&ctx))

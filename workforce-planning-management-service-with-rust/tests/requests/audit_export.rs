@@ -1,6 +1,7 @@
 //! The audit trail as JSON Lines for a security monitoring system (WPM-R122, WPM-T197): resumable,
 //! oldest first, capped, and without snapshots.
 
+use jiff::Timestamp;
 use serde_json::Value;
 use serial_test::serial;
 
@@ -104,8 +105,9 @@ async fn the_trail_is_exported_in_order_and_resumes_where_it_stopped() {
 async fn the_department_query_keeps_to_the_department_and_the_time() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
-        let since = (chrono::Utc::now() - chrono::Duration::minutes(1))
-            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let since = workforce_planning_management::dates::rfc3339_seconds(
+            Timestamp::now() - jiff::SignedDuration::from_mins(1),
+        );
         let first = seed_worker!(&request, &org, "d1", None::<i64>).await;
         let second = seed_worker!(&request, &org, "d2", None::<i64>).await;
 
@@ -137,8 +139,9 @@ async fn the_department_query_keeps_to_the_department_and_the_time() {
             .json();
         assert_eq!(elsewhere, serde_json::json!([]));
 
-        let later = (chrono::Utc::now() + chrono::Duration::hours(1))
-            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let later = workforce_planning_management::dates::rfc3339_seconds(
+            Timestamp::now() + jiff::SignedDuration::from_hours(1),
+        );
         let none: Value = request
             .get(&format!("/api/audits?department=engineering&since={later}"))
             .await

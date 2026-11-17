@@ -7,8 +7,7 @@
 //! within a period (six months) of the date of reporting. WPM computes the clock from the indicators and what a person has
 //! recorded; it never concludes that anyone was paid unfairly, and a gap it cannot see is `unknown`, not "no assessment due".
 //! The threshold and the period are configuration whose defaults are the Directive's own.
-
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 
 use super::pay_gap::{Figure, Gap};
@@ -52,9 +51,9 @@ pub struct Record {
     /// The employer has justified the gap on objective, gender-neutral criteria.
     pub justified: bool,
     /// The day the gap was remedied, if it was.
-    pub remedied_on: Option<NaiveDate>,
+    pub remedied_on: Option<Date>,
     /// The day the joint assessment was carried out, if it was.
-    pub assessed_on: Option<NaiveDate>,
+    pub assessed_on: Option<Date>,
 }
 
 /// Why no assessment is due.
@@ -98,19 +97,21 @@ pub enum Signal {
     /// The gap is at or over the threshold and the employer has until `remedy_by` (none until it has reported).
     Pending {
         /// The last day to justify or remedy, six months after reporting by default.
-        remedy_by: Option<NaiveDate>,
+        remedy_by: Option<Date>,
     },
     /// The period has run out with the gap neither justified nor remedied: a joint assessment is due.
     Due {
         /// The last day the employer had.
-        remedy_by: NaiveDate,
+        remedy_by: Date,
     },
 }
 
 /// The last day to remedy: `remedy_months` calendar months after the date of reporting.
 #[must_use]
-pub fn remedy_by(reported_on: NaiveDate, config: Config) -> Option<NaiveDate> {
-    reported_on.checked_add_months(Months::new(config.remedy_months))
+pub fn remedy_by(reported_on: Date, config: Config) -> Option<Date> {
+    reported_on
+        .checked_add(jiff::Span::new().try_months(config.remedy_months).ok()?)
+        .ok()
 }
 
 /// The signal for a category on `today`.
@@ -120,9 +121,9 @@ pub fn remedy_by(reported_on: NaiveDate, config: Config) -> Option<NaiveDate> {
 pub fn signal(
     gap: &Figure<Gap>,
     record: Option<&Record>,
-    reported_on: Option<NaiveDate>,
+    reported_on: Option<Date>,
     config: Config,
-    today: NaiveDate,
+    today: Date,
 ) -> Signal {
     let gap_bp = match gap {
         Figure::Shown(g) => g.gap_bp,
@@ -179,11 +180,11 @@ pub fn signal(
 /// A justification stated in too few words, a remedy or an assessment dated before the report, an outcome not on the
 /// closed list, or an outcome with no assessment date.
 pub fn validate_record(
-    reported_on: NaiveDate,
+    reported_on: Date,
     justified: bool,
     justification: Option<&str>,
-    remedied_on: Option<NaiveDate>,
-    assessed_on: Option<NaiveDate>,
+    remedied_on: Option<Date>,
+    assessed_on: Option<Date>,
     outcome: Option<&str>,
 ) -> Result<(), String> {
     let words = justification.map_or(0, |t| t.trim().chars().count());
@@ -236,8 +237,8 @@ mod tests {
     use super::*;
     use crate::rules::pay_gap::Reason;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     fn gap(bp: i64) -> Figure<Gap> {
@@ -250,7 +251,7 @@ mod tests {
 
     const REPORT: (i32, u32, u32) = (2027, 6, 7);
     #[allow(clippy::unnecessary_wraps)] // the argument it stands for is an `Option`
-    fn reported() -> Option<NaiveDate> {
+    fn reported() -> Option<Date> {
         Some(day(REPORT.0, REPORT.1, REPORT.2))
     }
 
@@ -355,7 +356,7 @@ mod tests {
             "to a leap day when there is one"
         );
         assert_eq!(remedy_by(day(2026, 8, 31), c), Some(day(2027, 2, 28)));
-        assert_eq!(remedy_by(NaiveDate::MAX, c), None);
+        assert_eq!(remedy_by(Date::MAX, c), None);
     }
 
     #[test]
@@ -459,11 +460,9 @@ mod tests {
     #[test]
     fn what_a_person_records_is_checked() {
         let on = day(2027, 6, 7);
-        let ok = |j: bool,
-                  t: Option<&str>,
-                  r: Option<NaiveDate>,
-                  a: Option<NaiveDate>,
-                  o: Option<&str>| validate_record(on, j, t, r, a, o);
+        let ok = |j: bool, t: Option<&str>, r: Option<Date>, a: Option<Date>, o: Option<&str>| {
+            validate_record(on, j, t, r, a, o)
+        };
         assert!(ok(false, None, None, None, None).is_ok());
         assert!(
             ok(

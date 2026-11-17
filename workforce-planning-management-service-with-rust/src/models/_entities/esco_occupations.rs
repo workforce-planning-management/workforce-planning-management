@@ -2,13 +2,13 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub uri: String,
     pub label: String,

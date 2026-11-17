@@ -6,7 +6,7 @@
 //!
 //! DB-free and clock-free: the controller supplies the facts.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use uuid::Uuid;
 
 /// The most backups one worker can name.
@@ -22,8 +22,8 @@ pub fn validate_backup(
     worker: Uuid,
     backup: Uuid,
     priority: i32,
-    starts_on: Option<NaiveDate>,
-    ends_on: Option<NaiveDate>,
+    starts_on: Option<Date>,
+    ends_on: Option<Date>,
 ) -> Result<(), String> {
     if worker == backup {
         return Err("a person cannot be their own backup".to_string());
@@ -47,9 +47,9 @@ pub struct Candidate {
     /// Rank: lower is asked first.
     pub priority: i32,
     /// First day the designation applies, when bounded.
-    pub starts_on: Option<NaiveDate>,
+    pub starts_on: Option<Date>,
     /// Last day the designation applies, when bounded.
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
     /// Whether the backup is still employed on the day.
     pub employed: bool,
     /// Whether the backup is on approved leave on the day.
@@ -58,7 +58,7 @@ pub struct Candidate {
 
 /// Whether `candidate`'s window includes `on` (an absent bound is open).
 #[must_use]
-pub fn in_window(candidate: &Candidate, on: NaiveDate) -> bool {
+pub fn in_window(candidate: &Candidate, on: Date) -> bool {
     candidate.starts_on.is_none_or(|s| s <= on) && candidate.ends_on.is_none_or(|e| on <= e)
 }
 
@@ -67,7 +67,7 @@ pub fn in_window(candidate: &Candidate, on: NaiveDate) -> bool {
 /// answer is stable. `None` when nobody can cover — the caller shows that
 /// plainly rather than guessing.
 #[must_use]
-pub fn resolve(candidates: &[Candidate], on: NaiveDate) -> Option<Uuid> {
+pub fn resolve(candidates: &[Candidate], on: Date) -> Option<Uuid> {
     candidates
         .iter()
         .filter(|c| in_window(c, on) && c.employed && !c.on_leave)
@@ -79,8 +79,8 @@ pub fn resolve(candidates: &[Candidate], on: NaiveDate) -> Option<Uuid> {
 mod tests {
     use super::*;
 
-    fn day(d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 10, d).unwrap()
+    fn day(d: u32) -> Date {
+        crate::dates::ymd(2026, 10, d).unwrap()
     }
 
     fn cand(n: u128, priority: i32) -> Candidate {

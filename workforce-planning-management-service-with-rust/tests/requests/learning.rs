@@ -425,17 +425,17 @@ async fn directory_lists_employed_workers_without_sensitive_fields() {
             .json(&json!({ "backup_pid": backup }))
             .await
             .assert_status_ok();
-        let today = chrono::Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         request
             .post(&format!("/api/workers/{stay}/leave-entitlements"))
-            .json(&json!({ "kind": "sick", "year": today.format("%Y").to_string().parse::<i32>().unwrap(),
+            .json(&json!({ "kind": "sick", "year": today.strftime("%Y").to_string().parse::<i32>().unwrap(),
                            "entitled_days": 30 }))
             .await
             .assert_status_ok();
         let leave: Value = request
             .post(&format!("/api/workers/{stay}/leave-requests"))
             .json(&json!({ "kind": "sick", "start_on": today.to_string(),
-                           "end_on": (today + chrono::Duration::days(6)).to_string() }))
+                           "end_on": (today + workforce_planning_management::dates::days(6)).to_string() }))
             .await
             .json();
         request
@@ -525,7 +525,7 @@ async fn workforce_insights_flag_a_shrinking_headcount() {
         }
 
         // Period of a single day: opening is yesterday (3), closing today (1).
-        let today = chrono::Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let response = request
             .get(&format!(
                 "/api/workforce-intelligence/insights?from={today}&to={today}"
@@ -568,7 +568,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         let a = seed_worker!(&request, &org, "E-1", None).await;
         activate!(&request, &a).await;
 
-        let first_day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
+        let first_day = workforce_planning_management::dates::ymd(2026, 7, 1).unwrap();
         let written = run_snapshot(workforce_planning_management::db::pool(&ctx), first_day)
             .await
             .expect("first snapshot");
@@ -602,7 +602,7 @@ async fn headcount_snapshots_are_recorded_idempotently() {
         // A later snapshot measures starters/leavers from the earlier one.
         run_snapshot(
             workforce_planning_management::db::pool(&ctx),
-            chrono::NaiveDate::from_ymd_opt(2026, 8, 1).unwrap(),
+            workforce_planning_management::dates::ymd(2026, 8, 1).unwrap(),
         )
         .await
         .expect("second snapshot");
@@ -2081,7 +2081,7 @@ async fn career_history_and_aspirations() {
         assert_eq!(held[0]["proficiency"], 1);
         let before: Value = request.get(&format!("/api/workers/{me}/skills-as-of?at=2010-01-01")).await.json();
         assert!(before["skills"].as_array().unwrap().is_empty());
-        let today = chrono::Utc::now().date_naive().to_string();
+        let today = workforce_planning_management::dates::today().to_string();
         let now: Value = request.get(&format!("/api/workers/{me}/skills-as-of?at={today}")).await.json();
         assert_eq!(now["skills"][0]["proficiency"], 3, "the current level");
         assert_eq!(now["roles"][0]["role_label"], "Tester");

@@ -148,8 +148,8 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
         let asked = request.post(&mine).add_header("authorization", tokens[0].clone()).await;
         assert_eq!(asked.status_code(), 200, "{}", asked.text());
         let body: Value = asked.json();
-        let today = chrono::Utc::now().date_naive();
-        let due = today.checked_add_months(chrono::Months::new(2)).unwrap();
+        let today = workforce_planning_management::dates::today();
+        let due = today.checked_add(jiff::Span::new().months(2)).ok().unwrap();
         assert_eq!(body["due_on"], due.to_string(), "two calendar months, computed");
         let request_pid = body["pid"].as_str().unwrap().to_string();
         let again = request.post(&mine).add_header("authorization", tokens[0].clone()).await;

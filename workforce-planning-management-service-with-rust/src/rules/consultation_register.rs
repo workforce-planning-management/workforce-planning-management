@@ -4,7 +4,7 @@
 //! to the documents shared, when consultation began and ended, and the outcome. It answers "what did we consult on, with whom and when?".
 //! It holds **no attendee, representative or minute**: the consultation is with a body, and what was said is not stored.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::consultation::Assessment;
 
@@ -90,7 +90,7 @@ pub fn open_problems(
 
 /// Problems with recording the day consultation began: not in the future, and not twice.
 #[must_use]
-pub fn begin_problems(started_on: NaiveDate, today: NaiveDate, already_begun: bool) -> Vec<String> {
+pub fn begin_problems(started_on: Date, today: Date, already_begun: bool) -> Vec<String> {
     let mut out = Vec::new();
     if already_begun {
         out.push("consultation has already begun".to_string());
@@ -105,9 +105,9 @@ pub fn begin_problems(started_on: NaiveDate, today: NaiveDate, already_begun: bo
 #[must_use]
 pub fn close_problems(
     outcome: &str,
-    ended_on: NaiveDate,
-    started_on: Option<NaiveDate>,
-    today: NaiveDate,
+    ended_on: Date,
+    started_on: Option<Date>,
+    today: Date,
     has_agreement: bool,
 ) -> Vec<String> {
     let mut out = Vec::new();
@@ -158,11 +158,7 @@ pub enum Timeliness {
 
 /// Compare when consultation began (or, if not, `today`) with the latest start the assessment gave.
 #[must_use]
-pub fn timeliness(
-    assessment: &Assessment,
-    started_on: Option<NaiveDate>,
-    today: NaiveDate,
-) -> Timeliness {
+pub fn timeliness(assessment: &Assessment, started_on: Option<Date>, today: Date) -> Timeliness {
     if !assessment.may_apply {
         return Timeliness::NothingDue;
     }
@@ -172,13 +168,13 @@ pub fn timeliness(
     match started_on {
         Some(start) if start <= latest => Timeliness::BegunInTime,
         Some(start) => Timeliness::BegunLate {
-            days_late: (start - latest).num_days(),
+            days_late: crate::dates::days_between(latest, start),
         },
         None if today <= latest => Timeliness::NotBegun {
-            days_left: (latest - today).num_days(),
+            days_left: crate::dates::days_between(today, latest),
         },
         None => Timeliness::NotBegunAndLate {
-            days_late: (today - latest).num_days(),
+            days_late: crate::dates::days_between(latest, today),
         },
     }
 }
@@ -188,7 +184,7 @@ mod tests {
     use super::*;
     use crate::rules::consultation::{Proposal, assess, great_britain};
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 

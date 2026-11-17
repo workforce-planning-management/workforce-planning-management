@@ -3,14 +3,16 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
+use jiff::{Timestamp, civil::Date};
 
 /// `PUT /api/programme-demands` body.
 #[derive(Debug, Deserialize)]
 pub(super) struct DemandPayload {
     programme_ref: String,
     pool_pid: Uuid,
-    month: NaiveDate,
+    month: Date,
     fte_centi: i64,
     /// `proposed` or `closed`; omit to keep the current status (`proposed` for a new
     /// claim). A claim becomes `active` only through a start decision.
@@ -62,7 +64,7 @@ pub(super) async fn set_demand(
         Uuid::new_v4(),
         payload.programme_ref,
         pool.pid,
-        payload.month,
+        SqlDate(payload.month),
         payload.fte_centi,
         payload.status,
     )
@@ -131,10 +133,9 @@ pub(super) async fn list_demand(
                     "pid": r.pid, "programme_ref": r.programme_ref, "pool_pid": r.pool_pid,
                     "month": r.month, "fte_centi": r.fte_centi, "status": r.status,
                     "source": r.source,
-                    // As the answer gave them before: with a `+00:00` offset, not `Z`.
-                    "received_at": r.received_at.map(|t| t.fixed_offset()),
-                    "peer_sent_at": r.peer_sent_at.map(|t| t.fixed_offset()),
-                    "peer_withdrawn_at": r.peer_withdrawn_at.map(|t| t.fixed_offset()),
+                    "received_at": r.received_at,
+                    "peer_sent_at": r.peer_sent_at,
+                    "peer_withdrawn_at": r.peer_withdrawn_at,
                 })
             })
             .collect::<Vec<_>>(),
@@ -160,7 +161,7 @@ pub(super) async fn delete_demand(
     sqlx::query!(
         "UPDATE programme_demands SET deleted_at = $2 WHERE id = $1",
         row.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -182,7 +183,7 @@ pub(super) async fn delete_demand(
 pub(super) struct CommitmentPayload {
     partner_ref: String,
     pool_pid: Uuid,
-    month: NaiveDate,
+    month: Date,
     fte_centi: i64,
     status: String,
 }
@@ -220,7 +221,7 @@ pub(super) async fn set_commitment(
         Uuid::new_v4(),
         payload.partner_ref,
         pool.pid,
-        payload.month,
+        SqlDate(payload.month),
         payload.fte_centi,
         payload.status,
     )
@@ -289,7 +290,7 @@ pub(super) async fn delete_commitment(
     sqlx::query!(
         "UPDATE partner_commitments SET deleted_at = $2 WHERE id = $1",
         row.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;

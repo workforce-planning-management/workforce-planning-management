@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE time_entries SET status = 'approved' WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, worked_on, minutes,\n                  kind, status, notes, deleted_at AS \"deleted_at: _\"",
+  "query": "SELECT created_at, updated_at, id, pid, worker_pid, worked_on, minutes,\n                  kind, status, notes, deleted_at\n             FROM time_entries\n            WHERE worker_pid = $1 AND deleted_at IS NULL AND ($2::date IS NULL OR worked_on >= $2)\n              AND ($3::date IS NULL OR worked_on <= $3)\n            ORDER BY worked_on, id\n            LIMIT 1000",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -115,7 +115,7 @@
       },
       {
         "ordinal": 10,
-        "name": "deleted_at: _",
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -127,7 +127,9 @@
     ],
     "parameters": {
       "Left": [
-        "Int4"
+        "Uuid",
+        "Date",
+        "Date"
       ]
     },
     "nullable": [
@@ -144,5 +146,5 @@
       true
     ]
   },
-  "hash": "3efbc36ed34fb0f0ae16a9f45041a0da309a3efb3b67d6ad78ce7fd8965c0a3c"
+  "hash": "512ad4ed3b4bf59bccf0444927bdb559d08d10b1e44bcaa79a3763156c035717"
 }

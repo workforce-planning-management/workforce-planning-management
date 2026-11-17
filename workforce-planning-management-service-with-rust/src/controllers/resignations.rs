@@ -10,9 +10,10 @@
 //! small groups.
 
 use super::ensure_org_in_scope;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -32,7 +33,7 @@ use super::statutory_defaults::{self as statutory, InForce};
 /// else `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting is ignored with a warning,
 /// never silently shortened.
 #[must_use]
-pub fn notice_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<i64> {
+pub fn notice_days(scope: Option<&Scope>, as_of: Date) -> InForce<i64> {
     let name = "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS";
     let configured =
         crate::compat::env_var(name).and_then(|text| match text.trim().parse::<i64>() {
@@ -54,7 +55,7 @@ pub fn notice_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<i64> {
 /// [`notice_days`] for `worker`, over their own chain.
 pub(crate) async fn notice_for(ctx: &AppContext, worker: &workers::Model) -> Result<InForce<i64>> {
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
-    Ok(notice_days(Some(&scope), Utc::now().date_naive()))
+    Ok(notice_days(Some(&scope), crate::dates::today()))
 }
 
 /// The worker's latest resignation of any status.
@@ -106,7 +107,7 @@ fn shared_json(row: &resignations::Model) -> serde_json::Value {
 /// `POST /api/me/resignation` body.
 #[derive(Debug, Deserialize)]
 pub(crate) struct LogPayload {
-    proposed_last_day: NaiveDate,
+    proposed_last_day: Date,
     /// Optional, from a closed list; never free text.
     #[serde(default)]
     reason: Option<String>,
@@ -123,7 +124,7 @@ pub(crate) async fn log_for(
         return Err(unprocessable("your employment has already ended"));
     }
     rules::validate_reason(payload.reason.as_deref()).map_err(|e| unprocessable(&e))?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let notice = notice_for(ctx, worker).await?;
     rules::validate_proposal(today, payload.proposed_last_day, notice.value)
         .map_err(|e| unprocessable(&e))?;
@@ -133,8 +134,8 @@ pub(crate) async fn log_for(
         "INSERT INTO resignations (pid, worker_pid, logged_on, proposed_last_day, reason, status) VALUES ($1, $2, $3, $4, $5, $6)",
         pid,
         worker.pid,
-        today,
-        payload.proposed_last_day,
+        SqlDate(today),
+        SqlDate(payload.proposed_last_day),
         payload.reason,
         Status::Logged.as_str(),
     )
@@ -240,7 +241,7 @@ async fn resignation_and_worker(
 struct AcceptPayload {
     /// The last day agreed; default the day the worker proposed.
     #[serde(default)]
-    agreed_last_day: Option<NaiveDate>,
+    agreed_last_day: Option<Date>,
 }
 
 /// `POST /api/resignations/{pid}/accept` — a person accepts it: the agreed last day is recorded,
@@ -255,8 +256,10 @@ async fn accept(
 ) -> Result<Response> {
     let (row, worker) = resignation_and_worker(&ctx, &caller, &pid).await?;
     let to = rules::next(status_of(&row)?, Action::Accept).map_err(|e| unprocessable(&e))?;
-    let agreed = payload.agreed_last_day.unwrap_or(row.proposed_last_day);
-    rules::validate_agreed(row.logged_on, agreed).map_err(|e| unprocessable(&e))?;
+    let agreed = payload
+        .agreed_last_day
+        .unwrap_or(row.proposed_last_day.get());
+    rules::validate_agreed(row.logged_on.get(), agreed).map_err(|e| unprocessable(&e))?;
     let mut tx = db::pool(&ctx).begin().await?;
     let movement = open_in(
         &mut tx,
@@ -278,10 +281,10 @@ async fn accept(
                      proposed_last_day, reason, status, agreed_last_day, movement_pid, decided_by, decided_at AS "decided_at: _""#,
         row.id,
         to.as_str(),
-        agreed,
+        SqlDate(agreed),
         movement.pid,
         caller.actor(),
-        Utc::now().fixed_offset(),
+        SqlTimestamp(Timestamp::now()),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -334,7 +337,7 @@ async fn rescind(
         row.id,
         to.as_str(),
         caller.actor(),
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .fetch_one(&mut *tx)
     .await?;

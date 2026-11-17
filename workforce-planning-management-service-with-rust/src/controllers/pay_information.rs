@@ -7,11 +7,12 @@
 //!   administrators); **recording** that it was given is a write (HR). Neither is the worker's.
 //! - An average is withheld under the floor for each sex on its own.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use axa::extract::Path;
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -31,7 +32,7 @@ use super::statutory_defaults::{self as statutory, InForce};
 
 /// Calendar months an answer may take: the worker's profile (`pay_transparency.information_months`),
 /// else `WPM_PAY_INFORMATION_MONTHS` (1 to 12), else 2 (the Directive's).
-pub(crate) fn answer_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+pub(crate) fn answer_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
     let configured = crate::compat::env_var("WPM_PAY_INFORMATION_MONTHS")
         .and_then(|v| v.trim().parse::<u32>().ok())
         .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n));
@@ -49,7 +50,7 @@ pub(crate) fn answer_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<
 /// `WPM_REQUIRE_PAY_RANGE` is off. A deployment outside the Directive's reach may turn it off; the
 /// default follows Article 5.
 #[must_use]
-pub fn pay_range_required(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<bool> {
+pub fn pay_range_required(scope: Option<&Scope>, as_of: Date) -> InForce<bool> {
     let configured = crate::compat::env_var("WPM_REQUIRE_PAY_RANGE")
         .map(|v| v.trim().to_lowercase())
         .filter(|v| !v.is_empty())
@@ -64,20 +65,20 @@ pub fn pay_range_required(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<bo
     )
 }
 
-fn view(row: &pay_information_requests::Model, today: NaiveDate) -> serde_json::Value {
+fn view(row: &pay_information_requests::Model, today: Date) -> serde_json::Value {
     json!({
         "pid": row.pid,
         "asked_on": row.asked_on,
         "due_on": row.due_on,
         "answered_on": row.answered_on,
-        "standing": rules::standing(row.answered_on, row.due_on, today),
+        "standing": rules::standing(row.answered_on.map(SqlDate::get), row.due_on.get(), today),
     })
 }
 
 /// The worker's own requests, newest first, each with its due date and standing. Shared with
 /// `GET /api/me/pay-information-requests`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         pay_information_requests::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, asked_on, due_on, answered_on,
@@ -105,7 +106,7 @@ pub(crate) async fn ask_for(
     .fetch_one(db::pool(ctx))
     .await?;
     rules::may_ask(open).map_err(|e| unprocessable(&e))?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let months = answer_months(Some(&scope), today);
     let due_on = rules::due_on(today, months.value)
@@ -116,8 +117,8 @@ pub(crate) async fn ask_for(
         "INSERT INTO pay_information_requests (pid, worker_pid, asked_on, due_on) VALUES ($1, $2, $3, $4)",
         request,
         worker.pid,
-        today,
-        due_on,
+        SqlDate(today),
+        SqlDate(due_on),
     )
     .execute(&mut *tx)
     .await?;
@@ -160,7 +161,7 @@ pub(crate) async fn list_requests(
         return Err(unprocessable("status is open, overdue or answered"));
     }
     let scope = crate::models::memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     // One read with the asker, in the caller's organizations (and the one asked for); a removed worker's is left out.
     let rows = sqlx::query!(
         "SELECT r.pid, r.asked_on, r.due_on, r.answered_on,
@@ -176,7 +177,7 @@ pub(crate) async fn list_requests(
     .await?;
     let mut out = Vec::new();
     for row in &rows {
-        let standing = rules::standing(row.answered_on, row.due_on, today);
+        let standing = rules::standing(row.answered_on.map(SqlDate::get), row.due_on.get(), today);
         let label = serde_json::to_value(standing)
             .ok()
             .and_then(|v| v.as_str().map(ToString::to_string));
@@ -229,8 +230,8 @@ struct Paid {
     job_title: String,
     salary_minor: Option<i64>,
     salary_currency: Option<String>,
-    hired_on: NaiveDate,
-    terminated_on: Option<NaiveDate>,
+    hired_on: Date,
+    terminated_on: Option<SqlDate>,
 }
 
 /// The pay of the workers of each sex in the asker's category, or why there is none, with the floor to use.
@@ -301,7 +302,7 @@ pub(crate) async fn answer(
             "an answer is made of salaries and needs payroll read access",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let staff: Vec<Paid> = sqlx::query_as!(
         Paid,
         "SELECT pid, job_title, salary_minor, salary_currency, hired_on, terminated_on FROM workers
@@ -311,7 +312,7 @@ pub(crate) async fn answer(
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on.map(SqlDate::get)))
     .collect();
     let categories = sqlx::query!(
         "SELECT name, basis, job_titles FROM pay_categories
@@ -366,7 +367,7 @@ pub(crate) async fn answer(
         "request_pid": row.pid,
         "asked_on": row.asked_on,
         "due_on": row.due_on,
-        "standing": rules::standing(row.answered_on, row.due_on, today),
+        "standing": rules::standing(row.answered_on.map(SqlDate::get), row.due_on.get(), today),
         "currency": currency,
         "category": basis,
         "answer": given,
@@ -389,7 +390,7 @@ pub(crate) async fn mark_answered(
     if row.answered_on.is_some() {
         return Err(unprocessable("this request is already answered"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let saved = sqlx::query_as!(
         pay_information_requests::Model,
@@ -397,7 +398,7 @@ pub(crate) async fn mark_answered(
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, asked_on, due_on, answered_on,
                   answered_by, deleted_at AS "deleted_at: _""#,
         row.id,
-        today,
+        SqlDate(today),
         caller.actor(),
     )
     .fetch_one(&mut *tx)

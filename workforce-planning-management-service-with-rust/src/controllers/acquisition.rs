@@ -3,8 +3,10 @@
 //! application creates the Worker in one transaction (WPM-D9).
 
 use super::row_json;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::{Timestamp, civil::Date};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -101,7 +103,7 @@ struct CandidatePayload {
     #[serde(default)]
     person_ref: Option<String>,
     #[serde(default)]
-    consent_until: Option<chrono::NaiveDate>,
+    consent_until: Option<Date>,
 }
 
 /// `POST /api/requisitions/{pid}/applications` body.
@@ -132,17 +134,17 @@ struct StagePayload {
     #[serde(default)]
     salary_currency: Option<String>,
     #[serde(default)]
-    hired_on: Option<chrono::NaiveDate>,
+    hired_on: Option<Date>,
     /// The last day of the engagement (WPM-R79): required for `fixed_term` and
     /// `contractor`, refused for `permanent`.
     #[serde(default)]
-    engagement_ends_on: Option<chrono::NaiveDate>,
+    engagement_ends_on: Option<Date>,
 }
 
 /// `POST /api/applications/{pid}/interviews` body.
 #[derive(Debug, Deserialize)]
 struct InterviewPayload {
-    scheduled_at: chrono::DateTime<chrono::FixedOffset>,
+    scheduled_at: Timestamp,
     interviewer_ref: String,
     #[serde(default)]
     notes: Option<String>,
@@ -343,8 +345,7 @@ async fn requisition_status(
             &requisition.organization_ref,
         )
         .await?;
-        super::pay_information::pay_range_required(Some(&scope), chrono::Utc::now().date_naive())
-            .value
+        super::pay_information::pay_range_required(Some(&scope), crate::dates::today()).value
     } else {
         false
     };
@@ -372,7 +373,7 @@ async fn requisition_status(
     }
     let from = requisition.status.clone();
     let title = requisition.job_title.clone();
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         requisitions::Model,
@@ -386,7 +387,7 @@ async fn requisition_status(
                   deleted_at AS "deleted_at: _", programme_ref, basis, expected_duration_months"#,
         requisition.id,
         payload.to,
-        today,
+        SqlDate(today),
         payload.to == "open",
         payload.to == "filled",
     )
@@ -475,7 +476,7 @@ async fn create_candidate(
         payload.display_name,
         payload.email,
         payload.source,
-        payload.consent_until,
+        payload.consent_until.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -509,7 +510,7 @@ async fn list_candidates(
     State(ctx): State<AppContext>,
     Query(params): Query<CandidateListParams>,
 ) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         candidates::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref, display_name, email,
@@ -551,7 +552,7 @@ async fn create_application(
             requisition.status
         )));
     }
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     if candidate.consent_until.is_some_and(|until| until < today) {
         return Err(unprocessable("candidate consent has expired"));
     }
@@ -692,9 +693,7 @@ async fn application_stage(
             tokens::EMPLOYMENT_TYPES,
             &employment_type,
         );
-        let hired_on = payload
-            .hired_on
-            .unwrap_or_else(|| chrono::Utc::now().date_naive());
+        let hired_on = payload.hired_on.unwrap_or_else(crate::dates::today);
         let engagement_ends_on = payload.engagement_ends_on.or_else(|| {
             (employment_type == requisition.basis)
                 .then_some(requisition.expected_duration_months)
@@ -725,8 +724,8 @@ async fn application_stage(
             requisition.job_title,
             payload.salary_minor,
             payload.salary_currency,
-            hired_on,
-            engagement_ends_on,
+            SqlDate(hired_on),
+            engagement_ends_on.map(SqlDate),
         )
         .execute(&mut *tx)
         .await?;
@@ -790,7 +789,7 @@ async fn create_interview(
          VALUES ($1, $2, $3, $4, 'pending', $5)",
         interview,
         application.pid,
-        payload.scheduled_at,
+        SqlTimestamp(payload.scheduled_at),
         payload.interviewer_ref,
         payload.notes,
     )
@@ -974,7 +973,7 @@ async fn finish_item(
         item.id,
         status,
         reason,
-        chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+        SqlTimestamp(Timestamp::now()),
     )
     .fetch_one(&mut *tx)
     .await?;

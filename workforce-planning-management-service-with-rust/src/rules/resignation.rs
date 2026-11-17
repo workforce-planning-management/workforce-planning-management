@@ -5,8 +5,7 @@
 //! The earliest last day is the date logged plus the notice the deployer configures, counted in
 //! **calendar days**. Nothing here ends anyone's employment: accepting a resignation records the
 //! agreed last day and opens the leaver process; a person still ends the employment.
-
-use chrono::{Days, NaiveDate};
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 /// The notice period when none is configured, in calendar days.
@@ -118,8 +117,13 @@ pub fn validate_notice(days: i64) -> Result<(), String> {
 
 /// The earliest last day: the day it is logged plus the notice, in calendar days.
 #[must_use]
-pub fn earliest_last_day(logged_on: NaiveDate, notice_calendar_days: i64) -> Option<NaiveDate> {
-    logged_on.checked_add_days(Days::new(u64::try_from(notice_calendar_days).ok()?))
+pub fn earliest_last_day(logged_on: Date, notice_calendar_days: i64) -> Option<Date> {
+    if notice_calendar_days < 0 {
+        return None;
+    }
+    logged_on
+        .checked_add(jiff::Span::new().try_days(notice_calendar_days).ok()?)
+        .ok()
 }
 
 /// The worker's proposed last day must allow the notice.
@@ -128,8 +132,8 @@ pub fn earliest_last_day(logged_on: NaiveDate, notice_calendar_days: i64) -> Opt
 ///
 /// A day earlier than the notice allows (HR can agree an earlier one when accepting).
 pub fn validate_proposal(
-    logged_on: NaiveDate,
-    proposed_last_day: NaiveDate,
+    logged_on: Date,
+    proposed_last_day: Date,
     notice_calendar_days: i64,
 ) -> Result<(), String> {
     let earliest = earliest_last_day(logged_on, notice_calendar_days)
@@ -149,9 +153,10 @@ pub fn validate_proposal(
 /// # Errors
 ///
 /// A day outside that range.
-pub fn validate_agreed(logged_on: NaiveDate, agreed: NaiveDate) -> Result<(), String> {
+pub fn validate_agreed(logged_on: Date, agreed: Date) -> Result<(), String> {
     let latest = logged_on
-        .checked_add_days(Days::new(366))
+        .checked_add(jiff::Span::new().days(366))
+        .ok()
         .ok_or_else(|| "outside the supported calendar".to_string())?;
     if agreed < logged_on {
         Err(format!(
@@ -220,8 +225,8 @@ pub fn summarise(rows: &[(String, Option<String>)], floor: usize) -> Vec<Departm
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]

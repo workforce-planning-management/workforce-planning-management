@@ -2,9 +2,10 @@
 //! of the AI Act. Any signed-in caller reads it (it is a notice of how people are scored); HR and administrators write it.
 //! It records; it does not classify a system, certify conformity or count as evidence of compliance. Spec: `spec/regulatory.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -21,9 +22,9 @@ use crate::rules::jurisdiction::Value as ProfileValue;
 /// The date the Annex III duties apply, with where it came from (WPM-D153, WPM-T409): for an organization, its home jurisdiction's
 /// profile (`ai_act.applies_from`), then `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), then the default. With no organization there is no
 /// profile to look at.
-pub(crate) fn applies_from_in(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<NaiveDate> {
+pub(crate) fn applies_from_in(scope: Option<&Scope>, as_of: Date) -> InForce<Date> {
     let setting = crate::compat::env_var("WPM_AI_ACT_APPLIES_FROM")
-        .and_then(|v| NaiveDate::parse_from_str(v.trim(), "%Y-%m-%d").ok());
+        .and_then(|v| Date::strptime("%Y-%m-%d", v.trim()).ok());
     pick(
         scope,
         "WPM_AI_ACT_APPLIES_FROM",
@@ -69,15 +70,15 @@ async fn register(
             let entry = held.iter().find(|m| m.feature_id == f.id).map(|m| Entry {
                 annex_category: m.annex_category.clone(),
                 overseer_role: m.overseer_role.clone(),
-                representatives_informed_on: m.representatives_informed_on,
-                workers_informed_on: m.workers_informed_on,
+                representatives_informed_on: m.representatives_informed_on.map(SqlDate::get),
+                workers_informed_on: m.workers_informed_on.map(SqlDate::get),
                 log_retention_months: m.log_retention_months,
                 retention_note: m.retention_note.clone(),
             });
             rules::row(f, entry.as_ref())
         })
         .collect();
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let from = applies_from_in(scope.as_ref(), today);
     format::json(json!({
         "applies_from": from.value,
@@ -95,8 +96,8 @@ async fn register(
 struct Payload {
     annex_category: Option<String>,
     overseer_role: Option<String>,
-    representatives_informed_on: Option<NaiveDate>,
-    workers_informed_on: Option<NaiveDate>,
+    representatives_informed_on: Option<Date>,
+    workers_informed_on: Option<Date>,
     log_retention_months: Option<i32>,
     retention_note: Option<String>,
     /// A consultation record for this change, when a decision gate asks for one (WPM-R108).
@@ -121,7 +122,7 @@ async fn record(
         log_retention_months: payload.log_retention_months,
         retention_note: clean(payload.retention_note),
     };
-    let problems = rules::validate(&entry, Utc::now().date_naive());
+    let problems = rules::validate(&entry, crate::dates::today());
     if !problems.is_empty() {
         return Err(unprocessable(&problems.join("; ")));
     }
@@ -149,8 +150,8 @@ async fn record(
             pid,
             entry.annex_category,
             entry.overseer_role,
-            entry.representatives_informed_on,
-            entry.workers_informed_on,
+            entry.representatives_informed_on.map(SqlDate),
+            entry.workers_informed_on.map(SqlDate),
             entry.log_retention_months,
             entry.retention_note,
             caller.actor(),
@@ -169,8 +170,8 @@ async fn record(
             feature.id,
             entry.annex_category,
             entry.overseer_role,
-            entry.representatives_informed_on,
-            entry.workers_informed_on,
+            entry.representatives_informed_on.map(SqlDate),
+            entry.workers_informed_on.map(SqlDate),
             entry.log_retention_months,
             entry.retention_note,
             caller.actor(),

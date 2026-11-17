@@ -6,21 +6,21 @@
 //! half-open `[start, end)`: a role that ends at noon and the next that
 //! starts at noon do not overlap, and a level read "at noon" is the new one.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 /// A span of time; `end = None` means still current.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Interval {
     /// When it began.
-    pub start: DateTime<Utc>,
+    pub start: Timestamp,
     /// When it ended; `None` while current.
-    pub end: Option<DateTime<Utc>>,
+    pub end: Option<Timestamp>,
 }
 
 impl Interval {
     /// Whether `at` falls inside: `start <= at < end`.
     #[must_use]
-    pub fn contains(&self, at: DateTime<Utc>) -> bool {
+    pub fn contains(&self, at: Timestamp) -> bool {
         self.start <= at && self.end.is_none_or(|end| at < end)
     }
 
@@ -37,11 +37,7 @@ impl Interval {
 ///
 /// # Errors
 /// A message naming the problem.
-pub fn validate_past(
-    start: DateTime<Utc>,
-    end: DateTime<Utc>,
-    now: DateTime<Utc>,
-) -> Result<Interval, String> {
+pub fn validate_past(start: Timestamp, end: Timestamp, now: Timestamp) -> Result<Interval, String> {
     if end <= start {
         return Err("it must end after it starts".to_string());
     }
@@ -63,7 +59,7 @@ pub fn first_overlap(new: &Interval, existing: &[Interval]) -> Option<usize> {
 /// The level held at `at` from `(interval, level)` history: the entry whose
 /// interval contains it, or `None`.
 #[must_use]
-pub fn level_at(history: &[(Interval, i32)], at: DateTime<Utc>) -> Option<i32> {
+pub fn level_at(history: &[(Interval, i32)], at: Timestamp) -> Option<i32> {
     history
         .iter()
         .find(|(interval, _)| interval.contains(at))
@@ -174,10 +170,9 @@ pub fn can_view(viewer: Viewer, visibility: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
 
-    fn at(y: i32, m: u32, d: u32) -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(y, m, d, 12, 0, 0).unwrap()
+    fn at(y: i32, m: u32, d: u32) -> Timestamp {
+        crate::dates::utc(y, m, d, 12, 0, 0).unwrap()
     }
 
     #[test]

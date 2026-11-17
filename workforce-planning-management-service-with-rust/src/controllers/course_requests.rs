@@ -1,10 +1,10 @@
 //! **Starting a course** (WPM-R236, WPM-D182): a person enrols at once on a course whose recorded fee is zero, and asks a manager above
 //! them for any other. Every route resolves the person from the token. A request names a course and a decision, and holds no reason.
 
+use crate::sql_time::SqlDate;
 use axa::error::ErrorDetail;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use sqlx::PgConnection;
 use uuid::Uuid;
@@ -25,7 +25,7 @@ struct CourseRequest {
     worker_pid: Uuid,
     course_ref: String,
     status: String,
-    decided_on: Option<NaiveDate>,
+    decided_on: Option<SqlDate>,
 }
 
 /// `POST /api/me/course-requests` body.
@@ -245,13 +245,13 @@ async fn settle(
     to: &str,
     decided_by: Option<&str>,
 ) -> Result<()> {
-    let decided_on = decided_by.map(|_| Utc::now().date_naive());
+    let decided_on = decided_by.map(|_| crate::dates::today());
     let moved = sqlx::query!(
         "UPDATE course_requests SET status = $1, decided_by = $2, decided_on = $3
          WHERE pid = $4 AND status = 'requested'",
         to,
         decided_by,
-        decided_on,
+        decided_on.map(SqlDate),
         row.pid,
     )
     .execute(connection)

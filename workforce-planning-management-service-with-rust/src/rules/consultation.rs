@@ -8,7 +8,7 @@
 //! (WPM-D50), never a verdict. Periods are counted in calendar days. Nothing here names a person: a proposal is
 //! counts and dates.
 
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 
 /// How many dismissals meet a test, for an establishment of a given size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -174,9 +174,9 @@ pub struct Proposal {
     /// Dismissals this proposal makes.
     pub dismissals: u32,
     /// The day the first of them takes effect.
-    pub earliest_termination: NaiveDate,
+    pub earliest_termination: Date,
     /// Dismissals already proposed at the same establishment: `(takes effect on, how many)`.
-    pub others: Vec<(NaiveDate, u32)>,
+    pub others: Vec<(Date, u32)>,
     /// A longer consultation period an agreement requires, in calendar days.
     pub agreed_period_days: Option<i64>,
 }
@@ -206,9 +206,9 @@ pub struct Assessment {
     /// The consultation period in force (the profile's, or the agreed one if longer), when there is one.
     pub consultation_days: Option<i64>,
     /// The latest day consultation should begin, for the earliest termination date.
-    pub latest_consultation_start: Option<NaiveDate>,
+    pub latest_consultation_start: Option<Date>,
     /// The latest day the authority should be notified.
-    pub latest_authority_notice: Option<NaiveDate>,
+    pub latest_authority_notice: Option<Date>,
     /// Days from `today` to the later of those two dates' earlier one; negative when already passed.
     pub days_remaining: Option<i64>,
     /// The date has passed.
@@ -220,18 +220,13 @@ pub struct Assessment {
 }
 
 /// The dismissals that fall together in the best `window_days` window that includes `date`.
-fn counted_in_window(
-    date: NaiveDate,
-    own: u32,
-    others: &[(NaiveDate, u32)],
-    window_days: i64,
-) -> u32 {
+fn counted_in_window(date: Date, own: u32, others: &[(Date, u32)], window_days: i64) -> u32 {
     let mut best = own;
     let window = window_days.max(1);
-    let mut starts: Vec<NaiveDate> = others.iter().map(|(d, _)| *d).collect();
+    let mut starts: Vec<Date> = others.iter().map(|(d, _)| *d).collect();
     starts.push(date);
     for start in starts {
-        let end = start + Duration::days(window - 1);
+        let end = start + crate::dates::days(window - 1);
         if start > date || end < date {
             continue;
         }
@@ -266,7 +261,7 @@ fn period_for(periods: &[Period], counted: u32) -> Option<i64> {
 
 /// Whether a collective duty may apply to `proposal` under `profile`, and what follows.
 #[must_use]
-pub fn assess(profile: &Profile, proposal: &Proposal, today: NaiveDate) -> Assessment {
+pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment {
     let applicable = profile.tests.iter().filter(|t| {
         proposal.establishment_size >= t.size_from
             && t.size_to.is_none_or(|to| proposal.establishment_size <= to)
@@ -307,15 +302,15 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: NaiveDate) -> Asses
         };
         (
             days,
-            days.map(|d| proposal.earliest_termination - Duration::days(d)),
+            days.map(|d| proposal.earliest_termination - crate::dates::days(d)),
             period_for(&profile.authority_notice, counted)
-                .map(|d| proposal.earliest_termination - Duration::days(d)),
+                .map(|d| proposal.earliest_termination - crate::dates::days(d)),
         )
     } else {
         (None, None, None)
     };
     let nearest = [consult_start, notice_by].into_iter().flatten().min();
-    let days_remaining = nearest.map(|d| (d - today).num_days());
+    let days_remaining = nearest.map(|d| crate::dates::days_between(today, d));
     Assessment {
         profile: profile.id,
         source: profile.source,
@@ -339,8 +334,8 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: NaiveDate) -> Asses
 mod tests {
     use super::*;
 
-    fn day(m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2027, m, d).unwrap()
+    fn day(m: u32, d: u32) -> Date {
+        crate::dates::ymd(2027, m, d).unwrap()
     }
 
     fn proposal(size: u32, dismissals: u32) -> Proposal {
@@ -369,7 +364,7 @@ mod tests {
         assert_eq!(hundred.consultation_days, Some(45));
         assert_eq!(
             hundred.latest_consultation_start,
-            Some(day(6, 30) - Duration::days(45))
+            Some(day(6, 30) - crate::dates::days(45))
         );
         assert_eq!(
             hundred.latest_authority_notice,
@@ -382,12 +377,12 @@ mod tests {
     fn a_proposal_that_crosses_the_ninety_day_window() {
         let gb = great_britain();
         let mut p = proposal(500, 10);
-        p.others = vec![(day(6, 30) - Duration::days(89), 10)];
+        p.others = vec![(day(6, 30) - crate::dates::days(89), 10)];
         assert!(
             assess(&gb, &p, day(1, 1)).may_apply,
             "90 days inclusive: 89 days apart is inside"
         );
-        p.others = vec![(day(6, 30) - Duration::days(90), 10)];
+        p.others = vec![(day(6, 30) - crate::dates::days(90), 10)];
         let apart = assess(&gb, &p, day(1, 1));
         assert!(!apart.may_apply, "90 days apart is outside");
         assert_eq!(
@@ -398,7 +393,7 @@ mod tests {
                 window_days: Some(90)
             }
         );
-        p.others = vec![(day(6, 30) + Duration::days(89), 10)];
+        p.others = vec![(day(6, 30) + crate::dates::days(89), 10)];
         assert!(
             assess(&gb, &p, day(1, 1)).may_apply,
             "later dismissals count too"
@@ -410,8 +405,8 @@ mod tests {
     fn two_far_apart_groups_are_not_summed() {
         let mut p = proposal(500, 10);
         p.others = vec![
-            (day(6, 30) - Duration::days(80), 6),
-            (day(6, 30) + Duration::days(80), 6),
+            (day(6, 30) - crate::dates::days(80), 6),
+            (day(6, 30) + crate::dates::days(80), 6),
         ];
         let a = assess(&great_britain(), &p, day(1, 1));
         assert!(!a.may_apply);
@@ -459,12 +454,12 @@ mod tests {
     fn the_thirty_day_band_test_needs_dismissals_within_thirty_days() {
         let eu = eu_directive_98_59();
         let mut p = proposal(50, 5);
-        p.others = vec![(day(6, 30) - Duration::days(29), 5)];
+        p.others = vec![(day(6, 30) - crate::dates::days(29), 5)];
         assert!(
             assess(&eu, &p, day(1, 1)).may_apply,
             "10 within 30 days at a 50-person establishment"
         );
-        p.others = vec![(day(6, 30) - Duration::days(30), 5)];
+        p.others = vec![(day(6, 30) - crate::dates::days(30), 5)];
         assert!(
             !assess(&eu, &p, day(1, 1)).may_apply,
             "30 days apart is a 31-day span"
@@ -500,7 +495,7 @@ mod tests {
         );
         assert_eq!(
             eu.latest_consultation_start,
-            Some(day(6, 30) - Duration::days(45))
+            Some(day(6, 30) - crate::dates::days(45))
         );
     }
 

@@ -5699,6 +5699,36 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T528 **Dates and times are jiff, not chrono.** *The owner asked on 2026-11-17 ("migrate from chrono to jiff").* *(WPM-D202; [rust-axum-stack.md](rust-axum-stack.md))*
+      The stack already said "jiff NOT chrono"; chrono was also declared unmaintained that week (RUSTSEC-2026-0543). **The
+      versions:** `jiff` 0.2.45 and `jiff-sqlx` 0.2.2, both outside the owner's two-day minimum publish age, so no exception was
+      needed (`jiff` 1.0.0 and `jiff-sqlx` 1.0.0, published 2026-11-15, were inside it). **The shape:** sqlx has no jiff feature,
+      so `src/sql_time.rs` defines `SqlTimestamp` and `SqlDate`, newtypes over `jiff::Timestamp` and `jiff::civil::Date` with
+      sqlx's traits by way of `jiff-sqlx`, `Deref`, `From` and comparison with the jiff value both ways; `sqlx.toml` maps
+      `timestamptz` and `date` (and their arrays) to them, so the query macros produce and expect them; `extern crate self as
+      workforce_planning_management` lets the override's global path resolve in the crate. Every row struct holds them; rules and
+      controllers use the jiff types. `src/dates.rs` has the helpers that stand in for chrono idioms (`today`, `date_of`, `ymd`,
+      `start_of_day`, `utc`, `days_between`, `days`, `rfc3339_seconds`). A codemod did the mechanical part across 416 files; four
+      agents did the rest by directory, then the lead the integration tests and benches. `scheduler.rs` keeps chrono at the `cron`
+      crate's edge, converting through seconds and nanoseconds. **The matcher** is on jiff too: `WorkerRecord::date_of_birth` is
+      `Option<jiff::civil::Date>`, a breaking change for its next release (0.2.0); `with_date_of_birth` keeps its signature.
+      `tests/load` declared chrono and used none of it; the dependency is gone. **What changed for a client (WPM-D202):** an instant
+      is RFC 3339 in UTC with a `Z`; the row types and `capacity/demand.rs`'s three peer fields wrote `+00:00` before. The audit
+      export writes UTC (a test that kept a `+02:00` offset now expects the same instant in UTC: a `timestamptz` read back was
+      always UTC). A day or month count outside jiff's range (years -9999 to 9999) gives `None` or the existing refusal, not a
+      panic; the narrower range touches only extreme years in `holiday` and two year fields. **A defect found and fixed on the
+      way:** the first `rfc3339_seconds` rounded where chrono's `SecondsFormat::Secs` cuts off; it now cuts off, and a test pins
+      it. **The `.sqlx` cache:** 27 queries regenerated (their column annotations named chrono types, now removed, since the
+      override already gives the type). **Verified:** the CI jobs of the service run locally against the worktree on fresh
+      PostgreSQL 18 and Redis 8, 44 of 45 steps passing: fmt, clippy with `-D warnings` on every target under both auth backends,
+      1,293 lib tests, the benchmark run, the MSRV checks, `cargo sqlx prepare --check`, the request suite (231), every
+      enforcement and security binary, the chaos test, the restore drill, the least-privilege roles, the Keycloak and Entra suites:
+      1,579 tests passed, 0 failed (1,568 before). The matcher: 58 tests, clippy, fmt and `cargo +1.98 check`. `cargo deny`:
+      licences, bans and sources pass for both crates. **Fails: `cargo deny` advisories, on RUSTSEC-2026-0543** (chrono), which
+      fails on `main` too and stays until chrono leaves the graph or the owner accepts it: it comes in through `cron`, the `chrono`
+      feature `axa` turns on in sqlx, and the published matcher 0.1.0. Adding it to `deny.toml`'s accepted list is the owner's
+      decision and was not done. **Not checked:** CI; the UI against the new `Z` timestamps beyond its own tests, which this change did not run; the
+      siblings PPM and CRM, which read some WPM instants.
 - [x] (2026-11-17) WPM-T526 **Mutation testing with cargo-mutants.** *The owner asked on 2026-11-17 ("improve mutation testing").* *([testing.md](testing.md))*
       Until now mutation testing was by hand: a task broke its code on purpose and wrote "mutation-checked". Now `cargo-mutants`
       27.1.0 has a configuration in each Rust crate. The service's `.cargo/mutants.toml` examines the pure core (`src/rules/**`,

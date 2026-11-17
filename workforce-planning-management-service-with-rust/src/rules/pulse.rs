@@ -3,7 +3,7 @@
 //! The k-anonymity floor is a **constant**, not configuration — a
 //! floor a deployment can quietly lower to 1 is no floor at all.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The k-anonymity floor: a cell (department or overall) with fewer
 /// responses than this is suppressed — statistics AND count withheld.
@@ -22,11 +22,7 @@ pub fn valid_score(score: i32) -> bool {
 
 /// Whether a survey window is open on `today` (bounds inclusive).
 #[must_use]
-pub fn survey_open(
-    active_from: Option<NaiveDate>,
-    active_until: Option<NaiveDate>,
-    today: NaiveDate,
-) -> bool {
+pub fn survey_open(active_from: Option<Date>, active_until: Option<Date>, today: Date) -> bool {
     active_from.is_none_or(|from| today >= from) && active_until.is_none_or(|until| today <= until)
 }
 
@@ -76,8 +72,8 @@ pub fn aggregate_cell(scores: &[i32]) -> Cell {
 mod tests {
     use super::*;
 
-    fn date(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn date(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     #[test]

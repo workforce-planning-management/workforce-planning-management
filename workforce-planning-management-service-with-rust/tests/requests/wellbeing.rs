@@ -105,7 +105,7 @@ async fn wellbeing_round_trip() {
         let person_urn = worker_row["person_ref"].as_str().unwrap();
         workforce_planning_management::clients::prime_birth_date(
             person_urn,
-            chrono::NaiveDate::from_ymd_opt(1958, 3, 14).unwrap(),
+            workforce_planning_management::dates::ymd(1958, 3, 14).unwrap(),
         );
         let prompts: Value = request
             .get(&format!("/api/workers/{engineer}/wellbeing-prompts"))

@@ -6,8 +6,7 @@
 //! `organization:` reference and a date, with `from` and `to` for an ending), so a subscriber can tell *who* by reference (proposed
 //! WPM-D145, consistent with WPM-D106 and WPM-D134). The body is signed with HMAC-SHA256 under a per-subscription secret that is held **by reference** (the name of an
 //! environment variable), so the secret is never stored or returned.
-
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -100,14 +99,14 @@ pub fn payload(
     event_id: &str,
     kind: &str,
     subject: &str,
-    occurred_at: DateTime<Utc>,
+    occurred_at: Timestamp,
     data: Option<&Value>,
 ) -> Value {
     let mut body = json!({
         "id": event_id,
         "kind": kind,
         "subject": subject,
-        "occurred_at": occurred_at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+        "occurred_at": crate::dates::rfc3339_seconds(occurred_at),
     });
     if let (Some(data), Some(object)) = (delivery_data(kind, data), body.as_object_mut()) {
         object.insert("data".to_string(), data);
@@ -319,10 +318,8 @@ pub fn check_subscription(name: &str, kinds: &[String]) -> Result<(), Vec<String
 mod tests {
     use super::*;
 
-    fn at() -> DateTime<Utc> {
-        DateTime::parse_from_rfc3339("2026-10-24T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc)
+    fn at() -> Timestamp {
+        "2026-10-24T12:00:00Z".parse::<Timestamp>().unwrap()
     }
 
     #[test]
@@ -426,7 +423,7 @@ mod tests {
         let handoff = crate::rules::bridge::handoff_data(
             "person:0c4f1e2a-0000-4000-8000-000000000001",
             "organization:0c4f1e2a-0000-4000-8000-0000000000aa",
-            chrono::NaiveDate::from_ymd_opt(2026, 10, 30).unwrap(),
+            crate::dates::ymd(2026, 10, 30).unwrap(),
         );
         let hired = payload("e1", "worker_hired", "worker:x", at(), Some(&handoff));
         assert_eq!(sorted_keys(&hired), PAYLOAD_FIELDS_WITH_DATA);

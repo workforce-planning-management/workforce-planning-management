@@ -4,7 +4,7 @@
 //! number, display name, title, department, manager and whether the person is employed. [`Employment`] has no field for a
 //! contact detail, so none can leave through the mapping; a source test also fails if this file or the push names one.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -28,9 +28,9 @@ pub struct Employment {
     /// The department.
     pub department: String,
     /// The first day of employment.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// The termination date, when there is one.
-    pub terminated_on: Option<NaiveDate>,
+    pub terminated_on: Option<Date>,
     /// The record was deleted.
     pub deleted: bool,
 }
@@ -38,13 +38,13 @@ pub struct Employment {
 /// Whether the person should be active on `today`, by the same definition as every headcount: hired on or before it and not
 /// terminated on or before it. A deleted record is never active.
 #[must_use]
-pub fn active_on(e: &Employment, today: NaiveDate) -> bool {
+pub fn active_on(e: &Employment, today: Date) -> bool {
     !e.deleted && crate::rules::metrics::is_employed_on(today, e.hired_on, e.terminated_on)
 }
 
 /// Whether the worker should be sent at all on `today`: not before the first day, so no account exists before the person joins.
 #[must_use]
-pub fn due(e: &Employment, today: NaiveDate) -> bool {
+pub fn due(e: &Employment, today: Date) -> bool {
     e.hired_on <= today
 }
 
@@ -57,7 +57,7 @@ pub fn external_id(pid: &str) -> String {
 /// The SCIM `User` for a worker. `manager_scim_id` is the identity provider's own id for the manager, known only once the
 /// manager has been provisioned; until then the manager is left out and a later run adds it.
 #[must_use]
-pub fn user(e: &Employment, today: NaiveDate, manager_scim_id: Option<&str>) -> Value {
+pub fn user(e: &Employment, today: Date, manager_scim_id: Option<&str>) -> Value {
     let mut enterprise = json!({ "employeeNumber": e.worker_number, "department": e.department });
     if let Some(id) = manager_scim_id {
         enterprise["manager"] = json!({ "value": id });
@@ -163,8 +163,8 @@ pub fn check_base_url(url: &str) -> Result<String, String> {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn worker() -> Employment {

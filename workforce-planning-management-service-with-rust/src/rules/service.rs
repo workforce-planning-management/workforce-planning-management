@@ -6,7 +6,7 @@
 //! `None` (unknown, never zero) and is named. Recognised prior service is counted only when recorded and is shown apart.
 //! Dates are inclusive at both ends.
 
-use chrono::{Days, Months, NaiveDate};
+use jiff::civil::Date;
 
 /// One employment period, as recorded.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,13 +14,13 @@ pub struct Period {
     /// How the period is named when it is unknown (a reference, never an employer or role).
     pub reference: String,
     /// The first day, where recorded.
-    pub starts_on: Option<NaiveDate>,
+    pub starts_on: Option<Date>,
     /// The last day, or none while the period continues.
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
 }
 
 /// A period that is known and clipped to the as-of date.
-type Span = (NaiveDate, NaiveDate);
+type Span = (Date, Date);
 
 /// The answer for one person.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,26 +34,30 @@ pub struct Service {
     /// Whole years of continuous service, from the chain's own start; none when unknown.
     pub continuous_years: Option<i32>,
     /// The periods the answer rests on, merged and clipped, oldest first.
-    pub spans: Vec<(NaiveDate, NaiveDate)>,
+    pub spans: Vec<(Date, Date)>,
     /// The references of the periods that make the answer unknown.
     pub unknown: Vec<String>,
 }
 
 fn days(span: Span) -> i64 {
-    (span.1 - span.0).num_days() + 1
+    crate::dates::days_between(span.0, span.1) + 1
 }
 
 /// Whole years completed by service that began on `start` and has run for `total_days` inclusive days.
-fn whole_years(start: NaiveDate, total_days: i64) -> i32 {
+fn whole_years(start: Date, total_days: i64) -> i32 {
     let mut n = 0;
-    while let Some(next) = start.checked_add_months(Months::new(12 * (n + 1))) {
-        if total_days >= (next - start).num_days() {
+    while let Some(next) = jiff::Span::new()
+        .try_months(12 * (n + 1))
+        .ok()
+        .and_then(|span| start.checked_add(span).ok())
+    {
+        if total_days >= crate::dates::days_between(start, next) {
             n += 1;
         } else {
             break;
         }
     }
-    i32::try_from(n).unwrap_or(i32::MAX)
+    n
 }
 
 /// Union of spans with gaps up to `tolerance` days joined. A gap is the days not worked between two spans.
@@ -62,7 +66,9 @@ fn merge(mut spans: Vec<Span>, tolerance: i64) -> Vec<Span> {
     let mut out: Vec<Span> = Vec::new();
     for s in spans {
         match out.last_mut() {
-            Some(last) if (s.0 - last.1).num_days() - 1 <= tolerance => last.1 = last.1.max(s.1),
+            Some(last) if crate::dates::days_between(last.1, s.0) - 1 <= tolerance => {
+                last.1 = last.1.max(s.1);
+            }
             _ => out.push(s),
         }
     }
@@ -71,7 +77,7 @@ fn merge(mut spans: Vec<Span>, tolerance: i64) -> Vec<Span> {
 
 /// Service on `as_of`. `tolerance_days` is the configured break that does not end continuous service (none: no break allowed).
 #[must_use]
-pub fn service(periods: &[Period], tolerance_days: Option<u32>, as_of: NaiveDate) -> Service {
+pub fn service(periods: &[Period], tolerance_days: Option<u32>, as_of: Date) -> Service {
     let mut unknown = Vec::new();
     let mut spans: Vec<Span> = Vec::new();
     for p in periods {
@@ -113,7 +119,7 @@ pub fn service(periods: &[Period], tolerance_days: Option<u32>, as_of: NaiveDate
 /// Days of recognised prior service, shown apart and never added to [`Service`]. Only periods HR recorded are passed in; one
 /// with no end runs to `as_of`, and overlaps count once.
 #[must_use]
-pub fn prior_days(recorded: &[(NaiveDate, Option<NaiveDate>)], as_of: NaiveDate) -> i64 {
+pub fn prior_days(recorded: &[(Date, Option<Date>)], as_of: Date) -> i64 {
     let spans = recorded
         .iter()
         .filter(|(s, _)| *s <= as_of)
@@ -125,21 +131,22 @@ pub fn prior_days(recorded: &[(NaiveDate, Option<NaiveDate>)], as_of: NaiveDate)
 
 /// The day a period of `n` years of service is reached from `start`: the anniversary, one day before the date n years on.
 #[must_use]
-pub fn anniversary(start: NaiveDate, years: u32) -> Option<NaiveDate> {
+pub fn anniversary(start: Date, years: u32) -> Option<Date> {
     start
-        .checked_add_months(Months::new(12 * years))
-        .and_then(|d| d.checked_sub_days(Days::new(1)))
+        .checked_add(jiff::Span::new().try_months(12 * years).ok()?)
+        .ok()
+        .and_then(|d| d.checked_sub(jiff::Span::new().days(1)).ok())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn p(r: &str, from: Option<NaiveDate>, to: Option<NaiveDate>) -> Period {
+    fn p(r: &str, from: Option<Date>, to: Option<Date>) -> Period {
         Period {
             reference: r.to_string(),
             starts_on: from,
@@ -147,7 +154,7 @@ mod tests {
         }
     }
 
-    const NOW: fn() -> NaiveDate = || d(2026, 10, 28);
+    const NOW: fn() -> Date = || d(2026, 10, 28);
 
     #[test]
     fn one_period_counts_inclusive_days_and_whole_years() {
@@ -207,11 +214,11 @@ mod tests {
         let none = service(&list, None, NOW());
         assert_eq!(
             with.continuous_days,
-            Some((NOW() - d(2020, 1, 1)).num_days() + 1)
+            Some(crate::dates::days_between(d(2020, 1, 1), NOW()) + 1)
         );
         assert_eq!(
             without.continuous_days,
-            Some((NOW() - d(2021, 1, 8)).num_days() + 1)
+            Some(crate::dates::days_between(d(2021, 1, 8), NOW()) + 1)
         );
         assert_eq!(
             none.continuous_days, without.continuous_days,

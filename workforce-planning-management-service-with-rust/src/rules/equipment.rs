@@ -4,7 +4,7 @@
 //! issue ties an asset to a worker from a day; a return or a write-off closes it, and a write-off needs a reason. Equipment still
 //! out is what a leaver's record cannot be completed over.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The kinds of asset offered.
 pub const KINDS: &[&str] = &["laptop", "phone", "pass", "key", "other"];
@@ -35,7 +35,7 @@ pub fn asset_problems(kind: &str, tag: &str, owner_role: &str) -> Vec<String> {
 
 /// Problems with issuing: not in the future, and not before the worker's first day.
 #[must_use]
-pub fn issue_problems(issued_on: NaiveDate, today: NaiveDate, hired_on: NaiveDate) -> Vec<String> {
+pub fn issue_problems(issued_on: Date, today: Date, hired_on: Date) -> Vec<String> {
     let mut out = Vec::new();
     if issued_on > today {
         out.push("issued_on must not be in the future".to_string());
@@ -50,9 +50,9 @@ pub fn issue_problems(issued_on: NaiveDate, today: NaiveDate, hired_on: NaiveDat
 #[must_use]
 pub fn return_problems(
     outcome: &str,
-    returned_on: NaiveDate,
-    issued_on: NaiveDate,
-    today: NaiveDate,
+    returned_on: Date,
+    issued_on: Date,
+    today: Date,
     note: Option<&str>,
 ) -> Vec<String> {
     let mut out = Vec::new();
@@ -113,7 +113,7 @@ pub fn team_holding(team: usize, holding: usize, floor: usize) -> TeamHolding {
 mod tests {
     use super::*;
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 

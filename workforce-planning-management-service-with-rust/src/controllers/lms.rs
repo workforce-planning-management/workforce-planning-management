@@ -13,6 +13,7 @@
 
 use axa::extract::Json;
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::str::FromStr;
 use uuid::Uuid;
@@ -21,6 +22,7 @@ use super::unprocessable;
 use crate::auth::MaybeAuthUser;
 use crate::db::{self, pool};
 use crate::rules::lms as rules;
+use crate::sql_time::SqlDate;
 
 /// The link to a course in the learning system, from the deployer's `WPM_LMS_COURSE_URL` (WPM-R138,
 /// WPM-D91); `None` when it is unset or not valid. An invalid one is logged, once.
@@ -47,9 +49,9 @@ struct CompletionEvent {
     organization_ref: Option<String>,
     /// The `course:` or `courseinstance:` URN.
     course_ref: String,
-    completed_on: chrono::NaiveDate,
+    completed_on: Date,
     #[serde(default)]
-    certificate_expires_on: Option<chrono::NaiveDate>,
+    certificate_expires_on: Option<Date>,
     /// CPD credit, in hours — or points; not both.
     #[serde(default)]
     hours: Option<f64>,
@@ -104,7 +106,7 @@ async fn completions(
             rules::MAX_BATCH
         )));
     }
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut results = Vec::with_capacity(batch.completions.len());
     for event in &batch.completions {
         results.push(apply(&ctx, &caller, event, today).await?);
@@ -142,8 +144,8 @@ async fn sync_enrollment(
     .await?;
     let snapshot = existing.as_ref().map(|e| rules::Existing {
         status: e.status.as_str(),
-        completed_on: e.completed_on,
-        certificate_expires_on: e.certificate_expires_on,
+        completed_on: e.completed_on.map(SqlDate::get),
+        certificate_expires_on: e.certificate_expires_on.map(SqlDate::get),
     });
     let action = rules::enrollment_action(
         snapshot.as_ref(),
@@ -158,8 +160,8 @@ async fn sync_enrollment(
                  SET status = 'completed', completed_on = $2, certificate_expires_on = $3
                  WHERE pid = $1",
                 row.pid,
-                event.completed_on,
-                event.certificate_expires_on,
+                SqlDate(event.completed_on),
+                event.certificate_expires_on.map(SqlDate),
             )
             .execute(&mut *connection)
             .await?;
@@ -183,8 +185,8 @@ async fn sync_enrollment(
                 pid,
                 worker,
                 event.course_ref,
-                event.completed_on,
-                event.certificate_expires_on,
+                SqlDate(event.completed_on),
+                event.certificate_expires_on.map(SqlDate),
             )
             .execute(&mut *connection)
             .await?;
@@ -235,7 +237,7 @@ async fn record_credit(
          VALUES ($1, $2, $3, $4, 'course', $5, $6, 'lms', $7, $8)",
         pid,
         worker,
-        event.completed_on,
+        SqlDate(event.completed_on),
         format!("LMS completion: {}", event.course_ref),
         unit,
         hundredths,
@@ -261,7 +263,7 @@ async fn apply(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
     event: &CompletionEvent,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<Outcome> {
     let reference = event.external_ref.trim();
     if let Err(reason) = rules::validate_completion(

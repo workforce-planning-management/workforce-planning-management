@@ -6,10 +6,9 @@
 //! guessed start gives wrong totals that look right. Each tax year and currency has its own totals: an amount is never
 //! added across currencies. A query flags a payslip for payroll; it changes no amount.
 
-use std::collections::BTreeMap;
-
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 use super::payroll::Deduction;
 
@@ -26,29 +25,29 @@ pub fn tax_year_start(mmdd: i64) -> Option<(u32, u32)> {
     let month = u32::try_from(mmdd / 100).ok()?;
     let day = u32::try_from(mmdd % 100).ok()?;
     // 2027 is not a leap year, so 29 February is refused.
-    NaiveDate::from_ymd_opt(2027, month, day).map(|_| (month, day))
+    crate::dates::ymd(2027, month, day).map(|_| (month, day))
 }
 
 /// The first and last days of the tax year holding `date`, for a tax year starting on `start` (month, day). `None` if
 /// `start` is not a date, or at the limits of the calendar.
 #[must_use]
-pub fn tax_year_of(date: NaiveDate, start: (u32, u32)) -> Option<(NaiveDate, NaiveDate)> {
+pub fn tax_year_of(date: Date, start: (u32, u32)) -> Option<(Date, Date)> {
     let (month, day) = start;
-    let this_year = NaiveDate::from_ymd_opt(date.year(), month, day)?;
+    let this_year = crate::dates::ymd(i32::from(date.year()), month, day)?;
     let first = if date >= this_year {
         this_year
     } else {
-        NaiveDate::from_ymd_opt(date.year() - 1, month, day)?
+        crate::dates::ymd(i32::from(date.year()) - 1, month, day)?
     };
-    let next = NaiveDate::from_ymd_opt(first.year() + 1, month, day)?;
-    Some((first, next.pred_opt()?))
+    let next = crate::dates::ymd(i32::from(first.year()) + 1, month, day)?;
+    Some((first, next.yesterday().ok()?))
 }
 
 /// What the year to date reads from one payslip.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Slip {
     /// The last day of the run's period: this decides the tax year.
-    pub period_end: NaiveDate,
+    pub period_end: Date,
     /// The payslip's currency.
     pub currency: String,
     /// Gross pay in minor units.
@@ -63,9 +62,9 @@ pub struct Slip {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct YearToDate {
     /// The first day of the tax year.
-    pub starts_on: NaiveDate,
+    pub starts_on: Date,
     /// The last day of the tax year.
-    pub ends_on: NaiveDate,
+    pub ends_on: Date,
     /// The currency of every amount here.
     pub currency: String,
     /// How many payslips the totals rest on.
@@ -93,7 +92,7 @@ pub fn year_to_date(slips: &[Slip], start: (u32, u32)) -> Result<Vec<YearToDate>
         deductions: BTreeMap<String, i64>,
     }
     let overflow = || "a year-to-date total does not fit".to_string();
-    let mut years: BTreeMap<(NaiveDate, NaiveDate, String), Totals> = BTreeMap::new();
+    let mut years: BTreeMap<(Date, Date, String), Totals> = BTreeMap::new();
     for slip in slips {
         let (first, last) =
             tax_year_of(slip.period_end, start).ok_or("the tax year start is not a date")?;
@@ -181,11 +180,11 @@ pub fn may_raise(open_already: bool) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).expect("a date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("a date")
     }
 
-    fn slip(end: NaiveDate, currency: &str, gross: i64, lines: &[(&str, i64)], net: i64) -> Slip {
+    fn slip(end: Date, currency: &str, gross: i64, lines: &[(&str, i64)], net: i64) -> Slip {
         Slip {
             period_end: end,
             currency: currency.to_string(),

@@ -4,7 +4,7 @@
 
 use axa::extract::Json;
 use axa::prelude::*;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -15,6 +15,7 @@ use crate::auth::MaybeAuthUser;
 use crate::db::{self, pool};
 use crate::models::_entities::holidays;
 use crate::rules::holiday as rules;
+use crate::sql_time::SqlDate;
 
 /// The years a calendar can hold.
 const YEARS: std::ops::RangeInclusive<i32> = 1970..=2100;
@@ -126,7 +127,7 @@ async fn generate(
     .await?
     .remove(&p.organization_ref)
     .unwrap_or_default();
-    let on = NaiveDate::from_ymd_opt(p.year, 1, 1).unwrap_or_default();
+    let on = crate::dates::ymd(p.year, 1, 1).unwrap_or_default();
     let resolved = profile.resolve("holidays.weekend_days", Some(&p.region), on);
     let configured = match &resolved {
         crate::rules::jurisdiction::Resolution::Resolved { value, .. } => value
@@ -149,7 +150,7 @@ async fn generate(
              WHERE organization_ref = $1 AND region = $2 AND natural_on = $3 AND name = $4 LIMIT 1",
             p.organization_ref,
             p.region,
-            h.natural_on,
+            SqlDate(h.natural_on),
             h.name,
         )
         .fetch_optional(&mut *tx)
@@ -164,8 +165,8 @@ async fn generate(
                     p.region,
                     p.year,
                     h.name,
-                    h.natural_on,
-                    h.observed_on,
+                    SqlDate(h.natural_on),
+                    SqlDate(h.observed_on),
                     caller.actor(),
                 )
                 .execute(&mut *tx)
@@ -178,7 +179,7 @@ async fn generate(
                 sqlx::query!(
                     "UPDATE holidays SET observed_on = $2 WHERE id = $1",
                     row.id,
-                    h.observed_on,
+                    SqlDate(h.observed_on),
                 )
                 .execute(&mut *tx)
                 .await?;
@@ -214,7 +215,7 @@ struct ManualPayload {
     organization_ref: String,
     region: String,
     name: String,
-    on: NaiveDate,
+    on: Date,
 }
 
 /// `POST /api/holidays` — add a day by hand (a local or one-off holiday). HR.
@@ -228,7 +229,7 @@ async fn add(
     let mut problems = rules::region_problems(&p.region);
     problems.extend(rules::manual_problems(&p.name));
     ensure_valid(&problems)?;
-    let year = chrono::Datelike::year(&p.on);
+    let year = i32::from(p.on.year());
     if !YEARS.contains(&year) {
         return Err(unprocessable("the date must be between 1970 and 2100"));
     }
@@ -239,7 +240,7 @@ async fn add(
            ) AS "clash!""#,
         p.organization_ref,
         p.region,
-        p.on,
+        SqlDate(p.on),
         name,
     )
     .fetch_one(pool(&ctx))
@@ -257,8 +258,8 @@ async fn add(
         p.region,
         year,
         name,
-        p.on,
-        p.on,
+        SqlDate(p.on),
+        SqlDate(p.on),
         caller.actor(),
     )
     .execute(&mut *tx)

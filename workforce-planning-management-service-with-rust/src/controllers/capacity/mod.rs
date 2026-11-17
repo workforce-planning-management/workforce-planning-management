@@ -9,7 +9,7 @@
 
 use super::ensure_org_in_scope;
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap};
@@ -29,8 +29,8 @@ const DEFAULT_MONTHS: u32 = 12;
 /// The number of months a start check looks across, so a delay has room to be found.
 const CHECK_MONTHS: u32 = 24;
 
-fn today() -> NaiveDate {
-    Utc::now().date_naive()
+fn today() -> Date {
+    crate::dates::today()
 }
 
 /// The organizations the caller may see: `None` when unrestricted.

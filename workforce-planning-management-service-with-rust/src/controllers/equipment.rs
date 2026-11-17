@@ -4,7 +4,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -20,6 +20,7 @@ use crate::models::records;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::equipment as rules;
 use crate::rules::metrics::is_employed_on;
+use crate::sql_time::SqlDate;
 
 /// How many pieces of equipment `worker` still holds.
 pub(crate) async fn out_count(ctx: &AppContext, worker: Uuid) -> Result<usize> {
@@ -152,7 +153,7 @@ async fn find_asset(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Resu
 #[derive(Debug, Deserialize)]
 struct IssuePayload {
     worker_pid: Uuid,
-    issued_on: Option<NaiveDate>,
+    issued_on: Option<Date>,
 }
 
 /// `POST /api/assets/{pid}/issue` — give an asset to a worker of its organization who is still employed. One holder at a time.
@@ -175,12 +176,20 @@ async fn issue(
     if worker.organization_ref != asset.organization_ref {
         return Err(unprocessable("the worker is not in this organization"));
     }
-    let today = Utc::now().date_naive();
-    if !is_employed_on(today, worker.hired_on, worker.terminated_on) {
+    let today = crate::dates::today();
+    if !is_employed_on(
+        today,
+        worker.hired_on.get(),
+        worker.terminated_on.map(SqlDate::get),
+    ) {
         return Err(unprocessable("the worker is not employed today"));
     }
     let issued_on = payload.issued_on.unwrap_or(today);
-    ensure_valid(&rules::issue_problems(issued_on, today, worker.hired_on))?;
+    ensure_valid(&rules::issue_problems(
+        issued_on,
+        today,
+        worker.hired_on.get(),
+    ))?;
     let held = sqlx::query_scalar!(
         r#"SELECT EXISTS (
                SELECT 1 FROM asset_issues WHERE asset_pid = $1 AND returned_on IS NULL
@@ -202,7 +211,7 @@ async fn issue(
         issue_pid,
         pid,
         worker.pid,
-        issued_on,
+        SqlDate(issued_on),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -223,7 +232,7 @@ async fn issue(
 #[derive(Debug, Deserialize)]
 struct ReturnPayload {
     outcome: String,
-    returned_on: Option<NaiveDate>,
+    returned_on: Option<Date>,
     note: Option<String>,
 }
 
@@ -246,12 +255,12 @@ async fn close(
     if issue.returned_on.is_some() {
         return Err(unprocessable("this issue is already closed"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let returned_on = payload.returned_on.unwrap_or(today);
     ensure_valid(&rules::return_problems(
         &payload.outcome,
         returned_on,
-        issue.issued_on,
+        issue.issued_on.get(),
         today,
         payload.note.as_deref(),
     ))?;
@@ -270,7 +279,7 @@ async fn close(
         "UPDATE asset_issues SET returned_on = $2, outcome = $3, note = $4, recorded_by = $5
          WHERE pid = $1",
         pid,
-        returned_on,
+        SqlDate(returned_on),
         payload.outcome,
         note,
         caller.actor(),
@@ -334,7 +343,7 @@ async fn team_count(
     {
         return Err(forbidden("a manager's team count is for that manager"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let team: Vec<Uuid> = sqlx::query!(
         "SELECT pid, hired_on, terminated_on FROM workers
          WHERE manager_pid = $1 AND organization_ref = $2 AND deleted_at IS NULL",
@@ -344,7 +353,7 @@ async fn team_count(
     .fetch_all(pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(today, w.hired_on.get(), w.terminated_on.map(SqlDate::get)))
     .map(|w| w.pid)
     .collect();
     let holders = sqlx::query_scalar!(

@@ -18,9 +18,9 @@
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use chrono::{DateTime, Utc};
 use clap::Parser;
 use cron::Schedule;
+use jiff::Timestamp;
 
 /// One recurring task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -145,10 +145,23 @@ pub fn tagged(tag: &str) -> Vec<Job> {
 ///
 /// # Errors
 /// A sentence saying the expression is not valid.
-pub fn next_after(job: &Job, now: DateTime<Utc>) -> Result<Option<DateTime<Utc>>, String> {
+pub fn next_after(job: &Job, now: Timestamp) -> Result<Option<Timestamp>, String> {
     let schedule =
         Schedule::from_str(job.cron).map_err(|cause| format!("{}: {cause}", job.name))?;
-    Ok(schedule.after(&now).next())
+    let now = to_chrono(now).ok_or_else(|| format!("{}: {now} is out of range", job.name))?;
+    Ok(schedule.after(&now).next().and_then(from_chrono))
+}
+
+/// `cron` takes and returns `chrono` instants; this is the only place they appear (WPM-T528).
+fn to_chrono(at: Timestamp) -> Option<chrono::DateTime<chrono::Utc>> {
+    let nanos = u32::try_from(at.subsec_nanosecond()).ok()?;
+    chrono::DateTime::from_timestamp(at.as_second(), nanos)
+}
+
+/// The way back from `chrono`; `None` past the years `jiff` can hold.
+fn from_chrono(at: chrono::DateTime<chrono::Utc>) -> Option<Timestamp> {
+    let nanos = i32::try_from(at.timestamp_subsec_nanos()).ok()?;
+    Timestamp::new(at.timestamp(), nanos).ok()
 }
 
 fn start(job: &Job, exe: &std::path::Path) -> Option<tokio::process::Child> {
@@ -192,7 +205,7 @@ pub async fn run(arguments: &[String]) -> axa::Result<()> {
     let exe = std::env::current_exe()?;
     let mut running: HashMap<&'static str, tokio::process::Child> = HashMap::new();
     loop {
-        let now = Utc::now();
+        let now = Timestamp::now();
         let mut upcoming = Vec::with_capacity(jobs.len());
         for job in &jobs {
             if let Some(at) = next_after(job, now).map_err(|cause| axa::Error::string(&cause))? {
@@ -202,7 +215,7 @@ pub async fn run(arguments: &[String]) -> axa::Result<()> {
         let Some(soonest) = upcoming.iter().map(|(at, _)| *at).min() else {
             return Ok(());
         };
-        let wait = (soonest - now).to_std().unwrap_or_default();
+        let wait = std::time::Duration::try_from(soonest.duration_since(now)).unwrap_or_default();
         tokio::select! {
             () = tokio::time::sleep(wait) => {}
             _ = tokio::signal::ctrl_c() => return Ok(()),

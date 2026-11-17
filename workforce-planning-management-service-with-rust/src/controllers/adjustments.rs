@@ -6,6 +6,7 @@
 //! required, and the schema has nowhere to put one.
 
 use super::row_json;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
@@ -187,7 +188,7 @@ async fn decide(
                      adjustment, status, decision_note, decided_on, deleted_at AS "deleted_at: _""#,
         row.pid,
         payload.to,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
         payload.note,
     )
     .fetch_one(&mut *tx)

@@ -19,6 +19,7 @@
 //! `payroll_run_calculated` / `review_shared` / … (the full kind list
 //! is spec `audit.md`).
 
+use jiff::Timestamp;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
 
@@ -184,8 +185,7 @@ pub async fn emit_in(
 ) -> axa::Result<()> {
     let env = envelope(entity, kind, pid, name, actor, data);
     if transport().is_outbox() {
-        let row = OutboxInsert::from_envelope(&env, chrono::Utc::now().into())
-            .map_err(axa::Error::Model)?;
+        let row = OutboxInsert::from_envelope(&env, Timestamp::now()).map_err(axa::Error::Model)?;
         sqlx::query!(
             "INSERT INTO event_outbox (event_id, entity, entity_pid, kind, occurred_at, actor, schema_version, payload)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
@@ -193,7 +193,7 @@ pub async fn emit_in(
             row.entity,
             row.entity_pid,
             row.kind,
-            row.occurred_at,
+            crate::sql_time::SqlTimestamp(row.occurred_at),
             row.actor,
             row.schema_version,
             row.payload,

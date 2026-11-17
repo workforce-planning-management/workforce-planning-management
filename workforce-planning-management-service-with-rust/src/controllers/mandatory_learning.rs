@@ -4,11 +4,12 @@
 //! the category an audience is defined by is `unknown`, counted apart. The status arithmetic is `rules::mandatory_learning`.
 //! Spec: `spec/staff-records-and-pay.md`.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::HashMap;
 
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -65,8 +66,8 @@ fn requirement_json(r: &learning_requirements::Model) -> Value {
 /// What one person's evidence for one requirement comes to on `today`.
 struct Evaluation {
     status: rules::Status,
-    last_completed_on: Option<NaiveDate>,
-    expires_on: Option<NaiveDate>,
+    last_completed_on: Option<Date>,
+    expires_on: Option<Date>,
 }
 
 /// The deployment's due-soon window in calendar days: `WPM_LEARNING_DUE_SOON_DAYS`, 1 to 366, else 90 (WPM-T434).
@@ -78,7 +79,7 @@ fn evaluate(
     req: &learning_requirements::Model,
     categories: &[rules::Categories],
     completions: &[rules::Completion],
-    today: NaiveDate,
+    today: Date,
 ) -> Evaluation {
     let applies = rules::applies(&audience_of(&req.audience), categories);
     let refresher = req.refresher_months.and_then(|m| u32::try_from(m).ok());
@@ -141,7 +142,7 @@ async fn position_numbers(ctx: &AppContext, pids: &[Uuid]) -> Result<HashMap<Uui
 async fn categories_of(
     ctx: &AppContext,
     pids: &[Uuid],
-    today: NaiveDate,
+    today: Date,
 ) -> Result<HashMap<Uuid, Vec<rules::Categories>>> {
     let mut out: HashMap<Uuid, Vec<rules::Categories>> = HashMap::new();
     let numbers = position_numbers(ctx, pids).await?;
@@ -194,7 +195,7 @@ async fn completions_of(
         out.entry((c.worker_pid, c.requirement_pid))
             .or_default()
             .push(rules::Completion {
-                on: c.completed_on,
+                on: c.completed_on.get(),
                 transferred,
             });
     }
@@ -213,7 +214,7 @@ async fn completions_of(
                 out.entry((e.worker_pid, r.pid))
                     .or_default()
                     .push(rules::Completion {
-                        on,
+                        on: on.get(),
                         transferred: false,
                     });
             }
@@ -225,7 +226,7 @@ async fn completions_of(
 async fn live_requirements(
     ctx: &AppContext,
     organization: &str,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<Vec<learning_requirements::Model>> {
     Ok(sqlx::query_as!(
         learning_requirements::Model,
@@ -296,7 +297,7 @@ async fn list(
     Query(q): Query<OrgQuery>,
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &q.organization).await?;
-    let rows = live_requirements(&ctx, &q.organization, Utc::now().date_naive()).await?;
+    let rows = live_requirements(&ctx, &q.organization, crate::dates::today()).await?;
     format::json(rows.iter().map(requirement_json).collect::<Vec<_>>())
 }
 
@@ -409,7 +410,7 @@ async fn create(
 #[derive(Debug, Deserialize)]
 struct CompletionPayload {
     worker_pid: Uuid,
-    completed_on: NaiveDate,
+    completed_on: Date,
     source: Option<String>,
     source_organization: Option<String>,
 }
@@ -430,7 +431,7 @@ async fn record_completion(
         return Err(Error::NotFound);
     }
     let mut problems = Vec::new();
-    if p.completed_on > Utc::now().date_naive() {
+    if p.completed_on > crate::dates::today() {
         problems.push("completed_on must not be in the future".to_string());
     }
     let source = p
@@ -451,7 +452,7 @@ async fn record_completion(
         id,
         req.pid,
         worker.pid,
-        p.completed_on,
+        SqlDate(p.completed_on),
         source,
         p.source_organization
             .as_deref()
@@ -482,7 +483,7 @@ async fn of_worker(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let reqs = live_requirements(&ctx, &worker.organization_ref, today).await?;
     let cats = categories_of(&ctx, &[worker.pid], today).await?;
     let comps = completions_of(&ctx, std::slice::from_ref(&worker), &reqs).await?;
@@ -536,7 +537,7 @@ fn rollup_fields(r: &rules::Rollup) -> Value {
 async fn groups_of(
     ctx: &AppContext,
     pids: &[Uuid],
-    today: NaiveDate,
+    today: Date,
     by: &str,
 ) -> Result<HashMap<Uuid, Vec<Option<String>>>> {
     let mut out: HashMap<Uuid, Vec<Option<String>>> = HashMap::new();
@@ -583,7 +584,7 @@ async fn rollup(
             ));
         }
     };
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let reqs = live_requirements(&ctx, &q.organization, today).await?;
@@ -669,7 +670,7 @@ async fn team(
     {
         return Err(forbidden("a team's learning is for that team's manager"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let staff = current_staff(&ctx, &manager.organization_ref).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
@@ -726,7 +727,9 @@ async fn retire(
 ) -> Result<Response> {
     let req = requirement(&ctx, pid).await?;
     ensure_hr(&ctx, &caller, &req.organization_ref).await?;
-    let on = req.retired_on.unwrap_or_else(|| Utc::now().date_naive());
+    let on = req
+        .retired_on
+        .unwrap_or_else(|| SqlDate(crate::dates::today()));
     let mut tx = db::pool(&ctx).begin().await?;
     if req.retired_on.is_none() {
         sqlx::query!(

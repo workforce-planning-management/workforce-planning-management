@@ -8,10 +8,10 @@
 //! moved setting follows. With `?organization=` the list says, for that organization, where each value
 //! came from: its profile (the code, layer, status and source), the `WPM_*` setting, or the default.
 
+use jiff::civil::Date;
 use std::collections::BTreeSet;
 
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -45,7 +45,7 @@ pub(crate) fn is_set(setting: &str) -> bool {
 pub fn pick<T>(
     scope: Option<&Scope>,
     setting: &str,
-    as_of: NaiveDate,
+    as_of: Date,
     from_profile: impl Fn(&ProfileValue) -> Option<T>,
     from_setting: Option<T>,
     default: T,
@@ -95,7 +95,7 @@ pub fn pick<T>(
 pub fn integer<T: TryFrom<i64>>(
     scope: Option<&Scope>,
     setting: &str,
-    as_of: NaiveDate,
+    as_of: Date,
     from_setting: Option<T>,
     default: T,
 ) -> InForce<T> {
@@ -111,7 +111,7 @@ pub fn integer<T: TryFrom<i64>>(
 
 /// The value in force for one listed setting over `scope`, read the way its controller reads it,
 /// with where it came from.
-fn value_of(setting: &str, scope: Option<&Scope>, as_of: NaiveDate) -> (Value, Value) {
+fn value_of(setting: &str, scope: Option<&Scope>, as_of: Date) -> (Value, Value) {
     use super::{flexible_working, pay_assessment, pay_information, pay_transparency, payroll};
     fn shown<T: serde::Serialize>(found: InForce<T>) -> (Value, Value) {
         (json!(found.value), found.came_from)
@@ -190,7 +190,7 @@ async fn list(
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
-    let as_of = Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let organization = match &q.organization {
         Some(org) => {
             ensure_valid(&organization_problems(org))?;
@@ -276,8 +276,8 @@ mod tests {
     use crate::rules;
     use crate::rules::jurisdiction::{Layer, Link, Row, Status};
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     /// An organization keeping `XA` under the bloc `QZ`, with one row for the decision period at `XA`.

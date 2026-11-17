@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, worked_on, minutes,\n                  kind, status, notes, deleted_at AS \"deleted_at: _\"\n             FROM time_entries\n            WHERE worker_pid = $1 AND deleted_at IS NULL AND ($2::date IS NULL OR worked_on >= $2)\n              AND ($3::date IS NULL OR worked_on <= $3)\n            ORDER BY worked_on, id\n            LIMIT 1000",
+  "query": "SELECT created_at, updated_at, id, pid, worker_pid, skill_pid,\n                  proficiency, target, assessed_on, source_framework, source_level, source_scale_max,\n                  deleted_at\n             FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "id"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "pid"
           }
         }
@@ -53,73 +53,95 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "worked_on",
-        "type_info": "Date",
+        "name": "skill_pid",
+        "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "time_entries",
-            "name": "worked_on"
+            "table": "worker_skills",
+            "name": "skill_pid"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "minutes",
+        "name": "proficiency",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "time_entries",
-            "name": "minutes"
+            "table": "worker_skills",
+            "name": "proficiency"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "kind",
-        "type_info": "Varchar",
+        "name": "target",
+        "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "time_entries",
-            "name": "kind"
+            "table": "worker_skills",
+            "name": "target"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "status",
-        "type_info": "Varchar",
+        "name": "assessed_on",
+        "type_info": "Date",
         "origin": {
           "Table": {
-            "table": "time_entries",
-            "name": "status"
+            "table": "worker_skills",
+            "name": "assessed_on"
           }
         }
       },
       {
         "ordinal": 9,
-        "name": "notes",
+        "name": "source_framework",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "time_entries",
-            "name": "notes"
+            "table": "worker_skills",
+            "name": "source_framework"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "deleted_at: _",
+        "name": "source_level",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "source_level"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "source_scale_max",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "worker_skills",
+            "name": "source_scale_max"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "time_entries",
+            "table": "worker_skills",
             "name": "deleted_at"
           }
         }
@@ -127,9 +149,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Date",
-        "Date"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -140,11 +160,13 @@
       false,
       false,
       false,
+      true,
       false,
-      false,
+      true,
+      true,
       true,
       true
     ]
   },
-  "hash": "7b9688d42d1aa5c44a2f0723d28ff9328fcda3e35a8cf120caa3d137fa30b92a"
+  "hash": "c8006f720a216078e540430c535a750af7bdabde65f3472dabe38c14ec8336b3"
 }

@@ -9,8 +9,7 @@
 //! are open or anything they hold is still unassigned.
 //!
 //! DB-free and clock-free (the day is always supplied).
-
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -65,7 +64,7 @@ pub struct Planned {
     /// `admin`, `equipment`, `access`, `people` or `handover`.
     pub category: String,
     /// The date it is due.
-    pub due_on: NaiveDate,
+    pub due_on: Date,
 }
 
 /// Whether `kind` is a movement kind.
@@ -77,7 +76,7 @@ pub fn valid_kind(kind: &str) -> bool {
 /// The dated checklist for `kind` around `effective` (start day for a
 /// joiner, last day for a leaver).
 #[must_use]
-pub fn plan(kind: &str, effective: NaiveDate) -> Vec<Planned> {
+pub fn plan(kind: &str, effective: Date) -> Vec<Planned> {
     let lines = if kind == "leaver" { LEAVER } else { JOINER };
     lines
         .iter()
@@ -86,7 +85,7 @@ pub fn plan(kind: &str, effective: NaiveDate) -> Vec<Planned> {
             position: i32::try_from(i).unwrap_or(i32::MAX),
             title: (*title).to_string(),
             category: (*category).to_string(),
-            due_on: effective + Duration::days(*offset),
+            due_on: effective + crate::dates::days(*offset),
         })
         .collect()
 }
@@ -101,8 +100,8 @@ pub fn plan(kind: &str, effective: NaiveDate) -> Vec<Planned> {
 pub fn validate(
     kind: &str,
     reason: Option<&str>,
-    effective: NaiveDate,
-    hired_on: NaiveDate,
+    effective: Date,
+    hired_on: Date,
 ) -> Result<(), String> {
     if !valid_kind(kind) {
         return Err(format!("kind must be one of {}", KINDS.join(", ")));
@@ -142,7 +141,7 @@ pub enum ItemState {
 
 /// An item's state: done and skipped win; otherwise by its due date.
 #[must_use]
-pub fn item_state(due_on: NaiveDate, done: bool, skipped: bool, today: NaiveDate) -> ItemState {
+pub fn item_state(due_on: Date, done: bool, skipped: bool, today: Date) -> ItemState {
     if done {
         ItemState::Done
     } else if skipped {
@@ -315,8 +314,8 @@ pub fn validate_handover(kind: HandoverKind, to: Option<Uuid>, leaver: Uuid) -> 
 mod tests {
     use super::*;
 
-    fn d(day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 11, day).unwrap()
+    fn d(day: u32) -> Date {
+        crate::dates::ymd(2026, 11, day).unwrap()
     }
 
     #[test]
@@ -325,7 +324,7 @@ mod tests {
         assert_eq!(leaver.len(), 8);
         assert_eq!(
             leaver[0].due_on,
-            NaiveDate::from_ymd_opt(2026, 11, 2).unwrap(),
+            crate::dates::ymd(2026, 11, 2).unwrap(),
             "28 days before"
         );
         assert!(
@@ -335,14 +334,11 @@ mod tests {
         );
         assert_eq!(
             leaver.last().unwrap().due_on,
-            NaiveDate::from_ymd_opt(2026, 12, 5).unwrap(),
+            crate::dates::ymd(2026, 12, 5).unwrap(),
             "5 days after"
         );
         let joiner = plan("joiner", d(3));
-        assert_eq!(
-            joiner[0].due_on,
-            NaiveDate::from_ymd_opt(2026, 10, 27).unwrap()
-        );
+        assert_eq!(joiner[0].due_on, crate::dates::ymd(2026, 10, 27).unwrap());
         assert_eq!(
             joiner.iter().map(|p| p.position).collect::<Vec<_>>(),
             (0..7).collect::<Vec<_>>()

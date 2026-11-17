@@ -1,7 +1,5 @@
 //! Policies and acknowledgements (WPM-R156, WPM-D105): versions by reference, an audience, the newest version in force, a worker's own
 //! acknowledgement, a manager's counts with the floor, and HR's named record.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::policy_reminders::send_reminders;
@@ -63,7 +61,7 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
         assert_eq!(request.post("/api/policies").json(&json!({ "organization_ref": org, "name": "Code of conduct" })).await.status_code(), 422);
 
         let versions = format!("/api/policies/{policy}/versions");
-        let yesterday = (Utc::now().date_naive() - Duration::days(1)).to_string();
+        let yesterday = (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(1)).to_string();
         for bad in [
             json!({ "title": "", "document_ref": "doc:c1", "effective_on": yesterday, "audience": "all" }),
             json!({ "title": "T", "document_ref": "has a space", "effective_on": yesterday, "audience": "all" }),
@@ -136,7 +134,7 @@ async fn a_version_is_acknowledged_by_its_audience_counted_for_managers_and_name
 async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_reminded_once() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let make = |name: &'static str| {
             let request = &request;
             let org = org.clone();
@@ -157,7 +155,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
         assert_eq!(request.patch(&url).json(&json!({ "name": "Conduct" })).await.status_code(), 200, "its own name is not a clash");
         let version = request
             .post(&format!("/api/policies/{conduct}/versions"))
-            .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct", "effective_on": (today - Duration::days(1)).to_string(), "audience": "all", "acknowledge_within_days": 5 }))
+            .json(&json!({ "title": "Conduct", "document_ref": "doc:conduct", "effective_on": (today - workforce_planning_management::dates::days(1)).to_string(), "audience": "all", "acknowledge_within_days": 5 }))
             .await;
         assert_eq!(version.status_code(), 200, "{}", version.text());
         let renamed = request.patch(&url).json(&json!({ "name": "  Code of conduct " })).await;
@@ -209,7 +207,7 @@ async fn a_policy_is_renamed_without_touching_its_versions_and_workers_are_remin
             .unwrap();
         send_reminders(&ctx, today, 30).await.unwrap();
         assert_eq!(told(c).await, 0, "already acknowledged");
-        let early = send_reminders(&ctx, today - Duration::days(400), 30).await.unwrap();
+        let early = send_reminders(&ctx, today - workforce_planning_management::dates::days(400), 30).await.unwrap();
         assert_eq!(early, 0, "no version was in force 400 days ago, and nobody was employed");
     })
     .await;

@@ -4,7 +4,7 @@
 //! AI Act puts duties on it. The register **records** them per feature; it does not classify a system, certify
 //! conformity or count as evidence of compliance. Nothing recorded is `unknown`, never "overseen", "informed" or "kept".
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 
 /// A feature that derives something about people, from the scoring register of the equality impact assessments.
@@ -104,8 +104,8 @@ pub const MINIMUM_LOG_MONTHS: i32 = 6;
 ///
 /// Never: the date is a constant.
 #[must_use]
-pub fn default_applies_from() -> NaiveDate {
-    NaiveDate::from_ymd_opt(2027, 12, 2).expect("a valid date")
+pub fn default_applies_from() -> Date {
+    crate::dates::ymd(2027, 12, 2).expect("a valid date")
 }
 
 /// The feature with this id.
@@ -122,9 +122,9 @@ pub struct Entry {
     /// The role responsible for human oversight; a role, not a person.
     pub overseer_role: Option<String>,
     /// When workers' representatives were informed.
-    pub representatives_informed_on: Option<NaiveDate>,
+    pub representatives_informed_on: Option<Date>,
     /// When the affected workers were informed.
-    pub workers_informed_on: Option<NaiveDate>,
+    pub workers_informed_on: Option<Date>,
     /// How long the system's logs are kept, in months.
     pub log_retention_months: Option<i32>,
     /// Why retention is shorter than the minimum, where other law says so.
@@ -133,7 +133,7 @@ pub struct Entry {
 
 /// Check an entry made `today`. Returns the problems found.
 #[must_use]
-pub fn validate(e: &Entry, today: NaiveDate) -> Vec<String> {
+pub fn validate(e: &Entry, today: Date) -> Vec<String> {
     let mut out = Vec::new();
     if let Some(c) = &e.annex_category
         && !CATEGORIES.contains(&c.as_str())
@@ -207,9 +207,9 @@ pub struct Row {
     /// The oversight role.
     pub overseer_role: Field<String>,
     /// When representatives were informed.
-    pub representatives_informed_on: Field<NaiveDate>,
+    pub representatives_informed_on: Field<Date>,
     /// When workers were informed.
-    pub workers_informed_on: Field<NaiveDate>,
+    pub workers_informed_on: Field<Date>,
     /// Log retention in months.
     pub log_retention_months: Field<i32>,
     /// Why retention is short.
@@ -242,8 +242,8 @@ pub fn row(f: &Feature, e: Option<&Entry>) -> Row {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]

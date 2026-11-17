@@ -8,6 +8,7 @@
 
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -19,6 +20,7 @@ use crate::metrics::Metrics;
 use crate::models::_entities::{benefit_enrollments, benefit_plans, workers};
 use crate::models::{memberships, records};
 use crate::rules::{engagement, lifecycle, org, talent, tokens, worker_fields};
+use crate::sql_time::SqlDate;
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -44,11 +46,11 @@ struct WorkerPayload {
     salary_minor: Option<i64>,
     #[serde(default)]
     salary_currency: Option<String>,
-    hired_on: chrono::NaiveDate,
+    hired_on: Date,
     /// The last day of the engagement: required for `fixed_term` and `contractor`, optional
     /// for `intern`, refused for `permanent` (WPM-R79).
     #[serde(default)]
-    engagement_ends_on: Option<chrono::NaiveDate>,
+    engagement_ends_on: Option<Date>,
 }
 
 /// `PUT /api/workers/{pid}` body — the mutable employment facts.
@@ -81,7 +83,7 @@ struct WorkerUpdate {
     /// Record a missing end date. A date already set moves only by an extension
     /// (`POST /api/workers/{pid}/engagement/extensions`), so the history is kept.
     #[serde(default)]
-    engagement_ends_on: Option<chrono::NaiveDate>,
+    engagement_ends_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/status` body.
@@ -107,9 +109,9 @@ struct BenefitPlanPayload {
 #[derive(Debug, Deserialize)]
 struct EnrollmentPayload {
     plan_pid: Uuid,
-    starts_on: chrono::NaiveDate,
+    starts_on: Date,
     #[serde(default)]
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<Date>,
 }
 
 /// A `{pid}` reference response.
@@ -214,8 +216,8 @@ async fn create_worker(
         payload.manager_pid,
         payload.salary_minor,
         payload.salary_currency,
-        payload.hired_on,
-        payload.engagement_ends_on,
+        SqlDate(payload.hired_on),
+        payload.engagement_ends_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -249,7 +251,7 @@ async fn create_worker(
         Some(crate::rules::bridge::handoff_data(
             &row.person_ref,
             &row.organization_ref,
-            row.hired_on,
+            row.hired_on.get(),
         )),
     )
     .await?;
@@ -403,7 +405,7 @@ async fn get_worker(
 
 /// What is wrong with recording `end` on an existing worker, if anything: a date already set
 /// moves only by an extension (so the history is kept), and a new one must fit the basis.
-fn end_date_problem(worker: &workers::Model, end: Option<chrono::NaiveDate>) -> Option<String> {
+fn end_date_problem(worker: &workers::Model, end: Option<Date>) -> Option<String> {
     let end = end?;
     if worker.engagement_ends_on.is_some() {
         return Some(
@@ -411,7 +413,7 @@ fn end_date_problem(worker: &workers::Model, end: Option<chrono::NaiveDate>) -> 
                 .to_string(),
         );
     }
-    engagement::validate_end_date(&worker.employment_type, worker.hired_on, Some(end)).err()
+    engagement::validate_end_date(&worker.employment_type, worker.hired_on.get(), Some(end)).err()
 }
 
 /// `PUT /api/workers/{pid}` — update mutable employment facts.
@@ -534,7 +536,7 @@ async fn update_worker(
         payload.salary_minor,
         payload.salary_currency,
         payload.upstream_worker_ref,
-        payload.engagement_ends_on,
+        payload.engagement_ends_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -606,8 +608,7 @@ async fn change_status(
     let from = worker.status.clone();
     let number = worker.worker_number.clone();
     let department = worker.department.clone();
-    let ends = (payload.to == "terminated" || payload.to == "retired")
-        .then(|| chrono::Utc::now().date_naive());
+    let ends = (payload.to == "terminated" || payload.to == "retired").then(crate::dates::today);
     let mut tx = db::pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         workers::Model,
@@ -619,7 +620,7 @@ async fn change_status(
                   salary_currency, hired_on, terminated_on, engagement_ends_on, deleted_at AS "deleted_at: _""#,
         worker.id,
         payload.to,
-        ends,
+        ends.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -759,7 +760,7 @@ struct Person {
     department: String,
     location: Option<String>,
     manager_pid: Option<Uuid>,
-    hired_on: chrono::NaiveDate,
+    hired_on: Date,
 }
 
 /// Build one org-chart node (bounded depth; the write path
@@ -768,7 +769,7 @@ fn build_org_node(
     node: &Person,
     children: &HashMap<Option<Uuid>, Vec<&Person>>,
     depth: usize,
-    as_of: chrono::NaiveDate,
+    as_of: Date,
 ) -> OrgNode {
     let reports = if depth > 32 {
         Vec::new() // corrupt-cycle guard; the write path prevents cycles
@@ -854,7 +855,7 @@ async fn org_chart(
     for e in &rows {
         children.entry(e.manager_pid).or_default().push(e);
     }
-    let as_of = chrono::Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let roots: Vec<OrgNode> = children.get(&None).map_or_default(|top| {
         top.iter()
             .map(|n| build_org_node(n, &children, 0, as_of))
@@ -1000,8 +1001,8 @@ async fn enroll(
         new_pid,
         plan.pid,
         worker.pid,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        payload.ends_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -1102,7 +1103,7 @@ fn status_event_data(from: &str, to: &str, row: &workers::Model) -> serde_json::
             &row.person_ref,
             &row.organization_ref,
             row.terminated_on
-                .unwrap_or_else(|| chrono::Utc::now().date_naive()),
+                .map_or_else(crate::dates::today, SqlDate::get),
         );
         if let (Some(d), Some(h)) = (data.as_object_mut(), handoff.as_object()) {
             d.extend(h.clone());

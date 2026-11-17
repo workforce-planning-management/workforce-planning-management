@@ -4,8 +4,10 @@
 //! transaction.
 
 use super::row_json;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::{Timestamp, civil::Date};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -24,7 +26,7 @@ use crate::validation::Problems;
 /// `POST /api/workers/{pid}/time-entries` body.
 #[derive(Debug, Deserialize)]
 struct TimeEntryPayload {
-    worked_on: chrono::NaiveDate,
+    worked_on: Date,
     minutes: i32,
     #[serde(default = "default_kind")]
     kind: String,
@@ -44,8 +46,8 @@ struct EntitlementPayload {
 #[derive(Debug, Deserialize)]
 pub(crate) struct LeaveRequestPayload {
     kind: String,
-    start_on: chrono::NaiveDate,
-    end_on: chrono::NaiveDate,
+    start_on: Date,
+    end_on: Date,
     #[serde(default)]
     reason: Option<String>,
 }
@@ -54,8 +56,8 @@ pub(crate) struct LeaveRequestPayload {
 #[derive(Debug, Deserialize)]
 struct ShiftPayload {
     department: String,
-    starts_at: chrono::DateTime<chrono::FixedOffset>,
-    ends_at: chrono::DateTime<chrono::FixedOffset>,
+    starts_at: Timestamp,
+    ends_at: Timestamp,
     #[serde(default = "default_headcount")]
     required_headcount: i32,
 }
@@ -96,7 +98,7 @@ async fn create_time_entry(
     let existing: Vec<i32> = sqlx::query_scalar!(
         "SELECT minutes FROM time_entries WHERE worker_pid = $1 AND worked_on = $2 AND deleted_at IS NULL",
         worker.pid,
-        payload.worked_on,
+        SqlDate(payload.worked_on),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -110,7 +112,7 @@ async fn create_time_entry(
          VALUES ($1, $2, $3, $4, $5, 'recorded', $6)",
         pid,
         worker.pid,
-        payload.worked_on,
+        SqlDate(payload.worked_on),
         payload.minutes,
         payload.kind,
         payload.notes,
@@ -147,9 +149,9 @@ async fn create_time_entry(
 #[derive(Debug, Deserialize)]
 struct TimeListParams {
     #[serde(default)]
-    from: Option<chrono::NaiveDate>,
+    from: Option<Date>,
     #[serde(default)]
-    to: Option<chrono::NaiveDate>,
+    to: Option<Date>,
 }
 
 #[debug_handler]
@@ -161,25 +163,24 @@ async fn list_time_entries(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         time_entries::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, worked_on, minutes,
-                  kind, status, notes, deleted_at AS "deleted_at: _"
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, worked_on, minutes,
+                  kind, status, notes, deleted_at
              FROM time_entries
             WHERE worker_pid = $1 AND deleted_at IS NULL AND ($2::date IS NULL OR worked_on >= $2)
               AND ($3::date IS NULL OR worked_on <= $3)
             ORDER BY worked_on, id
             LIMIT 1000"#,
         worker.pid,
-        params.from,
-        params.to,
+        params.from.map(SqlDate),
+        params.to.map(SqlDate),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
     // Per-day overtime derivation over the returned window, against the deployment's day (WPM-T383).
     let full_day = super::payroll::contracted_day();
-    let mut days: std::collections::BTreeMap<chrono::NaiveDate, (i32, i32)> =
-        std::collections::BTreeMap::new();
+    let mut days: std::collections::BTreeMap<Date, (i32, i32)> = std::collections::BTreeMap::new();
     for entry in &rows {
-        let slot = days.entry(entry.worked_on).or_default();
+        let slot = days.entry(entry.worked_on.get()).or_default();
         if entry.kind == "overtime" {
             slot.1 += entry.minutes;
         } else {
@@ -220,8 +221,8 @@ async fn approve_time_entry(
     let row = sqlx::query_as!(
         time_entries::Model,
         r#"UPDATE time_entries SET status = 'approved' WHERE id = $1
-        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, worked_on, minutes,
-                  kind, status, notes, deleted_at AS "deleted_at: _""#,
+        RETURNING created_at, updated_at, id, pid, worker_pid, worked_on, minutes,
+                  kind, status, notes, deleted_at"#,
         entry.id,
     )
     .fetch_one(&mut *tx)
@@ -311,8 +312,8 @@ async fn list_entitlements(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         leave_entitlements::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, year,
-                  entitled_days, used_days, deleted_at AS "deleted_at: _"
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, kind, year,
+                  entitled_days, used_days, deleted_at
              FROM leave_entitlements WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
         worker.pid,
     )
@@ -371,8 +372,8 @@ pub(crate) async fn create_leave_for(
         pid,
         worker.pid,
         payload.kind,
-        payload.start_on,
-        payload.end_on,
+        SqlDate(payload.start_on),
+        SqlDate(payload.end_on),
         days,
         negative,
         payload.reason,
@@ -407,11 +408,10 @@ async fn balance_check(
     ctx: &AppContext,
     worker: &crate::models::_entities::workers::Model,
     kind: &str,
-    start_on: chrono::NaiveDate,
+    start_on: Date,
     days: i32,
 ) -> Result<leave::BalanceCheck> {
-    use chrono::Datelike;
-    let year = start_on.year();
+    let year = i32::from(start_on.year());
     let entitlement = sqlx::query!(
         "SELECT entitled_days, used_days FROM leave_entitlements
           WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1",
@@ -434,9 +434,9 @@ async fn list_leave_requests(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         leave_requests::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, start_on, end_on,
-                  days, status, negative_balance, reason, decided_by, decided_at AS "decided_at: _",
-                  deleted_at AS "deleted_at: _"
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, kind, start_on, end_on,
+                  days, status, negative_balance, reason, decided_by, decided_at,
+                  deleted_at
              FROM leave_requests WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
         worker.pid,
     )
@@ -455,7 +455,6 @@ pub(crate) async fn decide_leave(
     pid: &str,
     to: &str,
 ) -> Result<Response> {
-    use chrono::Datelike;
     let pid = records::parse_pid(pid)?;
     let mut tx = db::pool(ctx).begin().await?;
     // Lock the request row: two racing approvers serialize here; the
@@ -471,14 +470,14 @@ pub(crate) async fn decide_leave(
     lifecycle::check("leave request", lifecycle::LEAVE, &request.status, to)
         .map_err(|e| unprocessable(&e))?;
     let was = request.status.clone();
-    let year = request.start_on.year();
+    let year = i32::from(request.start_on.year());
     let days = request.days;
     let row = sqlx::query_as!(
         leave_requests::Model,
         r#"UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now() WHERE id = $1
-        RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, start_on, end_on,
-                  days, status, negative_balance, reason, decided_by, decided_at AS "decided_at: _",
-                  deleted_at AS "deleted_at: _""#,
+        RETURNING created_at, updated_at, id, pid, worker_pid, kind, start_on, end_on,
+                  days, status, negative_balance, reason, decided_by, decided_at,
+                  deleted_at"#,
         request.id,
         to,
         caller.actor(),
@@ -626,8 +625,8 @@ async fn create_shift(
         "INSERT INTO shifts (pid, department, starts_at, ends_at, required_headcount) VALUES ($1, $2, $3, $4, $5)",
         pid,
         payload.department,
-        payload.starts_at,
-        payload.ends_at,
+        SqlTimestamp(payload.starts_at),
+        SqlTimestamp(payload.ends_at),
         payload.required_headcount,
     )
     .execute(&mut *tx)
@@ -645,7 +644,7 @@ struct RotaParams {
     #[serde(default)]
     department: Option<String>,
     #[serde(default)]
-    date: Option<chrono::NaiveDate>,
+    date: Option<Date>,
 }
 
 #[debug_handler]
@@ -655,8 +654,8 @@ async fn list_shifts(
 ) -> Result<Response> {
     let rows = sqlx::query_as!(
         shifts::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, department,
-                  starts_at AS "starts_at: _", ends_at AS "ends_at: _", required_headcount, deleted_at AS "deleted_at: _"
+        r#"SELECT created_at, updated_at, id, pid, department,
+                  starts_at, ends_at, required_headcount, deleted_at
              FROM shifts WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1)
             ORDER BY starts_at, id
             LIMIT 1000"#,
@@ -666,7 +665,7 @@ async fn list_shifts(
     .await?;
     let rows: Vec<_> = if let Some(date) = params.date {
         rows.into_iter()
-            .filter(|s| s.starts_at.date_naive() == date)
+            .filter(|s| crate::dates::date_of(s.starts_at) == date)
             .collect()
     } else {
         rows
@@ -677,8 +676,8 @@ async fn list_shifts(
         std::collections::HashMap::new();
     for assignment in sqlx::query_as!(
         shift_assignments::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, shift_pid, worker_pid,
-                  deleted_at AS "deleted_at: _"
+        r#"SELECT created_at, updated_at, id, pid, shift_pid, worker_pid,
+                  deleted_at
              FROM shift_assignments WHERE shift_pid = ANY($1) AND deleted_at IS NULL ORDER BY id"#,
         &shift_pids,
     )
@@ -709,8 +708,8 @@ async fn assign_shift(
     Json(payload): Json<AssignmentPayload>,
 ) -> Result<Response> {
     let shift = sqlx::query!(
-        r#"SELECT pid, starts_at AS "starts_at: chrono::DateTime<chrono::FixedOffset>",
-                  ends_at AS "ends_at: chrono::DateTime<chrono::FixedOffset>"
+        r#"SELECT pid, starts_at,
+                  ends_at
              FROM shifts WHERE pid = $1 AND deleted_at IS NULL"#,
         records::parse_pid(&pid)?,
     )
@@ -720,8 +719,8 @@ async fn assign_shift(
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     // Double-booking: any live assignment to an overlapping live shift.
     let theirs = sqlx::query!(
-        r#"SELECT s.pid, s.starts_at AS "starts_at: chrono::DateTime<chrono::FixedOffset>",
-                  s.ends_at AS "ends_at: chrono::DateTime<chrono::FixedOffset>"
+        r#"SELECT s.pid, s.starts_at,
+                  s.ends_at
              FROM shift_assignments a JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL
             WHERE a.worker_pid = $1 AND a.deleted_at IS NULL
             ORDER BY a.id"#,
@@ -731,10 +730,10 @@ async fn assign_shift(
     .await?;
     for other in &theirs {
         if workforce::windows_overlap(
-            shift.starts_at,
-            shift.ends_at,
-            other.starts_at,
-            other.ends_at,
+            shift.starts_at.get(),
+            shift.ends_at.get(),
+            other.starts_at.get(),
+            other.ends_at.get(),
         ) {
             return Err(unprocessable(&format!(
                 "double booking: worker already assigned to an overlapping shift ({})",
@@ -750,10 +749,15 @@ async fn assign_shift(
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let shift_start = shift.starts_at.date_naive();
-    let shift_end = shift.ends_at.date_naive();
+    let shift_start = crate::dates::date_of(shift.starts_at);
+    let shift_end = crate::dates::date_of(shift.ends_at);
     for request in &approved_leave {
-        if leave::ranges_overlap(shift_start, shift_end, request.start_on, request.end_on) {
+        if leave::ranges_overlap(
+            shift_start,
+            shift_end,
+            request.start_on.get(),
+            request.end_on.get(),
+        ) {
             return Err(unprocessable(&format!(
                 "worker is on approved {} leave {} to {}",
                 request.kind, request.start_on, request.end_on
@@ -834,7 +838,7 @@ async fn unassign_shift(
 #[derive(Debug, Deserialize)]
 struct WorkingTimeQuery {
     department: Option<String>,
-    as_of: Option<chrono::NaiveDate>,
+    as_of: Option<Date>,
 }
 
 /// How far the rest-gap check looks around `as_of` (days, each way) —
@@ -842,7 +846,7 @@ struct WorkingTimeQuery {
 const REST_WINDOW_DAYS: i64 = 28;
 
 /// One shift's `(starts, ends)` in UTC, for the rest-gap check.
-type ShiftInterval = (chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>);
+type ShiftInterval = (Timestamp, Timestamp);
 
 /// One worker's three resolved working-time limits.
 struct WorkerLimits {
@@ -875,9 +879,7 @@ async fn working_time(
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     use crate::rules::jurisdiction::Resolution;
-    let as_of = query
-        .as_of
-        .unwrap_or_else(|| chrono::Utc::now().date_naive());
+    let as_of = query.as_of.unwrap_or_else(crate::dates::today);
     let department = query.department.as_deref();
     // Every worker in scope, with where their work is done: the limits are per worker.
     let places: Vec<(Uuid, String, Option<String>)> = sqlx::query!(
@@ -930,7 +932,7 @@ async fn working_time(
     // a week at the heavy floor; only their entries are then summed over the exact window.
     let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
     for (&(weeks, ceiling), pids) in &groups {
-        let window_start = as_of - chrono::Duration::weeks(weeks);
+        let window_start = as_of - crate::dates::days(7 * weeks);
         let total_ceiling = ceiling.saturating_mul(weeks);
         let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
         // One bind for the whole list (`ANY`), so the statement's parameter limit does not apply.
@@ -949,8 +951,8 @@ async fn working_time(
                 WHERE t.worker_pid IN (SELECT worker_pid FROM maybe)
                   AND t.deleted_at IS NULL AND t.worked_on > $1::date AND t.worked_on <= $2::date
                 GROUP BY t.worker_pid HAVING SUM(t.minutes) > $3::bigint"#,
-            window_start,
-            as_of,
+            SqlDate(window_start),
+            SqlDate(as_of),
             total_ceiling,
             heavy,
             pids.as_slice(),
@@ -962,21 +964,21 @@ async fn working_time(
         }
     }
     // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
-    let rest_start = as_of - chrono::Duration::days(REST_WINDOW_DAYS);
-    let rest_end = as_of + chrono::Duration::days(REST_WINDOW_DAYS);
-    let utc_midnight = |date: chrono::NaiveDate| date.and_time(chrono::NaiveTime::MIN).and_utc();
+    let rest_start = as_of - crate::dates::days(REST_WINDOW_DAYS);
+    let rest_end = as_of + crate::dates::days(REST_WINDOW_DAYS);
+    let utc_midnight = |date: Date| crate::sql_time::SqlTimestamp(crate::dates::start_of_day(date));
     let shift_rows = sqlx::query!(
-        r#"SELECT pid, starts_at AS "starts_at: chrono::DateTime<chrono::Utc>",
-                  ends_at AS "ends_at: chrono::DateTime<chrono::Utc>"
+        r#"SELECT pid, starts_at,
+                  ends_at
              FROM shifts WHERE deleted_at IS NULL AND starts_at >= $1 AND starts_at < $2"#,
         utc_midnight(rest_start),
-        utc_midnight(rest_end + chrono::Duration::days(1)),
+        utc_midnight(rest_end + crate::dates::days(1)),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
     let window_shifts: std::collections::BTreeMap<Uuid, ShiftInterval> = shift_rows
         .iter()
-        .map(|shift| (shift.pid, (shift.starts_at, shift.ends_at)))
+        .map(|shift| (shift.pid, (shift.starts_at.get(), shift.ends_at.get())))
         .collect();
     let window_pids: Vec<Uuid> = window_shifts.keys().copied().collect();
     let mut assigned: Vec<(Uuid, ShiftInterval)> = Vec::new();
@@ -1006,8 +1008,8 @@ async fn working_time(
             "SELECT SUM(minutes)::bigint FROM time_entries
               WHERE deleted_at IS NULL AND worker_pid = $1 AND worked_on > $2 AND worked_on <= $3",
             *pid,
-            as_of - chrono::Duration::weeks(weeks),
-            as_of,
+            SqlDate(as_of - crate::dates::days(7 * weeks)),
+            SqlDate(as_of),
         )
         .fetch_one(db::pool(&ctx))
         .await?;

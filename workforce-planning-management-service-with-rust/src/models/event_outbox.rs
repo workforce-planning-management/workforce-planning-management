@@ -8,7 +8,7 @@
 //! poll and ack are roadmap (the relay itself is not built yet).
 
 use axa::prelude::*;
-use chrono::{DateTime, FixedOffset};
+use jiff::Timestamp;
 use uuid::Uuid;
 
 use crate::streaming::Envelope;
@@ -27,7 +27,7 @@ pub struct OutboxInsert {
     /// Change kind token (`created`, `worker_hired`, …).
     pub kind: String,
     /// When the change occurred.
-    pub occurred_at: DateTime<FixedOffset>,
+    pub occurred_at: Timestamp,
     /// Actor pid, if any.
     pub actor: Option<String>,
     /// Envelope schema version.
@@ -43,7 +43,7 @@ impl OutboxInsert {
     /// # Errors
     ///
     /// When `env.pid` is not a UUID, or the envelope fails to serialize.
-    pub fn from_envelope(env: &Envelope, occurred_at: DateTime<FixedOffset>) -> ModelResult<Self> {
+    pub fn from_envelope(env: &Envelope, occurred_at: Timestamp) -> ModelResult<Self> {
         let entity_pid = Uuid::parse_str(&env.pid).map_err(|e| ModelError::Any(Box::new(e)))?;
         let payload = serde_json::to_value(env).map_err(|e| ModelError::Any(Box::new(e)))?;
         Ok(Self {
@@ -63,7 +63,7 @@ impl OutboxInsert {
 mod tests {
     use super::OutboxInsert;
     use crate::streaming::Envelope;
-    use chrono::{FixedOffset, TimeZone};
+    use jiff::Timestamp;
     use uuid::Uuid;
 
     fn an_envelope(kind: &str, pid: &str) -> Envelope {
@@ -80,11 +80,8 @@ mod tests {
         }
     }
 
-    fn an_instant() -> chrono::DateTime<FixedOffset> {
-        FixedOffset::east_opt(0)
-            .unwrap()
-            .with_ymd_and_hms(2026, 7, 17, 9, 0, 0)
-            .unwrap()
+    fn an_instant() -> Timestamp {
+        crate::dates::utc(2026, 7, 17, 9, 0, 0).unwrap()
     }
 
     /// Every field maps and the full envelope survives as the payload.

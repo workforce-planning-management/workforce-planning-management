@@ -19,7 +19,7 @@
 //! monthly (Spain, China). A monthly floor is brought to the period by calendar days, the number of payments a year (Spain
 //! states 14) and the worker's FTE.
 
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 
 /// The registry key of the age from which the adult floor applies, in whole years. Zero or unset means every worker is in the
 /// adult band and no date of birth is read.
@@ -208,7 +208,7 @@ impl Outcome {
 /// Whole years completed on `on` by someone born on `born`, never below zero. A birthday on 29 February is reached on 1 March
 /// in a year with no 29 February.
 #[must_use]
-pub fn completed_years(born: NaiveDate, on: NaiveDate) -> i64 {
+pub fn completed_years(born: Date, on: Date) -> i64 {
     let mut years = i64::from(on.year()) - i64::from(born.year());
     if (on.month(), on.day()) < (born.month(), born.day()) {
         years -= 1;
@@ -361,8 +361,8 @@ fn evaluate(floor: &Floor, inputs: &Inputs) -> Outcome {
 mod tests {
     use super::*;
 
-    fn date(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn date(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     /// The `GB` shape: three bands, hourly, in pence.

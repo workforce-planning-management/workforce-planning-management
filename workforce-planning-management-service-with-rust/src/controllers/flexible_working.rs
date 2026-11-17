@@ -15,7 +15,7 @@ use super::ensure_org_in_scope;
 use super::forbidden;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -28,6 +28,7 @@ use crate::models::{memberships, records};
 use crate::need_to_know::facts_for;
 use crate::rules::access::Relation;
 use crate::rules::flexible_working::{self as rules, Action, Status};
+use crate::sql_time::SqlDate;
 use crate::validation::Problems;
 
 use super::jurisdictions::Scope;
@@ -56,7 +57,7 @@ fn number(name: &str, max: u32) -> Option<u32> {
 /// (`flexible_working.decision_months`), else `WPM_FLEXIBLE_DECISION_MONTHS` (at most 12, at least
 /// 1), else 2.
 #[must_use]
-pub fn decision_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+pub fn decision_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
     let name = "WPM_FLEXIBLE_DECISION_MONTHS";
     statutory::integer(
         scope,
@@ -71,7 +72,7 @@ pub fn decision_months(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> 
 /// (`flexible_working.requests_per_year`), else `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, else 2; `0` for no
 /// limit.
 #[must_use]
-pub fn requests_per_year(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+pub fn requests_per_year(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
     let name = "WPM_FLEXIBLE_REQUESTS_PER_YEAR";
     statutory::integer(
         scope,
@@ -85,7 +86,7 @@ pub fn requests_per_year(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32
 /// Calendar days to appeal a refusal: the profile's (`flexible_working.appeal_calendar_days`), else
 /// `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS`, else 14.
 #[must_use]
-pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<u32> {
+pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
     let name = "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS";
     statutory::integer(
         scope,
@@ -99,7 +100,7 @@ pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<
 /// The allowed refusal reasons: the profile's (`flexible_working.refusal_reasons`), else
 /// `WPM_FLEXIBLE_REFUSAL_REASONS` (comma-separated lowercase tokens), else the defaults.
 #[must_use]
-pub fn refusal_reasons(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<Vec<String>> {
+pub fn refusal_reasons(scope: Option<&Scope>, as_of: Date) -> InForce<Vec<String>> {
     let name = "WPM_FLEXIBLE_REFUSAL_REASONS";
     let configured = setting(name).and_then(|text| match rules::parse_reasons(&text) {
         Ok(list) => Some(list),
@@ -126,11 +127,7 @@ pub fn refusal_reasons(scope: Option<&Scope>, as_of: NaiveDate) -> InForce<Vec<S
 }
 
 /// The calendar days `worker` has to appeal, from their own chain.
-async fn appeal_days_for(
-    ctx: &AppContext,
-    worker: &workers::Model,
-    as_of: NaiveDate,
-) -> Result<u32> {
+async fn appeal_days_for(ctx: &AppContext, worker: &workers::Model, as_of: Date) -> Result<u32> {
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     Ok(appeal_calendar_days(Some(&scope), as_of).value)
 }
@@ -141,9 +138,9 @@ fn status_of(row: &requests::Model) -> Result<Status> {
     Status::parse(&row.status).ok_or_else(|| super::internal("a request has an unknown status"))
 }
 
-fn view(row: &requests::Model, today: NaiveDate, appeal_days: u32) -> serde_json::Value {
+fn view(row: &requests::Model, today: Date, appeal_days: u32) -> serde_json::Value {
     let status = Status::parse(&row.status);
-    let overdue = status.is_some_and(|s| rules::is_overdue(s, row.decide_by, today));
+    let overdue = status.is_some_and(|s| rules::is_overdue(s, row.decide_by.get(), today));
     json!({
         "pid": row.pid,
         "kind": row.kind,
@@ -164,7 +161,7 @@ fn view(row: &requests::Model, today: NaiveDate, appeal_days: u32) -> serde_json
         "appealed_on": row.appealed_on,
         "appeal_note": row.appeal_note,
         "can_appeal": status == Some(Status::Refused)
-            && row.decided_on.is_some_and(|on| rules::can_appeal(on, today, appeal_days)),
+            && row.decided_on.is_some_and(|on| rules::can_appeal(on.get(), today, appeal_days)),
         // The software never changes a contract: an agreed change of hours is for HR to apply.
         "hr_to_apply_fte_percent": if status.is_some_and(Status::is_agreed) {
             if status == Some(Status::Accepted) { row.counter_fte_percent.or(row.proposed_fte_percent) } else { row.proposed_fte_percent }
@@ -180,7 +177,7 @@ fn view(row: &requests::Model, today: NaiveDate, appeal_days: u32) -> serde_json
 #[derive(Debug, Deserialize)]
 pub(crate) struct RequestPayload {
     kind: String,
-    proposed_start: NaiveDate,
+    proposed_start: Date,
     #[serde(default)]
     proposed_fte_percent: Option<i32>,
     /// The worker's own view of the effect on the team. Their words; not for health detail.
@@ -204,7 +201,7 @@ pub(crate) async fn create_for(
     worker: &workers::Model,
     payload: RequestPayload,
 ) -> Result<Response> {
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut problems = Problems::new();
     if let Some(t) = &payload.effect_on_team {
         problems.cap_text("effect_on_team", t);
@@ -220,14 +217,14 @@ pub(crate) async fn create_for(
         today,
     )
     .map_err(|e| unprocessable(&e))?;
-    let previous: Vec<(NaiveDate, Status)> = sqlx::query!(
+    let previous: Vec<(Date, Status)> = sqlx::query!(
         "SELECT requested_on, status FROM flexible_working_requests WHERE worker_pid = $1",
         worker.pid,
     )
     .fetch_all(db::pool(ctx))
     .await?
     .iter()
-    .filter_map(|r| Some((r.requested_on, Status::parse(&r.status)?)))
+    .filter_map(|r| Some((r.requested_on.get(), Status::parse(&r.status)?)))
     .collect();
     let scope = Scope::for_worker(crate::db::pool(ctx), worker).await?;
     let per_year = requests_per_year(Some(&scope), today);
@@ -249,13 +246,13 @@ pub(crate) async fn create_for(
         pid,
         worker.pid,
         payload.kind,
-        today,
-        payload.proposed_start,
+        SqlDate(today),
+        SqlDate(payload.proposed_start),
         payload.proposed_fte_percent,
         clean(payload.effect_on_team.as_ref()),
         clean(payload.how_to_manage.as_ref()),
         Status::Requested.as_str(),
-        decide_by,
+        SqlDate(decide_by),
     )
     .execute(&mut *tx)
     .await?;
@@ -292,7 +289,7 @@ pub(crate) async fn create_for(
 
 /// The worker's own requests, newest first. Shared with `/api/me/flexible-working`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         requests::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
@@ -545,7 +542,7 @@ pub(crate) async fn withdraw_for(
         |_| {},
     )
     .await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     format::json(view(
         &saved,
         today,
@@ -580,7 +577,7 @@ pub(crate) async fn respond_for(
         Event::Declined
     };
     let saved = move_to(ctx, caller, worker, row, action, event, |_| {}).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     format::json(view(
         &saved,
         today,
@@ -609,12 +606,12 @@ pub(crate) async fn appeal_for(
     }
     super::ensure_valid(&problems.into_vec())?;
     let row = own_request(ctx, worker, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let appeal_days = appeal_days_for(ctx, worker, today).await?;
     if status_of(&row)? == Status::Refused
         && !row
             .decided_on
-            .is_some_and(|on| rules::can_appeal(on, today, appeal_days))
+            .is_some_and(|on| rules::can_appeal(on.get(), today, appeal_days))
     {
         return Err(unprocessable(&format!(
             "an appeal must be made within {appeal_days} calendar days of the refusal"
@@ -629,7 +626,7 @@ pub(crate) async fn appeal_for(
         Action::Appeal,
         Event::Appealed,
         |a| {
-            a.appealed_on = Some(today);
+            a.appealed_on = Some(SqlDate(today));
             a.appeal_note = note;
         },
     )
@@ -703,7 +700,7 @@ struct DecidePayload {
     note: Option<String>,
     /// For an approval: a trial that ends on this day.
     #[serde(default)]
-    trial_until: Option<NaiveDate>,
+    trial_until: Option<Date>,
     /// For a counter-proposal: what is offered instead.
     #[serde(default)]
     counter_note: Option<String>,
@@ -733,7 +730,7 @@ async fn decide(
         }
     }
     super::ensure_valid(&problems.into_vec())?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let (action, event) = match payload.outcome.as_str() {
         "approve" => (Action::Approve, Event::Approved),
         "refuse" => (Action::Refuse, Event::Refused),
@@ -784,13 +781,13 @@ async fn decide(
         payload.trial_until.filter(|_| action == Action::Approve),
     );
     let saved = move_to(&ctx, &caller, &worker, row, action, event, |a| {
-        a.decided_on = Some(today);
+        a.decided_on = Some(SqlDate(today));
         a.decided_by = actor;
         a.decision_reason = reason;
         a.decision_note = note;
         a.counter_note = counter_note;
         a.counter_fte_percent = counter_fte;
-        a.trial_until = trial;
+        a.trial_until = trial.map(SqlDate);
     })
     .await?;
     tell(
@@ -842,7 +839,7 @@ async fn decide_appeal(
     }
     super::ensure_valid(&problems.into_vec())?;
     let note = clean(payload.note.as_ref());
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let saved = move_to(&ctx, &caller, &worker, row, action, event, |a| {
         a.appeal_decided_by = actor;
         if note.is_some() {
@@ -889,7 +886,7 @@ async fn list(
     {
         return Err(unprocessable("unknown status"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         requests::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,

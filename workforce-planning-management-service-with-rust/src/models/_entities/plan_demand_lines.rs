@@ -2,20 +2,20 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub plan_pid: Uuid,
     pub department: String,
     pub role_profile_pid: Option<Uuid>,
-    pub target_on: NaiveDate,
+    pub target_on: SqlDate,
     pub target_headcount: i32,
     pub note: Option<String>,
     /// The programme the demand serves (`thing:` URN), if any.
@@ -25,5 +25,5 @@ pub struct Model {
     /// The engagement basis of the demand.
     pub basis: String,
     /// The last day the demanded engagements run, for a basis that ends.
-    pub expected_ends_on: Option<NaiveDate>,
+    pub expected_ends_on: Option<SqlDate>,
 }

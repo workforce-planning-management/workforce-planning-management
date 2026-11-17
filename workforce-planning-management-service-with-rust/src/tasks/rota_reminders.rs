@@ -10,6 +10,7 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
+use jiff::civil::Date;
 
 use crate::controllers::rotas::turns_starting_on;
 
@@ -30,9 +31,9 @@ impl Task for RotaReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<chrono::NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let days_ahead = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -42,7 +43,7 @@ impl Task for RotaReminders {
                 .ok_or_else(|| Error::string("days_ahead must be a number from 0 to 14"))?,
             Err(_) => 1,
         };
-        let sent = send_reminders(ctx, as_of + chrono::Duration::days(days_ahead)).await?;
+        let sent = send_reminders(ctx, as_of + crate::dates::days(days_ahead)).await?;
         tracing::info!(%as_of, days_ahead, sent, "on-call reminders sent");
         Ok(())
     }
@@ -54,7 +55,7 @@ impl Task for RotaReminders {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, starts_on: chrono::NaiveDate) -> Result<usize> {
+pub async fn send_reminders(ctx: &AppContext, starts_on: Date) -> Result<usize> {
     let mut sent = 0;
     for (rota, worker) in turns_starting_on(ctx, starts_on).await? {
         let already = sqlx::query_scalar!(

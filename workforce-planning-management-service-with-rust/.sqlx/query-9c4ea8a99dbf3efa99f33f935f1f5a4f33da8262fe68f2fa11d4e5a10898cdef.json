@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE worker_skills\n                      SET proficiency = $2, source_framework = $3, source_level = $4, source_scale_max = $5, target = $6,\n                          assessed_on = $7, deleted_at = NULL\n                    WHERE id = $1\n                RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, skill_pid,\n                          proficiency, target, assessed_on, source_framework, source_level, source_scale_max,\n                          deleted_at AS \"deleted_at: _\"",
+  "query": "UPDATE worker_skills\n                      SET proficiency = $2, source_framework = $3, source_level = $4, source_scale_max = $5, target = $6,\n                          assessed_on = $7, deleted_at = NULL\n                    WHERE id = $1\n                RETURNING created_at, updated_at, id, pid, worker_pid, skill_pid,\n                          proficiency, target, assessed_on, source_framework, source_level, source_scale_max,\n                          deleted_at",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -137,7 +137,7 @@
       },
       {
         "ordinal": 12,
-        "name": "deleted_at: _",
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -174,5 +174,5 @@
       true
     ]
   },
-  "hash": "a605c17cbe7ebb0ce2bdc0f3f83a2e08e216890f7aa6b0f1225ecb11977fbb7f"
+  "hash": "9c4ea8a99dbf3efa99f33f935f1f5a4f33da8262fe68f2fa11d4e5a10898cdef"
 }

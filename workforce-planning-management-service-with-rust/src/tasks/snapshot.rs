@@ -8,9 +8,11 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
+use jiff::civil::Date;
 use uuid::Uuid;
 
 use crate::rules::metrics::{self, WorkerFacts};
+use crate::sql_time::SqlDate;
 
 /// The headcount-snapshot task.
 pub struct SnapshotHeadcount;
@@ -29,9 +31,9 @@ impl Task for SnapshotHeadcount {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<chrono::NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let written = run_snapshot(crate::db::pool(ctx), as_of).await?;
         tracing::info!(%as_of, written, "headcount snapshot recorded");
@@ -44,21 +46,31 @@ impl Task for SnapshotHeadcount {
 ///
 /// # Errors
 /// A database error.
-pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: chrono::NaiveDate) -> Result<usize> {
-    let facts: Vec<WorkerFacts> = sqlx::query_as!(
-        WorkerFacts,
+pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
+    let facts: Vec<WorkerFacts> = sqlx::query!(
         "SELECT organization_ref, department, fte_percent, employment_type, hired_on, terminated_on
            FROM workers WHERE deleted_at IS NULL"
     )
     .fetch_all(pool)
-    .await?;
+    .await?
+    .into_iter()
+    .map(|w| WorkerFacts {
+        organization_ref: w.organization_ref,
+        department: w.department,
+        fte_percent: w.fte_percent,
+        employment_type: w.employment_type,
+        hired_on: w.hired_on.get(),
+        terminated_on: w.terminated_on.map(SqlDate::get),
+    })
+    .collect();
     // The window starts after the most recent earlier snapshot.
     let since = sqlx::query_scalar!(
         "SELECT max(as_of) FROM headcount_snapshots WHERE as_of < $1",
-        as_of
+        SqlDate(as_of)
     )
     .fetch_one(pool)
-    .await?;
+    .await?
+    .map(SqlDate::get);
 
     let mut tx = pool.begin().await?;
     let mut written = 0;
@@ -68,7 +80,7 @@ pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: chrono::NaiveDate) -> Resu
                                WHERE organization_ref = $1 AND department = $2 AND as_of = $3) AS "e!""#,
             row.organization_ref,
             row.department,
-            as_of,
+            SqlDate(as_of),
         )
         .fetch_one(&mut *tx)
         .await?;
@@ -83,7 +95,7 @@ pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: chrono::NaiveDate) -> Resu
             Uuid::new_v4(),
             row.organization_ref,
             row.department,
-            as_of,
+            SqlDate(as_of),
             i32::try_from(row.headcount).unwrap_or(i32::MAX),
             row.fte_percent_total,
             i32::try_from(row.contractor_headcount).ok(),

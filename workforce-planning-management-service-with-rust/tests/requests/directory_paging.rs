@@ -228,7 +228,7 @@ async fn the_rota_a_worker_is_on_call_for_is_searchable_beside_another_term() {
                 .assert_status_ok();
             members.push(pid);
         }
-        let today = chrono::Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         request
             .post("/api/rotas")
             .json(

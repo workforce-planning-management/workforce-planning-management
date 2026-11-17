@@ -1,9 +1,15 @@
 //! Demand lines (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
+use super::{
+    AppContext, Deserialize, Error, MaybeAuthUser, PidRef, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_editable, ensure_valid, format, records, rules, scoped_plan,
+    unprocessable,
+};
 #[allow(clippy::wildcard_imports)]
-use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
+use jiff::civil::Date;
 
 /// `PUT /api/workforce-plans/{pid}/demand-lines` body.
 #[derive(Debug, Deserialize)]
@@ -11,7 +17,7 @@ pub(super) struct LinePayload {
     department: String,
     #[serde(default)]
     role_profile_pid: Option<Uuid>,
-    target_on: chrono::NaiveDate,
+    target_on: Date,
     target_headcount: i32,
     /// FTE across the headcount, in percent of one person (`250` is two and a half people); not
     /// stated is unknown, never assumed to be the headcount.
@@ -22,7 +28,7 @@ pub(super) struct LinePayload {
     basis: String,
     /// The last day a basis that ends runs.
     #[serde(default)]
-    expected_ends_on: Option<chrono::NaiveDate>,
+    expected_ends_on: Option<Date>,
     /// The programme the demand serves (`thing:` URN).
     #[serde(default)]
     programme_ref: Option<String>,
@@ -59,8 +65,8 @@ pub(super) async fn set_line(
     rules::validate_line(
         &payload.department,
         payload.target_on,
-        plan.horizon_start,
-        plan.horizon_end,
+        plan.horizon_start.get(),
+        plan.horizon_end.get(),
         payload.target_headcount,
     )
     .map_err(|e| unprocessable(&e))?;
@@ -98,11 +104,11 @@ pub(super) async fn set_line(
         plan.pid,
         payload.department.trim(),
         payload.role_profile_pid,
-        payload.target_on,
+        SqlDate(payload.target_on),
         payload.target_headcount,
         payload.target_fte_percent,
         payload.basis,
-        payload.expected_ends_on,
+        payload.expected_ends_on.map(SqlDate),
         payload.programme_ref,
         payload.note,
     )

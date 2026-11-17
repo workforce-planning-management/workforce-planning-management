@@ -191,7 +191,7 @@ pub async fn import_pcf(
     }
 
     // Framework row.
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let framework_note = "Role structure and wording: the official framework role summaries. \
                           Required levels: baselines from the community competency assessments \
                           (AI-assisted, human-reviewed) — a draft for a human to edit.";
@@ -211,7 +211,7 @@ pub async fn import_pcf(
          Data Profession Capability Framework.",
         rules::PCF_SCALE_MAX,
         "1 Awareness; 2 Working; 3 Practitioner; 4 Expert",
-        today,
+        crate::sql_time::SqlDate(today),
         framework_note,
     )
     .execute(pool)

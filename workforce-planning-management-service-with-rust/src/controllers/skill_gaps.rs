@@ -14,7 +14,6 @@
 
 use axa::extract::Path;
 use axa::prelude::*;
-use chrono::Utc;
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -317,7 +316,7 @@ async fn workforce_gaps(
 ) -> Result<Response> {
     let limit = q.limit.unwrap_or(25).clamp(1, 100);
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let department = q.department.as_deref();
     // Counted by the database (see `gap_sql`): the same grading as `Evidence::gaps_for`, for everyone at once.
     let (considered, rows, with_needs) =

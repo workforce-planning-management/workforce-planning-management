@@ -9,9 +9,8 @@
 //! is `Unknown`, never "no overtime". No rule set configured says so ([`Outcome::NoLimitConfigured`]). The figures here are
 //! parameters a deployer enters; none is built in. Pay uses the base hourly rate as the regular rate, and says so.
 
+use jiff::civil::Date;
 use std::collections::BTreeMap;
-
-use chrono::{Datelike, Duration, NaiveDate};
 
 /// Basis points in 100 percent: the regular rate.
 pub const REGULAR_BP: u32 = 10_000;
@@ -168,7 +167,7 @@ impl Status {
 /// Group worked minutes by week, each week's days in date order, with a week starting on ISO weekday `week_start` (1 Monday to 7
 /// Sunday; anything else is read as Monday). Days with no entry are left out, which does not change a derivation.
 #[must_use]
-pub fn weeks(days: &BTreeMap<NaiveDate, u32>, week_start: u32) -> Vec<Vec<u32>> {
+pub fn weeks(days: &BTreeMap<Date, u32>, week_start: u32) -> Vec<Vec<u32>> {
     weeks_with(days, week_start, |_| DayKind::Ordinary)
         .into_iter()
         .map(|week| week.into_iter().map(|(m, _)| m).collect())
@@ -178,19 +177,19 @@ pub fn weeks(days: &BTreeMap<NaiveDate, u32>, week_start: u32) -> Vec<Vec<u32>> 
 /// [`weeks`] with each day's kind, given by `kind_of`.
 #[must_use]
 pub fn weeks_with(
-    days: &BTreeMap<NaiveDate, u32>,
+    days: &BTreeMap<Date, u32>,
     week_start: u32,
-    kind_of: impl Fn(NaiveDate) -> DayKind,
+    kind_of: impl Fn(Date) -> DayKind,
 ) -> Vec<Vec<(u32, DayKind)>> {
     let start = i64::from(if (1..=7).contains(&week_start) {
         week_start
     } else {
         1
     });
-    let mut by_week: BTreeMap<NaiveDate, Vec<(u32, DayKind)>> = BTreeMap::new();
+    let mut by_week: BTreeMap<Date, Vec<(u32, DayKind)>> = BTreeMap::new();
     for (date, minutes) in days {
-        let back = (i64::from(date.weekday().number_from_monday()) - start).rem_euclid(7);
-        let first = *date - Duration::days(back);
+        let back = (i64::from(date.weekday().to_monday_one_offset()) - start).rem_euclid(7);
+        let first = *date - crate::dates::days(back);
         by_week
             .entry(first)
             .or_default()
@@ -203,11 +202,11 @@ pub fn weeks_with(
 /// year in which it begins, so a week is never split between two (WPM-T426). `week_start` is read as for [`weeks`].
 #[must_use]
 pub fn weeks_beginning_between(
-    days: &BTreeMap<NaiveDate, u32>,
+    days: &BTreeMap<Date, u32>,
     week_start: u32,
-    from: NaiveDate,
-    to: NaiveDate,
-) -> BTreeMap<NaiveDate, u32> {
+    from: Date,
+    to: Date,
+) -> BTreeMap<Date, u32> {
     let start = i64::from(if (1..=7).contains(&week_start) {
         week_start
     } else {
@@ -215,8 +214,8 @@ pub fn weeks_beginning_between(
     });
     days.iter()
         .filter(|(date, _)| {
-            let back = (i64::from(date.weekday().number_from_monday()) - start).rem_euclid(7);
-            let first = **date - Duration::days(back);
+            let back = (i64::from(date.weekday().to_monday_one_offset()) - start).rem_euclid(7);
+            let first = **date - crate::dates::days(back);
             first >= from && first <= to
         })
         .map(|(date, minutes)| (*date, *minutes))
@@ -580,7 +579,7 @@ mod tests {
 
     #[test]
     fn days_group_into_weeks_that_start_where_the_calendar_says() {
-        let d = |day| NaiveDate::from_ymd_opt(2026, 11, day).unwrap();
+        let d = |day| crate::dates::ymd(2026, 11, day).unwrap();
         // 2026-11-01 is a Sunday. Monday weeks: {1} then {2..4}; Sunday weeks: {1..4}.
         let days = BTreeMap::from([(d(1), 60), (d(2), 120), (d(4), 180)]);
         assert_eq!(weeks(&days, 1), vec![vec![60], vec![120, 180]]);
@@ -664,8 +663,8 @@ mod tests {
         );
     }
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]
@@ -762,7 +761,7 @@ mod tests {
         days.insert(d(2026, 11, 2), 60); // Monday
         days.insert(d(2026, 11, 7), 120); // Saturday
         let weeks = weeks_with(&days, 1, |date| {
-            if date.weekday().number_from_monday() == 6 {
+            if date.weekday().to_monday_one_offset() == 6 {
                 DayKind::Rest
             } else {
                 DayKind::Ordinary

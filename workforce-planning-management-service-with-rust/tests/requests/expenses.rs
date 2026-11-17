@@ -2,8 +2,6 @@
 //! reimbursed; duplicates flagged; the manager told and the claimant told of the
 //! outcome without any amount; exported, and on erasure the text goes but the
 //! amounts stay. (Who may do what under enforcement is in `tests/enforcement.rs`.)
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -26,7 +24,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
             .json(&json!({ "manager_pid": boss }))
             .await
             .assert_status_ok();
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let url = format!("/api/workers/{worker}/expense-claims");
 
         // Bad claims: no title, a lower-case or short currency.
@@ -68,7 +66,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
             json!({ "incurred_on": today.to_string(), "category": "yacht", "amount_minor": 500 }),
             json!({ "incurred_on": today.to_string(), "category": "travel", "amount_minor": 0 }),
             json!({ "incurred_on": today.to_string(), "category": "travel", "amount_minor": -5 }),
-            json!({ "incurred_on": (today + Duration::days(1)).to_string(),
+            json!({ "incurred_on": (today + workforce_planning_management::dates::days(1)).to_string(),
                     "category": "travel", "amount_minor": 500 }),
         ] {
             assert_eq!(
@@ -77,7 +75,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
                 "{bad}"
             );
         }
-        let day = (today - Duration::days(3)).to_string();
+        let day = (today - workforce_planning_management::dates::days(3)).to_string();
         for (cat, amount) in [("travel", 4_250), ("meals", 1_250), ("meals", 1_250)] {
             request
                 .post(&items)
@@ -218,7 +216,7 @@ async fn a_claim_goes_from_draft_to_reimbursed() {
         assert_eq!(
             request
                 .post(&format!("/api/expense-claims/{pid}/reimburse"))
-                .json(&json!({ "reimbursed_on": (today + Duration::days(2)).to_string() }))
+                .json(&json!({ "reimbursed_on": (today + workforce_planning_management::dates::days(2)).to_string() }))
                 .await
                 .status_code(),
             422
@@ -321,7 +319,7 @@ async fn a_claim_is_exported_and_erased_keeping_the_amounts() {
         let org = an_org();
         let worker = seed_worker!(&request, &org, "EX-2", None).await;
         activate!(&request, &worker).await;
-        let day = (Utc::now().date_naive() - Duration::days(2)).to_string();
+        let day = (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(2)).to_string();
         let paid: Value = request
             .post(&format!("/api/workers/{worker}/expense-claims"))
             .json(&json!({ "title": "Secret errand", "currency": "GBP", "description": "private detail" }))
@@ -407,7 +405,7 @@ async fn currencies_are_checked_against_the_iso_4217_table() {
             .await
             .json();
         let pid = claim["pid"].as_str().unwrap().to_string();
-        let day = (Utc::now().date_naive() - Duration::days(1)).to_string();
+        let day = (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(1)).to_string();
         // 1,500.00 forint is 150,000 fillér: the amount is kept as sent, never rescaled.
         request
             .post(&format!("/api/expense-claims/{pid}/items"))

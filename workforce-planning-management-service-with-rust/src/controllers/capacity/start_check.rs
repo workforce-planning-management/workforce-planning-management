@@ -4,12 +4,13 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 use axa::extract::Json;
+use jiff::civil::Date;
 
 /// One line of a what-if.
 #[derive(Debug, Deserialize)]
 pub(super) struct WishLine {
     pool_pid: Uuid,
-    month: NaiveDate,
+    month: Date,
     fte_centi: i64,
 }
 
@@ -34,7 +35,7 @@ pub(super) struct Checked {
     capacity: OrgCapacity,
     constraint: Option<String>,
     proposed: Vec<programme_demands::Model>,
-    from: NaiveDate,
+    from: Date,
 }
 
 pub(super) async fn run_start_check(
@@ -68,7 +69,7 @@ pub(super) async fn run_start_check(
             .into_iter()
             .filter(|r| counts_here(&r.source, linked.contains(&r.pool_pid)))
             .collect();
-    let lines: Vec<(String, NaiveDate, i64)> = if let Some(wish) = &payload.lines {
+    let lines: Vec<(String, Date, i64)> = if let Some(wish) = &payload.lines {
         let mut out = Vec::with_capacity(wish.len());
         for line in wish {
             rules::validate_month(line.month).map_err(|e| unprocessable(&e))?;
@@ -84,7 +85,7 @@ pub(super) async fn run_start_check(
     } else {
         proposed
             .iter()
-            .map(|r| (r.pool_pid.to_string(), r.month, r.fte_centi))
+            .map(|r| (r.pool_pid.to_string(), r.month.get(), r.fte_centi))
             .collect()
     };
     if lines.is_empty() {
@@ -279,7 +280,7 @@ pub(super) async fn list_start_decisions(
                     "reason": r.reason, "fit": r.fit,
                     "earliest_shift_months": r.earliest_shift_months,
                     "wip_exceeds": r.wip_exceeds, "decided_by": r.decided_by,
-                    "decided_on": r.created_at.date_naive().to_string(),
+                    "decided_on": crate::dates::date_of(r.created_at).to_string(),
                 })
             })
             .collect::<Vec<_>>(),

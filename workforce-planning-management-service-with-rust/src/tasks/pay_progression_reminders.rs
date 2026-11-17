@@ -8,9 +8,10 @@
 //! nothing else — no band, step or amount — and promises no move: eligibility is
 //! only the circular's years on the step (WPM-D41).
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use crate::rules::metrics as metric_rules;
 use crate::rules::pay_position as rules;
@@ -33,9 +34,9 @@ impl Task for PayProgressionReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let days_ahead = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -47,7 +48,7 @@ impl Task for PayProgressionReminders {
                 })?,
             Err(_) => 30,
         };
-        let sent = send_reminders(ctx, as_of, as_of + chrono::Duration::days(days_ahead)).await?;
+        let sent = send_reminders(ctx, as_of, as_of + crate::dates::days(days_ahead)).await?;
         tracing::info!(%as_of, days_ahead, sent, "pay-progression reminders sent");
         Ok(())
     }
@@ -59,7 +60,7 @@ impl Task for PayProgressionReminders {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) -> Result<usize> {
+pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<usize> {
     let mut sent = 0;
     let positions = sqlx::query!(
         "SELECT worker_pid, scale_id, band, step, step_since FROM worker_pay_positions"
@@ -73,7 +74,7 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
         let step = usize::try_from(row.step).unwrap_or(0);
         let Some(on) = scale
             .band(&row.band)
-            .and_then(|b| rules::eligible_on(b, step, row.step_since))
+            .and_then(|b| rules::eligible_on(b, step, row.step_since.get()))
         else {
             continue;
         };
@@ -90,7 +91,11 @@ pub async fn send_reminders(ctx: &AppContext, from: NaiveDate, to: NaiveDate) ->
         else {
             continue;
         };
-        if !metric_rules::is_employed_on(on, worker.hired_on, worker.terminated_on) {
+        if !metric_rules::is_employed_on(
+            on,
+            worker.hired_on.get(),
+            worker.terminated_on.map(SqlDate::get),
+        ) {
             continue;
         }
         let already = sqlx::query_scalar!(

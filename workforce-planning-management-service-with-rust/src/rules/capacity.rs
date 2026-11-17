@@ -14,8 +14,7 @@
 //! The start check is a **suggestion with its derivation**; a person decides (WPM-D50).
 //! It answers a capacity question only. Scheduling the work belongs to
 //! project-portfolio-management (WPM-D55).
-
-use chrono::{DateTime, Datelike, Months, NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
@@ -37,8 +36,8 @@ in which a partner has made no commitment is unknown, not zero.";
 
 /// The first day of the month containing `date`.
 #[must_use]
-pub fn month_start(date: NaiveDate) -> NaiveDate {
-    date.with_day(1).unwrap_or(date)
+pub fn month_start(date: Date) -> Date {
+    date.first_of_month()
 }
 
 /// `count` consecutive months starting at the month of `start`.
@@ -46,7 +45,7 @@ pub fn month_start(date: NaiveDate) -> NaiveDate {
 /// # Errors
 ///
 /// A `count` of zero or more than [`MAX_HORIZON_MONTHS`].
-pub fn months(start: NaiveDate, count: u32) -> Result<Vec<NaiveDate>, String> {
+pub fn months(start: Date, count: u32) -> Result<Vec<Date>, String> {
     if count == 0 || count > MAX_HORIZON_MONTHS {
         return Err(format!(
             "the horizon is 1 to {MAX_HORIZON_MONTHS} months, not {count}"
@@ -56,7 +55,8 @@ pub fn months(start: NaiveDate, count: u32) -> Result<Vec<NaiveDate>, String> {
     (0..count)
         .map(|i| {
             first
-                .checked_add_months(Months::new(i))
+                .checked_add(jiff::Span::new().months(i))
+                .ok()
                 .ok_or_else(|| "the horizon runs past the supported calendar".to_string())
         })
         .collect()
@@ -64,17 +64,19 @@ pub fn months(start: NaiveDate, count: u32) -> Result<Vec<NaiveDate>, String> {
 
 /// `month` moved by `by` months (still the first of a month).
 #[must_use]
-pub fn shift_month(month: NaiveDate, by: u32) -> Option<NaiveDate> {
-    month_start(month).checked_add_months(Months::new(by))
+pub fn shift_month(month: Date, by: u32) -> Option<Date> {
+    let by = jiff::Span::new().try_months(by).ok()?;
+    month_start(month).checked_add(by).ok()
 }
 
 /// The number of calendar days in the month starting `month`.
 #[must_use]
-pub fn days_in_month(month: NaiveDate) -> i64 {
+pub fn days_in_month(month: Date) -> i64 {
     let first = month_start(month);
     first
-        .checked_add_months(Months::new(1))
-        .map_or(31, |next| (next - first).num_days())
+        .checked_add(jiff::Span::new().months(1))
+        .ok()
+        .map_or(31, |next| crate::dates::days_between(first, next))
 }
 
 // ─── Validation ─────────────────────────────────────────────────────────────
@@ -114,7 +116,7 @@ pub fn validate_fte_centi(fte_centi: i64) -> Result<(), String> {
 /// # Errors
 ///
 /// Any other day of the month.
-pub fn validate_month(month: NaiveDate) -> Result<(), String> {
+pub fn validate_month(month: Date) -> Result<(), String> {
     if month.day() == 1 {
         Ok(())
     } else {
@@ -173,15 +175,15 @@ pub struct WorkerFacts {
     /// Contracted FTE as a percentage (`100` is full time).
     pub fte_percent: i32,
     /// First day of employment.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// Day employment ended, if it has.
-    pub terminated_on: Option<NaiveDate>,
+    pub terminated_on: Option<Date>,
     /// The role profiles the worker holds.
     pub role_profiles: Vec<Uuid>,
     /// Declared skills and their proficiency.
     pub skills: Vec<(Uuid, i32)>,
     /// Approved leave as inclusive `(start, end)` date ranges.
-    pub approved_leave: Vec<(NaiveDate, NaiveDate)>,
+    pub approved_leave: Vec<(Date, Date)>,
 }
 
 /// Whether a worker counts toward a pool with these members. A worker who qualifies in
@@ -200,32 +202,31 @@ pub fn counts_toward(members: &[Member], worker: &WorkerFacts) -> bool {
     })
 }
 
+/// A day's number counted from 1 January of year 1 (that day is 0): only differences are used.
+fn day_number(date: Date) -> i64 {
+    crate::dates::days_between(jiff::civil::date(1, 1, 1), date)
+}
+
 /// The days of `month` on which the worker is employed and not on approved leave.
 ///
 /// Counted by interval arithmetic (the employed span within the month, less the merged leave spans),
 /// not by walking the days: the view calls this for every worker and month (WPM-D90).
 #[must_use]
-pub fn available_days(worker: &WorkerFacts, month: NaiveDate) -> i64 {
-    use chrono::Datelike;
-    let first = i64::from(month_start(month).num_days_from_ce());
+pub fn available_days(worker: &WorkerFacts, month: Date) -> i64 {
+    let first = day_number(month_start(month));
     let last = first + days_in_month(month_start(month)) - 1;
     // employed: hired_on <= day and (not terminated, or terminated_on > day)
-    let from = first.max(i64::from(worker.hired_on.num_days_from_ce()));
+    let from = first.max(day_number(worker.hired_on));
     let to = worker
         .terminated_on
-        .map_or(last, |t| last.min(i64::from(t.num_days_from_ce()) - 1));
+        .map_or(last, |t| last.min(day_number(t) - 1));
     if from > to {
         return 0;
     }
     let mut leave: Vec<(i64, i64)> = worker
         .approved_leave
         .iter()
-        .map(|(s, e)| {
-            (
-                i64::from(s.num_days_from_ce()).max(from),
-                i64::from(e.num_days_from_ce()).min(to),
-            )
-        })
+        .map(|(s, e)| (day_number(*s).max(from), day_number(*e).min(to)))
         .filter(|(s, e)| s <= e)
         .collect();
     leave.sort_unstable();
@@ -243,13 +244,11 @@ pub fn available_days(worker: &WorkerFacts, month: NaiveDate) -> i64 {
 
 /// The same count, one day at a time: the definition [`available_days`] must equal.
 #[cfg(test)]
-fn available_days_by_walking(worker: &WorkerFacts, month: NaiveDate) -> i64 {
+fn available_days_by_walking(worker: &WorkerFacts, month: Date) -> i64 {
     let first = month_start(month);
     let mut count = 0;
     for offset in 0..days_in_month(first) {
-        let day = first
-            .checked_add_days(chrono::Days::new(u64::try_from(offset).unwrap_or(0)))
-            .unwrap();
+        let day = first.checked_add(jiff::Span::new().days(offset)).unwrap();
         let employed =
             worker.hired_on <= day && worker.terminated_on.is_none_or(|ended| ended > day);
         let on_leave = worker
@@ -272,7 +271,7 @@ pub fn pool_supply_centi(
     members: &[Member],
     reservation_bp: i32,
     workers: &[WorkerFacts],
-    month: NaiveDate,
+    month: Date,
 ) -> i64 {
     supply_from_weighted(
         pool_weighted_days(members, workers, month),
@@ -285,7 +284,7 @@ pub fn pool_supply_centi(
 /// those who count toward the pool. Workers can be summed in batches and the batches added, so an
 /// organization need not be held in memory whole (WPM-D90); [`supply_from_weighted`] finishes it.
 #[must_use]
-pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: NaiveDate) -> i64 {
+pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Date) -> i64 {
     workers
         .iter()
         .filter(|w| counts_toward(members, w))
@@ -296,7 +295,7 @@ pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Na
 /// A pool's supply in centi-FTE from the summed [`pool_weighted_days`]: less the operations
 /// reservation, rounded half up. The rounding happens once, on the total.
 #[must_use]
-pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: NaiveDate) -> i64 {
+pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: Date) -> i64 {
     let kept = i64::from(FULL_BP - reservation_bp.clamp(0, FULL_BP));
     let denominator = days_in_month(month) * i64::from(FULL_BP);
     (2 * weighted * kept + denominator) / (2 * denominator)
@@ -337,7 +336,7 @@ pub struct Demand {
     /// The programme's `EntityRef` URN (owned by project-portfolio-management).
     pub programme: String,
     /// The month (its first day).
-    pub month: NaiveDate,
+    pub month: Date,
     /// FTE wanted, in hundredths.
     pub fte_centi: i64,
     /// Where the claim stands.
@@ -394,7 +393,7 @@ pub struct Commitment {
     /// The partner's `EntityRef` URN.
     pub partner: String,
     /// The month (its first day).
-    pub month: NaiveDate,
+    pub month: Date,
     /// FTE offered, in hundredths.
     pub fte_centi: i64,
     /// How firm it is.
@@ -440,7 +439,7 @@ impl CellStatus {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cell {
     /// The month (its first day).
-    pub month: NaiveDate,
+    pub month: Date,
     /// Own supply, in centi-FTE.
     pub supply_centi: i64,
     /// Demand from active programme claims.
@@ -511,7 +510,7 @@ fn classify(balance: i64, firm: i64, any_unknown: bool) -> (CellStatus, i64) {
 /// the later in the list wins.
 #[must_use]
 pub fn build_pool(
-    months: &[NaiveDate],
+    months: &[Date],
     supply_centi: &[i64],
     demand: &[Demand],
     commitments: &[Commitment],
@@ -615,7 +614,7 @@ pub struct Candidate {
     /// The programme's URN.
     pub programme: String,
     /// `(pool key, month, centi-FTE)` lines.
-    pub lines: Vec<(String, NaiveDate, i64)>,
+    pub lines: Vec<(String, Date, i64)>,
 }
 
 /// How a start check came out overall.
@@ -648,7 +647,7 @@ pub struct LineResult {
     /// The pool.
     pub pool: String,
     /// The month the line falls in after any shift.
-    pub month: NaiveDate,
+    pub month: Date,
     /// FTE the programme wants there (lines on one pool-month added together).
     pub needed_centi: i64,
     /// FTE available there: supply less active demand, plus firm partner capacity.
@@ -695,7 +694,7 @@ fn check_lines(
     pools: &BTreeMap<String, PoolView>,
     shift: u32,
 ) -> Vec<LineResult> {
-    let mut needed: BTreeMap<(String, NaiveDate), i64> = BTreeMap::new();
+    let mut needed: BTreeMap<(String, Date), i64> = BTreeMap::new();
     for (pool, month, fte) in &candidate.lines {
         let moved = shift_month(*month, shift).unwrap_or(*month);
         *needed.entry((pool.clone(), moved)).or_insert(0) += fte;
@@ -814,7 +813,7 @@ pub struct Change {
     /// The pool's key.
     pub pool: String,
     /// The month (its first day).
-    pub month: NaiveDate,
+    pub month: Date,
     /// The change, in centi-FTE.
     pub fte_centi: i64,
 }
@@ -825,7 +824,7 @@ pub struct CellChange {
     /// The pool's key.
     pub pool: String,
     /// The month.
-    pub month: NaiveDate,
+    pub month: Date,
     /// Status now.
     pub before: CellStatus,
     /// Status with the proposal.
@@ -884,7 +883,7 @@ pub struct WhatIf {
 #[must_use]
 pub fn change_problems(
     views: &BTreeMap<String, PoolView>,
-    months: &[NaiveDate],
+    months: &[Date],
     changes: &[Change],
 ) -> Vec<String> {
     let mut out = Vec::new();
@@ -911,7 +910,7 @@ pub fn change_problems(
 }
 
 /// The view with each month's active demand moved by `moves` (month, centi-FTE), never below zero.
-fn moved(view: &PoolView, moves: &BTreeMap<NaiveDate, i64>) -> PoolView {
+fn moved(view: &PoolView, moves: &BTreeMap<Date, i64>) -> PoolView {
     let mut cells = Vec::with_capacity(view.cells.len());
     let (mut over_total, mut over_months, mut unknown_months) = (0, 0, 0);
     for cell in &view.cells {
@@ -957,15 +956,15 @@ fn pools_of(views: &BTreeMap<String, PoolView>) -> Vec<(&str, &PoolView)> {
 /// (used to find the earliest start that fits); a change moved past the last month of the view is dropped and the answer is then `None`
 /// for it in [`what_if`].
 /// A proposal applied: the views with it, and the `(pool, month)` cells it touches.
-type Applied = (BTreeMap<String, PoolView>, Vec<(String, NaiveDate)>);
+type Applied = (BTreeMap<String, PoolView>, Vec<(String, Date)>);
 
 fn apply(
     views: &BTreeMap<String, PoolView>,
-    programme_active: &BTreeMap<(String, NaiveDate), i64>,
+    programme_active: &BTreeMap<(String, Date), i64>,
     changes: &[Change],
     shift: u32,
 ) -> Option<Applied> {
-    let mut by_pool: BTreeMap<&str, BTreeMap<NaiveDate, i64>> = BTreeMap::new();
+    let mut by_pool: BTreeMap<&str, BTreeMap<Date, i64>> = BTreeMap::new();
     let mut touched = Vec::new();
     for c in changes {
         let month = shift_month(c.month, shift)?;
@@ -995,11 +994,7 @@ fn apply(
     Some((after, touched))
 }
 
-fn cell_at<'a>(
-    views: &'a BTreeMap<String, PoolView>,
-    pool: &str,
-    month: NaiveDate,
-) -> Option<&'a Cell> {
+fn cell_at<'a>(views: &'a BTreeMap<String, PoolView>, pool: &str, month: Date) -> Option<&'a Cell> {
     views.get(pool)?.cells.iter().find(|c| c.month == month)
 }
 
@@ -1008,7 +1003,7 @@ fn cell_at<'a>(
 fn judge(
     before: &BTreeMap<String, PoolView>,
     after: &BTreeMap<String, PoolView>,
-    touched: &[(String, NaiveDate)],
+    touched: &[(String, Date)],
 ) -> Answer {
     let mut unknown = false;
     for (pool, month) in touched {
@@ -1038,7 +1033,7 @@ fn judge(
 #[must_use]
 pub fn what_if(
     views: &BTreeMap<String, PoolView>,
-    programme_active: &BTreeMap<(String, NaiveDate), i64>,
+    programme_active: &BTreeMap<(String, Date), i64>,
     changes: &[Change],
 ) -> WhatIf {
     let (after, touched) =
@@ -1166,7 +1161,7 @@ pub struct PeerClaim {
     /// Whether the peer has withdrawn it (status `closed`).
     pub withdrawn: bool,
     /// When the peer sent the last event applied to it, if the peer said.
-    pub last_sent_at: Option<DateTime<Utc>>,
+    pub last_sent_at: Option<Timestamp>,
 }
 
 /// Decide what a new peer event does (WPM-D146). `fte_centi` is already known to be zero or a valid figure. **An event is stale only
@@ -1175,7 +1170,7 @@ pub struct PeerClaim {
 #[must_use]
 pub fn peer_demand_outcome(
     fte_centi: i64,
-    sent_at: Option<DateTime<Utc>>,
+    sent_at: Option<Timestamp>,
     existing: Option<PeerClaim>,
 ) -> PeerDemandOutcome {
     let Some(claim) = existing else {
@@ -1216,7 +1211,7 @@ pub fn validate_peer_fte_centi(fte_centi: i64) -> Result<(), String> {
 /// Whether a contingent engagement that ends on `ends_on` would end before a programme's proposed new end. An engagement already over
 /// (`ends_on` before `today`) is not an effect of the proposal; one ending on the new end date itself covers it.
 #[must_use]
-pub fn ends_before_programme(ends_on: NaiveDate, today: NaiveDate, new_end: NaiveDate) -> bool {
+pub fn ends_before_programme(ends_on: Date, today: Date, new_end: Date) -> bool {
     ends_on >= today && ends_on < new_end
 }
 
@@ -1225,9 +1220,9 @@ pub fn ends_before_programme(ends_on: NaiveDate, today: NaiveDate, new_end: Naiv
 /// pool's skills, so a total would count them twice, and a sum of shown cells would be wrong rather than safe.
 #[must_use]
 pub fn ending_counts(
-    per_pool: &[(String, Vec<NaiveDate>)],
-    today: NaiveDate,
-    new_end: NaiveDate,
+    per_pool: &[(String, Vec<Date>)],
+    today: Date,
+    new_end: Date,
     floor: usize,
 ) -> Vec<(String, Option<usize>)> {
     per_pool
@@ -1249,8 +1244,8 @@ pub fn ending_counts(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn worker(fte: i32, role: Option<Uuid>) -> WorkerFacts {
@@ -1264,7 +1259,7 @@ mod tests {
         }
     }
 
-    fn demand(programme: &str, month: NaiveDate, fte: i64, status: DemandStatus) -> Demand {
+    fn demand(programme: &str, month: Date, fte: i64, status: DemandStatus) -> Demand {
         Demand {
             programme: programme.to_string(),
             month,
@@ -1273,7 +1268,7 @@ mod tests {
         }
     }
 
-    fn commit(partner: &str, month: NaiveDate, fte: i64, status: CommitmentStatus) -> Commitment {
+    fn commit(partner: &str, month: Date, fte: i64, status: CommitmentStatus) -> Commitment {
         Commitment {
             partner: partner.to_string(),
             month,
@@ -1555,7 +1550,7 @@ mod tests {
             .lines
             .iter()
             .filter(|l| l.outcome == "short")
-            .map(|l| (l.month.month(), l.short_by_centi))
+            .map(|l| (u32::try_from(l.month.month()).unwrap(), l.short_by_centi))
             .collect();
         assert_eq!(short, vec![(1, 50), (2, 100)]);
         // Two months later it lands on months 3 and 4, both with 200 free.
@@ -1690,13 +1685,13 @@ mod tests {
 
     #[test]
     fn supply_summed_in_batches_equals_supply_of_the_whole() {
-        let jan = NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
+        let jan = crate::dates::ymd(2026, 1, 1).unwrap();
         let role = Uuid::from_u128(1);
         let mut staff = Vec::new();
         for i in 0..7 {
             staff.push(WorkerFacts {
                 fte_percent: 40 + 10 * i,
-                hired_on: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+                hired_on: crate::dates::ymd(2025, 1, 1).unwrap(),
                 terminated_on: None,
                 role_profiles: vec![role],
                 skills: Vec::new(),
@@ -1717,8 +1712,8 @@ mod tests {
     #[test]
     fn counting_by_intervals_equals_walking_the_days() {
         // a small deterministic generator: every combination of hire, end and overlapping leave
-        let base = NaiveDate::from_ymd_opt(2026, 1, 20).unwrap();
-        let at = |n: i64| base + chrono::Days::new(u64::try_from(n.rem_euclid(120)).unwrap());
+        let base = crate::dates::ymd(2026, 1, 20).unwrap();
+        let at = |n: i64| base + jiff::Span::new().days(n.rem_euclid(120));
         let mut state = 12_345_u64;
         let mut next = |m: i64| {
             state = state
@@ -1732,7 +1727,7 @@ mod tests {
             let approved_leave = (0..next(4))
                 .map(|_| {
                     let s = at(next(100));
-                    (s, s + chrono::Days::new(u64::try_from(next(20)).unwrap()))
+                    (s, s + jiff::Span::new().days(next(20)))
                 })
                 .collect();
             let worker = WorkerFacts {
@@ -1744,7 +1739,7 @@ mod tests {
                 approved_leave,
             };
             for month in [(2026, 1), (2026, 2), (2026, 3), (2026, 4)] {
-                let month = NaiveDate::from_ymd_opt(month.0, month.1, 1).unwrap();
+                let month = crate::dates::ymd(month.0, month.1, 1).unwrap();
                 assert_eq!(
                     available_days(&worker, month),
                     available_days_by_walking(&worker, month),
@@ -1756,11 +1751,11 @@ mod tests {
 
     // ─── What-if (WPM-T158) ─────────────────────────────────────────────────
 
-    fn wi_m(n: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2027, n, 1).unwrap()
+    fn wi_m(n: u32) -> Date {
+        crate::dates::ymd(2027, n, 1).unwrap()
     }
 
-    fn wi_six() -> Vec<NaiveDate> {
+    fn wi_six() -> Vec<Date> {
         (1..=6).map(wi_m).collect()
     }
 
@@ -1795,7 +1790,7 @@ mod tests {
         }
     }
 
-    fn wi_none() -> BTreeMap<(String, NaiveDate), i64> {
+    fn wi_none() -> BTreeMap<(String, Date), i64> {
         BTreeMap::new()
     }
 
@@ -1951,7 +1946,7 @@ mod tests {
                 &months,
                 &[Change {
                     pool: "nurses".into(),
-                    month: NaiveDate::from_ymd_opt(2027, 1, 15).unwrap(),
+                    month: crate::dates::ymd(2027, 1, 15).unwrap(),
                     fte_centi: 10
                 }]
             )
@@ -2123,8 +2118,8 @@ mod tests {
 
     // Every caller wants the optional form the rule takes, so the wrap is the point.
     #[allow(clippy::unnecessary_wraps)]
-    fn at(hour: u32) -> Option<DateTime<Utc>> {
-        Some(d(2026, 10, 30).and_hms_opt(hour, 0, 0).unwrap().and_utc())
+    fn at(hour: u32) -> Option<Timestamp> {
+        Some(crate::dates::utc(2026, 10, 30, hour, 0, 0).unwrap())
     }
 
     #[test]

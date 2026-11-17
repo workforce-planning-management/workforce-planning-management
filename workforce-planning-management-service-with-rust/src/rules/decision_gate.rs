@@ -4,7 +4,7 @@
 //! and asks for the consultation reference; it does not stop them (the law and the agreements decide, not this tool). **Facility time** is
 //! minutes released for representative duties, per body per period, so a budget can be agreed. Neither has a person in it.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The kinds of change a gate may be set for.
 pub const CHANGES: &[&str] = &[
@@ -90,16 +90,16 @@ pub const MINUTES_MAX: i32 = 6_000_000;
 /// Problems with a facility-time record. `existing` are the `(start, end)` periods already recorded for the body.
 #[must_use]
 pub fn facility_problems(
-    start: NaiveDate,
-    end: NaiveDate,
+    start: Date,
+    end: Date,
     minutes: i32,
     budget_minutes: Option<i32>,
-    existing: &[(NaiveDate, NaiveDate)],
+    existing: &[(Date, Date)],
 ) -> Vec<String> {
     let mut out = Vec::new();
     if end < start {
         out.push("period_end must not be before period_start".to_string());
-    } else if (end - start).num_days() + 1 > PERIOD_MAX_DAYS {
+    } else if crate::dates::days_between(start, end) + 1 > PERIOD_MAX_DAYS {
         out.push(format!("a period must be at most {PERIOD_MAX_DAYS} days"));
     }
     for (name, value) in [
@@ -126,7 +126,7 @@ pub fn over_budget(minutes: i32, budget_minutes: Option<i32>) -> Option<bool> {
 mod tests {
     use super::*;
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn facility_time_is_a_dated_period_with_minutes_and_no_overlap() {
-        let none: Vec<(NaiveDate, NaiveDate)> = vec![];
+        let none: Vec<(Date, Date)> = vec![];
         assert_eq!(
             facility_problems(
                 d("2026-04-01"),

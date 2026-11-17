@@ -9,11 +9,12 @@
 //! managers up the chain read it, audited with the pid and no content. HR reads the roll-up's counts and nothing else. Whether a
 //! wellbeing conversation was offered is a yes or no, and nothing here can hold what was said.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::HashMap;
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -136,7 +137,7 @@ async fn latest_locked(
 async fn objectives_of(
     connection: &mut sqlx::PgConnection,
     worker: Uuid,
-    period: (NaiveDate, NaiveDate),
+    period: (Date, Date),
 ) -> Result<Vec<worker_goals::Model>> {
     Ok(sqlx::query_as!(
         worker_goals::Model,
@@ -150,7 +151,7 @@ async fn objectives_of(
     .fetch_all(connection)
     .await?
     .into_iter()
-    .filter(|g| goals::is_objective(&g.status, (g.period_start, g.period_end), period))
+    .filter(|g| goals::is_objective(&g.status, (g.period_start.get(), g.period_end.get()), period))
     .collect())
 }
 
@@ -179,10 +180,10 @@ pub(super) async fn goal_snapshot(
     }))
 }
 
-const fn sign_offs(version: &padr_versions::Model) -> SignOffs {
+fn sign_offs(version: &padr_versions::Model) -> SignOffs {
     SignOffs {
-        reviewer: version.reviewer_signed_on,
-        reviewee: version.reviewee_signed_on,
+        reviewer: version.reviewer_signed_on.map(SqlDate::get),
+        reviewee: version.reviewee_signed_on.map(SqlDate::get),
     }
 }
 
@@ -196,7 +197,7 @@ fn reviewer_pid(review: &reviews::Model) -> Option<Uuid> {
 }
 
 /// The day each of these people's last PADR was completed.
-async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, NaiveDate>> {
+async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, Date>> {
     let live = sqlx::query!(
         "SELECT pid, worker_pid FROM reviews WHERE kind = 'padr' AND deleted_at IS NULL AND worker_pid = ANY($1)",
         people,
@@ -208,7 +209,7 @@ async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uui
     for row in versions_of(ctx, &pids).await? {
         by_review.entry(row.review_pid).or_default().push(row);
     }
-    let mut last: HashMap<Uuid, NaiveDate> = HashMap::new();
+    let mut last: HashMap<Uuid, Date> = HashMap::new();
     for review in &live {
         let offs: Vec<SignOffs> = by_review
             .get(&review.pid)
@@ -225,8 +226,8 @@ async fn last_completed(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uui
 async fn primary_starts(
     ctx: &AppContext,
     people: &[Uuid],
-    today: NaiveDate,
-) -> Result<HashMap<Uuid, NaiveDate>> {
+    today: Date,
+) -> Result<HashMap<Uuid, Date>> {
     let rows = sqlx::query!(
         "SELECT worker_pid, starts_on, ends_on FROM assignments WHERE is_primary AND worker_pid = ANY($1) ORDER BY id",
         people,
@@ -236,13 +237,13 @@ async fn primary_starts(
     Ok(rows
         .into_iter()
         .filter(|row| row.ends_on.is_none_or(|end| end >= today))
-        .map(|row| (row.worker_pid, row.starts_on))
+        .map(|row| (row.worker_pid, row.starts_on.get()))
         .collect())
 }
 
 /// Where each of these people stands against the cycle today.
 async fn standings(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, Standing>> {
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let last = last_completed(ctx, people).await?;
     let starts = primary_starts(ctx, people, today).await?;
     let months =
@@ -345,8 +346,8 @@ pub(crate) async fn mine_and_team(
 /// `POST /api/me/reports/{pid}/padrs` body.
 #[derive(Debug, Deserialize)]
 pub(crate) struct OpenPayload {
-    period_start: NaiveDate,
-    period_end: NaiveDate,
+    period_start: Date,
+    period_end: Date,
 }
 
 /// `POST /api/me/reports/{pid}/padrs` — open a PADR with someone in your reporting line. You become its reviewer.
@@ -391,8 +392,8 @@ pub(crate) async fn open(
         Uuid::new_v4(),
         review_pid,
         worker.pid,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
     )
     .execute(&mut *tx)
     .await?;
@@ -435,7 +436,7 @@ pub(crate) async fn detail(
         objectives_of(
             &mut *db::pool(&ctx).acquire().await?,
             worker.pid,
-            (latest.period_start, latest.period_end),
+            (latest.period_start.get(), latest.period_end.get()),
         )
         .await?
     };
@@ -484,8 +485,8 @@ pub(crate) struct Need {
 /// `PUT /api/me/padrs/{pid}` body.
 #[derive(Debug, Deserialize)]
 pub(crate) struct EditPayload {
-    period_start: NaiveDate,
-    period_end: NaiveDate,
+    period_start: Date,
+    period_end: Date,
     #[serde(default)]
     values_summary: Option<String>,
     #[serde(default)]
@@ -530,8 +531,8 @@ pub(crate) async fn edit(
                 development_needs = $6
           WHERE id = $1",
         latest.id,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         summary,
         payload.wellbeing_offered,
         serde_json::json!(needs),
@@ -561,13 +562,13 @@ pub(crate) async fn sign(
 ) -> Result<Response> {
     let (review, worker) = padr_and_worker(&ctx, &pid).await?;
     let who = writer(role_of(&ctx, &caller, &review, &worker).await?)?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let latest = latest_locked(&mut tx, review.pid).await?;
     rules::ready_to_sign(latest.wellbeing_offered).map_err(unprocessable)?;
     let before = sign_offs(&latest);
     let after = rules::sign(before, who, today, today).map_err(|e| unprocessable(&e))?;
-    let period = (latest.period_start, latest.period_end);
+    let period = (latest.period_start.get(), latest.period_end.get());
     let version = latest.version;
     let objectives = if before.frozen() {
         latest.objectives
@@ -583,8 +584,8 @@ pub(crate) async fn sign(
           WHERE id = $1",
         latest.id,
         objectives,
-        after.reviewer,
-        after.reviewee,
+        after.reviewer.map(SqlDate),
+        after.reviewee.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;

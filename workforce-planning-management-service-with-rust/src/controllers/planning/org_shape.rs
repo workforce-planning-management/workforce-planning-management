@@ -1,11 +1,15 @@
 //! The organization now and as a plan intends it (WPM-R153): a plan's target made of roles, and the comparison with the live
 //! reporting structure. Aggregate by role; it names no one and lists no one a restructure would move.
 
-#[allow(clippy::wildcard_imports)] // the planning sections share their parent's imports
-use super::*;
+use super::{
+    AppContext, Deserialize, MaybeAuthUser, PidRef, Response, Result, State, Uuid, debug_handler,
+    ensure_editable, format, scoped_plan, unprocessable,
+};
 use crate::db::{self, pool};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::org_shape::{self as shape, Node, Person};
+#[allow(clippy::wildcard_imports)] // the planning sections share their parent's imports
+use crate::sql_time::SqlDate;
 
 use axa::extract::{Json, Path};
 
@@ -122,13 +126,13 @@ pub(super) async fn organization_diff(
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
     let target = target_of(&ctx, plan.pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let people: Vec<Person> = sqlx::query!(
         "SELECT pid, manager_pid, department, job_title FROM workers
          WHERE organization_ref = $1 AND deleted_at IS NULL AND hired_on <= $2
            AND (terminated_on IS NULL OR terminated_on > $2)",
         plan.organization_ref,
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(&ctx))
     .await?

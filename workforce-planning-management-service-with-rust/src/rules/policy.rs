@@ -4,8 +4,7 @@
 //! an audience and a number of calendar days to acknowledge it. A worker is asked about the **newest version in force**; an
 //! acknowledgement of an older one does not count for it. A late acknowledgement is flagged as overdue, never forced. A manager
 //! sees how many of their team have acknowledged, from the floor; the names are HR's.
-
-use chrono::{Days, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 
 /// Who a version is for.
@@ -79,12 +78,12 @@ pub struct Fact {
     /// The version number.
     pub version: i32,
     /// The day it comes into force.
-    pub effective_on: NaiveDate,
+    pub effective_on: Date,
 }
 
 /// The index of the newest version in force on `today`; `None` when none is yet.
 #[must_use]
-pub fn current(facts: &[Fact], today: NaiveDate) -> Option<usize> {
+pub fn current(facts: &[Fact], today: Date) -> Option<usize> {
     facts
         .iter()
         .enumerate()
@@ -100,17 +99,17 @@ pub enum Standing {
     /// Acknowledged.
     Done {
         /// The day.
-        on: NaiveDate,
+        on: Date,
     },
     /// Waiting, and not yet late.
     Waiting {
         /// The last day it is not late.
-        due_on: NaiveDate,
+        due_on: Date,
     },
     /// Waiting, and past the day.
     Overdue {
         /// The day it was due.
-        due_on: NaiveDate,
+        due_on: Date,
         /// Whole calendar days past it.
         calendar_days_late: i64,
     },
@@ -119,21 +118,21 @@ pub enum Standing {
 /// Where a worker stands. The day due is the effective day plus the calendar days allowed.
 #[must_use]
 pub fn standing(
-    effective_on: NaiveDate,
+    effective_on: Date,
     days: i32,
-    acknowledged_on: Option<NaiveDate>,
-    today: NaiveDate,
+    acknowledged_on: Option<Date>,
+    today: Date,
 ) -> Standing {
     if let Some(on) = acknowledged_on {
         return Standing::Done { on };
     }
     let due_on = effective_on
-        .checked_add_days(Days::new(u64::try_from(days).unwrap_or(0)))
+        .checked_add(jiff::Span::new().try_days(days.max(0)).unwrap_or_default())
         .unwrap_or(effective_on);
     if today > due_on {
         Standing::Overdue {
             due_on,
-            calendar_days_late: (today - due_on).num_days(),
+            calendar_days_late: crate::dates::days_between(due_on, today),
         }
     } else {
         Standing::Waiting { due_on }
@@ -146,11 +145,11 @@ pub const REMIND_DAYS: i64 = 3;
 /// Whether to remind a worker now: they have not acknowledged and the day due is within `days_ahead` calendar days (or has passed).
 /// Someone who has acknowledged is never reminded. A reminder is sent once per version, so a late reminder is not repeated.
 #[must_use]
-pub fn remind_now(standing: Standing, days_ahead: i64, today: NaiveDate) -> bool {
+pub fn remind_now(standing: Standing, days_ahead: i64, today: Date) -> bool {
     match standing {
         Standing::Done { .. } => false,
         Standing::Overdue { .. } => true,
-        Standing::Waiting { due_on } => (due_on - today).num_days() <= days_ahead,
+        Standing::Waiting { due_on } => crate::dates::days_between(today, due_on) <= days_ahead,
     }
 }
 
@@ -191,7 +190,7 @@ pub fn team_count(in_audience: usize, acknowledged: usize, floor: usize) -> Coun
 mod tests {
     use super::*;
 
-    fn d(s: &str) -> NaiveDate {
+    fn d(s: &str) -> Date {
         s.parse().unwrap()
     }
 

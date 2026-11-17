@@ -8,9 +8,10 @@
 //! The person is told "Your <title> expires on <date>"; the manager is told the person's name, the title and the date. HR is not told:
 //! it can read the queue and the roll-up. Nothing else is in the notification: no level, no awarding body, no evidence reference.
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde_json::json;
 
 use crate::rules::qualification::{self as rules, Reminder};
@@ -32,9 +33,9 @@ impl Task for QualificationExpiryReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let window = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -65,7 +66,7 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
+pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let held = sqlx::query!(
         "SELECT pid, worker_pid, title, expires_on FROM qualifications WHERE expires_on IS NOT NULL ORDER BY id"
@@ -76,7 +77,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         let Some(expires_on) = q.expires_on else {
             continue;
         };
-        let Some(reminder) = rules::reminder_for(expires_on, as_of, window) else {
+        let Some(reminder) = rules::reminder_for(expires_on.get(), as_of, window) else {
             continue;
         };
         let Some(worker) = sqlx::query!(
@@ -139,7 +140,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             q.pid,
             expires_on,
             reminder.as_str(),
-            as_of,
+            SqlDate(as_of),
         )
         .execute(&mut *tx)
         .await?;

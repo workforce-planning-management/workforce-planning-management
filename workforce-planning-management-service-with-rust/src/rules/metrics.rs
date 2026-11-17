@@ -6,7 +6,7 @@
 //! DB-free and clock-free (dates are always supplied). Nothing is
 //! imputed: a rate with nothing to divide by is `None`, never `0`.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The shared vocabulary: `(metric, definition)`. The metrics endpoint
 /// returns this verbatim so a consumer reads the definition beside the
@@ -46,26 +46,22 @@ pub const DEFINITIONS: &[(&str, &str)] = &[
 #[derive(Debug, Clone, Copy)]
 pub struct Tenure {
     /// Hire date.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// Termination date, when there is one.
-    pub terminated_on: Option<NaiveDate>,
+    pub terminated_on: Option<Date>,
 }
 
 /// Whether a worker is employed on `date`: hired on or before it, and
 /// not terminated on or before it. **The** definition of "employed" —
 /// every headcount-style figure in the service goes through it.
 #[must_use]
-pub fn is_employed_on(
-    date: NaiveDate,
-    hired_on: NaiveDate,
-    terminated_on: Option<NaiveDate>,
-) -> bool {
+pub fn is_employed_on(date: Date, hired_on: Date, terminated_on: Option<Date>) -> bool {
     hired_on <= date && terminated_on.is_none_or(|t| t > date)
 }
 
 /// Headcount on `date`: workers [`is_employed_on`] it.
 #[must_use]
-pub fn headcount_on(date: NaiveDate, workers: &[Tenure]) -> usize {
+pub fn headcount_on(date: Date, workers: &[Tenure]) -> usize {
     workers
         .iter()
         .filter(|w| is_employed_on(date, w.hired_on, w.terminated_on))
@@ -74,7 +70,7 @@ pub fn headcount_on(date: NaiveDate, workers: &[Tenure]) -> usize {
 
 /// Workers hired within `[from, to]` (inclusive).
 #[must_use]
-pub fn starters(from: NaiveDate, to: NaiveDate, workers: &[Tenure]) -> usize {
+pub fn starters(from: Date, to: Date, workers: &[Tenure]) -> usize {
     workers
         .iter()
         .filter(|w| w.hired_on >= from && w.hired_on <= to)
@@ -83,7 +79,7 @@ pub fn starters(from: NaiveDate, to: NaiveDate, workers: &[Tenure]) -> usize {
 
 /// Workers terminated within `[from, to]` (inclusive).
 #[must_use]
-pub fn leavers(from: NaiveDate, to: NaiveDate, workers: &[Tenure]) -> usize {
+pub fn leavers(from: Date, to: Date, workers: &[Tenure]) -> usize {
     workers
         .iter()
         .filter(|w| w.terminated_on.is_some_and(|t| t >= from && t <= to))
@@ -114,9 +110,9 @@ pub struct WorkerFacts {
     /// The engagement basis (`employment_type`).
     pub employment_type: String,
     /// Hire date.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// Termination date, when there is one.
-    pub terminated_on: Option<NaiveDate>,
+    pub terminated_on: Option<Date>,
 }
 
 /// One organization × department row of a headcount snapshot.
@@ -152,12 +148,12 @@ pub struct SnapshotRow {
 /// (exclusive); with `None`, starters and leavers are unknown.
 #[must_use]
 pub fn snapshot_rows(
-    as_of: NaiveDate,
-    since: Option<NaiveDate>,
+    as_of: Date,
+    since: Option<Date>,
     workers: &[WorkerFacts],
 ) -> Vec<SnapshotRow> {
     use std::collections::BTreeMap;
-    let in_window = |d: NaiveDate| since.is_some_and(|s| d > s && d <= as_of);
+    let in_window = |d: Date| since.is_some_and(|s| d > s && d <= as_of);
     let mut rows: BTreeMap<(String, String), SnapshotRow> = BTreeMap::new();
     for w in workers {
         let key = (w.organization_ref.clone(), w.department.clone());
@@ -204,11 +200,8 @@ pub fn snapshot_rows(
 /// either date is missing or the fill date precedes the opening (bad
 /// data is left out, not reported as a negative duration).
 #[must_use]
-pub fn time_to_fill_days(
-    opened_on: Option<NaiveDate>,
-    filled_on: Option<NaiveDate>,
-) -> Option<i64> {
-    let days = (filled_on? - opened_on?).num_days();
+pub fn time_to_fill_days(opened_on: Option<Date>, filled_on: Option<Date>) -> Option<i64> {
+    let days = crate::dates::days_between(opened_on?, filled_on?);
     (days >= 0).then_some(days)
 }
 
@@ -280,8 +273,8 @@ pub fn span_of_control(direct_reports: &[usize]) -> Option<Span> {
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     fn staff() -> Vec<Tenure> {
@@ -387,13 +380,7 @@ mod tests {
         assert!((even.median - 25.0).abs() < 1e-9);
     }
 
-    fn facts(
-        org: &str,
-        dept: &str,
-        fte: i32,
-        hired: NaiveDate,
-        left: Option<NaiveDate>,
-    ) -> WorkerFacts {
+    fn facts(org: &str, dept: &str, fte: i32, hired: Date, left: Option<Date>) -> WorkerFacts {
         WorkerFacts {
             organization_ref: org.into(),
             department: dept.into(),

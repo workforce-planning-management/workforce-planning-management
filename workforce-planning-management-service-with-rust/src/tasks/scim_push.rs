@@ -9,17 +9,18 @@
 //! Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN` (a bearer token, never logged or stored),
 //! `WPM_SCIM_ORGANIZATION` (optional: only this organization's workers).
 
+use jiff::{Timestamp, civil::Date};
 use std::collections::{BTreeMap, HashMap};
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::{DateTime, Duration, NaiveDate, Utc};
 use serde::Serialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::models::_entities::{scim_pushes, workers};
 use crate::rules::scim::{self, Employment, Step};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 
 /// Where and how to push.
 #[derive(Debug, Clone)]
@@ -152,9 +153,9 @@ async fn replace(http: &reqwest::Client, cfg: &Config, id: &str, body: &Value) -
 type Saved = (
     Option<String>,
     Option<String>,
-    Option<DateTime<chrono::FixedOffset>>,
+    Option<Timestamp>,
     i32,
-    Option<DateTime<chrono::FixedOffset>>,
+    Option<Timestamp>,
     Option<String>,
 );
 
@@ -175,9 +176,9 @@ async fn save(ctx: &AppContext, worker: Uuid, saved: Saved) -> Result<scim_pushe
         worker,
         scim_id,
         body_hash,
-        pushed_at,
+        pushed_at.map(SqlTimestamp),
         attempts,
-        next_attempt_at,
+        next_attempt_at.map(SqlTimestamp),
         last_error,
     )
     .fetch_one(crate::db::pool(ctx))
@@ -204,12 +205,7 @@ async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<
 /// # Errors
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
-pub async fn run(
-    ctx: &AppContext,
-    cfg: &Config,
-    today: NaiveDate,
-    now: DateTime<Utc>,
-) -> Result<Summary> {
+pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) -> Result<Summary> {
     let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
         everyone.iter().map(|w| (w.pid, w.manager_pid)).collect();
@@ -240,8 +236,8 @@ pub async fn run(
             display_name: w.display_name.clone(),
             job_title: w.job_title.clone(),
             department: w.department.clone(),
-            hired_on: w.hired_on,
-            terminated_on: w.terminated_on,
+            hired_on: w.hired_on.get(),
+            terminated_on: w.terminated_on.map(SqlDate::get),
             deleted: w.deleted_at.is_some(),
         };
         let held = state.get(&w.pid).cloned();
@@ -281,7 +277,7 @@ pub async fn run(
                 create(&http, cfg, &body, &scim::external_id(&employment.pid)).await
             }
         };
-        let stamp = now.fixed_offset();
+        let stamp = now;
         let saved = match outcome {
             Outcome::Sent(id) => {
                 if step == Step::Create {
@@ -299,9 +295,10 @@ pub async fn run(
                 (
                     known,
                     held.as_ref().and_then(|h| h.body_hash.clone()),
-                    held.as_ref().and_then(|h| h.pushed_at),
+                    held.as_ref()
+                        .and_then(|h| h.pushed_at.map(SqlTimestamp::get)),
                     attempts,
-                    Some((now + Duration::seconds(wait)).fixed_offset()),
+                    Some(now + jiff::SignedDuration::from_secs(wait)),
                     Some(why),
                 )
             }
@@ -326,7 +323,7 @@ impl Task for ScimPush {
 
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
         let cfg = config_from_env().map_err(|e| Error::string(&e))?;
-        let summary = run(ctx, &cfg, Utc::now().date_naive(), Utc::now()).await?;
+        let summary = run(ctx, &cfg, crate::dates::today(), Timestamp::now()).await?;
         println!("{}", json!(summary));
         if summary.failed > 0 {
             return Err(Error::string(&format!(

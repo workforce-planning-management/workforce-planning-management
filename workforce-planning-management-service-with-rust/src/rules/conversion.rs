@@ -4,7 +4,7 @@
 //! A plan is a decision a person makes and records. Nothing here decides one, and length of
 //! service never creates one. A plan holds no pay figure.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// What a plan intends for the engagement.
 pub const INTENTS: &[&str] = &["convert", "extend", "end", "undecided"];
@@ -30,17 +30,17 @@ pub struct Proposal<'a> {
     /// One of [`INTENTS`].
     pub intent: &'a str,
     /// The date by which the decision is to be taken.
-    pub target_on: NaiveDate,
+    pub target_on: Date,
     /// The funding of the permanent post, if it has one.
     pub post_funding_kind: Option<&'a str>,
     /// The funding's own end, if it has one.
-    pub post_funding_ends_on: Option<NaiveDate>,
+    pub post_funding_ends_on: Option<Date>,
     /// Why, in the proposer's words.
     pub reason: Option<&'a str>,
     /// The date to look at the plan again.
-    pub review_on: Option<NaiveDate>,
+    pub review_on: Option<Date>,
     /// The last day of the contract, when known.
-    pub contract_ends_on: Option<NaiveDate>,
+    pub contract_ends_on: Option<Date>,
 }
 
 /// Check a proposal.
@@ -48,7 +48,7 @@ pub struct Proposal<'a> {
 /// # Errors
 ///
 /// A refusal that says what to change.
-pub fn validate_proposal(p: &Proposal<'_>, today: NaiveDate) -> Result<(), String> {
+pub fn validate_proposal(p: &Proposal<'_>, today: Date) -> Result<(), String> {
     if !INTENTS.contains(&p.intent) {
         return Err(format!("intent must be one of {}", INTENTS.join(", ")));
     }
@@ -180,10 +180,10 @@ impl Flag {
 /// The flags for an engagement. `plan_status` and `review_on` describe its open plan, if any.
 #[must_use]
 pub fn flags(
-    contract_ends_on: Option<NaiveDate>,
+    contract_ends_on: Option<Date>,
     plan_status: Option<&str>,
-    review_on: Option<NaiveDate>,
-    as_of: NaiveDate,
+    review_on: Option<Date>,
+    as_of: Date,
 ) -> Vec<Flag> {
     let mut out = Vec::new();
     if let Some(end) = contract_ends_on
@@ -205,8 +205,8 @@ pub fn flags(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn base() -> Proposal<'static> {
@@ -221,7 +221,7 @@ mod tests {
         }
     }
 
-    const TODAY: NaiveDate = NaiveDate::from_ymd_opt(2026, 10, 10).unwrap();
+    const TODAY: Date = jiff::civil::date(2026, 10, 10);
 
     #[test]
     fn a_funded_conversion_before_the_end_is_accepted() {

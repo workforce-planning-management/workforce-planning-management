@@ -27,8 +27,10 @@
 //! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::{Timestamp, civil::Date};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -138,8 +140,8 @@ struct MembershipView {
     /// doesn't have to infer it from nullability itself.
     employed: bool,
     role: String,
-    starts_on: chrono::NaiveDate,
-    ends_on: Option<chrono::NaiveDate>,
+    starts_on: Date,
+    ends_on: Option<Date>,
 }
 
 /// The live (not soft-deleted) memberships for one `person_ref`,
@@ -161,8 +163,8 @@ async fn memberships_for(ctx: &AppContext, person_ref: &str) -> Result<Vec<Membe
         worker_pid: row.worker_pid,
         employed: row.worker_pid.is_some(),
         role: row.role,
-        starts_on: row.starts_on,
-        ends_on: row.ends_on,
+        starts_on: row.starts_on.get(),
+        ends_on: row.ends_on.map(SqlDate::get),
     })
     .collect())
 }
@@ -238,9 +240,9 @@ struct GrantPayload {
     #[serde(default)]
     worker_pid: Option<Uuid>,
     role: String,
-    starts_on: chrono::NaiveDate,
+    starts_on: Date,
     #[serde(default)]
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<Date>,
 }
 
 /// A `{pid}` reference response.
@@ -322,8 +324,8 @@ async fn grant(
         payload.organization_ref,
         payload.worker_pid,
         payload.role,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        payload.ends_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -375,7 +377,7 @@ async fn revoke(
     sqlx::query!(
         "UPDATE organization_memberships SET deleted_at = $2 WHERE pid = $1",
         pid,
-        chrono::Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -408,8 +410,8 @@ struct ConfederationView {
     pid: String,
     parent_organization_ref: String,
     child_organization_ref: String,
-    starts_on: chrono::NaiveDate,
-    ends_on: Option<chrono::NaiveDate>,
+    starts_on: Date,
+    ends_on: Option<Date>,
 }
 
 /// `GET /api/organization-confederations?parent_organization_ref=` or
@@ -463,8 +465,8 @@ async fn list_confederations(
         pid: row.pid.to_string(),
         parent_organization_ref: row.parent_organization_ref,
         child_organization_ref: row.child_organization_ref,
-        starts_on: row.starts_on,
-        ends_on: row.ends_on,
+        starts_on: row.starts_on.get(),
+        ends_on: row.ends_on.map(SqlDate::get),
     })
     .collect();
     Ok(window.respond(rows))
@@ -475,9 +477,9 @@ async fn list_confederations(
 struct GrantConfederationPayload {
     parent_organization_ref: String,
     child_organization_ref: String,
-    starts_on: chrono::NaiveDate,
+    starts_on: Date,
     #[serde(default)]
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<Date>,
 }
 
 /// `POST /api/organization-confederations` — declare that
@@ -546,8 +548,8 @@ async fn grant_confederation(
         edge,
         payload.parent_organization_ref,
         payload.child_organization_ref,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        payload.ends_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -599,7 +601,7 @@ async fn revoke_confederation(
     sqlx::query!(
         "UPDATE organization_confederations SET deleted_at = $2 WHERE pid = $1",
         pid,
-        chrono::Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;

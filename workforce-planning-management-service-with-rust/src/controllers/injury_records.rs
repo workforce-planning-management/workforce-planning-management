@@ -6,7 +6,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, HashMap};
@@ -18,6 +18,7 @@ use crate::db::{self, pool};
 use crate::models::_entities::{injury_records, injury_reports};
 use crate::models::records;
 use crate::rules::{equality_monitoring, injury_record as rules};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 
 /// HR of the organization, or the service or an administrator: whoever may write its records. Payroll and a manager may not.
 async fn ensure_hr(ctx: &AppContext, caller: &MaybeAuthUser, organization: &str) -> Result<()> {
@@ -48,11 +49,11 @@ async fn find_record(ctx: &AppContext, pid: Uuid) -> Result<injury_records::Mode
     .ok_or(Error::NotFound)
 }
 
-fn utc(at: DateTime<FixedOffset>) -> DateTime<Utc> {
-    at.with_timezone(&Utc)
+fn utc(at: SqlTimestamp) -> Timestamp {
+    at.get()
 }
 
-fn report_json(r: &injury_reports::Model, now: DateTime<Utc>) -> Value {
+fn report_json(r: &injury_reports::Model, now: Timestamp) -> Value {
     let standing = rules::standing(r.due_at.map(utc), r.sent_at.map(utc), now);
     json!({
         "pid": r.pid, "recipient": r.recipient, "due_at": r.due_at, "sent_at": r.sent_at,
@@ -64,7 +65,7 @@ fn record_json(
     r: &injury_records::Model,
     reports: &[&injury_reports::Model],
     names: &HashMap<Uuid, String>,
-    now: DateTime<Utc>,
+    now: Timestamp,
 ) -> Value {
     json!({
         "pid": r.pid, "organization_ref": r.organization_ref, "jurisdiction": r.jurisdiction, "kind": r.kind,
@@ -137,7 +138,7 @@ async fn list(
         Some(json!({ "organization": q.organization, "count": rows.len() })),
     )
     .await?;
-    let now = Utc::now();
+    let now = Timestamp::now();
     format::json(
         rows.iter()
             .map(|r| {
@@ -157,14 +158,14 @@ struct CreatePayload {
     kind: String,
     /// Absent for a dangerous occurrence, or someone who is not a worker.
     worker_pid: Option<Uuid>,
-    occurred_at: DateTime<Utc>,
-    learned_at: Option<DateTime<Utc>>,
+    occurred_at: Timestamp,
+    learned_at: Option<Timestamp>,
     class: String,
     absence_days: Option<i32>,
     people_affected: Option<i32>,
     /// Where the statutory record is held: a reference, never the record.
     statutory_record_ref: Option<String>,
-    keep_until: Option<NaiveDate>,
+    keep_until: Option<Date>,
 }
 
 /// `POST /api/injury-records` — HR records an incident.
@@ -184,7 +185,7 @@ async fn create(
         p.learned_at,
         p.absence_days,
         people,
-        Utc::now(),
+        Timestamp::now(),
     ))?;
     let reference =
         rules::clean_ref(p.statutory_record_ref.as_deref()).map_err(|e| unprocessable(&e))?;
@@ -208,13 +209,13 @@ async fn create(
         p.jurisdiction,
         p.kind,
         p.worker_pid,
-        p.occurred_at,
-        p.learned_at,
+        SqlTimestamp(p.occurred_at),
+        p.learned_at.map(SqlTimestamp),
         p.class,
         p.absence_days,
         people,
         reference,
-        p.keep_until,
+        p.keep_until.map(SqlDate),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -236,12 +237,12 @@ async fn create(
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct UpdatePayload {
-    learned_at: Option<DateTime<Utc>>,
+    learned_at: Option<Timestamp>,
     class: String,
     absence_days: Option<i32>,
     people_affected: i32,
     statutory_record_ref: Option<String>,
-    keep_until: Option<NaiveDate>,
+    keep_until: Option<Date>,
 }
 
 /// `PUT /api/injury-records/{pid}` — HR brings an incident up to date, because a class and a count of days change as a case goes on.
@@ -262,7 +263,7 @@ async fn update(
         p.learned_at,
         p.absence_days,
         p.people_affected,
-        Utc::now(),
+        Timestamp::now(),
     ))?;
     let reference =
         rules::clean_ref(p.statutory_record_ref.as_deref()).map_err(|e| unprocessable(&e))?;
@@ -273,12 +274,12 @@ async fn update(
              statutory_record_ref = $6, keep_until = $7
          WHERE pid = $1",
         pid,
-        p.learned_at,
+        p.learned_at.map(SqlTimestamp),
         p.class,
         p.absence_days,
         p.people_affected,
         reference,
-        p.keep_until,
+        p.keep_until.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -301,8 +302,8 @@ async fn update(
 struct ReportPayload {
     recipient: String,
     /// When it is due, as the person filing reads the law. Absent where the law says "immediately".
-    due_at: Option<DateTime<Utc>>,
-    sent_at: Option<DateTime<Utc>>,
+    due_at: Option<Timestamp>,
+    sent_at: Option<Timestamp>,
     method: Option<String>,
     reference: Option<String>,
 }
@@ -321,7 +322,7 @@ async fn add_report(
         &p.recipient,
         p.method.as_deref(),
         p.sent_at,
-        Utc::now(),
+        Timestamp::now(),
     ))?;
     let reference = rules::clean_ref(p.reference.as_deref()).map_err(|e| unprocessable(&e))?;
     let report = Uuid::new_v4();
@@ -333,8 +334,8 @@ async fn add_report(
         report,
         pid,
         p.recipient,
-        p.due_at,
-        p.sent_at,
+        p.due_at.map(SqlTimestamp),
+        p.sent_at.map(SqlTimestamp),
         p.method,
         reference,
         caller.actor(),
@@ -358,7 +359,7 @@ async fn add_report(
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SentPayload {
-    sent_at: DateTime<Utc>,
+    sent_at: Timestamp,
     method: String,
     reference: Option<String>,
 }
@@ -384,14 +385,14 @@ async fn mark_sent(
         &report.recipient,
         Some(&p.method),
         Some(p.sent_at),
-        Utc::now(),
+        Timestamp::now(),
     ))?;
     let reference = rules::clean_ref(p.reference.as_deref()).map_err(|e| unprocessable(&e))?;
     let mut tx = pool(&ctx).begin().await?;
     sqlx::query!(
         "UPDATE injury_reports SET sent_at = $2, method = $3, reference = $4 WHERE pid = $1",
         pid,
-        p.sent_at,
+        SqlTimestamp(p.sent_at),
         p.method,
         reference,
     )

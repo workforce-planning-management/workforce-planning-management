@@ -14,9 +14,10 @@
 //! Past entries and aspirations are statements, not assessments.
 
 use super::writable_worker;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -31,10 +32,6 @@ use crate::models::records;
 use crate::rules::career::{self as rules, Interval};
 use crate::tasks::import_esco::ESCO_SLUG;
 use crate::tasks::import_framework::PCF_SLUG;
-
-fn utc(t: DateTime<FixedOffset>) -> DateTime<Utc> {
-    t.with_timezone(&Utc)
-}
 
 /// A live UK GDAD PCF role level: its pid and job title.
 async fn pcf_profile(ctx: &AppContext, pid: Uuid) -> Result<Option<(Uuid, String)>> {
@@ -102,8 +99,8 @@ async fn skill_intervals_of(
     .await?)
 }
 
-fn start_of(day: NaiveDate) -> DateTime<Utc> {
-    Utc.from_utc_datetime(&day.and_hms_opt(0, 0, 0).unwrap_or_default())
+fn start_of(day: Date) -> Timestamp {
+    crate::dates::start_of_day(day)
 }
 
 // ─── Role history ───────────────────────────────────────────────────────────
@@ -162,9 +159,9 @@ struct PastRolePayload {
     #[serde(default)]
     occupation_uri: Option<String>,
     /// The first day in the role.
-    started_on: NaiveDate,
+    started_on: Date,
     /// The last day in the role (inclusive).
-    ended_on: NaiveDate,
+    ended_on: Date,
 }
 
 /// `POST /api/workers/{pid}/framework-roles/{framework}/past` — record a role
@@ -183,8 +180,8 @@ async fn add_past_role(
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let interval = rules::validate_past(
         start_of(payload.started_on),
-        start_of(payload.ended_on) + chrono::Duration::days(1),
-        Utc::now(),
+        start_of(payload.ended_on) + crate::dates::days(1),
+        Timestamp::now(),
     )
     .map_err(|e| unprocessable(&e))?;
     let (profile_pid, occupation_uri, label) = if framework == PCF_SLUG {
@@ -208,15 +205,15 @@ async fn add_past_role(
     let spans: Vec<Interval> = existing
         .iter()
         .map(|r| Interval {
-            start: utc(r.started_at),
-            end: r.ended_at.map(utc),
+            start: r.started_at.get(),
+            end: r.ended_at.map(SqlTimestamp::get),
         })
         .collect();
     if let Some(i) = rules::first_overlap(&interval, &spans) {
         return Err(unprocessable(&format!(
             "that overlaps the role '{}' held from {}",
             existing[i].role_label,
-            existing[i].started_at.date_naive()
+            crate::dates::date_of(existing[i].started_at)
         )));
     }
     let mut tx = db::pool(&ctx).begin().await?;
@@ -234,9 +231,9 @@ async fn add_past_role(
         profile_pid,
         occupation_uri,
         label,
-        payload.started_on,
-        interval.start,
-        interval.end,
+        SqlDate(payload.started_on),
+        SqlTimestamp(interval.start),
+        interval.end.map(SqlTimestamp),
         caller.actor(),
         auth::acting_for_other(&caller, &worker.person_ref),
     )
@@ -320,8 +317,8 @@ async fn skill_history(
 struct PastSkillPayload {
     skill_pid: Uuid,
     proficiency: i32,
-    started_on: NaiveDate,
-    ended_on: NaiveDate,
+    started_on: Date,
+    ended_on: Date,
 }
 
 /// `POST /api/workers/{pid}/skill-history/past` — record a level held in the
@@ -343,16 +340,16 @@ async fn add_past_skill(
     }
     let interval = rules::validate_past(
         start_of(payload.started_on),
-        start_of(payload.ended_on) + chrono::Duration::days(1),
-        Utc::now(),
+        start_of(payload.ended_on) + crate::dates::days(1),
+        Timestamp::now(),
     )
     .map_err(|e| unprocessable(&e))?;
     let existing = skill_intervals_of(&ctx, worker.pid, Some(payload.skill_pid)).await?;
     let spans: Vec<Interval> = existing
         .iter()
         .map(|r| Interval {
-            start: utc(r.started_at),
-            end: r.ended_at.map(utc),
+            start: r.started_at.get(),
+            end: r.ended_at.map(SqlTimestamp::get),
         })
         .collect();
     if rules::first_overlap(&interval, &spans).is_some() {
@@ -370,8 +367,8 @@ async fn add_past_skill(
         worker.pid,
         payload.skill_pid,
         payload.proficiency,
-        interval.start,
-        interval.end,
+        SqlTimestamp(interval.start),
+        interval.end.map(SqlTimestamp),
         caller.actor(),
         auth::acting_for_other(&caller, &worker.person_ref),
     )
@@ -394,7 +391,7 @@ async fn add_past_skill(
 #[derive(Debug, Deserialize)]
 struct AsOfQuery {
     /// The date to read the state at (end of that day, UTC).
-    at: NaiveDate,
+    at: Date,
 }
 
 /// `GET /api/workers/{pid}/skills-as-of?at=YYYY-MM-DD` — the skills and levels
@@ -406,15 +403,15 @@ async fn skills_as_of(
     axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let instant = start_of(query.at) + chrono::Duration::days(1) - chrono::Duration::seconds(1);
+    let instant = start_of(query.at) + crate::dates::days(1) - jiff::SignedDuration::from_secs(1);
     let rows = skill_intervals_of(&ctx, worker.pid, None).await?;
     let names = skill_names(&ctx).await?;
     let mut by_skill: BTreeMap<Uuid, Vec<(Interval, i32)>> = BTreeMap::new();
     for r in &rows {
         by_skill.entry(r.skill_pid).or_default().push((
             Interval {
-                start: utc(r.started_at),
-                end: r.ended_at.map(utc),
+                start: r.started_at.get(),
+                end: r.ended_at.map(SqlTimestamp::get),
             },
             r.proficiency,
         ));
@@ -433,8 +430,8 @@ async fn skills_as_of(
         .iter()
         .filter(|r| {
             Interval {
-                start: utc(r.started_at),
-                end: r.ended_at.map(utc),
+                start: r.started_at.get(),
+                end: r.ended_at.map(SqlTimestamp::get),
             }
             .contains(instant)
         })

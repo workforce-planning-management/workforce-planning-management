@@ -10,9 +10,10 @@
 //! only*; nothing here says the employer will move anyone.
 
 use super::writable_worker;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -37,11 +38,11 @@ async fn current(ctx: &AppContext, worker: Uuid) -> Result<Option<worker_pay_pos
 }
 
 /// The position as the API shows it, with progression worked out for `today`.
-fn view(row: &worker_pay_positions::Model, today: NaiveDate) -> serde_json::Value {
+fn view(row: &worker_pay_positions::Model, today: Date) -> serde_json::Value {
     let scale = scale_rules::find(&row.scale_id);
     let step = usize::try_from(row.step).unwrap_or(0);
     let band = scale.as_ref().and_then(|s| s.band(&row.band));
-    let standing = band.and_then(|b| rules::standing(b, step, row.step_since, today));
+    let standing = band.and_then(|b| rules::standing(b, step, row.step_since.get(), today));
     json!({
         "scale": row.scale_id,
         "scale_name": scale.as_ref().map(|s| s.name),
@@ -63,7 +64,7 @@ async fn get_position(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let position = current(&ctx, worker.pid)
         .await?
         .map(|row| view(&row, today));
@@ -79,7 +80,7 @@ struct PositionPayload {
     step: usize,
     /// On this step since; default today. Not in the future.
     #[serde(default)]
-    step_since: Option<NaiveDate>,
+    step_since: Option<Date>,
 }
 
 /// `PUT /api/workers/{pid}/pay-position` — set (or change) the worker's position.
@@ -93,7 +94,7 @@ async fn set_position(
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let (scale, band, step) = rules::validate(&payload.scale, &payload.band, payload.step)
         .map_err(|e| unprocessable(&e))?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let step_since = payload.step_since.unwrap_or(today);
     rules::validate_step_since(step_since, today).map_err(|e| unprocessable(&e))?;
     let step = i32::try_from(step).unwrap_or(i32::MAX);
@@ -113,7 +114,7 @@ async fn set_position(
                 scale,
                 band,
                 step,
-                step_since,
+                SqlDate(step_since),
                 caller.actor(),
                 on_behalf,
             )
@@ -131,7 +132,7 @@ async fn set_position(
                 scale,
                 band,
                 step,
-                step_since,
+                SqlDate(step_since),
                 caller.actor(),
                 on_behalf,
             )

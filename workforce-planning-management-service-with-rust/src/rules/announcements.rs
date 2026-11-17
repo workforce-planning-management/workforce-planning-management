@@ -5,7 +5,7 @@
 //! Posts are plain text — the UI shows them with line breaks and never as
 //! markup, so a post can never carry script or styling.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use std::cmp::Ordering;
 
 /// Longest title.
@@ -25,8 +25,8 @@ pub const EDITOR_ROLES: &[&str] = &["hr_admin", "org_admin"];
 pub fn validate(
     title: &str,
     body: &str,
-    publish_on: NaiveDate,
-    expires_on: Option<NaiveDate>,
+    publish_on: Date,
+    expires_on: Option<Date>,
 ) -> Result<(), String> {
     if title.trim().is_empty() || title.chars().count() > MAX_TITLE {
         return Err(format!("title is required (up to {MAX_TITLE} characters)"));
@@ -101,7 +101,7 @@ pub enum Status {
 /// A post's status on `today`: live from `publish_on` through `expires_on`
 /// inclusive.
 #[must_use]
-pub fn status(publish_on: NaiveDate, expires_on: Option<NaiveDate>, today: NaiveDate) -> Status {
+pub fn status(publish_on: Date, expires_on: Option<Date>, today: Date) -> Status {
     if publish_on > today {
         Status::Scheduled
     } else if expires_on.is_some_and(|e| e < today) {
@@ -114,7 +114,7 @@ pub fn status(publish_on: NaiveDate, expires_on: Option<NaiveDate>, today: Naive
 /// The order of the feed: pinned posts first, then newest published first,
 /// then newest created (higher `id`) first.
 #[must_use]
-pub fn feed_order(a: (bool, NaiveDate, i32), b: (bool, NaiveDate, i32)) -> Ordering {
+pub fn feed_order(a: (bool, Date, i32), b: (bool, Date, i32)) -> Ordering {
     b.0.cmp(&a.0).then(b.1.cmp(&a.1)).then(b.2.cmp(&a.2))
 }
 
@@ -122,8 +122,8 @@ pub fn feed_order(a: (bool, NaiveDate, i32), b: (bool, NaiveDate, i32)) -> Order
 mod tests {
     use super::*;
 
-    fn d(day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 10, day).unwrap()
+    fn d(day: u32) -> Date {
+        crate::dates::ymd(2026, 10, day).unwrap()
     }
 
     #[test]

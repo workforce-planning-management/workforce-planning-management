@@ -6,13 +6,14 @@
 //! pure-core/DB-touching-model split.
 
 use axa::prelude::*;
+use jiff::civil::Date;
 
 use super::_entities::organization_confederations;
 
 /// Whether a confederation edge is currently live: not soft-deleted
 /// and within its `starts_on`/`ends_on` window. Mirrors
 /// `memberships::is_live`.
-fn is_live(row: &organization_confederations::Model, today: chrono::NaiveDate) -> bool {
+fn is_live(row: &organization_confederations::Model, today: Date) -> bool {
     row.deleted_at.is_none() && row.starts_on <= today && row.ends_on.is_none_or(|end| end >= today)
 }
 
@@ -27,7 +28,7 @@ fn is_live(row: &organization_confederations::Model, today: chrono::NaiveDate) -
 ///
 /// Any query error.
 pub async fn live_edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         organization_confederations::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid,
@@ -48,32 +49,33 @@ pub async fn live_edges(ctx: &AppContext) -> Result<Vec<(String, String)>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::Timestamp;
 
     fn an_edge(
         parent: &str,
         child: &str,
-        starts_on: chrono::NaiveDate,
-        ends_on: Option<chrono::NaiveDate>,
-        deleted_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+        starts_on: Date,
+        ends_on: Option<Date>,
+        deleted_at: Option<Timestamp>,
     ) -> organization_confederations::Model {
         organization_confederations::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: uuid::Uuid::new_v4(),
             parent_organization_ref: parent.to_string(),
             child_organization_ref: child.to_string(),
-            starts_on,
-            ends_on,
-            deleted_at,
+            starts_on: starts_on.into(),
+            ends_on: ends_on.map(Into::into),
+            deleted_at: deleted_at.map(Into::into),
         }
     }
 
     #[test]
     fn is_live_windows_on_dates_and_deletion() {
-        let today = chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
-        let past = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        let future = chrono::NaiveDate::from_ymd_opt(2026, 12, 1).unwrap();
+        let today = crate::dates::ymd(2026, 6, 15).unwrap();
+        let past = crate::dates::ymd(2026, 1, 1).unwrap();
+        let future = crate::dates::ymd(2026, 12, 1).unwrap();
 
         assert!(is_live(&an_edge("a", "b", past, None, None), today));
         assert!(
@@ -82,7 +84,7 @@ mod tests {
         );
         assert!(
             !is_live(
-                &an_edge("a", "b", past, None, Some(chrono::Utc::now().into())),
+                &an_edge("a", "b", past, None, Some(Timestamp::now())),
                 today
             ),
             "soft-deleted"

@@ -13,7 +13,7 @@ use crate::models::_entities::audit_logs::Model;
 pub fn line(entry: &Model) -> String {
     let mut text = json!({
         "chain_seq": entry.chain_seq,
-        "at": entry.created_at.to_rfc3339(),
+        "at": entry.created_at.to_string(),
         "entity": entry.entity,
         "entity_pid": entry.entity_pid,
         "action": entry.action,
@@ -29,11 +29,18 @@ pub fn line(entry: &Model) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::Timestamp;
 
     fn entry() -> Model {
         Model {
-            created_at: chrono::DateTime::parse_from_rfc3339("2026-10-20T09:30:00+00:00").unwrap(),
-            updated_at: chrono::DateTime::parse_from_rfc3339("2026-10-20T09:30:00+00:00").unwrap(),
+            created_at: "2026-10-20T09:30:00+00:00"
+                .parse::<Timestamp>()
+                .unwrap()
+                .into(),
+            updated_at: "2026-10-20T09:30:00+00:00"
+                .parse::<Timestamp>()
+                .unwrap()
+                .into(),
             id: 7,
             entity: "worker".into(),
             entity_pid: uuid::Uuid::nil(),
@@ -54,7 +61,7 @@ mod tests {
         assert_eq!(value["chain_seq"], 3);
         assert_eq!(value["action"], "created");
         assert_eq!(value["actor"], "user-1");
-        assert_eq!(value["at"], "2026-10-20T09:30:00+00:00");
+        assert_eq!(value["at"], "2026-10-20T09:30:00Z");
     }
 
     #[test]
@@ -100,10 +107,13 @@ mod tests {
     }
 
     #[test]
-    fn a_non_utc_time_keeps_its_offset() {
+    fn a_non_utc_time_is_written_as_the_same_instant_in_utc() {
         let mut e = entry();
-        e.created_at = chrono::DateTime::parse_from_rfc3339("2026-10-20T09:30:00+02:00").unwrap();
+        e.created_at = "2026-10-20T09:30:00+02:00"
+            .parse::<Timestamp>()
+            .unwrap()
+            .into();
         let value: serde_json::Value = serde_json::from_str(&line(&e)).unwrap();
-        assert_eq!(value["at"], "2026-10-20T09:30:00+02:00");
+        assert_eq!(value["at"], "2026-10-20T07:30:00Z");
     }
 }

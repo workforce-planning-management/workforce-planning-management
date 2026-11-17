@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT m.created_at AS \"created_at: chrono::DateTime<chrono::FixedOffset>\",\n                  m.updated_at AS \"updated_at: chrono::DateTime<chrono::FixedOffset>\", m.id, m.pid,\n                  m.worker_pid, m.kind, m.effective_on, m.reason, m.status, m.notes, m.created_by,\n                  m.completed_at AS \"completed_at: chrono::DateTime<chrono::FixedOffset>\",\n                  w.display_name, w.department, w.job_title, w.organization_ref\n             FROM movements m JOIN workers w ON w.pid = m.worker_pid AND w.deleted_at IS NULL\n            WHERE m.status = $1 AND ($2::text IS NULL OR m.kind = $2)\n              AND ($3::text[] IS NULL OR w.organization_ref = ANY($3))\n            ORDER BY m.effective_on, m.id",
+  "query": "SELECT created_at, updated_at, id, pid, worker_pid, kind,\n                  effective_on, reason, status, notes, created_by, completed_at\n             FROM movements WHERE pid = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -126,7 +126,7 @@
       },
       {
         "ordinal": 11,
-        "name": "completed_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "completed_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -134,57 +134,11 @@
             "name": "completed_at"
           }
         }
-      },
-      {
-        "ordinal": 12,
-        "name": "display_name",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "workers",
-            "name": "display_name"
-          }
-        }
-      },
-      {
-        "ordinal": 13,
-        "name": "department",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "workers",
-            "name": "department"
-          }
-        }
-      },
-      {
-        "ordinal": 14,
-        "name": "job_title",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "workers",
-            "name": "job_title"
-          }
-        }
-      },
-      {
-        "ordinal": 15,
-        "name": "organization_ref",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "workers",
-            "name": "organization_ref"
-          }
-        }
       }
     ],
     "parameters": {
       "Left": [
-        "Text",
-        "Text",
-        "TextArray"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -199,12 +153,8 @@
       false,
       true,
       true,
-      true,
-      false,
-      false,
-      false,
-      false
+      true
     ]
   },
-  "hash": "4f1ac37299cabfd44ddb81e0ccc89d914f0312143ebb71d66e828cbee3975e8a"
+  "hash": "5abd69bab713d985d33628a0be74404d34aca2615fd660cdb74cbed1443db24c"
 }

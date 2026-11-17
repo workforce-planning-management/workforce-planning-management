@@ -3,7 +3,9 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
+use jiff::civil::Date;
 
 /// One live mentorship by pid, or 404.
 async fn find_mentorship(ctx: &AppContext, pid: &str) -> Result<mentorships::Model> {
@@ -78,7 +80,7 @@ pub(super) async fn mentorship_status(
     let row = find_mentorship(&ctx, &pid).await?;
     rules::mentorship_transition(&row.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let from = row.status.clone();
     let mut tx = crate::db::pool(&ctx).begin().await?;
     // Activating stamps `started_on`, closing stamps `ended_on`; any other move leaves both.
@@ -92,7 +94,7 @@ pub(super) async fn mentorship_status(
                   started_on, ended_on, deleted_at AS "deleted_at: _""#,
         row.id,
         payload.to,
-        today,
+        SqlDate(today),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -112,7 +114,7 @@ pub(super) async fn mentorship_status(
 /// `POST /api/mentorships/{pid}/sessions` body.
 #[derive(Debug, Deserialize)]
 pub(super) struct SessionPayload {
-    held_on: chrono::NaiveDate,
+    held_on: Date,
     notes: String,
 }
 
@@ -141,7 +143,7 @@ pub(super) async fn log_session(
         "INSERT INTO mentorship_sessions (pid, mentorship_pid, held_on, notes) VALUES ($1, $2, $3, $4)",
         session,
         mentorship.pid,
-        payload.held_on,
+        SqlDate(payload.held_on),
         payload.notes,
     )
     .execute(&mut *tx)

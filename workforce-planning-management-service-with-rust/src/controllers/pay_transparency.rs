@@ -9,11 +9,12 @@
 //!   (off until a deployer records a lawful basis), so it does not exist where that is off.
 //! - **Pay components beyond salary are not held**, so the variable-pay indicators are `unknown` until a source exists.
 
+use crate::sql_time::{SqlDate, SqlTimestamp};
+use jiff::{Timestamp, civil::Date};
 use std::collections::BTreeMap;
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -61,7 +62,7 @@ pub(crate) struct ListQuery {
 pub(crate) struct ReportQuery {
     pub(crate) organization: String,
     /// The day the workforce is taken on; default today.
-    pub(crate) as_of: Option<NaiveDate>,
+    pub(crate) as_of: Option<Date>,
     /// ISO-4217 currency; default the most common among workers with a salary.
     pub(crate) currency: Option<String>,
     /// `all_known` (default) or `recipients_only`: who a gap in variable pay is taken over.
@@ -253,7 +254,7 @@ pub(crate) async fn remove_category(
     sqlx::query!(
         "UPDATE pay_categories SET deleted_at = $2 WHERE id = $1",
         row.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -273,7 +274,7 @@ pub(crate) async fn remove_category(
 /// What the report and its CSV share.
 pub(crate) struct Built {
     pub(crate) organization: String,
-    pub(crate) as_of: NaiveDate,
+    pub(crate) as_of: Date,
     pub(crate) currency: Option<String>,
     pub(crate) variable: VariableBasis,
     pub(crate) report: Report,
@@ -327,7 +328,7 @@ pub(crate) async fn build(
             "the sex category is not monitored on this deployment (WPM_PAY_GAP_SEX_CATEGORY names it)",
         ));
     }
-    let as_of = query.as_of.unwrap_or_else(|| Utc::now().date_naive());
+    let as_of = query.as_of.unwrap_or_else(crate::dates::today);
     let (staff, answers) =
         staff_and_answers(ctx, &query.organization, as_of, &sex_category).await?;
     let categories = live_categories(ctx, &query.organization).await?;
@@ -386,7 +387,7 @@ pub(crate) async fn build(
 async fn staff_and_answers(
     ctx: &AppContext,
     organization: &str,
-    as_of: NaiveDate,
+    as_of: Date,
     sex_category: &str,
 ) -> Result<(Vec<Paid>, BTreeMap<Uuid, String>)> {
     let staff: Vec<Paid> = sqlx::query_as!(
@@ -398,7 +399,7 @@ async fn staff_and_answers(
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on.map(SqlDate::get)))
     .collect();
     let answers: BTreeMap<Uuid, String> = sqlx::query!(
         "SELECT worker_pid, value FROM equality_declarations WHERE category = $1",
@@ -418,8 +419,8 @@ struct Paid {
     job_title: String,
     salary_minor: Option<i64>,
     salary_currency: Option<String>,
-    hired_on: NaiveDate,
-    terminated_on: Option<NaiveDate>,
+    hired_on: Date,
+    terminated_on: Option<SqlDate>,
 }
 
 fn most_common_currency(staff: &[Paid]) -> Option<String> {
@@ -486,7 +487,7 @@ pub(crate) fn sex_category() -> String {
 /// ignored with a warning, never half-applied (WPM-T384).
 pub(crate) fn reporting_tiers(
     scope: Option<&super::jurisdictions::Scope>,
-    as_of: NaiveDate,
+    as_of: Date,
 ) -> super::statutory_defaults::InForce<Vec<pay_gap::Obligation>> {
     let configured = crate::compat::env_var("WPM_PAY_GAP_TIERS")
         .filter(|v| !v.trim().is_empty())

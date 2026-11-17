@@ -9,8 +9,7 @@
 //! declared — that needs assessing first, not training.
 //!
 //! DB-free and clock-free (the start day is supplied).
-
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 use std::collections::HashSet;
 
@@ -138,9 +137,9 @@ pub fn weekly_hours(requested: Option<i64>, fte_percent: i32) -> Result<u32, Str
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Slot {
     /// First day (`None` for an item that needs no hours).
-    pub starts_on: Option<NaiveDate>,
+    pub starts_on: Option<Date>,
     /// Last day.
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
     /// Whole weeks at the weekly pace.
     pub weeks: u32,
     /// Hours up to and including this item.
@@ -151,7 +150,7 @@ pub struct Slot {
 /// each takes `ceil(hours / weekly_hours)` whole weeks starting where the last
 /// ended. An item with no hours takes no time and is not placed.
 #[must_use]
-pub fn schedule(hours: &[u32], weekly_hours: u32, start: NaiveDate) -> Vec<Slot> {
+pub fn schedule(hours: &[u32], weekly_hours: u32, start: Date) -> Vec<Slot> {
     let pace = weekly_hours.max(1);
     let mut cursor = start;
     let mut total = 0;
@@ -169,8 +168,8 @@ pub fn schedule(hours: &[u32], weekly_hours: u32, start: NaiveDate) -> Vec<Slot>
             }
             let weeks = h.div_ceil(pace);
             let starts_on = cursor;
-            let ends_on = cursor + Duration::days(i64::from(weeks) * 7 - 1);
-            cursor = ends_on + Duration::days(1);
+            let ends_on = cursor + crate::dates::days(i64::from(weeks) * 7 - 1);
+            cursor = ends_on + crate::dates::days(1);
             Slot {
                 starts_on: Some(starts_on),
                 ends_on: Some(ends_on),
@@ -260,14 +259,14 @@ mod tests {
 
     #[test]
     fn items_run_one_after_another_in_whole_weeks() {
-        let start = NaiveDate::from_ymd_opt(2026, 10, 5).unwrap();
+        let start = crate::dates::ymd(2026, 10, 5).unwrap();
         let slots = schedule(&[10, 0, 3], 4, start);
         // 10h at 4/week = 3 weeks: 5–25 Oct. Then a zero-hour item: not placed.
         assert_eq!(slots[0].weeks, 3);
         assert_eq!(slots[0].starts_on, Some(start));
         assert_eq!(
             slots[0].ends_on,
-            Some(NaiveDate::from_ymd_opt(2026, 10, 25).unwrap())
+            Some(crate::dates::ymd(2026, 10, 25).unwrap())
         );
         assert_eq!(
             (
@@ -280,7 +279,7 @@ mod tests {
         // 3h = 1 week, starting the day after the first ended.
         assert_eq!(
             slots[2].starts_on,
-            Some(NaiveDate::from_ymd_opt(2026, 10, 26).unwrap())
+            Some(crate::dates::ymd(2026, 10, 26).unwrap())
         );
         assert_eq!(slots[2].cumulative_hours, 13);
     }

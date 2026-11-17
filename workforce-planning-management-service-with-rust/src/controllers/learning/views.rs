@@ -4,6 +4,8 @@
 #[allow(clippy::wildcard_imports)]
 use super::*;
 use crate::db::pool;
+use crate::sql_time::SqlDate;
+use jiff::{Timestamp, civil::Date};
 
 /// `GET /api/learning/skills-matrix` — per-department skill coverage:
 /// for each (department, skill) the count of workers at each
@@ -76,7 +78,7 @@ pub(super) async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Respo
         })
         .collect();
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "note": "coverage over declared proficiencies only; gaps = declared below a declared target",
         "matrix": matrix,
         "gaps": gaps,
@@ -100,8 +102,8 @@ pub(super) async fn training_analytics(
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let horizon_days = query.expiring_within_days.unwrap_or(90).clamp(0, 3650);
-    let today = chrono::Utc::now().date_naive();
-    let horizon = today + chrono::Duration::days(horizon_days);
+    let today = crate::dates::today();
+    let horizon = today + crate::dates::days(horizon_days);
     // Counted by the database: per department and status, over enrolments of workers who still exist.
     let mut per_dept: std::collections::BTreeMap<
         String,
@@ -116,8 +118,8 @@ pub(super) async fn training_analytics(
            JOIN workers w ON w.pid = e.worker_pid AND w.deleted_at IS NULL
            WHERE e.deleted_at IS NULL
            GROUP BY w.department, e.status"#,
-        today,
-        horizon,
+        SqlDate(today),
+        SqlDate(horizon),
     )
     .fetch_all(pool(&ctx))
     .await?
@@ -166,8 +168,8 @@ pub(super) async fn mentorship_overview(
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
     let stale_days = query.days.unwrap_or(30).clamp(1, 365);
-    let today = chrono::Utc::now().date_naive();
-    let stale_before = today - chrono::Duration::days(stale_days);
+    let today = crate::dates::today();
+    let stale_before = today - crate::dates::days(stale_days);
     let unmatched_limit = query.unmatched_limit.unwrap_or(200).clamp(1, 1000);
     let active = sqlx::query!(
         "SELECT pid, mentor_pid, mentee_pid FROM mentorships
@@ -192,14 +194,14 @@ pub(super) async fn mentorship_overview(
         .iter()
         .map(|e| (e.pid, e.display_name.as_str()))
         .collect();
-    let last_session: std::collections::BTreeMap<Uuid, chrono::NaiveDate> = sqlx::query!(
+    let last_session: std::collections::BTreeMap<Uuid, Date> = sqlx::query!(
         r#"SELECT mentorship_pid, MAX(held_on) AS "last!"
            FROM mentorship_sessions GROUP BY mentorship_pid"#,
     )
     .fetch_all(pool(&ctx))
     .await?
     .into_iter()
-    .map(|row| (row.mentorship_pid, row.last))
+    .map(|row| (row.mentorship_pid, row.last.get()))
     .collect();
     let mut mentor_load: std::collections::BTreeMap<Uuid, usize> =
         std::collections::BTreeMap::new();

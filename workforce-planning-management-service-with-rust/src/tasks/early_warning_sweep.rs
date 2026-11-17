@@ -3,11 +3,11 @@
 //! that have stopped, and tell the HR administrators (WPM-R68). Run it daily: the date a condition is
 //! first true is the date of the first sweep that saw it. Idempotent within a day.
 
+use jiff::civil::Date;
 use std::collections::BTreeSet;
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
 
 use crate::controllers::early_warning::sweep;
 
@@ -28,9 +28,9 @@ impl Task for EarlyWarningSweep {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let orgs: BTreeSet<String> = sqlx::query_scalar!(
             r#"SELECT organization_ref AS "organization_ref!" FROM skill_pools WHERE deleted_at IS NULL

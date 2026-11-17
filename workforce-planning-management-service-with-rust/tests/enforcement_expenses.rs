@@ -109,7 +109,7 @@ async fn nobody_decides_their_own_claim() {
             .unwrap();
         let _ = (&w_stranger, &w_peer);
 
-        let day = (chrono::Utc::now().date_naive() - chrono::Duration::days(2)).to_string();
+        let day = (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(2)).to_string();
         let as_ = |who: uuid::Uuid| token(who);
 
         // Writing a claim: the claimant and HR; not the manager, a peer or a stranger.

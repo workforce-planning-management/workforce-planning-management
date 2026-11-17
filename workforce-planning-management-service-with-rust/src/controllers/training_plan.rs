@@ -14,9 +14,10 @@
 //!
 //! These are planning estimates, not promises.
 
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use uuid::Uuid;
@@ -243,7 +244,7 @@ async fn remove_course(
     sqlx::query!(
         "UPDATE skill_courses SET deleted_at = $2 WHERE id = $1",
         row.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -394,7 +395,7 @@ struct PlanQuery {
     /// Weekly training hours to assume (1–40); default from the person's FTE.
     weekly_hours: Option<i64>,
     /// First day of the plan (default today).
-    start: Option<NaiveDate>,
+    start: Option<Date>,
 }
 
 /// `GET /api/workers/{pid}/training-plan?weekly_hours=&start=` — one person's
@@ -424,7 +425,7 @@ async fn worker_plan(
     .is_ok();
     let weekly =
         rules::weekly_hours(q.weekly_hours, worker.fte_percent).map_err(|e| unprocessable(&e))?;
-    let start = q.start.unwrap_or_else(|| Utc::now().date_naive());
+    let start = q.start.unwrap_or_else(crate::dates::today);
 
     let evidence = load_evidence(&ctx, &[worker.pid], own_view).await?;
     let mut gaps = evidence.gaps_for(worker.pid);
@@ -518,7 +519,7 @@ async fn training_demand(
     axa::extract::Query(q): axa::extract::Query<DemandQuery>,
 ) -> Result<Response> {
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let department = q.department.as_deref();
     // Only people below a need can add hours, so only they are read whole; everyone else is counted.
     let (considered, pids) =

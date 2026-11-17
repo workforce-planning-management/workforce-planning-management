@@ -1,8 +1,6 @@
 //! Pay positions: a worker's band and step (person and HR only), the eligibility
 //! date worked out from the years on the step, audited without the band or step,
 //! exported and erased with the person, and a reminder that names no pay.
-
-use chrono::{Duration, Months, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::pay_progression_reminders::send_reminders;
@@ -19,7 +17,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         let worker = seed_worker!(&request, &org, "PP-1", None).await;
         activate!(&request, &worker).await;
         let url = format!("/api/workers/{worker}/pay-position");
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
 
         let none: Value = request.get(&url).await.json();
         assert_eq!(none["pay_position"], Value::Null);
@@ -39,7 +37,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
 
         // Band 6, entry step, reached ten days short of two years ago: not yet
         // eligible, and the date is exactly two years after step_since.
-        let since = today - Months::new(24) + Duration::days(10);
+        let since = today - jiff::Span::new().months(24) + workforce_planning_management::dates::days(10);
         let set: Value = request
             .put(&url)
             .json(&json!({ "scale": "national-2026-27", "band": "6", "step": 1,
@@ -54,7 +52,7 @@ async fn a_pay_position_is_validated_dated_audited_without_pay_and_erased() {
         assert_eq!(p["progression"]["days_remaining"], 10);
         assert_eq!(
             p["progression"]["eligible_on"],
-            (since + Months::new(24)).to_string()
+            (since + jiff::Span::new().months(24)).to_string()
         );
         assert_eq!(p["progression"]["next_annual_minor"], 4_280_500);
 
@@ -123,11 +121,15 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
         for w in [&soon, &later] {
             activate!(&request, w).await;
         }
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         // `soon` becomes eligible in 10 days; `later` in about a year.
         for (who, since) in [
-            (&soon, today - Months::new(24) + Duration::days(10)),
-            (&later, today - Months::new(12)),
+            (
+                &soon,
+                today - jiff::Span::new().months(24)
+                    + workforce_planning_management::dates::days(10),
+            ),
+            (&later, today - jiff::Span::new().months(12)),
         ] {
             request
                 .put(&format!("/api/workers/{who}/pay-position"))
@@ -155,7 +157,7 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
         };
 
         // A 30-day window catches `soon` only, once.
-        let to = today + Duration::days(30);
+        let to = today + workforce_planning_management::dates::days(30);
         assert_eq!(send_reminders(&ctx, today, to).await.unwrap(), 1);
         assert_eq!(told(soon.clone()).await.len(), 1);
         assert_eq!(told(later.clone()).await.len(), 0);
@@ -176,9 +178,13 @@ async fn eligibility_reminders_name_no_pay_and_are_sent_once() {
         }
         // A window that excludes the date tells nobody new.
         assert_eq!(
-            send_reminders(&ctx, today + Duration::days(40), today + Duration::days(60))
-                .await
-                .unwrap(),
+            send_reminders(
+                &ctx,
+                today + workforce_planning_management::dates::days(40),
+                today + workforce_planning_management::dates::days(60)
+            )
+            .await
+            .unwrap(),
             0
         );
     })

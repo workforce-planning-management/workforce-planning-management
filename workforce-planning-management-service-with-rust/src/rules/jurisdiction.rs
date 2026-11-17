@@ -15,10 +15,9 @@
 //! Where the design (spec/worldwide.md, "Jurisdiction profile design") left a detail open, the choice made here is
 //! written down in the spec under "What the registry chose (WPM-T407)".
 
-use std::collections::BTreeSet;
-
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 /// The most links a chain may have; a longer one is refused as malformed (a cycle is refused before that).
 pub const MAX_CHAIN: usize = 8;
@@ -672,13 +671,13 @@ pub enum Value {
         max: Option<i64>,
     },
     /// A calendar date (stored as `YYYY-MM-DD`).
-    Date(chrono::NaiveDate),
+    Date(Date),
 }
 
 impl Value {
     /// The date, if this is one.
     #[must_use]
-    pub const fn as_date(&self) -> Option<chrono::NaiveDate> {
+    pub const fn as_date(&self) -> Option<Date> {
         match self {
             Self::Date(day) => Some(*day),
             _ => None,
@@ -768,7 +767,7 @@ pub fn validate_entry(entry: &Parameter, raw: &serde_json::Value) -> Result<Valu
             .ok_or_else(|| format!("{key} must be true or false")),
         Shape::Date => raw
             .as_str()
-            .and_then(|text| chrono::NaiveDate::parse_from_str(text.trim(), "%Y-%m-%d").ok())
+            .and_then(|text| Date::strptime("%Y-%m-%d", text.trim()).ok())
             .map(Value::Date)
             .ok_or_else(|| format!("{key} must be a date, YYYY-MM-DD")),
         Shape::Weekday => weekday(raw)
@@ -883,9 +882,9 @@ pub struct Row {
     /// The value, already validated.
     pub value: Value,
     /// The first day it is in force.
-    pub effective_from: NaiveDate,
+    pub effective_from: Date,
     /// The last day it is in force, if it ends.
-    pub effective_to: Option<NaiveDate>,
+    pub effective_to: Option<Date>,
     /// What it rests on.
     pub source: String,
     /// How far it was checked.
@@ -906,7 +905,7 @@ pub struct Origin {
     /// That row's source.
     pub source: String,
     /// That row's first day in force.
-    pub effective_from: NaiveDate,
+    pub effective_from: Date,
 }
 
 /// The resolver's answer.
@@ -947,7 +946,7 @@ impl Resolution {
 
 /// The row in force on `as_of` for `code` and `key`: the latest `effective_from` not after `as_of` whose
 /// `effective_to` (inclusive) has not passed, the later-recorded on a tie.
-fn in_force<'a>(rows: &'a [Row], code: &str, key: &str, as_of: NaiveDate) -> Option<&'a Row> {
+fn in_force<'a>(rows: &'a [Row], code: &str, key: &str, as_of: Date) -> Option<&'a Row> {
     rows.iter()
         .filter(|row| row.code == code && row.key == key)
         .filter(|row| row.effective_from <= as_of && row.effective_to.is_none_or(|to| as_of <= to))
@@ -973,7 +972,7 @@ pub fn resolve(
     key: &str,
     chain: Option<&[Step]>,
     rows: &[Row],
-    as_of: NaiveDate,
+    as_of: Date,
 ) -> Result<Resolution, String> {
     let entry = parameter(key).ok_or_else(|| format!("{key} is not in the parameter registry"))?;
     Ok(resolve_entry(entry, chain, rows, as_of))
@@ -986,7 +985,7 @@ pub fn resolve_entry(
     entry: &Parameter,
     chain: Option<&[Step]>,
     rows: &[Row],
-    as_of: NaiveDate,
+    as_of: Date,
 ) -> Resolution {
     let key = entry.key;
     let Some(chain) = chain else {
@@ -1123,8 +1122,8 @@ mod tests {
 
     // The codes are ISO 3166 user-assigned ones (`QA`–`QZ`, `XA`–`XZ`), so no test names a real country.
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     fn link(code: &str, layer: Layer, parent: Option<&str>) -> Link {
@@ -1136,7 +1135,7 @@ mod tests {
     }
 
     #[allow(clippy::needless_pass_by_value)] // the tests pass `json!` literals
-    fn row(code: &str, key: &str, value: serde_json::Value, from: NaiveDate, seq: i64) -> Row {
+    fn row(code: &str, key: &str, value: serde_json::Value, from: Date, seq: i64) -> Row {
         Row {
             code: code.into(),
             key: key.into(),
@@ -1299,7 +1298,7 @@ mod tests {
         // A date (WPM-T409): ISO, trimmed, and a real day; a number or a word is not one.
         assert_eq!(
             validate("ai_act.applies_from", &json!(" 2027-12-02 ")).map(|v| v.as_date()),
-            Ok(chrono::NaiveDate::from_ymd_opt(2027, 12, 2))
+            Ok(crate::dates::ymd(2027, 12, 2))
         );
         for bad in [
             json!("2027-02-30"),
@@ -1310,10 +1309,7 @@ mod tests {
             assert!(validate("ai_act.applies_from", &bad).is_err(), "{bad}");
         }
         assert_eq!(
-            serde_json::to_value(Value::Date(
-                chrono::NaiveDate::from_ymd_opt(2027, 12, 2).unwrap()
-            ))
-            .unwrap(),
+            serde_json::to_value(Value::Date(crate::dates::ymd(2027, 12, 2).unwrap())).unwrap(),
             json!("2027-12-02"),
             "stored as the date itself, so a stored row reads back"
         );
@@ -1321,7 +1317,7 @@ mod tests {
             serde_json::from_value::<Value>(json!("2027-12-02"))
                 .unwrap()
                 .as_date(),
-            chrono::NaiveDate::from_ymd_opt(2027, 12, 2)
+            crate::dates::ymd(2027, 12, 2)
         );
         assert!(
             validate("no.such", &json!(1))

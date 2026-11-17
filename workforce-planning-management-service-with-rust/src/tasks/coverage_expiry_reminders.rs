@@ -7,9 +7,10 @@
 //! says so. A retired record is not reminded. The notification names the jurisdiction, the kind and the date, and nothing else: no
 //! insurer, policy reference or certificate. It goes to the organization's `hr_admin` members.
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde_json::json;
 
 use crate::rules::qualification::{self as rules, Reminder};
@@ -31,9 +32,9 @@ impl Task for CoverageExpiryReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let window = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -64,7 +65,7 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
+pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let held = sqlx::query!(
         "SELECT pid, organization_ref, kind, jurisdiction, valid_to FROM coverage_evidence
@@ -76,7 +77,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         let Some(valid_to) = record.valid_to else {
             continue;
         };
-        let Some(reminder) = rules::reminder_for(valid_to, as_of, window) else {
+        let Some(reminder) = rules::reminder_for(valid_to.get(), as_of, window) else {
             continue;
         };
         let already = sqlx::query_scalar!(
@@ -128,7 +129,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             record.pid,
             valid_to,
             reminder.as_str(),
-            as_of,
+            SqlDate(as_of),
         )
         .execute(&mut *tx)
         .await?;

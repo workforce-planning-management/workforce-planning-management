@@ -7,7 +7,7 @@
 //! says which job level corresponds to which pay band, so the service does not
 //! pretend to know.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::job_levels as levels;
 use super::pay_scale as scales;
@@ -54,7 +54,7 @@ pub fn resolve_band(scale: &str, band: &str) -> Result<(&'static str, &'static s
 ///
 /// # Errors
 /// A message when `effective_on` is in the future.
-pub fn validate_effective_on(effective_on: NaiveDate, today: NaiveDate) -> Result<(), String> {
+pub fn validate_effective_on(effective_on: Date, today: Date) -> Result<(), String> {
     if effective_on > today {
         Err("effective_on cannot be in the future".to_string())
     } else {
@@ -66,8 +66,8 @@ pub fn validate_effective_on(effective_on: NaiveDate, today: NaiveDate) -> Resul
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     /// A level resolves from any accepted spelling to the canonical id and number;

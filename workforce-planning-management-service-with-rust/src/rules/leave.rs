@@ -5,6 +5,8 @@
 //! negative but the result is flagged; other kinds behave like
 //! annual (balance-enforced) except `unpaid`, which has no balance.
 
+use jiff::civil::Date;
+
 /// The verdict on taking `days` against a balance.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BalanceCheck {
@@ -78,11 +80,11 @@ pub fn check_balance(kind: &str, entitled: i32, used: i32, requested: i32) -> Ba
 ///
 /// A human-readable refusal (`422` material) for a reversed or
 /// oversized range.
-pub fn day_span(start: chrono::NaiveDate, end: chrono::NaiveDate) -> Result<i32, String> {
+pub fn day_span(start: Date, end: Date) -> Result<i32, String> {
     if end < start {
         return Err(format!("end_on {end} is before start_on {start}"));
     }
-    let days = (end - start).num_days() + 1;
+    let days = crate::dates::days_between(start, end) + 1;
     if days > 366 {
         return Err(format!(
             "leave spans {days} calendar days; the cap is 366 calendar days"
@@ -94,12 +96,7 @@ pub fn day_span(start: chrono::NaiveDate, end: chrono::NaiveDate) -> Result<i32,
 /// Whether two inclusive date ranges overlap (shift-vs-leave and
 /// leave-vs-leave conflict checks).
 #[must_use]
-pub fn ranges_overlap(
-    a_start: chrono::NaiveDate,
-    a_end: chrono::NaiveDate,
-    b_start: chrono::NaiveDate,
-    b_end: chrono::NaiveDate,
-) -> bool {
+pub fn ranges_overlap(a_start: Date, a_end: Date, b_start: Date, b_end: Date) -> bool {
     a_start <= b_end && b_start <= a_end
 }
 
@@ -119,10 +116,9 @@ mod tests {
     }
 
     use super::*;
-    use chrono::NaiveDate;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     /// Annual leave: within balance passes with the new remainder;

@@ -662,14 +662,14 @@ async fn the_minimum_wage_check_is_advisory_and_follows_the_place_of_work() {
         ] {
             let pid = seed_worker!(&request, &org, number, Some(salary)).await;
             activate!(&request, &pid).await;
-            let mut day = chrono::NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
+            let mut day = workforce_planning_management::dates::ymd(2026, 7, 1).unwrap();
             for _ in 0..20 {
                 request
                     .post(&format!("/api/workers/{pid}/time-entries"))
                     .json(&json!({ "worked_on": day, "minutes": 480 }))
                     .await
                     .assert_status_ok();
-                day += chrono::Duration::days(1);
+                day += workforce_planning_management::dates::days(1);
             }
             slips.push((number, pid));
         }

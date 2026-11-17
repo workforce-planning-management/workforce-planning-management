@@ -4,7 +4,7 @@
 //! in date; a declared match is shown as `declared_only`, never as met; a match past its expiry is `expired`; otherwise `missing`.
 //! **Unknown is never met**, and nothing here is a score: the outcome is a fact about a record, not a rating of a person.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// The kinds a qualification can have.
 pub const KINDS: &[&str] = &["academic", "professional", "vocational", "licence"];
@@ -21,7 +21,7 @@ pub struct Held {
     /// The level on that framework, if any.
     pub level: Option<i32>,
     /// The last day it is valid, if it expires.
-    pub expires_on: Option<NaiveDate>,
+    pub expires_on: Option<Date>,
     /// Whether HR has verified it.
     pub verified: bool,
 }
@@ -76,7 +76,7 @@ pub fn matches(held: &Held, req: &Requirement) -> bool {
 
 /// How `req` stands given what a person holds on `today`. The best matching qualification decides.
 #[must_use]
-pub fn standing(req: &Requirement, held: &[Held], today: NaiveDate) -> Standing {
+pub fn standing(req: &Requirement, held: &[Held], today: Date) -> Standing {
     let mut best = Standing::Missing;
     for h in held.iter().filter(|h| matches(h, req)) {
         let in_date = h.expires_on.is_none_or(|e| e >= today);
@@ -170,8 +170,8 @@ impl Reminder {
 /// The reminder a qualification expiring on `expires_on` needs on `today`, if any. An expiry that passed more than `window_days` ago is
 /// a past fact, not an alert, so a first run on old data does not tell anyone about years-old lapses.
 #[must_use]
-pub fn reminder_for(expires_on: NaiveDate, today: NaiveDate, window_days: i64) -> Option<Reminder> {
-    let until = (expires_on - today).num_days();
+pub fn reminder_for(expires_on: Date, today: Date, window_days: i64) -> Option<Reminder> {
+    let until = crate::dates::days_between(today, expires_on);
     if until < 0 {
         (-until <= window_days).then_some(Reminder::Expired)
     } else {
@@ -198,11 +198,11 @@ pub fn validate_reminder_window(days: i64) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn held(title: &str, verified: bool, expires_on: Option<NaiveDate>) -> Held {
+    fn held(title: &str, verified: bool, expires_on: Option<Date>) -> Held {
         Held {
             title: title.into(),
             kind: "professional".into(),

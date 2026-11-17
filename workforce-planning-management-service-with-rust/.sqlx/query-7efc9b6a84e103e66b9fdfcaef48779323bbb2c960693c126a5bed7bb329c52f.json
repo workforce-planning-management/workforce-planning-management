@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at AS \"deleted_at: chrono::DateTime<chrono::FixedOffset>\"\n             FROM worker_skills WHERE skill_pid = $1 ORDER BY id",
+  "query": "SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at\n             FROM worker_skills WHERE skill_pid = $1 ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -60,7 +60,7 @@
       },
       {
         "ordinal": 5,
-        "name": "deleted_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -84,5 +84,5 @@
       true
     ]
   },
-  "hash": "fe914fa9a9cdfb0568446ed466a5b6dc06c3f9b0db20dcaa5b6bd5f68355a5e5"
+  "hash": "7efc9b6a84e103e66b9fdfcaef48779323bbb2c960693c126a5bed7bb329c52f"
 }

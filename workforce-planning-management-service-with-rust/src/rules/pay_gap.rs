@@ -15,10 +15,9 @@
 //! The comparable basis (for example gross hourly pay, or full-time-equivalent annual pay) is the caller's choice and
 //! is recorded with the report by the layer above; every amount here is in minor units on that one basis.
 
-use std::collections::BTreeMap;
-
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 use super::equality_monitoring;
 
@@ -535,14 +534,14 @@ pub struct Obligation {
     /// Years between reports (1 = every year).
     pub every_years: u32,
     /// The date of the first report.
-    pub first_report_on: NaiveDate,
+    pub first_report_on: Date,
 }
 
 /// The Directive's own tiers, as defaults a deployer's national law may replace: 250 or more report every year from
 /// 7 June 2027; 150 to 249 every three years from 7 June 2027; 100 to 149 every three years from 7 June 2031.
 #[must_use]
 pub fn directive_tiers() -> Vec<Obligation> {
-    let date = |year| NaiveDate::from_ymd_opt(year, 6, 7).unwrap_or(NaiveDate::MIN);
+    let date = |year| crate::dates::ymd(year, 6, 7).unwrap_or(Date::MIN);
     vec![
         Obligation {
             from_workers: 250,
@@ -600,7 +599,8 @@ pub fn parse_tiers(text: &str) -> Result<Vec<Obligation>, String> {
             .ok()
             .filter(|n| (1..=MAX_EVERY_YEARS).contains(n))
             .ok_or_else(|| format!("tier {entry:?}: every_years must be 1 to {MAX_EVERY_YEARS}"))?;
-        let first_report_on = NaiveDate::parse_from_str(first, "%Y-%m-%d")
+        let first_report_on = first
+            .parse::<Date>()
             .map_err(|_| format!("tier {entry:?}: first_report_on must be a date, YYYY-MM-DD"))?;
         if tiers.iter().any(|t| t.from_workers == from_workers) {
             return Err(format!("two tiers start at {from_workers} workers"));
@@ -630,7 +630,7 @@ pub fn tier_for(headcount: usize, tiers: &[Obligation]) -> Option<Obligation> {
 
 /// The first report date on or after `today`: the first report, then one every `every_years`.
 #[must_use]
-pub fn next_due(obligation: Obligation, today: NaiveDate) -> NaiveDate {
+pub fn next_due(obligation: Obligation, today: Date) -> Date {
     let mut due = obligation.first_report_on;
     let mut step = 0_u32;
     while due < today {
@@ -639,9 +639,11 @@ pub fn next_due(obligation: Obligation, today: NaiveDate) -> NaiveDate {
             .every_years
             .saturating_mul(12)
             .saturating_mul(step);
-        match obligation
-            .first_report_on
-            .checked_add_months(Months::new(months))
+        // `try_months`: a count past the calendar ends the walk, as `checked_add_months` did, not a panic.
+        match jiff::Span::new()
+            .try_months(months)
+            .ok()
+            .and_then(|span| obligation.first_report_on.checked_add(span).ok())
         {
             Some(next) => due = next,
             None => break,
@@ -1148,7 +1150,7 @@ mod tests {
 
     #[test]
     fn the_next_report_falls_on_the_first_date_then_every_period() {
-        let day = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        let day = |y, m, d| crate::dates::ymd(y, m, d).unwrap();
         let yearly = Obligation {
             from_workers: 250,
             every_years: 1,
@@ -1185,7 +1187,7 @@ mod tests {
     /// WPM-T384: a deployment's own tiers parse, `none` is no duty, and a bad entry says why.
     #[test]
     fn reporting_tiers_are_configurable() {
-        let date = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        let date = |y, m, d| crate::dates::ymd(y, m, d).unwrap();
         // The Directive's own tiers, written as a setting, equal the defaults.
         let written = parse_tiers("250:1:2027-06-07, 150:3:2027-06-07, 100:3:2031-06-07").unwrap();
         assert_eq!(written, directive_tiers());

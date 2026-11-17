@@ -129,7 +129,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
-        let today = chrono::Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let post = |path: String, t: String, body: Value| { let request = &request; async move { request.post(&path).add_header("authorization", t).json(&body).await } };
         let put = |path: String, t: String, body: Value| { let request = &request; async move { request.put(&path).add_header("authorization", t).json(&body).await } };
         let get = |path: String, t: String| { let request = &request; async move { request.get(&path).add_header("authorization", t).await } };
@@ -183,7 +183,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
             assert_eq!(r.status_code(), 403, "{name} cannot record a status");
         }
         assert_eq!(record(oh.clone(), &w, &hep, json!({ "status": "vaccinated" })).await.status_code(), 422, "a status from the list");
-        assert_eq!(record(oh.clone(), &w, &hep, json!({ "status": "up_to_date", "recorded_on": (today + chrono::Duration::days(1)).to_string() })).await.status_code(), 422);
+        assert_eq!(record(oh.clone(), &w, &hep, json!({ "status": "up_to_date", "recorded_on": (today + workforce_planning_management::dates::days(1)).to_string() })).await.status_code(), 422);
         assert_eq!(record(oh.clone(), &w_office, &hep, json!({ "status": "up_to_date" })).await.status_code(), 422, "does not apply to the office");
         assert_eq!(record(oh.clone(), &w, &uuid::Uuid::new_v4().to_string(), json!({ "status": "up_to_date" })).await.status_code(), 404);
         let done = record(oh.clone(), &w, &hep, json!({ "status": "up_to_date" })).await;
@@ -195,7 +195,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         let own: Value = get("/api/me/health-requirements".into(), worker.clone()).await.json();
         let hep_view = own["requirements"].as_array().unwrap().iter().find(|r| r["requirement"]["name"] == "Hepatitis B").unwrap();
         assert_eq!(hep_view["standing"], "up_to_date");
-        assert_eq!(hep_view["next_due"], (today + chrono::Duration::days(365)).to_string().as_str(), "the re-check period in calendar days");
+        assert_eq!(hep_view["next_due"], (today + workforce_planning_management::dates::days(365)).to_string().as_str(), "the re-check period in calendar days");
         // Overdue: the reminder shows and they are no longer cleared.
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE worker_health_records SET next_due = CURRENT_DATE - 1 WHERE worker_pid = '{w}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         let late: Value = get("/api/me/health-requirements".into(), worker.clone()).await.json();

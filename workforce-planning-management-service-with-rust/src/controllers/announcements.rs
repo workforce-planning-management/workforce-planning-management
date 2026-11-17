@@ -14,9 +14,10 @@
 //! it, never who.
 
 use super::ensure_org_in_scope;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -114,8 +115,8 @@ fn validate_links_payload(links: &[LinkPayload]) -> Result<()> {
     rules::validate_links(&pairs).map_err(|e| unprocessable(&e))
 }
 
-fn row_json(a: &announcements::Model, today: NaiveDate) -> serde_json::Value {
-    let status = match rules::status(a.publish_on, a.expires_on, today) {
+fn row_json(a: &announcements::Model, today: Date) -> serde_json::Value {
+    let status = match rules::status(a.publish_on.get(), a.expires_on.map(SqlDate::get), today) {
         rules::Status::Scheduled => "scheduled",
         rules::Status::Live => "live",
         rules::Status::Expired => "expired",
@@ -162,7 +163,7 @@ async fn feed(
 ) -> Result<Response> {
     let window = super::resolve(&page, FEED_DEFAULT_LIMIT)?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut rows = sqlx::query_as!(
         announcements::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, title, body, pinned,
@@ -203,15 +204,19 @@ async fn feed(
         {
             continue;
         }
-        let live = rules::status(row.publish_on, row.expires_on, today) == rules::Status::Live;
+        let live = rules::status(
+            row.publish_on.get(),
+            row.expires_on.map(SqlDate::get),
+            today,
+        ) == rules::Status::Live;
         if live || (all && editor) {
             kept.push(row);
         }
     }
     kept.sort_by(|a, b| {
         rules::feed_order(
-            (a.pinned, a.publish_on, a.id),
-            (b.pinned, b.publish_on, b.id),
+            (a.pinned, a.publish_on.get(), a.id),
+            (b.pinned, b.publish_on.get(), b.id),
         )
     });
     let (page_rows, more) = window.split(
@@ -262,8 +267,12 @@ async fn get_one(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let row = find(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
-    if rules::status(row.publish_on, row.expires_on, today) != rules::Status::Live
+    let today = crate::dates::today();
+    if rules::status(
+        row.publish_on.get(),
+        row.expires_on.map(SqlDate::get),
+        today,
+    ) != rules::Status::Live
         && !can_edit(&ctx, &caller, &row.organization_ref).await?
     {
         return Err(Error::NotFound);
@@ -281,9 +290,9 @@ struct AnnouncementPayload {
     pinned: Option<bool>,
     /// Default today.
     #[serde(default)]
-    publish_on: Option<NaiveDate>,
+    publish_on: Option<Date>,
     #[serde(default)]
-    expires_on: Option<NaiveDate>,
+    expires_on: Option<Date>,
     /// Aim the post at one department; absent = everyone.
     #[serde(default)]
     department: Option<String>,
@@ -301,7 +310,7 @@ async fn create(
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;
     require_editor(&ctx, &caller, &payload.organization_ref).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let publish_on = payload.publish_on.unwrap_or(today);
     rules::validate(
         &payload.title,
@@ -321,8 +330,8 @@ async fn create(
         payload.title.trim(),
         payload.body.trim(),
         payload.pinned.unwrap_or(false),
-        publish_on,
-        payload.expires_on,
+        SqlDate(publish_on),
+        payload.expires_on.map(SqlDate),
         payload
             .department
             .map(|d| d.trim().to_string())
@@ -347,10 +356,10 @@ struct AnnouncementUpdate {
     #[serde(default)]
     pinned: Option<bool>,
     #[serde(default)]
-    publish_on: Option<NaiveDate>,
+    publish_on: Option<Date>,
     /// Set the expiry; `clear_expiry` removes it.
     #[serde(default)]
-    expires_on: Option<NaiveDate>,
+    expires_on: Option<Date>,
     #[serde(default)]
     clear_expiry: bool,
     /// Aim at a department; `clear_department` makes it organization-wide.
@@ -375,11 +384,11 @@ async fn update(
     require_editor(&ctx, &caller, &row.organization_ref).await?;
     let title = payload.title.unwrap_or_else(|| row.title.clone());
     let body = payload.body.unwrap_or_else(|| row.body.clone());
-    let publish_on = payload.publish_on.unwrap_or(row.publish_on);
+    let publish_on = payload.publish_on.unwrap_or(row.publish_on.get());
     let expires_on = if payload.clear_expiry {
         None
     } else {
-        payload.expires_on.or(row.expires_on)
+        payload.expires_on.or(row.expires_on.map(SqlDate::get))
     };
     rules::validate(&title, &body, publish_on, expires_on).map_err(|e| unprocessable(&e))?;
     let pinned = payload.pinned.unwrap_or(row.pinned);
@@ -413,8 +422,8 @@ async fn update(
         title.trim(),
         body.trim(),
         pinned,
-        publish_on,
-        expires_on,
+        SqlDate(publish_on),
+        expires_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -428,7 +437,7 @@ async fn update(
     )
     .await?;
     tx.commit().await?;
-    format::json(row_json(&updated, Utc::now().date_naive()))
+    format::json(row_json(&updated, crate::dates::today()))
 }
 
 /// `DELETE /api/announcements/{pid}` — retire a post (soft-delete).
@@ -444,7 +453,7 @@ async fn retire(
     sqlx::query!(
         "UPDATE announcements SET deleted_at = $2 WHERE id = $1",
         row.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -507,7 +516,7 @@ async fn mark_read(
          ON CONFLICT (announcement_pid, worker_pid) DO NOTHING",
         row.pid,
         worker.pid,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(db::pool(&ctx))
     .await?;

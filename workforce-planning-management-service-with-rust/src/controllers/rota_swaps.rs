@@ -9,9 +9,10 @@
 //! the colleague's. Both are told the outcome (`swap_requested`,
 //! `swap_decided`; reference-only).
 
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -80,8 +81,8 @@ async fn find_request(ctx: &AppContext, pid: &str) -> Result<rota_swap_requests:
 struct SwapPayload {
     requester_pid: Uuid,
     taker_pid: Uuid,
-    starts_on: NaiveDate,
-    ends_on: NaiveDate,
+    starts_on: Date,
+    ends_on: Date,
     #[serde(default)]
     note: Option<String>,
 }
@@ -99,7 +100,7 @@ async fn request_swap(
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
     let requester = writable_worker(&ctx, &caller, payload.requester_pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     rules::validate_swap(
         payload.requester_pid,
         payload.taker_pid,
@@ -120,8 +121,8 @@ async fn request_swap(
         rota.pid,
         requester.pid,
         payload.taker_pid,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        SqlDate(payload.ends_on),
     )
     .fetch_one(db::pool(&ctx))
     .await?;
@@ -137,8 +138,8 @@ async fn request_swap(
         rota.pid,
         requester.pid,
         payload.taker_pid,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        SqlDate(payload.ends_on),
         payload
             .note
             .map(|n| n.trim().to_string())
@@ -206,7 +207,7 @@ async fn decide(
         "UPDATE rota_swap_requests SET status = $2, decided_at = $3 WHERE id = $1",
         request.id,
         to,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(tx)
     .await?;
@@ -232,7 +233,7 @@ async fn accept(
     }
     check_members(&ctx, &rota.organization_ref, &[taker.pid]).await?;
     let (_, _, assignments, people) =
-        compute(&ctx, &rota, request.starts_on, request.ends_on).await?;
+        compute(&ctx, &rota, request.starts_on.get(), request.ends_on.get()).await?;
     let stretches = rules::stretches_for(&assignments, request.requester_pid);
     if stretches.is_empty() {
         return Err(unprocessable(
@@ -243,8 +244,8 @@ async fn accept(
         "Swap with {}",
         name_of(&people, Some(request.requester_pid)).unwrap_or_default()
     );
-    let froms: Vec<NaiveDate> = stretches.iter().map(|run| run.from).collect();
-    let tos: Vec<NaiveDate> = stretches.iter().map(|run| run.to).collect();
+    let froms: Vec<Date> = stretches.iter().map(|run| run.from).collect();
+    let tos: Vec<Date> = stretches.iter().map(|run| run.to).collect();
     let mut tx = db::pool(&ctx).begin().await?;
     // Every stretch becomes the taker's override, in one statement.
     sqlx::query!(
@@ -253,8 +254,8 @@ async fn accept(
            FROM unnest($3::date[], $4::date[]) AS run(starts_on, ends_on)",
         rota.pid,
         taker.pid,
-        &froms,
-        &tos,
+        &froms.iter().copied().map(SqlDate).collect::<Vec<_>>(),
+        &tos.iter().copied().map(SqlDate).collect::<Vec<_>>(),
         note,
         caller.actor(),
     )
@@ -263,7 +264,7 @@ async fn accept(
     sqlx::query!(
         "UPDATE rota_swap_requests SET status = 'accepted', decided_at = $2 WHERE id = $1",
         request.id,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(&mut *tx)
     .await?;

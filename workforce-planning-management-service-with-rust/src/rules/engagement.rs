@@ -9,7 +9,7 @@
 //! Nothing here converts, extends or ends an engagement. It reports where each stands
 //! so a person can decide (WPM-D66).
 
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 
 /// The default end-of-engagement reminder window, in calendar days.
 pub const DEFAULT_WINDOW_CALENDAR_DAYS: i64 = 60;
@@ -95,11 +95,7 @@ pub const fn end_date_rule(basis: Basis) -> EndDate {
 ///
 /// An unknown basis, an end date that is missing where required or given where refused,
 /// or one that is not after the start.
-pub fn validate_end_date(
-    basis: &str,
-    hired_on: NaiveDate,
-    ends_on: Option<NaiveDate>,
-) -> Result<(), String> {
+pub fn validate_end_date(basis: &str, hired_on: Date, ends_on: Option<Date>) -> Result<(), String> {
     let basis = Basis::parse(basis).ok_or_else(|| format!("unknown engagement basis: {basis}"))?;
     match (end_date_rule(basis), ends_on) {
         (EndDate::Required, None) => Err(format!(
@@ -122,7 +118,7 @@ pub fn validate_end_date(
 /// # Errors
 ///
 /// A new end that is not after the previous one.
-pub fn validate_extension(previous_end: NaiveDate, new_end: NaiveDate) -> Result<(), String> {
+pub fn validate_extension(previous_end: Date, new_end: Date) -> Result<(), String> {
     if new_end > previous_end {
         Ok(())
     } else {
@@ -233,8 +229,8 @@ impl Standing {
 #[must_use]
 pub fn standing(
     basis: Basis,
-    ends_on: Option<NaiveDate>,
-    as_of: NaiveDate,
+    ends_on: Option<Date>,
+    as_of: Date,
     window_calendar_days: i64,
     decided: bool,
 ) -> Standing {
@@ -244,7 +240,7 @@ pub fn standing(
             _ => Standing::OpenEnded,
         };
     };
-    let until = (end - as_of).num_days();
+    let until = crate::dates::days_between(as_of, end);
     if until < 0 {
         if decided {
             Standing::PastEndDecided
@@ -299,11 +295,7 @@ impl Reminder {
 
 /// The reminder an engagement with this end date needs on `as_of`, if any.
 #[must_use]
-pub fn reminder_for(
-    ends_on: NaiveDate,
-    as_of: NaiveDate,
-    window_calendar_days: i64,
-) -> Option<Reminder> {
+pub fn reminder_for(ends_on: Date, as_of: Date, window_calendar_days: i64) -> Option<Reminder> {
     if ends_on < as_of {
         Some(Reminder::EndedUndecided)
     } else if in_end_window(ends_on, as_of, window_calendar_days) {
@@ -315,8 +307,8 @@ pub fn reminder_for(
 
 /// Whether an engagement ends inside the window starting `as_of` (a reminder is due).
 #[must_use]
-pub fn in_end_window(ends_on: NaiveDate, as_of: NaiveDate, window_calendar_days: i64) -> bool {
-    let until = (ends_on - as_of).num_days();
+pub fn in_end_window(ends_on: Date, as_of: Date, window_calendar_days: i64) -> bool {
+    let until = crate::dates::days_between(as_of, ends_on);
     (0..=window_calendar_days).contains(&until)
 }
 
@@ -330,16 +322,18 @@ pub fn much_extended(extensions: usize, threshold: usize) -> bool {
 /// `as_of`: a conversion or status-review candidate (WPM-R86). A start that is not yet
 /// reached is not long-running.
 #[must_use]
-pub fn long_running(hired_on: NaiveDate, as_of: NaiveDate, months: u32) -> bool {
-    hired_on
-        .checked_add_months(Months::new(months))
+pub fn long_running(hired_on: Date, as_of: Date, months: u32) -> bool {
+    jiff::Span::new()
+        .try_months(months)
+        .ok()
+        .and_then(|span| hired_on.checked_add(span).ok())
         .is_some_and(|limit| as_of > limit)
 }
 
 /// Whether an engagement is counted on `date`: it started, and has not passed its end
 /// date. An engagement with no end date is counted.
 #[must_use]
-pub fn is_engaged_on(date: NaiveDate, hired_on: NaiveDate, ends_on: Option<NaiveDate>) -> bool {
+pub fn is_engaged_on(date: Date, hired_on: Date, ends_on: Option<Date>) -> bool {
     hired_on <= date && ends_on.is_none_or(|end| date <= end)
 }
 
@@ -354,9 +348,9 @@ pub struct ContingentEngagement {
     /// A contractor (rather than fixed-term).
     pub contractor: bool,
     /// The start.
-    pub hired_on: NaiveDate,
+    pub hired_on: Date,
     /// The end date; `None` is counted nowhere in the ending figures (the missing end is its own list).
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
     /// A decision is recorded for the current end date.
     pub decided: bool,
     /// How many times the end has been extended.
@@ -395,10 +389,10 @@ pub const LISTS: &[&str] = &[
 /// Whether an engagement belongs on the list `list`; `None` for a token that is not a list. The one
 /// definition behind both the count and the named list, so the two cannot disagree.
 #[must_use]
-pub fn on_list(list: &str, e: &ContingentEngagement, today: NaiveDate) -> Option<bool> {
+pub fn on_list(list: &str, e: &ContingentEngagement, today: Date) -> Option<bool> {
     let band = |from: i64, to: i64| {
         e.ends_on
-            .is_some_and(|end| (from..=to).contains(&(end - today).num_days()))
+            .is_some_and(|end| (from..=to).contains(&crate::dates::days_between(today, end)))
     };
     Some(match list {
         "ending_within_30" => band(0, 30),
@@ -417,7 +411,7 @@ pub fn on_list(list: &str, e: &ContingentEngagement, today: NaiveDate) -> Option
 #[must_use]
 pub fn contingent_counts(
     rows: &[ContingentEngagement],
-    today: NaiveDate,
+    today: Date,
     floor: usize,
 ) -> ContingentCounts {
     let count = |list: &str| {
@@ -441,8 +435,8 @@ pub fn contingent_counts(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]
@@ -583,7 +577,7 @@ mod tests {
     #[test]
     fn standing_at_each_boundary() {
         let today = d(2026, 6, 1);
-        let at = |end: Option<NaiveDate>, decided: bool, basis: Basis| {
+        let at = |end: Option<Date>, decided: bool, basis: Basis| {
             standing(basis, end, today, 60, decided)
         };
         let ft = Basis::FixedTerm;
@@ -646,7 +640,7 @@ mod tests {
         assert!(is_engaged_on(d(2030, 1, 1), start, None));
     }
 
-    fn row(ends: Option<NaiveDate>, decided: bool, extensions: usize) -> ContingentEngagement {
+    fn row(ends: Option<Date>, decided: bool, extensions: usize) -> ContingentEngagement {
         ContingentEngagement {
             contractor: true,
             hired_on: d(2020, 1, 1),
@@ -661,7 +655,7 @@ mod tests {
         let today = d(2026, 6, 1);
         let mut rows = Vec::new();
         for days in [0, 30, 31, 60, 61, 90, 91] {
-            rows.push(row(Some(today + chrono::Duration::days(days)), false, 0));
+            rows.push(row(Some(today + crate::dates::days(days)), false, 0));
         }
         let c = contingent_counts(&rows, today, 0);
         assert_eq!(c.ending_within_30, Some(2), "day 0 and day 30");
@@ -736,7 +730,7 @@ mod tests {
     #[test]
     fn the_count_and_the_list_agree() {
         let today = d(2026, 6, 1);
-        let day = |n: i64| today + chrono::Duration::days(n);
+        let day = |n: i64| today + crate::dates::days(n);
         let mut rows = Vec::new();
         for n in [-5, 0, 10, 31, 45, 61, 90, 200] {
             for ext in [0, 3] {

@@ -19,7 +19,7 @@
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 
 use crate::error::MatchError;
@@ -479,7 +479,7 @@ fn family_name(a: &WorkerRecord, b: &WorkerRecord) -> Option<f64> {
 
 /// 1 for the same day; 0.6 for day and month swapped; 0.5 for a single typo
 /// in year, month or day; otherwise 0.
-fn date_of_birth(a: NaiveDate, b: NaiveDate) -> f64 {
+fn date_of_birth(a: Date, b: Date) -> f64 {
     if a == b {
         return 1.0;
     }
@@ -674,7 +674,7 @@ mod tests {
 
     #[test]
     fn day_and_month_swapped_scores_between() {
-        let d = |m, dd| NaiveDate::from_ymd_opt(1980, m, dd).unwrap();
+        let d = |m, dd| Date::new(1980, m, dd).unwrap();
         assert_eq!(date_of_birth(d(5, 3), d(3, 5)), 0.6);
         assert_eq!(date_of_birth(d(5, 3), d(5, 4)), 0.5);
         assert_eq!(date_of_birth(d(5, 3), d(6, 4)), 0.0);

@@ -4,10 +4,11 @@
 //! stored and no pay change is proposed. It reads salaries, so it needs the same unmasked read as the pay gap report.
 //! Spec: `spec/payroll-compensation.md`.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -29,7 +30,7 @@ const BASIS: &str = "Annual full-time-equivalent basic salary on the worker reco
 #[derive(Debug, Deserialize)]
 pub(crate) struct Query {
     organization: String,
-    as_of: Option<NaiveDate>,
+    as_of: Option<Date>,
     /// Outlier cut-off in whole percentage points of compa-ratio (default 10).
     cutoff: Option<i64>,
     currency: Option<String>,
@@ -38,8 +39,8 @@ pub(crate) struct Query {
 /// What the analysis reads of a worker.
 struct Staff {
     pid: Uuid,
-    hired_on: NaiveDate,
-    terminated_on: Option<NaiveDate>,
+    hired_on: Date,
+    terminated_on: Option<SqlDate>,
     salary_minor: Option<i64>,
     salary_currency: Option<String>,
     department: String,
@@ -83,7 +84,7 @@ async fn pay_range(
             "a pay position analysis is made of salaries and needs payroll read access",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let as_of = query.as_of.unwrap_or(today);
     if as_of > today {
         return Err(unprocessable("as_of must not be in the future"));
@@ -103,7 +104,7 @@ async fn pay_range(
     .fetch_all(pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(as_of, w.hired_on, w.terminated_on.map(SqlDate::get)))
     .collect();
     let positions: BTreeMap<Uuid, _> =
         sqlx::query!("SELECT worker_pid, scale_id, band FROM worker_pay_positions")

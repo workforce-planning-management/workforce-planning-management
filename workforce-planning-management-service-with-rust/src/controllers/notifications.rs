@@ -2,9 +2,10 @@
 //! list (unread first) and the mark-read action. Reference-only rows;
 //! the write side lives in the handlers that make the change.
 
+use crate::sql_time::SqlTimestamp;
 use axa::extract::Path;
 use axa::prelude::*;
-use chrono::Utc;
+use jiff::Timestamp;
 
 use super::{record_rejection, row_json};
 use crate::auth::{self, MaybeAuthUser};
@@ -76,7 +77,7 @@ async fn mark_read(
         r#"UPDATE notifications SET read_at = $1 WHERE pid = $2
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, body, data,
                      read_at AS "read_at: _""#,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
         notification.pid,
     )
     .fetch_one(pool(&ctx))

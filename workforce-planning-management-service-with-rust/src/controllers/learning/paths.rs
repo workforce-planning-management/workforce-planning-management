@@ -3,7 +3,9 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
+use jiff::Timestamp;
 
 /// `POST /api/learning-paths` body (steps declared inline, ordered).
 #[derive(Debug, Deserialize)]
@@ -130,7 +132,7 @@ pub(super) async fn enroll_path(
         enrollment,
         path.pid,
         worker.pid,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .execute(&mut *tx)
     .await?;
@@ -192,7 +194,7 @@ pub(super) async fn path_progress(
         })
         .collect();
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "path": { "pid": path.pid, "name": path.name },
         "steps": steps.iter().map(|s| serde_json::json!({
             "course_ref": s.course_ref, "title": s.title, "position": s.position,

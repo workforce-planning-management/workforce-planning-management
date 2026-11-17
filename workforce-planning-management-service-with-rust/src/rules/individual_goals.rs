@@ -4,10 +4,9 @@
 //! within one goal or across people: a measure shows its own start, current and target, and an unknown value stays unknown. The
 //! scoring guard in [`super::scoring`] names any function that would.
 
-use std::collections::{BTreeMap, BTreeSet};
-
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
+use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
 /// A goal's statuses.
@@ -105,7 +104,7 @@ pub const fn skill_evidence(declared: Option<i32>, target: i32) -> SkillEvidence
 /// # Errors
 ///
 /// A reason when the title is blank or too long, or the period ends before it starts.
-pub fn valid_goal(title: &str, start: NaiveDate, end: NaiveDate) -> Result<(), String> {
+pub fn valid_goal(title: &str, start: Date, end: Date) -> Result<(), String> {
     let title = title.trim();
     if title.is_empty() || title.chars().count() > MAX_TITLE_CHARS {
         return Err(format!(
@@ -215,7 +214,7 @@ pub fn may_agree(status: &str, proposed_by: &str, party: Party) -> bool {
 
 /// Whether a goal's period overlaps a review's.
 #[must_use]
-pub fn overlaps(goal: (NaiveDate, NaiveDate), review: (NaiveDate, NaiveDate)) -> bool {
+pub fn overlaps(goal: (Date, Date), review: (Date, Date)) -> bool {
     goal.0 <= review.1 && review.0 <= goal.1
 }
 
@@ -232,11 +231,7 @@ pub struct RollupRow {
 
 /// Whether a goal is an objective of a PADR with this period (WPM-R225): it overlaps, and it has not been withdrawn.
 #[must_use]
-pub fn is_objective(
-    status: &str,
-    goal: (NaiveDate, NaiveDate),
-    padr: (NaiveDate, NaiveDate),
-) -> bool {
+pub fn is_objective(status: &str, goal: (Date, Date), padr: (Date, Date)) -> bool {
     status != "withdrawn" && overlaps(goal, padr)
 }
 
@@ -295,8 +290,8 @@ pub fn rollup(rows: &[RollupRow]) -> Vec<RollupLine> {
 mod tests {
     use super::*;
 
-    fn day(month: u32, date: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, month, date).expect("a date")
+    fn day(month: u32, date: u32) -> Date {
+        crate::dates::ymd(2026, month, date).expect("a date")
     }
 
     fn measure<'a>(name: &'a str, kind: &'a str, number: bool, done: bool) -> MeasureShape<'a> {
@@ -315,8 +310,8 @@ mod tests {
         assert!(is_objective("proposed", (day(12, 31), day(12, 31)), padr));
         assert!(!is_objective("withdrawn", (day(3, 1), day(4, 1)), padr));
         let before = (
-            NaiveDate::from_ymd_opt(2025, 1, 1).expect("a date"),
-            NaiveDate::from_ymd_opt(2025, 12, 31).expect("a date"),
+            crate::dates::ymd(2025, 1, 1).expect("a date"),
+            crate::dates::ymd(2025, 12, 31).expect("a date"),
         );
         assert!(!is_objective("agreed", before, padr));
     }

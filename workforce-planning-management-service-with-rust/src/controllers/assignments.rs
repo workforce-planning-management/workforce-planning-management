@@ -3,9 +3,10 @@
 //! do on that day". The worker row stays the record of the primary assignment and is written through when the primary changes.
 //! Spec: `spec/staff-records-and-pay.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -24,8 +25,8 @@ use crate::rules::assignment as rules;
 fn as_rule(a: &assignments::Model) -> rules::Assignment {
     rules::Assignment {
         fte_percent: a.fte_percent,
-        starts_on: a.starts_on,
-        ends_on: a.ends_on,
+        starts_on: a.starts_on.get(),
+        ends_on: a.ends_on.map(SqlDate::get),
         primary: a.is_primary,
     }
 }
@@ -62,8 +63,8 @@ async fn insert(tx: &mut sqlx::PgConnection, a: &New<'_>) -> Result<()> {
         a.fields.cost_centre,
         a.fte_percent,
         a.is_primary,
-        a.starts_on,
-        a.ends_on,
+        SqlDate(a.starts_on),
+        a.ends_on.map(SqlDate),
         a.recorded_by,
     )
     .execute(tx)
@@ -78,8 +79,8 @@ struct New<'a> {
     fields: &'a Fields,
     fte_percent: i32,
     is_primary: bool,
-    starts_on: NaiveDate,
-    ends_on: Option<NaiveDate>,
+    starts_on: Date,
+    ends_on: Option<Date>,
     recorded_by: Option<&'a str>,
 }
 
@@ -101,7 +102,7 @@ async fn list(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = of(&ctx, worker.pid).await?;
     let all: Vec<rules::Assignment> = rows.iter().map(as_rule).collect();
     let mut out = Vec::new();
@@ -175,8 +176,8 @@ struct AddPayload {
     occupation_code: Option<String>,
     cost_centre: Option<String>,
     fte_percent: i32,
-    starts_on: Option<NaiveDate>,
-    ends_on: Option<NaiveDate>,
+    starts_on: Option<Date>,
+    ends_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/assignments` — add a further (not primary) assignment. The FTE of the assignments in force may not go
@@ -189,7 +190,7 @@ async fn add(
     Json(p): Json<AddPayload>,
 ) -> Result<Response> {
     let worker = hr_worker(&ctx, &caller, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let new = rules::Assignment {
         fte_percent: p.fte_percent,
         starts_on: p.starts_on.unwrap_or(today),
@@ -269,7 +270,7 @@ async fn add(
 
 #[derive(Debug, Deserialize)]
 struct ChangePayload {
-    effective_on: Option<NaiveDate>,
+    effective_on: Option<Date>,
     job_title: Option<String>,
     department: Option<String>,
     location: Option<String>,
@@ -303,7 +304,7 @@ async fn change(
     .await?
     .ok_or(Error::NotFound)?;
     let worker = hr_worker(&ctx, &caller, old.worker_pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let effective_on = p.effective_on.unwrap_or(today);
     if effective_on > today {
         return Err(unprocessable("effective_on must not be in the future"));
@@ -313,7 +314,7 @@ async fn change(
     let new = rules::Assignment {
         fte_percent: p.fte_percent.unwrap_or(old.fte_percent),
         starts_on: effective_on,
-        ends_on: old.ends_on,
+        ends_on: old.ends_on.map(SqlDate::get),
         primary: old.is_primary,
     };
     let mut problems = f.problems();
@@ -338,7 +339,7 @@ async fn change(
     sqlx::query!(
         "UPDATE assignments SET ends_on = $2 WHERE id = $1",
         old.id,
-        end
+        SqlDate(end)
     )
     .execute(&mut *tx)
     .await?;
@@ -351,7 +352,7 @@ async fn change(
             fte_percent: new.fte_percent,
             is_primary: old.is_primary,
             starts_on: effective_on,
-            ends_on: old.ends_on,
+            ends_on: old.ends_on.map(SqlDate::get),
             recorded_by: caller.actor(),
         },
     )
@@ -432,7 +433,7 @@ impl Fields {
 }
 
 /// The worker's assignments as the rules see them, with the one `pid` ended on `end`.
-fn with_ended(rows: &[assignments::Model], pid: Uuid, end: NaiveDate) -> Vec<rules::Assignment> {
+fn with_ended(rows: &[assignments::Model], pid: Uuid, end: Date) -> Vec<rules::Assignment> {
     rows.iter()
         .map(|a| {
             let mut r = as_rule(a);
@@ -466,7 +467,7 @@ async fn breakdown(
             "by must be one of: staff_group, job_role, area_of_work",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let db = db::pool(&ctx);
     let in_org = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "count!" FROM workers WHERE organization_ref = $1 AND deleted_at IS NULL"#,
@@ -490,8 +491,8 @@ async fn breakdown(
     .filter(|a| {
         rules::Assignment {
             fte_percent: a.fte_percent,
-            starts_on: a.starts_on,
-            ends_on: a.ends_on,
+            starts_on: a.starts_on.get(),
+            ends_on: a.ends_on.map(SqlDate::get),
             primary: a.is_primary,
         }
         .current_on(today)

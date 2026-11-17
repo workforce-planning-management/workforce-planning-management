@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, year,\n                  entitled_days, used_days, deleted_at AS \"deleted_at: _\"\n             FROM leave_entitlements WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "query": "SELECT created_at, updated_at, id, pid, department,\n                  starts_at, ends_at, required_headcount, deleted_at\n             FROM shifts WHERE deleted_at IS NULL AND ($1::text IS NULL OR department = $1)\n            ORDER BY starts_at, id\n            LIMIT 1000",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
+            "table": "shifts",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
+            "table": "shifts",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
+            "table": "shifts",
             "name": "id"
           }
         }
@@ -42,73 +42,62 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
+            "table": "shifts",
             "name": "pid"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "worker_pid",
-        "type_info": "Uuid",
+        "name": "department",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
-            "name": "worker_pid"
+            "table": "shifts",
+            "name": "department"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "kind",
-        "type_info": "Varchar",
+        "name": "starts_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
-            "name": "kind"
+            "table": "shifts",
+            "name": "starts_at"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "year",
-        "type_info": "Int4",
+        "name": "ends_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
-            "name": "year"
+            "table": "shifts",
+            "name": "ends_at"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "entitled_days",
+        "name": "required_headcount",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
-            "name": "entitled_days"
+            "table": "shifts",
+            "name": "required_headcount"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "used_days",
-        "type_info": "Int4",
-        "origin": {
-          "Table": {
-            "table": "leave_entitlements",
-            "name": "used_days"
-          }
-        }
-      },
-      {
-        "ordinal": 9,
-        "name": "deleted_at: _",
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_entitlements",
+            "table": "shifts",
             "name": "deleted_at"
           }
         }
@@ -116,7 +105,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Text"
       ]
     },
     "nullable": [
@@ -128,9 +117,8 @@
       false,
       false,
       false,
-      false,
       true
     ]
   },
-  "hash": "8aa0219e0b7a2fa6553d59f1189346ebcbd39d66f22410a1dcb4a8a7617a9ba2"
+  "hash": "e2fc8ae11397e63272d434ed3170aaf53816e707d82d021ade69ba816ed212b9"
 }

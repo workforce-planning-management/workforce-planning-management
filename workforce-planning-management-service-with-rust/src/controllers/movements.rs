@@ -18,9 +18,10 @@
 
 use super::ensure_org_in_scope;
 use super::writable_worker;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -41,8 +42,8 @@ pub(super) async fn find_movement(
 ) -> Result<(movements::Model, workers::Model)> {
     let movement = sqlx::query_as!(
         movements::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
-                  effective_on, reason, status, notes, created_by, completed_at AS "completed_at: _"
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, kind,
+                  effective_on, reason, status, notes, created_by, completed_at
              FROM movements WHERE pid = $1"#,
         records::parse_pid(pid)?,
     )
@@ -57,7 +58,7 @@ pub(super) async fn find_movement(
 async fn items_of(ctx: &AppContext, movement: Uuid) -> Result<Vec<movement_items::Model>> {
     Ok(sqlx::query_as!(
         movement_items::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, position,
+        r#"SELECT created_at, updated_at, id, pid, movement_pid, position,
                   title, category, due_on, assignee_pid, done_on, done_by, skipped_reason
              FROM movement_items WHERE movement_pid = $1
             ORDER BY position, id"#,
@@ -71,7 +72,7 @@ async fn items_of(ctx: &AppContext, movement: Uuid) -> Result<Vec<movement_items
 async fn states_of(
     ctx: &AppContext,
     movements: &[Uuid],
-    today: NaiveDate,
+    today: Date,
 ) -> Result<HashMap<Uuid, Vec<ItemState>>> {
     let mut states: HashMap<Uuid, Vec<ItemState>> = HashMap::new();
     for i in sqlx::query!(
@@ -86,7 +87,7 @@ async fn states_of(
             .entry(i.movement_pid)
             .or_default()
             .push(rules::item_state(
-                i.due_on,
+                i.due_on.get(),
                 i.done_on.is_some(),
                 i.skipped_reason.is_some(),
                 today,
@@ -95,9 +96,9 @@ async fn states_of(
     Ok(states)
 }
 
-fn state_of(i: &movement_items::Model, today: NaiveDate) -> ItemState {
+fn state_of(i: &movement_items::Model, today: Date) -> ItemState {
     rules::item_state(
-        i.due_on,
+        i.due_on.get(),
         i.done_on.is_some(),
         i.skipped_reason.is_some(),
         today,
@@ -106,7 +107,7 @@ fn state_of(i: &movement_items::Model, today: NaiveDate) -> ItemState {
 
 fn item_json(
     i: &movement_items::Model,
-    today: NaiveDate,
+    today: Date,
     names: &HashMap<Uuid, String>,
 ) -> serde_json::Value {
     serde_json::json!({
@@ -182,7 +183,7 @@ pub(crate) struct MovementPayload {
     pub(crate) kind: String,
     /// The start day (default: the hire date) or the leaver's last day (required).
     #[serde(default)]
-    pub(crate) effective_on: Option<NaiveDate>,
+    pub(crate) effective_on: Option<Date>,
     /// A leaver's reason.
     #[serde(default)]
     pub(crate) reason: Option<String>,
@@ -221,13 +222,13 @@ pub(crate) async fn open_in(
     let effective = match (payload.kind.as_str(), payload.effective_on) {
         ("leaver", None) => return Err(unprocessable("a leaver needs a last day (effective_on)")),
         (_, Some(d)) => d,
-        (_, None) => worker.hired_on,
+        (_, None) => worker.hired_on.get(),
     };
     rules::validate(
         &payload.kind,
         payload.reason.as_deref(),
         effective,
-        worker.hired_on,
+        worker.hired_on.get(),
     )
     .map_err(|e| unprocessable(&e))?;
     if payload.kind == "leaver" && matches!(worker.status.as_str(), "terminated" | "retired") {
@@ -241,12 +242,12 @@ pub(crate) async fn open_in(
         movements::Model,
         r#"INSERT INTO movements (pid, worker_pid, kind, effective_on, reason, status, notes, created_by)
            VALUES ($1, $2, $3, $4, $5, 'open', $6, $7)
-           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
-                     effective_on, reason, status, notes, created_by, completed_at AS "completed_at: _""#,
+           RETURNING created_at, updated_at, id, pid, worker_pid, kind,
+                     effective_on, reason, status, notes, created_by, completed_at"#,
         Uuid::new_v4(),
         worker.pid,
         payload.kind,
-        effective,
+        SqlDate(effective),
         payload.reason,
         notes,
         caller.actor(),
@@ -271,7 +272,7 @@ pub(crate) async fn open_in(
         .collect();
     let pids: Vec<Uuid> = plan.iter().map(|_| Uuid::new_v4()).collect();
     let positions: Vec<i32> = plan.iter().map(|item| item.position).collect();
-    let due: Vec<NaiveDate> = plan.iter().map(|item| item.due_on).collect();
+    let due: Vec<Date> = plan.iter().map(|item| item.due_on).collect();
     let (titles, categories): (Vec<String>, Vec<String>) = plan
         .into_iter()
         .map(|item| (item.title, item.category))
@@ -285,7 +286,7 @@ pub(crate) async fn open_in(
         &positions,
         &titles,
         &categories,
-        &due,
+        &due.iter().copied().map(SqlDate).collect::<Vec<_>>(),
         &assignees as &[Option<Uuid>],
     )
     .execute(&mut *connection)
@@ -339,10 +340,10 @@ async fn list_movements(
     let wanted = q.status.unwrap_or_else(|| "open".to_string());
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let rows = sqlx::query!(
-        r#"SELECT m.created_at AS "created_at: chrono::DateTime<chrono::FixedOffset>",
-                  m.updated_at AS "updated_at: chrono::DateTime<chrono::FixedOffset>", m.id, m.pid,
+        r#"SELECT m.created_at,
+                  m.updated_at, m.id, m.pid,
                   m.worker_pid, m.kind, m.effective_on, m.reason, m.status, m.notes, m.created_by,
-                  m.completed_at AS "completed_at: chrono::DateTime<chrono::FixedOffset>",
+                  m.completed_at,
                   w.display_name, w.department, w.job_title, w.organization_ref
              FROM movements m JOIN workers w ON w.pid = m.worker_pid AND w.deleted_at IS NULL
             WHERE m.status = $1 AND ($2::text IS NULL OR m.kind = $2)
@@ -354,7 +355,7 @@ async fn list_movements(
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let pids: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
     let states = states_of(&ctx, &pids, today).await?;
     let mut out = Vec::new();
@@ -404,7 +405,7 @@ async fn get_movement(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let (movement, worker) = find_movement(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let items = items_of(&ctx, movement.pid).await?;
     let names = names_for(&ctx, items.iter().filter_map(|i| i.assignee_pid).collect()).await?;
     let states: Vec<ItemState> = items.iter().map(|i| state_of(i, today)).collect();
@@ -439,11 +440,11 @@ async fn worker_movements(
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         movements::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind,
-                  effective_on, reason, status, notes, created_by, completed_at AS "completed_at: _"
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, kind,
+                  effective_on, reason, status, notes, created_by, completed_at
              FROM movements WHERE worker_pid = $1 ORDER BY id DESC"#,
         worker.pid,
     )
@@ -480,7 +481,7 @@ struct ItemPayload {
     title: String,
     #[serde(default)]
     category: Option<String>,
-    due_on: NaiveDate,
+    due_on: Date,
     #[serde(default)]
     assignee_pid: Option<Uuid>,
 }
@@ -513,7 +514,7 @@ async fn add_item(
         next,
         payload.title.trim(),
         category,
-        payload.due_on,
+        SqlDate(payload.due_on),
         payload.assignee_pid,
     )
     .execute(&mut *tx)
@@ -538,7 +539,7 @@ async fn find_item(
 ) -> Result<(movement_items::Model, movements::Model, workers::Model)> {
     let item = sqlx::query_as!(
         movement_items::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, position,
+        r#"SELECT created_at, updated_at, id, pid, movement_pid, position,
                   title, category, due_on, assignee_pid, done_on, done_by, skipped_reason
              FROM movement_items WHERE pid = $1"#,
         records::parse_pid(pid)?,
@@ -563,7 +564,7 @@ async fn item_done(
     sqlx::query!(
         "UPDATE movement_items SET done_on = $2, done_by = $3, skipped_reason = NULL WHERE id = $1",
         item.id,
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -709,7 +710,7 @@ async fn complete(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let items = items_of(&ctx, movement.pid).await?;
     let open = items
         .iter()

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT kind, subject_pid, subject_label, action, to_worker, note, performed_by,\n                  performed_at AS \"performed_at: DateTime<FixedOffset>\"\n             FROM handover_actions WHERE movement_pid = $1 ORDER BY id",
+  "query": "SELECT kind, subject_pid, subject_label, action, to_worker, note, performed_by,\n                  performed_at\n             FROM handover_actions WHERE movement_pid = $1 ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -82,7 +82,7 @@
       },
       {
         "ordinal": 7,
-        "name": "performed_at: DateTime<FixedOffset>",
+        "name": "performed_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -108,5 +108,5 @@
       false
     ]
   },
-  "hash": "88d7a2d9368bf8a6da95997db7a89dce808c77f12ed60b2041df732cf2cc6c65"
+  "hash": "d8d55e894c5355e6063ce1d69a3402f00bcb8c3e60ef3efa89e72904902f0ded"
 }

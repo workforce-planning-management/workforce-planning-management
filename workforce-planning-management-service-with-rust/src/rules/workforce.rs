@@ -3,6 +3,8 @@
 //! Time is recorded in whole **minutes** (no float hours). Overtime is
 //! **derived** against the contracted day, scaled by FTE (WPM-D3).
 
+use jiff::Timestamp;
+
 /// Minutes in a day — the hard cap on one day's recorded time.
 pub const DAY_MINUTES: i32 = 24 * 60;
 
@@ -77,10 +79,10 @@ pub fn overtime_minutes(
 /// shift double-booking check (WPM-R6).
 #[must_use]
 pub fn windows_overlap(
-    a_start: chrono::DateTime<chrono::FixedOffset>,
-    a_end: chrono::DateTime<chrono::FixedOffset>,
-    b_start: chrono::DateTime<chrono::FixedOffset>,
-    b_end: chrono::DateTime<chrono::FixedOffset>,
+    a_start: Timestamp,
+    a_end: Timestamp,
+    b_start: Timestamp,
+    b_end: Timestamp,
 ) -> bool {
     a_start < b_end && b_start < a_end
 }
@@ -88,13 +90,9 @@ pub fn windows_overlap(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{FixedOffset, TimeZone};
 
-    fn t(h: u32) -> chrono::DateTime<FixedOffset> {
-        FixedOffset::east_opt(0)
-            .unwrap()
-            .with_ymd_and_hms(2026, 8, 3, h, 0, 0)
-            .unwrap()
+    fn t(h: u32) -> Timestamp {
+        crate::dates::utc(2026, 8, 3, h, 0, 0).unwrap()
     }
 
     /// Day-minute caps: zero/negative refused, a single >24h entry

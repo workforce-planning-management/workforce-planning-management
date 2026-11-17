@@ -8,7 +8,7 @@
 //! - **Aggregates only.** A count of 1 to `floor - 1` is [`Value::Withheld`]; nothing here names a person.
 //!   Zero is shown: it says nobody, which discloses no one.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 
 use super::injury_record;
@@ -67,9 +67,9 @@ pub enum Value {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct Period {
     /// The first day, for a range; absent for a figure true on one date.
-    pub from: Option<NaiveDate>,
+    pub from: Option<Date>,
     /// The last day, or the date.
-    pub to: NaiveDate,
+    pub to: Date,
 }
 
 /// Where a figure sits in the two frameworks, by name.
@@ -253,9 +253,9 @@ impl WageRun {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Inputs {
     /// The date the report is as of.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// The first day of the year ending on `as_of`.
-    pub from: NaiveDate,
+    pub from: Date,
     /// Workers employed on `as_of`, by employment type.
     pub by_type: Vec<TypeCount>,
     /// Headcount the day before `from`.
@@ -288,7 +288,7 @@ pub struct Inputs {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Report {
     /// The date.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// The smallest group shown.
     pub floor: usize,
     /// The figures.
@@ -701,8 +701,8 @@ pub fn report(i: &Inputs, floor: usize) -> Report {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn inputs() -> Inputs {

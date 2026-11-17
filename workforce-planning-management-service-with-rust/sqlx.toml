@@ -1,3 +1,11 @@
-# The query macros read dates and times as `chrono` types, even if another crate turns on sqlx's `time` feature (WPM-D184).
+# Dates and times are `jiff` (WPM-T528). The query macros read and bind PostgreSQL's `timestamptz` and `date` as the two
+# newtypes in `src/sql_time.rs`, which wrap `jiff::Timestamp` and `jiff::civil::Date`. An override is looked up before the
+# preferred crate, so `chrono`, which `axa` turns on in `sqlx`, is never chosen. Type names are matched exactly.
 [macros.preferred-crates]
 date-time = "chrono"
+
+[macros.type-overrides]
+"TIMESTAMPTZ" = "::workforce_planning_management::sql_time::SqlTimestamp"
+"DATE" = "::workforce_planning_management::sql_time::SqlDate"
+"TIMESTAMPTZ[]" = "::std::vec::Vec<::workforce_planning_management::sql_time::SqlTimestamp>"
+"DATE[]" = "::std::vec::Vec<::workforce_planning_management::sql_time::SqlDate>"

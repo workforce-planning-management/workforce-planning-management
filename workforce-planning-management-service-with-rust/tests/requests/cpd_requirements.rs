@@ -1,7 +1,5 @@
 //! A CPD requirement can be corrected or withdrawn, and a worker's progress carries a pace that says
 //! what it rests on (WPM-R139, WPM-D92).
-
-use chrono::{Days, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -37,12 +35,12 @@ async fn a_requirement_is_corrected_and_withdrawn_and_entries_stay() {
         let worker = hire(&request).await;
         let detail: Value = request.get(&format!("/api/workers/{worker}")).await.json();
         let title = detail["job_title"].as_str().expect("title").to_string();
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let body = |name: &str, required: f64, unit: &str| {
             json!({
                 "name": name, "unit": unit, "required": required, "job_title": title,
-                "period_start": (today - Days::new(9)).to_string(),
-                "period_end": (today + Days::new(20)).to_string(), // 30 days, today is day 10
+                "period_start": (today - jiff::Span::new().days(9)).to_string(),
+                "period_end": (today + jiff::Span::new().days(20)).to_string(), // 30 days, today is day 10
             })
         };
         let created: Value = request

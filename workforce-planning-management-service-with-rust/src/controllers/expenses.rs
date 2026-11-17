@@ -15,7 +15,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::{BTreeSet, HashMap};
@@ -28,6 +28,7 @@ use crate::models::_entities::{expense_claims, expense_items, workers};
 use crate::models::{memberships, records};
 use crate::rules::career;
 use crate::rules::expenses::{self as rules, Standing};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use crate::validation::Problems;
 
 /// Roles that act for HR on expense claims.
@@ -256,7 +257,7 @@ async fn get_claim(
     let others = other_keys(&ctx, &claim).await?;
     let keys: Vec<rules::ItemKey<'_>> = items
         .iter()
-        .map(|i| (i.incurred_on, i.category.as_str(), i.amount_minor))
+        .map(|i| (i.incurred_on.get(), i.category.as_str(), i.amount_minor))
         .collect();
     let other_keys_ref: Vec<rules::ItemKey<'_>> = others
         .iter()
@@ -297,7 +298,7 @@ async fn get_claim(
 async fn other_keys(
     ctx: &AppContext,
     claim: &expense_claims::Model,
-) -> Result<Vec<(NaiveDate, String, i64)>> {
+) -> Result<Vec<(Date, String, i64)>> {
     Ok(sqlx::query!(
         "SELECT i.incurred_on, i.category, i.amount_minor
            FROM expense_items i
@@ -311,7 +312,7 @@ async fn other_keys(
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-    .map(|i| (i.incurred_on, i.category, i.amount_minor))
+    .map(|i| (i.incurred_on.get(), i.category, i.amount_minor))
     .collect())
 }
 
@@ -320,7 +321,7 @@ async fn other_keys(
 /// `POST` body.
 #[derive(Debug, Deserialize)]
 struct ItemPayload {
-    incurred_on: NaiveDate,
+    incurred_on: Date,
     category: String,
     amount_minor: i64,
     #[serde(default)]
@@ -355,7 +356,7 @@ async fn add_item(
         &payload.category,
         payload.amount_minor,
         payload.incurred_on,
-        Utc::now().date_naive(),
+        crate::dates::today(),
     )
     .map_err(|e| unprocessable(&e))?;
     let existing = items_of(&ctx, claim.pid).await?;
@@ -376,7 +377,7 @@ async fn add_item(
         pid,
         claim.pid,
         claim.worker_pid,
-        payload.incurred_on,
+        SqlDate(payload.incurred_on),
         payload.category,
         payload.amount_minor,
         clean(payload.description),
@@ -434,7 +435,7 @@ struct MoveBody {
     #[serde(default)]
     note: Option<String>,
     #[serde(default)]
-    reimbursed_on: Option<NaiveDate>,
+    reimbursed_on: Option<Date>,
 }
 
 /// Tell the right person about a move: the manager when a claim is submitted, the
@@ -510,7 +511,7 @@ async fn transition(
     if to == "rejected" && note.is_none() {
         return Err(unprocessable("say why the claim is rejected (note)"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     if to == "reimbursed" && body.reimbursed_on.is_some_and(|d| d > today) {
         return Err(unprocessable("reimbursed_on cannot be in the future"));
     }
@@ -534,7 +535,7 @@ async fn transition(
         rules::can_submit(usize::try_from(count).unwrap_or(usize::MAX))
             .map_err(|e| unprocessable(&e))?;
     }
-    let now: chrono::DateTime<chrono::FixedOffset> = Utc::now().into();
+    let now: Timestamp = Timestamp::now();
     let decided = matches!(to, "approved" | "rejected");
     let reimbursed = to == "reimbursed";
     let row = sqlx::query_as!(
@@ -554,12 +555,12 @@ async fn transition(
         claim.id,
         to,
         to == "submitted",
-        now,
+        SqlTimestamp(now),
         decided,
         caller.actor(),
         note,
         reimbursed,
-        body.reimbursed_on.unwrap_or(today),
+        SqlDate(body.reimbursed_on.unwrap_or(today)),
     )
     .fetch_one(&mut *tx)
     .await?;

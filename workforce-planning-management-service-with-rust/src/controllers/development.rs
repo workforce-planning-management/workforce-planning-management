@@ -6,6 +6,7 @@
 use super::row_json;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -18,6 +19,7 @@ use crate::models::_entities::{
 };
 use crate::models::records;
 use crate::rules::{lifecycle, tokens};
+use crate::sql_time::SqlDate;
 use crate::streaming;
 use crate::validation::Problems;
 
@@ -111,8 +113,8 @@ async fn freeze_review_goals(
     .await?;
     for goal in goals.into_iter().filter(|g| {
         crate::rules::individual_goals::overlaps(
-            (g.period_start, g.period_end),
-            (cycle.period_start, cycle.period_end),
+            (g.period_start.get(), g.period_end.get()),
+            (cycle.period_start.get(), cycle.period_end.get()),
         )
     }) {
         let snapshot = super::padr::goal_snapshot(&mut *connection, &goal).await?;
@@ -136,8 +138,8 @@ async fn freeze_review_goals(
 #[derive(Debug, Deserialize)]
 struct CyclePayload {
     name: String,
-    period_start: chrono::NaiveDate,
-    period_end: chrono::NaiveDate,
+    period_start: Date,
+    period_end: Date,
 }
 
 /// `POST /api/review-cycles/{pid}/reviews` body.
@@ -194,9 +196,9 @@ struct TrainingPayload {
 struct TrainingUpdate {
     status: String,
     #[serde(default)]
-    completed_on: Option<chrono::NaiveDate>,
+    completed_on: Option<Date>,
     #[serde(default)]
-    certificate_expires_on: Option<chrono::NaiveDate>,
+    certificate_expires_on: Option<Date>,
 }
 
 /// `POST /api/succession-plans` body.
@@ -214,7 +216,7 @@ struct SuccessionPayload {
     risk_of_loss: Option<String>,
     /// When the role is expected to fall vacant, when that is known.
     #[serde(default)]
-    vacancy_expected_on: Option<chrono::NaiveDate>,
+    vacancy_expected_on: Option<Date>,
 }
 
 /// `PUT /api/succession-plans/{pid}` body — restate the planning
@@ -226,7 +228,7 @@ struct SuccessionUpdate {
     #[serde(default)]
     risk_of_loss: Option<String>,
     #[serde(default)]
-    vacancy_expected_on: Option<chrono::NaiveDate>,
+    vacancy_expected_on: Option<Date>,
     #[serde(default)]
     incumbent_pid: Option<Uuid>,
 }
@@ -282,8 +284,8 @@ async fn create_cycle(
         "INSERT INTO review_cycles (pid, name, period_start, period_end, status) VALUES ($1, $2, $3, $4, 'open')",
         pid,
         payload.name,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
     )
     .execute(&mut *tx)
     .await?;
@@ -792,8 +794,8 @@ async fn update_training(
                   completed_on, certificate_expires_on, deleted_at AS "deleted_at: _""#,
         enrollment.id,
         payload.status,
-        payload.completed_on,
-        payload.certificate_expires_on,
+        payload.completed_on.map(SqlDate),
+        payload.certificate_expires_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -851,8 +853,8 @@ async fn expiring_training(
     State(ctx): State<AppContext>,
     Query(params): Query<ExpiringParams>,
 ) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
-    let horizon = today + chrono::Duration::days(params.within_days.clamp(0, 3650));
+    let today = crate::dates::today();
+    let horizon = today + crate::dates::days(params.within_days.clamp(0, 3650));
     let rows = sqlx::query_as!(
         training_enrollments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
@@ -860,7 +862,7 @@ async fn expiring_training(
              FROM training_enrollments
             WHERE deleted_at IS NULL AND certificate_expires_on IS NOT NULL AND certificate_expires_on <= $1
             ORDER BY certificate_expires_on, id LIMIT 500"#,
-        horizon,
+        SqlDate(horizon),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -904,7 +906,7 @@ async fn create_succession(
         payload.criticality,
         payload.incumbent_pid,
         payload.risk_of_loss,
-        payload.vacancy_expected_on,
+        payload.vacancy_expected_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -1081,7 +1083,7 @@ async fn update_succession(
         plan.id,
         payload.criticality,
         payload.risk_of_loss,
-        payload.vacancy_expected_on,
+        payload.vacancy_expected_on.map(SqlDate),
         payload.incumbent_pid,
     )
     .fetch_one(&mut *tx)

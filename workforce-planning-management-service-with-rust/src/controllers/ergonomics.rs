@@ -7,6 +7,7 @@
 use super::row_json;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::Timestamp;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -16,6 +17,7 @@ use crate::db::{self, pool};
 use crate::models::_entities::{ergonomic_assessments, ergonomic_items};
 use crate::models::records;
 use crate::rules::ergonomics as rules;
+use crate::sql_time::SqlDate;
 use crate::validation::Problems;
 
 /// A `{pid}` reference response.
@@ -248,7 +250,7 @@ async fn complete_assessment(
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _",
                   id, pid, worker_pid, workstation, status, assessed_on, deleted_at AS "deleted_at: _""#,
         assessment.pid,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -300,7 +302,7 @@ async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
         }));
     }
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "by_department": by_department,
         "issues": listed,
         "derivation": "issue-flagged checklist items on live assessments; equipment and \

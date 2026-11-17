@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO movements (pid, worker_pid, kind, effective_on, reason, status, notes, created_by)\n           VALUES ($1, $2, $3, $4, $5, 'open', $6, $7)\n           RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind,\n                     effective_on, reason, status, notes, created_by, completed_at AS \"completed_at: _\"",
+  "query": "INSERT INTO movements (pid, worker_pid, kind, effective_on, reason, status, notes, created_by)\n           VALUES ($1, $2, $3, $4, $5, 'open', $6, $7)\n           RETURNING created_at, updated_at, id, pid, worker_pid, kind,\n                     effective_on, reason, status, notes, created_by, completed_at",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -126,7 +126,7 @@
       },
       {
         "ordinal": 11,
-        "name": "completed_at: _",
+        "name": "completed_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -162,5 +162,5 @@
       true
     ]
   },
-  "hash": "7ec877a9122c29df1bdae2bfa4621551e1d93894e7b551abcb22342fd21de8f0"
+  "hash": "78a0f086d5124f9d87f8fde743d01c2f33365a3bd3dc623d9b8a694469ee35b3"
 }

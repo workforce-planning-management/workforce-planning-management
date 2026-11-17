@@ -4,6 +4,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use jiff::civil::Date;
 
 use std::collections::BTreeSet;
 
@@ -15,7 +16,7 @@ pub(super) struct PeopleImpactQuery {
     /// The programme, `thing:<uuid>` (a PPM plan's pid).
     programme: String,
     /// The programme's end, as its owner gives it: WPM holds none.
-    ends_on: Option<NaiveDate>,
+    ends_on: Option<Date>,
     /// How many months, from this one, the over-committed months are looked for in.
     months: Option<u32>,
 }
@@ -136,7 +137,7 @@ async fn gather(
     orgs: &BTreeSet<String>,
     staff: &std::collections::HashMap<Uuid, crate::controllers::funding::Employed>,
     demand_rows: &[programme_demands::Model],
-    today: NaiveDate,
+    today: Date,
     months_asked: u32,
 ) -> Result<Gathered> {
     let mut pool_keys = Vec::new();
@@ -171,7 +172,7 @@ async fn gather(
                 if let Some(cell) = view.cells.iter().find(|c| c.month == d.month) {
                     claimed.push(impact::ClaimedMonth {
                         pool: key.clone(),
-                        month: d.month,
+                        month: d.month.get(),
                         status: cell.status,
                     });
                 }

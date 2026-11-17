@@ -28,6 +28,7 @@
 
 use super::ratio_json;
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -39,12 +40,13 @@ use crate::rules::capability as capability_rules;
 use crate::rules::insights as insight_rules;
 use crate::rules::metrics as metric_rules;
 use crate::rules::talent as rules;
+use crate::sql_time::SqlDate;
 
 /// Query accepted by every intelligence view.
 #[derive(Debug, Deserialize)]
 struct AsOfQuery {
     /// The date the view is computed against (default today).
-    as_of: Option<chrono::NaiveDate>,
+    as_of: Option<Date>,
 }
 
 /// `GET /api/workforce-intelligence/overview?as_of=` — the shape of the
@@ -58,9 +60,7 @@ async fn overview(
     axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
-    let as_of = query
-        .as_of
-        .unwrap_or_else(|| chrono::Utc::now().date_naive());
+    let as_of = query.as_of.unwrap_or_else(crate::dates::today);
     // Counts are worked out by the database, one small grouped query each: the dashboard asks for this
     // on every load, and reading every worker into memory made it fail at 50,000 (WPM-D90).
     let db = crate::db::pool(&ctx);
@@ -73,7 +73,7 @@ async fn overview(
            SELECT 'department' AS "dimension!", department AS "key!", count(*) AS "n!" FROM e GROUP BY department
            UNION ALL SELECT 'status', status, count(*) FROM e GROUP BY status
            UNION ALL SELECT 'employment_type', employment_type, count(*) FROM e GROUP BY employment_type"#,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_all(db)
     .await?
@@ -89,20 +89,20 @@ async fn overview(
         r#"SELECT hired_on, count(*) AS "n!" FROM workers
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
             GROUP BY hired_on"#,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_all(db)
     .await?;
     let mut by_tenure: BTreeMap<&str, usize> = BTreeMap::new();
     for row in hire_dates {
-        let months = rules::months_of_service(row.hired_on, as_of);
+        let months = rules::months_of_service(row.hired_on.get(), as_of);
         *by_tenure.entry(rules::tenure_bucket(months)).or_default() +=
             usize::try_from(row.n).unwrap_or(0);
     }
     let fte_percent_total = sqlx::query_scalar!(
         r#"SELECT COALESCE(SUM(fte_percent), 0)::bigint AS "total!" FROM workers
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_one(db)
     .await?;
@@ -116,7 +116,7 @@ async fn overview(
             WHERE r.deleted_at IS NULL AND r.hired_on <= $1 AND (r.terminated_on IS NULL OR r.terminated_on > $1)
               AND r.manager_pid IS NOT NULL
             GROUP BY r.manager_pid"#,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_all(db)
     .await?;
@@ -160,7 +160,7 @@ async fn overview(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // one pass over skills, plans, and sittings
 async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let headcount = employed_count(&ctx, today).await?;
 
     let skill_rows = live_skills(&ctx).await?;
@@ -181,7 +181,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
             WHERE ws.deleted_at IS NULL AND e.deleted_at IS NULL AND e.hired_on <= $1
               AND (e.terminated_on IS NULL OR e.terminated_on > $1)
             GROUP BY ws.skill_pid"#,
-        today,
+        SqlDate(today),
     )
     .fetch_all(db)
     .await?
@@ -202,7 +202,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
              FROM worker_skills ws JOIN workers e ON e.pid = ws.worker_pid
             WHERE ws.deleted_at IS NULL AND ws.target IS NOT NULL AND ws.proficiency < ws.target
               AND e.deleted_at IS NULL AND e.hired_on <= $1 AND (e.terminated_on IS NULL OR e.terminated_on > $1)"#,
-        today,
+        SqlDate(today),
     )
     .fetch_one(db)
     .await?;
@@ -324,7 +324,7 @@ async fn capability_analysis(
         }
     })?;
 
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let headcount = employed_count(&ctx, today).await?;
     let skill_rows = live_skills(&ctx).await?;
 
@@ -339,7 +339,7 @@ async fn capability_analysis(
             WHERE ws.deleted_at IS NULL AND e.deleted_at IS NULL AND e.hired_on <= $1
               AND (e.terminated_on IS NULL OR e.terminated_on > $1)
             GROUP BY ws.skill_pid"#,
-        today,
+        SqlDate(today),
         min_proficiency,
     )
     .fetch_all(crate::db::pool(&ctx))
@@ -401,17 +401,17 @@ async fn capability_analysis(
 #[derive(Debug, Deserialize)]
 struct MetricsQuery {
     /// Period start (default: one year before `to`).
-    from: Option<chrono::NaiveDate>,
+    from: Option<Date>,
     /// Period end, inclusive (default today).
-    to: Option<chrono::NaiveDate>,
+    to: Option<Date>,
 }
 
 /// The shared metrics for one period, computed once for both the
 /// `metrics` and `insights` views.
 struct PeriodMetrics {
-    from: chrono::NaiveDate,
-    to: chrono::NaiveDate,
-    opening_date: chrono::NaiveDate,
+    from: Date,
+    to: Date,
+    opening_date: Date,
     opening: usize,
     closing: usize,
     starters: usize,
@@ -424,16 +424,18 @@ struct PeriodMetrics {
 /// Resolve the period (default: the year ending today) and compute the
 /// shared metrics over it.
 async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodMetrics> {
-    let to = query.to.unwrap_or_else(|| chrono::Utc::now().date_naive());
-    let from = query
-        .from
-        .unwrap_or_else(|| to.checked_sub_months(chrono::Months::new(12)).unwrap_or(to));
+    let to = query.to.unwrap_or_else(crate::dates::today);
+    let from = query.from.unwrap_or_else(|| {
+        to.checked_sub(jiff::Span::new().months(12))
+            .ok()
+            .unwrap_or(to)
+    });
     if from > to {
         return Err(super::unprocessable("from must not be after to"));
     }
 
     // Opening and closing headcount, starters and leavers: one pass in the database over live workers.
-    let opening_date = from.pred_opt().unwrap_or(from);
+    let opening_date = from.yesterday().ok().unwrap_or(from);
     let db = crate::db::pool(ctx);
     let counts = sqlx::query!(
         r#"SELECT count(*) FILTER (WHERE hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)) AS "opening!",
@@ -441,9 +443,9 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
                   count(*) FILTER (WHERE hired_on >= $3 AND hired_on <= $2) AS "starters!",
                   count(*) FILTER (WHERE terminated_on >= $3 AND terminated_on <= $2) AS "leavers!"
              FROM workers WHERE deleted_at IS NULL"#,
-        opening_date,
-        to,
-        from,
+        SqlDate(opening_date),
+        SqlDate(to),
+        SqlDate(from),
     )
     .fetch_one(db)
     .await?;
@@ -461,7 +463,7 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
               AND manager_pid IS NOT NULL
             GROUP BY manager_pid"#,
-        to,
+        SqlDate(to),
     )
     .fetch_all(db)
     .await?
@@ -472,13 +474,13 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
     // Time-to-fill over requisitions filled within the period.
     let filled_days: Vec<i64> = sqlx::query!(
         "SELECT opened_on, filled_on FROM requisitions WHERE deleted_at IS NULL AND filled_on BETWEEN $1 AND $2",
-        from,
-        to,
+        SqlDate(from),
+        SqlDate(to),
     )
     .fetch_all(db)
     .await?
     .iter()
-    .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on, r.filled_on))
+    .filter_map(|r| metric_rules::time_to_fill_days(r.opened_on.map(SqlDate::get), r.filled_on.map(SqlDate::get)))
     .collect();
 
     Ok(PeriodMetrics {
@@ -562,9 +564,9 @@ struct HistoryQuery {
     /// Restrict to one organization URN (must be within the caller's scope).
     organization: Option<String>,
     /// First snapshot date (inclusive).
-    from: Option<chrono::NaiveDate>,
+    from: Option<Date>,
     /// Last snapshot date (inclusive).
-    to: Option<chrono::NaiveDate>,
+    to: Option<Date>,
 }
 
 /// `GET /api/workforce-intelligence/headcount-history?organization=&from=&to=`
@@ -586,8 +588,8 @@ async fn headcount_history(
             AND ($3::date IS NULL OR as_of <= $3) AND ($4::text[] IS NULL OR organization_ref = ANY($4))
           ORDER BY as_of, organization_ref, department",
         query.organization,
-        query.from,
-        query.to,
+        query.from.map(SqlDate),
+        query.to.map(SqlDate),
         scope.as_deref(),
     )
     .fetch_all(crate::db::pool(&ctx))
@@ -819,11 +821,11 @@ async fn live_skills(ctx: &AppContext) -> Result<Vec<Skill>> {
 
 /// How many people are employed on `date` ([`metric_rules::is_employed_on`], in SQL): the one population every
 /// headcount-style view counts.
-async fn employed_count(ctx: &AppContext, date: chrono::NaiveDate) -> Result<usize> {
+async fn employed_count(ctx: &AppContext, date: Date) -> Result<usize> {
     let total = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "total!" FROM workers
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
-        date,
+        SqlDate(date),
     )
     .fetch_one(crate::db::pool(ctx))
     .await?;

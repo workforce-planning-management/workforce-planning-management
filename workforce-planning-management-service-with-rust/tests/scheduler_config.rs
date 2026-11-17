@@ -1,10 +1,10 @@
 //! The scheduler's job list (WPM-T300): every expression parses, every job names a task that exists, and no task is left out
 //! without a reason, so a new task is a decision (scheduled, or named here as run by hand) and not something forgotten.
 
+use jiff::Timestamp;
 use std::collections::BTreeSet;
 
 use axa::task::Tasks;
-use chrono::Utc;
 use workforce_planning_management::app::App;
 use workforce_planning_management::scheduler::{JOBS, Job, next_after, tagged};
 
@@ -91,7 +91,7 @@ fn every_cron_has_six_or_seven_fields_and_a_job_that_needs_settings_is_not_in_th
             job.cron
         );
         assert!(
-            next_after(job, Utc::now())
+            next_after(job, Timestamp::now())
                 .expect("a valid expression")
                 .is_some(),
             "{} never runs",

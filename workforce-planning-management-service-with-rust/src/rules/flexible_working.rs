@@ -7,7 +7,7 @@
 //! **deployer's** to set (a jurisdiction may fix them); the defaults here are starting points a
 //! deployer confirms. Periods are calendar months or calendar days, as each says.
 
-use chrono::{Days, Months, NaiveDate};
+use jiff::civil::Date;
 
 /// The default time a decision may take, in calendar months, unless configured.
 pub const DEFAULT_DECISION_MONTHS: u32 = 2;
@@ -175,24 +175,26 @@ const fn action_word(action: Action) -> &'static str {
 /// The date by which a decision is due: the day the request was received plus the configured
 /// calendar months (a month-end clamps to the last day of the shorter month).
 #[must_use]
-pub fn decide_by(received_on: NaiveDate, months: u32) -> Option<NaiveDate> {
-    received_on.checked_add_months(Months::new(months))
+pub fn decide_by(received_on: Date, months: u32) -> Option<Date> {
+    received_on
+        .checked_add(jiff::Span::new().try_months(months).ok()?)
+        .ok()
 }
 
 /// Whether a request still waiting for a decision is past its decide-by date.
 #[must_use]
-pub fn is_overdue(status: Status, decide_by: NaiveDate, today: NaiveDate) -> bool {
+pub fn is_overdue(status: Status, decide_by: Date, today: Date) -> bool {
     matches!(status, Status::Requested | Status::Appealed) && today > decide_by
 }
 
 /// Whether a worker may make another request: fewer than `limit` requests (not counting
 /// withdrawn ones) in the 12 calendar months before `today`. A `limit` of `0` means no limit.
 #[must_use]
-pub fn within_limit(previous: &[(NaiveDate, Status)], today: NaiveDate, limit: u32) -> bool {
+pub fn within_limit(previous: &[(Date, Status)], today: Date, limit: u32) -> bool {
     if limit == 0 {
         return true;
     }
-    let Some(since) = today.checked_sub_months(Months::new(12)) else {
+    let Some(since) = today.checked_sub(jiff::Span::new().months(12)).ok() else {
         return true;
     };
     let made = previous
@@ -204,9 +206,11 @@ pub fn within_limit(previous: &[(NaiveDate, Status)], today: NaiveDate, limit: u
 
 /// Whether a refusal can still be appealed: within `appeal_calendar_days` of the decision.
 #[must_use]
-pub fn can_appeal(decided_on: NaiveDate, today: NaiveDate, appeal_calendar_days: u32) -> bool {
-    decided_on
-        .checked_add_days(Days::new(u64::from(appeal_calendar_days)))
+pub fn can_appeal(decided_on: Date, today: Date, appeal_calendar_days: u32) -> bool {
+    jiff::Span::new()
+        .try_days(appeal_calendar_days)
+        .ok()
+        .and_then(|span| decided_on.checked_add(span).ok())
         .is_some_and(|last| today <= last)
 }
 
@@ -217,9 +221,9 @@ pub fn can_appeal(decided_on: NaiveDate, today: NaiveDate, appeal_calendar_days:
 /// An unknown kind, a start before today, or an FTE outside `1..=100`.
 pub fn validate_request(
     kind: &str,
-    proposed_start: NaiveDate,
+    proposed_start: Date,
     proposed_fte_percent: Option<i32>,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<(), String> {
     if !KINDS.contains(&kind) {
         return Err(format!("kind must be one of {}", KINDS.join(", ")));
@@ -273,8 +277,8 @@ pub fn parse_reasons(text: &str) -> Result<Vec<String>, String> {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]

@@ -6,7 +6,7 @@
 //! the ceiling in minutes a week and the rest floor in minutes come from the worker's profile through
 //! `rules::jurisdiction::resolve`. With none configured a check is "no limit configured", never a pass.
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 
 /// The registry key of the reference window, in weeks of seven calendar days.
 pub const REFERENCE_WEEKS_KEY: &str = "working_time.reference_weeks";
@@ -44,9 +44,9 @@ pub fn over_average(total_minutes: i64, weeks: i64, ceiling: i64) -> bool {
 #[derive(Debug, PartialEq, Eq)]
 pub struct RestBreach {
     /// When the earlier shift ends.
-    pub prev_end: DateTime<Utc>,
+    pub prev_end: Timestamp,
     /// When the next shift starts.
-    pub next_start: DateTime<Utc>,
+    pub next_start: Timestamp,
     /// The gap between them, in minutes (clamped at 0 for overlaps).
     pub gap_minutes: i64,
 }
@@ -57,11 +57,8 @@ pub struct RestBreach {
 /// end and the later start is a breach. Malformed intervals
 /// (`end <= start`) are skipped rather than trusted.
 #[must_use]
-pub fn rest_breaches(
-    intervals: &[(DateTime<Utc>, DateTime<Utc>)],
-    min_rest: i64,
-) -> Vec<RestBreach> {
-    let mut sorted: Vec<&(DateTime<Utc>, DateTime<Utc>)> = intervals
+pub fn rest_breaches(intervals: &[(Timestamp, Timestamp)], min_rest: i64) -> Vec<RestBreach> {
+    let mut sorted: Vec<&(Timestamp, Timestamp)> = intervals
         .iter()
         .filter(|(start, end)| end > start)
         .collect();
@@ -71,7 +68,7 @@ pub fn rest_breaches(
         .filter_map(|pair| {
             let (_, prev_end) = *pair[0];
             let (next_start, _) = *pair[1];
-            let gap_minutes = (next_start - prev_end).num_minutes().max(0);
+            let gap_minutes = next_start.duration_since(prev_end).as_mins().max(0);
             (gap_minutes < min_rest).then_some(RestBreach {
                 prev_end,
                 next_start,
@@ -82,7 +79,7 @@ pub fn rest_breaches(
 }
 
 /// One shift's `(starts, ends)`.
-pub type Shift = (DateTime<Utc>, DateTime<Utc>);
+pub type Shift = (Timestamp, Timestamp);
 
 /// Rest breaches per worker from `(worker, (starts, ends))` assignments, each against that worker's own
 /// floor (`rest_of`); a worker with no floor configured (`None`) or no breach is left out.
@@ -114,6 +111,7 @@ pub const fn is_flagged(over: bool, rest_breach_count: usize) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::civil::Date;
 
     /// The example limits the tests use (the shape of a 17-week, 48-hour, 11-hour profile) and a second,
     /// differently shaped one (4 weeks, 40 hours, 12 hours).
@@ -126,7 +124,10 @@ mod tests {
     fn breaches_are_found_within_a_worker_not_across_workers() {
         let assignments = [
             (1_u8, (at(1, 8), at(1, 20))),
-            (2, (at(1, 23), at(1, 23) + chrono::Duration::hours(8))),
+            (
+                2,
+                (at(1, 23), at(1, 23) + jiff::SignedDuration::from_hours(8)),
+            ),
             (1, (at(2, 5), at(2, 13))),
             (3, (at(1, 8), at(1, 16))),
             (3, (at(3, 8), at(3, 16))),
@@ -182,19 +183,20 @@ mod tests {
     /// rollup's week starts on, so the rollup's own week start cannot change an answer.
     #[test]
     fn the_window_touches_at_most_weeks_plus_one_rollup_weeks_for_any_week_start() {
-        use chrono::Datelike;
         for weeks in [1_i64, 4, 17] {
             for end_offset in 0..7 {
-                let end = chrono::NaiveDate::from_ymd_opt(2026, 7, 10).unwrap()
-                    + chrono::Duration::days(end_offset);
-                let start = end - chrono::Duration::weeks(weeks) + chrono::Duration::days(1);
+                let end = crate::dates::ymd(2026, 7, 10).unwrap() + crate::dates::days(end_offset);
+                let start = end - crate::dates::days(7 * weeks) + crate::dates::days(1);
                 for week_start in 0..7_u32 {
-                    let bucket = |d: chrono::NaiveDate| {
-                        let back = (d.weekday().num_days_from_monday() + 7 - week_start) % 7;
-                        d - chrono::Duration::days(i64::from(back))
+                    let bucket = |d: Date| {
+                        let back = (u32::from(d.weekday().to_monday_zero_offset().unsigned_abs())
+                            + 7
+                            - week_start)
+                            % 7;
+                        d - crate::dates::days(i64::from(back))
                     };
                     let touched: std::collections::BTreeSet<_> = start
-                        .iter_days()
+                        .series(jiff::Span::new().days(1))
                         .take_while(|d| *d <= end)
                         .map(bucket)
                         .collect();
@@ -204,12 +206,8 @@ mod tests {
         }
     }
 
-    fn at(day: u32, hour: u32) -> DateTime<Utc> {
-        chrono::NaiveDate::from_ymd_opt(2026, 7, day)
-            .unwrap()
-            .and_hms_opt(hour, 0, 0)
-            .unwrap()
-            .and_utc()
+    fn at(day: u32, hour: u32) -> Timestamp {
+        crate::dates::utc(2026, 7, day, hour, 0, 0).unwrap()
     }
 
     /// The average carries its terms: a zero-week window is `None`

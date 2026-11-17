@@ -4,9 +4,10 @@
 //! The issuer's public key and the status list are public by necessity (a verifier has no account here) and hold no personal data.
 //! Spec: `spec/skills-and-training.md`.
 
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, SecondsFormat, Utc};
+use jiff::Timestamp;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -50,8 +51,8 @@ fn issuer() -> Result<Issuer> {
     })
 }
 
-fn stamp(at: DateTime<Utc>) -> String {
-    at.to_rfc3339_opts(SecondsFormat::Secs, true)
+fn stamp(at: Timestamp) -> String {
+    crate::dates::rfc3339_seconds(at)
 }
 
 fn row(i: &credential_issuances::Model) -> serde_json::Value {
@@ -105,7 +106,7 @@ pub(crate) async fn issue(
             "a credential for this entry is already live; revoke it to issue another",
         ));
     }
-    let now = Utc::now();
+    let now = Timestamp::now();
     let pid = Uuid::new_v4();
     let mut tx = pool(&ctx).begin().await?;
     let id = sqlx::query_scalar!(
@@ -114,7 +115,7 @@ pub(crate) async fn issue(
         pid,
         worker.pid,
         entry.pid,
-        now,
+        SqlTimestamp(now),
         "0".repeat(64),
     )
     .fetch_one(&mut *tx)
@@ -233,7 +234,7 @@ async fn revoke_row(
     sqlx::query!(
         "UPDATE credential_issuances SET revoked_at = $2, revoked_by = $3 WHERE id = $1",
         found.id,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -314,7 +315,12 @@ async fn status_list(State(ctx): State<AppContext>) -> Result<Response> {
             .filter_map(|id| usize::try_from(id - 1).ok())
             .collect();
     let encoded = rules::encoded_list(&revoked).map_err(|e| unprocessable(&e))?;
-    let credential = rules::status_list(&issuer.id, &issuer.list_url, &stamp(Utc::now()), &encoded);
+    let credential = rules::status_list(
+        &issuer.id,
+        &issuer.list_url,
+        &stamp(Timestamp::now()),
+        &encoded,
+    );
     let token = rules::sign(&issuer.seed, &issuer.kid, &credential);
     format::json(json!({ "credential": credential, "jwt": token }))
 }

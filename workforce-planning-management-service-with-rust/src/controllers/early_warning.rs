@@ -8,12 +8,12 @@
 //! daily dates a condition late, and the answer says so. A warning names a pool or a measure, never a
 //! person, and the notification carries no figure (WPM-D23).
 
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::ensure_org_in_scope;
 use axa::extract::Path;
 use axa::prelude::*;
-use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -26,6 +26,7 @@ use crate::rules::capacity::CellStatus;
 use crate::rules::cutover as cutover_rules;
 use crate::rules::early_warning::{self as rules, Key};
 use crate::rules::oversight::{self as oversight_rules, Reason};
+use crate::sql_time::SqlDate;
 
 /// What a sweep did.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -39,7 +40,7 @@ pub struct Report {
 }
 
 /// The conditions true for the organization on `today`, with the name of what each is about.
-async fn true_now(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<BTreeMap<Key, String>> {
+async fn true_now(ctx: &AppContext, org: &str, today: Date) -> Result<BTreeMap<Key, String>> {
     let mut found = BTreeMap::new();
     let cap = capacity::load_org_capacity(ctx, org, today, rules::HORIZON_MONTHS).await?;
     for pool in &cap.pools {
@@ -80,7 +81,7 @@ async fn true_now(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<BTree
            FROM cutovers
            WHERE organization_ref = $1 AND window_end >= $2"#,
         org,
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -120,7 +121,7 @@ async fn hr_admins(ctx: &AppContext, org: &str) -> Result<Vec<Uuid>> {
 /// # Errors
 ///
 /// A database error.
-pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Report> {
+pub async fn sweep(ctx: &AppContext, org: &str, today: Date) -> Result<Report> {
     let now = true_now(ctx, org, today).await?;
     let open_rows = sqlx::query!(
         "SELECT pid, kind, subject_pid FROM early_warnings
@@ -157,7 +158,7 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
             key.kind,
             key.subject,
             name,
-            today,
+            SqlDate(today),
         )
         .execute(&mut *connection)
         .await?;
@@ -189,7 +190,7 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: NaiveDate) -> Result<Repo
             sqlx::query!(
                 "UPDATE early_warnings SET cleared_on = $2 WHERE pid = $1",
                 row.pid,
-                today,
+                SqlDate(today),
             )
             .execute(&mut *connection)
             .await?;
@@ -221,7 +222,7 @@ async fn run_sweep(
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let report = sweep(&ctx, &org, today).await?;
     format::json(json!({
         "organization_ref": org, "as_of": today,
@@ -229,13 +230,15 @@ async fn run_sweep(
     }))
 }
 
-fn warning_json(w: &warnings::Model, today: NaiveDate) -> serde_json::Value {
-    let until = w.cleared_on.unwrap_or(today);
+fn warning_json(w: &warnings::Model, today: Date) -> serde_json::Value {
+    let until = w
+        .cleared_on
+        .map_or(today, super::super::sql_time::SqlDate::get);
     json!({
         "pid": w.pid, "kind": w.kind, "subject_pid": w.subject_pid, "subject_name": w.subject_name,
         "first_true_on": w.first_true_on, "cleared_on": w.cleared_on, "acknowledged_on": w.acknowledged_on,
-        "days_open": (until - w.first_true_on).num_days(),
-        "days_to_acknowledge": rules::days_to_acknowledge(w.first_true_on, w.acknowledged_on),
+        "days_open": crate::dates::days_between(w.first_true_on.get(), until),
+        "days_to_acknowledge": rules::days_to_acknowledge(w.first_true_on.get(), w.acknowledged_on.map(super::super::sql_time::SqlDate::get)),
     })
 }
 
@@ -247,7 +250,7 @@ async fn list(
     axa::extract::Query(q): axa::extract::Query<OrgQuery>,
 ) -> Result<Response> {
     let org = org_of(&ctx, &caller, q).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         warnings::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _",
@@ -260,9 +263,9 @@ async fn list(
     )
     .fetch_all(pool(&ctx))
     .await?;
-    let pairs: Vec<(NaiveDate, Option<NaiveDate>)> = rows
+    let pairs: Vec<(Date, Option<Date>)> = rows
         .iter()
-        .map(|w| (w.first_true_on, w.acknowledged_on))
+        .map(|w| (w.first_true_on.get(), w.acknowledged_on.map(SqlDate::get)))
         .collect();
     format::json(json!({
         "organization_ref": org,
@@ -299,7 +302,7 @@ async fn acknowledge(
     if row.acknowledged_on.is_some() {
         return Err(unprocessable("this warning is already acknowledged"));
     }
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = pool(&ctx).begin().await?;
     let row = sqlx::query_as!(
         warnings::Model,
@@ -308,7 +311,7 @@ async fn acknowledge(
                    id, pid, organization_ref, kind, subject_pid, subject_name,
                    first_true_on, cleared_on, acknowledged_on"#,
         row.pid,
-        today,
+        SqlDate(today),
     )
     .fetch_one(&mut *tx)
     .await?;

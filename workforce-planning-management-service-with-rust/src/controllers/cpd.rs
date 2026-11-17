@@ -11,8 +11,10 @@
 
 use super::ratio_json;
 use crate::rules::display;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -56,8 +58,8 @@ struct RequirementPayload {
     unit: String,
     /// Units required in the period (e.g. `30` hours).
     required: f64,
-    period_start: chrono::NaiveDate,
-    period_end: chrono::NaiveDate,
+    period_start: Date,
+    period_end: Date,
     /// Restrict to one job title; absent ⇒ every worker.
     #[serde(default)]
     job_title: Option<String>,
@@ -107,8 +109,8 @@ async fn create_requirement(
         name,
         payload.unit,
         required,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         job_title,
     )
     .execute(&mut *tx)
@@ -164,8 +166,8 @@ async fn update_requirement(
         existing.id,
         name,
         required,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         job_title,
     )
     .execute(&mut *tx)
@@ -251,7 +253,7 @@ async fn live_requirements(ctx: &AppContext) -> Result<Vec<cpd_requirements::Mod
 /// `POST /api/workers/{pid}/cpd-entries` body.
 #[derive(Debug, Deserialize)]
 struct EntryPayload {
-    entry_date: chrono::NaiveDate,
+    entry_date: Date,
     activity: String,
     category: String,
     unit: String,
@@ -295,7 +297,7 @@ async fn create_entry(
         &payload.category,
         amount,
         payload.entry_date,
-        chrono::Utc::now().date_naive(),
+        crate::dates::today(),
     )
     .map_err(|e| unprocessable(&e))?;
     if let Some(skill) = payload.skill_pid {
@@ -318,7 +320,7 @@ async fn create_entry(
         pid,
         worker.pid,
         payload.skill_pid,
-        payload.entry_date,
+        SqlDate(payload.entry_date),
         payload.activity.trim(),
         payload.category,
         payload.unit,
@@ -395,7 +397,7 @@ async fn verify_entry(
                      category, unit, amount_hundredths, evidence_note, evidence_url, source, external_ref, course_ref,
                      verified_on, verified_by, skill_pid, deleted_at AS "deleted_at: _""#,
         entry.id,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
         caller.actor(),
     )
     .fetch_one(&mut *tx)
@@ -464,9 +466,9 @@ struct RegistrationPayload {
     #[serde(default)]
     reference: Option<String>,
     #[serde(default)]
-    registered_on: Option<chrono::NaiveDate>,
+    registered_on: Option<Date>,
     #[serde(default)]
-    expires_on: Option<chrono::NaiveDate>,
+    expires_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/registrations` — record a professional
@@ -500,8 +502,8 @@ async fn create_registration(
         worker.pid,
         payload.body.trim(),
         payload.reference,
-        payload.registered_on,
-        payload.expires_on,
+        payload.registered_on.map(SqlDate),
+        payload.expires_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -542,7 +544,7 @@ async fn list_registrations(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = worker_registrations(&ctx, worker.pid).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -553,7 +555,7 @@ async fn list_registrations(
                 "reference": r.reference,
                 "registered_on": r.registered_on,
                 "expires_on": r.expires_on,
-                "status": rules::registration_status(r.expires_on, today, rules::DEFAULT_WARN_DAYS),
+                "status": rules::registration_status(r.expires_on.map(SqlDate::get), today, rules::DEFAULT_WARN_DAYS),
             })
         })
         .collect();
@@ -569,7 +571,7 @@ async fn list_registrations(
 #[debug_handler]
 async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let entries = worker_entries(&ctx, worker.pid).await?;
     let requirements: Vec<serde_json::Value> = live_requirements(&ctx)
         .await?
@@ -579,7 +581,12 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
             let counted: Vec<(i64, bool)> = entries
                 .iter()
                 .filter(|e| {
-                    e.unit == r.unit && rules::in_period(e.entry_date, r.period_start, r.period_end)
+                    e.unit == r.unit
+                        && rules::in_period(
+                            e.entry_date.get(),
+                            r.period_start.get(),
+                            r.period_end.get(),
+                        )
                 })
                 .map(|e| (e.amount_hundredths, e.verified_on.is_some()))
                 .collect();
@@ -599,8 +606,8 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 "pace": pace_json(&rules::pace(
                     p.recorded,
                     p.required,
-                    r.period_start,
-                    r.period_end,
+                    r.period_start.get(),
+                    r.period_end.get(),
                     today,
                 )),
             })
@@ -613,7 +620,7 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
             serde_json::json!({
                 "body": r.body,
                 "expires_on": r.expires_on,
-                "status": rules::registration_status(r.expires_on, today, rules::DEFAULT_WARN_DAYS),
+                "status": rules::registration_status(r.expires_on.map(SqlDate::get), today, rules::DEFAULT_WARN_DAYS),
             })
         })
         .collect();
@@ -633,11 +640,11 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
 /// many registrations are expiring or expired.
 #[debug_handler]
 async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let headcount = sqlx::query_scalar!(
         r#"SELECT count(*) AS "n!" FROM workers
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)"#,
-        today,
+        SqlDate(today),
     )
     .fetch_one(db::pool(&ctx))
     .await?;
@@ -657,7 +664,7 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
         }));
     }
     // Only the registrations that need attention are read: expired, or expiring inside the warning window.
-    let horizon = today + chrono::Days::new(u64::try_from(rules::DEFAULT_WARN_DAYS).unwrap_or(90));
+    let horizon = today + jiff::Span::new().days(rules::DEFAULT_WARN_DAYS);
     let (mut expiring, mut expired) = (0usize, 0usize);
     for expires_on in sqlx::query_scalar!(
         "SELECT r.expires_on FROM professional_registrations r
@@ -665,13 +672,17 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
             AND r.worker_pid IN (SELECT w.pid FROM workers w
                                   WHERE w.deleted_at IS NULL AND w.hired_on <= $2
                                     AND (w.terminated_on IS NULL OR w.terminated_on > $2))",
-        horizon,
-        today,
+        SqlDate(horizon),
+        SqlDate(today),
     )
     .fetch_all(db::pool(&ctx))
     .await?
     {
-        match rules::registration_status(expires_on, today, rules::DEFAULT_WARN_DAYS) {
+        match rules::registration_status(
+            expires_on.map(SqlDate::get),
+            today,
+            rules::DEFAULT_WARN_DAYS,
+        ) {
             "expiring" => expiring += 1,
             "expired" => expired += 1,
             _ => {}
@@ -693,7 +704,7 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
 async fn requirement_counts(
     ctx: &AppContext,
     r: &cpd_requirements::Model,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<(usize, usize, usize)> {
     let row = sqlx::query!(
         r#"SELECT count(*) AS "applicable!",
@@ -715,7 +726,7 @@ async fn requirement_counts(
         r.unit,
         r.period_start,
         r.period_end,
-        today,
+        SqlDate(today),
         r.job_title,
     )
     .fetch_one(db::pool(ctx))

@@ -1,7 +1,5 @@
 //! Equipment issued and returned (WPM-R155): assets, one holder at a time, returns and write-offs, the leaver's record held open
 //! while equipment is out, the subject export, and erasure (the asset stays).
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -42,7 +40,7 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
 
         // Issue: not in the future, not to a stranger; one holder at a time.
         let issue_url = format!("/api/assets/{laptop}/issue");
-        let future = (Utc::now().date_naive() + Duration::days(2)).to_string();
+        let future = (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(2)).to_string();
         assert_eq!(request.post(&issue_url).json(&json!({ "worker_pid": a, "issued_on": future })).await.status_code(), 422);
         assert_eq!(request.post(&issue_url).json(&json!({ "worker_pid": uuid::Uuid::new_v4() })).await.status_code(), 422);
         let issued: Value = request.post(&issue_url).json(&json!({ "worker_pid": a })).await.json();
@@ -57,7 +55,7 @@ async fn equipment_is_issued_to_one_holder_returned_or_written_off_and_holds_a_l
         assert!(!listed.to_string().contains(&a), "the list does not say who holds it");
 
         // A leaver's record cannot be completed while the laptop is out.
-        let last_day = (Utc::now().date_naive() + Duration::days(14)).to_string();
+        let last_day = (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(14)).to_string();
         let movement: Value = request
             .post(&format!("/api/workers/{a}/movements"))
             .json(&json!({ "kind": "leaver", "effective_on": last_day, "reason": "resignation" }))

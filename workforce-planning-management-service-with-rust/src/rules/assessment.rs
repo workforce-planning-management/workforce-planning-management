@@ -23,6 +23,8 @@
 //! (the one exception is the reported *mean*, which is a display ratio
 //! and always accompanied by its numerator and denominator).
 
+use jiff::civil::Date;
+
 /// The assessment categories.
 pub const ASSESSMENT_CATEGORIES: &[&str] = &[
     "aptitude",
@@ -220,11 +222,7 @@ pub fn band_for_percentile(percentile: i32) -> &'static str {
 /// passed it. A scheduled, in-progress, cancelled, or explicitly
 /// expired assessment is never current.
 #[must_use]
-pub fn is_current(
-    status: &str,
-    expires_on: Option<chrono::NaiveDate>,
-    as_of: chrono::NaiveDate,
-) -> bool {
+pub fn is_current(status: &str, expires_on: Option<Date>, as_of: Date) -> bool {
     status == "completed" && expires_on.is_none_or(|expiry| as_of <= expiry)
 }
 
@@ -263,8 +261,8 @@ pub fn scales_not_assessed(category: &str, measured: &[String]) -> Vec<&'static 
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> chrono::NaiveDate {
-        chrono::NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     /// Every scale has exactly one home category, and the two

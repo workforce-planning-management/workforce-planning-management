@@ -112,11 +112,10 @@ pub fn over_committed(cells: &[CellStatus]) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
 
     fn row(headcount: i64, fte: i64, c: Option<i64>, f: Option<i64>) -> SplitRow {
         SplitRow {
-            as_of: NaiveDate::from_ymd_opt(2026, 3, 31).unwrap(),
+            as_of: crate::dates::ymd(2026, 3, 31).unwrap(),
             headcount,
             fte,
             contractor_fte: c,

@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, movement_pid, position,\n                  title, category, due_on, assignee_pid, done_on, done_by, skipped_reason\n             FROM movement_items WHERE pid = $1",
+  "query": "SELECT created_at, updated_at, id, pid, worker_pid, kind,\n                  effective_on, reason, status, notes, created_by, completed_at\n             FROM movements WHERE worker_pid = $1 ORDER BY id DESC",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "movement_items",
+            "table": "movements",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "movement_items",
+            "table": "movements",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "movement_items",
+            "table": "movements",
             "name": "id"
           }
         }
@@ -42,107 +42,96 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "movement_items",
+            "table": "movements",
             "name": "pid"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "movement_pid",
+        "name": "worker_pid",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "movement_pid"
+            "table": "movements",
+            "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "position",
-        "type_info": "Int4",
+        "name": "kind",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "position"
+            "table": "movements",
+            "name": "kind"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "title",
-        "type_info": "Varchar",
+        "name": "effective_on",
+        "type_info": "Date",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "title"
+            "table": "movements",
+            "name": "effective_on"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "category",
+        "name": "reason",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "category"
+            "table": "movements",
+            "name": "reason"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "due_on",
-        "type_info": "Date",
+        "name": "status",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "due_on"
+            "table": "movements",
+            "name": "status"
           }
         }
       },
       {
         "ordinal": 9,
-        "name": "assignee_pid",
-        "type_info": "Uuid",
+        "name": "notes",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "assignee_pid"
+            "table": "movements",
+            "name": "notes"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "done_on",
-        "type_info": "Date",
+        "name": "created_by",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "done_on"
+            "table": "movements",
+            "name": "created_by"
           }
         }
       },
       {
         "ordinal": 11,
-        "name": "done_by",
-        "type_info": "Varchar",
+        "name": "completed_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "movement_items",
-            "name": "done_by"
-          }
-        }
-      },
-      {
-        "ordinal": 12,
-        "name": "skipped_reason",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "movement_items",
-            "name": "skipped_reason"
+            "table": "movements",
+            "name": "completed_at"
           }
         }
       }
@@ -160,13 +149,12 @@
       false,
       false,
       false,
-      false,
-      false,
       true,
+      false,
       true,
       true,
       true
     ]
   },
-  "hash": "799cd29c181218a5e675939dc40fa849518adc65436a8ced82fc86708d73b790"
+  "hash": "ba91445d394fef9e8be02780db19d7cc2bd2350046975eeb25c003fc400a0fa4"
 }

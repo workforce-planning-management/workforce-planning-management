@@ -17,6 +17,7 @@ use crate::auth::MaybeAuthUser;
 use crate::db::{self, pool};
 use crate::models::memberships;
 use crate::rules::key_person::{self as rules, Holder, Status};
+use crate::sql_time::SqlDate;
 
 /// One assessed skill in one pool (a department, or `None` for the whole scope).
 pub(super) struct Row {
@@ -54,7 +55,7 @@ struct Loaded {
 /// no workers at all.
 #[allow(clippy::too_many_lines)] // skills → holders → their backups and successors, linearly
 async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut minimums: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
     for r in sqlx::query!(
         "SELECT r.skill_pid, r.min_proficiency
@@ -102,7 +103,7 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
            )",
         &skill_pids,
         lowest_bar,
-        today,
+        SqlDate(today),
         scope,
     )
     .fetch_all(pool(ctx))
@@ -131,7 +132,7 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
            AND worker_pid = ANY($1)
            AND (ends_on IS NULL OR ends_on >= $2)",
         &staff_pids,
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(ctx))
     .await?

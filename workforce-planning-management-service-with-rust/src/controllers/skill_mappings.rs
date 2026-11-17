@@ -2,9 +2,9 @@
 //! confidence and the basis it rests on. Reference data: any signed-in caller reads; HR writes. Gap analysis reads them
 //! (`controllers::skill_gaps`). Spec: `spec/skills-and-training.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -112,7 +112,7 @@ async fn create(
         payload.basis,
         payload.source.trim(),
         caller.actor(),
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .execute(&mut *tx)
     .await?;

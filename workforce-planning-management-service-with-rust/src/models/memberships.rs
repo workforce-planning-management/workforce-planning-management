@@ -10,6 +10,7 @@
 
 use authentication_verifier::Claims;
 use axa::prelude::*;
+use jiff::civil::Date;
 
 use super::_entities::organization_memberships;
 
@@ -18,7 +19,7 @@ use super::_entities::organization_memberships;
 /// count per person is small; this matches the family's existing
 /// date-window pattern elsewhere in this crate, e.g. the candidate
 /// consent-expiry filter in `controllers::acquisition`).
-fn is_live(row: &organization_memberships::Model, today: chrono::NaiveDate) -> bool {
+fn is_live(row: &organization_memberships::Model, today: Date) -> bool {
     row.deleted_at.is_none() && row.starts_on <= today && row.ends_on.is_none_or(|end| end >= today)
 }
 
@@ -37,7 +38,7 @@ pub async fn caller_memberships(
         return Ok(Vec::new());
     };
     let person_ref = format!("person:{}", claims.sub);
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         organization_memberships::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, person_ref,
@@ -126,35 +127,36 @@ pub async fn has_role_in(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::Timestamp;
 
     fn a_membership(
         organization_ref: &str,
         role: &str,
-        starts_on: chrono::NaiveDate,
-        ends_on: Option<chrono::NaiveDate>,
-        deleted_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+        starts_on: Date,
+        ends_on: Option<Date>,
+        deleted_at: Option<Timestamp>,
     ) -> organization_memberships::Model {
         organization_memberships::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: uuid::Uuid::new_v4(),
             person_ref: "person:11111111-1111-1111-1111-111111111111".to_string(),
             organization_ref: organization_ref.to_string(),
             worker_pid: None,
             role: role.to_string(),
-            starts_on,
-            ends_on,
-            deleted_at,
+            starts_on: starts_on.into(),
+            ends_on: ends_on.map(Into::into),
+            deleted_at: deleted_at.map(Into::into),
         }
     }
 
     #[test]
     fn is_live_windows_on_dates_and_deletion() {
-        let today = chrono::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
-        let past_start = chrono::NaiveDate::from_ymd_opt(2026, 1, 1).unwrap();
-        let future_start = chrono::NaiveDate::from_ymd_opt(2026, 12, 1).unwrap();
-        let past_end = chrono::NaiveDate::from_ymd_opt(2026, 2, 1).unwrap();
+        let today = crate::dates::ymd(2026, 6, 15).unwrap();
+        let past_start = crate::dates::ymd(2026, 1, 1).unwrap();
+        let future_start = crate::dates::ymd(2026, 12, 1).unwrap();
+        let past_end = crate::dates::ymd(2026, 2, 1).unwrap();
 
         assert!(is_live(
             &a_membership("organization:a", "member", past_start, None, None),
@@ -181,7 +183,7 @@ mod tests {
                     "member",
                     past_start,
                     None,
-                    Some(chrono::Utc::now().into())
+                    Some(Timestamp::now())
                 ),
                 today
             ),

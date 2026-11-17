@@ -2,7 +2,7 @@
 //! where a post's money comes from and when it stops. Only a kind and an end date are held, never an
 //! amount.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// Where the money comes from.
 pub const KINDS: &[&str] = &["core", "time_limited", "external", "programme"];
@@ -28,8 +28,8 @@ pub fn validate_kind(kind: &str) -> Result<(), String> {
 /// A refusal that says what to change.
 pub fn validate(
     kind: &str,
-    ends_on: Option<NaiveDate>,
-    engagement_started_on: NaiveDate,
+    ends_on: Option<Date>,
+    engagement_started_on: Date,
 ) -> Result<(), String> {
     validate_kind(kind)?;
     if matches!(kind, "time_limited" | "external") && ends_on.is_none() {
@@ -84,7 +84,7 @@ impl Alignment {
 /// Compare the two ends. `funding` is `None` when no record exists; `Some(None)` is a funding with
 /// no end. An unknown is never a match.
 #[must_use]
-pub fn align(contract_ends_on: Option<NaiveDate>, funding: Option<Option<NaiveDate>>) -> Alignment {
+pub fn align(contract_ends_on: Option<Date>, funding: Option<Option<Date>>) -> Alignment {
     let Some(funding_end) = funding else {
         return Alignment::Unknown;
     };
@@ -228,13 +228,12 @@ pub struct FundingMonth {
 /// entry, because someone is still engaged on it.
 #[must_use]
 pub fn funding_horizon(
-    ends: &[(NaiveDate, i32)],
-    today: NaiveDate,
+    ends: &[(Date, i32)],
+    today: Date,
     months: u32,
     floor: usize,
 ) -> Vec<FundingMonth> {
-    use chrono::Datelike;
-    let index = |d: NaiveDate| i64::from(d.year()) * 12 + i64::from(d.month0());
+    let index = |d: Date| i64::from(d.year()) * 12 + i64::from(d.month()) - 1;
     let start = index(today);
     let mut buckets: Vec<(usize, i64)> = vec![(0, 0); months as usize + 1];
     for (end, fte) in ends {
@@ -275,7 +274,7 @@ pub fn funding_horizon(
 #[derive(Debug, Clone, Copy)]
 pub struct SplitRow {
     /// The snapshot date.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// People employed.
     pub headcount: i64,
     /// Their FTE, in hundredths of a person.
@@ -290,7 +289,7 @@ pub struct SplitRow {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TrendPoint {
     /// The date.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// Contractor share of FTE.
     pub contractor_percent: Option<f64>,
     /// Fixed-term share of FTE.
@@ -319,7 +318,7 @@ pub struct ContingentTrend {
 pub fn contingent_trend(rows: &[SplitRow], floor: usize) -> ContingentTrend {
     use crate::rules::planning::{MIN_SNAPSHOTS, MIN_WINDOW_DAYS};
     use std::collections::BTreeMap;
-    let mut by: BTreeMap<NaiveDate, Vec<&SplitRow>> = BTreeMap::new();
+    let mut by: BTreeMap<Date, Vec<&SplitRow>> = BTreeMap::new();
     for r in rows {
         by.entry(r.as_of).or_default().push(r);
     }
@@ -348,7 +347,7 @@ pub fn contingent_trend(rows: &[SplitRow], floor: usize) -> ContingentTrend {
         });
     }
     let span = match (points.first(), points.last()) {
-        (Some(a), Some(b)) => (b.as_of - a.as_of).num_days(),
+        (Some(a), Some(b)) => crate::dates::days_between(a.as_of, b.as_of),
         _ => 0,
     };
     let enough = points.len() >= MIN_SNAPSHOTS && span >= MIN_WINDOW_DAYS;
@@ -364,8 +363,8 @@ pub fn contingent_trend(rows: &[SplitRow], floor: usize) -> ContingentTrend {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     /// Groups of people give exactly the answer that one row per person gives.
@@ -510,7 +509,7 @@ mod tests {
         assert!(!contingent_share(&people("A", "permanent", 4), 5).departments_shown);
     }
 
-    fn ends(spec: &[(NaiveDate, i32)]) -> Vec<(NaiveDate, i32)> {
+    fn ends(spec: &[(Date, i32)]) -> Vec<(Date, i32)> {
         spec.to_vec()
     }
 
@@ -565,7 +564,7 @@ mod tests {
         );
     }
 
-    fn split(date: NaiveDate, people: i64, fte: i64, c: Option<i64>, f: Option<i64>) -> SplitRow {
+    fn split(date: Date, people: i64, fte: i64, c: Option<i64>, f: Option<i64>) -> SplitRow {
         SplitRow {
             as_of: date,
             headcount: people,
@@ -578,7 +577,7 @@ mod tests {
     #[test]
     fn the_trend_needs_enough_dates_and_enough_span() {
         let a = d(2026, 1, 1);
-        let day = |n: i64| a + chrono::Duration::days(n);
+        let day = |n: i64| a + crate::dates::days(n);
         let row = |n| split(day(n), 50, 5000, Some(500), Some(250));
         assert_eq!(
             contingent_trend(&[row(0), row(30)], 10).status,
@@ -604,7 +603,7 @@ mod tests {
     #[test]
     fn a_date_with_any_unsplit_row_is_unknown_not_zero() {
         let a = d(2026, 1, 1);
-        let day = |n: i64| a + chrono::Duration::days(n);
+        let day = |n: i64| a + crate::dates::days(n);
         let rows = [
             split(day(0), 50, 5000, None, None),
             split(day(0), 50, 5000, Some(0), Some(0)),
@@ -625,7 +624,7 @@ mod tests {
     #[test]
     fn a_date_below_the_floor_is_left_out() {
         let a = d(2026, 1, 1);
-        let day = |n: i64| a + chrono::Duration::days(n);
+        let day = |n: i64| a + crate::dates::days(n);
         let small = split(day(30), 9, 900, Some(100), Some(0));
         let big = |n| split(day(n), 10, 1000, Some(100), Some(0));
         let t = contingent_trend(&[big(0), small, big(60), big(90)], 10);

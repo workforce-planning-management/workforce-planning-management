@@ -12,8 +12,7 @@
 //! day; this module reads no database and no clock. The facts come from the
 //! records WPM-T326–T331 and T334 will own; until those exist the controller
 //! layer is not wired (see the task entry).
-
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -27,13 +26,13 @@ pub struct ReportFacts {
     /// The person, by reference.
     pub person_ref: Uuid,
     /// The day the person became this manager's report.
-    pub manager_since: NaiveDate,
+    pub manager_since: Date,
     /// Absences with a plan still open (not why).
     pub open_absence_plans: u32,
     /// Review points reached and not yet concluded.
     pub open_review_points: u32,
     /// When the PADR is due, if set.
-    pub padr_due: Option<NaiveDate>,
+    pub padr_due: Option<Date>,
     /// Statutory or mandatory learning expiring within the horizon.
     pub learning_expiring: u32,
     /// The person has an adjustments passport. A yes/no only.
@@ -46,15 +45,15 @@ pub struct GetToKnowItem {
     /// The person, by reference.
     pub person_ref: Uuid,
     /// First day the item shows.
-    pub from: NaiveDate,
+    pub from: Date,
     /// Last day the item shows.
-    pub until: NaiveDate,
+    pub until: Date,
     /// Absences with a plan still open (not why).
     pub open_absence_plans: u32,
     /// Review points reached and not concluded.
     pub open_review_points: u32,
     /// When the PADR is due, if set.
-    pub padr_due: Option<NaiveDate>,
+    pub padr_due: Option<Date>,
     /// Learning expiring within the horizon.
     pub learning_expiring: u32,
     /// "They have a passport they may choose to share"; the words are not here.
@@ -74,11 +73,11 @@ pub fn is_manager_change(previous: Option<Uuid>, new: Option<Uuid>) -> bool {
 /// The items to show on `as_of`: those whose window has started and not ended,
 /// ordered by start day then person reference (stable, no ranking of people).
 #[must_use]
-pub fn items(facts: &[ReportFacts], as_of: NaiveDate) -> Vec<GetToKnowItem> {
+pub fn items(facts: &[ReportFacts], as_of: Date) -> Vec<GetToKnowItem> {
     let mut out: Vec<GetToKnowItem> = facts
         .iter()
         .filter_map(|f| {
-            let until = f.manager_since + Duration::days(WINDOW_DAYS);
+            let until = f.manager_since + crate::dates::days(WINDOW_DAYS);
             (as_of >= f.manager_since && as_of <= until).then_some(GetToKnowItem {
                 person_ref: f.person_ref,
                 from: f.manager_since,
@@ -99,8 +98,8 @@ pub fn items(facts: &[ReportFacts], as_of: NaiveDate) -> Vec<GetToKnowItem> {
 mod tests {
     use super::*;
 
-    fn d(n: i64) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 1, 1).unwrap() + Duration::days(n)
+    fn d(n: i64) -> Date {
+        crate::dates::ymd(2026, 1, 1).unwrap() + crate::dates::days(n)
     }
 
     fn facts(id: u128, since: i64) -> ReportFacts {

@@ -6,6 +6,7 @@
 //! competency-gap analysis measures declared proficiency against.
 
 use super::ratio_json;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -526,13 +527,13 @@ async fn worker_role_gap(
 #[debug_handler]
 async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Result<Response> {
     let profile = find_profile(&ctx, &pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let employed: Vec<Uuid> =
         sqlx::query!("SELECT pid, hired_on, terminated_on FROM workers WHERE deleted_at IS NULL")
             .fetch_all(db::pool(&ctx))
             .await?
             .into_iter()
-            .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+            .filter(|w| is_employed_on(today, w.hired_on.get(), w.terminated_on.map(SqlDate::get)))
             .map(|w| w.pid)
             .collect();
     let headcount = employed.len();

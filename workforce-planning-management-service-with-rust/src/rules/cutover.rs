@@ -6,7 +6,7 @@
 //! DB-free and clock-free. Nothing here names a person. **The go/no-go stays a human decision outside
 //! WPM**: this reports the people evidence for it and never decides.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use crate::rules::key_person::Status as KeyStatus;
 
@@ -88,11 +88,11 @@ pub fn overall(checks: &[&Check]) -> Readiness {
 /// # Errors
 ///
 /// When the end is before the start, or the window is longer than [`MAX_WINDOW_CALENDAR_DAYS`].
-pub fn validate_window(start: NaiveDate, end: NaiveDate) -> Result<(), String> {
+pub fn validate_window(start: Date, end: Date) -> Result<(), String> {
     if end < start {
         return Err("the window must not end before it starts".to_string());
     }
-    let days = (end - start).num_days() + 1;
+    let days = crate::dates::days_between(start, end) + 1;
     if days > MAX_WINDOW_CALENDAR_DAYS {
         return Err(format!(
             "the window may cover at most {MAX_WINDOW_CALENDAR_DAYS} calendar days, not {days}"
@@ -188,7 +188,7 @@ pub fn trained_staff(roles: &[(String, RoleCount)]) -> Check {
 /// Hypercare cover from the on-call rota. `rota` is `false` when none is linked; `uncovered` is the
 /// days of the window with nobody on call, oldest first.
 #[must_use]
-pub fn hypercare(rota: bool, uncovered: &[NaiveDate]) -> Check {
+pub fn hypercare(rota: bool, uncovered: &[Date]) -> Check {
     if !rota {
         return Check::new(
             Readiness::Unknown,
@@ -334,8 +334,8 @@ mod tests {
             },
         )
     }
-    fn day(d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2027, 3, d).unwrap()
+    fn day(d: u32) -> Date {
+        crate::dates::ymd(2027, 3, d).unwrap()
     }
 
     #[test]
@@ -476,8 +476,8 @@ mod tests {
     fn the_window_is_ordered_and_bounded() {
         assert!(validate_window(day(1), day(1)).is_ok());
         assert!(validate_window(day(2), day(1)).is_err());
-        let far = day(1) + chrono::Duration::days(92);
+        let far = day(1) + crate::dates::days(92);
         assert!(validate_window(day(1), far).is_err());
-        assert!(validate_window(day(1), far - chrono::Duration::days(1)).is_ok());
+        assert!(validate_window(day(1), far - crate::dates::days(1)).is_ok());
     }
 }

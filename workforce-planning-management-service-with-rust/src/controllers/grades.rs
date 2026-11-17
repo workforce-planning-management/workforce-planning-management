@@ -14,7 +14,7 @@
 use super::writable_worker;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -26,6 +26,7 @@ use crate::models::_entities::workers;
 use crate::models::records;
 use crate::rules::grade as rules;
 use crate::rules::pay_scale as scale_rules;
+use crate::sql_time::SqlDate;
 
 /// A level number on a framework, as the API shows it.
 async fn level_view(ctx: &AppContext, framework: &str, number: i32) -> Result<serde_json::Value> {
@@ -87,7 +88,7 @@ fn band_view(scale: &str, band: &str) -> serde_json::Value {
 struct Held {
     framework: String,
     level_number: i32,
-    effective_on: chrono::NaiveDate,
+    effective_on: Date,
     on_behalf: bool,
 }
 
@@ -128,7 +129,7 @@ struct WorkerLevelPayload {
     level: String,
     /// Held since; default today. Not in the future.
     #[serde(default)]
-    effective_on: Option<chrono::NaiveDate>,
+    effective_on: Option<Date>,
 }
 
 /// `PUT /api/workers/{pid}/job-level` — set (or change) the worker's level.
@@ -141,7 +142,7 @@ async fn set_worker_level(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let (framework, number) = resolve_level(&ctx, &payload.framework, &payload.level).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let effective_on = payload.effective_on.unwrap_or(today);
     rules::validate_effective_on(effective_on, today).map_err(|e| unprocessable(&e))?;
     let recorded_by = caller.actor().map(ToString::to_string);
@@ -156,7 +157,7 @@ async fn set_worker_level(
         worker.pid,
         framework,
         i32::from(number),
-        effective_on,
+        SqlDate(effective_on),
         recorded_by,
         on_behalf,
     )

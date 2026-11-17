@@ -11,6 +11,7 @@
 //! derived figure can be mistaken for a richer measurement than it is.
 //! Nothing is interpolated and nothing is rounded up.
 
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 // ─── Development plans (upskilling / reskilling) ─────────────────────────────
@@ -396,8 +397,7 @@ pub fn tenure_bucket(months: i64) -> &'static str {
 /// when the hire date is in the future, so a future start is visible
 /// rather than silently zero).
 #[must_use]
-pub fn months_of_service(hired_on: chrono::NaiveDate, as_of: chrono::NaiveDate) -> i64 {
-    use chrono::Datelike;
+pub fn months_of_service(hired_on: Date, as_of: Date) -> i64 {
     let years = i64::from(as_of.year()) - i64::from(hired_on.year());
     let months = years * 12 + i64::from(as_of.month()) - i64::from(hired_on.month());
     if as_of.day() < hired_on.day() {
@@ -412,8 +412,8 @@ mod tests {
     use super::*;
     use uuid::Uuid;
 
-    fn day(y: i32, m: u32, d: u32) -> chrono::NaiveDate {
-        chrono::NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     /// Upskilling deepens the current role; reskilling must name a

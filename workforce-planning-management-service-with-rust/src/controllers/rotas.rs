@@ -10,9 +10,10 @@
 //! own organization.
 
 use super::ensure_org_in_scope;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{Duration, NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashMap};
 use uuid::Uuid;
@@ -98,8 +99,8 @@ pub(super) struct RotaPerson {
     pub(super) display_name: String,
     pub(super) job_title: String,
     pub(super) organization_ref: String,
-    pub(super) hired_on: NaiveDate,
-    pub(super) terminated_on: Option<NaiveDate>,
+    pub(super) hired_on: Date,
+    pub(super) terminated_on: Option<Date>,
 }
 
 /// Live workers by pid, for names and availability.
@@ -122,8 +123,8 @@ pub(super) async fn workers_by_pid(
                 display_name: w.display_name,
                 job_title: w.job_title,
                 organization_ref: w.organization_ref,
-                hired_on: w.hired_on,
-                terminated_on: w.terminated_on,
+                hired_on: w.hired_on.get(),
+                terminated_on: w.terminated_on.map(SqlDate::get),
             },
         )
     })
@@ -135,8 +136,8 @@ pub(super) async fn workers_by_pid(
 pub(super) async fn compute(
     ctx: &AppContext,
     rota: &rotas::Model,
-    from: NaiveDate,
-    to: NaiveDate,
+    from: Date,
+    to: Date,
 ) -> Result<(
     Vec<Uuid>,
     Vec<rota_overrides::Model>,
@@ -148,22 +149,22 @@ pub(super) async fn compute(
     let mut ids = members.clone();
     ids.extend(overrides.iter().map(|o| o.worker_pid));
     let people = workers_by_pid(ctx, ids.clone()).await?;
-    let mut away: HashMap<Uuid, Vec<(NaiveDate, NaiveDate)>> = HashMap::new();
+    let mut away: HashMap<Uuid, Vec<(Date, Date)>> = HashMap::new();
     for l in sqlx::query!(
         "SELECT worker_pid, start_on, end_on FROM leave_requests
           WHERE worker_pid = ANY($1) AND status = 'approved' AND deleted_at IS NULL AND start_on <= $2 AND end_on >= $3",
         &ids,
-        to,
-        from,
+        SqlDate(to),
+        SqlDate(from),
     )
     .fetch_all(db::pool(ctx))
     .await?
     {
         away.entry(l.worker_pid)
             .or_default()
-            .push((l.start_on, l.end_on));
+            .push((l.start_on.get(), l.end_on.get()));
     }
-    let unavailable = |worker: Uuid, day: NaiveDate| -> bool {
+    let unavailable = |worker: Uuid, day: Date| -> bool {
         let Some(w) = people.get(&worker) else {
             return true;
         };
@@ -174,15 +175,15 @@ pub(super) async fn compute(
     };
     let model = Rota {
         period_days: i64::from(rota.period_days),
-        starts_on: rota.starts_on,
+        starts_on: rota.starts_on.get(),
         members: members.clone(),
     };
     let swaps: Vec<Override> = overrides
         .iter()
         .map(|o| Override {
             worker: o.worker_pid,
-            starts_on: o.starts_on,
-            ends_on: o.ends_on,
+            starts_on: o.starts_on.get(),
+            ends_on: o.ends_on.get(),
         })
         .collect();
     let assignments = rules::schedule(&model, &swaps, &unavailable, from, to);
@@ -195,13 +196,13 @@ pub(super) fn name_of(people: &HashMap<Uuid, RotaPerson>, pid: Option<Uuid>) -> 
 }
 
 /// The `from..=to` window from a query, defaulting to 28 days from today.
-fn window(from: Option<NaiveDate>, to: Option<NaiveDate>) -> Result<(NaiveDate, NaiveDate)> {
-    let from = from.unwrap_or_else(|| Utc::now().date_naive());
-    let to = to.unwrap_or(from + Duration::days(DEFAULT_WINDOW_DAYS - 1));
+fn window(from: Option<Date>, to: Option<Date>) -> Result<(Date, Date)> {
+    let from = from.unwrap_or_else(crate::dates::today);
+    let to = to.unwrap_or(from + crate::dates::days(DEFAULT_WINDOW_DAYS - 1));
     if to < from {
         return Err(unprocessable("to must not be before from"));
     }
-    if (to - from).num_days() + 1 > rules::MAX_WINDOW_DAYS {
+    if crate::dates::days_between(from, to) + 1 > rules::MAX_WINDOW_DAYS {
         return Err(unprocessable(&format!(
             "the window may cover at most {} calendar days",
             rules::MAX_WINDOW_DAYS
@@ -230,7 +231,7 @@ struct RotaPayload {
     #[serde(default)]
     description: Option<String>,
     period_days: i32,
-    starts_on: NaiveDate,
+    starts_on: Date,
     /// Members in rotation order.
     members: Vec<Uuid>,
 }
@@ -238,7 +239,7 @@ struct RotaPayload {
 /// Members must be employed workers of `org`, in the order given.
 pub(super) async fn check_members(ctx: &AppContext, org: &str, members: &[Uuid]) -> Result<()> {
     let people = workers_by_pid(ctx, members.to_vec()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     for m in members {
         let Some(w) = people.get(m) else {
             return Err(unprocessable("a member is not a worker here"));
@@ -320,7 +321,7 @@ async fn create_rota(
             .map(|d| d.trim().to_string())
             .filter(|d| !d.is_empty()),
         payload.period_days,
-        payload.starts_on,
+        SqlDate(payload.starts_on),
     )
     .fetch_one(&mut *tx)
     .await
@@ -349,7 +350,7 @@ async fn create_rota(
 async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let all = rotas_in(&ctx, scope.as_deref()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut out = Vec::with_capacity(all.len());
     for rota in &all {
         let (members, _, assignments, people) = compute(&ctx, rota, today, today).await?;
@@ -374,8 +375,8 @@ async fn list_rotas(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
 /// Query for a rota's schedule.
 #[derive(Debug, Deserialize)]
 struct WindowQuery {
-    from: Option<NaiveDate>,
-    to: Option<NaiveDate>,
+    from: Option<Date>,
+    to: Option<Date>,
 }
 
 /// `GET /api/rotas/{pid}?from=&to=` — the rota: members in order, swaps,
@@ -401,7 +402,7 @@ async fn get_rota(
             serde_json::json!({ "worker_pid": w, "name": name_of(&people, Some(w)), "days": days })
         })
         .collect();
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let on_call_today = assignments
         .iter()
         .find(|a| a.date == today)
@@ -438,7 +439,7 @@ async fn get_rota(
 /// Query naming a day.
 #[derive(Debug, Deserialize)]
 struct OnQuery {
-    on: Option<NaiveDate>,
+    on: Option<Date>,
 }
 
 /// `GET /api/rotas/{pid}/on-call?on=` — who is on call on a day (default
@@ -451,7 +452,7 @@ async fn on_call(
     axa::extract::Query(q): axa::extract::Query<OnQuery>,
 ) -> Result<Response> {
     let rota = find_rota(&ctx, &caller, &pid).await?;
-    let on = q.on.unwrap_or_else(|| Utc::now().date_naive());
+    let on = q.on.unwrap_or_else(crate::dates::today);
     let (_, _, assignments, people) = compute(&ctx, &rota, on, on).await?;
     let a = assignments.first();
     format::json(serde_json::json!({
@@ -475,7 +476,7 @@ struct RotaUpdate {
     #[serde(default)]
     period_days: Option<i32>,
     #[serde(default)]
-    starts_on: Option<NaiveDate>,
+    starts_on: Option<Date>,
     #[serde(default)]
     members: Option<Vec<Uuid>>,
 }
@@ -506,7 +507,7 @@ async fn update_rota(
         Some(d) => Some(d.trim().to_string()).filter(|d| !d.is_empty()),
         None => rota.description.clone(),
     };
-    let starts_on = payload.starts_on.unwrap_or(rota.starts_on);
+    let starts_on = payload.starts_on.unwrap_or(rota.starts_on.get());
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
         "UPDATE rotas SET name = $2, description = $3, period_days = $4, starts_on = $5 WHERE id = $1",
@@ -514,7 +515,7 @@ async fn update_rota(
         name,
         description,
         period,
-        starts_on,
+        SqlDate(starts_on),
     )
     .execute(&mut *tx)
     .await?;
@@ -553,7 +554,7 @@ async fn delete_rota(
     sqlx::query!(
         "UPDATE rotas SET deleted_at = $2 WHERE id = $1",
         rota.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -566,8 +567,8 @@ async fn delete_rota(
 #[derive(Debug, Deserialize)]
 struct OverridePayload {
     worker_pid: Uuid,
-    starts_on: NaiveDate,
-    ends_on: NaiveDate,
+    starts_on: Date,
+    ends_on: Date,
     #[serde(default)]
     note: Option<String>,
 }
@@ -595,8 +596,8 @@ async fn add_override(
         swap,
         rota.pid,
         payload.worker_pid,
-        payload.starts_on,
-        payload.ends_on,
+        SqlDate(payload.starts_on),
+        SqlDate(payload.ends_on),
         payload
             .note
             .map(|n| n.trim().to_string())
@@ -677,7 +678,7 @@ async fn worker_on_call(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let (from, to) = window(q.from, q.to)?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let mut out: BTreeMap<(NaiveDate, String), serde_json::Value> = BTreeMap::new();
+    let mut out: BTreeMap<(Date, String), serde_json::Value> = BTreeMap::new();
     for rota in rotas_in(&ctx, scope.as_deref()).await? {
         let (_, _, assignments, _) = compute(&ctx, &rota, from, to).await?;
         for run in rules::runs(&assignments) {
@@ -710,7 +711,7 @@ pub(super) async fn on_call_today(
     caller: &MaybeAuthUser,
 ) -> Result<HashMap<Uuid, Vec<String>>> {
     let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut out: HashMap<Uuid, Vec<String>> = HashMap::new();
     // By name, as before: a worker on call in several rotas lists them in name order.
     let mut rotas = rotas_in(ctx, scope.as_deref()).await?;
@@ -734,13 +735,14 @@ pub(super) async fn on_call_today(
 /// Any query error.
 pub(crate) async fn turns_starting_on(
     ctx: &AppContext,
-    date: NaiveDate,
+    date: Date,
 ) -> Result<Vec<(rotas::Model, Uuid)>> {
     let mut out = Vec::new();
     let mut all = rotas_in(ctx, None).await?;
     all.sort_by_key(|r| r.id);
     for rota in all {
-        let (_, _, assignments, _) = compute(ctx, &rota, date - Duration::days(1), date).await?;
+        let (_, _, assignments, _) =
+            compute(ctx, &rota, date - crate::dates::days(1), date).await?;
         if let [yesterday, today] = assignments.as_slice()
             && let Some(worker) = rules::turn_starts(yesterday, today)
         {

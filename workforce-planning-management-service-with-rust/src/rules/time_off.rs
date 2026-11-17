@@ -4,8 +4,7 @@
 //! score: there is no absence rate, no trigger point and no ranking, because a number about a
 //! person's sickness is a score about them and would need an equality impact assessment first
 //! (WPM-R99). A balance for a kind with no entitlement recorded is **unknown**, never zero.
-
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 /// A recorded entitlement for a kind of leave in a year.
@@ -27,9 +26,9 @@ pub struct Request {
     /// The kind of leave.
     pub kind: String,
     /// First day.
-    pub start_on: NaiveDate,
+    pub start_on: Date,
     /// Last day.
-    pub end_on: NaiveDate,
+    pub end_on: Date,
     /// Calendar days it spans.
     pub days: i32,
     /// `requested`, `approved`, `rejected` or `cancelled`.
@@ -61,11 +60,7 @@ pub struct Balance {
 
 /// Balances per kind and year, from entitlements and requests, as of `today`.
 #[must_use]
-pub fn balances(
-    entitlements: &[Entitlement],
-    requests: &[Request],
-    today: NaiveDate,
-) -> Vec<Balance> {
+pub fn balances(entitlements: &[Entitlement], requests: &[Request], today: Date) -> Vec<Balance> {
     let mut rows: BTreeMap<(i32, String), Balance> = BTreeMap::new();
     let blank = |kind: &str, year: i32| Balance {
         kind: kind.to_string(),
@@ -86,7 +81,7 @@ pub fn balances(
         row.used = e.used;
     }
     for r in requests {
-        let year = r.start_on.year();
+        let year = i32::from(r.start_on.year());
         let row = rows
             .entry((year, r.kind.clone()))
             .or_insert_with(|| blank(&r.kind, year));
@@ -120,14 +115,14 @@ pub struct Absence {
 
 /// Historical absence by year (the year a request starts in), oldest first.
 #[must_use]
-pub fn history(requests: &[Request], today: NaiveDate) -> Vec<(i32, Vec<Absence>)> {
+pub fn history(requests: &[Request], today: Date) -> Vec<(i32, Vec<Absence>)> {
     let mut by: BTreeMap<i32, BTreeMap<String, (i32, i32)>> = BTreeMap::new();
     for r in requests
         .iter()
         .filter(|r| r.status == "approved" && r.end_on < today)
     {
         let entry = by
-            .entry(r.start_on.year())
+            .entry(i32::from(r.start_on.year()))
             .or_default()
             .entry(r.kind.clone())
             .or_insert((0, 0));
@@ -158,11 +153,7 @@ pub fn history(requests: &[Request], today: NaiveDate) -> Vec<(i32, Vec<Absence>
 /// # Errors
 ///
 /// A request the worker may not cancel, with the reason.
-pub fn can_worker_cancel(
-    status: &str,
-    start_on: NaiveDate,
-    today: NaiveDate,
-) -> Result<(), String> {
+pub fn can_worker_cancel(status: &str, start_on: Date, today: Date) -> Result<(), String> {
     match status {
         "requested" => Ok(()),
         "approved" if start_on > today => Ok(()),
@@ -176,8 +167,8 @@ mod tests {
     #[test]
     fn a_worker_cancels_what_has_not_started() {
         use super::can_worker_cancel;
-        let today = super::NaiveDate::from_ymd_opt(2026, 6, 15).unwrap();
-        let day = |m, d| super::NaiveDate::from_ymd_opt(2026, m, d).unwrap();
+        let today = crate::dates::ymd(2026, 6, 15).unwrap();
+        let day = |m, d| crate::dates::ymd(2026, m, d).unwrap();
         assert!(
             can_worker_cancel("requested", day(1, 5), today).is_ok(),
             "awaiting a decision, even if the dates passed"
@@ -200,10 +191,10 @@ mod tests {
 
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
-    fn req(kind: &str, s: NaiveDate, e: NaiveDate, days: i32, status: &str) -> Request {
+    fn req(kind: &str, s: Date, e: Date, days: i32, status: &str) -> Request {
         Request {
             kind: kind.into(),
             start_on: s,

@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, uri, label, skill_type, reuse_level\n                     FROM esco_skills WHERE uri = $1 LIMIT 1",
+  "query": "SELECT created_at, updated_at, id, pid, shift_pid, worker_pid,\n                  deleted_at\n             FROM shift_assignments WHERE shift_pid = ANY($1) AND deleted_at IS NULL ORDER BY id",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "esco_skills",
+            "table": "shift_assignments",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "esco_skills",
+            "table": "shift_assignments",
             "name": "updated_at"
           }
         }
@@ -31,59 +31,59 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "esco_skills",
+            "table": "shift_assignments",
             "name": "id"
           }
         }
       },
       {
         "ordinal": 3,
-        "name": "uri",
-        "type_info": "Varchar",
+        "name": "pid",
+        "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "esco_skills",
-            "name": "uri"
+            "table": "shift_assignments",
+            "name": "pid"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "label",
-        "type_info": "Varchar",
+        "name": "shift_pid",
+        "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "esco_skills",
-            "name": "label"
+            "table": "shift_assignments",
+            "name": "shift_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "skill_type",
-        "type_info": "Varchar",
+        "name": "worker_pid",
+        "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "esco_skills",
-            "name": "skill_type"
+            "table": "shift_assignments",
+            "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "reuse_level",
-        "type_info": "Varchar",
+        "name": "deleted_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "esco_skills",
-            "name": "reuse_level"
+            "table": "shift_assignments",
+            "name": "deleted_at"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "UuidArray"
       ]
     },
     "nullable": [
@@ -92,9 +92,9 @@
       false,
       false,
       false,
-      true,
+      false,
       true
     ]
   },
-  "hash": "fa5021af61f380f53520ba8400d8eef7585202e1a166af682a954731ded75ebf"
+  "hash": "faabdba9cafc18426b9d7336e58921feb41d3442800f44f23fc0ab49571d0435"
 }

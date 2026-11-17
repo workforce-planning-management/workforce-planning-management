@@ -1,7 +1,5 @@
 //! Coverage evidence (WPM-R220, WPM-D154, WPM-T420): a record per organization and jurisdiction, checked for what its kind needs, with a
 //! standing today. No end date is said and never read as valid; a retired record leaves the list.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -13,7 +11,7 @@ use super::an_org;
 async fn coverage_is_recorded_checked_stood_and_retired() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let post = |body: Value| {
             let request = &request;
             async move { request.post("/api/coverage-evidence").json(&body).await }
@@ -32,7 +30,7 @@ async fn coverage_is_recorded_checked_stood_and_retired() {
         ending["policy_reference"] = json!("EL-12345");
         ending["minimum_cover_minor"] = json!(500_000_000);
         ending["currency"] = json!("GBP");
-        ending["valid_to"] = json!((today + Duration::days(20)).to_string());
+        ending["valid_to"] = json!((today + workforce_planning_management::dates::days(20)).to_string());
         ending["certificate_ref"] = json!("dms://certificates/el-2026");
         let made = post(ending).await;
         assert_eq!(made.status_code(), 200, "{}", made.text());
@@ -40,7 +38,7 @@ async fn coverage_is_recorded_checked_stood_and_retired() {
         let open_ended = post(json!({ "organization": org, "jurisdiction": "XB", "kind": "statutory_scheme" })).await;
         assert_eq!(open_ended.status_code(), 200, "{}", open_ended.text());
         let expired = post(json!({ "organization": org, "jurisdiction": "XC", "kind": "self_insured",
-            "valid_to": (today - Duration::days(1)).to_string() })).await;
+            "valid_to": (today - workforce_planning_management::dates::days(1)).to_string() })).await;
         assert_eq!(expired.status_code(), 200);
 
         let list: Value = request.get(&format!("/api/coverage-evidence?organization={org}")).await.json();
@@ -73,8 +71,8 @@ async fn expiry_reminders_tell_hr_once_and_name_no_policy() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = Utc::now().date_naive();
-        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let hr = super::seed_worker!(&request, &org, format!("CV-H-{tag}"), None).await;
         super::activate!(&request, &hr).await;
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!(

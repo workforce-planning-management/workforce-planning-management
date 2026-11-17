@@ -5,10 +5,9 @@
 //! Vacancy and over-establishment are arithmetic over positions, never records, and an over-establishment on one position is
 //! never netted against a vacancy on another. An unknown holder FTE is an unknown vacancy, not the whole budget.
 
-use std::collections::BTreeMap;
-
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
+use std::collections::BTreeMap;
 
 use crate::rules::lifecycle;
 
@@ -86,7 +85,7 @@ pub fn validate(
     cost_centre: &str,
     budget_fte_percent: i32,
     funding_kind: &str,
-    funding_ends_on: Option<NaiveDate>,
+    funding_ends_on: Option<Date>,
     programme_ref: Option<&str>,
 ) -> Result<(), Vec<String>> {
     let mut out = Vec::new();
@@ -396,7 +395,7 @@ mod tests {
     #[test]
     fn a_position_is_one_seat_with_a_funding_that_makes_sense() {
         let thing = "thing:11111111-2222-4333-8444-555555555555";
-        let end = NaiveDate::from_ymd_opt(2027, 3, 31);
+        let end = crate::dates::ymd(2027, 3, 31);
         assert!(validate("CC-100", 100, "core", None, None).is_ok());
         assert!(validate("CC-100", 50, "time_limited", end, None).is_ok());
         assert!(validate("CC-100", 50, "programme", None, Some(thing)).is_ok());

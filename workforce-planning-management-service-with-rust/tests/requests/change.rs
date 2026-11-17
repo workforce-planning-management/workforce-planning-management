@@ -3,6 +3,7 @@
 //! not there is a 404, a closed initiative takes no removals, and the department and
 //! event views answer.
 
+use jiff::Timestamp;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -80,7 +81,7 @@ async fn an_initiative_is_read_back_by_name_and_its_impacts_and_shifts_can_be_re
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_department_audit_and_recent_event_views_answer_and_need_their_parameters() {
     crate::requests::request_open(|request, _ctx| async move {
-        let since = (chrono::Utc::now() - chrono::Duration::days(1)).to_rfc3339();
+        let since = (Timestamp::now() - workforce_planning_management::dates::days(1)).to_string();
         let rows: Value = request
             .get("/api/audits")
             .add_query_params([("department", "engineering"), ("since", since.as_str())])

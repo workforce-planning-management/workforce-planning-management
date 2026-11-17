@@ -13,6 +13,7 @@
 use super::writable_worker;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::Timestamp;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -25,6 +26,7 @@ use crate::models::_entities::{esco_skills, worker_framework_roles};
 use crate::models::records;
 use crate::rules::framework_roles::{self as rules, Choice};
 use crate::rules::learning::valid_proficiency;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use crate::tasks::import_esco::ESCO_SLUG;
 use crate::tasks::import_framework::PCF_SLUG;
 
@@ -60,9 +62,9 @@ async fn current_selection(
 ) -> Result<Option<worker_framework_roles::Model>> {
     Ok(sqlx::query_as!(
         worker_framework_roles::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
-                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
-                  ended_at AS "ended_at: _", recorded_by, on_behalf
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at,
+                  ended_at, recorded_by, on_behalf
              FROM worker_framework_roles
             WHERE worker_pid = $1 AND framework_slug = $2 AND ended_at IS NULL
             LIMIT 1"#,
@@ -83,9 +85,9 @@ async fn list_selections(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         worker_framework_roles::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
-                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
-                  ended_at AS "ended_at: _", recorded_by, on_behalf
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, framework_slug,
+                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at,
+                  ended_at, recorded_by, on_behalf
              FROM worker_framework_roles
             WHERE worker_pid = $1 AND ended_at IS NULL
             ORDER BY id"#,
@@ -150,23 +152,23 @@ async fn set_selection(
     let mut tx = db::pool(&ctx).begin().await?;
     // The previous role ends now — that is what makes it a *past* role.
     close_current(&mut tx, worker.pid, &framework).await?;
-    let now: chrono::DateTime<chrono::FixedOffset> = chrono::Utc::now().into();
+    let now: Timestamp = Timestamp::now();
     let row = sqlx::query_as!(
         worker_framework_roles::Model,
         r#"INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, esco_occupation_uri, role_label,
                                              selected_on, started_at, recorded_by, on_behalf)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-           RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, framework_slug,
-                     role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS "started_at: _",
-                     ended_at AS "ended_at: _", recorded_by, on_behalf"#,
+           RETURNING created_at, updated_at, id, pid, worker_pid, framework_slug,
+                     role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at,
+                     ended_at, recorded_by, on_behalf"#,
         Uuid::new_v4(),
         worker.pid,
         framework,
         profile_pid,
         occupation_uri,
         label,
-        chrono::Utc::now().date_naive(),
-        now,
+        SqlDate(crate::dates::today()),
+        SqlTimestamp(now),
         caller.actor(),
         on_behalf,
     )
@@ -227,7 +229,7 @@ async fn close_current(
         sqlx::query!(
             "UPDATE worker_framework_roles SET ended_at = $2 WHERE id = $1",
             id,
-            chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+            SqlTimestamp(Timestamp::now()),
         )
         .execute(&mut *tx)
         .await?;
@@ -369,9 +371,9 @@ async fn apply_declaration(
         on_behalf,
     )
     .await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let existing = sqlx::query!(
-        r#"SELECT id, deleted_at AS "deleted_at: chrono::DateTime<chrono::FixedOffset>"
+        r#"SELECT id, deleted_at
              FROM worker_skills WHERE worker_pid = $1 AND skill_pid = $2 LIMIT 1"#,
         worker_pid,
         skill_pid,
@@ -384,7 +386,7 @@ async fn apply_declaration(
                 "UPDATE worker_skills SET proficiency = $2, assessed_on = $3, deleted_at = NULL WHERE id = $1",
                 row.id,
                 level,
-                today,
+                SqlDate(today),
             )
             .execute(&mut *tx)
             .await?;
@@ -397,7 +399,7 @@ async fn apply_declaration(
                 worker_pid,
                 skill_pid,
                 level,
-                today,
+                SqlDate(today),
             )
             .execute(&mut *tx)
             .await?;
@@ -407,7 +409,7 @@ async fn apply_declaration(
             sqlx::query!(
                 "UPDATE worker_skills SET deleted_at = $2 WHERE id = $1",
                 row.id,
-                chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+                SqlTimestamp(Timestamp::now()),
             )
             .execute(&mut *tx)
             .await?;
@@ -480,7 +482,7 @@ async fn set_skills(
         } else {
             let esco = sqlx::query_as!(
                 esco_skills::Model,
-                r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, uri, label, skill_type, reuse_level
+                r#"SELECT created_at, updated_at, id, uri, label, skill_type, reuse_level
                      FROM esco_skills WHERE uri = $1 LIMIT 1"#,
                 choice.reference,
             )

@@ -9,11 +9,11 @@
 //! a goal. A review lists the goals of its period, the reviewer and the reviewee each record an outcome, and a review that is
 //! shared freezes a snapshot (WPM-D165).
 
+use jiff::civil::Date;
 use std::collections::HashMap;
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -28,6 +28,7 @@ use crate::models::records;
 use crate::need_to_know::is_line_manager;
 use crate::rules::career::is_self;
 use crate::rules::individual_goals::{self as rules, MeasureShape, Party};
+use crate::sql_time::SqlDate;
 
 /// The caller's token subject.
 pub(crate) fn subject(caller: &MaybeAuthUser) -> Result<&str> {
@@ -409,8 +410,8 @@ pub(crate) struct GoalPayload {
     title: String,
     #[serde(default)]
     description: Option<String>,
-    period_start: chrono::NaiveDate,
-    period_end: chrono::NaiveDate,
+    period_start: Date,
+    period_end: Date,
     #[serde(default)]
     skill_pid: Option<Uuid>,
     /// The level the goal aims at in that skill.
@@ -497,8 +498,8 @@ async fn propose(
         worker.organization_ref,
         payload.title.trim(),
         description,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         by.as_str(),
         payload.skill_pid,
         payload.skill_target_level,
@@ -577,8 +578,8 @@ pub(crate) async fn edit(
         who.as_str(),
         payload.title.trim(),
         description,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         payload.skill_pid,
         skill_target_level,
         payload.plan_item_pid,
@@ -613,7 +614,7 @@ pub(crate) async fn agree(
     let status = sqlx::query_scalar!(
         "UPDATE worker_goals SET status = 'agreed', agreed_on = $2 WHERE id = $1 RETURNING status",
         goal.id,
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -741,7 +742,7 @@ pub(crate) async fn check_in(
         pid,
         goal.pid,
         goal.worker_pid,
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
         payload.status,
         note,
         caller.actor(),
@@ -847,8 +848,8 @@ fn in_period(
         .into_iter()
         .filter(|g| {
             rules::overlaps(
-                (g.period_start, g.period_end),
-                (cycle.period_start, cycle.period_end),
+                (g.period_start.get(), g.period_end.get()),
+                (cycle.period_start.get(), cycle.period_end.get()),
             )
         })
         .collect()
@@ -939,8 +940,8 @@ pub(crate) async fn record_outcome(
     let (goal, worker) = goal_and_worker(&ctx, &goal_pid).await?;
     if goal.worker_pid != review.worker_pid
         || !rules::overlaps(
-            (goal.period_start, goal.period_end),
-            (cycle.period_start, cycle.period_end),
+            (goal.period_start.get(), goal.period_end.get()),
+            (cycle.period_start.get(), cycle.period_end.get()),
         )
     {
         return Err(Error::NotFound);

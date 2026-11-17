@@ -7,9 +7,11 @@
 //! and are never part of a workforce view, so they are not here.
 
 use axa::prelude::*;
+use jiff::civil::Date;
 use uuid::Uuid;
 
 use crate::rules::skill_gap::{Row, Status};
+use crate::sql_time::SqlDate;
 use crate::tasks::import_framework::PCF_SLUG;
 
 /// What one reading of the staff gives: how many are employed, and, as asked for, their graded needs counted per skill,
@@ -43,7 +45,7 @@ async fn graded(
     ctx: &AppContext,
     scope: Option<&[String]>,
     department: Option<&str>,
-    today: chrono::NaiveDate,
+    today: Date,
     rows: bool,
     below: bool,
 ) -> Result<Graded> {
@@ -106,7 +108,7 @@ async fn graded(
                 ARRAY(SELECT g.worker_pid FROM graded g
                        WHERE $6 AND g.declared < g.required GROUP BY g.worker_pid
                        ORDER BY (SELECT id FROM workers w WHERE w.pid = g.worker_pid)) AS "below!: Vec<Uuid>""#,
-        today,
+        SqlDate(today),
         PCF_SLUG,
         scope,
         department,
@@ -151,7 +153,7 @@ pub(crate) async fn gap_rows(
     ctx: &AppContext,
     scope: Option<&[String]>,
     department: Option<&str>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<(usize, Vec<(Row, usize)>, usize)> {
     let g = graded(ctx, scope, department, today, true, false).await?;
     Ok((g.considered, g.rows, g.with_needs))
@@ -167,7 +169,7 @@ pub(crate) async fn workers_below_a_need(
     ctx: &AppContext,
     scope: Option<&[String]>,
     department: Option<&str>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<(usize, Vec<Uuid>)> {
     let g = graded(ctx, scope, department, today, false, true).await?;
     Ok((g.considered, g.below))

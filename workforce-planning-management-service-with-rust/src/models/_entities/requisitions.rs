@@ -2,14 +2,14 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub organization_ref: String,
@@ -20,9 +20,9 @@ pub struct Model {
     pub salary_max_minor: Option<i64>,
     pub salary_currency: Option<String>,
     pub status: String,
-    pub opened_on: Option<NaiveDate>,
-    pub filled_on: Option<NaiveDate>,
-    pub deleted_at: Option<DateTime<FixedOffset>>,
+    pub opened_on: Option<SqlDate>,
+    pub filled_on: Option<SqlDate>,
+    pub deleted_at: Option<SqlTimestamp>,
     /// The programme the post serves (`thing:` URN), if any.
     pub programme_ref: Option<String>,
     /// The engagement basis of the post.

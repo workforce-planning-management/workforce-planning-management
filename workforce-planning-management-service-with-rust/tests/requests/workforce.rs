@@ -1,6 +1,7 @@
 //! Workforce flows (WPM-R4–R6): time caps + overtime, the leave
 //! balance journey (+ the two-approver race), and shift conflicts.
 
+use jiff::civil::Date;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -256,14 +257,14 @@ async fn working_time_guardrails() {
         // 35 recorded 24-hour days inside the 17-week window ending
         // 2026-07-10 — 50 400 min, over the 48 960-min ceiling. Unapproved
         // on purpose: a safety signal must not wait for approval.
-        let mut day = chrono::NaiveDate::from_ymd_opt(2026, 4, 1).unwrap();
+        let mut day = workforce_planning_management::dates::ymd(2026, 4, 1).unwrap();
         for _ in 0..35 {
             request
                 .post(&format!("/api/workers/{heavy}/time-entries"))
                 .json(&json!({ "worked_on": day, "minutes": 1440 }))
                 .await
                 .assert_status_ok();
-            day += chrono::Duration::days(1);
+            day += workforce_planning_management::dates::days(1);
         }
         // The light worker records one modest day.
         request
@@ -404,7 +405,7 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
         let who = seed_worker!(&request, &org, "WT-EDGE", None).await;
         activate!(&request, &who).await;
         crate::requests::working_time_profile(&request, &org, "XW", (17, 2_880, 660), &[&who]).await;
-        let record = |day: chrono::NaiveDate, minutes: i32| {
+        let record = |day: Date, minutes: i32| {
             let request = &request;
             let who = &who;
             async move {
@@ -416,14 +417,14 @@ async fn working_time_window_edges_and_rollup_follow_the_entries() {
             }
         };
         // as_of 2026-07-10 → the window is the 119 days 2026-03-14 ..= 2026-07-10.
-        let first = chrono::NaiveDate::from_ymd_opt(2026, 3, 14).unwrap();
+        let first = workforce_planning_management::dates::ymd(2026, 3, 14).unwrap();
         for n in 0..34 {
-            record(first + chrono::Duration::days(n), 1440).await; // 48 960 = the ceiling
+            record(first + workforce_planning_management::dates::days(n), 1440).await; // 48 960 = the ceiling
         }
-        record(first - chrono::Duration::days(1), 5).await; // the day the window starts: excluded
-        record(chrono::NaiveDate::from_ymd_opt(2026, 7, 11).unwrap(), 5).await; // after as_of: excluded
+        record(first - workforce_planning_management::dates::days(1), 5).await; // the day the window starts: excluded
+        record(workforce_planning_management::dates::ymd(2026, 7, 11).unwrap(), 5).await; // after as_of: excluded
         assert!(flagged_as_of(&request, &who).await.is_none(), "exactly the ceiling is not over it");
-        record(chrono::NaiveDate::from_ymd_opt(2026, 7, 10).unwrap(), 1).await;
+        record(workforce_planning_management::dates::ymd(2026, 7, 10).unwrap(), 1).await;
         let row = flagged_as_of(&request, &who).await.expect("one more minute on as_of flags");
         assert_eq!(row["average_weekly"]["numerator_minutes"], 48_961);
 
@@ -477,9 +478,9 @@ async fn an_unassigned_shift_seat_and_an_ended_benefit_enrolment_leave_their_lis
         super::activate!(&request, &worker).await;
 
         // A shift seat, then unassigned: a second delete is a 404.
-        let day = chrono::Utc::now().date_naive() + chrono::Duration::days(30);
-        let starts = day.and_hms_opt(9, 0, 0).unwrap().and_utc().to_rfc3339();
-        let ends = day.and_hms_opt(17, 0, 0).unwrap().and_utc().to_rfc3339();
+        let day = workforce_planning_management::dates::today() + workforce_planning_management::dates::days(30);
+        let starts = (workforce_planning_management::dates::start_of_day(day) + jiff::SignedDuration::from_hours(9)).to_string();
+        let ends = (workforce_planning_management::dates::start_of_day(day) + jiff::SignedDuration::from_hours(17)).to_string();
         let shift: Value = request
             .post("/api/shifts")
             .json(&json!({ "department": "engineering", "starts_at": starts, "ends_at": ends, "required_headcount": 1 }))

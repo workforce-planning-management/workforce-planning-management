@@ -2,19 +2,19 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub requisition_pid: Uuid,
     pub candidate_pid: Uuid,
     pub stage: String,
     pub notes: Option<String>,
-    pub deleted_at: Option<DateTime<FixedOffset>>,
+    pub deleted_at: Option<SqlTimestamp>,
 }

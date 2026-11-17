@@ -8,6 +8,7 @@
 //! Pinned to the MCP revision [`PROTOCOL_VERSION`] (tools and Streamable HTTP pages read 2026-10-24). A later revision is a
 //! change to this constant and these tests, not a surprise.
 
+use jiff::civil::Date;
 use serde_json::{Map, Value, json};
 
 /// The one MCP revision this server speaks.
@@ -227,7 +228,7 @@ fn valid(kind: Kind, v: &Value) -> Option<String> {
     match kind {
         Kind::Date => v
             .as_str()
-            .filter(|s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok())
+            .filter(|s| s.parse::<Date>().is_ok())
             .map(str::to_string),
         Kind::Pid => v
             .as_str()

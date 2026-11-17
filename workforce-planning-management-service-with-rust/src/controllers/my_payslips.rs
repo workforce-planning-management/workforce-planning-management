@@ -5,11 +5,12 @@
 //! comment: it changes no amount. Payroll reads and closes queries at `/api/payslip-queries`, within the organizations
 //! the caller holds. A comment is never put in an audit entry.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::{BTreeMap, HashMap};
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -40,7 +41,7 @@ fn deduction_lines(slip: &payslips::Model) -> Result<Vec<Deduction>> {
 }
 
 /// The tax year start that applies to a worker on a date, if one is configured.
-fn tax_year_start(scope: &Scope, today: NaiveDate) -> Option<(u32, u32)> {
+fn tax_year_start(scope: &Scope, today: Date) -> Option<(u32, u32)> {
     scope
         .resolve("payroll.tax_year_start", today)
         .integer()
@@ -123,14 +124,14 @@ pub(crate) async fn my_payslips(
             "query": queries.get(&slip.pid).map(query_view),
         }));
         slips.push(rules::Slip {
-            period_end: run.period_end,
+            period_end: run.period_end.get(),
             currency: slip.currency.clone(),
             gross_minor: slip.gross_minor,
             deductions,
             net_minor: slip.net_minor,
         });
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
     let year_to_date = tax_year_start(&scope, today)
         .map(|start| rules::year_to_date(&slips, start))
@@ -208,7 +209,7 @@ pub(crate) async fn raise_query(
         slip.pid,
         worker.pid,
         comment,
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -349,7 +350,7 @@ async fn close_query(
     if row.closed_on.is_some() {
         return Err(unprocessable("this query is already closed"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = pool(&ctx).begin().await?;
     let saved = sqlx::query_as!(
         payslip_queries::Model,
@@ -357,7 +358,7 @@ async fn close_query(
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _",
                   id, pid, payslip_pid, worker_pid, comment, raised_on, closed_on, closed_by, deleted_at AS "deleted_at: _""#,
         pid,
-        today,
+        SqlDate(today),
         caller.actor(),
     )
     .fetch_one(&mut *tx)

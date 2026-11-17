@@ -3,13 +3,13 @@
 //! [`issue`] returns the token **once**; only its hash is stored. [`consume`] marks it used in a single `UPDATE ... WHERE` that
 //! also checks purpose, expiry and that it is unused, so two people presenting the same link at once cannot both succeed. A caller is
 //! told only whether it worked; the reason for a refusal goes to the audit trail, and the token never does.
-
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use sqlx::PgConnection;
 use uuid::Uuid;
 
 use crate::db;
 use crate::rules::link_token as rules;
+use crate::sql_time::SqlTimestamp;
 use axa::prelude::*;
 
 /// What a successful consume gives back.
@@ -38,7 +38,7 @@ pub async fn issue(
     purpose: &str,
     subject_pid: Option<Uuid>,
     ttl_minutes: i64,
-    now: DateTime<Utc>,
+    now: Timestamp,
 ) -> Result<String> {
     let mut problems = rules::purpose_problems(purpose);
     let expires = match rules::expires_at(now, ttl_minutes) {
@@ -58,7 +58,7 @@ pub async fn issue(
         rules::hash(&token),
         purpose,
         subject_pid,
-        expires,
+        SqlTimestamp(expires),
     )
     .execute(connection)
     .await?;
@@ -75,7 +75,7 @@ pub async fn consume(
     connection: &mut PgConnection,
     purpose: &str,
     token: &str,
-    now: DateTime<Utc>,
+    now: Timestamp,
 ) -> Result<Option<Consumed>> {
     if !rules::well_formed(token) {
         db::audit(
@@ -96,7 +96,7 @@ pub async fn consume(
           RETURNING pid, subject_pid",
         hash,
         purpose,
-        now,
+        SqlTimestamp(now),
     )
     .fetch_optional(&mut *connection)
     .await?;
@@ -125,8 +125,8 @@ pub async fn consume(
             .as_ref()
             .map(|r| rules::Stored {
                 purpose: r.purpose.clone(),
-                expires_at: r.expires_at,
-                used_at: r.used_at,
+                expires_at: r.expires_at.get(),
+                used_at: r.used_at.map(SqlTimestamp::get),
             })
             .as_ref(),
         purpose,
@@ -151,9 +151,12 @@ pub async fn consume(
 /// # Errors
 ///
 /// A database error.
-pub async fn purge_expired(connection: &mut PgConnection, before: DateTime<Utc>) -> Result<u64> {
-    let done = sqlx::query!("DELETE FROM link_tokens WHERE expires_at < $1", before)
-        .execute(connection)
-        .await?;
+pub async fn purge_expired(connection: &mut PgConnection, before: Timestamp) -> Result<u64> {
+    let done = sqlx::query!(
+        "DELETE FROM link_tokens WHERE expires_at < $1",
+        SqlTimestamp(before)
+    )
+    .execute(connection)
+    .await?;
     Ok(done.rows_affected())
 }

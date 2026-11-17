@@ -6,8 +6,10 @@
 //! number of distinct groups, not on the number of workers.
 
 // A section of one controller: it shares the parent module's imports.
+use super::{AppContext, BTreeMap, BTreeSet, Result, Uuid, rules};
 #[allow(clippy::wildcard_imports)]
-use super::*;
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 
 use crate::db::pool;
 
@@ -17,7 +19,7 @@ struct PersonGroup {
     department: String,
     employment_type: String,
     fte_percent: i32,
-    engagement_ends_on: Option<chrono::NaiveDate>,
+    engagement_ends_on: Option<SqlDate>,
     people: i64,
 }
 
@@ -27,7 +29,7 @@ pub(super) async fn people_by_department(
     ctx: &AppContext,
     org: &str,
     departments: &BTreeSet<String>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<BTreeMap<String, Vec<rules::Person>>> {
     let wanted: Vec<String> = departments.iter().cloned().collect();
     let count = sqlx::query_scalar!(
@@ -36,7 +38,7 @@ pub(super) async fn people_by_department(
              AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3)"#,
         org,
         &wanted,
-        today,
+        SqlDate(today),
     )
     .fetch_one(pool(ctx))
     .await?;
@@ -50,7 +52,7 @@ pub(super) async fn people_by_department(
            GROUP BY department, employment_type, fte_percent, engagement_ends_on"#,
         org,
         &wanted,
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -60,7 +62,7 @@ pub(super) async fn people_by_department(
             basis: crate::rules::engagement::Basis::parse(&g.employment_type)
                 .unwrap_or(crate::rules::engagement::Basis::Permanent),
             fte_percent: g.fte_percent,
-            ends_on: g.engagement_ends_on,
+            ends_on: g.engagement_ends_on.map(SqlDate::get),
         };
         out.entry(g.department)
             .or_default()
@@ -78,7 +80,7 @@ pub(super) async fn skill_levels_by_department(
     org: &str,
     departments: &BTreeSet<String>,
     skills: &BTreeSet<Uuid>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<BTreeMap<(String, Uuid), Vec<(i32, usize)>>> {
     if skills.is_empty() {
         return Ok(BTreeMap::new());
@@ -93,7 +95,7 @@ pub(super) async fn skill_levels_by_department(
         &skills.iter().copied().collect::<Vec<Uuid>>(),
         org,
         &departments.iter().cloned().collect::<Vec<String>>(),
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -112,7 +114,7 @@ pub(super) async fn converting_by_department(
     ctx: &AppContext,
     org: &str,
     departments: &BTreeSet<String>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<BTreeMap<String, Vec<(String, i32)>>> {
     let open: BTreeMap<Uuid, String> = sqlx::query!(
         "SELECT worker_pid, status FROM conversion_plans
@@ -129,7 +131,7 @@ pub(super) async fn converting_by_department(
            AND hired_on <= $3 AND (terminated_on IS NULL OR terminated_on > $3) AND pid = ANY($4)",
         org,
         &departments.iter().cloned().collect::<Vec<String>>(),
-        today,
+        SqlDate(today),
         &open.keys().copied().collect::<Vec<Uuid>>(),
     )
     .fetch_all(pool(ctx))
@@ -151,7 +153,7 @@ pub(super) async fn salaries_by_department(
     org: &str,
     departments: &BTreeSet<String>,
     currency: &str,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<BTreeMap<String, Vec<i64>>> {
     let rows = sqlx::query!(
         r#"SELECT department, salary_minor AS "salary_minor!" FROM workers
@@ -160,7 +162,7 @@ pub(super) async fn salaries_by_department(
              AND salary_currency = $4 AND salary_minor IS NOT NULL"#,
         org,
         &departments.iter().cloned().collect::<Vec<String>>(),
-        today,
+        SqlDate(today),
         currency,
     )
     .fetch_all(pool(ctx))

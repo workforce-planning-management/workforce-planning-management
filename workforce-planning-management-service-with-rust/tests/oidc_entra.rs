@@ -21,6 +21,7 @@
 //!
 //! `cargo test --no-default-features --features keycloak --test oidc_entra -- --ignored`
 
+use jiff::Timestamp;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -103,7 +104,7 @@ impl Provider {
 
     /// A v2 access token, signed with `key`, shaped like Entra's.
     fn token(&self, user: &User, key: &str, bend: impl FnOnce(&mut Value)) -> String {
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now().as_second();
         let mut claims = json!({
             "iss": self.issuer(), "aud": CLIENT_ID, "tid": TENANT, "ver": "2.0",
             "sub": format!("pairwise-{}", user.oid), "oid": user.oid,
@@ -353,7 +354,7 @@ async fn entra_sign_in_gates_and_authorises() {
         c["iss"] = json!(format!("{}/another-tenant/v2.0", provider.base));
     });
     let expired = provider.token(&USERS[0], SIGNING_KEY, |c| {
-        let past = chrono::Utc::now().timestamp() - 7200;
+        let past = Timestamp::now().as_second() - 7200;
         c["iat"] = json!(past - 60);
         c["nbf"] = json!(past - 60);
         c["exp"] = json!(past);

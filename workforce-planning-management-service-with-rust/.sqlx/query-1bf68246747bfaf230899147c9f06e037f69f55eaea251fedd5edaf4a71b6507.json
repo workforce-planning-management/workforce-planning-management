@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT pid, starts_at AS \"starts_at: chrono::DateTime<chrono::Utc>\",\n                  ends_at AS \"ends_at: chrono::DateTime<chrono::Utc>\"\n             FROM shifts WHERE deleted_at IS NULL AND starts_at >= $1 AND starts_at < $2",
+  "query": "SELECT a.pid, s.department, s.starts_at\n             FROM shift_assignments a\n             JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id",
   "describe": {
     "columns": [
       {
@@ -9,14 +9,25 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "shifts",
+            "table": "shift_assignments",
             "name": "pid"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "starts_at: chrono::DateTime<chrono::Utc>",
+        "name": "department",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "shifts",
+            "name": "department"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "starts_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -24,23 +35,11 @@
             "name": "starts_at"
           }
         }
-      },
-      {
-        "ordinal": 2,
-        "name": "ends_at: chrono::DateTime<chrono::Utc>",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "shifts",
-            "name": "ends_at"
-          }
-        }
       }
     ],
     "parameters": {
       "Left": [
-        "Timestamptz",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -49,5 +48,5 @@
       false
     ]
   },
-  "hash": "ac7360b81c4ada7f910f44fc6b89e15f2f1735ae7965d8224b9b0eb91c5ef4ad"
+  "hash": "1bf68246747bfaf230899147c9f06e037f69f55eaea251fedd5edaf4a71b6507"
 }

@@ -2,6 +2,7 @@
 //! fixed-term and contractor share, and the engagements and funding that end. Pure rules in
 //! [`crate::rules::programmes`]. Aggregate only; HR only and audited.
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use serde_json::json;
 
@@ -20,7 +21,7 @@ const MONTHS: u32 = 12;
 /// withheld, and no total across programmes is given. HR only.
 #[debug_handler]
 async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let funded = sqlx::query!(
         "SELECT worker_pid, programme_ref, ends_on FROM post_fundings WHERE programme_ref IS NOT NULL"
@@ -42,7 +43,7 @@ async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
                 programme: f.programme_ref?,
                 fte_percent: w.fte_percent,
                 basis: w.employment_type.clone(),
-                funding_ends: f.ends_on,
+                funding_ends: f.ends_on.map(SqlDate::get),
                 engagement_ends: w.engagement_ends_on,
             })
         })

@@ -8,7 +8,7 @@
 //! requirement — an honest zero, since "required" is defined, unlike a
 //! ratio with nothing to divide.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 /// What a requirement and an entry are measured in.
 pub const UNITS: &[&str] = &["hours", "points"];
@@ -53,8 +53,8 @@ pub fn validate_entry(
     unit: &str,
     category: &str,
     amount_hundredths: i64,
-    entry_date: NaiveDate,
-    today: NaiveDate,
+    entry_date: Date,
+    today: Date,
 ) -> Result<(), String> {
     if !UNITS.contains(&unit) {
         return Err(format!("unit must be one of {}", UNITS.join(", ")));
@@ -79,8 +79,8 @@ pub fn validate_entry(
 pub fn validate_requirement(
     unit: &str,
     required_hundredths: i64,
-    period_start: NaiveDate,
-    period_end: NaiveDate,
+    period_start: Date,
+    period_end: Date,
 ) -> Result<(), String> {
     if !UNITS.contains(&unit) {
         return Err(format!("unit must be one of {}", UNITS.join(", ")));
@@ -96,7 +96,7 @@ pub fn validate_requirement(
 
 /// Whether `date` falls in `[start, end]` (inclusive).
 #[must_use]
-pub fn in_period(date: NaiveDate, start: NaiveDate, end: NaiveDate) -> bool {
+pub fn in_period(date: Date, start: Date, end: Date) -> bool {
     date >= start && date <= end
 }
 
@@ -159,15 +159,11 @@ pub const DEFAULT_WARN_DAYS: i64 = 90;
 /// Status of a registration on `today`: `no_expiry`, `valid`, `expiring`
 /// (within `warn_days`), or `expired`.
 #[must_use]
-pub fn registration_status(
-    expires_on: Option<NaiveDate>,
-    today: NaiveDate,
-    warn_days: i64,
-) -> &'static str {
+pub fn registration_status(expires_on: Option<Date>, today: Date, warn_days: i64) -> &'static str {
     match expires_on {
         None => "no_expiry",
         Some(date) if date < today => "expired",
-        Some(date) if (date - today).num_days() <= warn_days => "expiring",
+        Some(date) if crate::dates::days_between(today, date) <= warn_days => "expiring",
         Some(_) => "valid",
     }
 }
@@ -208,17 +204,11 @@ to look, not a finding. Verification is not used.";
 
 /// Compare `recorded` with a requirement of `required` over `start..=end`, as of `today`.
 #[must_use]
-pub fn pace(
-    recorded: i64,
-    required: i64,
-    start: NaiveDate,
-    end: NaiveDate,
-    today: NaiveDate,
-) -> Pace {
+pub fn pace(recorded: i64, required: i64, start: Date, end: Date, today: Date) -> Pace {
     let days_left = if today > end {
         0
     } else {
-        (end - today.max(start)).num_days() + 1
+        crate::dates::days_between(today.max(start), end) + 1
     };
     let none = |status| Pace {
         status,
@@ -235,8 +225,8 @@ pub fn pace(
     if today < start {
         return none(PaceStatus::NotStarted);
     }
-    let total_days = (end - start).num_days() + 1;
-    let elapsed = (today - start).num_days() + 1;
+    let total_days = crate::dates::days_between(start, end) + 1;
+    let elapsed = crate::dates::days_between(start, today) + 1;
     // required × elapsed ÷ total, rounded down: a worker exactly on the line is on track
     let expected = required * elapsed / total_days;
     let remaining = required - recorded;
@@ -256,8 +246,8 @@ pub fn pace(
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     /// Amounts convert to hundredths; non-positive, non-finite, and
@@ -372,8 +362,8 @@ mod tests {
         );
     }
 
-    fn d(m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, m, day).unwrap()
+    fn d(m: u32, day: u32) -> Date {
+        crate::dates::ymd(2026, m, day).unwrap()
     }
 
     #[test]

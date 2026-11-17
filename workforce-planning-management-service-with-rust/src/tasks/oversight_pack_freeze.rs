@@ -3,11 +3,11 @@
 //! month. **Idempotent:** an organization that already has a pack for the month being frozen is
 //! skipped, so a re-run, or two overlapping schedules, never write a second one.
 
+use jiff::civil::Date;
 use std::collections::BTreeSet;
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::{Datelike, NaiveDate};
 
 use crate::controllers::oversight_packs::freeze;
 
@@ -28,9 +28,9 @@ impl Task for OversightPackFreeze {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let frozen = freeze_all(ctx, as_of).await?;
         tracing::info!(%as_of, frozen, "oversight pack freeze done");
@@ -44,10 +44,11 @@ impl Task for OversightPackFreeze {
 /// # Errors
 ///
 /// A database error.
-pub async fn freeze_all(ctx: &AppContext, as_of: NaiveDate) -> Result<usize> {
-    let this_month = as_of.with_day(1).unwrap_or(as_of);
+pub async fn freeze_all(ctx: &AppContext, as_of: Date) -> Result<usize> {
+    let this_month = as_of.first_of_month();
     let month = this_month
-        .checked_sub_months(chrono::Months::new(1))
+        .checked_sub(jiff::Span::new().months(1))
+        .ok()
         .unwrap_or(this_month);
     let orgs: BTreeSet<String> =
         sqlx::query_scalar!("SELECT organization_ref FROM oversight_positions")
@@ -60,7 +61,7 @@ pub async fn freeze_all(ctx: &AppContext, as_of: NaiveDate) -> Result<usize> {
         let have = sqlx::query_scalar!(
             r#"SELECT EXISTS (SELECT 1 FROM oversight_packs WHERE organization_ref = $1 AND month = $2) AS "have!""#,
             org,
-            month,
+            crate::sql_time::SqlDate(month),
         )
         .fetch_one(crate::db::pool(ctx))
         .await?;

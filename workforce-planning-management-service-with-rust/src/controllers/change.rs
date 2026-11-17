@@ -8,8 +8,10 @@
 //! affected role, and no individual is named or ranked.
 
 use super::ratio_json;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
@@ -39,7 +41,7 @@ struct InitiativePayload {
     #[serde(default)]
     description: Option<String>,
     #[serde(default)]
-    starts_on: Option<chrono::NaiveDate>,
+    starts_on: Option<Date>,
 }
 
 /// `POST /api/change-initiatives` — open a draft initiative.
@@ -66,7 +68,7 @@ async fn create_initiative(
         payload.name.trim(),
         payload.description,
         payload.kind,
-        payload.starts_on,
+        payload.starts_on.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -482,8 +484,8 @@ async fn remove_skill_shift(
 struct Holder {
     pid: Uuid,
     job_title: String,
-    hired_on: chrono::NaiveDate,
-    terminated_on: Option<chrono::NaiveDate>,
+    hired_on: Date,
+    terminated_on: Option<SqlDate>,
 }
 
 /// Query for the readiness view.
@@ -512,7 +514,7 @@ async fn readiness(
         return Err(unprocessable("min_proficiency must be between 1 and 5"));
     }
     let initiative = find_initiative(&ctx, &pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let employed: Vec<Holder> = sqlx::query_as!(
         Holder,
         "SELECT pid, job_title, hired_on, terminated_on FROM workers WHERE deleted_at IS NULL ORDER BY id"
@@ -520,7 +522,7 @@ async fn readiness(
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on.map(SqlDate::get)))
     .collect();
     let with_reskill_plan: BTreeSet<Uuid> = sqlx::query_scalar!(
         "SELECT worker_pid FROM development_plans

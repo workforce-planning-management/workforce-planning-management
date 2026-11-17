@@ -66,6 +66,7 @@
 //! as configured policy rules over the same `attrs` claim, no code
 //! change required.
 
+use jiff::Timestamp;
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
@@ -529,8 +530,8 @@ pub fn mask_payslip(mut payslip: payslips::Model) -> payslips::Model {
 /// these attributes are inert.
 #[must_use]
 pub fn request_env_attrs() -> BTreeMap<String, Vec<String>> {
-    use chrono::Timelike;
-    env_attrs_at(chrono::Utc::now().hour())
+    let hour = Timestamp::now().to_zoned(jiff::tz::TimeZone::UTC).hour();
+    env_attrs_at(hour.unsigned_abs().into())
 }
 
 /// Pure derivation of the environment attributes for a given UTC `hour`
@@ -891,8 +892,8 @@ mod tests {
         crate::models::_entities::workers::Model {
             location: None,
             work_jurisdiction: None,
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: uuid::Uuid::new_v4(),
             person_ref: format!("person:{person}"),
@@ -908,7 +909,7 @@ mod tests {
             manager_pid: None,
             salary_minor: Some(3_600_000),
             salary_currency: Some("GBP".to_string()),
-            hired_on: chrono::NaiveDate::from_ymd_opt(2026, 1, 5).unwrap(),
+            hired_on: crate::dates::ymd(2026, 1, 5).unwrap().into(),
             terminated_on: None,
             engagement_ends_on: None,
             deleted_at: None,
@@ -999,8 +1000,8 @@ mod tests {
         assert_eq!(masked.department, "engineering");
         assert_eq!(masked.job_title, "Engineer");
         let slip = crate::models::_entities::payslips::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: uuid::Uuid::new_v4(),
             run_pid: uuid::Uuid::new_v4(),

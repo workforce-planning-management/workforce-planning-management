@@ -7,7 +7,7 @@
 // migration and the `event_outbox` table.
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -17,9 +17,9 @@ use uuid::Uuid;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
     /// Row creation timestamp.
-    pub created_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
     /// Row last-update timestamp (set when marked published).
-    pub updated_at: DateTime<FixedOffset>,
+    pub updated_at: SqlTimestamp,
     /// Auto-increment pk; also the global relay order.
     pub id: i32,
     /// Envelope id — the consumer dedup key.
@@ -31,7 +31,7 @@ pub struct Model {
     /// The change kind: `created` / `updated` / `deleted` / `merged`.
     pub kind: String,
     /// When the change occurred (stamped at enqueue).
-    pub occurred_at: DateTime<FixedOffset>,
+    pub occurred_at: SqlTimestamp,
     /// The acting user's pid, or `None` when unauthenticated.
     pub actor: Option<String>,
     /// The envelope schema version.
@@ -39,5 +39,5 @@ pub struct Model {
     /// The full canonical envelope as JSONB.
     pub payload: Value,
     /// `None` until the relay ships the row to the bus.
-    pub published_at: Option<DateTime<FixedOffset>>,
+    pub published_at: Option<SqlTimestamp>,
 }

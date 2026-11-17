@@ -2,9 +2,8 @@
 //! have stopped, and the time to report (the calendar days from a condition first being true to a
 //! person acknowledging it). DB-free and clock-free.
 
+use jiff::civil::Date;
 use std::collections::BTreeSet;
-
-use chrono::NaiveDate;
 use uuid::Uuid;
 
 /// The kinds of condition.
@@ -53,18 +52,15 @@ pub fn reconcile(open: &[Key], now_true: &BTreeSet<Key>) -> Plan {
 
 /// Calendar days from first true to acknowledged; `None` while unacknowledged.
 #[must_use]
-pub fn days_to_acknowledge(
-    first_true_on: NaiveDate,
-    acknowledged_on: Option<NaiveDate>,
-) -> Option<i64> {
-    acknowledged_on.map(|a| (a - first_true_on).num_days())
+pub fn days_to_acknowledge(first_true_on: Date, acknowledged_on: Option<Date>) -> Option<i64> {
+    acknowledged_on.map(|a| crate::dates::days_between(first_true_on, a))
 }
 
 /// The time to report for a set of warnings, as the **longest** calendar days to acknowledge (the
 /// worst case, which a quick one cannot hide). `None` for no warnings, and `None` when any is still
 /// unacknowledged: the figure is not known yet, and a slow one must not read as a fast one.
 #[must_use]
-pub fn time_to_report_days(rows: &[(NaiveDate, Option<NaiveDate>)]) -> Option<i64> {
+pub fn time_to_report_days(rows: &[(Date, Option<Date>)]) -> Option<i64> {
     let mut longest: Option<i64> = None;
     for (first, ack) in rows {
         let days = days_to_acknowledge(*first, *ack)?;
@@ -83,8 +79,8 @@ mod tests {
             subject: Uuid::from_u128(n),
         }
     }
-    fn day(d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 3, d).unwrap()
+    fn day(d: u32) -> Date {
+        crate::dates::ymd(2026, 3, d).unwrap()
     }
 
     #[test]

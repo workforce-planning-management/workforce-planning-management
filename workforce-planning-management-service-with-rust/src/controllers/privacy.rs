@@ -5,8 +5,10 @@
 //! store only: what the upstream identity services hold is the
 //! deployment's coordination duty, stated in the payloads.
 
+use crate::sql_time::SqlDate;
 use axa::extract::Path;
 use axa::prelude::*;
+use jiff::{Timestamp, civil::Date};
 use uuid::Uuid;
 
 use super::statutory_defaults::{self as statutory, InForce};
@@ -137,7 +139,7 @@ async fn subject_access(
         epid
     );
     let export = serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "worker": worker,
         "time_entries": rows_for!(db, time_entries, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM time_entries t WHERE worker_pid = $1"#, epid),
         "leave_entitlements": rows_for!(db, leave_entitlements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM leave_entitlements t WHERE worker_pid = $1"#, epid),
@@ -308,7 +310,7 @@ async fn candidate_subject_access(
         &assessment_pids
     );
     let export = serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "candidate": rows_for!(db, candidates, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM candidates t WHERE pid = $1"#, candidate_pid),
         "applications": apps,
         "interviews": their_interviews,
@@ -503,13 +505,10 @@ pub struct ReplayReport {
 /// # Errors
 ///
 /// A database error; nothing is applied for the entry that failed.
-pub async fn replay_erasures(
-    pool: &sqlx::PgPool,
-    since: Option<chrono::NaiveDate>,
-) -> Result<ReplayReport> {
+pub async fn replay_erasures(pool: &sqlx::PgPool, since: Option<Date>) -> Result<ReplayReport> {
     let rows = sqlx::query_scalar!(
         "SELECT worker_pid FROM erasure_ledger WHERE ($1::date IS NULL OR erased_at >= $1) ORDER BY erased_at",
-        since,
+        since.map(SqlDate),
     )
     .fetch_all(pool)
     .await?;
@@ -657,7 +656,7 @@ async fn erase(
 /// floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
 pub(crate) fn horizons(
     scope: Option<&super::jurisdictions::Scope>,
-    as_of: chrono::NaiveDate,
+    as_of: Date,
 ) -> Vec<(rules::RecordKind, InForce<rules::Horizon>)> {
     let legacy = crate::compat::env_var("WPM_RETENTION_DAYS");
     rules::RecordKind::ALL
@@ -694,7 +693,7 @@ pub(crate) fn horizons(
 async fn sweep_horizons(
     ctx: &AppContext,
 ) -> Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>> {
-    let as_of = chrono::Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let mut all = horizons(None, as_of);
     for organization in
         super::jurisdictions::organizations_with_a_home(crate::db::pool(ctx)).await?
@@ -760,7 +759,7 @@ async fn retention_schedule(
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<ScheduleQuery>,
 ) -> Result<Response> {
-    let as_of = chrono::Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let scope = match &q.organization {
         Some(org) => {
             super::ensure_valid(&super::pay_transparency::organization_problems(org))?;
@@ -828,12 +827,12 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
     let recruitment_days = days_for("candidates", &all);
     let expired_candidates = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "n!" FROM candidates WHERE deleted_at IS NULL AND consent_until < $1"#,
-        chrono::Utc::now().date_naive() - chrono::Duration::days(recruitment_days),
+        SqlDate(crate::dates::today() - crate::dates::days(recruitment_days)),
     )
     .fetch_one(crate::db::pool(&ctx))
     .await?;
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "horizons": horizon_map(&all),
         "horizons_from": horizon_sources(&all),
         "soft_deleted_past_horizon": tables,

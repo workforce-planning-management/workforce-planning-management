@@ -1,7 +1,5 @@
 //! Qualifications and the qualification gap (WPM-R171, WPM-T316): declared is never met, HR verifies with an evidence reference, a
 //! role's requirements are read beside the person's list, and no role recorded reads `role: null`.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -84,7 +82,7 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
         // Refusals: expiry before award, a future award, framework without level.
         for bad in [
             json!({ "kind": "licence", "title": "X", "awarded_on": "2020-01-01", "expires_on": "2019-01-01" }),
-            json!({ "kind": "licence", "title": "X", "awarded_on": (Utc::now().date_naive() + Duration::days(5)).to_string() }),
+            json!({ "kind": "licence", "title": "X", "awarded_on": (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(5)).to_string() }),
             json!({ "kind": "licence", "title": "X", "framework": "RQF" }),
             json!({ "kind": "nope", "title": "X" }),
         ] {
@@ -346,8 +344,8 @@ async fn expiry_reminders_tell_the_person_and_their_manager_once() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = Utc::now().date_naive();
-        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let boss = seed_worker!(&request, &org, format!("Q-M-{tag}"), None).await;
         activate!(&request, &boss).await;
         let me = seed_worker!(&request, &org, format!("Q-P-{tag}"), None).await;

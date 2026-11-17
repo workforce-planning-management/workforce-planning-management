@@ -7,8 +7,10 @@
 //! Scoped to the caller's organizations like the org chart: a worker outside
 //! the caller's scope is `404`, and people outside it never appear.
 
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::Timestamp;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -49,7 +51,7 @@ async fn staff_among(
     caller: &MaybeAuthUser,
     pids: &[Uuid],
 ) -> Result<BTreeMap<Uuid, Person>> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     Ok(sqlx::query_as!(
         Person,
@@ -57,7 +59,7 @@ async fn staff_among(
           WHERE pid = ANY($1) AND deleted_at IS NULL AND hired_on <= $2 AND (terminated_on IS NULL OR terminated_on > $2)
             AND ($3::text[] IS NULL OR organization_ref = ANY($3))",
         pids,
-        today,
+        SqlDate(today),
         scope.as_deref(),
     )
     .fetch_all(db::pool(ctx))
@@ -74,7 +76,7 @@ async fn staff_below(
     caller: &MaybeAuthUser,
     manager: Uuid,
 ) -> Result<BTreeMap<Uuid, Person>> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(ctx, caller.claims()).await?;
     Ok(sqlx::query_as!(
         Person,
@@ -90,7 +92,7 @@ async fn staff_below(
                   manager_pid
              FROM down WHERE pid <> $1"#,
         manager,
-        today,
+        SqlDate(today),
         scope.as_deref(),
     )
     .fetch_all(db::pool(ctx))
@@ -135,12 +137,16 @@ async fn upline(
 ) -> Result<Response> {
     let worker = visible_worker(&ctx, &caller, &pid).await?;
     // One manager at a time, up from the worker, while each is employed and visible; a cycle stops.
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut chain: Vec<serde_json::Value> = Vec::new();
     let mut seen = std::collections::BTreeSet::from([worker.pid]);
-    let mut manager = is_employed_on(today, worker.hired_on, worker.terminated_on)
-        .then_some(worker.manager_pid)
-        .flatten();
+    let mut manager = is_employed_on(
+        today,
+        worker.hired_on.get(),
+        worker.terminated_on.map(SqlDate::get),
+    )
+    .then_some(worker.manager_pid)
+    .flatten();
     while let Some(pid) = manager.filter(|m| seen.insert(*m)) {
         let Some(boss) = staff_among(&ctx, &caller, &[pid]).await?.remove(&pid) else {
             break;
@@ -386,7 +392,7 @@ async fn add_dotted_manager(
         report.pid,
         payload.manager_pid,
         payload.note,
-        chrono::Utc::now(),
+        SqlTimestamp(Timestamp::now()),
         caller.actor(),
         auth::acting_for_other(&caller, &report.person_ref),
     )
@@ -425,7 +431,7 @@ async fn end_dotted_manager(
         "UPDATE dotted_line_reports SET ended_at = $3 WHERE report_pid = $1 AND manager_pid = $2 AND ended_at IS NULL",
         report.pid,
         records::parse_pid(&manager_pid)?,
-        chrono::Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(&mut *tx)
     .await?;

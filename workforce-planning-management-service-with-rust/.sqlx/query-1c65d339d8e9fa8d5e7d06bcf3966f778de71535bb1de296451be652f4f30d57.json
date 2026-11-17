@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.pid, s.starts_at AS \"starts_at: chrono::DateTime<chrono::FixedOffset>\",\n                  s.ends_at AS \"ends_at: chrono::DateTime<chrono::FixedOffset>\"\n             FROM shift_assignments a JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id",
+  "query": "SELECT s.pid, s.starts_at,\n                  s.ends_at\n             FROM shift_assignments a JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL\n            WHERE a.worker_pid = $1 AND a.deleted_at IS NULL\n            ORDER BY a.id",
   "describe": {
     "columns": [
       {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "starts_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "starts_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -27,7 +27,7 @@
       },
       {
         "ordinal": 2,
-        "name": "ends_at: chrono::DateTime<chrono::FixedOffset>",
+        "name": "ends_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -48,5 +48,5 @@
       false
     ]
   },
-  "hash": "cac9bae19535238307bd498e9b3acc21a84486297946780112c2833b45e8d8ec"
+  "hash": "1c65d339d8e9fa8d5e7d06bcf3966f778de71535bb1de296451be652f4f30d57"
 }

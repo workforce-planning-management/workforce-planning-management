@@ -1,7 +1,5 @@
 //! Joiners and leavers: dated checklists, and a leaver's last-day handover —
 //! list what they hold, reassign it, revoke access, with an audit trail.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -21,8 +19,8 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
             people.push(pid);
         }
         let (m, l, r1, r2, s, x) = (&people[0], &people[1], &people[2], &people[3], &people[4], &people[5]);
-        let today = Utc::now().date_naive();
-        let last_day = today + Duration::days(14);
+        let today = workforce_planning_management::dates::today();
+        let last_day = today + workforce_planning_management::dates::days(14);
         for (who, boss) in [(l, m), (r1, l), (r2, l)] {
             request
                 .put(&format!("/api/workers/{who}"))
@@ -78,7 +76,7 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
         let view: Value = request.get(&format!("/api/movements/{mv}")).await.json();
         let items = view["items"].as_array().unwrap();
         assert_eq!(items.len(), 8);
-        assert_eq!(items[0]["due_on"], (last_day - Duration::days(28)).to_string());
+        assert_eq!(items[0]["due_on"], (last_day - workforce_planning_management::dates::days(28)).to_string());
         // "Notice acknowledged" was due 28 days before the last day = 14 days ago: overdue.
         assert_eq!(items[0]["state"], "overdue");
         // The last day is 14 days away: only "−28" is past; "−14" is due today; the rest are ahead.
@@ -99,8 +97,8 @@ async fn a_leaver_is_handed_over_item_by_item_and_completed_only_when_nothing_is
             .json(&json!({ "manager_pid": l }))
             .await
             .assert_status_ok();
-        let starts = (last_day + Duration::days(2)).and_hms_opt(9, 0, 0).unwrap().and_utc().to_rfc3339();
-        let ends = (last_day + Duration::days(2)).and_hms_opt(17, 0, 0).unwrap().and_utc().to_rfc3339();
+        let starts = (workforce_planning_management::dates::start_of_day(last_day + workforce_planning_management::dates::days(2)) + jiff::SignedDuration::from_hours(9)).to_string();
+        let ends = (workforce_planning_management::dates::start_of_day(last_day + workforce_planning_management::dates::days(2)) + jiff::SignedDuration::from_hours(17)).to_string();
         let shift: Value = request
             .post("/api/shifts")
             .json(&json!({ "department": "engineering", "starts_at": starts, "ends_at": ends, "required_headcount": 1 }))
@@ -264,7 +262,7 @@ async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_ca
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let joiner = seed_worker!(&request, &org, format!("MC-{tag}-J"), None).await;
         let buddy = seed_worker!(&request, &org, format!("MC-{tag}-B"), None).await;
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
 
         let movement: Value = request
             .post(&format!("/api/workers/{joiner}/movements"))

@@ -193,7 +193,7 @@ pub async fn import_esco(
     let attribution = "© European Union. ESCO (European Skills, Competences, Qualifications \
                        and Occupations), reused under Commission Decision 2011/833/EU with \
                        the source acknowledged.";
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     sqlx::query!(
         "INSERT INTO capability_frameworks
              (pid, slug, name, source_url, licence, attribution, scale_max, scale_labels, imported_on, note)
@@ -205,7 +205,7 @@ pub async fn import_esco(
         "https://esco.ec.europa.eu/",
         "Reuse under Commission Decision 2011/833/EU (attribution required)",
         attribution,
-        today,
+        crate::sql_time::SqlDate(today),
         format!("{note} Pinned version: {version}."),
     )
     .execute(&mut *tx)

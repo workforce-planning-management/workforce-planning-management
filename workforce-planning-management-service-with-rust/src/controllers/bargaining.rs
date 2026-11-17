@@ -5,9 +5,10 @@
 //! versioned reference data; which agreements apply to a worker is derived from the unit rules, for HR and payroll only (WPM-R103).
 //! Spec: `spec/worker-unions.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -77,7 +78,7 @@ struct BodyPayload {
     name: String,
     kind: String,
     basis: String,
-    recognised_on: NaiveDate,
+    recognised_on: Date,
     contact_role: String,
 }
 
@@ -119,7 +120,7 @@ async fn create(
         name,
         payload.kind,
         payload.basis,
-        payload.recognised_on,
+        SqlDate(payload.recognised_on),
         payload.contact_role.trim(),
         caller.actor(),
     )
@@ -237,7 +238,7 @@ async fn units(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let body = find_body(&ctx, &caller, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = units_of(&ctx, &[body.pid], true).await?;
     // Only the four facts a unit is defined over, for the workers in work today: nothing that names anyone is read.
     let facts: Vec<(String, Option<String>, String, String)> = sqlx::query!(
@@ -248,7 +249,7 @@ async fn units(
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(today, w.hired_on.get(), w.terminated_on.map(SqlDate::get)))
     .map(|w| (w.department, w.location, w.employment_type, w.job_title))
     .collect();
     let mut out = Vec::new();
@@ -363,8 +364,8 @@ fn agreement_json(a: &collective_agreements::Model, in_force: bool) -> serde_jso
 struct AgreementPayload {
     title: String,
     source: String,
-    effective_from: NaiveDate,
-    effective_to: Option<NaiveDate>,
+    effective_from: Date,
+    effective_to: Option<Date>,
     pay_scale_id: Option<String>,
     max_weekly_hours: Option<i32>,
     notice_weeks: Option<i32>,
@@ -406,7 +407,7 @@ async fn add_agreement(
     .await?;
     ensure_valid(&agreement_rules::version_problems(
         payload.effective_from,
-        newest.as_ref().map(|n| n.effective_from),
+        newest.as_ref().map(|n| n.effective_from.get()),
     ))?;
     let version = newest.map_or(1, |n| n.version + 1);
     let new_pid = Uuid::new_v4();
@@ -420,8 +421,8 @@ async fn add_agreement(
         unit.pid,
         title,
         version,
-        payload.effective_from,
-        payload.effective_to,
+        SqlDate(payload.effective_from),
+        payload.effective_to.map(SqlDate),
         payload.source.trim(),
         payload.pay_scale_id.map(|s| s.trim().to_string()),
         payload.max_weekly_hours,
@@ -452,7 +453,7 @@ async fn unit_agreements(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let (unit, _body) = find_unit(&ctx, &caller, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = agreements_of(&ctx, &[unit.pid]).await?;
     let out: Vec<serde_json::Value> = rows
         .iter()
@@ -462,8 +463,8 @@ async fn unit_agreements(
                 .filter(|o| o.title == a.title)
                 .map(|o| agreement_rules::Version {
                     version: o.version,
-                    from: o.effective_from,
-                    to: o.effective_to,
+                    from: o.effective_from.get(),
+                    to: o.effective_to.map(SqlDate::get),
                 })
                 .collect();
             agreement_json(
@@ -477,7 +478,7 @@ async fn unit_agreements(
 
 #[derive(Debug, Deserialize)]
 struct OnQuery {
-    on: Option<NaiveDate>,
+    on: Option<Date>,
 }
 
 /// `GET /api/workers/{pid}/collective-agreements?on=` — the agreements in force on a day (default today) for the units whose rules cover the
@@ -492,7 +493,7 @@ async fn of_worker(
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     ensure_org_in_scope(&ctx, &caller, &worker.organization_ref).await?;
-    let day = query.on.unwrap_or_else(|| Utc::now().date_naive());
+    let day = query.on.unwrap_or_else(crate::dates::today);
     let facts = rules::Facts {
         department: &worker.department,
         location: worker.location.as_deref(),
@@ -529,8 +530,8 @@ async fn of_worker(
             .filter(|o| o.unit_pid == a.unit_pid && o.title == a.title)
             .map(|o| agreement_rules::Version {
                 version: o.version,
-                from: o.effective_from,
-                to: o.effective_to,
+                from: o.effective_from.get(),
+                to: o.effective_to.map(SqlDate::get),
             })
             .collect();
         if agreement_rules::in_force(&same, day) == Some(a.version) {
@@ -573,7 +574,7 @@ async fn information_pack(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let (unit, body) = find_unit(&ctx, &caller, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let rule = rules::UnitRule {
         department: unit.department.as_deref(),
         location: unit.location.as_deref(),
@@ -619,8 +620,8 @@ async fn information_pack(
             department: w.department,
             employment_type: w.employment_type,
             fte_percent: w.fte_percent,
-            hired_on: w.hired_on,
-            terminated_on: w.terminated_on,
+            hired_on: w.hired_on.get(),
+            terminated_on: w.terminated_on.map(SqlDate::get),
         })
         .collect();
     let pack = pack_rules::pack(&pack_rows, today, DEFAULT_FLOOR);
@@ -674,8 +675,8 @@ async fn information_pack(
 
 #[derive(Debug, Deserialize)]
 struct FacilityPayload {
-    period_start: NaiveDate,
-    period_end: NaiveDate,
+    period_start: Date,
+    period_end: Date,
     minutes: i32,
     budget_minutes: Option<i32>,
 }
@@ -690,14 +691,14 @@ async fn add_facility_time(
     Json(payload): Json<FacilityPayload>,
 ) -> Result<Response> {
     let body = find_body(&ctx, &caller, pid).await?;
-    let held: Vec<(NaiveDate, NaiveDate)> = sqlx::query!(
+    let held: Vec<(Date, Date)> = sqlx::query!(
         "SELECT period_start, period_end FROM facility_time_periods WHERE body_pid = $1 ORDER BY id",
         body.pid,
     )
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .map(|p| (p.period_start, p.period_end))
+    .map(|p| (p.period_start.get(), p.period_end.get()))
     .collect();
     ensure_valid(&gate_rules::facility_problems(
         payload.period_start,
@@ -713,8 +714,8 @@ async fn add_facility_time(
          VALUES ($1, $2, $3, $4, $5, $6, $7)",
         new_pid,
         body.pid,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         payload.minutes,
         payload.budget_minutes,
         caller.actor(),

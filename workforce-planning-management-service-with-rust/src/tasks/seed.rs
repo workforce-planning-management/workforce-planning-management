@@ -3,8 +3,10 @@
 //! `regulatory.md`): person/worker URNs are random UUIDs, names are
 //! obviously fictional.
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
+use jiff::civil::Date;
 use uuid::Uuid;
 
 /// The demo-organization seed task.
@@ -60,7 +62,7 @@ impl Task for Seed {
                 "Head of Department".to_string(),
                 Some(6_500_000),
                 Some("GBP".to_string()),
-                chrono::NaiveDate::from_ymd_opt(2020, 1, 6).ok_or_else(|| {
+                crate::dates::ymd(2020, 1, 6).map(SqlDate).ok_or_else(|| {
                         Error::string("seed data: invalid department-head hired_on date")
                     })?,
             )
@@ -91,12 +93,12 @@ impl Task for Seed {
                     Some(head),
                     Some(salary),
                     Some("GBP".to_string()),
-                    chrono::NaiveDate::from_ymd_opt(2023, 3, 1).ok_or_else(|| {
+                    crate::dates::ymd(2023, 3, 1).map(SqlDate).ok_or_else(|| {
                             Error::string("seed data: invalid worker hired_on date")
                         })?,
                     // A fixed-term engagement needs an end date (WPM-R79).
                     (i % 4 == 3)
-                            .then(|| chrono::NaiveDate::from_ymd_opt(2028, 3, 1))
+                            .then(|| crate::dates::ymd(2028, 3, 1).map(SqlDate))
                             .flatten(),
                 )
                 .execute(&mut *tx)
@@ -136,7 +138,7 @@ impl Task for Seed {
                 Some("GBP".to_string()),
                 status.to_string(),
                 Some(
-                    chrono::NaiveDate::from_ymd_opt(2026, 6, 1).ok_or_else(|| {
+                    crate::dates::ymd(2026, 6, 1).map(SqlDate).ok_or_else(|| {
                         Error::string("seed data: invalid requisition opened_on date")
                     })?,
                 ),
@@ -176,7 +178,7 @@ impl Task for Seed {
                 median,
                 max,
                 "Demo Salary Survey 2026".to_string(),
-                chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+                crate::dates::ymd(2026, 4, 1).map(SqlDate)
                         .ok_or_else(|| Error::string("seed data: invalid benchmark as_of date"))?,
             )
             .execute(&mut *tx)
@@ -210,7 +212,7 @@ impl Task for Seed {
                 title.to_string(),
                 Some(salary),
                 Some("JPY".to_string()),
-                chrono::NaiveDate::from_ymd_opt(2024, 4, 1).ok_or_else(|| {
+                crate::dates::ymd(2024, 4, 1).map(SqlDate).ok_or_else(|| {
                         Error::string("seed data: invalid yen worker hired_on date")
                     })?,
             )
@@ -229,7 +231,7 @@ impl Task for Seed {
             Some("JPY".to_string()),
             "open".to_string(),
             Some(
-                chrono::NaiveDate::from_ymd_opt(2026, 6, 1).ok_or_else(|| {
+                crate::dates::ymd(2026, 6, 1).map(SqlDate).ok_or_else(|| {
                     Error::string("seed data: invalid yen requisition opened_on date")
                 })?,
             ),
@@ -255,7 +257,7 @@ impl Task for Seed {
                 median,
                 max,
                 "Demo Salary Survey 2026".to_string(),
-                chrono::NaiveDate::from_ymd_opt(2026, 4, 1)
+                crate::dates::ymd(2026, 4, 1).map(SqlDate)
                         .ok_or_else(|| Error::string("seed data: invalid benchmark as_of date"))?,
             )
             .execute(&mut *tx)
@@ -299,7 +301,7 @@ impl Task for Seed {
             Uuid::new_v4(),
             org.clone(),
             level_pids[1],
-            chrono::NaiveDate::from_ymd_opt(2026, 1, 1)
+            crate::dates::ymd(2026, 1, 1).map(SqlDate)
                     .ok_or_else(|| Error::string("seed data: invalid position date"))?,
             "Synthetic oversight panel".to_string(),
             "Synthetic demonstration position.".to_string(),
@@ -359,7 +361,7 @@ impl Task for Seed {
                 title.to_string(),
                 Some(salary),
                 Some("INR".to_string()),
-                chrono::NaiveDate::from_ymd_opt(2025, 4, 1).ok_or_else(|| {
+                crate::dates::ymd(2025, 4, 1).map(SqlDate).ok_or_else(|| {
                         Error::string("seed data: invalid rupee worker hired_on date")
                     })?,
             )
@@ -683,7 +685,8 @@ pub async fn seed_profile(
         let raw: serde_json::Value =
             serde_json::from_str(value).map_err(|e| Error::Message(e.to_string()))?;
         let value = crate::rules::jurisdiction::validate(key, &raw).map_err(Error::Message)?;
-        let from = chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d")
+        let from = from
+            .parse::<Date>()
             .map_err(|e| Error::Message(e.to_string()))?;
         sqlx::query!(
             "INSERT INTO jurisdiction_parameters (pid, organization_ref, code, key, value, effective_from, source, status)
@@ -693,7 +696,7 @@ pub async fn seed_profile(
             code,
             key,
             serde_json::to_value(value).unwrap_or_default(),
-            from,
+            SqlDate(from),
             source,
         )
         .execute(&mut *connection)
@@ -729,7 +732,7 @@ mod tests {
                     crate::rules::jurisdiction::validate(key, &raw).is_ok(),
                     "{key}"
                 );
-                assert!(chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d").is_ok());
+                assert!(from.parse::<Date>().is_ok());
                 assert!(
                     source.contains("not read"),
                     "an example says it was not read: {key}"
@@ -748,7 +751,7 @@ mod tests {
             flexible_working as fw, pay_assessment as pa, pay_information as pi,
         };
         use crate::rules::jurisdiction::{Layer, Link, Row, Status};
-        let as_of = chrono::NaiveDate::from_ymd_opt(2026, 10, 31).unwrap();
+        let as_of = crate::dates::ymd(2026, 10, 31).unwrap();
         for (profile, start) in [(example_profile_eu(), "EU"), (example_profile_gb(), "GB")] {
             let rows: Vec<Row> = profile
                 .rows
@@ -762,7 +765,7 @@ mod tests {
                         &serde_json::from_str(value).unwrap(),
                     )
                     .unwrap(),
-                    effective_from: chrono::NaiveDate::parse_from_str(from, "%Y-%m-%d").unwrap(),
+                    effective_from: from.parse::<Date>().unwrap(),
                     effective_to: None,
                     source: (*source).into(),
                     status: Status::Example,

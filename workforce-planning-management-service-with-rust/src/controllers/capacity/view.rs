@@ -3,10 +3,12 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 
 /// Everything the view and the start check work from, for one organization.
 pub(crate) struct OrgCapacity {
-    pub(crate) months: Vec<NaiveDate>,
+    pub(crate) months: Vec<Date>,
     pub(crate) pools: Vec<skill_pools::Model>,
     pub(crate) views: BTreeMap<String, rules::PoolView>,
     pub(crate) demand: BTreeMap<String, Vec<rules::Demand>>,
@@ -24,7 +26,7 @@ fn commitments_of(rows: &[partner_commitments::Model], pool: Uuid) -> Vec<rules:
         .filter_map(|c| {
             Some(rules::Commitment {
                 partner: c.partner_ref.clone(),
-                month: c.month,
+                month: c.month.get(),
                 fte_centi: c.fte_centi,
                 status: rules::CommitmentStatus::parse(&c.status)?,
             })
@@ -42,7 +44,7 @@ pub(super) fn parse_demand_rows(rows: &[programme_demands::Model]) -> Vec<rules:
         .filter_map(|r| {
             Some(rules::Demand {
                 programme: r.programme_ref.clone(),
-                month: r.month,
+                month: r.month.get(),
                 fte_centi: r.fte_centi,
                 status: rules::DemandStatus::parse(&r.status)?,
             })
@@ -90,22 +92,22 @@ pub(super) fn held_by(members: &[rules::Member]) -> Held {
 async fn weighted_days(
     ctx: &AppContext,
     org: &str,
-    months: &[NaiveDate],
+    months: &[Date],
     members_by_pool: &[Vec<rules::Member>],
 ) -> Result<(Vec<Vec<i64>>, Vec<Vec<usize>>)> {
     let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
     let mut heads = vec![vec![0_usize; months.len()]; members_by_pool.len()];
-    let firsts: Vec<NaiveDate> = months.iter().map(|m| rules::month_start(*m)).collect();
-    let lasts: Vec<NaiveDate> = firsts
+    let firsts: Vec<Date> = months.iter().map(|m| rules::month_start(*m)).collect();
+    let lasts: Vec<Date> = firsts
         .iter()
         .map(|first| {
             first
-                .checked_add_days(chrono::Days::new(
-                    u64::try_from(rules::days_in_month(*first) - 1).unwrap_or(30),
-                ))
+                .checked_add(jiff::Span::new().days(rules::days_in_month(*first) - 1))
                 .unwrap_or(*first)
         })
         .collect();
+    let sql_firsts: Vec<SqlDate> = firsts.iter().copied().map(SqlDate).collect();
+    let sql_lasts: Vec<SqlDate> = lasts.iter().copied().map(SqlDate).collect();
     for ((members, sums), counts) in members_by_pool
         .iter()
         .zip(weighted.iter_mut())
@@ -149,8 +151,8 @@ async fn weighted_days(
              FROM span s LEFT JOIN away a ON a.pid = s.pid AND a.first = s.first
              GROUP BY s.first"#,
             org,
-            &firsts,
-            &lasts,
+            &sql_firsts,
+            &sql_lasts,
             &held.roles,
             &held.skills,
             &held.minimums,
@@ -170,7 +172,7 @@ async fn weighted_days(
 pub(crate) async fn load_org_capacity(
     ctx: &AppContext,
     org: &str,
-    from: NaiveDate,
+    from: Date,
     count: u32,
 ) -> Result<OrgCapacity> {
     let months = rules::months(from, count).map_err(|e| unprocessable(&e))?;
@@ -281,7 +283,7 @@ pub(super) fn cell_json(cell: &rules::Cell) -> serde_json::Value {
 #[derive(Debug, Deserialize)]
 pub(super) struct ViewQuery {
     organization: Option<String>,
-    from: Option<NaiveDate>,
+    from: Option<Date>,
     pub(super) months: Option<u32>,
 }
 
@@ -291,7 +293,7 @@ pub(super) struct ViewQuery {
 pub(crate) async fn pack_view(
     ctx: &AppContext,
     org: &str,
-    from: NaiveDate,
+    from: Date,
 ) -> Result<serde_json::Value> {
     let capacity = load_org_capacity(ctx, org, from, DEFAULT_MONTHS).await?;
     let constraint = constraint_of(&capacity).and_then(|key| {

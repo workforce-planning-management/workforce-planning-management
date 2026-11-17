@@ -2,15 +2,15 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub run_pid: Uuid,
@@ -22,5 +22,5 @@ pub struct Model {
     pub statutory_overtime_minor: i64,
     pub employer_cost_minor: i64,
     pub employer_costs: Value,
-    pub deleted_at: Option<DateTime<FixedOffset>>,
+    pub deleted_at: Option<SqlTimestamp>,
 }

@@ -3,9 +3,10 @@
 //! the list says where each record stands today. WPM records the fact and its expiry. It never decides that an organization is covered,
 //! pays nothing and adjudicates nothing. The standing arithmetic is `rules::coverage_evidence`. Spec: `spec/statutory-pay-protections.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -18,8 +19,13 @@ use crate::models::_entities::coverage_evidence;
 use crate::rules::coverage_evidence as rules;
 
 /// A record as the API shows it, with its standing on `today`.
-fn row_json(r: &coverage_evidence::Model, today: NaiveDate, window: i64) -> Value {
-    let standing = rules::standing(r.valid_from, r.valid_to, today, window);
+fn row_json(r: &coverage_evidence::Model, today: Date, window: i64) -> Value {
+    let standing = rules::standing(
+        r.valid_from.map(SqlDate::get),
+        r.valid_to.map(SqlDate::get),
+        today,
+        window,
+    );
     json!({
         "pid": r.pid, "organization_ref": r.organization_ref, "jurisdiction": r.jurisdiction, "kind": r.kind,
         "insurer": r.insurer, "policy_reference": r.policy_reference,
@@ -49,7 +55,7 @@ async fn list(
     Query(q): Query<ListQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let window = q
         .days
         .filter(|d| (1..=366).contains(d))
@@ -84,8 +90,8 @@ struct CreatePayload {
     policy_reference: Option<String>,
     minimum_cover_minor: Option<i64>,
     currency: Option<String>,
-    valid_from: Option<NaiveDate>,
-    valid_to: Option<NaiveDate>,
+    valid_from: Option<Date>,
+    valid_to: Option<Date>,
     /// Where the certificate is kept: a reference, never the document.
     certificate_ref: Option<String>,
 }
@@ -150,8 +156,8 @@ async fn create(
         policy,
         p.minimum_cover_minor,
         currency,
-        p.valid_from,
-        p.valid_to,
+        p.valid_from.map(SqlDate),
+        p.valid_to.map(SqlDate),
         certificate,
         caller.actor(),
     )
@@ -186,7 +192,9 @@ async fn retire(
     .await?
     .ok_or(Error::NotFound)?;
     ensure_hr(&ctx, &caller, &record.organization_ref).await?;
-    let on = record.retired_on.unwrap_or_else(|| Utc::now().date_naive());
+    let on = record
+        .retired_on
+        .unwrap_or_else(|| SqlDate(crate::dates::today()));
     if record.retired_on.is_none() {
         let mut tx = pool(&ctx).begin().await?;
         sqlx::query!(

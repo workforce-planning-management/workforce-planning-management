@@ -8,12 +8,13 @@
 //! and the published reason. No level, criterion or threshold ships in code; the seed task adds a
 //! scale labelled synthetic. Everything is scoped to the organization and every write is audited.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Datelike;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -218,7 +219,7 @@ async fn delete_level(
 struct PositionPayload {
     organization_ref: String,
     level_pid: Uuid,
-    effective_on: chrono::NaiveDate,
+    effective_on: Date,
     deciding_body: String,
     reason: String,
 }
@@ -253,7 +254,7 @@ async fn record_position(
         Uuid::new_v4(),
         p.organization_ref,
         level.pid,
-        p.effective_on,
+        SqlDate(p.effective_on),
         p.deciding_body,
         p.reason,
         caller.actor(),
@@ -511,7 +512,7 @@ async fn delete_measure(
 #[derive(Debug, Deserialize)]
 struct ReadingPayload {
     /// Any day of the month; the reading is for that whole month.
-    period_on: chrono::NaiveDate,
+    period_on: Date,
     /// `null` says the data is missing for the month. It is never read as a pass.
     value: Option<i64>,
     evidence: Option<String>,
@@ -544,10 +545,7 @@ async fn put_reading(
     problems.cap_opt("evidence", p.evidence.as_deref());
     problems.cap_opt("source_document", p.source_document.as_deref());
     ensure_valid(&problems.into_vec())?;
-    let month = p
-        .period_on
-        .with_day(1)
-        .ok_or_else(|| unprocessable("period_on is not a date"))?;
+    let month = SqlDate(p.period_on.first_of_month());
     let mut tx = db::pool(&ctx).begin().await?;
     // One reading per measure and month: a second one replaces the first and keeps its pid.
     let row = sqlx::query!(
@@ -593,8 +591,11 @@ pub(super) fn spec_of(m: &measures::Model) -> rules::Spec {
 }
 
 /// The last complete month, as a period number.
-pub(super) fn last_complete_month(today: chrono::NaiveDate) -> i64 {
-    rules::month_period(today.year(), today.month()) - 1
+pub(super) fn last_complete_month(today: Date) -> i64 {
+    rules::month_period(
+        i32::from(today.year()),
+        u32::from(today.month().unsigned_abs()),
+    ) - 1
 }
 
 /// The readings a measure is judged on: entered ones for a reported measure; for a derived one, the
@@ -618,7 +619,10 @@ pub(super) async fn measure_readings(
     .await?
     .into_iter()
     .map(|r| rules::Reading {
-        period: rules::month_period(r.period_on.year(), r.period_on.month()),
+        period: rules::month_period(
+            i32::from(r.period_on.year()),
+            u32::from(r.period_on.month().unsigned_abs()),
+        ),
         value: r.value,
         origin: rules::Origin::Reported,
     })
@@ -630,13 +634,13 @@ pub(super) async fn measure_readings(
 pub(super) async fn current_measures(
     ctx: &AppContext,
     org: &str,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<Vec<measures::Model>> {
     let current = sqlx::query_scalar!(
         "SELECT level_pid FROM oversight_positions WHERE organization_ref = $1 AND effective_on <= $2
           ORDER BY effective_on DESC, id DESC LIMIT 1",
         org,
-        today,
+        SqlDate(today),
     )
     .fetch_optional(db::pool(ctx))
     .await?;
@@ -673,7 +677,7 @@ async fn status(
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     format::json(status_json(&ctx, &org, today).await?)
 }
 
@@ -682,7 +686,7 @@ async fn status(
 pub(super) async fn status_json(
     ctx: &AppContext,
     org: &str,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> Result<serde_json::Value> {
     // The scale by ordinal; an ordinal is unique on an organization's scale, and the id breaks any tie.
     let scale = sqlx::query_as!(

@@ -4,12 +4,11 @@
 //! exact payload a hire or termination event hands to another app, and the overlap question ("which of these people are workers
 //! here?"). The point of putting the payload in one function is that a test can pin its keys, so a field cannot be added by accident.
 
+use entity_ref::{EntityRef, EntityType};
+use jiff::civil::Date;
+use serde_json::{Value, json};
 use std::collections::BTreeSet;
 use std::str::FromStr;
-
-use chrono::NaiveDate;
-use entity_ref::{EntityRef, EntityType};
-use serde_json::{Value, json};
 
 /// The most references one overlap call may carry.
 pub const OVERLAP_MAX: usize = 500;
@@ -17,7 +16,7 @@ pub const OVERLAP_MAX: usize = 500;
 /// What a hire or a termination tells another app: who (a `person:` ref), where (an `organization:` ref) and when. Nothing else:
 /// no name, no department, no pay, no worker number.
 #[must_use]
-pub fn handoff_data(person_ref: &str, organization_ref: &str, effective_on: NaiveDate) -> Value {
+pub fn handoff_data(person_ref: &str, organization_ref: &str, effective_on: Date) -> Value {
     json!({
         "person_ref": person_ref,
         "organization_ref": organization_ref,
@@ -64,8 +63,8 @@ mod tests {
     const B: &str = "person:0c4f1e2a-0000-4000-8000-000000000002";
     const ORG: &str = "organization:0c4f1e2a-0000-4000-8000-0000000000aa";
 
-    fn d() -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 10, 28).unwrap()
+    fn d() -> Date {
+        crate::dates::ymd(2026, 10, 28).unwrap()
     }
 
     #[test]

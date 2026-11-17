@@ -1,17 +1,23 @@
 //! Plans (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
+use super::{
+    AppContext, BTreeMap, Deserialize, Error, MaybeAuthUser, PidRef, Problems, Response, Result,
+    State, Uuid, cost_rules, debug_handler, ensure_org_in_scope, ensure_valid, format, memberships,
+    plan_demand_lines, records, rules, unprocessable, workforce_plans,
+};
 #[allow(clippy::wildcard_imports)]
-use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
+use jiff::civil::Date;
 
 /// `POST /api/workforce-plans` body.
 #[derive(Debug, Deserialize)]
 pub(super) struct PlanPayload {
     name: String,
     organization_ref: String,
-    horizon_start: chrono::NaiveDate,
-    horizon_end: chrono::NaiveDate,
+    horizon_start: Date,
+    horizon_end: Date,
     #[serde(default)]
     rationale: Option<String>,
     /// Assumed annual attrition, in basis points (1200 = 12%). Absent ⇒
@@ -88,8 +94,8 @@ pub(super) async fn create_plan(
         pid,
         payload.name.trim(),
         payload.organization_ref,
-        payload.horizon_start,
-        payload.horizon_end,
+        SqlDate(payload.horizon_start),
+        SqlDate(payload.horizon_end),
         payload.rationale,
         payload.attrition_bp,
         payload.budget_minor,

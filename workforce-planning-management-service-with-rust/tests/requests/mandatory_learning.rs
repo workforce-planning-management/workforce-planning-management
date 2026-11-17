@@ -1,7 +1,5 @@
 //! Statutory and mandatory learning (WPM-R170, WPM-D117, WPM-T315): requirements HR adds, completions HR records, the person's status,
 //! `unknown` for a category nobody recorded, a future date refused, and a roll-up that hides a small group and names no one.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -77,27 +75,27 @@ async fn a_requirement_is_checked_against_recorded_completions_and_unknown_is_ne
         assert_eq!(status_of(unrecorded.clone()).await["status"], "unknown");
 
         let completions = format!("/api/learning-requirements/{req}/completions");
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let future = request
             .post(&completions)
-            .json(&json!({ "worker_pid": nurse, "completed_on": today + Duration::days(1) }))
+            .json(&json!({ "worker_pid": nurse, "completed_on": today + workforce_planning_management::dates::days(1) }))
             .await;
         assert_eq!(future.status_code(), 422);
         // 400 days ago is past a 12-month refresher; the latest completion is the one that counts.
         let old = request
             .post(&completions)
-            .json(&json!({ "worker_pid": nurse, "completed_on": today - Duration::days(400), "source": "Provider" }))
+            .json(&json!({ "worker_pid": nurse, "completed_on": today - workforce_planning_management::dates::days(400), "source": "Provider" }))
             .await;
         assert_eq!(old.status_code(), 200, "{}", old.text());
         assert_eq!(status_of(nurse.clone()).await["status"], "expired");
         let recent = request
             .post(&completions)
-            .json(&json!({ "worker_pid": nurse, "completed_on": today - Duration::days(30) }))
+            .json(&json!({ "worker_pid": nurse, "completed_on": today - workforce_planning_management::dates::days(30) }))
             .await;
         assert_eq!(recent.status_code(), 200);
         let now = status_of(nurse.clone()).await;
         assert_eq!(now["status"], "compliant");
-        assert_eq!(now["last_completed_on"], json!(today - Duration::days(30)));
+        assert_eq!(now["last_completed_on"], json!(today - workforce_planning_management::dates::days(30)));
         assert!(now["expires_on"].is_string());
 
         // The requirement is listed, and the roll-up for a group under the floor shows nothing and names no one.
@@ -304,8 +302,8 @@ async fn a_requirement_may_carry_its_own_due_soon_window() {
         let short = short["pid"].as_str().unwrap().to_string();
         let plain = plain["pid"].as_str().unwrap().to_string();
         // Sixty days left on a twelve month refresher: due soon under the default 90, in date under a window of 30.
-        let expires = Utc::now().date_naive() + Duration::days(60);
-        let completed = expires - chrono::Months::new(12);
+        let expires = workforce_planning_management::dates::today() + workforce_planning_management::dates::days(60);
+        let completed = expires - jiff::Span::new().months(12);
         for req in [&short, &plain] {
             let res = request
                 .post(&format!("/api/learning-requirements/{req}/completions"))

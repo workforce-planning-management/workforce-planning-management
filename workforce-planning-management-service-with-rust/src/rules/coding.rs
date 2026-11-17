@@ -5,9 +5,8 @@
 //! code. The most specific subjective rule wins, and two equally specific rules that could match the same assignment are refused
 //! when the second is saved, so the answer never depends on order.
 
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet};
-
-use chrono::NaiveDate;
 
 /// The longest segment.
 pub const SEGMENT_MAX: usize = 20;
@@ -260,15 +259,15 @@ pub struct CostCentre {
     /// The code of its parent, if any.
     pub parent: Option<String>,
     /// The first day it may be used.
-    pub valid_from: NaiveDate,
+    pub valid_from: Date,
     /// The last day it may be used; a cost centre is closed, never deleted.
-    pub valid_to: Option<NaiveDate>,
+    pub valid_to: Option<Date>,
 }
 
 impl CostCentre {
     /// Open on `on`: from its first day to its last, inclusive.
     #[must_use]
-    pub fn open_on(&self, on: NaiveDate) -> bool {
+    pub fn open_on(&self, on: Date) -> bool {
         self.valid_from <= on && self.valid_to.is_none_or(|e| e >= on)
     }
 }
@@ -277,7 +276,7 @@ impl CostCentre {
 ///
 /// # Errors
 /// A sentence saying which.
-pub fn check_open(register: &[CostCentre], code: &str, on: NaiveDate) -> Result<(), String> {
+pub fn check_open(register: &[CostCentre], code: &str, on: Date) -> Result<(), String> {
     match register.iter().find(|c| c.code == code) {
         None => Err(format!("cost centre {code} is not in the register")),
         Some(c) if !c.open_on(on) => Err(format!("cost centre {code} is not open on {on}")),
@@ -314,8 +313,8 @@ pub fn creates_cycle(register: &[CostCentre], code: &str, parent: &str) -> bool 
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn seg(name: &str, length: usize, source: Source) -> Segment {

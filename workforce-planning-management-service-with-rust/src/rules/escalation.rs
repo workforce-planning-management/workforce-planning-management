@@ -3,7 +3,7 @@
 //!
 //! Pure: what may be raised, the three levels, the decisions, and the counts the tolerances view shows.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 
 use crate::rules::tolerance::Rag;
@@ -120,8 +120,8 @@ pub fn clean_note(note: Option<&str>, required: bool) -> Result<Option<String>, 
 
 /// Calendar days from `raised_on` to `today`, never negative.
 #[must_use]
-pub fn days_open(raised_on: NaiveDate, today: NaiveDate) -> i64 {
-    (today - raised_on).num_days().max(0)
+pub fn days_open(raised_on: Date, today: Date) -> i64 {
+    crate::dates::days_between(raised_on, today).max(0)
 }
 
 /// Red dimensions with a tolerance that no open escalation covers: breaches nobody has been asked about.
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn days_open_counts_calendar_days_and_is_never_negative() {
-        let d = |m, day| NaiveDate::from_ymd_opt(2026, m, day).unwrap();
+        let d = |m, day| crate::dates::ymd(2026, m, day).unwrap();
         assert_eq!(days_open(d(10, 1), d(10, 20)), 19);
         assert_eq!(days_open(d(10, 20), d(10, 20)), 0);
         assert_eq!(days_open(d(10, 21), d(10, 20)), 0);

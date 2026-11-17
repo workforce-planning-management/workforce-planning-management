@@ -4,7 +4,7 @@
 //! twice. HR adds the final pay date and a reference to the pay summary, which is a pointer and never an amount. A field not yet
 //! recorded is named as missing, so a gap is never read as a finished record. WPM submits nothing.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::csv::{field, row};
 
@@ -31,10 +31,7 @@ pub fn clean_ref(reference: Option<&str>) -> Result<Option<String>, String> {
 
 /// What the record still lacks.
 #[must_use]
-pub fn missing(
-    final_pay_on: Option<NaiveDate>,
-    pay_summary_ref: Option<&str>,
-) -> Vec<&'static str> {
+pub fn missing(final_pay_on: Option<Date>, pay_summary_ref: Option<&str>) -> Vec<&'static str> {
     let mut gaps = Vec::new();
     if final_pay_on.is_none() {
         gaps.push("final_pay_on");
@@ -49,7 +46,7 @@ pub fn missing(
 ///
 /// # Errors
 /// A sentence saying what is wrong.
-pub fn valid_period(from: NaiveDate, to: NaiveDate) -> Result<(), String> {
+pub fn valid_period(from: Date, to: Date) -> Result<(), String> {
     if to < from {
         return Err("the period ends before it starts".to_string());
     }
@@ -64,11 +61,11 @@ pub struct Line {
     /// Their name.
     pub display_name: String,
     /// The last day, from the leaver record.
-    pub last_day: NaiveDate,
+    pub last_day: Date,
     /// The reason, from the leaver record. `None` is shown blank and is listed as missing.
     pub reason_code: Option<String>,
     /// The final pay date.
-    pub final_pay_on: Option<NaiveDate>,
+    pub final_pay_on: Option<Date>,
     /// The pay summary reference.
     pub pay_summary_ref: Option<String>,
 }
@@ -99,8 +96,8 @@ pub fn to_csv(lines: &[Line]) -> String {
 mod tests {
     use super::*;
 
-    fn day(month: u32, date: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, month, date).expect("a date")
+    fn day(month: u32, date: u32) -> Date {
+        crate::dates::ymd(2026, month, date).expect("a date")
     }
 
     fn line() -> Line {

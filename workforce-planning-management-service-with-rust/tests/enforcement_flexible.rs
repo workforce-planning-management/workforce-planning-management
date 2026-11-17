@@ -147,8 +147,8 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
                 "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
                  VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
         }
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let post = |path: String, token: String, body: Value| {
             let request = &request;
             async move { request.post(&path).add_header("authorization", token).json(&body).await }
@@ -172,7 +172,7 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
             "effect_on_team": "Fridays are quiet", "how_to_manage": "Swap the Friday rota" })).await;
         assert_eq!(first.status_code(), 200);
         let f1 = first.json::<Value>();
-        let expected_by = today.checked_add_months(chrono::Months::new(2)).unwrap().to_string();
+        let expected_by = today.checked_add(jiff::Span::new().months(2)).ok().unwrap().to_string();
         assert_eq!(f1["decide_by"], expected_by.as_str(), "two calendar months by default");
         let r1 = f1["pid"].as_str().unwrap().to_string();
         let second = post("/api/me/flexible-working".into(), me.clone(), json!({ "kind": "place_of_work", "proposed_start": day(60) })).await;

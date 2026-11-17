@@ -4,15 +4,15 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub subscription_pid: Uuid,
@@ -20,11 +20,11 @@ pub struct Model {
     pub kind: String,
     pub subject: String,
     pub data: Option<Value>,
-    pub occurred_at: DateTime<FixedOffset>,
+    pub occurred_at: SqlTimestamp,
     pub status: String,
     pub attempts: i32,
     pub last_status: Option<i32>,
     pub last_error: Option<String>,
-    pub next_attempt_at: Option<DateTime<FixedOffset>>,
-    pub delivered_at: Option<DateTime<FixedOffset>>,
+    pub next_attempt_at: Option<SqlTimestamp>,
+    pub delivered_at: Option<SqlTimestamp>,
 }

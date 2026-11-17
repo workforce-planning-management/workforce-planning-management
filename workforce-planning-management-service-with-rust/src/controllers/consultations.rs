@@ -3,9 +3,10 @@
 //! representative or what was said. The timeline reads the pure rules in `rules::consultation` (a suggestion with its evidence, the deployer's
 //! to confirm) and says whether consultation began in time. HR writes and reads; audited without text. Spec: `spec/worker-unions.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -81,7 +82,7 @@ struct OpenPayload {
     profile: String,
     establishment_size: i32,
     dismissals: i32,
-    earliest_termination_on: NaiveDate,
+    earliest_termination_on: Date,
     topics: Vec<String>,
     document_ref: Option<String>,
 }
@@ -140,7 +141,7 @@ async fn open(
         payload.profile,
         payload.establishment_size,
         payload.dismissals,
-        payload.earliest_termination_on,
+        SqlDate(payload.earliest_termination_on),
         topics,
         payload.document_ref.map(|r| r.trim().to_string()),
         caller.actor(),
@@ -162,7 +163,7 @@ async fn open(
 
 #[derive(Debug, Deserialize)]
 struct BeginPayload {
-    started_on: NaiveDate,
+    started_on: Date,
     document_ref: Option<String>,
 }
 
@@ -177,7 +178,7 @@ async fn begin(
     let row = find(&ctx, &caller, pid).await?;
     let mut problems = rules::begin_problems(
         payload.started_on,
-        Utc::now().date_naive(),
+        crate::dates::today(),
         row.started_on.is_some(),
     );
     if row.outcome != "open" {
@@ -195,7 +196,7 @@ async fn begin(
     sqlx::query!(
         "UPDATE consultations SET started_on = $2, document_ref = COALESCE($3, document_ref) WHERE pid = $1",
         pid,
-        payload.started_on,
+        SqlDate(payload.started_on),
         payload.document_ref.map(|r| r.trim().to_string()),
     )
     .execute(&mut *tx)
@@ -216,7 +217,7 @@ async fn begin(
 #[derive(Debug, Deserialize)]
 struct ClosePayload {
     outcome: String,
-    ended_on: NaiveDate,
+    ended_on: Date,
     agreement_pid: Option<Uuid>,
 }
 
@@ -233,8 +234,8 @@ async fn close(
     let mut problems = rules::close_problems(
         &payload.outcome,
         payload.ended_on,
-        row.started_on,
-        Utc::now().date_naive(),
+        row.started_on.map(SqlDate::get),
+        crate::dates::today(),
         payload.agreement_pid.is_some(),
     );
     if row.outcome != "open" {
@@ -263,7 +264,7 @@ async fn close(
         "UPDATE consultations SET outcome = $2, ended_on = $3, agreement_pid = $4 WHERE pid = $1",
         pid,
         payload.outcome,
-        payload.ended_on,
+        SqlDate(payload.ended_on),
         payload.agreement_pid,
     )
     .execute(&mut *tx)
@@ -291,10 +292,10 @@ async fn timeline(
     Path(pid): Path<Uuid>,
 ) -> Result<Response> {
     let row = find(&ctx, &caller, pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let profile = consult::profile(&row.profile)
         .ok_or_else(|| Error::string("the record names a profile this service does not know"))?;
-    let others: Vec<(NaiveDate, u32)> = sqlx::query!(
+    let others: Vec<(Date, u32)> = sqlx::query!(
         "SELECT earliest_termination_on, dismissals FROM consultations
          WHERE organization_ref = $1 AND establishment = $2 AND pid <> $3 AND outcome <> 'withdrawn'",
         row.organization_ref,
@@ -306,7 +307,7 @@ async fn timeline(
     .into_iter()
     .map(|o| {
         (
-            o.earliest_termination_on,
+            o.earliest_termination_on.get(),
             u32::try_from(o.dismissals).unwrap_or(0),
         )
     })
@@ -326,8 +327,8 @@ async fn timeline(
                 .filter(|o| o.unit_pid == a.unit_pid && o.title == a.title)
                 .map(|o| agreement_rules::Version {
                     version: o.version,
-                    from: o.effective_from,
-                    to: o.effective_to,
+                    from: o.effective_from.get(),
+                    to: o.effective_to.map(SqlDate::get),
                 })
                 .collect();
             agreement_rules::in_force(&same, today) == Some(a.version)
@@ -338,12 +339,12 @@ async fn timeline(
     let proposal = consult::Proposal {
         establishment_size: u32::try_from(row.establishment_size).unwrap_or(0),
         dismissals: u32::try_from(row.dismissals).unwrap_or(0),
-        earliest_termination: row.earliest_termination_on,
+        earliest_termination: row.earliest_termination_on.get(),
         others,
         agreed_period_days: agreed_period,
     };
     let assessment = consult::assess(&profile, &proposal, today);
-    let timeliness = rules::timeliness(&assessment, row.started_on, today);
+    let timeliness = rules::timeliness(&assessment, row.started_on.map(SqlDate::get), today);
     format::json(json!({
         "consultation": json_of(&row),
         "assessment": {

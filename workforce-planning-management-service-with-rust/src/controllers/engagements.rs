@@ -10,7 +10,7 @@
 use super::writable_worker;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -23,6 +23,7 @@ use crate::models::_entities::{
 };
 use crate::models::{memberships, records};
 use crate::rules::engagement as rules;
+use crate::sql_time::SqlDate;
 use crate::validation::Problems;
 
 fn extension_json(row: &engagement_extensions::Model) -> serde_json::Value {
@@ -59,7 +60,7 @@ async fn get_engagement(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let extensions = extensions_of(&ctx, worker.pid).await?;
     let decisions = decisions_of(&ctx, worker.pid).await?;
     // A decision settles the end date it was made for; an extension gives a new date and so a new question.
@@ -69,7 +70,7 @@ async fn get_engagement(
     let standing = rules::Basis::parse(&worker.employment_type).map(|basis| {
         rules::standing(
             basis,
-            worker.engagement_ends_on,
+            worker.engagement_ends_on.map(SqlDate::get),
             today,
             rules::DEFAULT_WINDOW_CALENDAR_DAYS,
             current.is_some(),
@@ -145,7 +146,7 @@ async fn decide(
         ends_on,
         payload.decision,
         caller.actor(),
-        Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
     )
     .execute(&mut *tx)
     .await?;
@@ -166,7 +167,7 @@ async fn decide(
 /// `POST …/engagement/extensions` body.
 #[derive(Debug, Deserialize)]
 struct ExtensionPayload {
-    new_end: NaiveDate,
+    new_end: Date,
     #[serde(default)]
     reason: Option<String>,
 }
@@ -188,7 +189,7 @@ async fn extend(
     if worker.terminated_on.is_some() {
         return Err(unprocessable("the worker's employment has ended"));
     }
-    let previous = worker.engagement_ends_on.ok_or_else(|| {
+    let previous = worker.engagement_ends_on.map(SqlDate::get).ok_or_else(|| {
         unprocessable("the engagement has no end date to extend; record one first")
     })?;
     rules::validate_extension(previous, payload.new_end).map_err(|e| unprocessable(&e))?;
@@ -201,8 +202,8 @@ async fn extend(
                      new_end, reason, decided_by"#,
         Uuid::new_v4(),
         worker.pid,
-        previous,
-        payload.new_end,
+        SqlDate(previous),
+        SqlDate(payload.new_end),
         payload.reason.clone().filter(|r| !r.trim().is_empty()),
         caller.actor(),
     )
@@ -211,7 +212,7 @@ async fn extend(
     sqlx::query!(
         "UPDATE workers SET engagement_ends_on = $2 WHERE id = $1",
         worker.id,
-        payload.new_end,
+        SqlDate(payload.new_end),
     )
     .execute(&mut *tx)
     .await?;
@@ -427,7 +428,7 @@ struct AssessmentPayload {
     outcome: String,
     /// Default today; not in the future.
     #[serde(default)]
-    assessed_on: Option<NaiveDate>,
+    assessed_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/engagement/status-assessments` — record an assessment of a
@@ -449,7 +450,7 @@ async fn record_assessment(
     let mut problems = Problems::new();
     problems.require_token("outcome", rules::STATUS_OUTCOMES, &payload.outcome);
     ensure_valid(&problems.into_vec())?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let on = payload.assessed_on.unwrap_or(today);
     if on > today {
         return Err(unprocessable("assessed_on must not be in the future"));
@@ -462,7 +463,7 @@ async fn record_assessment(
         pid,
         worker.pid,
         payload.outcome,
-        on,
+        SqlDate(on),
         caller.actor(),
     )
     .execute(&mut *tx)

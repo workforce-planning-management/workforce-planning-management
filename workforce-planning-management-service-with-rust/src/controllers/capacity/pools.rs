@@ -3,7 +3,9 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
+use jiff::Timestamp;
 
 /// `POST /api/skill-pools` and `PUT /api/skill-pools/{pid}` body.
 #[derive(Debug, Deserialize)]
@@ -134,7 +136,7 @@ pub(super) async fn delete_pool(
     sqlx::query!(
         "UPDATE skill_pools SET deleted_at = $2 WHERE id = $1",
         pool.id,
-        Utc::now()
+        SqlTimestamp(Timestamp::now())
     )
     .execute(&mut *tx)
     .await?;
@@ -326,7 +328,7 @@ pub(super) async fn remove_member(
          RETURNING pid",
         records::parse_pid(&member_pid)?,
         pool.pid,
-        Utc::now(),
+        SqlTimestamp(Timestamp::now()),
     )
     .fetch_optional(&mut *tx)
     .await?

@@ -8,9 +8,8 @@
 //! unverified**: an employer confirms a region against its government's published list before relying on it, and a day the pack does
 //! not know is added by hand. Regional and local days (a Scottish or a state holiday, a one-off royal event) are not in any pack.
 
+use jiff::{civil::Date, civil::Weekday};
 use std::collections::BTreeSet;
-
-use chrono::{Datelike, Days, NaiveDate, Weekday};
 
 /// How a holiday's date is found in a year.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,7 +67,8 @@ pub enum Weekend {
 }
 
 /// A Saturday and Sunday weekend, the shape of the three Western example packs (not a default: [`generate`] always takes one).
-pub const SATURDAY_SUNDAY: &[Weekday] = &[Weekday::Sat, Weekday::Sun];
+pub const SATURDAY_SUNDAY: &[Weekday] =
+    &[jiff::civil::Weekday::Saturday, jiff::civil::Weekday::Sunday];
 
 /// The weekend from ISO weekday numbers (1 Monday to 7 Sunday), as `holidays.weekend_days` stores them. `None` for a number out of
 /// range.
@@ -76,13 +76,13 @@ pub const SATURDAY_SUNDAY: &[Weekday] = &[Weekday::Sat, Weekday::Sun];
 pub fn weekend_from_iso(days: &[u8]) -> Option<Vec<Weekday>> {
     days.iter()
         .map(|n| match n {
-            1 => Some(Weekday::Mon),
-            2 => Some(Weekday::Tue),
-            3 => Some(Weekday::Wed),
-            4 => Some(Weekday::Thu),
-            5 => Some(Weekday::Fri),
-            6 => Some(Weekday::Sat),
-            7 => Some(Weekday::Sun),
+            1 => Some(jiff::civil::Weekday::Monday),
+            2 => Some(jiff::civil::Weekday::Tuesday),
+            3 => Some(jiff::civil::Weekday::Wednesday),
+            4 => Some(jiff::civil::Weekday::Thursday),
+            5 => Some(jiff::civil::Weekday::Friday),
+            6 => Some(jiff::civil::Weekday::Saturday),
+            7 => Some(jiff::civil::Weekday::Sunday),
             _ => None,
         })
         .collect()
@@ -91,7 +91,10 @@ pub fn weekend_from_iso(days: &[u8]) -> Option<Vec<Weekday>> {
 /// The ISO weekday numbers of a weekend, sorted.
 #[must_use]
 pub fn weekend_to_iso(weekend: &[Weekday]) -> Vec<u32> {
-    let mut days: Vec<u32> = weekend.iter().map(Weekday::number_from_monday).collect();
+    let mut days: Vec<u32> = weekend
+        .iter()
+        .map(|w| u32::from(w.to_monday_one_offset().unsigned_abs()))
+        .collect();
     days.sort_unstable();
     days.dedup();
     days
@@ -109,7 +112,7 @@ const fn hijri_leap(year: i64) -> bool {
 
 /// The dates in Gregorian `year` that are `day` `month` in the tabular Islamic calendar (zero, one or two of them).
 #[must_use]
-pub fn hijri_dates(month: u32, day: u32, year: i32) -> Vec<NaiveDate> {
+pub fn hijri_dates(month: u32, day: u32, year: i32) -> Vec<Date> {
     if !(1..=12).contains(&month) || day == 0 {
         return Vec::new();
     }
@@ -127,9 +130,11 @@ pub fn hijri_dates(month: u32, day: u32, year: i32) -> Vec<NaiveDate> {
         })
         .filter_map(|hijri_year| {
             let days_from_ce = i32::try_from(hijri_jdn(hijri_year, month, day) - 1_721_425).ok()?;
-            NaiveDate::from_num_days_from_ce_opt(days_from_ce)
+            // day 1 is 1 January of year 1
+            let after_epoch = jiff::Span::new().try_days(days_from_ce - 1).ok()?;
+            jiff::civil::date(1, 1, 1).checked_add(after_epoch).ok()
         })
-        .filter(|date| date.year() == year)
+        .filter(|date| i32::from(date.year()) == year)
         .collect()
 }
 
@@ -150,15 +155,15 @@ pub struct Holiday {
     /// The holiday's name.
     pub name: &'static str,
     /// The date the rule gives.
-    pub natural_on: NaiveDate,
+    pub natural_on: Date,
     /// The day it is taken: the same, or the substitute when the natural date is a weekend. May be in the adjoining year.
-    pub observed_on: NaiveDate,
+    pub observed_on: Date,
 }
 
-/// Easter Sunday in the Gregorian calendar (the anonymous Gregorian algorithm). `None` outside the years chrono can hold.
+/// Easter Sunday in the Gregorian calendar (the anonymous Gregorian algorithm). `None` outside the years jiff can hold.
 #[must_use]
 #[allow(clippy::many_single_char_names)] // the published algorithm's own names
-pub fn easter(year: i32) -> Option<NaiveDate> {
+pub fn easter(year: i32) -> Option<Date> {
     let a = year % 19;
     let b = year / 100;
     let c = year % 100;
@@ -173,22 +178,24 @@ pub fn easter(year: i32) -> Option<NaiveDate> {
     let m = (a + 11 * h + 22 * l) / 451;
     let month = (h + l - 7 * m + 114) / 31;
     let day = (h + l - 7 * m + 114) % 31 + 1;
-    NaiveDate::from_ymd_opt(year, u32::try_from(month).ok()?, u32::try_from(day).ok()?)
+    crate::dates::ymd(year, u32::try_from(month).ok()?, u32::try_from(day).ok()?)
 }
 
-fn nth_weekday(year: i32, month: u32, weekday: Weekday, n: u32) -> Option<NaiveDate> {
-    NaiveDate::from_weekday_of_month_opt(year, month, weekday, u8::try_from(n).ok()?)
+fn nth_weekday(year: i32, month: u32, weekday: Weekday, n: u32) -> Option<Date> {
+    crate::dates::ymd(year, month, 1)?
+        .nth_weekday_of_month(i8::try_from(n).ok()?, weekday)
+        .ok()
 }
 
-fn last_weekday(year: i32, month: u32, weekday: Weekday) -> Option<NaiveDate> {
+fn last_weekday(year: i32, month: u32, weekday: Weekday) -> Option<Date> {
     let first_next = if month == 12 {
-        NaiveDate::from_ymd_opt(year + 1, 1, 1)?
+        crate::dates::ymd(year + 1, 1, 1)?
     } else {
-        NaiveDate::from_ymd_opt(year, month + 1, 1)?
+        crate::dates::ymd(year, month + 1, 1)?
     };
-    let mut d = first_next.checked_sub_days(Days::new(1))?;
+    let mut d = first_next.checked_sub(jiff::Span::new().days(1)).ok()?;
     while d.weekday() != weekday {
-        d = d.checked_sub_days(Days::new(1))?;
+        d = d.checked_sub(jiff::Span::new().days(1)).ok()?;
     }
     Some(d)
 }
@@ -196,58 +203,52 @@ fn last_weekday(year: i32, month: u32, weekday: Weekday) -> Option<NaiveDate> {
 /// The date a rule gives in `year`, before any weekend policy. `None` for a date that does not exist (29 February in a common year);
 /// for a [`When::Hijri`] rule, the first of the year's dates (see [`natural_dates`]).
 #[must_use]
-pub fn natural_date(when: When, year: i32) -> Option<NaiveDate> {
+pub fn natural_date(when: When, year: i32) -> Option<Date> {
     natural_dates(when, year).into_iter().next()
 }
 
 /// Every date a rule gives in `year`, before any weekend policy: one for a Gregorian rule, zero to two for a [`When::Hijri`] one.
 #[must_use]
-pub fn natural_dates(when: When, year: i32) -> Vec<NaiveDate> {
+pub fn natural_dates(when: When, year: i32) -> Vec<Date> {
     match when {
-        When::Fixed { month, day } => NaiveDate::from_ymd_opt(year, month, day)
-            .into_iter()
-            .collect(),
+        When::Fixed { month, day } => crate::dates::ymd(year, month, day).into_iter().collect(),
         When::Nth { month, weekday, n } => {
             nth_weekday(year, month, weekday, n).into_iter().collect()
         }
         When::Last { month, weekday } => last_weekday(year, month, weekday).into_iter().collect(),
         When::Easter { offset } => easter(year)
-            .and_then(|e| e.checked_add_signed(chrono::Duration::days(offset)))
+            .and_then(|e| e.checked_add(jiff::Span::new().try_days(offset).ok()?).ok())
             .into_iter()
             .collect(),
         When::Hijri { month, day } => hijri_dates(month, day, year),
     }
 }
 
-fn is_weekend(d: NaiveDate, weekend: &[Weekday]) -> bool {
+fn is_weekend(d: Date, weekend: &[Weekday]) -> bool {
     weekend.contains(&d.weekday())
 }
 
-fn next_free_weekday(
-    from: NaiveDate,
-    taken: &BTreeSet<NaiveDate>,
-    weekend: &[Weekday],
-) -> Option<NaiveDate> {
+fn next_free_weekday(from: Date, taken: &BTreeSet<Date>, weekend: &[Weekday]) -> Option<Date> {
     // At most six weekend days, so a working day is found within a week; a full-week weekend has none.
     if weekend_to_iso(weekend).len() >= 7 {
         return None;
     }
     let mut d = from;
     loop {
-        d = d.checked_add_days(Days::new(1))?;
+        d = d.checked_add(jiff::Span::new().days(1)).ok()?;
         if !is_weekend(d, weekend) && !taken.contains(&d) {
             return Some(d);
         }
     }
 }
 
-fn nearest_working_day(from: NaiveDate, weekend: &[Weekday]) -> Option<NaiveDate> {
+fn nearest_working_day(from: Date, weekend: &[Weekday]) -> Option<Date> {
     (1..7).find_map(|step| {
-        let before = from.checked_sub_days(Days::new(step))?;
+        let before = from.checked_sub(jiff::Span::new().days(step)).ok()?;
         if !is_weekend(before, weekend) {
             return Some(Some(before));
         }
-        let after = from.checked_add_days(Days::new(step))?;
+        let after = from.checked_add(jiff::Span::new().days(step)).ok()?;
         (!is_weekend(after, weekend)).then_some(Some(after))
     })?
 }
@@ -257,11 +258,11 @@ fn nearest_working_day(from: NaiveDate, weekend: &[Weekday]) -> Option<NaiveDate
 /// holiday.
 #[must_use]
 pub fn generate(rules: &[Rule], year: i32, weekend: &[Weekday]) -> Vec<Holiday> {
-    let dated: Vec<(&Rule, NaiveDate)> = rules
+    let dated: Vec<(&Rule, Date)> = rules
         .iter()
         .flat_map(|r| natural_dates(r.when, year).into_iter().map(move |d| (r, d)))
         .collect();
-    let mut taken: BTreeSet<NaiveDate> = dated
+    let mut taken: BTreeSet<Date> = dated
         .iter()
         .filter(|(r, d)| !is_weekend(*d, weekend) || r.weekend == Weekend::Stays)
         .map(|(_, d)| *d)
@@ -290,13 +291,13 @@ pub fn generate(rules: &[Rule], year: i32, weekend: &[Weekday]) -> Vec<Holiday> 
 
 /// Whether `date` is taken as a holiday in the list.
 #[must_use]
-pub fn is_holiday(holidays: &[Holiday], date: NaiveDate) -> bool {
+pub fn is_holiday(holidays: &[Holiday], date: Date) -> bool {
     holidays.iter().any(|h| h.observed_on == date)
 }
 
 /// A business day: not one of the `weekend` days and not a holiday in the list.
 #[must_use]
-pub fn is_business_day(holidays: &[Holiday], date: NaiveDate, weekend: &[Weekday]) -> bool {
+pub fn is_business_day(holidays: &[Holiday], date: Date, weekend: &[Weekday]) -> bool {
     !is_weekend(date, weekend) && !is_holiday(holidays, date)
 }
 
@@ -367,9 +368,9 @@ pub const PACKS: &[Pack] = &[
             fixed("New Year's Day", 1, 1, Weekend::NextWeekday),
             easter_day("Good Friday", -2),
             easter_day("Easter Monday", 1),
-            nth("Early May bank holiday", 5, Weekday::Mon, 1),
-            last("Spring bank holiday", 5, Weekday::Mon),
-            last("Summer bank holiday", 8, Weekday::Mon),
+            nth("Early May bank holiday", 5, jiff::civil::Weekday::Monday, 1),
+            last("Spring bank holiday", 5, jiff::civil::Weekday::Monday),
+            last("Summer bank holiday", 8, jiff::civil::Weekday::Monday),
             fixed("Christmas Day", 12, 25, Weekend::NextWeekday),
             fixed("Boxing Day", 12, 26, Weekend::NextWeekday),
         ],
@@ -381,15 +382,20 @@ pub const PACKS: &[Pack] = &[
         verified: false,
         rules: &[
             fixed("New Year's Day", 1, 1, Weekend::Nearest),
-            nth("Birthday of Martin Luther King, Jr.", 1, Weekday::Mon, 3),
-            nth("Washington's Birthday", 2, Weekday::Mon, 3),
-            last("Memorial Day", 5, Weekday::Mon),
+            nth(
+                "Birthday of Martin Luther King, Jr.",
+                1,
+                jiff::civil::Weekday::Monday,
+                3,
+            ),
+            nth("Washington's Birthday", 2, jiff::civil::Weekday::Monday, 3),
+            last("Memorial Day", 5, jiff::civil::Weekday::Monday),
             fixed("Juneteenth", 6, 19, Weekend::Nearest),
             fixed("Independence Day", 7, 4, Weekend::Nearest),
-            nth("Labor Day", 9, Weekday::Mon, 1),
-            nth("Columbus Day", 10, Weekday::Mon, 2),
+            nth("Labor Day", 9, jiff::civil::Weekday::Monday, 1),
+            nth("Columbus Day", 10, jiff::civil::Weekday::Monday, 2),
             fixed("Veterans Day", 11, 11, Weekend::Nearest),
-            nth("Thanksgiving Day", 11, Weekday::Thu, 4),
+            nth("Thanksgiving Day", 11, jiff::civil::Weekday::Thursday, 4),
             fixed("Christmas Day", 12, 25, Weekend::Nearest),
         ],
     },
@@ -414,7 +420,7 @@ pub const PACKS: &[Pack] = &[
         region: "SA",
         name: "Saudi Arabia (example of another shape)",
         verified: false,
-        weekend: &[Weekday::Fri, Weekday::Sat],
+        weekend: &[jiff::civil::Weekday::Friday, jiff::civil::Weekday::Saturday],
         rules: &[
             fixed("Founding Day", 2, 22, Weekend::Stays),
             hijri("Eid al-Fitr", 10, 1),
@@ -461,11 +467,11 @@ pub fn region_problems(region: &str) -> Vec<String> {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn dates(region: &str, year: i32) -> Vec<(String, NaiveDate, NaiveDate)> {
+    fn dates(region: &str, year: i32) -> Vec<(String, Date, Date)> {
         generate(
             pack(region).unwrap().rules,
             year,
@@ -476,7 +482,7 @@ mod tests {
         .collect()
     }
 
-    fn observed(region: &str, year: i32) -> Vec<NaiveDate> {
+    fn observed(region: &str, year: i32) -> Vec<Date> {
         generate(
             pack(region).unwrap().rules,
             year,
@@ -630,7 +636,7 @@ mod tests {
             natural_date(
                 When::Nth {
                     month: 2,
-                    weekday: Weekday::Mon,
+                    weekday: jiff::civil::Weekday::Monday,
                     n: 5
                 },
                 2026
@@ -646,7 +652,7 @@ mod tests {
             natural_date(
                 When::Last {
                     month: 12,
-                    weekday: Weekday::Fri
+                    weekday: jiff::civil::Weekday::Friday
                 },
                 2027
             ),
@@ -656,7 +662,7 @@ mod tests {
             natural_date(
                 When::Last {
                     month: 8,
-                    weekday: Weekday::Mon
+                    weekday: jiff::civil::Weekday::Monday
                 },
                 2026
             ),
@@ -666,7 +672,7 @@ mod tests {
             natural_date(
                 When::Last {
                     month: 5,
-                    weekday: Weekday::Mon
+                    weekday: jiff::civil::Weekday::Monday
                 },
                 2026
             ),
@@ -687,7 +693,7 @@ mod tests {
         );
         assert!(is_business_day(&h, d(2026, 4, 7), SATURDAY_SUNDAY));
         // Under a Friday and Saturday weekend the Saturday is still off, the Sunday is a business day and the Friday is not.
-        let fri_sat = [Weekday::Fri, Weekday::Sat];
+        let fri_sat = [jiff::civil::Weekday::Friday, jiff::civil::Weekday::Saturday];
         assert!(is_business_day(&[], d(2026, 4, 5), &fri_sat));
         assert!(!is_business_day(&[], d(2026, 4, 10), &fri_sat));
         assert!(
@@ -741,7 +747,7 @@ mod tests {
         // A lunar year is shorter: 1 Muharram falls twice in 2008.
         assert_eq!(hijri_dates(1, 1, 2008).len(), 2);
         // The second month has 29 days; Dhu al-Hijja has 30 only in a leap year (1446 is not one, 1447 is).
-        assert_eq!(hijri_dates(2, 30, 2026), Vec::<NaiveDate>::new());
+        assert_eq!(hijri_dates(2, 30, 2026), Vec::<Date>::new());
         assert!(hijri_leap(1447) && !hijri_leap(1446));
         assert!(hijri_dates(13, 1, 2026).is_empty() && hijri_dates(1, 0, 2026).is_empty());
         // Every Gregorian year from 1970 to 2100 holds each day of a 30-day month at least once or twice, never three times.
@@ -755,7 +761,7 @@ mod tests {
     /// none at all, and `Nearest` takes the nearest working day, the earlier on a tie.
     #[test]
     fn the_weekend_is_a_parameter() {
-        let fri_sat = [Weekday::Fri, Weekday::Sat];
+        let fri_sat = [jiff::civil::Weekday::Friday, jiff::civil::Weekday::Saturday];
         let next = [fixed("Day", 1, 2, Weekend::NextWeekday)]; // 2 January 2026 is a Friday
         assert_eq!(
             generate(&next, 2026, SATURDAY_SUNDAY)[0].observed_on,
@@ -768,7 +774,7 @@ mod tests {
             "the Sunday is the next working day"
         );
         assert_eq!(
-            generate(&next, 2026, &[Weekday::Fri])[0].observed_on,
+            generate(&next, 2026, &[jiff::civil::Weekday::Friday])[0].observed_on,
             d(2026, 1, 3),
             "a Friday-only weekend"
         );
@@ -781,7 +787,7 @@ mod tests {
             fixed("Day", 1, 2, Weekend::Nearest),
             fixed("Other", 1, 3, Weekend::Nearest),
         ];
-        let got: Vec<NaiveDate> = generate(&nearest, 2026, &fri_sat)
+        let got: Vec<Date> = generate(&nearest, 2026, &fri_sat)
             .iter()
             .map(|h| h.observed_on)
             .collect();
@@ -805,11 +811,18 @@ mod tests {
         );
         assert_eq!(
             weekend_from_iso(&[5, 6]),
-            Some(vec![Weekday::Fri, Weekday::Sat])
+            Some(vec![
+                jiff::civil::Weekday::Friday,
+                jiff::civil::Weekday::Saturday
+            ])
         );
         assert_eq!(weekend_from_iso(&[0]), None);
         assert_eq!(
-            weekend_to_iso(&[Weekday::Sun, Weekday::Sat, Weekday::Sun]),
+            weekend_to_iso(&[
+                jiff::civil::Weekday::Sunday,
+                jiff::civil::Weekday::Saturday,
+                jiff::civil::Weekday::Sunday
+            ]),
             [6, 7]
         );
     }

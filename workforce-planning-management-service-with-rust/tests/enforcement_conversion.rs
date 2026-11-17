@@ -116,8 +116,8 @@ async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read
 
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let make = |person: uuid::Uuid, number: &'static str, basis: &'static str, manager_pid: Option<String>| {
             let request = &request;
             let (t, org, end) = (svc.clone(), org.clone(), day(90));

@@ -5,7 +5,7 @@
 //! views and handed in as numbers. A deviation that cannot be worked out is `None`, and `None` is never
 //! green.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 
 /// What is measured.
@@ -124,7 +124,7 @@ pub fn overall(statuses: &[Rag]) -> Rag {
 #[derive(Debug, Clone, Copy)]
 pub struct Line {
     /// The date by which the headcount is wanted.
-    pub target_on: NaiveDate,
+    pub target_on: Date,
     /// What is planned.
     pub planned: i64,
     /// Planned minus projected supply; `None` when no attrition assumption exists. Positive is short.
@@ -134,7 +134,7 @@ pub struct Line {
 /// Time: the most calendar days an unmet line is past its date. `Some(0)` when every known line is
 /// on time or met; `None` when there are no lines or no line's gap is known.
 #[must_use]
-pub fn time_deviation(lines: &[Line], today: NaiveDate) -> Option<i64> {
+pub fn time_deviation(lines: &[Line], today: Date) -> Option<i64> {
     let known: Vec<&Line> = lines.iter().filter(|l| l.gap.is_some()).collect();
     if known.is_empty() {
         return None;
@@ -143,7 +143,7 @@ pub fn time_deviation(lines: &[Line], today: NaiveDate) -> Option<i64> {
         known
             .iter()
             .filter(|l| l.gap.is_some_and(|g| g > 0))
-            .map(|l| (today - l.target_on).num_days())
+            .map(|l| crate::dates::days_between(l.target_on, today))
             .max()
             .unwrap_or(0)
             .max(0),
@@ -187,8 +187,8 @@ pub fn risk_deviation(plans_in_departments: usize, without_bench: usize) -> Opti
 mod tests {
     use super::*;
 
-    fn day(m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, m, d).unwrap()
+    fn day(m: u32, d: u32) -> Date {
+        crate::dates::ymd(2026, m, d).unwrap()
     }
 
     #[test]
@@ -252,7 +252,7 @@ mod tests {
         assert!(validate(10, 100).is_err());
     }
 
-    fn line(target: NaiveDate, planned: i64, gap: Option<i64>) -> Line {
+    fn line(target: Date, planned: i64, gap: Option<i64>) -> Line {
         Line {
             target_on: target,
             planned,

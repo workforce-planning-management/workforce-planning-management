@@ -11,6 +11,8 @@
 //! **aggregate counts only** (WPM-D16 terms), and no manager view
 //! exists at all.
 
+use crate::sql_time::SqlDate;
+use jiff::{Timestamp, civil::Date};
 use std::str::FromStr;
 
 use super::row_json;
@@ -68,9 +70,9 @@ struct EntitlementPayload {
     #[serde(default = "one_dose")]
     doses: i32,
     #[serde(default)]
-    active_from: Option<chrono::NaiveDate>,
+    active_from: Option<Date>,
     #[serde(default)]
-    active_until: Option<chrono::NaiveDate>,
+    active_until: Option<Date>,
 }
 
 fn one_dose() -> i32 {
@@ -139,8 +141,8 @@ async fn create_entitlement(
         serde_json::json!(payload.departments),
         serde_json::json!(payload.job_titles),
         payload.doses,
-        payload.active_from,
-        payload.active_until,
+        payload.active_from.map(SqlDate),
+        payload.active_until.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -206,8 +208,8 @@ struct Survey {
     pid: Uuid,
     name: String,
     question: String,
-    active_from: Option<chrono::NaiveDate>,
-    active_until: Option<chrono::NaiveDate>,
+    active_from: Option<SqlDate>,
+    active_until: Option<SqlDate>,
 }
 
 /// `GET /api/wellbeing-entitlements?kind=` query.
@@ -267,8 +269,8 @@ async fn update_entitlement(
         serde_json::json!(payload.departments),
         serde_json::json!(payload.job_titles),
         payload.doses,
-        payload.active_from,
-        payload.active_until,
+        payload.active_from.map(SqlDate),
+        payload.active_until.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -344,7 +346,7 @@ async fn worker_prompts(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let age = match entity_ref::EntityRef::from_str(&worker.person_ref) {
         Ok(person) => crate::clients::birth_date(&person)
             .await
@@ -387,8 +389,8 @@ async fn worker_prompts(
             max_age: entitlement.max_age,
             departments: &departments,
             job_titles: &job_titles,
-            active_from: entitlement.active_from,
-            active_until: entitlement.active_until,
+            active_from: entitlement.active_from.map(SqlDate::get),
+            active_until: entitlement.active_until.map(SqlDate::get),
         };
         if !rules::eligible(
             &predicates,
@@ -469,7 +471,7 @@ async fn acknowledge(
     .fetch_optional(db::pool(&ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let existing = sqlx::query!(
         "SELECT id, response, reminded_on FROM entitlement_acknowledgements
           WHERE entitlement_pid = $1 AND worker_pid = $2 LIMIT 1",
@@ -497,7 +499,7 @@ async fn acknowledge(
                               entitlement_pid, worker_pid, response, responded_on, reminded_on"#,
                 row.id,
                 payload.response,
-                today,
+                SqlDate(today),
                 answers_reminder,
             )
             .fetch_one(&mut *tx)
@@ -515,7 +517,7 @@ async fn acknowledge(
                 entitlement.pid,
                 worker.pid,
                 payload.response,
-                today,
+                SqlDate(today),
             )
             .fetch_one(&mut *tx)
             .await?
@@ -552,7 +554,7 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     // Live (plan, worker) enrolment pairs, for the conversion terms.
     let live_enrollments: std::collections::HashSet<(Uuid, Uuid)> = sqlx::query!(
         "SELECT plan_pid, worker_pid, ends_on FROM benefit_enrollments WHERE deleted_at IS NULL"
@@ -605,7 +607,7 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
         })
         .collect();
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "derivation": "uptake = (booked + done) / all acknowledgements; enrolment \
                        conversion (plan-linked rules) = acknowledgers now live-enrolled \
                        in the linked plan / distinct acknowledgers; counts only — \
@@ -623,9 +625,9 @@ struct SurveyPayload {
     name: String,
     question: String,
     #[serde(default)]
-    active_from: Option<chrono::NaiveDate>,
+    active_from: Option<Date>,
     #[serde(default)]
-    active_until: Option<chrono::NaiveDate>,
+    active_until: Option<Date>,
 }
 
 /// `POST /api/pulse-surveys` — open a pulse survey (HR configuration;
@@ -655,8 +657,8 @@ async fn create_survey(
         pid,
         payload.name,
         payload.question,
-        payload.active_from,
-        payload.active_until,
+        payload.active_from.map(SqlDate),
+        payload.active_until.map(SqlDate),
     )
     .execute(&mut *tx)
     .await?;
@@ -676,7 +678,7 @@ async fn create_survey(
 /// `GET /api/pulse-surveys` — the surveys, with their open state.
 #[debug_handler]
 async fn list_surveys(State(ctx): State<AppContext>) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let rows = sqlx::query_as!(
         Survey,
         "SELECT pid, name, question, active_from, active_until FROM pulse_surveys
@@ -693,7 +695,7 @@ async fn list_surveys(State(ctx): State<AppContext>) -> Result<Response> {
                 "question": survey.question,
                 "active_from": survey.active_from,
                 "active_until": survey.active_until,
-                "open": pulse::survey_open(survey.active_from, survey.active_until, today),
+                "open": pulse::survey_open(survey.active_from.map(SqlDate::get), survey.active_until.map(SqlDate::get), today),
             })
         })
         .collect();
@@ -730,8 +732,12 @@ async fn submit_response(
     }
     ensure_valid(&problems.into_vec())?;
     let survey = find_survey(&ctx, &pid).await?;
-    let today = chrono::Utc::now().date_naive();
-    if !pulse::survey_open(survey.active_from, survey.active_until, today) {
+    let today = crate::dates::today();
+    if !pulse::survey_open(
+        survey.active_from.map(SqlDate::get),
+        survey.active_until.map(SqlDate::get),
+        today,
+    ) {
         return Err(super::unprocessable("this survey is not open"));
     }
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
@@ -749,7 +755,7 @@ async fn submit_response(
         survey.pid,
         worker.department,
         payload.score,
-        today,
+        SqlDate(today),
     )
     .execute(&mut *tx)
     .await?;
@@ -816,7 +822,7 @@ async fn survey_results(
         .collect();
     let all_scores: Vec<i32> = responses.iter().map(|r| r.score).collect();
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "survey": { "pid": survey.pid, "name": survey.name, "question": survey.question },
         "overall": cell_json(&pulse::aggregate_cell(&all_scores)),
         "departments": departments,

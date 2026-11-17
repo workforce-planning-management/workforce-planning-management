@@ -33,12 +33,17 @@
 // The hand-written OpenAPI document is one large nested `json!` literal.
 #![recursion_limit = "2048"]
 
+// `sqlx.toml` names the row date types by a global path (`::workforce_planning_management::sql_time::…`), which must
+// resolve inside this crate as well as in its tests.
+extern crate self as workforce_planning_management;
+
 pub mod app;
 pub mod auth;
 pub mod clients;
 /// Backward-compatibility shims for the 2026-07-23 `HCM` → `WPM` rename.
 pub mod compat;
 pub mod controllers;
+pub mod dates;
 pub mod db;
 pub mod hardening;
 pub mod idempotency;
@@ -53,6 +58,7 @@ pub mod rules;
 pub mod scheduler;
 pub mod security;
 pub mod shared_cache;
+pub mod sql_time;
 pub mod statutory_defaults;
 pub mod streaming;
 pub mod tasks;

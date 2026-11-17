@@ -71,6 +71,13 @@ URNs (`person:<uuid>`), never duplicated demographics
    OpenAPI/Swagger (`src/openapi.rs` — add every new route), header API
    versioning, **Podman not Docker**, **PostgreSQL not SQLite**, in-memory
    cache. See rust-axum-stack.
+
+   **Dates and times are `jiff`, never `chrono`** (WPM-D202). A rule takes and returns `jiff::Timestamp` (an instant) and
+   `jiff::civil::Date` (a day); `crate::dates` has `today()`, `date_of`, `ymd`, `days_between`, `days(n)` (24-hour days, for a
+   `Timestamp`, which takes no calendar units) and `rfc3339_seconds`. A database row holds `sql_time::SqlTimestamp` or `SqlDate`,
+   which the query macros produce and expect (`sqlx.toml`): read the jiff value with `.get()`, bind with `SqlDate(d)` or
+   `opt.map(SqlDate)`. A nullable date in a `query_as!` struct must be `Option<SqlDate>`, because the macro cannot lift `Into`
+   through `Option`. `chrono` stays only in `scheduler.rs`, at the `cron` crate's edge.
 3. **Pure core first.** Rules live in DB-free, clock-free `src/rules/<area>.rs`
    with exhaustive unit tests (dates and "today" are always supplied);
    controllers only load data, call the rule and write. Write and test the rule

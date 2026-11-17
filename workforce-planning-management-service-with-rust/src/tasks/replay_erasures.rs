@@ -16,7 +16,7 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::{DateTime, NaiveDate};
+use jiff::{Timestamp, civil::Date};
 use uuid::Uuid;
 
 use crate::controllers::privacy::replay_erasures;
@@ -27,9 +27,7 @@ use crate::controllers::privacy::replay_erasures;
 /// # Errors
 ///
 /// The first malformed line.
-pub fn parse_ledger(
-    text: &str,
-) -> std::result::Result<Vec<(Uuid, DateTime<chrono::FixedOffset>)>, String> {
+pub fn parse_ledger(text: &str) -> std::result::Result<Vec<(Uuid, Timestamp)>, String> {
     let mut out = Vec::new();
     for (number, line) in text.lines().enumerate() {
         let line = line.trim();
@@ -43,7 +41,9 @@ pub fn parse_ledger(
             .trim()
             .parse::<Uuid>()
             .map_err(|e| format!("line {}: bad pid: {e}", number + 1))?;
-        let at = DateTime::parse_from_rfc3339(at.trim())
+        let at = at
+            .trim()
+            .parse::<Timestamp>()
             .map_err(|e| format!("line {}: bad time: {e}", number + 1))?;
         out.push((pid, at));
     }
@@ -68,7 +68,7 @@ impl Task for ReplayErasures {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let since = match vars.cli_arg("since") {
             Ok(text) => Some(
-                text.parse::<NaiveDate>()
+                text.parse::<Date>()
                     .map_err(|e| Error::string(&format!("since must be YYYY-MM-DD: {e}")))?,
             ),
             Err(_) => None,
@@ -81,7 +81,7 @@ impl Task for ReplayErasures {
                 sqlx::query!(
                     "INSERT INTO erasure_ledger (worker_pid, erased_at) VALUES ($1, $2) ON CONFLICT DO NOTHING",
                     pid,
-                    at,
+                    crate::sql_time::SqlTimestamp(*at),
                 )
                 .execute(crate::db::pool(ctx))
                 .await?;
@@ -114,7 +114,7 @@ mod tests {
             entries[0].0.to_string(),
             "11111111-1111-4111-8111-111111111111"
         );
-        assert_eq!(entries[1].1.to_rfc3339(), "2026-10-10T09:30:00+00:00");
+        assert_eq!(entries[1].1.to_string(), "2026-10-10T09:30:00Z");
         assert_eq!(parse_ledger("").unwrap(), vec![]);
     }
 

@@ -3,7 +3,9 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
+use jiff::{Timestamp, civil::Date};
 
 /// The longest event id taken from a peer.
 const MAX_EVENT_ID: usize = 128;
@@ -91,14 +93,14 @@ pub(super) async fn set_peer_link(
 pub(super) struct PeerDemandPayload {
     pool_pid: Uuid,
     programme_ref: String,
-    month: NaiveDate,
+    month: Date,
     /// The figure, in hundredths of an FTE; `0` withdraws the peer's claim (WPM-D146).
     fte_centi: i64,
     /// The peer's id for the event that carried this figure; the same id again for the same pool, programme and month changes nothing.
     peer_event_id: String,
     /// When the peer sent the event (RFC 3339). Optional; when it and the last applied event both carry one, an older event is ignored.
     #[serde(default)]
-    sent_at: Option<chrono::DateTime<chrono::FixedOffset>>,
+    sent_at: Option<Timestamp>,
 }
 
 /// Write what [`rules::peer_demand_outcome`] decided: a new claim, or the existing one changed. Returns the row and whether it had been
@@ -108,16 +110,18 @@ async fn write_peer_claim(
     pool: &skill_pools::Model,
     payload: &PeerDemandPayload,
     event: &str,
-    sent_at: Option<chrono::DateTime<Utc>>,
+    sent_at: Option<Timestamp>,
     existing: Option<programme_demands::Model>,
     outcome: rules::PeerDemandOutcome,
 ) -> Result<(programme_demands::Model, bool)> {
-    let now: chrono::DateTime<chrono::FixedOffset> = Utc::now().into();
+    let now = Timestamp::now();
     if let Some(row) = existing {
         let was_active = row.status == "active";
         let (fte_centi, status, withdrawn_at) = match outcome {
             // The last figure is kept (the column refuses zero); the claim is closed and stops counting.
-            rules::PeerDemandOutcome::Withdrawn => (row.fte_centi, "closed".to_string(), Some(now)),
+            rules::PeerDemandOutcome::Withdrawn => {
+                (row.fte_centi, "closed".to_string(), Some(SqlTimestamp(now)))
+            }
             rules::PeerDemandOutcome::Reopened => (payload.fte_centi, "proposed".to_string(), None),
             rules::PeerDemandOutcome::Updated => {
                 (payload.fte_centi, row.status.clone(), row.peer_withdrawn_at)
@@ -125,7 +129,7 @@ async fn write_peer_claim(
             _ => (row.fte_centi, row.status.clone(), row.peer_withdrawn_at),
         };
         let peer_sent_at = if sent_at.is_some() {
-            payload.sent_at
+            payload.sent_at.map(SqlTimestamp)
         } else {
             row.peer_sent_at
         };
@@ -144,7 +148,7 @@ async fn write_peer_claim(
             status,
             withdrawn_at,
             event,
-            now,
+            SqlTimestamp(now),
             peer_sent_at,
         )
         .fetch_one(tx)
@@ -163,11 +167,11 @@ async fn write_peer_claim(
         Uuid::new_v4(),
         payload.programme_ref,
         pool.pid,
-        payload.month,
+        SqlDate(payload.month),
         payload.fte_centi,
         event,
-        now,
-        payload.sent_at,
+        SqlTimestamp(now),
+        payload.sent_at.map(SqlTimestamp),
     )
     .fetch_one(tx)
     .await?;
@@ -242,7 +246,7 @@ pub(super) async fn receive_peer_demand(
     ensure_valid(&problems)?;
     rules::validate_month(payload.month).map_err(|e| unprocessable(&e))?;
     rules::validate_peer_fte_centi(payload.fte_centi).map_err(|e| unprocessable(&e))?;
-    let sent_at = payload.sent_at.map(|t| t.with_timezone(&Utc));
+    let sent_at = payload.sent_at;
     let pool = live_pool(&ctx, &caller, &payload.pool_pid.to_string()).await?;
     if pool.peer_pool_ref.is_none() {
         return Err(unprocessable(
@@ -259,7 +263,7 @@ pub(super) async fn receive_peer_demand(
           LIMIT 1",
         pool.pid,
         payload.programme_ref,
-        payload.month,
+        SqlDate(payload.month),
         event,
     )
     .fetch_optional(db)
@@ -279,7 +283,7 @@ pub(super) async fn receive_peer_demand(
             WHERE programme_ref = $1 AND pool_pid = $2 AND month = $3 AND source = 'ppm' AND deleted_at IS NULL"#,
         payload.programme_ref,
         pool.pid,
-        payload.month,
+        SqlDate(payload.month),
     )
     .fetch_optional(db)
     .await?;
@@ -288,7 +292,7 @@ pub(super) async fn receive_peer_demand(
         sent_at,
         existing.as_ref().map(|row| rules::PeerClaim {
             withdrawn: row.status == "closed",
-            last_sent_at: row.peer_sent_at.map(|t| t.with_timezone(&Utc)),
+            last_sent_at: row.peer_sent_at.map(SqlTimestamp::get),
         }),
     );
     if !outcome.writes() {
@@ -313,7 +317,7 @@ pub(super) async fn receive_peer_demand(
 #[derive(Debug, Deserialize)]
 pub(super) struct PeerSupplyQuery {
     pool: Uuid,
-    from: Option<NaiveDate>,
+    from: Option<Date>,
     months: Option<u32>,
 }
 
@@ -351,7 +355,7 @@ pub(super) async fn peer_supply_view(
         "pool_pid": pool.pid,
         "peer_pool_ref": peer_pool_ref,
         "source": "wpm",
-        "as_of": Utc::now(),
+        "as_of": Timestamp::now(),
         "floor": crate::rules::pulse::K_ANONYMITY,
         "months": capacity.months.iter().zip(&shown).map(|(month, centi)| json!({
             "month": month,

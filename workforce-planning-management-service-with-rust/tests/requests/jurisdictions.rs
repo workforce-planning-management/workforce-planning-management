@@ -140,14 +140,14 @@ async fn working_time_follows_each_workers_profile() {
 
         // 10 000 minutes in the 28 days to 2026-07-10, for each of the three.
         for who in [&short, &long, &none] {
-            let mut day = chrono::NaiveDate::from_ymd_opt(2026, 6, 20).unwrap();
+            let mut day = workforce_planning_management::dates::ymd(2026, 6, 20).unwrap();
             for _ in 0..10 {
                 request
                     .post(&format!("/api/workers/{who}/time-entries"))
                     .json(&json!({ "worked_on": day, "minutes": 1000 }))
                     .await
                     .assert_status_ok();
-                day += chrono::Duration::days(1);
+                day += workforce_planning_management::dates::days(1);
             }
         }
         let signals: Value = request.get("/api/workforce/working-time?as_of=2026-07-10").await.json();

@@ -7,7 +7,7 @@
 //! too little history the answer is `None` (`insufficient_history`), never
 //! an extrapolation (WPM-D27).
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use crate::rules::lifecycle;
 
@@ -46,8 +46,8 @@ pub fn check_transition(from: &str, to: &str) -> Result<(), String> {
 /// A message naming the offending field.
 pub fn validate_plan(
     name: &str,
-    horizon_start: NaiveDate,
-    horizon_end: NaiveDate,
+    horizon_start: Date,
+    horizon_end: Date,
     attrition_bp: Option<i32>,
 ) -> Result<(), String> {
     if name.trim().is_empty() {
@@ -69,9 +69,9 @@ pub fn validate_plan(
 /// A message naming the offending field.
 pub fn validate_line(
     department: &str,
-    target_on: NaiveDate,
-    horizon_start: NaiveDate,
-    horizon_end: NaiveDate,
+    target_on: Date,
+    horizon_start: Date,
+    horizon_end: Date,
     target_headcount: i32,
 ) -> Result<(), String> {
     if department.trim().is_empty() {
@@ -100,8 +100,8 @@ pub const MAX_DURATION_MONTHS: i32 = 120;
 /// A message naming the offending field.
 pub fn validate_line_basis(
     basis: &str,
-    target_on: NaiveDate,
-    expected_ends_on: Option<NaiveDate>,
+    target_on: Date,
+    expected_ends_on: Option<Date>,
     target_headcount: i32,
     target_fte_percent: Option<i32>,
 ) -> Result<(), String> {
@@ -164,11 +164,13 @@ pub fn validate_requisition_basis(basis: &str, duration_months: Option<i32>) -> 
 /// The last day of an engagement that starts on `hired_on` and runs `months` calendar months: the
 /// day before the same day `months` later. `None` for a start that cannot take the duration.
 #[must_use]
-pub fn end_from_duration(hired_on: NaiveDate, months: i32) -> Option<NaiveDate> {
+pub fn end_from_duration(hired_on: Date, months: i32) -> Option<Date> {
     let months = u32::try_from(months).ok()?;
     hired_on
-        .checked_add_months(chrono::Months::new(months))?
-        .pred_opt()
+        .checked_add(jiff::Span::new().try_months(months).ok()?)
+        .ok()?
+        .yesterday()
+        .ok()
 }
 
 /// One demand line as the forecast sees it.
@@ -244,7 +246,7 @@ pub struct Breakdown {
 #[derive(Debug, Clone, Copy)]
 pub struct Snap {
     /// Snapshot date.
-    pub as_of: NaiveDate,
+    pub as_of: Date,
     /// Employed headcount on that date.
     pub headcount: i64,
     /// Leavers since the previous snapshot; `None` for the first.
@@ -270,7 +272,7 @@ pub fn observed_attrition_bp(snaps: &[Snap]) -> Option<i32> {
     }
     let first = sorted.first()?;
     let last = sorted.last()?;
-    let days = (last.as_of - first.as_of).num_days();
+    let days = crate::dates::days_between(first.as_of, last.as_of);
     if days < MIN_WINDOW_DAYS {
         return None;
     }
@@ -310,7 +312,7 @@ pub struct Person {
     pub fte_percent: i32,
     /// The last day of the engagement; `None` where none is recorded. An extension moves
     /// this date, so a recorded extension is already in it.
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
 }
 
 /// Supply from one basis at the target date.
@@ -372,13 +374,13 @@ fn attrit(opening: i64, attrition_bp: i32, days: i64) -> i64 {
 #[must_use]
 pub fn project_by_basis(
     people: &[Person],
-    as_of: NaiveDate,
-    target: NaiveDate,
+    as_of: Date,
+    target: Date,
     permanent_attrition_bp: Option<i32>,
     attrition_source: &str,
 ) -> Projection {
     use crate::rules::engagement::Basis;
-    let days = (target - as_of).num_days().max(0);
+    let days = crate::dates::days_between(as_of, target).max(0);
     let supply_of = |basis: Basis| -> BasisSupply {
         let group: Vec<&Person> = people.iter().filter(|p| p.basis == basis).collect();
         let opening = i64::try_from(group.len()).unwrap_or(i64::MAX);
@@ -613,7 +615,7 @@ pub fn proficiency_split<'a>(
 mod tests {
     use super::*;
 
-    fn person(basis: crate::rules::engagement::Basis, fte: i32, ends: Option<NaiveDate>) -> Person {
+    fn person(basis: crate::rules::engagement::Basis, fte: i32, ends: Option<Date>) -> Person {
         Person {
             basis,
             fte_percent: fte,
@@ -725,8 +727,8 @@ mod tests {
         assert_eq!(p.permanent.headcount, Some(1));
     }
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     /// Plans are one-way: draft → active → archived.
@@ -769,7 +771,7 @@ mod tests {
         assert!(validate_line("eng", day(2027, 6, 30), a, b, 100_001).is_err());
     }
 
-    fn snap(d: NaiveDate, headcount: i64, leavers: Option<i64>) -> Snap {
+    fn snap(d: Date, headcount: i64, leavers: Option<i64>) -> Snap {
         Snap {
             as_of: d,
             headcount,

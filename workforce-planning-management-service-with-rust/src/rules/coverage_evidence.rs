@@ -4,7 +4,7 @@
 //! A record states a fact and its dates. WPM never decides that an organization is covered or compliant: a record with no end date
 //! is `no_end_date`, never "valid", and a kind that needs no policy (a statutory scheme, an elective choice of none) is said as such.
 
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 
 /// The default reminder window in calendar days.
 pub const DEFAULT_WINDOW_DAYS: i64 = 60;
@@ -49,9 +49,9 @@ impl Standing {
 /// The standing of a record on `today`, with a reminder window of `window_days` calendar days.
 #[must_use]
 pub fn standing(
-    valid_from: Option<NaiveDate>,
-    valid_to: Option<NaiveDate>,
-    today: NaiveDate,
+    valid_from: Option<Date>,
+    valid_to: Option<Date>,
+    today: Date,
     window_days: i64,
 ) -> Standing {
     if valid_from.is_some_and(|from| from > today) {
@@ -63,8 +63,8 @@ pub fn standing(
     if to < today {
         return Standing::Expired;
     }
-    if to <= today + Duration::days(window_days.max(0)) {
-        return Standing::EndingSoon((to - today).num_days());
+    if to <= today + crate::dates::days(window_days.max(0)) {
+        return Standing::EndingSoon(crate::dates::days_between(today, to));
     }
     Standing::InForce
 }
@@ -80,8 +80,8 @@ pub fn problems(
     policy_reference: Option<&str>,
     minimum_cover_minor: Option<i64>,
     currency: Option<&str>,
-    valid_from: Option<NaiveDate>,
-    valid_to: Option<NaiveDate>,
+    valid_from: Option<Date>,
+    valid_to: Option<Date>,
 ) -> Vec<String> {
     let mut out = Vec::new();
     let code_ok = (2..=20).contains(&jurisdiction.len())
@@ -124,8 +124,8 @@ pub fn problems(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]

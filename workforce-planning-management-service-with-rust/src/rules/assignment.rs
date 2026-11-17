@@ -5,9 +5,8 @@
 //! of category, cost centre or FTE ends one assignment and starts another on the effective date. A category that was never
 //! recorded reads `unknown`, never a default. Dates are inclusive at both ends.
 
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet};
-
-use chrono::{Days, NaiveDate};
 
 /// The most FTE a worker's current assignments can add up to in one organization.
 pub const FTE_MAX: i32 = 100;
@@ -26,9 +25,9 @@ pub struct Assignment {
     /// What the contract says, 1 to 100.
     pub fte_percent: i32,
     /// The first day in force.
-    pub starts_on: NaiveDate,
+    pub starts_on: Date,
     /// The last day in force, or none while it continues.
-    pub ends_on: Option<NaiveDate>,
+    pub ends_on: Option<Date>,
     /// Whether this is the worker's primary assignment.
     pub primary: bool,
 }
@@ -36,14 +35,14 @@ pub struct Assignment {
 impl Assignment {
     /// Whether the assignment is in force on `on`.
     #[must_use]
-    pub fn current_on(&self, on: NaiveDate) -> bool {
+    pub fn current_on(&self, on: Date) -> bool {
         self.starts_on <= on && self.ends_on.is_none_or(|e| e >= on)
     }
 }
 
 /// The FTE of the assignments in force on `on`.
 #[must_use]
-pub fn fte_total(assignments: &[Assignment], on: NaiveDate) -> i32 {
+pub fn fte_total(assignments: &[Assignment], on: Date) -> i32 {
     assignments
         .iter()
         .filter(|a| a.current_on(on))
@@ -116,7 +115,7 @@ pub fn fte_problems(existing: &[Assignment], new: &Assignment) -> Vec<String> {
 
 /// Problems with which assignment is primary on `on`: where any are current, exactly one is primary.
 #[must_use]
-pub fn primary_problems(assignments: &[Assignment], on: NaiveDate) -> Vec<String> {
+pub fn primary_problems(assignments: &[Assignment], on: Date) -> Vec<String> {
     let current: Vec<_> = assignments.iter().filter(|a| a.current_on(on)).collect();
     if current.is_empty() {
         return Vec::new();
@@ -135,7 +134,7 @@ pub fn primary_problems(assignments: &[Assignment], on: NaiveDate) -> Vec<String
 ///
 /// # Errors
 /// A sentence saying why the change cannot take effect on that day.
-pub fn end_for_change(old: &Assignment, effective_on: NaiveDate) -> Result<NaiveDate, String> {
+pub fn end_for_change(old: &Assignment, effective_on: Date) -> Result<Date, String> {
     if effective_on <= old.starts_on {
         return Err("the change must take effect after the assignment started".to_string());
     }
@@ -143,7 +142,8 @@ pub fn end_for_change(old: &Assignment, effective_on: NaiveDate) -> Result<Naive
         return Err("the assignment had already ended".to_string());
     }
     effective_on
-        .checked_sub_days(Days::new(1))
+        .checked_sub(jiff::Span::new().days(1))
+        .ok()
         .ok_or_else(|| "the change date is out of range".to_string())
 }
 
@@ -267,11 +267,11 @@ pub fn breakdown<W: Ord + Clone>(rows: &[(W, Option<String>, i32)], floor: usize
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn a(fte: i32, from: NaiveDate, to: Option<NaiveDate>, primary: bool) -> Assignment {
+    fn a(fte: i32, from: Date, to: Option<Date>, primary: bool) -> Assignment {
         Assignment {
             fte_percent: fte,
             starts_on: from,

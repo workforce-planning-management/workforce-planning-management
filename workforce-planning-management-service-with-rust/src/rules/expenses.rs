@@ -7,7 +7,7 @@
 //! units in the claim's single currency: mixed currencies never silently add.
 //! Dates are arguments; nothing here reads a clock.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 
 use super::lifecycle;
 
@@ -79,8 +79,8 @@ pub fn validate_currency(currency: &str) -> Result<(), String> {
 pub fn validate_item(
     category: &str,
     amount_minor: i64,
-    incurred_on: NaiveDate,
-    today: NaiveDate,
+    incurred_on: Date,
+    today: Date,
 ) -> Result<(), String> {
     if !CATEGORIES.contains(&category) {
         return Err(format!(
@@ -126,7 +126,7 @@ pub fn can_submit(item_count: usize) -> Result<(), String> {
 
 /// The identity of an item for duplicate detection: the same day, category and
 /// amount.
-pub type ItemKey<'a> = (NaiveDate, &'a str, i64);
+pub type ItemKey<'a> = (Date, &'a str, i64);
 
 /// Which of `items` look like duplicates — the same day, category and amount as
 /// another item on the claim, or as an item on one of the claimant's `others`.
@@ -184,8 +184,8 @@ pub fn may_decide(s: Standing) -> bool {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     /// The machine: the happy path, withdrawal, and every terminal state stays

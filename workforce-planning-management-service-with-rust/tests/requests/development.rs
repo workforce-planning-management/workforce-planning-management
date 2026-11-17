@@ -160,7 +160,7 @@ async fn expiring_training_lists_certificates_that_lapse_inside_the_horizon() {
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let worker = seed_worker!(&request, &org, format!("TX-{tag}-W"), None).await;
         let course = format!("course:{}", uuid::Uuid::new_v4());
-        let day = |n: i64| (chrono::Utc::now().date_naive() + chrono::Duration::days(n)).to_string();
+        let day = |n: i64| (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(n)).to_string();
         for (n, tail) in [(10_i64, "near"), (200, "far")] {
             sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
                     "INSERT INTO training_enrollments (pid, worker_pid, course_ref, status, completed_on, certificate_expires_on) \

@@ -5,7 +5,7 @@
 //! a figure for one to nine people is withheld, and **no total across programmes** is given, so a
 //! withheld one cannot be worked out.
 
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 
 /// One person on a programme. No name, no pay.
 #[derive(Debug, Clone)]
@@ -17,9 +17,9 @@ pub struct OnProgramme {
     /// The engagement basis (`employment_type`).
     pub basis: String,
     /// When the funding ends; `None` is open-ended.
-    pub funding_ends: Option<NaiveDate>,
+    pub funding_ends: Option<Date>,
     /// When the engagement ends; `None` is open-ended or unknown.
-    pub engagement_ends: Option<NaiveDate>,
+    pub engagement_ends: Option<Date>,
 }
 
 /// One month of one programme. A figure is `None` when withheld.
@@ -57,10 +57,10 @@ pub struct Rollup {
     pub withheld_programmes: usize,
 }
 
-fn first_of_month(index: i64) -> NaiveDate {
+fn first_of_month(index: i64) -> Date {
     let year = i32::try_from(index.div_euclid(12)).unwrap_or(1970);
     let month = u32::try_from(index.rem_euclid(12)).unwrap_or(0) + 1;
-    NaiveDate::from_ymd_opt(year, month, 1).unwrap_or(NaiveDate::MIN)
+    crate::dates::ymd(year, month, 1).unwrap_or(Date::MIN)
 }
 
 fn percent(part: i64, whole: i64) -> Option<f64> {
@@ -78,9 +78,9 @@ fn shown(n: usize, floor: usize) -> Option<usize> {
 /// Roll the people on programmes up by programme and month for `months` months from the month of
 /// `today`. Funding counts in a month when it has no end or ends on or after the first of that month.
 #[must_use]
-pub fn rollup(rows: &[OnProgramme], today: NaiveDate, months: u32, floor: usize) -> Rollup {
+pub fn rollup(rows: &[OnProgramme], today: Date, months: u32, floor: usize) -> Rollup {
     use std::collections::BTreeMap;
-    let index = |d: NaiveDate| i64::from(d.year()) * 12 + i64::from(d.month0());
+    let index = |d: Date| i64::from(d.year()) * 12 + i64::from(d.month()) - 1;
     let start = index(today);
     let mut by: BTreeMap<&str, Vec<&OnProgramme>> = BTreeMap::new();
     for r in rows {
@@ -97,7 +97,7 @@ pub fn rollup(rows: &[OnProgramme], today: NaiveDate, months: u32, floor: usize)
             .map(|offset| {
                 let at = start + offset;
                 let from = first_of_month(at);
-                let in_month = |d: Option<NaiveDate>| d.is_some_and(|d| index(d) == at);
+                let in_month = |d: Option<Date>| d.is_some_and(|d| index(d) == at);
                 let funded: Vec<&&OnProgramme> = people
                     .iter()
                     .filter(|p| p.funding_ends.is_none_or(|e| e >= from))
@@ -154,16 +154,16 @@ pub fn rollup(rows: &[OnProgramme], today: NaiveDate, months: u32, floor: usize)
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn person(
         programme: &str,
         fte: i32,
         basis: &str,
-        funding: Option<NaiveDate>,
-        engagement: Option<NaiveDate>,
+        funding: Option<Date>,
+        engagement: Option<Date>,
     ) -> OnProgramme {
         OnProgramme {
             programme: programme.into(),
@@ -174,7 +174,7 @@ mod tests {
         }
     }
 
-    fn crowd(n: usize, funding: Option<NaiveDate>) -> Vec<OnProgramme> {
+    fn crowd(n: usize, funding: Option<Date>) -> Vec<OnProgramme> {
         (0..n)
             .map(|i| {
                 let basis = if i < 2 {

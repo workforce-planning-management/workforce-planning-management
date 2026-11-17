@@ -10,9 +10,10 @@
 //! carries the reason.
 
 use super::ensure_org_in_scope;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -27,13 +28,13 @@ use crate::rules::conversion::{self as rules, Proposal};
 
 fn plan_json(
     row: &conversion_plans::Model,
-    contract_ends_on: Option<NaiveDate>,
-    as_of: NaiveDate,
+    contract_ends_on: Option<Date>,
+    as_of: Date,
 ) -> serde_json::Value {
     let flags: Vec<&str> = rules::flags(
         contract_ends_on,
         Some(row.status.as_str()),
-        row.review_on,
+        row.review_on.map(SqlDate::get),
         as_of,
     )
     .into_iter()
@@ -82,7 +83,7 @@ async fn list_for_worker(
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let worker = scoped_worker(&ctx, &caller, worker).await?;
-    let as_of = Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let rows = sqlx::query_as!(
         conversion_plans::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
@@ -104,7 +105,7 @@ async fn list_for_worker(
     .await?;
     format::json(
         rows.iter()
-            .map(|r| plan_json(r, worker.engagement_ends_on, as_of))
+            .map(|r| plan_json(r, worker.engagement_ends_on.map(SqlDate::get), as_of))
             .collect::<Vec<_>>(),
     )
 }
@@ -122,7 +123,7 @@ struct Contingent {
     worker_number: String,
     department: String,
     employment_type: String,
-    engagement_ends_on: Option<NaiveDate>,
+    engagement_ends_on: Option<SqlDate>,
 }
 
 /// `GET /api/conversion-plans` — every open plan in the caller's organizations with its flags, and
@@ -135,7 +136,7 @@ async fn list_open(
     page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
-    let as_of = Utc::now().date_naive();
+    let as_of = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let staff: Vec<Contingent> = sqlx::query_as!(
         Contingent,
@@ -177,9 +178,9 @@ async fn list_open(
         let plan = open.remove(&w.pid);
         let status = plan.as_ref().map(|p| p.status.as_str());
         let flags = rules::flags(
-            w.engagement_ends_on,
+            w.engagement_ends_on.map(SqlDate::get),
             status,
-            plan.as_ref().and_then(|p| p.review_on),
+            plan.as_ref().and_then(|p| p.review_on).map(SqlDate::get),
             as_of,
         );
         if plan.is_none() && flags.is_empty() {
@@ -188,7 +189,7 @@ async fn list_open(
         out.push(json!({
             "worker_pid": w.pid, "worker_number": w.worker_number, "department": w.department,
             "employment_type": w.employment_type, "engagement_ends_on": w.engagement_ends_on,
-            "plan": plan.as_ref().map(|p| plan_json(p, w.engagement_ends_on, as_of)),
+            "plan": plan.as_ref().map(|p| plan_json(p, w.engagement_ends_on.map(SqlDate::get), as_of)),
             "flags": flags.into_iter().map(rules::Flag::as_str).collect::<Vec<_>>(),
         }));
     }
@@ -208,13 +209,13 @@ async fn list_open(
 #[derive(Debug, Deserialize)]
 struct ProposePayload {
     intent: String,
-    target_on: NaiveDate,
+    target_on: Date,
     department: Option<String>,
     role_profile_ref: Option<String>,
     post_funding_kind: Option<String>,
-    post_funding_ends_on: Option<NaiveDate>,
+    post_funding_ends_on: Option<Date>,
     reason: Option<String>,
-    review_on: Option<NaiveDate>,
+    review_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/conversion-plans` — propose a plan for a fixed-term or contractor
@@ -242,7 +243,7 @@ async fn propose(
             "the worker already has an open plan; approve, carry out or abandon it first",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     rules::validate_proposal(
         &Proposal {
             intent: &payload.intent,
@@ -251,7 +252,7 @@ async fn propose(
             post_funding_ends_on: payload.post_funding_ends_on,
             reason: payload.reason.as_deref(),
             review_on: payload.review_on,
-            contract_ends_on: worker.engagement_ends_on,
+            contract_ends_on: worker.engagement_ends_on.map(SqlDate::get),
         },
         today,
     )
@@ -268,14 +269,14 @@ async fn propose(
         Uuid::new_v4(),
         worker.pid,
         payload.intent,
-        payload.target_on,
+        SqlDate(payload.target_on),
         payload.department,
         payload.role_profile_ref,
         payload.post_funding_kind,
-        payload.post_funding_ends_on,
+        payload.post_funding_ends_on.map(SqlDate),
         payload.reason,
         caller.actor(),
-        payload.review_on,
+        payload.review_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await;
@@ -303,7 +304,11 @@ async fn propose(
     )
     .await?;
     tx.commit().await?;
-    format::json(plan_json(&row, worker.engagement_ends_on, today))
+    format::json(plan_json(
+        &row,
+        worker.engagement_ends_on.map(SqlDate::get),
+        today,
+    ))
 }
 
 async fn plan_and_worker(
@@ -347,8 +352,8 @@ async fn locked(connection: &mut sqlx::PgConnection, id: i32) -> Result<conversi
 /// What a plan's step needs of its worker, re-read under a row lock.
 struct LockedWorker {
     pid: Uuid,
-    engagement_ends_on: Option<NaiveDate>,
-    terminated_on: Option<NaiveDate>,
+    engagement_ends_on: Option<SqlDate>,
+    terminated_on: Option<SqlDate>,
 }
 
 async fn locked_worker(connection: &mut sqlx::PgConnection, id: i32) -> Result<LockedWorker> {
@@ -368,7 +373,7 @@ async fn set_status(
     id: i32,
     status: &str,
     approved_by: Option<&str>,
-    settled_on: Option<NaiveDate>,
+    settled_on: Option<Date>,
 ) -> Result<conversion_plans::Model> {
     Ok(sqlx::query_as!(
         conversion_plans::Model,
@@ -381,7 +386,7 @@ async fn set_status(
         id,
         status,
         approved_by,
-        settled_on,
+        settled_on.map(SqlDate),
     )
     .fetch_one(connection)
     .await?)
@@ -398,7 +403,7 @@ async fn approve(
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
     let actor = caller.actor().map(ToString::to_string);
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let row = locked(&mut tx, row.id).await?;
     rules::validate_approval(
@@ -410,11 +415,11 @@ async fn approve(
     .map_err(|e| unprocessable(&e))?;
     let worker = locked_worker(&mut tx, worker.id).await?;
     let updated = set_status(&mut tx, row.id, "approved", actor.as_deref(), None).await?;
-    if let Some(ends_on) = worker.engagement_ends_on {
+    if let Some(ends_on) = worker.engagement_ends_on.map(SqlDate::get) {
         let settled = sqlx::query_scalar!(
             r#"SELECT 1 AS "one!" FROM engagement_decisions WHERE worker_pid = $1 AND ends_on = $2 LIMIT 1"#,
             worker.pid,
-            ends_on,
+            SqlDate(ends_on),
         )
         .fetch_optional(&mut *tx)
         .await?
@@ -425,10 +430,10 @@ async fn approve(
                  VALUES ($1, $2, $3, $4, $5, $6)",
                 Uuid::new_v4(),
                 worker.pid,
-                ends_on,
+                SqlDate(ends_on),
                 row.intent,
                 actor,
-                today,
+                SqlDate(today),
             )
             .execute(&mut *tx)
             .await?;
@@ -444,7 +449,11 @@ async fn approve(
     )
     .await?;
     tx.commit().await?;
-    format::json(plan_json(&updated, worker.engagement_ends_on, today))
+    format::json(plan_json(
+        &updated,
+        worker.engagement_ends_on.map(SqlDate::get),
+        today,
+    ))
 }
 
 /// `POST /api/conversion-plans/{pid}/abandon` — drop an open plan. The plan stays as history.
@@ -461,7 +470,7 @@ async fn abandon(
             row.status
         )));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = set_status(&mut tx, row.id, "abandoned", None, Some(today)).await?;
     db::audit(
@@ -474,7 +483,11 @@ async fn abandon(
     )
     .await?;
     tx.commit().await?;
-    format::json(plan_json(&updated, worker.engagement_ends_on, today))
+    format::json(plan_json(
+        &updated,
+        worker.engagement_ends_on.map(SqlDate::get),
+        today,
+    ))
 }
 
 /// `POST /api/conversion-plans/{pid}/done` — carry out an approved conversion: the worker becomes
@@ -489,7 +502,7 @@ async fn done(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let (row, worker) = plan_and_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mut tx = db::pool(&ctx).begin().await?;
     let row = locked(&mut tx, row.id).await?;
     rules::validate_done(&row.intent, &row.status).map_err(|e| unprocessable(&e))?;

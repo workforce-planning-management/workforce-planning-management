@@ -3,21 +3,21 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
-    pub created_at: DateTime<FixedOffset>,
-    pub updated_at: DateTime<FixedOffset>,
+    pub created_at: SqlTimestamp,
+    pub updated_at: SqlTimestamp,
     pub id: i32,
     pub pid: Uuid,
     pub policy_pid: Uuid,
     pub version: i32,
     pub title: String,
     pub document_ref: String,
-    pub effective_on: NaiveDate,
+    pub effective_on: SqlDate,
     pub audience_kind: String,
     pub audience_value: Option<String>,
     pub acknowledge_within_days: i32,

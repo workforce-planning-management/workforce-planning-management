@@ -5,11 +5,12 @@
 //! check is the write check, which payroll and a plain seat do not pass, plus a seat in the organization. Each read is audited with
 //! the pid and no content. WPM submits nothing: the export is for HR and a payroll service to submit.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::{BTreeMap, HashMap};
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::NaiveDate;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -39,7 +40,7 @@ async fn ensure_hr(
 struct Leaver {
     pid: Uuid,
     worker_pid: Uuid,
-    effective_on: NaiveDate,
+    effective_on: Date,
     reason: Option<String>,
 }
 
@@ -80,7 +81,7 @@ fn view(movement: &Leaver, row: Option<&separation_records::Model>) -> serde_jso
         "reason_code": movement.reason,
         "final_pay_on": final_pay_on,
         "pay_summary_ref": reference,
-        "missing": rules::missing(final_pay_on, reference),
+        "missing": rules::missing(final_pay_on.map(SqlDate::get), reference),
     })
 }
 
@@ -110,7 +111,7 @@ async fn show(
 #[derive(Debug, Deserialize)]
 struct RecordPayload {
     #[serde(default)]
-    final_pay_on: Option<NaiveDate>,
+    final_pay_on: Option<Date>,
     #[serde(default)]
     pay_summary_ref: Option<String>,
 }
@@ -136,7 +137,7 @@ async fn record(
                RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, movement_pid, worker_pid,
                          final_pay_on, pay_summary_ref, recorded_by"#,
             row.id,
-            payload.final_pay_on,
+            payload.final_pay_on.map(SqlDate),
             reference,
             caller.actor(),
         )
@@ -152,7 +153,7 @@ async fn record(
             Uuid::new_v4(),
             movement.pid,
             worker.pid,
-            payload.final_pay_on,
+            payload.final_pay_on.map(SqlDate),
             reference,
             caller.actor(),
         )
@@ -176,8 +177,8 @@ async fn record(
 #[derive(Debug, Deserialize)]
 struct ExportQuery {
     organization: String,
-    from: NaiveDate,
-    to: NaiveDate,
+    from: Date,
+    to: Date,
 }
 
 /// `GET /api/separation-records/export?organization=&from=&to=` — one row for every leaver whose last day is in the period, with
@@ -213,8 +214,8 @@ async fn export(
         "SELECT pid, worker_pid, effective_on, reason FROM movements
          WHERE kind = 'leaver' AND status <> 'cancelled' AND effective_on >= $1 AND effective_on <= $2
          ORDER BY effective_on, id",
-        query.from,
-        query.to,
+        SqlDate(query.from),
+        SqlDate(query.to),
     )
     .fetch_all(pool(&ctx))
     .await?;
@@ -238,7 +239,7 @@ async fn export(
                 display_name: worker.display_name.clone(),
                 last_day: movement.effective_on,
                 reason_code: movement.reason,
-                final_pay_on: row.and_then(|r| r.final_pay_on),
+                final_pay_on: row.and_then(|r| r.final_pay_on).map(SqlDate::get),
                 pay_summary_ref: row.and_then(|r| r.pay_summary_ref.clone()),
             })
         })

@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 
 /// `POST /api/skills` body.
@@ -360,7 +361,7 @@ pub(super) async fn merge_skill(
 
     // Worker declarations.
     for row in sqlx::query!(
-        r#"SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at AS "deleted_at: chrono::DateTime<chrono::FixedOffset>"
+        r#"SELECT id, worker_pid, proficiency, target, assessed_on, deleted_at
              FROM worker_skills WHERE skill_pid = $1 ORDER BY id"#,
         source.pid,
     )
@@ -761,7 +762,7 @@ pub(super) async fn declare_skill(
     )
     .fetch_optional(db::pool(&ctx))
     .await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let (source_framework, source_level, source_scale_max) =
         native.as_ref().map_or((None, None, None), |n| {
             (Some(n.framework.clone()), Some(n.level), Some(n.scale_max))
@@ -775,16 +776,16 @@ pub(super) async fn declare_skill(
                       SET proficiency = $2, source_framework = $3, source_level = $4, source_scale_max = $5, target = $6,
                           assessed_on = $7, deleted_at = NULL
                     WHERE id = $1
-                RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                RETURNING created_at, updated_at, id, pid, worker_pid, skill_pid,
                           proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
-                          deleted_at AS "deleted_at: _""#,
+                          deleted_at"#,
                 id,
                 proficiency,
                 source_framework,
                 source_level,
                 source_scale_max,
                 payload.target,
-                today,
+                SqlDate(today),
             )
             .fetch_one(&mut *tx)
             .await?
@@ -796,15 +797,15 @@ pub(super) async fn declare_skill(
                           (pid, worker_pid, skill_pid, proficiency, target, assessed_on, source_framework, source_level,
                            source_scale_max)
                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+                RETURNING created_at, updated_at, id, pid, worker_pid, skill_pid,
                           proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
-                          deleted_at AS "deleted_at: _""#,
+                          deleted_at"#,
                 Uuid::new_v4(),
                 worker.pid,
                 skill.pid,
                 proficiency,
                 payload.target,
-                today,
+                SqlDate(today),
                 source_framework,
                 source_level,
                 source_scale_max,
@@ -845,9 +846,9 @@ pub(super) async fn list_worker_skills(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let rows = sqlx::query_as!(
         worker_skills::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, skill_pid,
+        r#"SELECT created_at, updated_at, id, pid, worker_pid, skill_pid,
                   proficiency, target, assessed_on, source_framework, source_level, source_scale_max,
-                  deleted_at AS "deleted_at: _"
+                  deleted_at
              FROM worker_skills WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id"#,
         worker.pid,
     )

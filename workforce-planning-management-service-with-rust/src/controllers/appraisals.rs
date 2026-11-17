@@ -8,6 +8,7 @@
 //! group aggregates only, with `peer`/`report` cells withheld below a
 //! floor of 3 (count included).
 
+use crate::sql_time::SqlDate;
 use std::collections::BTreeMap;
 
 use super::row_json;
@@ -244,7 +245,7 @@ async fn appraisal_status(
     }
     let from = appraisal.status.clone();
     let row_pid = appraisal.pid;
-    let shared_on = (payload.to == "shared").then(|| chrono::Utc::now().date_naive());
+    let shared_on = (payload.to == "shared").then(crate::dates::today);
     let mut tx = db::pool(&ctx).begin().await?;
     let updated = sqlx::query_as!(
         appraisals::Model,
@@ -254,7 +255,7 @@ async fn appraisal_status(
                   status, shared_on, deleted_at AS "deleted_at: _""#,
         appraisal.id,
         payload.to,
-        shared_on,
+        shared_on.map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;

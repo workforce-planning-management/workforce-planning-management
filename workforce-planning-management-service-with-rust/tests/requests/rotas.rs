@@ -1,7 +1,5 @@
 //! On-call rotas: a rotation through the members, swaps, skipping members on
 //! approved leave, and a worker's own on-call stretches.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::tasks::rota_reminders::send_reminders;
@@ -22,8 +20,8 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
             pids.push(pid);
         }
         let (a, b, c) = (&pids[0], &pids[1], &pids[2]);
-        let today = Utc::now().date_naive();
-        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
 
         // Shape is validated: a stranger, nobody, a repeat, a bad period.
         let rota = |members: Value, period: i32| {
@@ -111,7 +109,7 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
         assert_eq!(now["worker_pid"], a.as_str());
 
         // B takes approved leave across week 2: C is skipped in for B.
-        let year = today.format("%Y").to_string().parse::<i32>().unwrap();
+        let year = today.strftime("%Y").to_string().parse::<i32>().unwrap();
         for y in [year, year + 1] {
             request
                 .post(&format!("/api/workers/{b}/leave-entitlements"))
@@ -202,13 +200,13 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
             activate!(&request, &pid).await;
             pids.push(pid);
         }
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         // A's week starts a week ago (so today is mid-turn); B's starts in 6 days.
         request
             .post("/api/rotas")
             .json(
                 &json!({ "organization_ref": org, "name": format!("Rem {tag}"),
-                           "period_days": 7, "starts_on": (today - Duration::days(1)).to_string(),
+                           "period_days": 7, "starts_on": (today - workforce_planning_management::dates::days(1)).to_string(),
                            "members": [pids[0], pids[1]] }),
             )
             .await
@@ -228,7 +226,7 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
             }
         };
         // B's turn starts in 6 days (the day after A's 7-day turn ends).
-        let starts = today + Duration::days(6);
+        let starts = today + workforce_planning_management::dates::days(6);
         assert_eq!(send_reminders(&ctx, starts).await.unwrap(), 1);
         assert_eq!(reminders(pids[1].clone()).await, 1);
         assert_eq!(reminders(pids[0].clone()).await, 0);
@@ -237,7 +235,7 @@ async fn on_call_reminders_go_once_to_whoever_a_turn_starts_for() {
         assert_eq!(reminders(pids[1].clone()).await, 1);
         // A day mid-turn starts nobody's turn.
         assert_eq!(
-            send_reminders(&ctx, today + Duration::days(3))
+            send_reminders(&ctx, today + workforce_planning_management::dates::days(3))
                 .await
                 .unwrap(),
             0
@@ -260,8 +258,8 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             pids.push(pid);
         }
         let (a, b, c) = (&pids[0], &pids[1], &pids[2]);
-        let today = Utc::now().date_naive();
-        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let rota: Value = request
             .post("/api/rotas")
             .json(

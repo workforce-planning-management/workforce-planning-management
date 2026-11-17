@@ -6,9 +6,10 @@
 //! employed on `as_of` and not erased are told. The message names the policy and the day due; it holds no policy text and tells
 //! no one else. A reminder never forces anything: an overdue acknowledgement is flagged, not required (WPM-D105).
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use std::collections::BTreeSet;
 use uuid::Uuid;
 
@@ -32,9 +33,9 @@ impl Task for PolicyReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let days_ahead = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -57,7 +58,7 @@ impl Task for PolicyReminders {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64) -> Result<usize> {
+pub async fn send_reminders(ctx: &AppContext, as_of: Date, days_ahead: i64) -> Result<usize> {
     let mut sent = 0;
     // Versions already reminded, per worker: (worker, version).
     let told: BTreeSet<(Uuid, String)> =
@@ -87,7 +88,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
             .iter()
             .map(|v| rules::Fact {
                 version: v.version,
-                effective_on: v.effective_on,
+                effective_on: v.effective_on.get(),
             })
             .collect();
         let Some(i) = rules::current(&facts, as_of) else {
@@ -110,19 +111,21 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, days_ahead: i64)
         .fetch_all(crate::db::pool(ctx))
         .await?;
         for worker in staff {
-            if !metric_rules::is_employed_on(as_of, worker.hired_on, worker.terminated_on)
-                || !rules::in_audience(
-                    &version.audience_kind,
-                    version.audience_value.as_deref(),
-                    &worker.department,
-                    &worker.job_title,
-                )
-                || told.contains(&(worker.pid, version.pid.to_string()))
+            if !metric_rules::is_employed_on(
+                as_of,
+                worker.hired_on.get(),
+                worker.terminated_on.map(SqlDate::get),
+            ) || !rules::in_audience(
+                &version.audience_kind,
+                version.audience_value.as_deref(),
+                &worker.department,
+                &worker.job_title,
+            ) || told.contains(&(worker.pid, version.pid.to_string()))
             {
                 continue;
             }
             let standing = rules::standing(
-                version.effective_on,
+                version.effective_on.get(),
                 version.acknowledge_within_days,
                 acknowledged.contains(&worker.pid).then_some(as_of),
                 as_of,

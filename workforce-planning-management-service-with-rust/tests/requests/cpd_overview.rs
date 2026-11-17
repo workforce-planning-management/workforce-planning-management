@@ -1,8 +1,6 @@
 //! The CPD overview counts in the database and gives the answers it always did (WPM-D90): who a
 //! requirement applies to, who met it on recorded and on verified entries, and which registrations need
 //! attention, for employed workers only.
-
-use chrono::{Days, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -49,16 +47,16 @@ async fn the_overview_counts_employed_workers_against_each_requirement_and_what_
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let title = format!("Overview {}", uuid::Uuid::new_v4().simple());
-        let today = Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let period = |extra: Value| {
             let mut body = json!({
                 "unit": "hours", "required": 10.0,
-                "period_start": (today - Days::new(30)).to_string(), "period_end": (today + Days::new(30)).to_string(),
+                "period_start": (today - jiff::Span::new().days(30)).to_string(), "period_end": (today + jiff::Span::new().days(30)).to_string(),
             });
             body.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
             body
         };
-        let in_period = (today - Days::new(5)).to_string();
+        let in_period = (today - jiff::Span::new().days(5)).to_string();
 
         // four workers with the title, one of another title, one not yet employed
         let met_verified = hire(&request, &org, 1, &title, "2020-01-05").await;
@@ -75,7 +73,7 @@ async fn the_overview_counts_employed_workers_against_each_requirement_and_what_
         record(&request, &short, &in_period, "hours", 9.99).await;
         // entries that must not count: another unit, outside the period, a withdrawn one
         record(&request, &short, &in_period, "points", 50.0).await;
-        record(&request, &short, &(today - Days::new(60)).to_string(), "hours", 50.0).await;
+        record(&request, &short, &(today - jiff::Span::new().days(60)).to_string(), "hours", 50.0).await;
         let withdrawn = record(&request, &short, &in_period, "hours", 50.0).await;
         request.delete(&format!("/api/cpd-entries/{withdrawn}")).await.assert_status_ok();
         record(&request, &other_title, &in_period, "hours", 99.0).await;
@@ -89,7 +87,7 @@ async fn the_overview_counts_employed_workers_against_each_requirement_and_what_
 
         // registrations: employed workers only, and only those expired or inside the 90 calendar days
         let register = |worker: String, days: i64| {
-            let body = json!({ "body": "Regulator", "expires_on": (today + chrono::Duration::days(days)).to_string() });
+            let body = json!({ "body": "Regulator", "expires_on": (today + workforce_planning_management::dates::days(days)).to_string() });
             let request = &request;
             async move {
                 let response = request.post(&format!("/api/workers/{worker}/registrations")).json(&body).await;

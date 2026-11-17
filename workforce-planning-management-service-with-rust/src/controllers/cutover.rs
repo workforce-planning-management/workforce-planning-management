@@ -9,12 +9,13 @@
 //! The report names no one: counts, dates and skill or role names. **The go/no-go stays a human
 //! decision outside WPM**, and the answer says so.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -89,8 +90,8 @@ struct CutoverPayload {
     programme_ref: String,
     name: String,
     site: String,
-    window_start: NaiveDate,
-    window_end: NaiveDate,
+    window_start: Date,
+    window_end: Date,
     rota_pid: Option<Uuid>,
     /// Other names the site is recorded under (a worker's location is text, so a site spelt another way
     /// needs an alias). Up to ten.
@@ -149,8 +150,8 @@ async fn create(
         p.programme_ref,
         p.name,
         p.site,
-        p.window_start,
-        p.window_end,
+        SqlDate(p.window_start),
+        SqlDate(p.window_end),
         p.rota_pid,
         json!(aliases),
     )
@@ -363,12 +364,13 @@ struct Staff {
     pid: Uuid,
     job_title: String,
     location: Option<String>,
-    hired_on: NaiveDate,
-    terminated_on: Option<NaiveDate>,
+    hired_on: Date,
+    terminated_on: Option<SqlDate>,
 }
 
 /// The trained-staff check: for each required role, the people of the role at the site who completed
 /// the course and hold it through the window, and the people of the role with no site on file.
+#[allow(clippy::too_many_lines)] // roles → the people at the site → who is trained through the window, linearly
 async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::Check> {
     let roles = sqlx::query!(
         "SELECT role_profile_pid, course_ref, required_headcount FROM cutover_roles WHERE cutover_pid = $1 ORDER BY id",
@@ -388,7 +390,13 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(c.window_start, w.hired_on, w.terminated_on))
+    .filter(|w| {
+        is_employed_on(
+            c.window_start.get(),
+            w.hired_on,
+            w.terminated_on.map(SqlDate::get),
+        )
+    })
     .collect();
     let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
     let role_pids: Vec<Uuid> = roles.iter().map(|r| r.role_profile_pid).collect();
@@ -477,8 +485,9 @@ async fn hypercare_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules:
     let Some(rota) = live_rota(ctx, rota_pid).await? else {
         return Ok(rules::hypercare(false, &[]));
     };
-    let (_, _, assignments, _) = rotas::compute(ctx, &rota, c.window_start, c.window_end).await?;
-    let uncovered: Vec<NaiveDate> = assignments
+    let (_, _, assignments, _) =
+        rotas::compute(ctx, &rota, c.window_start.get(), c.window_end.get()).await?;
+    let uncovered: Vec<Date> = assignments
         .iter()
         .filter(|a| a.worker.is_none())
         .map(|a| a.date)

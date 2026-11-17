@@ -1,13 +1,13 @@
 //! Outbound webhooks (WPM-R151, WPM-D106): a subscription is told about an event with a signed reference, a retry is backed
 //! off, the log holds no body, and nothing is queued for a change that did not happen.
 
+use jiff::Timestamp;
 use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::post;
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 use workforce_planning_management::rules::webhook::{
@@ -113,7 +113,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
 
         // Send it: signed, with a reference and a kind only.
         // The database clock and this one may differ by a moment; start the clock a minute on so the delivery is due.
-        let now = Utc::now() + Duration::seconds(60);
+        let now = Timestamp::now() + jiff::SignedDuration::from_secs(60);
         assert_eq!(run(&ctx, now).await.unwrap(), Summary { delivered: 1, ..Summary::default() });
         {
             let received = stub.received.lock().unwrap();
@@ -134,8 +134,8 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
             assert!(!body.contains("WH-SECRET-NUMBER") && !body.contains("Secret Name"), "no name or number leaves: {body}");
             assert_eq!(headers["x-wpm-event"], "worker_terminated");
             let signature = headers["x-wpm-signature"].to_str().unwrap();
-            assert!(verify(b"whsec-test-1", signature, body.as_bytes(), now.timestamp(), 300), "{signature}");
-            assert!(!verify(b"other", signature, body.as_bytes(), now.timestamp(), 300));
+            assert!(verify(b"whsec-test-1", signature, body.as_bytes(), now.as_second(), 300), "{signature}");
+            assert!(!verify(b"other", signature, body.as_bytes(), now.as_second(), 300));
         }
         let after: Value = request.get(&format!("/api/webhook-subscriptions/{pid}/deliveries")).await.json();
         assert_eq!(after[0]["status"], "delivered");
@@ -153,14 +153,14 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         *stub.answer.lock().unwrap() = 503;
         status(&request, &w2, "terminated").await;
         // The database clock and this one may differ by a moment; start the clock a minute on so the delivery is due.
-        let t0 = Utc::now() + Duration::seconds(60);
+        let t0 = Timestamp::now() + jiff::SignedDuration::from_secs(60);
         assert_eq!(run(&ctx, t0).await.unwrap(), Summary { retrying: 1, ..Summary::default() });
-        assert_eq!(run(&ctx, t0 + Duration::seconds(30)).await.unwrap(), Summary::default(), "inside the back-off nothing is sent");
+        assert_eq!(run(&ctx, t0 + jiff::SignedDuration::from_secs(30)).await.unwrap(), Summary::default(), "inside the back-off nothing is sent");
         let row: Value = request.get(&format!("/api/webhook-subscriptions/{pid}/deliveries")).await.json();
         assert_eq!(row[0]["last_error"], "HTTP 503");
         assert_eq!(row[0]["last_status"], 503);
         *stub.answer.lock().unwrap() = 200;
-        assert_eq!(run(&ctx, t0 + Duration::seconds(90)).await.unwrap(), Summary { delivered: 1, ..Summary::default() });
+        assert_eq!(run(&ctx, t0 + jiff::SignedDuration::from_secs(90)).await.unwrap(), Summary { delivered: 1, ..Summary::default() });
 
         // A subscriber that refuses is not asked again.
         let w3 = worker(&request, "WH-3").await;
@@ -168,7 +168,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         status(&request, &w3, "offboarding").await;
         *stub.answer.lock().unwrap() = 400;
         status(&request, &w3, "terminated").await;
-        assert_eq!(run(&ctx, Utc::now() + Duration::seconds(60)).await.unwrap(), Summary { failed: 1, ..Summary::default() });
+        assert_eq!(run(&ctx, Timestamp::now() + jiff::SignedDuration::from_secs(60)).await.unwrap(), Summary { failed: 1, ..Summary::default() });
         let counts: Value = request.get("/api/webhook-subscriptions").await.json();
         let payroll = counts["subscriptions"].as_array().unwrap().iter().find(|s| s["name"] == "Payroll").unwrap();
         assert_eq!(payroll["deliveries"], json!({ "pending": 0, "delivered": 2, "failed": 1 }));
@@ -227,7 +227,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         status(&request, &w4, "active").await;
         *stub.answer.lock().unwrap() = 200;
         let seen = stub.received.lock().unwrap().len();
-        assert_eq!(run(&ctx, Utc::now() + Duration::seconds(60)).await.unwrap(), Summary { delivered: 2, ..Summary::default() });
+        assert_eq!(run(&ctx, Timestamp::now() + jiff::SignedDuration::from_secs(60)).await.unwrap(), Summary { delivered: 2, ..Summary::default() });
         {
             let received = stub.received.lock().unwrap();
             let bodies: Vec<Value> = received[seen..].iter().map(|(_, b)| serde_json::from_str(b).unwrap()).collect();

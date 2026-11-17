@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 
 use axa::extract::Json;
 use axa::prelude::*;
-use chrono::Utc;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -16,6 +15,7 @@ use crate::auth::MaybeAuthUser;
 use crate::db::{self, pool};
 use crate::rules::bridge as rules;
 use crate::rules::metrics::is_employed_on;
+use crate::sql_time::SqlDate;
 
 #[derive(Debug, Deserialize)]
 struct OverlapPayload {
@@ -39,7 +39,7 @@ async fn overlap(
     if !super::policies::privileged(&ctx, &caller, &p.organization_ref).await? {
         return Err(forbidden("the overlap check is for HR"));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let employed: BTreeSet<String> = sqlx::query!(
         "SELECT person_ref, hired_on, terminated_on FROM workers
          WHERE organization_ref = $1 AND person_ref = ANY($2) AND deleted_at IS NULL",
@@ -49,7 +49,7 @@ async fn overlap(
     .fetch_all(pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| is_employed_on(today, w.hired_on.get(), w.terminated_on.map(SqlDate::get)))
     .map(|w| w.person_ref)
     .collect();
     let results = rules::overlap(&employed, &p.person_refs);

@@ -1,6 +1,4 @@
 //! The consultation register (WPM-R105, WPM-D68): a record per proposal, the rules read over it, and nothing about who attends or what was said.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -13,8 +11,8 @@ async fn a_consultation_is_registered_read_against_the_rules_begun_and_closed() 
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = Utc::now().date_naive();
-        let termination = today + Duration::days(100);
+        let today = workforce_planning_management::dates::today();
+        let termination = today + workforce_planning_management::dates::days(100);
 
         let body: Value = request
             .post("/api/recognised-bodies")
@@ -64,14 +62,14 @@ async fn a_consultation_is_registered_read_against_the_rules_begun_and_closed() 
         assert_eq!(line["assessment"]["may_apply"], true);
         assert_eq!(line["assessment"]["agreed_period_days"], 60);
         assert_eq!(line["assessment"]["consultation_days"], 60);
-        assert_eq!(line["assessment"]["latest_consultation_start"], json!(termination - Duration::days(60)));
+        assert_eq!(line["assessment"]["latest_consultation_start"], json!(termination - workforce_planning_management::dates::days(60)));
         assert_eq!(line["assessment"]["deployer_to_confirm"], true);
         assert_eq!(line["timeliness"], json!({ "kind": "not_begun", "days_left": 40 }));
 
         // Another proposal at the same establishment inside the 90-day window counts with this one; one at another site does not.
         let mut same_site = open.clone();
         same_site["dismissals"] = json!(5);
-        same_site["earliest_termination_on"] = json!(termination + Duration::days(10));
+        same_site["earliest_termination_on"] = json!(termination + workforce_planning_management::dates::days(10));
         assert_eq!(request.post("/api/consultations").json(&same_site).await.status_code(), 200);
         let mut other_site = open.clone();
         other_site["establishment"] = json!(format!("York {tag}"));
@@ -86,7 +84,7 @@ async fn a_consultation_is_registered_read_against_the_rules_begun_and_closed() 
 
         // Beginning: not in the future, once; then it is in time.
         let begin = format!("/api/consultations/{pid}/begin");
-        assert_eq!(request.post(&begin).json(&json!({ "started_on": today + Duration::days(1) })).await.status_code(), 422);
+        assert_eq!(request.post(&begin).json(&json!({ "started_on": today + workforce_planning_management::dates::days(1) })).await.status_code(), 422);
         assert_eq!(request.post(&begin).json(&json!({ "started_on": today, "document_ref": "DOC-124" })).await.status_code(), 200);
         assert_eq!(request.post(&begin).json(&json!({ "started_on": today })).await.status_code(), 422, "only once");
         let line: Value = request.get(&format!("/api/consultations/{pid}/timeline")).await.json();
@@ -99,7 +97,7 @@ async fn a_consultation_is_registered_read_against_the_rules_begun_and_closed() 
         assert_eq!(request.post(&close).json(&json!({ "outcome": "agreed", "ended_on": today, "agreement_pid": foreign })).await.status_code(), 422);
         assert_eq!(request.post(&close).json(&json!({ "outcome": "no_agreement", "ended_on": today, "agreement_pid": agreement_pid })).await.status_code(), 422);
         assert_eq!(request.post(&close).json(&json!({ "outcome": "open", "ended_on": today })).await.status_code(), 422);
-        assert_eq!(request.post(&close).json(&json!({ "outcome": "agreed", "ended_on": today + Duration::days(1) })).await.status_code(), 422);
+        assert_eq!(request.post(&close).json(&json!({ "outcome": "agreed", "ended_on": today + workforce_planning_management::dates::days(1) })).await.status_code(), 422);
         assert_eq!(request.post(&close).json(&json!({ "outcome": "agreed", "ended_on": today, "agreement_pid": agreement_pid })).await.status_code(), 200);
         assert_eq!(request.post(&close).json(&json!({ "outcome": "withdrawn", "ended_on": today })).await.status_code(), 422, "already closed");
         // One that never began can only be withdrawn.

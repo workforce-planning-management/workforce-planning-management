@@ -1,9 +1,14 @@
 //! Forecast + gap analysis (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, BTreeSet, MaybeAuthUser, Response, Result, State, Uuid,
+    converting_by_department, debug_handler, format, people_by_department, plan_demand_lines,
+    plan_lines, role_titles, rules, scoped_plan, skill_levels_by_department, workforce_plans,
+};
 use axa::extract::Path;
+#[allow(clippy::wildcard_imports)]
+use jiff::civil::Date;
 
 /// The departments a plan's demand lines name.
 pub(super) fn departments_of(lines: &[plan_demand_lines::Model]) -> BTreeSet<String> {
@@ -25,9 +30,9 @@ pub(super) async fn resolve_attrition(
     )
     .fetch_all(crate::db::pool(ctx))
     .await?;
-    let mut by_date: BTreeMap<chrono::NaiveDate, (i64, Option<i64>)> = BTreeMap::new();
+    let mut by_date: BTreeMap<Date, (i64, Option<i64>)> = BTreeMap::new();
     for row in &rows {
-        let entry = by_date.entry(row.as_of).or_insert((0, Some(0)));
+        let entry = by_date.entry(row.as_of.get()).or_insert((0, Some(0)));
         entry.0 += i64::from(row.headcount);
         entry.1 = match (entry.1, row.leavers) {
             (Some(total), Some(n)) => Some(total + i64::from(n)),
@@ -99,7 +104,7 @@ pub(super) async fn forecast_value(
     pid: &str,
 ) -> Result<serde_json::Value> {
     let plan = scoped_plan(ctx, caller, pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let (attrition, source) = resolve_attrition(ctx, &plan).await?;
     let lines = plan_lines(ctx, plan.pid).await?;
     let departments_named = departments_of(&lines);
@@ -133,11 +138,10 @@ pub(super) async fn forecast_value(
         converting_by_department(ctx, &plan.organization_ref, &departments_named, today).await?;
 
     // Group lines by (department, target date).
-    let mut groups: BTreeMap<(String, chrono::NaiveDate), Vec<&plan_demand_lines::Model>> =
-        BTreeMap::new();
+    let mut groups: BTreeMap<(String, Date), Vec<&plan_demand_lines::Model>> = BTreeMap::new();
     for line in &lines {
         groups
-            .entry((line.department.clone(), line.target_on))
+            .entry((line.department.clone(), line.target_on.get()))
             .or_default()
             .push(line);
     }
@@ -153,7 +157,7 @@ pub(super) async fn forecast_value(
                 by_programme,
             } = rules::demand_breakdown(&demand_lines);
             let demand = demand_total.headcount;
-            let days = (*target_on - today).num_days().max(0);
+            let days = crate::dates::days_between(today, *target_on).max(0);
             let projection =
                 rules::project_by_basis(people, today, *target_on, attrition, source);
             let supply = projection.total_headcount;
@@ -240,9 +244,9 @@ pub(super) async fn forecast_value(
         .collect();
 
     // Demand by programme and date across the whole plan.
-    let mut dates: BTreeMap<chrono::NaiveDate, Vec<&plan_demand_lines::Model>> = BTreeMap::new();
+    let mut dates: BTreeMap<Date, Vec<&plan_demand_lines::Model>> = BTreeMap::new();
     for line in &lines {
-        dates.entry(line.target_on).or_default().push(line);
+        dates.entry(line.target_on.get()).or_default().push(line);
     }
     let programmes: Vec<serde_json::Value> = dates
         .iter()

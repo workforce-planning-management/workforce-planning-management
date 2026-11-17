@@ -16,7 +16,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::HashMap;
@@ -31,6 +31,7 @@ use crate::need_to_know::{facts_for, has_privileged_attrs};
 use crate::rules::access::Relation;
 use crate::rules::equality_monitoring::{DEFAULT_FLOOR, validate_floor};
 use crate::rules::health_requirements::{self as rules};
+use crate::sql_time::SqlDate;
 use crate::validation::Problems;
 
 const ATTRIBUTE: &str = "occupational_health";
@@ -328,11 +329,11 @@ struct RecordPayload {
     status: String,
     /// The day it was recorded; default today. Not in the future.
     #[serde(default)]
-    recorded_on: Option<chrono::NaiveDate>,
+    recorded_on: Option<Date>,
     /// The day it falls due again; default the re-check period from the recording, if the
     /// requirement has one.
     #[serde(default)]
-    next_due: Option<chrono::NaiveDate>,
+    next_due: Option<Date>,
 }
 
 /// `PUT /api/workers/{pid}/health-requirements/{req_pid}` — record the worker's status against a
@@ -354,7 +355,7 @@ async fn record_status(
             "that requirement does not apply to this worker's area",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let recorded_on = payload.recorded_on.unwrap_or(today);
     let next_due = payload.next_due.or_else(|| {
         (payload.status == "up_to_date")
@@ -381,8 +382,8 @@ async fn record_status(
         worker.pid,
         requirement.pid,
         payload.status,
-        recorded_on,
-        next_due,
+        SqlDate(recorded_on),
+        next_due.map(SqlDate),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -481,11 +482,11 @@ async fn all_records(ctx: &AppContext) -> Result<HashMap<Uuid, Vec<worker_health
 fn standing_of(
     requirement: &health_requirements::Model,
     record: Option<&worker_health_records::Model>,
-    today: chrono::NaiveDate,
+    today: Date,
 ) -> rules::Standing {
     rules::standing(
         record.map(|r| r.status.as_str()),
-        record.and_then(|r| r.next_due),
+        record.and_then(|r| r.next_due.map(SqlDate::get)),
         today,
         u32::try_from(requirement.reminder_calendar_days).unwrap_or(60),
     )
@@ -497,7 +498,7 @@ pub(crate) async fn view_for(ctx: &AppContext, worker: &workers::Model) -> Resul
     let Ok(basis) = on() else {
         return format::json(json!({ "enabled": false }));
     };
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let held = records_for(ctx, worker.pid).await?;
     let list: Vec<serde_json::Value> = live_requirements(ctx)
         .await?
@@ -542,7 +543,7 @@ async fn clearance(
     axa::extract::Query(query): axa::extract::Query<ClearanceQuery>,
 ) -> Result<Response> {
     on()?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let requirements: Vec<health_requirements::Model> = live_requirements(&ctx)
         .await?
         .into_iter()
@@ -557,10 +558,13 @@ async fn clearance(
     let mut out = Vec::new();
     let mut held_by = all_records(&ctx).await?;
     for worker in live_workers(&ctx).await? {
-        if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)
-            || scope
-                .as_ref()
-                .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
+        if !crate::rules::metrics::is_employed_on(
+            today,
+            worker.hired_on.get(),
+            worker.terminated_on.map(SqlDate::get),
+        ) || scope
+            .as_ref()
+            .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
         {
             continue;
         }
@@ -612,7 +616,7 @@ async fn detail(
     on()?;
     ensure_occupational_health(&caller)?;
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&query.worker)?).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let held = records_for(&ctx, worker.pid).await?;
     let list: Vec<serde_json::Value> = live_requirements(&ctx)
         .await?
@@ -653,16 +657,19 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
             ));
         }
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let requirements = live_requirements(&ctx).await?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let mut rows: Vec<(String, String, bool)> = Vec::new();
     let mut held_by = all_records(&ctx).await?;
     for worker in live_workers(&ctx).await? {
-        if !crate::rules::metrics::is_employed_on(today, worker.hired_on, worker.terminated_on)
-            || scope
-                .as_ref()
-                .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
+        if !crate::rules::metrics::is_employed_on(
+            today,
+            worker.hired_on.get(),
+            worker.terminated_on.map(SqlDate::get),
+        ) || scope
+            .as_ref()
+            .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
         {
             continue;
         }

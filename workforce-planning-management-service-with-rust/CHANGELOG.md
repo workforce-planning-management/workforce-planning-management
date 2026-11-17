@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `jiff` in place of `chrono` (WPM-T528, WPM-D202)
+
+Every date and instant is `jiff::civil::Date` or `jiff::Timestamp`, with `jiff` 0.2.45 and `jiff-sqlx` 0.2.2. Rows hold the
+newtypes `sql_time::SqlTimestamp` and `SqlDate`, which `sqlx.toml` maps `timestamptz` and `date` to; `dates` has the helpers
+that stand in for chrono idioms. **An instant is serialised in UTC with a `Z`** rather than `+00:00`, the audit export included.
+A day or month count outside jiff's range gives `None` or the existing refusal instead of a panic. `chrono` stays only in
+`scheduler.rs`, for `cron`'s API. The `.sqlx` cache is regenerated (27 queries whose annotations named chrono types).
+
 ### Added — mutation testing (WPM-T526)
 
 `.cargo/mutants.toml` points cargo-mutants at the pure core (`src/rules/`, `src/security.rs`) with the lib's unit tests, and

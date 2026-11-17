@@ -16,7 +16,7 @@
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -30,6 +30,7 @@ use crate::models::records;
 use crate::rules::metrics::is_employed_on;
 use crate::rules::movements::{Disposition, HandoverKind, disposition, validate_handover};
 use crate::rules::org::would_create_cycle;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 
 /// One thing the leaver still holds.
 #[derive(Debug, Clone)]
@@ -49,7 +50,7 @@ pub(super) async fn inventory(
     leaver: &workers::Model,
 ) -> Result<Vec<Held>> {
     let pool = db::pool(ctx);
-    let last_day = movement.effective_on;
+    let last_day = movement.effective_on.get();
     let mut out = Vec::new();
 
     // Direct reports still employed.
@@ -61,7 +62,11 @@ pub(super) async fn inventory(
     .fetch_all(pool)
     .await?
     {
-        if is_employed_on(last_day, w.hired_on, w.terminated_on) {
+        if is_employed_on(
+            last_day,
+            w.hired_on.get(),
+            w.terminated_on.map(SqlDate::get),
+        ) {
             out.push(Held {
                 kind: HandoverKind::DirectReport,
                 subject: w.pid,
@@ -131,7 +136,7 @@ pub(super) async fn inventory(
             WHERE o.worker_pid = $1 AND o.ends_on >= $2
             ORDER BY o.id"#,
         leaver.pid,
-        last_day,
+        SqlDate(last_day),
     )
     .fetch_all(pool)
     .await?
@@ -180,7 +185,7 @@ pub(super) async fn inventory(
     }
     // Future shifts.
     for a in sqlx::query!(
-        r#"SELECT a.pid, s.department, s.starts_at AS "starts_at: DateTime<FixedOffset>"
+        r#"SELECT a.pid, s.department, s.starts_at
              FROM shift_assignments a
              JOIN shifts s ON s.pid = a.shift_pid AND s.deleted_at IS NULL
             WHERE a.worker_pid = $1 AND a.deleted_at IS NULL
@@ -190,11 +195,15 @@ pub(super) async fn inventory(
     .fetch_all(pool)
     .await?
     {
-        if a.starts_at.date_naive() >= last_day {
+        if crate::dates::date_of(a.starts_at) >= last_day {
             out.push(Held {
                 kind: HandoverKind::Shift,
                 subject: a.pid,
-                label: format!("{} {}", a.department, a.starts_at.format("%Y-%m-%d %H:%M")),
+                label: format!(
+                    "{} {}",
+                    a.department,
+                    a.starts_at.get().strftime("%Y-%m-%d %H:%M")
+                ),
             });
         }
     }
@@ -301,7 +310,7 @@ async fn successor(
     ctx: &AppContext,
     to: Uuid,
     leaver: &workers::Model,
-    on: NaiveDate,
+    on: Date,
 ) -> Result<workers::Model> {
     let w = records::worker_by_pid(ctx, to)
         .await
@@ -311,7 +320,7 @@ async fn successor(
             "the new holder must be in the leaver's organization",
         ));
     }
-    if !is_employed_on(on, w.hired_on, w.terminated_on) {
+    if !is_employed_on(on, w.hired_on.get(), w.terminated_on.map(SqlDate::get)) {
         return Err(unprocessable("the new holder is not employed"));
     }
     Ok(w)
@@ -323,10 +332,10 @@ async fn apply(
     held: &Held,
     to: Option<&workers::Model>,
     leaver: &workers::Model,
-    last_day: NaiveDate,
+    last_day: Date,
     manager_of: &HashMap<Uuid, Uuid>,
 ) -> Result<&'static str> {
-    let now: DateTime<FixedOffset> = Utc::now().into();
+    let now: Timestamp = Timestamp::now();
     let new = to.map(|w| w.pid);
     match held.kind {
         HandoverKind::DirectReport => {
@@ -381,7 +390,7 @@ async fn apply(
             sqlx::query_scalar!(
                 "UPDATE organization_memberships SET ends_on = GREATEST(starts_on, $2) WHERE pid = $1 RETURNING id",
                 held.subject,
-                last_day,
+                SqlDate(last_day),
             )
             .fetch_optional(&mut *tx)
             .await?
@@ -406,7 +415,7 @@ async fn hand_over_dotted_line(
     tx: &mut sqlx::PgConnection,
     subject: Uuid,
     new: Option<Uuid>,
-    now: DateTime<FixedOffset>,
+    now: Timestamp,
 ) -> Result<&'static str> {
     let row = sqlx::query!(
         "SELECT id, report_pid FROM dotted_line_reports WHERE pid = $1",
@@ -430,7 +439,7 @@ async fn hand_over_dotted_line(
                 sqlx::query!(
                     "UPDATE dotted_line_reports SET ended_at = $2 WHERE id = $1",
                     row.id,
-                    now
+                    SqlTimestamp(now)
                 )
                 .execute(&mut *tx)
                 .await?;
@@ -449,7 +458,7 @@ async fn hand_over_dotted_line(
             sqlx::query!(
                 "UPDATE dotted_line_reports SET ended_at = $2 WHERE id = $1",
                 row.id,
-                now
+                SqlTimestamp(now)
             )
             .execute(&mut *tx)
             .await?;
@@ -464,12 +473,12 @@ async fn hand_over_group_lead(
     tx: &mut sqlx::PgConnection,
     subject: Uuid,
     new: Option<Uuid>,
-    now: DateTime<FixedOffset>,
+    now: Timestamp,
 ) -> Result<&'static str> {
     let group = sqlx::query_scalar!(
         "UPDATE group_members SET left_at = $2 WHERE pid = $1 RETURNING group_pid",
         subject,
-        now,
+        SqlTimestamp(now),
     )
     .fetch_optional(&mut *tx)
     .await?
@@ -576,7 +585,7 @@ async fn hand_over_backup(
     tx: &mut sqlx::PgConnection,
     subject: Uuid,
     new: Option<Uuid>,
-    now: DateTime<FixedOffset>,
+    now: Timestamp,
 ) -> Result<&'static str> {
     let row = sqlx::query!(
         "SELECT id, worker_pid FROM worker_backups WHERE pid = $1",
@@ -614,7 +623,7 @@ async fn hand_over_backup(
             sqlx::query!(
                 "UPDATE worker_backups SET deleted_at = $2 WHERE id = $1",
                 row.id,
-                now
+                SqlTimestamp(now)
             )
             .execute(&mut *tx)
             .await?;
@@ -628,7 +637,7 @@ async fn hand_over_mentorship(
     tx: &mut sqlx::PgConnection,
     subject: Uuid,
     new: Option<Uuid>,
-    last_day: NaiveDate,
+    last_day: Date,
 ) -> Result<&'static str> {
     let row = sqlx::query!(
         "SELECT id, mentee_pid FROM mentorships WHERE pid = $1",
@@ -652,7 +661,7 @@ async fn hand_over_mentorship(
             sqlx::query!(
                 "UPDATE mentorships SET status = 'ended', ended_on = $2 WHERE id = $1",
                 row.id,
-                last_day,
+                SqlDate(last_day),
             )
             .execute(&mut *tx)
             .await?;
@@ -666,7 +675,7 @@ async fn hand_over_shift(
     tx: &mut sqlx::PgConnection,
     subject: Uuid,
     new: Option<Uuid>,
-    now: DateTime<FixedOffset>,
+    now: Timestamp,
 ) -> Result<&'static str> {
     let row = sqlx::query!(
         "SELECT id, shift_pid FROM shift_assignments WHERE pid = $1",
@@ -702,7 +711,7 @@ async fn hand_over_shift(
             sqlx::query!(
                 "UPDATE shift_assignments SET deleted_at = $2 WHERE id = $1",
                 row.id,
-                now
+                SqlTimestamp(now)
             )
             .execute(&mut *tx)
             .await?;
@@ -739,7 +748,15 @@ async fn perform(
     managers: &HashMap<Uuid, Uuid>,
 ) -> Result<&'static str> {
     let mut tx = db::pool(ctx).begin().await?;
-    let verb = apply(&mut tx, held, to, leaver, movement.effective_on, managers).await?;
+    let verb = apply(
+        &mut tx,
+        held,
+        to,
+        leaver,
+        movement.effective_on.get(),
+        managers,
+    )
+    .await?;
     sqlx::query!(
         "INSERT INTO handover_actions (pid, movement_pid, kind, subject_pid, subject_label, from_worker, to_worker, action,
                                        note, performed_by, performed_at)
@@ -754,7 +771,7 @@ async fn perform(
         verb,
         note,
         caller.actor(),
-        DateTime::<FixedOffset>::from(Utc::now()),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(&mut *tx)
     .await?;
@@ -855,7 +872,7 @@ async fn reassign(
         .find(|h| h.kind == kind && h.subject == payload.subject_pid)
         .ok_or_else(|| unprocessable("the leaver does not hold that"))?;
     let new = match payload.to_worker_pid {
-        Some(to) => Some(successor(&ctx, to, &leaver, movement.effective_on).await?),
+        Some(to) => Some(successor(&ctx, to, &leaver, movement.effective_on.get()).await?),
         None => None,
     };
     let managers = manager_map(&ctx).await?;
@@ -907,7 +924,13 @@ async fn reassign_all(
     }
     validate_handover(HandoverKind::Task, Some(payload.to_worker_pid), leaver.pid)
         .map_err(|e| unprocessable(&e))?;
-    let new = successor(&ctx, payload.to_worker_pid, &leaver, movement.effective_on).await?;
+    let new = successor(
+        &ctx,
+        payload.to_worker_pid,
+        &leaver,
+        movement.effective_on.get(),
+    )
+    .await?;
     let mut moved = 0usize;
     let mut revoked = 0usize;
     let mut failed: Vec<serde_json::Value> = Vec::new();
@@ -954,7 +977,7 @@ async fn actions(
     let (movement, _) = leaver_movement(&ctx, &caller, &pid).await?;
     let rows = sqlx::query!(
         r#"SELECT kind, subject_pid, subject_label, action, to_worker, note, performed_by,
-                  performed_at AS "performed_at: DateTime<FixedOffset>"
+                  performed_at
              FROM handover_actions WHERE movement_pid = $1 ORDER BY id"#,
         movement.pid,
     )

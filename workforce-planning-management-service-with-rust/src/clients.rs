@@ -15,6 +15,7 @@
 //!   reading a best-effort `name`-ish field. (Thin by design; the
 //!   family front-ends do the rich rendering.)
 
+use jiff::civil::Date;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 
@@ -111,8 +112,8 @@ pub fn prime(urn: &str, name: &str) {
 /// the display-name cache; used by the wellbeing age-band evaluation
 /// (WPM-R25). The date is read, used for the whole-year age, and never
 /// stored in a WPM table.
-fn birth_date_cache() -> &'static Mutex<HashMap<String, chrono::NaiveDate>> {
-    static CACHE: OnceLock<Mutex<HashMap<String, chrono::NaiveDate>>> = OnceLock::new();
+fn birth_date_cache() -> &'static Mutex<HashMap<String, Date>> {
+    static CACHE: OnceLock<Mutex<HashMap<String, Date>>> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
@@ -120,7 +121,7 @@ fn birth_date_cache() -> &'static Mutex<HashMap<String, chrono::NaiveDate>> {
 /// then (in `http` mode) the person service, else `None`. `None`
 /// degrades honestly — an age-banded rule simply does not match
 /// (unknown is not a match; `rules::wellbeing`).
-pub async fn birth_date(entity_ref: &EntityRef) -> Option<chrono::NaiveDate> {
+pub async fn birth_date(entity_ref: &EntityRef) -> Option<Date> {
     let urn = entity_ref.to_string();
     if let Some(hit) = birth_date_cache()
         .lock()
@@ -143,7 +144,7 @@ pub async fn birth_date(entity_ref: &EntityRef) -> Option<chrono::NaiveDate> {
     let fetched = ["birth_date", "birthDate", "date_of_birth"]
         .iter()
         .find_map(|k| body.get(k).and_then(serde_json::Value::as_str))
-        .and_then(|s| s.parse::<chrono::NaiveDate>().ok());
+        .and_then(|s| s.parse::<Date>().ok());
     if let Some(date) = fetched {
         birth_date_cache()
             .lock()
@@ -154,7 +155,7 @@ pub async fn birth_date(entity_ref: &EntityRef) -> Option<chrono::NaiveDate> {
 }
 
 /// Seed the birth-date cache (used by tests).
-pub fn prime_birth_date(urn: &str, date: chrono::NaiveDate) {
+pub fn prime_birth_date(urn: &str, date: Date) {
     birth_date_cache()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)

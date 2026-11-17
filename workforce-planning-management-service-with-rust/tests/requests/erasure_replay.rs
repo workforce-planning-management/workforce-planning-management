@@ -147,7 +147,8 @@ async fn a_restore_does_not_undo_an_erasure() {
         );
 
         // ── `since` limits it: nothing was erased tomorrow or later.
-        let tomorrow = chrono::Utc::now().date_naive() + chrono::Duration::days(1);
+        let tomorrow = workforce_planning_management::dates::today()
+            + workforce_planning_management::dates::days(1);
         assert_eq!(
             replay_erasures(
                 workforce_planning_management::db::pool(&ctx),

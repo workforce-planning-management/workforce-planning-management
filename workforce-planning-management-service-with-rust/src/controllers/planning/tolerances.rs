@@ -102,7 +102,7 @@ pub(super) async fn dimension_states(
     .into_iter()
     .map(|t| (t.dimension.clone(), t))
     .collect();
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let forecast = forecast_value(ctx, caller, pid).await?;
     let cost = cost_value(ctx, caller, pid, CostQuery::default()).await?;
     let alignment = alignment_value(ctx, caller, pid).await?;
@@ -147,7 +147,7 @@ pub(super) async fn list_tolerances(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let plan = scoped_plan(&ctx, &caller, &pid).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let states = dimension_states(&ctx, &caller, &pid, &plan).await?;
     let open: BTreeMap<String, plan_escalations::Model> = sqlx::query_as!(
         plan_escalations::Model,

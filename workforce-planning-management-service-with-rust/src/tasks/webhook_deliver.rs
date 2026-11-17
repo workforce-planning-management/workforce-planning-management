@@ -7,12 +7,13 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::{DateTime, Duration, Utc};
+use jiff::Timestamp;
 use serde::Serialize;
 use serde_json::json;
 
 use crate::models::_entities::{webhook_deliveries, webhook_subscriptions};
 use crate::rules::webhook::{self as rules, Next};
+use crate::sql_time::SqlTimestamp;
 
 /// The most deliveries one run sends.
 const BATCH: i64 = 200;
@@ -33,14 +34,14 @@ pub struct Summary {
 /// # Errors
 ///
 /// A database error. A subscriber's failure is recorded and counted, not returned.
-pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
+pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
     let due = sqlx::query_as!(
         webhook_deliveries::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, subscription_pid, event_id,
                   kind, subject, data, occurred_at AS "occurred_at: _", status, attempts, last_status, last_error,
                   next_attempt_at AS "next_attempt_at: _", delivered_at AS "delivered_at: _"
              FROM webhook_deliveries WHERE status = 'pending' AND next_attempt_at <= $1 ORDER BY id LIMIT $2"#,
-        now,
+        SqlTimestamp(now),
         BATCH,
     )
     .fetch_all(crate::db::pool(ctx))
@@ -86,15 +87,15 @@ pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
                 summary.retrying += 1;
                 (
                     delivery.status.clone(),
-                    delivery.delivered_at.map(|d| d.with_timezone(&Utc)),
-                    Some(now + Duration::seconds(wait)),
+                    delivery.delivered_at.map(SqlTimestamp::get),
+                    Some(now + jiff::SignedDuration::from_secs(wait)),
                 )
             }
             Next::GiveUp => {
                 summary.failed += 1;
                 (
                     "failed".to_string(),
-                    delivery.delivered_at.map(|d| d.with_timezone(&Utc)),
+                    delivery.delivered_at.map(SqlTimestamp::get),
                     None,
                 )
             }
@@ -108,8 +109,8 @@ pub async fn run(ctx: &AppContext, now: DateTime<Utc>) -> Result<Summary> {
             status.map(i32::from),
             last_error,
             state,
-            delivered_at,
-            next_attempt_at,
+            delivered_at.map(SqlTimestamp),
+            next_attempt_at.map(SqlTimestamp),
         )
         .execute(crate::db::pool(ctx))
         .await?;
@@ -122,7 +123,7 @@ async fn send(
     http: &reqwest::Client,
     subscription: &webhook_subscriptions::Model,
     delivery: &webhook_deliveries::Model,
-    now: DateTime<Utc>,
+    now: Timestamp,
 ) -> (Option<u16>, Option<String>) {
     let Some(secret) = crate::compat::env_var(&subscription.secret_ref).filter(|s| !s.is_empty())
     else {
@@ -132,11 +133,11 @@ async fn send(
         &delivery.event_id.to_string(),
         &delivery.kind,
         &delivery.subject,
-        delivery.occurred_at.with_timezone(&Utc),
+        delivery.occurred_at.get(),
         delivery.data.as_ref(),
     )
     .to_string();
-    let header = rules::signature(secret.as_bytes(), now.timestamp(), body.as_bytes());
+    let header = rules::signature(secret.as_bytes(), now.as_second(), body.as_bytes());
     let sent = http
         .post(&subscription.url)
         .header("content-type", "application/json")
@@ -165,7 +166,7 @@ impl Task for WebhookDeliver {
     }
 
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
-        let summary = run(ctx, Utc::now()).await?;
+        let summary = run(ctx, Timestamp::now()).await?;
         println!("{}", json!(summary));
         Ok(())
     }

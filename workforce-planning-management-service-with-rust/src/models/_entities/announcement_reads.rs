@@ -2,7 +2,7 @@
 
 #![allow(missing_docs)]
 
-use chrono::{DateTime, FixedOffset};
+use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -11,5 +11,5 @@ pub struct Model {
     pub id: i32,
     pub announcement_pid: Uuid,
     pub worker_pid: Uuid,
-    pub read_at: DateTime<FixedOffset>,
+    pub read_at: SqlTimestamp,
 }

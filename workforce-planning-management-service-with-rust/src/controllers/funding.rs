@@ -8,6 +8,7 @@
 use super::ensure_org_in_scope;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -24,6 +25,7 @@ use crate::rules::engagement::{
 };
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::funding as rules;
+use crate::sql_time::SqlDate;
 use crate::validation::Problems;
 
 /// How far ahead the funding horizon looks.
@@ -33,7 +35,7 @@ const HORIZON_MONTHS: u32 = 12;
 struct Funding {
     kind: String,
     programme_ref: Option<String>,
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<SqlDate>,
 }
 
 async fn find(ctx: &AppContext, worker_pid: Uuid) -> Result<Option<Funding>> {
@@ -47,7 +49,10 @@ async fn find(ctx: &AppContext, worker_pid: Uuid) -> Result<Option<Funding>> {
 }
 
 fn view(worker: &workers::Model, row: Option<&Funding>) -> serde_json::Value {
-    let alignment = rules::align(worker.engagement_ends_on, row.map(|r| r.ends_on));
+    let alignment = rules::align(
+        worker.engagement_ends_on.map(SqlDate::get),
+        row.map(|r| r.ends_on.map(SqlDate::get)),
+    );
     json!({
         "funding": row.map(|r| json!({
             "kind": r.kind, "programme_ref": r.programme_ref, "ends_on": r.ends_on,
@@ -102,7 +107,7 @@ async fn ensure_privileged(
 struct FundingPayload {
     kind: String,
     programme_ref: Option<String>,
-    ends_on: Option<chrono::NaiveDate>,
+    ends_on: Option<Date>,
 }
 
 /// `PUT /api/workers/{pid}/funding` — set or change it.
@@ -122,7 +127,7 @@ async fn set_funding(
         payload.programme_ref.as_deref(),
     );
     ensure_valid(&problems.into_vec())?;
-    rules::validate(&payload.kind, payload.ends_on, worker.hired_on)
+    rules::validate(&payload.kind, payload.ends_on, worker.hired_on.get())
         .map_err(|e| unprocessable(&e))?;
     let mut tx = db::pool(&ctx).begin().await?;
     // One row per worker: one upsert on its unique key rather than a read and a write.
@@ -135,7 +140,7 @@ async fn set_funding(
         worker.pid,
         payload.kind,
         payload.programme_ref,
-        payload.ends_on,
+        payload.ends_on.map(SqlDate),
         caller.actor(),
     )
     .fetch_one(&mut *tx)
@@ -194,8 +199,8 @@ pub(crate) struct Employed {
     pub department: String,
     pub employment_type: String,
     pub fte_percent: i32,
-    pub hired_on: chrono::NaiveDate,
-    pub engagement_ends_on: Option<chrono::NaiveDate>,
+    pub hired_on: Date,
+    pub engagement_ends_on: Option<Date>,
 }
 
 /// The people employed on `today` ([`crate::rules::metrics::is_employed_on`], in SQL) in the caller's scope (`None` is
@@ -203,12 +208,11 @@ pub(crate) struct Employed {
 async fn employed(
     ctx: &AppContext,
     scope: Option<&[String]>,
-    today: chrono::NaiveDate,
+    today: Date,
     among: Option<&[Uuid]>,
     contingent: bool,
 ) -> Result<Vec<Employed>> {
-    Ok(sqlx::query_as!(
-        Employed,
+    Ok(sqlx::query!(
         "SELECT pid, organization_ref, worker_number, department, employment_type, fte_percent, hired_on, engagement_ends_on
            FROM workers
           WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
@@ -216,20 +220,32 @@ async fn employed(
             AND ($3::uuid[] IS NULL OR pid = ANY($3))
             AND (NOT $4 OR employment_type IN ('contractor', 'fixed_term'))
           ORDER BY id",
-        today,
+        SqlDate(today),
         scope,
         among,
         contingent,
     )
     .fetch_all(db::pool(ctx))
-    .await?)
+    .await?
+    .into_iter()
+    .map(|r| Employed {
+        pid: r.pid,
+        organization_ref: r.organization_ref,
+        worker_number: r.worker_number,
+        department: r.department,
+        employment_type: r.employment_type,
+        fte_percent: r.fte_percent,
+        hired_on: r.hired_on.get(),
+        engagement_ends_on: r.engagement_ends_on.map(SqlDate::get),
+    })
+    .collect())
 }
 
 /// The people among `pids` who are employed on `today` in the caller's scope, by id.
 pub(crate) async fn employed_among(
     ctx: &AppContext,
     scope: Option<&[String]>,
-    today: chrono::NaiveDate,
+    today: Date,
     pids: &[Uuid],
 ) -> Result<std::collections::HashMap<Uuid, Employed>> {
     Ok(employed(ctx, scope, today, Some(pids), false)
@@ -284,7 +300,7 @@ async fn engagements_of<'a>(
 async fn engagement_counts(
     ctx: &AppContext,
     staff: &[Employed],
-    today: chrono::NaiveDate,
+    today: Date,
     floor: usize,
 ) -> Result<ContingentCounts> {
     let engagements: Vec<ContingentEngagement> = engagements_of(ctx, staff)
@@ -319,7 +335,7 @@ async fn contingent_list(
             LISTS.join(", ")
         )));
     }
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let staff = employed(&ctx, scope.as_deref(), today, None, false).await?;
     let mut found: Vec<_> = engagements_of(&ctx, &staff)
@@ -367,7 +383,7 @@ async fn snapshot_trend(
     .await?
     .into_iter()
         .map(|r| rules::SplitRow {
-            as_of: r.as_of,
+            as_of: r.as_of.get(),
             headcount: i64::from(r.headcount),
             fte: r.fte_percent_total,
             contractor_fte: r.contractor_fte_percent_total,
@@ -383,7 +399,7 @@ async fn snapshot_trend(
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let db = db::pool(&ctx);
     // Grouped by the database: department, basis and FTE with the number of people who share them.
@@ -393,7 +409,7 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
             WHERE deleted_at IS NULL AND hired_on <= $1 AND (terminated_on IS NULL OR terminated_on > $1)
               AND ($2::text[] IS NULL OR organization_ref = ANY($2))
             GROUP BY department, employment_type, fte_percent"#,
-        today,
+        SqlDate(today),
         scope.as_deref(),
     )
     .fetch_all(db)
@@ -425,9 +441,9 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         .into_iter()
         .collect();
     let employed = employed_among(&ctx, scope.as_deref(), today, &funded_pids).await?;
-    let ends: Vec<(chrono::NaiveDate, i32)> = funded
+    let ends: Vec<(Date, i32)> = funded
         .into_iter()
-        .filter_map(|f| Some((f.ends_on, employed.get(&f.worker_pid)?.fte_percent)))
+        .filter_map(|f| Some((f.ends_on.get(), employed.get(&f.worker_pid)?.fte_percent)))
         .collect();
     let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor);
     let counts = engagement_counts(&ctx, &contingent_staff, today, floor).await?;

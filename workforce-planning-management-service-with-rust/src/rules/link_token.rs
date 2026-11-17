@@ -7,7 +7,7 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use chrono::{DateTime, Duration, Utc};
+use jiff::Timestamp;
 use sha2::{Digest, Sha256};
 
 /// The random bytes in a token (256 bits).
@@ -68,13 +68,13 @@ pub fn purpose_problems(purpose: &str) -> Vec<String> {
 ///
 /// # Errors
 /// A sentence when the life is outside [`TTL_MIN_MINUTES`] to [`TTL_MAX_MINUTES`].
-pub fn expires_at(now: DateTime<Utc>, ttl_minutes: i64) -> Result<DateTime<Utc>, String> {
+pub fn expires_at(now: Timestamp, ttl_minutes: i64) -> Result<Timestamp, String> {
     if !(TTL_MIN_MINUTES..=TTL_MAX_MINUTES).contains(&ttl_minutes) {
         return Err(format!(
             "a link lives {TTL_MIN_MINUTES} to {TTL_MAX_MINUTES} minutes"
         ));
     }
-    Ok(now + Duration::minutes(ttl_minutes))
+    Ok(now + jiff::SignedDuration::from_mins(ttl_minutes))
 }
 
 /// What is stored about a token.
@@ -83,9 +83,9 @@ pub struct Stored {
     /// What the link was made for.
     pub purpose: String,
     /// When it stops working.
-    pub expires_at: DateTime<Utc>,
+    pub expires_at: Timestamp,
     /// When it was used, if it has been.
-    pub used_at: Option<DateTime<Utc>>,
+    pub used_at: Option<Timestamp>,
 }
 
 /// Why a token was refused. **For the audit trail only; never sent to the caller.**
@@ -118,7 +118,7 @@ impl Refusal {
 ///
 /// # Errors
 /// The reason, for the audit trail.
-pub fn check(stored: Option<&Stored>, purpose: &str, now: DateTime<Utc>) -> Result<(), Refusal> {
+pub fn check(stored: Option<&Stored>, purpose: &str, now: Timestamp) -> Result<(), Refusal> {
     let Some(s) = stored else {
         return Err(Refusal::Unknown);
     };
@@ -136,10 +136,9 @@ pub fn check(stored: Option<&Stored>, purpose: &str, now: DateTime<Utc>) -> Resu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
 
-    fn at(h: u32, m: u32) -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 10, 28, h, m, 0).unwrap()
+    fn at(h: u32, m: u32) -> Timestamp {
+        crate::dates::utc(2026, 10, 28, h, m, 0).unwrap()
     }
 
     fn stored(used: bool) -> Stored {

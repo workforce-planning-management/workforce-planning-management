@@ -10,9 +10,10 @@
 //! The notification names the worker and the date. **It carries no rate**, no supplier and no reason.
 //! HR is the workers who hold an `hr_admin` membership in the worker's organization.
 
+use crate::sql_time::SqlDate;
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde_json::json;
 
 use crate::rules::engagement::{self as rules, Reminder};
@@ -34,9 +35,9 @@ impl Task for EngagementEndReminders {
     async fn run(&self, ctx: &AppContext, vars: &Vars) -> Result<()> {
         let as_of = match vars.cli_arg("as_of") {
             Ok(text) => text
-                .parse::<NaiveDate>()
+                .parse::<Date>()
                 .map_err(|e| Error::string(&format!("as_of must be YYYY-MM-DD: {e}")))?,
-            Err(_) => chrono::Utc::now().date_naive(),
+            Err(_) => crate::dates::today(),
         };
         let window = match vars.cli_arg("days_ahead") {
             Ok(text) => text
@@ -67,7 +68,7 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> Result<Report> {
+pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let staff = sqlx::query!(
         "SELECT pid, status, display_name, organization_ref, manager_pid, engagement_ends_on FROM workers
@@ -82,7 +83,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
         if matches!(worker.status.as_str(), "terminated" | "retired") {
             continue;
         }
-        let Some(reminder) = rules::reminder_for(ends_on, as_of, window) else {
+        let Some(reminder) = rules::reminder_for(ends_on.get(), as_of, window) else {
             continue;
         };
         // A decision already recorded for this end date settles it: nothing more to ask.
@@ -149,7 +150,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: NaiveDate, window: i64) -> 
             worker.pid,
             ends_on,
             reminder.as_str(),
-            as_of,
+            SqlDate(as_of),
         )
         .execute(&mut *tx)
         .await?;

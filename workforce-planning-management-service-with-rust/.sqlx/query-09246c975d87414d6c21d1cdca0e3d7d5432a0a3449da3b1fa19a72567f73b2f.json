@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, movement_pid, position,\n                  title, category, due_on, assignee_pid, done_on, done_by, skipped_reason\n             FROM movement_items WHERE movement_pid = $1\n            ORDER BY position, id",
+  "query": "SELECT created_at, updated_at, id, pid, movement_pid, position,\n                  title, category, due_on, assignee_pid, done_on, done_by, skipped_reason\n             FROM movement_items WHERE movement_pid = $1\n            ORDER BY position, id",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -168,5 +168,5 @@
       true
     ]
   },
-  "hash": "44a3efbc291d53c59b147bdf7db9a8e42e51ac6695c0f75c00ea8108bf96d039"
+  "hash": "09246c975d87414d6c21d1cdca0e3d7d5432a0a3449da3b1fa19a72567f73b2f"
 }

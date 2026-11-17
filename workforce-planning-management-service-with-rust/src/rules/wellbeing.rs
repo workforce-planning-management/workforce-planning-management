@@ -7,7 +7,7 @@
 //! arithmetic never panics; an unknown birth date makes an age-banded
 //! rule **not** eligible (honest: unknown is not a match).
 
-use chrono::{Datelike, NaiveDate};
+use jiff::civil::Date;
 
 /// The closed acknowledgement vocabulary: what a worker can say
 /// about a prompt. An HR workflow fact — never a clinical status.
@@ -50,11 +50,11 @@ pub fn valid_age_band(min_age: Option<i32>, max_age: Option<i32>) -> bool {
 /// date is in the future of `on`. Never panics: leap-day birthdays
 /// count from 1 March in a common year.
 #[must_use]
-pub fn age_on(born: NaiveDate, on: NaiveDate) -> Option<i32> {
+pub fn age_on(born: Date, on: Date) -> Option<i32> {
     if born > on {
         return None;
     }
-    let mut age = on.year() - born.year();
+    let mut age = i32::from(on.year()) - i32::from(born.year());
     let had_birthday = (on.month(), on.day()) >= (born.month(), born.day());
     if !had_birthday {
         age -= 1;
@@ -74,14 +74,14 @@ pub struct Predicates<'a> {
     /// Job-title allow-list; empty ⇒ every job title.
     pub job_titles: &'a [String],
     /// First day the rule is active, if bounded.
-    pub active_from: Option<NaiveDate>,
+    pub active_from: Option<Date>,
     /// Last day the rule is active, if bounded.
-    pub active_until: Option<NaiveDate>,
+    pub active_until: Option<Date>,
 }
 
 /// Whether the rule is active on `today` (both bounds inclusive).
 #[must_use]
-pub fn active_on(predicates: &Predicates<'_>, today: NaiveDate) -> bool {
+pub fn active_on(predicates: &Predicates<'_>, today: Date) -> bool {
     predicates.active_from.is_none_or(|from| today >= from)
         && predicates.active_until.is_none_or(|until| today <= until)
 }
@@ -97,7 +97,7 @@ pub fn eligible(
     age: Option<i32>,
     department: &str,
     job_title: &str,
-    today: NaiveDate,
+    today: Date,
 ) -> bool {
     if !active_on(predicates, today) {
         return false;
@@ -147,8 +147,8 @@ pub fn prompt_state(doses: i32, response: Option<&str>, reminded: bool) -> Promp
 mod tests {
     use super::*;
 
-    fn date(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn date(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     fn open(departments: &[String]) -> Predicates<'_> {

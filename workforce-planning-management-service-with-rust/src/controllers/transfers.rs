@@ -4,9 +4,10 @@
 //! memberships that no longer fit end** (kept as past membership, not
 //! deleted).
 
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Utc;
+use jiff::Timestamp;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -90,7 +91,7 @@ async fn transfer(
     for membership in open.iter().filter(|m| to_end.contains(&m.pid)) {
         sqlx::query!(
             "UPDATE group_members SET left_at = $1 WHERE pid = $2",
-            Utc::now(),
+            SqlTimestamp(Timestamp::now()),
             membership.pid,
         )
         .execute(&mut *tx)

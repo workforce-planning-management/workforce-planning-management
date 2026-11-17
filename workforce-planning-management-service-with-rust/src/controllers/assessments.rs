@@ -23,8 +23,10 @@
 //! payload names its derivation.
 
 use super::row_json;
+use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
+use jiff::{Timestamp, civil::Date};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -256,7 +258,7 @@ struct AssessmentPayload {
     #[serde(default)]
     application_pid: Option<Uuid>,
     #[serde(default)]
-    scheduled_on: Option<chrono::NaiveDate>,
+    scheduled_on: Option<Date>,
     #[serde(default)]
     administered_by: Option<String>,
     #[serde(default)]
@@ -312,7 +314,7 @@ async fn create_assessment(
         payload.subject_kind,
         payload.subject_pid,
         payload.application_pid,
-        payload.scheduled_on,
+        payload.scheduled_on.map(SqlDate),
         payload.administered_by,
         payload.notes,
     )
@@ -371,7 +373,7 @@ async fn assessment_status(
     rules::assessment_transition(&row.status, &payload.to)
         .map_err(|reason| unprocessable(&reason))?;
 
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let instrument = find_instrument(&ctx, row.instrument_pid).await?;
     let from = row.status.clone();
     let row_pid = row.pid;
@@ -409,9 +411,9 @@ async fn assessment_status(
         row.id,
         payload.to,
         completing,
-        today,
+        SqlDate(today),
         expires.is_some(),
-        expires.flatten(),
+        expires.flatten().map(SqlDate),
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -440,10 +442,11 @@ async fn assessment_status(
 
 /// The expiry date `months` after `from`, or `None` when the arithmetic
 /// would overflow the calendar (never panics — security invariant 2).
-fn expiry_from(from: chrono::NaiveDate, months: i32) -> Option<chrono::NaiveDate> {
+fn expiry_from(from: Date, months: i32) -> Option<Date> {
     u32::try_from(months)
         .ok()
-        .and_then(|m| from.checked_add_months(chrono::Months::new(m)))
+        .and_then(|m| jiff::Span::new().try_months(m).ok())
+        .and_then(|span| from.checked_add(span).ok())
 }
 
 /// `POST /api/assessments/{pid}/results` body — record (or replace) one
@@ -657,7 +660,7 @@ async fn delete_assessment(
     sqlx::query!(
         "UPDATE assessments SET deleted_at = $2 WHERE id = $1",
         assessment.id,
-        chrono::DateTime::<chrono::FixedOffset>::from(chrono::Utc::now()),
+        SqlTimestamp(Timestamp::now()),
     )
     .execute(&mut *tx)
     .await?;
@@ -690,7 +693,7 @@ async fn delete_assessment(
 #[derive(Debug, Deserialize)]
 struct ProfileQuery {
     /// Judge currency as of this date (default today).
-    as_of: Option<chrono::NaiveDate>,
+    as_of: Option<Date>,
 }
 
 /// `GET /api/candidates/{pid}/assessment-profile` — a candidate's
@@ -735,7 +738,7 @@ async fn subject_profile(
     caller: &MaybeAuthUser,
     subject_kind: &str,
     subject_pid: Uuid,
-    as_of: Option<chrono::NaiveDate>,
+    as_of: Option<Date>,
 ) -> Result<Response> {
     let obligations = auth::authorize_record(
         caller,
@@ -763,10 +766,10 @@ async fn build_profile(
     ctx: &AppContext,
     subject_kind: &str,
     subject_pid: Uuid,
-    as_of: Option<chrono::NaiveDate>,
+    as_of: Option<Date>,
     masked: bool,
 ) -> Result<Response> {
-    let as_of = as_of.unwrap_or_else(|| chrono::Utc::now().date_naive());
+    let as_of = as_of.unwrap_or_else(crate::dates::today);
     let sittings = sqlx::query_as!(
         assessments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, instrument_pid, subject_kind,
@@ -796,7 +799,7 @@ async fn build_profile(
             .collect();
         let current: Vec<&&assessments::Model> = in_category
             .iter()
-            .filter(|a| rules::is_current(&a.status, a.expires_on, as_of))
+            .filter(|a| rules::is_current(&a.status, a.expires_on.map(SqlDate::get), as_of))
             .collect();
 
         // Latest current reading per scale; ties on the completion date
@@ -989,7 +992,7 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
         })
         .collect();
     format::json(serde_json::json!({
-        "as_of": chrono::Utc::now(),
+        "as_of": Timestamp::now(),
         "note": "counts over live sittings; the band distribution is aggregate only — \
                  no individual score is reported here",
         "categories": categories,
@@ -1117,8 +1120,8 @@ mod tests {
     /// A stored result, as the DB would return it.
     fn a_result(scale: &str, percentile: Option<i32>) -> assessment_results::Model {
         assessment_results::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             assessment_pid: Uuid::new_v4(),
@@ -1134,8 +1137,8 @@ mod tests {
     /// An instrument row declaring `scales`.
     fn an_instrument(category: &str, scales: &[&str]) -> assessment_instruments::Model {
         assessment_instruments::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             name: "Test".to_string(),
@@ -1181,8 +1184,8 @@ mod tests {
     fn resource_attrs_expose_category_status_and_subject() {
         let instrument = an_instrument("selection", &["job_simulation"]);
         let sitting = assessments::Model {
-            created_at: chrono::Utc::now().into(),
-            updated_at: chrono::Utc::now().into(),
+            created_at: Timestamp::now().into(),
+            updated_at: Timestamp::now().into(),
             id: 1,
             pid: Uuid::new_v4(),
             instrument_pid: instrument.pid,
@@ -1207,7 +1210,7 @@ mod tests {
     /// negative or absurd validity.
     #[test]
     fn expiry_is_derived_and_never_panics() {
-        let day = |y, m, d| chrono::NaiveDate::from_ymd_opt(y, m, d).expect("valid date");
+        let day = |y, m, d| crate::dates::ymd(y, m, d).expect("valid date");
         assert_eq!(expiry_from(day(2026, 7, 23), 12), Some(day(2027, 7, 23)));
         assert_eq!(expiry_from(day(2026, 1, 31), 1), Some(day(2026, 2, 28)));
         assert_eq!(expiry_from(day(2026, 7, 23), -1), None, "negative months");

@@ -5,8 +5,10 @@
 //! worker's record-level ABAC pass (WPM-R15).
 
 use super::row_json;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -182,8 +184,8 @@ fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
 #[derive(Debug, Deserialize)]
 struct RunPayload {
     organization_ref: String,
-    period_start: chrono::NaiveDate,
-    period_end: chrono::NaiveDate,
+    period_start: Date,
+    period_end: Date,
     #[serde(default)]
     notes: Option<String>,
 }
@@ -197,7 +199,7 @@ struct BenchmarkPayload {
     median_minor: i64,
     max_minor: i64,
     source: String,
-    as_of: chrono::NaiveDate,
+    as_of: Date,
 }
 
 /// A `{pid}` reference response.
@@ -231,8 +233,8 @@ async fn create_run(
          VALUES ($1, $2, $3, $4, 'draft', NULL, $5, NULL)",
         pid,
         payload.organization_ref,
-        payload.period_start,
-        payload.period_end,
+        SqlDate(payload.period_start),
+        SqlDate(payload.period_end),
         payload.notes,
     )
     .execute(&mut *tx)
@@ -340,14 +342,13 @@ async fn calculate_run(
     let holidays = holiday_dates(
         &mut tx,
         &run.organization_ref,
-        run.period_start,
-        run.period_end,
+        run.period_start.get(),
+        run.period_end.get(),
     )
     .await?;
     // Earlier runs of the same calendar year, for the wage base of an employer cost line (WPM-D170): approved or paid, ending before
     // this period starts.
     let earlier_runs: Vec<Uuid> = {
-        use chrono::Datelike;
         sqlx::query!(
             "SELECT pid, period_end FROM payroll_runs
               WHERE organization_ref = $1 AND status IN ('approved', 'paid') AND period_end < $2 AND pid <> $3",
@@ -383,10 +384,10 @@ async fn calculate_run(
         )
         .fetch_all(&mut *tx)
         .await?;
-        let mut days: std::collections::BTreeMap<chrono::NaiveDate, (i32, i32)> =
+        let mut days: std::collections::BTreeMap<Date, (i32, i32)> =
             std::collections::BTreeMap::new();
         for entry in &entries {
-            let slot = days.entry(entry.worked_on).or_default();
+            let slot = days.entry(entry.worked_on.get()).or_default();
             if entry.kind == "overtime" {
                 slot.1 += entry.minutes;
             } else {
@@ -433,10 +434,9 @@ async fn calculate_run(
         )
         .fetch_all(&mut *tx)
         .await?;
-        let mut worked: std::collections::BTreeMap<chrono::NaiveDate, u32> =
-            std::collections::BTreeMap::new();
+        let mut worked: std::collections::BTreeMap<Date, u32> = std::collections::BTreeMap::new();
         for entry in entries.iter().filter(|entry| entry.kind != "on_call") {
-            *worked.entry(entry.worked_on).or_default() +=
+            *worked.entry(entry.worked_on.get()).or_default() +=
                 u32::try_from(entry.minutes.max(0)).unwrap_or(0);
         }
         let found = statutory_outcome(
@@ -446,7 +446,7 @@ async fn calculate_run(
             None,
             &OutcomeContext {
                 profile,
-                as_of: run.period_end,
+                as_of: run.period_end.get(),
                 currency: &currency,
                 month_minutes: stub.month_minutes,
                 holidays: &holidays,
@@ -482,11 +482,14 @@ async fn calculate_run(
             .iter()
             .sum()
         };
-        let (employer_cost, employer_costs) =
-            employer_costs_for(profile, worker, run.period_end, slip.gross_minor, earlier)
-                .map_err(|e| {
-                    unprocessable(&format!("payslip for {}: {e}", worker.worker_number))
-                })?;
+        let (employer_cost, employer_costs) = employer_costs_for(
+            profile,
+            worker,
+            run.period_end.get(),
+            slip.gross_minor,
+            earlier,
+        )
+        .map_err(|e| unprocessable(&format!("payslip for {}: {e}", worker.worker_number)))?;
         sqlx::query!(
             "INSERT INTO payslips (pid, run_pid, worker_pid, currency, gross_minor, deductions, net_minor,
                                    statutory_overtime_minor, employer_cost_minor, employer_costs, deleted_at)
@@ -761,7 +764,7 @@ async fn create_benchmark(
         payload.median_minor,
         payload.max_minor,
         payload.source,
-        payload.as_of,
+        SqlDate(payload.as_of),
     )
     .execute(&mut *tx)
     .await?;
@@ -878,7 +881,7 @@ pub(crate) struct WageCheck {
 pub(crate) async fn check_minimum_wage(
     ctx: &AppContext,
     run: &payroll_runs::Model,
-    known_births: &mut std::collections::BTreeMap<String, Option<chrono::NaiveDate>>,
+    known_births: &mut std::collections::BTreeMap<String, Option<Date>>,
 ) -> Result<WageCheck> {
     use crate::rules::jurisdiction::Resolution;
     use crate::rules::minimum_wage as mw;
@@ -910,8 +913,8 @@ pub(crate) async fn check_minimum_wage(
     .await?;
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
-    let as_of = run.period_end;
-    let period_days = (run.period_end - run.period_start).num_days() + 1;
+    let as_of = run.period_end.get();
+    let period_days = crate::dates::days_between(run.period_start.get(), run.period_end.get()) + 1;
 
     let mut counts: BTreeMap<&'static str, u64> = ["below", "near", "ok", "none_by_law", "unknown"]
         .into_iter()
@@ -1061,7 +1064,7 @@ async fn minimum_wage_check(
 fn employer_costs_for(
     profile: &super::jurisdictions::Profile,
     worker: &workers::Model,
-    as_of: chrono::NaiveDate,
+    as_of: Date,
     gross_minor: i64,
     earlier_gross_minor: i64,
 ) -> std::result::Result<(i64, serde_json::Value), String> {
@@ -1118,23 +1121,21 @@ struct StatutoryOutcome {
 async fn holiday_dates(
     connection: &mut sqlx::PgConnection,
     organization: &str,
-    from: chrono::NaiveDate,
-    to: chrono::NaiveDate,
-) -> Result<std::collections::BTreeMap<String, std::collections::BTreeSet<chrono::NaiveDate>>> {
-    let mut found: std::collections::BTreeMap<
-        String,
-        std::collections::BTreeSet<chrono::NaiveDate>,
-    > = std::collections::BTreeMap::new();
+    from: Date,
+    to: Date,
+) -> Result<std::collections::BTreeMap<String, std::collections::BTreeSet<Date>>> {
+    let mut found: std::collections::BTreeMap<String, std::collections::BTreeSet<Date>> =
+        std::collections::BTreeMap::new();
     for h in sqlx::query!(
         "SELECT region, observed_on FROM holidays WHERE organization_ref = $1 AND observed_on >= $2 AND observed_on <= $3",
         organization,
-        from,
-        to,
+        SqlDate(from),
+        SqlDate(to),
     )
     .fetch_all(connection)
     .await?
     {
-        found.entry(h.region).or_default().insert(h.observed_on);
+        found.entry(h.region).or_default().insert(h.observed_on.get());
     }
     Ok(found)
 }
@@ -1144,10 +1145,10 @@ async fn holiday_dates(
 #[derive(Clone, Copy)]
 struct OutcomeContext<'a> {
     profile: &'a super::jurisdictions::Profile,
-    as_of: chrono::NaiveDate,
+    as_of: Date,
     currency: &'a str,
     month_minutes: i64,
-    holidays: &'a std::collections::BTreeMap<String, std::collections::BTreeSet<chrono::NaiveDate>>,
+    holidays: &'a std::collections::BTreeMap<String, std::collections::BTreeSet<Date>>,
 }
 
 /// Derives [`StatutoryOutcome`] for one worker. `seats` is the overtime status recorded on each seat the worker holds, `on_days` the
@@ -1156,8 +1157,8 @@ struct OutcomeContext<'a> {
 fn statutory_outcome(
     worker: Option<&workers::Model>,
     seats: &[String],
-    on_days: &std::collections::BTreeMap<chrono::NaiveDate, u32>,
-    year_days: Option<&std::collections::BTreeMap<chrono::NaiveDate, u32>>,
+    on_days: &std::collections::BTreeMap<Date, u32>,
+    year_days: Option<&std::collections::BTreeMap<Date, u32>>,
     at: &OutcomeContext<'_>,
 ) -> StatutoryOutcome {
     use crate::rules::jurisdiction::Resolution;
@@ -1265,10 +1266,10 @@ fn statutory_outcome(
                 .unwrap_or_default(),
             _ => Vec::new(),
         };
-        let kind_of = |date: chrono::NaiveDate| {
+        let kind_of = |date: Date| {
             if holidays.get(place).is_some_and(|set| set.contains(&date)) {
                 ot::DayKind::Holiday
-            } else if weekend.contains(&chrono::Datelike::weekday(&date)) {
+            } else if weekend.contains(&date.weekday()) {
                 ot::DayKind::Rest
             } else {
                 ot::DayKind::Ordinary
@@ -1292,11 +1293,10 @@ fn statutory_outcome(
                 // The advisory caps: overtime in the calendar month up to the run's end and in the calendar year, over the weeks that
                 // begin there. A cap that is not configured is absent, never "within".
                 if let Some(year_days) = year_days {
-                    use chrono::Datelike;
-                    let month_start = as_of.with_day(1).unwrap_or(as_of);
+                    let month_start = as_of.first_of_month();
                     let year_start =
-                        chrono::NaiveDate::from_ymd_opt(as_of.year(), 1, 1).unwrap_or(as_of);
-                    let used = |from: chrono::NaiveDate| {
+                        crate::dates::ymd(i32::from(as_of.year()), 1, 1).unwrap_or(as_of);
+                    let used = |from: Date| {
                         let days = ot::weeks_beginning_between(year_days, week_start, from, as_of);
                         match ot::derive_period_kinds(
                             status,
@@ -1380,30 +1380,33 @@ async fn overtime_check(
     }
     // The caps count whole weeks from the start of the year, so the time and the holidays are read from a week before 1 January.
     let year_from = {
-        use chrono::Datelike;
-        chrono::NaiveDate::from_ymd_opt(run.period_end.year(), 1, 1).unwrap_or(run.period_start)
-            - chrono::Duration::days(6)
+        crate::dates::ymd(i32::from(run.period_end.year()), 1, 1).unwrap_or(run.period_start.get())
+            - crate::dates::days(6)
     }
-    .min(run.period_start);
+    .min(run.period_start.get());
     // Approved minutes by worker and day. On-call entries are not hours worked.
     let entries = sqlx::query!(
         "SELECT worker_pid, worked_on, minutes FROM time_entries
           WHERE worker_pid = ANY($1) AND status = 'approved' AND worked_on >= $2 AND worked_on <= $3
             AND kind <> 'on_call' AND deleted_at IS NULL",
         &worker_pids,
-        year_from,
+        SqlDate(year_from),
         run.period_end,
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let mut days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
-    let mut year_days: BTreeMap<Uuid, BTreeMap<chrono::NaiveDate, u32>> = BTreeMap::new();
+    let mut days: BTreeMap<Uuid, BTreeMap<Date, u32>> = BTreeMap::new();
+    let mut year_days: BTreeMap<Uuid, BTreeMap<Date, u32>> = BTreeMap::new();
     for entry in entries {
         let (worker, on) = (entry.worker_pid, entry.worked_on);
         let minutes = u32::try_from(entry.minutes.max(0)).unwrap_or(0);
-        *year_days.entry(worker).or_default().entry(on).or_default() += minutes;
+        *year_days
+            .entry(worker)
+            .or_default()
+            .entry(on.get())
+            .or_default() += minutes;
         if on >= run.period_start {
-            *days.entry(worker).or_default().entry(on).or_default() += minutes;
+            *days.entry(worker).or_default().entry(on.get()).or_default() += minutes;
         }
     }
     let profiles = super::jurisdictions::profiles_for(
@@ -1413,7 +1416,7 @@ async fn overtime_check(
     .await?;
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
-    let as_of = run.period_end;
+    let as_of = run.period_end.get();
     let month_minutes = tax_stub().0.month_minutes;
 
     let mut counts: BTreeMap<&'static str, u64> = [
@@ -1433,7 +1436,7 @@ async fn overtime_check(
         &mut *read_connection(&ctx).await?,
         &run.organization_ref,
         year_from,
-        run.period_end,
+        run.period_end.get(),
     )
     .await?;
     let mut rows = Vec::with_capacity(slips.len());

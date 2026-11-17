@@ -7,8 +7,7 @@
 //!   quietly closed.
 //! - **An average is withheld under the floor**, for each sex on its own, and a side with nobody is unknown.
 //! - **The figures are not stored.** Only the dates are; the answer is worked out when it is given.
-
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 
 use super::pay_gap::{Figure, Reason, mean_minor};
@@ -20,8 +19,10 @@ pub const MAX_ANSWER_MONTHS: u32 = 12;
 
 /// The day an answer is due: `months` calendar months after the request (a month-end clamps to the shorter month).
 #[must_use]
-pub fn due_on(asked_on: NaiveDate, months: u32) -> Option<NaiveDate> {
-    asked_on.checked_add_months(Months::new(months))
+pub fn due_on(asked_on: Date, months: u32) -> Option<Date> {
+    asked_on
+        .checked_add(jiff::Span::new().try_months(months).ok()?)
+        .ok()
 }
 
 /// Where a request stands.
@@ -38,7 +39,7 @@ pub enum Standing {
 
 /// A request's standing on `today`. The due day itself is still open; the day after is overdue.
 #[must_use]
-pub fn standing(answered_on: Option<NaiveDate>, due_on: NaiveDate, today: NaiveDate) -> Standing {
+pub fn standing(answered_on: Option<Date>, due_on: Date, today: Date) -> Standing {
     if answered_on.is_some() {
         Standing::Answered
     } else if today > due_on {
@@ -124,8 +125,8 @@ pub fn require_range(min: Option<i64>, max: Option<i64>) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     #[test]
@@ -142,7 +143,7 @@ mod tests {
             "to a leap day when there is one"
         );
         assert_eq!(due_on(day(2026, 1, 15), 0), Some(day(2026, 1, 15)));
-        assert_eq!(due_on(NaiveDate::MAX, 1), None, "past the calendar");
+        assert_eq!(due_on(Date::MAX, 1), None, "past the calendar");
     }
 
     #[test]

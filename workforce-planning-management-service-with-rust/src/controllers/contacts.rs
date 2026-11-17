@@ -19,9 +19,10 @@
 // written with `+` has an E.164 form (WPM-D152).
 use super::writable_worker;
 use crate::rules::phone as phone_rules;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -449,9 +450,9 @@ struct BackupPayload {
     #[serde(default)]
     priority: Option<i32>,
     #[serde(default)]
-    starts_on: Option<NaiveDate>,
+    starts_on: Option<Date>,
     #[serde(default)]
-    ends_on: Option<NaiveDate>,
+    ends_on: Option<Date>,
     #[serde(default)]
     note: Option<String>,
 }
@@ -490,8 +491,12 @@ async fn add_backup(
     )
     .map_err(|e| unprocessable(&e))?;
     let backup = live_worker(&ctx, payload.backup_pid).await?;
-    let today = Utc::now().date_naive();
-    if !metric_rules::is_employed_on(today, backup.hired_on, backup.terminated_on) {
+    let today = crate::dates::today();
+    if !metric_rules::is_employed_on(
+        today,
+        backup.hired_on.get(),
+        backup.terminated_on.map(SqlDate::get),
+    ) {
         return Err(unprocessable("that backup is not currently employed"));
     }
     if let Some(refs) = memberships::scope_organization_refs(&ctx, caller.claims()).await?
@@ -509,8 +514,8 @@ async fn add_backup(
         worker.pid,
         backup.pid,
         priority,
-        payload.starts_on,
-        payload.ends_on,
+        payload.starts_on.map(SqlDate),
+        payload.ends_on.map(SqlDate),
         clean(payload.note),
         caller.actor(),
         auth::acting_for_other(&caller, &worker.person_ref),
@@ -536,9 +541,9 @@ struct BackupUpdate {
     #[serde(default)]
     priority: Option<i32>,
     #[serde(default)]
-    starts_on: Option<NaiveDate>,
+    starts_on: Option<Date>,
     #[serde(default)]
-    ends_on: Option<NaiveDate>,
+    ends_on: Option<Date>,
     #[serde(default)]
     note: Option<String>,
 }
@@ -567,8 +572,8 @@ async fn update_backup(
     let row = find_backup(&ctx, &pid).await?;
     let worker = writable_worker(&ctx, &caller, &row.worker_pid.to_string()).await?;
     let priority = payload.priority.unwrap_or(row.priority);
-    let starts_on = payload.starts_on.or(row.starts_on);
-    let ends_on = payload.ends_on.or(row.ends_on);
+    let starts_on = payload.starts_on.or(row.starts_on.map(SqlDate::get));
+    let ends_on = payload.ends_on.or(row.ends_on.map(SqlDate::get));
     cover_rules::validate_backup(worker.pid, row.backup_pid, priority, starts_on, ends_on)
         .map_err(|e| unprocessable(&e))?;
     let note = payload
@@ -583,8 +588,8 @@ async fn update_backup(
                   starts_on, ends_on, note, recorded_by, on_behalf, deleted_at AS "deleted_at: _""#,
         row.id,
         priority,
-        starts_on,
-        ends_on,
+        starts_on.map(SqlDate),
+        ends_on.map(SqlDate),
         note,
     )
     .fetch_optional(&mut *tx)
@@ -637,7 +642,7 @@ async fn delete_backup(
 #[derive(Debug, Deserialize)]
 struct CoverQuery {
     /// The day to resolve (default today).
-    on: Option<NaiveDate>,
+    on: Option<Date>,
 }
 
 /// `GET /api/workers/{pid}/cover?on=` — who covers for this worker on a
@@ -658,7 +663,7 @@ async fn cover(
         &auth::worker_resource_attrs(&worker),
     )
     .map_err(record_rejection)?;
-    let on = query.on.unwrap_or_else(|| Utc::now().date_naive());
+    let on = query.on.unwrap_or_else(crate::dates::today);
     let rows = live_backups(&ctx, worker.pid).await?;
     let who = backup_workers(&ctx, &rows).await?;
     let ids: Vec<Uuid> = rows.iter().map(|b| b.backup_pid).collect();
@@ -666,21 +671,25 @@ async fn cover(
         "SELECT worker_pid FROM leave_requests
           WHERE worker_pid = ANY($1) AND status = 'approved' AND deleted_at IS NULL AND start_on <= $2 AND end_on >= $2",
         &ids,
-        on,
+        SqlDate(on),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
     let candidates: Vec<Candidate> = rows
         .iter()
         .map(|b| {
-            let employed = who
-                .get(&b.backup_pid)
-                .is_some_and(|w| metric_rules::is_employed_on(on, w.hired_on, w.terminated_on));
+            let employed = who.get(&b.backup_pid).is_some_and(|w| {
+                metric_rules::is_employed_on(
+                    on,
+                    w.hired_on.get(),
+                    w.terminated_on.map(SqlDate::get),
+                )
+            });
             Candidate {
                 backup: b.backup_pid,
                 priority: b.priority,
-                starts_on: b.starts_on,
-                ends_on: b.ends_on,
+                starts_on: b.starts_on.map(SqlDate::get),
+                ends_on: b.ends_on.map(SqlDate::get),
                 employed,
                 on_leave: on_leave.contains(&b.backup_pid),
             }

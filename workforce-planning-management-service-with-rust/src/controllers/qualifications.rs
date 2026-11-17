@@ -3,9 +3,10 @@
 //! list shows how each requirement of their current role stands: met only by a verified match in date. No role recorded reads
 //! `role: null`, never an empty gap. The arithmetic is `rules::qualification`. Spec: `spec/staff-records-and-pay.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
@@ -86,12 +87,12 @@ fn held_of(q: &qualifications::Model) -> rules::Held {
         kind: q.kind.clone(),
         framework: q.framework.clone(),
         level: q.level,
-        expires_on: q.expires_on,
+        expires_on: q.expires_on.map(SqlDate::get),
         verified: q.verified_on.is_some(),
     }
 }
 
-fn row(q: &qualifications::Model, today: NaiveDate) -> Value {
+fn row(q: &qualifications::Model, today: Date) -> Value {
     json!({
         "pid": q.pid, "kind": q.kind, "title": q.title, "awarding_body": q.awarding_body,
         "framework": q.framework, "level": q.level, "awarded_on": q.awarded_on, "expires_on": q.expires_on,
@@ -117,8 +118,8 @@ struct AddPayload {
     awarding_body: Option<String>,
     framework: Option<String>,
     level: Option<i32>,
-    awarded_on: Option<NaiveDate>,
-    expires_on: Option<NaiveDate>,
+    awarded_on: Option<Date>,
+    expires_on: Option<Date>,
 }
 
 /// `POST /api/workers/{pid}/qualifications` — the person or HR adds a qualification; it is `declared`.
@@ -157,7 +158,7 @@ async fn add(
     {
         problems.push("expires_on must not be before awarded_on".to_string());
     }
-    if p.awarded_on.is_some_and(|a| a > Utc::now().date_naive()) {
+    if p.awarded_on.is_some_and(|a| a > crate::dates::today()) {
         problems.push("awarded_on must not be in the future".to_string());
     }
     ensure_valid(&problems)?;
@@ -174,8 +175,8 @@ async fn add(
         body,
         framework,
         p.level,
-        p.awarded_on,
-        p.expires_on,
+        p.awarded_on.map(SqlDate),
+        p.expires_on.map(SqlDate),
         caller.actor(),
     )
     .execute(&mut *tx)
@@ -236,7 +237,7 @@ async fn verify(
         sqlx::query!(
             "UPDATE qualifications SET verified_on = $2, verified_by = $3, evidence_ref = $4 WHERE id = $1",
             q.id,
-            Utc::now().date_naive(),
+            SqlDate(crate::dates::today()),
             caller.actor(),
             evidence,
         )
@@ -316,7 +317,7 @@ async fn role_and_gap(
     ctx: &AppContext,
     worker: Uuid,
     held: &[rules::Held],
-    today: NaiveDate,
+    today: Date,
 ) -> Result<(Value, Vec<Value>)> {
     let Some(profile) = current_role(ctx, worker).await? else {
         return Ok((Value::Null, Vec::new()));
@@ -361,7 +362,7 @@ async fn team(
             "a team's qualifications are for that team's manager",
         ));
     }
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let staff = current_staff(&ctx, &manager.organization_ref).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
@@ -401,7 +402,7 @@ async fn of_worker(
     Path(pid): Path<String>,
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let mine = held_by_any(&ctx, &[worker.pid]).await?;
     let held: Vec<rules::Held> = mine.iter().map(held_of).collect();
     let (role, gap) = role_and_gap(&ctx, worker.pid, &held, today).await?;
@@ -520,7 +521,7 @@ async fn unverified(
     Query(q): Query<OrgQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let waiting = sqlx::query_as!(
@@ -542,7 +543,7 @@ async fn unverified(
             let mut v = row(w, today);
             v["worker_pid"] = json!(w.worker_pid);
             v["display_name"] = json!(name_of.get(&w.worker_pid));
-            v["declared_on"] = json!(w.created_at.date_naive());
+            v["declared_on"] = json!(crate::dates::date_of(w.created_at));
             v
         })
         .collect();
@@ -559,7 +560,7 @@ async fn rollup(
     Query(q): Query<OrgQuery>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &q.organization).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let links = sqlx::query!(

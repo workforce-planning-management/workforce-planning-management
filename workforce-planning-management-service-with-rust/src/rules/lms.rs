@@ -7,7 +7,7 @@
 //! reports completions here. Every event carries an `external_ref` so a
 //! redelivery is recognised and changes nothing.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use std::fmt::Write;
 
 use crate::rules::cpd::to_hundredths;
@@ -24,9 +24,9 @@ pub const MAX_EXTERNAL_REF_LEN: usize = 200;
 /// A message naming the offending field.
 pub fn validate_completion(
     external_ref: &str,
-    completed_on: NaiveDate,
-    certificate_expires_on: Option<NaiveDate>,
-    today: NaiveDate,
+    completed_on: Date,
+    certificate_expires_on: Option<Date>,
+    today: Date,
 ) -> Result<(), String> {
     let reference = external_ref.trim();
     if reference.is_empty() {
@@ -83,17 +83,17 @@ pub struct Existing<'a> {
     /// Its status.
     pub status: &'a str,
     /// When it was completed.
-    pub completed_on: Option<NaiveDate>,
+    pub completed_on: Option<Date>,
     /// Certificate expiry.
-    pub certificate_expires_on: Option<NaiveDate>,
+    pub certificate_expires_on: Option<Date>,
 }
 
 /// Decide what a completion does to the matching enrollment, if any.
 #[must_use]
 pub fn enrollment_action(
     existing: Option<&Existing<'_>>,
-    completed_on: NaiveDate,
-    certificate_expires_on: Option<NaiveDate>,
+    completed_on: Date,
+    certificate_expires_on: Option<Date>,
 ) -> EnrollmentAction {
     match existing {
         None => EnrollmentAction::Create,
@@ -181,8 +181,8 @@ pub fn is_unchanged(enrollment: &str, cpd: &str) -> bool {
 mod tests {
     use super::*;
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).expect("valid date")
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).expect("valid date")
     }
 
     /// An event needs a reference, a non-future completion, and a sane expiry.

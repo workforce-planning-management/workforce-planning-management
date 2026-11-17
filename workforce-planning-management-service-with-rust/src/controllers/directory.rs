@@ -16,7 +16,7 @@
 //! only ever someone the caller could find in the directory anyway.
 
 use axa::prelude::*;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -27,6 +27,7 @@ use crate::db::pool;
 use crate::models::memberships;
 use crate::rules::cover::{self as cover_rules, Candidate};
 use crate::rules::directory as rules;
+use crate::sql_time::SqlDate;
 
 /// Default page size: a directory is browsed, not exported.
 const DIRECTORY_DEFAULT_LIMIT: u64 = 50;
@@ -58,7 +59,7 @@ struct DirectoryParams {
 async fn matches(
     ctx: &AppContext,
     refs: Option<&[String]>,
-    today: NaiveDate,
+    today: Date,
     params: &DirectoryParams,
     on_call: &HashMap<Uuid, Vec<String>>,
     window: &Window,
@@ -118,7 +119,7 @@ async fn matches(
             SELECT pid FROM matching ORDER BY sort_name, pid LIMIT $7 OFFSET $8
         ) AS "page!"
         "#,
-        today,
+        SqlDate(today),
         refs,
         department,
         &terms,
@@ -133,7 +134,7 @@ async fn matches(
 }
 
 /// Who among `pids` is on approved leave `today`.
-async fn away_among(ctx: &AppContext, pids: &[Uuid], today: NaiveDate) -> Result<HashSet<Uuid>> {
+async fn away_among(ctx: &AppContext, pids: &[Uuid], today: Date) -> Result<HashSet<Uuid>> {
     let away = sqlx::query_scalar!(
         "SELECT worker_pid FROM leave_requests
          WHERE worker_pid = ANY($1)
@@ -142,7 +143,7 @@ async fn away_among(ctx: &AppContext, pids: &[Uuid], today: NaiveDate) -> Result
            AND start_on <= $2
            AND end_on >= $2",
         pids,
-        today,
+        SqlDate(today),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -166,7 +167,7 @@ async fn directory(
 
     let refs = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let refs = refs.as_deref();
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let on_call = super::rotas::on_call_today(&ctx, &caller).await?;
 
     // The pid past the page only says that more follow; nothing is read for it.
@@ -216,7 +217,7 @@ async fn directory(
           AND ($3::text[] IS NULL OR organization_ref = ANY($3))
         "#,
         &wanted,
-        today,
+        SqlDate(today),
         refs,
     )
     .fetch_all(pool(&ctx))
@@ -253,8 +254,8 @@ async fn directory(
                     .map(|b| Candidate {
                         backup: b.backup_pid,
                         priority: b.priority,
-                        starts_on: b.starts_on,
-                        ends_on: b.ends_on,
+                        starts_on: b.starts_on.map(SqlDate::get),
+                        ends_on: b.ends_on.map(SqlDate::get),
                         employed: known.contains_key(&b.backup_pid),
                         on_leave: away.contains(&b.backup_pid),
                     })

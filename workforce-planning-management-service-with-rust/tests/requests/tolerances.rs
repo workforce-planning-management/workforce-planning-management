@@ -1,7 +1,5 @@
 //! Tolerances on a workforce plan (WPM-R140, WPM-D93): the deviation, the limit and a red, amber or
 //! green status, with an unknown never green.
-
-use chrono::Utc;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -55,7 +53,7 @@ async fn a_plan_shows_red_amber_green_and_an_unknown_is_never_green() {
             .await
             .assert_status_ok();
         let url = format!("/api/workforce-plans/{pid}/tolerances");
-        let days_past = (Utc::now().date_naive() - chrono::NaiveDate::from_ymd_opt(2026, 6, 30).unwrap()).num_days();
+        let days_past = workforce_planning_management::dates::days_between(workforce_planning_management::dates::ymd(2026, 6, 30).unwrap(), workforce_planning_management::dates::today());
 
         // nothing set: every dimension has a measured deviation and says not_set; the plan too
         let none: Value = request.get(&url).await.json();

@@ -17,7 +17,6 @@
 use axa::error::ErrorDetail;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{Datelike, Utc};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -543,8 +542,8 @@ async fn my_time_off(
     axa::extract::Query(query): axa::extract::Query<TimeOffQuery>,
 ) -> Result<Response> {
     let worker = me_worker(&ctx, &caller).await?;
-    let today = Utc::now().date_naive();
-    let year = query.year.unwrap_or_else(|| today.year());
+    let today = crate::dates::today();
+    let year = query.year.unwrap_or_else(|| i32::from(today.year()));
     let entitlements: Vec<time_rules::Entitlement> = sqlx::query!(
         "SELECT kind, year, entitled_days, used_days FROM leave_entitlements
           WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
@@ -571,8 +570,8 @@ async fn my_time_off(
         .iter()
         .map(|r| time_rules::Request {
             kind: r.kind.clone(),
-            start_on: r.start_on,
-            end_on: r.end_on,
+            start_on: r.start_on.get(),
+            end_on: r.end_on.get(),
             days: r.days,
             status: r.status.clone(),
         })
@@ -591,7 +590,7 @@ async fn my_time_off(
         .collect();
     let year_requests: Vec<serde_json::Value> = rows
         .iter()
-        .filter(|r| r.start_on.year() == year)
+        .filter(|r| i32::from(r.start_on.year()) == year)
         .map(|r| {
             json!({
                 "pid": r.pid, "kind": r.kind, "start_on": r.start_on, "end_on": r.end_on,
@@ -658,8 +657,12 @@ async fn cancel_my_leave(
     .fetch_optional(db::pool(&ctx))
     .await?
     .ok_or(Error::NotFound)?;
-    time_rules::can_worker_cancel(&request.status, request.start_on, Utc::now().date_naive())
-        .map_err(|e| unprocessable(&e))?;
+    time_rules::can_worker_cancel(
+        &request.status,
+        request.start_on.get(),
+        crate::dates::today(),
+    )
+    .map_err(|e| unprocessable(&e))?;
     decide_leave(&ctx, &caller, &pid, "cancelled").await
 }
 

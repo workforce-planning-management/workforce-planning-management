@@ -12,7 +12,7 @@
 
 use std::fmt;
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::{Deserialize, Serialize};
 
 /// An employer-issued worker number, scoped to the organization that issued it.
@@ -46,7 +46,7 @@ pub struct WorkerRecord {
     /// Family name as typed.
     pub family_name: Option<String>,
     /// Date of birth, when known.
-    pub date_of_birth: Option<NaiveDate>,
+    pub date_of_birth: Option<Date>,
     /// Email addresses as typed.
     pub emails: Vec<String>,
     /// Phone numbers as typed.
@@ -79,7 +79,13 @@ impl WorkerRecord {
     /// `None` when the calendar date does not exist (for example 31 February).
     #[must_use]
     pub fn with_date_of_birth(mut self, year: i32, month: u32, day: u32) -> Option<Self> {
-        self.date_of_birth = Some(NaiveDate::from_ymd_opt(year, month, day)?);
+        let date = Date::new(
+            i16::try_from(year).ok()?,
+            i8::try_from(month).ok()?,
+            i8::try_from(day).ok()?,
+        )
+        .ok()?;
+        self.date_of_birth = Some(date);
         Some(self)
     }
 

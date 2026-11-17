@@ -8,7 +8,7 @@
 //! A lint test reads `src/rules/*.rs` and names any new `pub fn` whose name contains score, rank, rating, band,
 //! readiness or risk that is neither registered here nor exempt with a reason, so a new score cannot arrive unlisted.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Serialize;
 
 /// What kind of figure a score is.
@@ -61,7 +61,7 @@ pub struct Entry {
     /// Where the assessment stands.
     pub status: Status,
     /// When the assessment must be reviewed by; `None` until someone sets it.
-    pub review_by: Option<NaiveDate>,
+    pub review_by: Option<Date>,
     /// The code that makes it (`rules::module::item`).
     pub code: &'static [&'static str],
 }
@@ -172,7 +172,7 @@ pub const REGISTER: &[Entry] = &[
 /// A score may be used to inform a decision only when its assessment exists, is approved (with or without conditions) and its review
 /// date is set and not passed. `today` is passed in: this module reads no clock.
 #[must_use]
-pub fn ready_for_use(entry: &Entry, today: NaiveDate) -> bool {
+pub fn ready_for_use(entry: &Entry, today: Date) -> bool {
     entry.assessment.is_some()
         && matches!(entry.status, Status::Conditional | Status::Approved)
         && entry.review_by.is_some_and(|d| d >= today)
@@ -201,8 +201,8 @@ mod tests {
 
     const REGISTER_DOC: &str = include_str!("../../../spec/equality-impact/register.md");
 
-    fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, d).unwrap()
+    fn day(y: i32, m: u32, d: u32) -> Date {
+        crate::dates::ymd(y, m, d).unwrap()
     }
 
     /// The text of the register document's section for an id (a heading may name several ids, as `S6` and `S7` share one).

@@ -3,7 +3,9 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::sql_time::SqlDate;
 use axa::extract::Json;
+use jiff::civil::Date;
 
 /// The most changes one proposal may carry.
 const MAX_CHANGES: usize = 200;
@@ -12,7 +14,7 @@ const MAX_CHANGES: usize = 200;
 #[derive(Debug, Deserialize)]
 pub(super) struct ChangeLine {
     pool_pid: Uuid,
-    month: NaiveDate,
+    month: Date,
     /// Centi-FTE; negative gives capacity back.
     fte_centi: i64,
 }
@@ -25,7 +27,7 @@ pub(super) struct WhatIfPayload {
     changes: Vec<ChangeLine>,
     /// Where the change moves the programme's end date, if it does: the contingent effect is worked out against it (WPM-R97).
     #[serde(default)]
-    programme_new_end: Option<NaiveDate>,
+    programme_new_end: Option<Date>,
 }
 
 /// `POST /api/capacity/what-if` — what a proposed change to a programme's demand does: which pool-months become over-committed or stop
@@ -91,7 +93,7 @@ pub(super) async fn what_if(
         &changes,
     ))?;
     // What this programme already holds, by pool and month: a change cannot take back more.
-    let mut held: BTreeMap<(String, NaiveDate), i64> = BTreeMap::new();
+    let mut held: BTreeMap<(String, Date), i64> = BTreeMap::new();
     for (pool, demand) in &capacity.demand {
         for d in demand.iter().filter(|d| {
             d.programme == payload.programme_ref && d.status == rules::DemandStatus::Active
@@ -138,7 +140,7 @@ async fn contingent_effect(
     ctx: &AppContext,
     org: &str,
     capacity: &OrgCapacity,
-    new_end: NaiveDate,
+    new_end: Date,
 ) -> Result<Vec<(String, Option<usize>)>> {
     let mut per_pool = Vec::new();
     for pool in &capacity.pools {
@@ -167,7 +169,7 @@ async fn contingent_effect(
             .fetch_all(crate::db::pool(ctx))
             .await?;
         }
-        per_pool.push((key, ends));
+        per_pool.push((key, ends.into_iter().map(SqlDate::get).collect::<Vec<_>>()));
     }
     Ok(rules::ending_counts(
         &per_pool,
@@ -181,7 +183,7 @@ async fn contingent_effect(
 fn answer_json(
     result: &rules::WhatIf,
     names: &BTreeMap<String, String>,
-    from: NaiveDate,
+    from: Date,
 ) -> serde_json::Value {
     let name = |key: &Option<String>| {
         key.as_ref()

@@ -8,15 +8,14 @@
 //! The working-time limits (WPM-T380) and the holiday rules' weekend days (WPM-T379) are parameters since 2026-10-31 and are
 //! tested with a second shape in their own modules and below; the payroll stub's is WPM-T383.
 
-use chrono::{NaiveDate, Weekday};
-
 use super::{
     consultation, cost, expenses, flexible_working, holiday, joint_assessment, pay_gap,
     pay_information, privacy, resignation,
 };
+use jiff::civil::Date;
 
-fn day(y: i32, m: u32, d: u32) -> NaiveDate {
-    NaiveDate::from_ymd_opt(y, m, d).unwrap()
+fn day(y: i32, m: u32, d: u32) -> Date {
+    crate::dates::ymd(y, m, d).unwrap()
 }
 
 /// A consultation profile with only a percentage test, a size floor, a 60-day window, two consultation tiers that
@@ -107,7 +106,7 @@ fn holiday_rules_of_another_shape_keep_a_weekend_day_where_it_falls() {
             name: "Spring day",
             when: holiday::When::Nth {
                 month: 3,
-                weekday: Weekday::Thu,
+                weekday: jiff::civil::Weekday::Thursday,
                 n: 2,
             },
             weekend: holiday::Weekend::Stays,
@@ -130,7 +129,7 @@ fn holiday_rules_of_another_shape_keep_a_weekend_day_where_it_falls() {
     );
     // A Thursday and Friday weekend (a shape no shipped pack has): 1 January 2026 is a Thursday, so the nearest working day is the
     // Wednesday before, and the substitute policy gives the Saturday after.
-    let thu_fri = [Weekday::Thu, Weekday::Fri];
+    let thu_fri = [jiff::civil::Weekday::Thursday, jiff::civil::Weekday::Friday];
     assert_eq!(
         holiday::generate(&nearest, 2026, &thu_fri)[0].observed_on,
         day(2025, 12, 31)

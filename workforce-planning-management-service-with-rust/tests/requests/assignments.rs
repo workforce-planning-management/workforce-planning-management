@@ -1,7 +1,6 @@
 //! Assignments (WPM-R161): a primary one from the worker row, further ones capped at 100 FTE, a change that ends one and starts
 //! another and writes through, the worker-row triggers, and the subject export and erasure.
-
-use chrono::{Duration, Utc};
+use jiff::Timestamp;
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -59,7 +58,7 @@ async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_anot
 
         // A change: effective in the future, before the start, or over 100 is refused.
         let change = format!("/api/assignments/{primary_pid}/change");
-        let future = (Utc::now().date_naive() + Duration::days(3)).to_string();
+        let future = (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(3)).to_string();
         assert_eq!(request.post(&change).json(&json!({ "effective_on": future, "fte_percent": 60 })).await.status_code(), 422);
         assert_eq!(request.post(&change).json(&json!({ "effective_on": "2026-01-05", "fte_percent": 60 })).await.status_code(), 422);
         assert_eq!(request.post(&change).json(&json!({ "fte_percent": 101 })).await.status_code(), 422);
@@ -71,7 +70,7 @@ async fn a_worker_has_a_primary_assignment_and_a_change_ends_one_and_starts_anot
             .await;
         assert_eq!(done.status_code(), 200, "{}", done.text());
         let done: Value = done.json();
-        let yesterday = (Utc::now().date_naive() - Duration::days(1)).to_string();
+        let yesterday = (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(1)).to_string();
         assert_eq!(done["previous_ends_on"], yesterday);
         let after: Value = request.get(&url).await.json();
         let rows = after["assignments"].as_array().unwrap();
@@ -377,7 +376,9 @@ async fn the_absence_categories_are_listed_by_pay_and_a_government_holiday_has_n
         let tag = uuid::Uuid::new_v4().simple().to_string();
         let w = seed_worker!(&request, &org, format!("AC-{tag}"), None).await;
         activate!(&request, &w).await;
-        let day = (Utc::now().date_naive() + Duration::days(30)).to_string();
+        let day = (workforce_planning_management::dates::today()
+            + workforce_planning_management::dates::days(30))
+        .to_string();
         let made = request
             .post(&format!("/api/workers/{w}/leave-requests"))
             .json(&json!({ "kind": "public_holiday", "start_on": day, "end_on": day }))
@@ -470,11 +471,10 @@ async fn holidays_are_generated_per_region_safely_repeated_and_kept_apart_from_h
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
-    use chrono::Duration as D;
     use workforce_planning_management::models::link_tokens::{consume, issue, purge_expired};
     crate::requests::request_open(|_request, ctx| async move {
         let db = workforce_planning_management::db::pool(&ctx);
-        let now = Utc::now();
+        let now = Timestamp::now();
         let subject = uuid::Uuid::new_v4();
 
         // A bad purpose or life is refused; nothing is stored.
@@ -496,15 +496,15 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
         assert_eq!(scalar(&ctx, format!("SELECT count(*) AS n FROM link_tokens WHERE token_hash = '{hash}'")).await, 1);
 
         // The wrong purpose does not use it up, and does not work.
-        assert_eq!(consume(&mut db.acquire().await.unwrap(), "reset", &token, now + D::minutes(1)).await.unwrap(), None);
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "reset", &token, now + jiff::SignedDuration::from_mins(1)).await.unwrap(), None);
         // Malformed input never reaches the table.
         assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", "short", now).await.unwrap(), None);
         assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &format!("{}!", &token[..42]), now).await.unwrap(), None);
 
         // The right purpose works exactly once.
-        let first = consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + D::minutes(2)).await.unwrap();
+        let first = consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + jiff::SignedDuration::from_mins(2)).await.unwrap();
         assert_eq!(first.map(|c| c.subject_pid), Some(Some(subject)));
-        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + D::minutes(3)).await.unwrap(), None, "used");
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &token, now + jiff::SignedDuration::from_mins(3)).await.unwrap(), None, "used");
 
         // A used token cannot be made usable again, even by an UPDATE.
         let reuse = sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE link_tokens SET used_at = NULL WHERE token_hash = '{hash}'"))).execute(workforce_planning_management::db::pool(&ctx)).await;
@@ -512,9 +512,9 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
 
         // Expiry is exclusive and an expired token is refused.
         let brief = issue(&mut db.acquire().await.unwrap(), "confirm", None, 1, now).await.unwrap();
-        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &brief, now + D::minutes(1)).await.unwrap(), None, "expired at the minute");
+        assert_eq!(consume(&mut db.acquire().await.unwrap(), "confirm", &brief, now + jiff::SignedDuration::from_mins(1)).await.unwrap(), None, "expired at the minute");
         let live = issue(&mut db.acquire().await.unwrap(), "confirm", None, 5, now).await.unwrap();
-        assert!(consume(&mut db.acquire().await.unwrap(), "confirm", &live, now + D::minutes(4)).await.unwrap().is_some());
+        assert!(consume(&mut db.acquire().await.unwrap(), "confirm", &live, now + jiff::SignedDuration::from_mins(4)).await.unwrap().is_some());
 
         // The audit trail has the reasons and never the token.
         let reasons = |r: &str| scalar(&ctx, format!("SELECT count(*) AS n FROM audit_logs WHERE entity = 'link_token' AND action = 'link_token_refused' AND snapshot->>'reason' = '{r}'"));
@@ -523,7 +523,7 @@ async fn a_link_token_works_once_for_its_purpose_and_only_its_hash_is_stored() {
         assert_eq!(in_audit, 0, "a token is never written to the audit trail");
 
         // Old tokens are purged.
-        let removed = purge_expired(&mut db.acquire().await.unwrap(), now + D::hours(1)).await.unwrap();
+        let removed = purge_expired(&mut db.acquire().await.unwrap(), now + jiff::SignedDuration::from_hours(1)).await.unwrap();
         assert!(removed >= 4, "{removed}");
         assert_eq!(scalar(&ctx, "SELECT count(*) AS n FROM link_tokens".to_string()).await, 0);
     })

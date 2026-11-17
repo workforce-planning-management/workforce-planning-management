@@ -8,8 +8,7 @@
 //! If nobody is available the day is unassigned — said plainly, not guessed.
 //!
 //! DB-free and clock-free. Availability is a caller-supplied predicate.
-
-use chrono::{Duration, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -26,7 +25,7 @@ pub struct Rota {
     /// Days each member stays on call before the next takes over (1–31).
     pub period_days: i64,
     /// First day of the first member's turn.
-    pub starts_on: NaiveDate,
+    pub starts_on: Date,
     /// Members in rotation order.
     pub members: Vec<Uuid>,
 }
@@ -37,9 +36,9 @@ pub struct Override {
     /// Who is on call.
     pub worker: Uuid,
     /// First day.
-    pub starts_on: NaiveDate,
+    pub starts_on: Date,
     /// Last day.
-    pub ends_on: NaiveDate,
+    pub ends_on: Date,
 }
 
 /// Why a worker is on call on a day.
@@ -58,7 +57,7 @@ pub enum Source {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Assignment {
     /// The day.
-    pub date: NaiveDate,
+    pub date: Date,
     /// Who is on call; `None` when nobody can be.
     pub worker: Option<Uuid>,
     /// Why; `None` exactly when `worker` is.
@@ -90,11 +89,11 @@ pub fn validate_rota(period_days: i64, members: &[Uuid]) -> Result<(), String> {
 
 /// The index into `members` whose turn it is on `date`, counting from
 /// `starts_on`; `None` before the rota starts or with no members.
-fn turn_index(rota: &Rota, date: NaiveDate) -> Option<usize> {
+fn turn_index(rota: &Rota, date: Date) -> Option<usize> {
     if rota.members.is_empty() || date < rota.starts_on || rota.period_days < 1 {
         return None;
     }
-    let turns = (date - rota.starts_on).num_days() / rota.period_days;
+    let turns = crate::dates::days_between(rota.starts_on, date) / rota.period_days;
     let n = i64::try_from(rota.members.len()).ok()?;
     usize::try_from(turns.rem_euclid(n)).ok()
 }
@@ -102,7 +101,7 @@ fn turn_index(rota: &Rota, date: NaiveDate) -> Option<usize> {
 /// Who is *scheduled* on `date` by the rotation alone (ignoring overrides
 /// and availability).
 #[must_use]
-pub fn scheduled(rota: &Rota, date: NaiveDate) -> Option<Uuid> {
+pub fn scheduled(rota: &Rota, date: Date) -> Option<Uuid> {
     turn_index(rota, date).map(|i| rota.members[i])
 }
 
@@ -114,8 +113,8 @@ pub fn scheduled(rota: &Rota, date: NaiveDate) -> Option<Uuid> {
 pub fn assign(
     rota: &Rota,
     overrides: &[Override],
-    unavailable: &dyn Fn(Uuid, NaiveDate) -> bool,
-    date: NaiveDate,
+    unavailable: &dyn Fn(Uuid, Date) -> bool,
+    date: Date,
 ) -> Assignment {
     if date < rota.starts_on {
         return Assignment {
@@ -194,9 +193,9 @@ pub fn swap_can_move(from: &str, to: &str) -> bool {
 pub fn validate_swap(
     requester: Uuid,
     taker: Uuid,
-    starts_on: NaiveDate,
-    ends_on: NaiveDate,
-    today: NaiveDate,
+    starts_on: Date,
+    ends_on: Date,
+    today: Date,
 ) -> Result<(), String> {
     if requester == taker {
         return Err("a person cannot swap with themself".to_string());
@@ -207,7 +206,7 @@ pub fn validate_swap(
     if ends_on < today {
         return Err("a swap must include today or a later day".to_string());
     }
-    if (ends_on - starts_on).num_days() + 1 > MAX_WINDOW_DAYS {
+    if crate::dates::days_between(starts_on, ends_on) + 1 > MAX_WINDOW_DAYS {
         return Err(format!(
             "a swap may cover at most {MAX_WINDOW_DAYS} calendar days"
         ));
@@ -231,15 +230,15 @@ pub fn stretches_for(assignments: &[Assignment], worker: Uuid) -> Vec<Run> {
 pub fn schedule(
     rota: &Rota,
     overrides: &[Override],
-    unavailable: &dyn Fn(Uuid, NaiveDate) -> bool,
-    from: NaiveDate,
-    to: NaiveDate,
+    unavailable: &dyn Fn(Uuid, Date) -> bool,
+    from: Date,
+    to: Date,
 ) -> Vec<Assignment> {
     let mut out = Vec::new();
     let mut day = from;
     while day <= to {
         out.push(assign(rota, overrides, unavailable, day));
-        day += Duration::days(1);
+        day += crate::dates::days(1);
     }
     out
 }
@@ -248,9 +247,9 @@ pub fn schedule(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Run {
     /// First day.
-    pub from: NaiveDate,
+    pub from: Date,
     /// Last day.
-    pub to: NaiveDate,
+    pub to: Date,
     /// Who; `None` for a stretch with nobody available.
     pub worker: Option<Uuid>,
     /// Why; `None` exactly when `worker` is.
@@ -266,7 +265,7 @@ pub fn runs(assignments: &[Assignment]) -> Vec<Run> {
             Some(last)
                 if last.worker == a.worker
                     && last.source == a.source
-                    && last.to + Duration::days(1) == a.date =>
+                    && last.to + crate::dates::days(1) == a.date =>
             {
                 last.to = a.date;
             }
@@ -297,8 +296,8 @@ pub fn load(assignments: &[Assignment]) -> BTreeMap<Uuid, usize> {
 mod tests {
     use super::*;
 
-    fn d(day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 10, day).unwrap()
+    fn d(day: u32) -> Date {
+        crate::dates::ymd(2026, 10, day).unwrap()
     }
     fn w(n: u128) -> Uuid {
         Uuid::from_u128(n)
@@ -310,7 +309,7 @@ mod tests {
             members: members.iter().map(|n| w(*n)).collect(),
         }
     }
-    const NOBODY_AWAY: &dyn Fn(Uuid, NaiveDate) -> bool = &|_, _| false;
+    const NOBODY_AWAY: &dyn Fn(Uuid, Date) -> bool = &|_, _| false;
 
     #[test]
     fn the_duty_passes_every_period_and_wraps() {
@@ -393,7 +392,7 @@ mod tests {
     fn a_skip_splits_a_run_because_the_reason_changes() {
         let rota = weekly(&[1, 2]);
         // Member 1 is away only on the 8th.
-        let away = |who: Uuid, day: NaiveDate| who == w(1) && day == d(8);
+        let away = |who: Uuid, day: Date| who == w(1) && day == d(8);
         let r = runs(&schedule(&rota, &[], &away, d(7), d(9)));
         assert_eq!(r.len(), 3);
         assert_eq!(r[1].worker, Some(w(2)));
@@ -442,7 +441,7 @@ mod tests {
             "all in the past"
         );
         assert!(validate_swap(a, b, d(4), d(6), d(5)).is_ok(), "spans today");
-        assert!(validate_swap(a, b, d(5), d(5) + Duration::days(92), d(5)).is_err());
+        assert!(validate_swap(a, b, d(5), d(5) + crate::dates::days(92), d(5)).is_err());
     }
 
     #[test]

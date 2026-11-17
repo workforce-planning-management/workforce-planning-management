@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — dates and times are jiff, not chrono (WPM-T528, 2026-11-17)
+
+The service and the matcher use `jiff` for every date and instant, as `spec/rust-axum-stack.md` asked (WPM-D202). An instant in
+an API answer now ends in `Z` (`2026-11-17T09:30:00Z`) where some ended in `+00:00`; days are unchanged. chrono stays only where
+another crate needs it: `cron`, the sqlx feature `axa` turns on, and the published matcher 0.1.0.
+
 ### Added — mutation testing with cargo-mutants (WPM-T526, 2026-11-17)
 
 CI's new `mutants` job tests the mutants in each push's changed lines of the service's pure rules and of the matcher

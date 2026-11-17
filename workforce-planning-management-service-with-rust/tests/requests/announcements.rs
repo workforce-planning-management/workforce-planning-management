@@ -1,8 +1,6 @@
 //! The announcement feed: live posts for readers, pinned first then newest;
 //! scheduled and expired posts only with `include=all`; validation; edit and
 //! retire.
-
-use chrono::{Duration, Utc};
 use serde_json::{Value, json};
 use serial_test::serial;
 
@@ -14,8 +12,8 @@ use super::{activate, an_org, seed_worker};
 async fn the_feed_shows_live_posts_pinned_first_and_hides_the_rest() {
     crate::requests::request_open(|request, _ctx| async move {
         let org = an_org();
-        let today = Utc::now().date_naive();
-        let day = |n: i64| (today + Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let post = |title: &str, extra: Value| {
             let mut body = json!({ "organization_ref": org, "title": title,
                                    "body": "Plain text <script>alert(1)</script> stays text." });

@@ -490,8 +490,8 @@ async fn end_of_engagement_reminders_and_decisions() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let make = |number: String, basis: &'static str, ends: Option<String>, manager: Option<String>| {
             let (request, org) = (&request, org.clone());
             async move {
@@ -552,15 +552,15 @@ async fn end_of_engagement_reminders_and_decisions() {
         // Idempotent: a re-run tells no one twice.
         assert_eq!(send_reminders(&ctx, today, 60).await.unwrap(), Default::default());
         // The window moves: the one 90 calendar days out is now inside it, once.
-        let later = send_reminders(&ctx, today + chrono::Duration::days(40), 60).await.unwrap();
+        let later = send_reminders(&ctx, today + workforce_planning_management::dates::days(40), 60).await.unwrap();
         // The 90-day one is now ending; and the first contractor's end date (30 days out) has itself
         // passed with no decision, which is a different reminder for the same worker.
         assert_eq!((later.ending, later.ended_undecided), (1, 1), "the 90-day one is ending; the 30-day one has ended");
 
         // An extension gives a new end date and so a new reminder, once it is inside the window.
         request.post(&format!("/api/workers/{ending}/engagement/extensions")).json(&json!({ "new_end": day(130) })).await.assert_status_ok();
-        assert_eq!(send_reminders(&ctx, today + chrono::Duration::days(41), 60).await.unwrap().ending, 0, "130 days out is still beyond 60");
-        let again = send_reminders(&ctx, today + chrono::Duration::days(75), 60).await.unwrap();
+        assert_eq!(send_reminders(&ctx, today + workforce_planning_management::dates::days(41), 60).await.unwrap().ending, 0, "130 days out is still beyond 60");
+        let again = send_reminders(&ctx, today + workforce_planning_management::dates::days(75), 60).await.unwrap();
         assert_eq!(again.ending, 1, "the new end date is a new question");
 
         // Decisions: validated, against the end date they settle, and the standing follows.
@@ -599,8 +599,8 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
     crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let make = |number: String, basis: &'static str, ends: Option<String>, manager: Option<String>| {
             let (request, org) = (&request, org.clone());
             async move {
@@ -679,7 +679,7 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
         let engagement: Value = request.get(&format!("/api/workers/{w}/engagement")).await.json();
         assert_eq!(engagement["decision"], "extend");
         // Reminders no longer ask about an end date a person has decided.
-        assert_eq!(send_reminders(&ctx, today + chrono::Duration::days(1), 60).await.unwrap().ending, 0);
+        assert_eq!(send_reminders(&ctx, today + workforce_planning_management::dates::days(1), 60).await.unwrap().ending, 0);
         // Only a plan to convert is carried out.
         assert_eq!(request.post(&format!("/api/conversion-plans/{second_pid}/done")).await.status_code(), 422);
 
@@ -704,8 +704,8 @@ async fn a_conversion_plan_is_kept_flagged_reminded_exported_and_erased() {
 async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
     crate::requests::request_open(|request, ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let day = |n: i64| (today + chrono::Duration::days(n)).to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
         let r = request.post("/api/workers").json(&json!({
             "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("PF-{tag}"),
             "display_name": "Test Worker PF", "employment_type": "fixed_term", "department": "engineering",
@@ -756,20 +756,20 @@ async fn post_funding_is_compared_with_the_contract_end_exported_and_erased() {
 async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small_groups() {
     crate::requests::request_open(|request, _ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
-        let end = today + chrono::Duration::days(75);
-        let month = end.format("%Y-%m").to_string();
+        let today = workforce_planning_management::dates::today();
+        let end = today + workforce_planning_management::dates::days(75);
+        let month = end.strftime("%Y-%m").to_string();
         // Ten people whose funding ends in one month, and one whose ends in another.
         for i in 0..11 {
             let kind = if i < 2 { "contractor" } else if i < 4 { "fixed_term" } else { "permanent" };
             let r = request.post("/api/workers").json(&json!({
                 "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("CT-{tag}-{i}"),
                 "display_name": "Test Worker CT", "employment_type": kind, "department": format!("ct-{tag}"),
-                "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": (kind != "permanent").then(|| (today + chrono::Duration::days(300)).to_string()),
+                "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": (kind != "permanent").then(|| (today + workforce_planning_management::dates::days(300)).to_string()),
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
             let w = r.json::<Value>()["pid"].as_str().unwrap().to_string();
-            let ends = if i < 10 { end } else { today + chrono::Duration::days(200) };
+            let ends = if i < 10 { end } else { today + workforce_planning_management::dates::days(200) };
             request.put(&format!("/api/workers/{w}/funding")).json(&json!({ "kind": "external", "ends_on": ends.to_string() })).await.assert_status_ok();
         }
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
@@ -782,7 +782,7 @@ async fn the_contingent_view_shows_shares_and_funding_months_and_withholds_small
         let hit = months.iter().find(|m| m["month"] == month.as_str()).unwrap();
         assert!(hit["people"].as_u64().unwrap() >= 10, "ten at the floor are shown");
         // The one whose funding ends alone in another month is not shown by itself.
-        let lone = (today + chrono::Duration::days(200)).format("%Y-%m").to_string();
+        let lone = (today + workforce_planning_management::dates::days(200)).strftime("%Y-%m").to_string();
         let lone = months.iter().find(|m| m["month"] == lone.as_str()).unwrap();
         if lone["people"].is_null() {
             assert!(lone["fte"].is_null(), "withheld means no figure at all");
@@ -830,7 +830,7 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
         }
-        let date = |m, d| chrono::NaiveDate::from_ymd_opt(2025, m, d).unwrap();
+        let date = |m, d| workforce_planning_management::dates::ymd(2025, m, d).unwrap();
         run_snapshot(workforce_planning_management::db::pool(&ctx), date(1, 1)).await.unwrap();
         let v: Value = request.get("/api/workforce-intelligence/contingent").await.json();
         assert_eq!(v["trend"]["status"], "insufficient_history", "one date is not a trend");
@@ -865,7 +865,7 @@ async fn the_contingent_trend_comes_from_snapshots_split_by_basis() {
 async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_small_one() {
     crate::requests::request_open(|request, _ctx| async move {
         let tag = uuid::Uuid::new_v4().simple().to_string();
-        let today = chrono::Utc::now().date_naive();
+        let today = workforce_planning_management::dates::today();
         let big = format!("thing:{}", uuid::Uuid::new_v4());
         let small = format!("thing:{}", uuid::Uuid::new_v4());
         for i in 0..12 {
@@ -875,12 +875,12 @@ async fn the_programme_rollup_shows_a_programme_at_the_floor_and_leaves_out_a_sm
                 "person_ref": a_person(), "organization_ref": an_org(), "worker_number": format!("PG-{tag}-{i}"),
                 "display_name": "Test Worker PG", "employment_type": kind, "department": format!("pg-{tag}"),
                 "job_title": "Engineer", "hired_on": "2026-01-05",
-                "engagement_ends_on": (kind != "permanent").then(|| (today + chrono::Duration::days(300)).to_string()),
+                "engagement_ends_on": (kind != "permanent").then(|| (today + workforce_planning_management::dates::days(300)).to_string()),
             })).await;
             assert_eq!(r.status_code(), 200, "{}", r.text());
             let w = r.json::<Value>()["pid"].as_str().unwrap().to_string();
             request.put(&format!("/api/workers/{w}/funding")).json(&json!({
-                "kind": "programme", "programme_ref": programme, "ends_on": (today + chrono::Duration::days(400)).to_string(),
+                "kind": "programme", "programme_ref": programme, "ends_on": (today + workforce_planning_management::dates::days(400)).to_string(),
             })).await.assert_status_ok();
         }
         let v: Value = request.get("/api/workforce-intelligence/programmes").await.json();

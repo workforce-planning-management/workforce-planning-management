@@ -8,11 +8,11 @@
 //! organization as a whole (no single worker) over the organization's **home jurisdiction**, the legal entity's registered
 //! jurisdiction, which HR sets (`PUT /api/home-jurisdiction`). [`Scope`] is the one place a reader gets its chain.
 
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use axa::extract::Json;
 use axa::prelude::*;
-use chrono::NaiveDate;
 use serde::Deserialize;
 use serde_json::json;
 use sqlx::PgPool;
@@ -23,6 +23,7 @@ use super::{ensure_org_in_scope, ensure_valid, forbidden, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::models::_entities::workers;
 use crate::rules::jurisdiction::{self as rules, Layer, Link, Row, Status};
+use crate::sql_time::SqlDate;
 
 /// One organization's chain links and parameter rows.
 #[derive(Clone, Debug, Default)]
@@ -41,7 +42,7 @@ impl Profile {
         &self,
         key: &str,
         work_jurisdiction: Option<&str>,
-        as_of: NaiveDate,
+        as_of: Date,
     ) -> rules::Resolution {
         let chain = work_jurisdiction.map(|code| rules::chain(code, &self.links));
         match chain {
@@ -134,7 +135,7 @@ impl Scope {
     /// Resolve `key` over this scope's chain as of `as_of`. An unrecorded start is unknown with the reader's reason
     /// (`no_work_jurisdiction` or `no_home_jurisdiction`), never the organization's country or a guess.
     #[must_use]
-    pub fn resolve(&self, key: &str, as_of: NaiveDate) -> rules::Resolution {
+    pub fn resolve(&self, key: &str, as_of: Date) -> rules::Resolution {
         match self.profile.resolve(key, self.start.as_deref(), as_of) {
             rules::Resolution::Unknown {
                 reason: "no_work_jurisdiction",
@@ -224,8 +225,8 @@ pub async fn profiles_for(
             code: row.code,
             key: row.key,
             value,
-            effective_from: row.effective_from,
-            effective_to: row.effective_to,
+            effective_from: row.effective_from.get(),
+            effective_to: row.effective_to.map(SqlDate::get),
             source: row.source,
             status,
             seq: row.id,
@@ -342,7 +343,7 @@ async fn list(
             "checked_on": row.checked_on,
             "status": row.status,
             // As the answer gave it before: with a `+00:00` offset, not `Z`.
-            "created_at": row.created_at.fixed_offset(),
+            "created_at": row.created_at,
         })
     })
     .collect();
@@ -460,12 +461,12 @@ struct ParameterPayload {
     code: String,
     key: String,
     value: serde_json::Value,
-    effective_from: NaiveDate,
+    effective_from: Date,
     #[serde(default)]
-    effective_to: Option<NaiveDate>,
+    effective_to: Option<Date>,
     source: String,
     #[serde(default)]
-    checked_on: Option<NaiveDate>,
+    checked_on: Option<Date>,
     status: String,
 }
 
@@ -518,10 +519,10 @@ async fn add_parameter(
         p.code,
         p.key,
         canonical,
-        p.effective_from,
-        p.effective_to,
+        SqlDate(p.effective_from),
+        p.effective_to.map(SqlDate),
         source,
-        p.checked_on,
+        p.checked_on.map(SqlDate),
         p.status,
     )
     .execute(&mut *tx)

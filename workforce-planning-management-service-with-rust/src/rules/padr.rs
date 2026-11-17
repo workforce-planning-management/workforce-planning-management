@@ -6,7 +6,7 @@
 //! neither, the due date is unknown, never invented. Whether a wellbeing conversation was *offered* is a yes or no; nothing here
 //! can hold what was said.
 
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 
 /// The kinds of review.
 pub const KINDS: &[&str] = &["performance", "padr"];
@@ -27,9 +27,9 @@ pub enum Signer {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct SignOffs {
     /// The day the reviewer signed.
-    pub reviewer: Option<NaiveDate>,
+    pub reviewer: Option<Date>,
     /// The day the reviewee signed.
-    pub reviewee: Option<NaiveDate>,
+    pub reviewee: Option<Date>,
 }
 
 impl SignOffs {
@@ -41,7 +41,7 @@ impl SignOffs {
 
     /// The day it became complete: the later of the two. `None` until both have signed.
     #[must_use]
-    pub fn completed_on(&self) -> Option<NaiveDate> {
+    pub fn completed_on(&self) -> Option<Date> {
         self.reviewer.zip(self.reviewee).map(|(a, b)| a.max(b))
     }
 
@@ -56,12 +56,7 @@ impl SignOffs {
 ///
 /// # Errors
 /// A sentence saying why the signature cannot be recorded.
-pub fn sign(
-    current: SignOffs,
-    who: Signer,
-    on: NaiveDate,
-    today: NaiveDate,
-) -> Result<SignOffs, String> {
+pub fn sign(current: SignOffs, who: Signer, on: Date, today: Date) -> Result<SignOffs, String> {
     if on > today {
         return Err("a sign-off cannot be dated in the future".to_string());
     }
@@ -112,7 +107,7 @@ pub const MAX_FIRST_AFTER_MONTHS: u32 = 60;
 ///
 /// # Errors
 /// A sentence saying what is wrong.
-pub fn valid_period(start: NaiveDate, end: NaiveDate) -> Result<(), String> {
+pub fn valid_period(start: Date, end: Date) -> Result<(), String> {
     if end < start {
         return Err("the period ends before it starts".to_string());
     }
@@ -181,7 +176,7 @@ pub fn may_correct(latest: SignOffs) -> Result<(), &'static str> {
 /// The day a PADR was completed: when its **first** completed version was, given its versions in order. A correction signed later
 /// never moves the due date, or a correction could postpone the next PADR (WPM-D176).
 #[must_use]
-pub fn completed_on(versions: &[SignOffs]) -> Option<NaiveDate> {
+pub fn completed_on(versions: &[SignOffs]) -> Option<Date> {
     versions.iter().find_map(SignOffs::completed_on)
 }
 
@@ -200,24 +195,24 @@ pub enum Standing {
     /// There is no completed PADR and no primary start with a configured lead time, so no due date exists.
     Unknown,
     /// Due on or after the as-of date, on this day.
-    Current(NaiveDate),
+    Current(Date),
     /// The due date passed, on this day.
-    Overdue(NaiveDate),
+    Overdue(Date),
 }
 
 /// The due date. `last_completed` is the day the latest PADR was completed; `primary_start` the start of the primary assignment;
 /// `first_after_months` the configured lead time for someone who has never had one (no default shipped).
 #[must_use]
 pub fn due_on(
-    last_completed: Option<NaiveDate>,
-    primary_start: Option<NaiveDate>,
+    last_completed: Option<Date>,
+    primary_start: Option<Date>,
     first_after_months: Option<u32>,
-) -> Option<NaiveDate> {
+) -> Option<Date> {
     match last_completed {
-        Some(d) => d.checked_add_months(Months::new(CYCLE_MONTHS)),
+        Some(d) => d.checked_add(jiff::Span::new().months(CYCLE_MONTHS)).ok(),
         None => primary_start
             .zip(first_after_months)
-            .and_then(|(s, m)| s.checked_add_months(Months::new(m))),
+            .and_then(|(s, m)| s.checked_add(jiff::Span::new().months(m)).ok()),
     }
 }
 
@@ -234,7 +229,7 @@ impl Standing {
 
     /// The due date, when there is one.
     #[must_use]
-    pub const fn due_on(self) -> Option<NaiveDate> {
+    pub const fn due_on(self) -> Option<Date> {
         match self {
             Self::Unknown => None,
             Self::Current(day) | Self::Overdue(day) => Some(day),
@@ -245,10 +240,10 @@ impl Standing {
 /// Where the person stands on `as_of`. Due on the as-of day is still current.
 #[must_use]
 pub fn standing(
-    last_completed: Option<NaiveDate>,
-    primary_start: Option<NaiveDate>,
+    last_completed: Option<Date>,
+    primary_start: Option<Date>,
     first_after_months: Option<u32>,
-    as_of: NaiveDate,
+    as_of: Date,
 ) -> Standing {
     match due_on(last_completed, primary_start, first_after_months) {
         None => Standing::Unknown,
@@ -261,11 +256,11 @@ pub fn standing(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    const NOW: fn() -> NaiveDate = || d(2026, 10, 28);
+    const NOW: fn() -> Date = || d(2026, 10, 28);
 
     #[test]
     fn complete_means_both_signed_and_the_later_day_is_the_completion() {

@@ -16,7 +16,6 @@
 //!   code names the table.
 
 use axa::prelude::*;
-use chrono::Utc;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -27,6 +26,7 @@ use crate::db::{self, pool};
 use crate::models::_entities::workers;
 use crate::models::memberships;
 use crate::rules::equality_monitoring::{self as rules, Config, Gate};
+use crate::sql_time::SqlDate;
 
 /// The gate, read from the environment each time so a change of setting needs no restart of a
 /// test, and a misconfiguration is reported rather than silently ignored.
@@ -198,7 +198,7 @@ async fn summary(
         ));
     }
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let staff: Vec<_> = sqlx::query!(
         "SELECT pid, organization_ref, department, hired_on, terminated_on
          FROM workers WHERE deleted_at IS NULL ORDER BY id",
@@ -206,7 +206,13 @@ async fn summary(
     .fetch_all(pool(&ctx))
     .await?
     .into_iter()
-    .filter(|w| crate::rules::metrics::is_employed_on(today, w.hired_on, w.terminated_on))
+    .filter(|w| {
+        crate::rules::metrics::is_employed_on(
+            today,
+            w.hired_on.get(),
+            w.terminated_on.map(SqlDate::get),
+        )
+    })
     .filter(|w| {
         scope
             .as_ref()

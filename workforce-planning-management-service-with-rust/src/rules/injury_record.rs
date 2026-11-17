@@ -5,9 +5,8 @@
 //! characters, with no space, and a sentence cannot be typed into one. The classes are plain and shared; a country's own trigger is for
 //! the person filing, and WPM decides no duty. Spec: `spec/injury-and-separation-duties.md`.
 
-use chrono::{DateTime, Utc};
-
 use super::suppression::{self, Suppressed};
+use jiff::Timestamp;
 
 /// What happened.
 pub const KINDS: [&str; 3] = ["accident", "illness", "dangerous_occurrence"];
@@ -85,11 +84,11 @@ pub fn problems(
     jurisdiction: &str,
     kind: &str,
     class: &str,
-    occurred_at: DateTime<Utc>,
-    learned_at: Option<DateTime<Utc>>,
+    occurred_at: Timestamp,
+    learned_at: Option<Timestamp>,
     absence_days: Option<i32>,
     people_affected: i32,
-    now: DateTime<Utc>,
+    now: Timestamp,
 ) -> Vec<String> {
     let mut out = Vec::new();
     if !valid_jurisdiction(jurisdiction) {
@@ -127,8 +126,8 @@ pub fn problems(
 pub fn report_problems(
     recipient: &str,
     method: Option<&str>,
-    sent_at: Option<DateTime<Utc>>,
-    now: DateTime<Utc>,
+    sent_at: Option<Timestamp>,
+    now: Timestamp,
 ) -> Vec<String> {
     let mut out = Vec::new();
     if !RECIPIENTS.contains(&recipient) {
@@ -180,11 +179,7 @@ impl Standing {
 
 /// Where a report stands at `now`.
 #[must_use]
-pub fn standing(
-    due_at: Option<DateTime<Utc>>,
-    sent_at: Option<DateTime<Utc>>,
-    now: DateTime<Utc>,
-) -> Standing {
+pub fn standing(due_at: Option<Timestamp>, sent_at: Option<Timestamp>, now: Timestamp) -> Standing {
     match (due_at, sent_at) {
         (Some(due), Some(sent)) if sent <= due => Standing::SentByDue,
         (Some(_), Some(_)) => Standing::SentAfterDue,
@@ -213,10 +208,9 @@ pub fn rollup(classes: &[String], floor: usize) -> Suppressed<&'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{Duration, TimeZone};
 
-    fn at(hour: u32) -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 3, 4, hour, 0, 0).unwrap()
+    fn at(hour: u32) -> Timestamp {
+        crate::dates::utc(2026, 3, 4, hour, 0, 0).unwrap()
     }
 
     fn check(kind: &str, class: &str) -> Vec<String> {
@@ -347,7 +341,11 @@ mod tests {
         }
         assert_eq!(Standing::NoDue.as_str(), "no_due");
         assert_eq!(
-            standing(Some(at(12) - Duration::seconds(1)), None, at(12)),
+            standing(
+                Some(at(12) - jiff::SignedDuration::from_secs(1)),
+                None,
+                at(12)
+            ),
             Standing::PastDue
         );
     }

@@ -2,9 +2,10 @@
 //! representatives due for a category of workers, and the record a person keeps of what was justified, remedied and
 //! assessed. It reports; a person decides and records. Spec: `spec/pay-transparency.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::Json;
 use axa::prelude::*;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -34,7 +35,7 @@ pub(crate) struct Configured {
 /// profile over its home jurisdiction's chain (`pay_transparency.joint_assessment_percent`,
 /// `pay_transparency.joint_assessment_months`), else the environment, else the Directive's. A pair
 /// that does not check together falls back to the defaults with a warning.
-pub(crate) fn configured(scope: Option<&Scope>, as_of: NaiveDate) -> Configured {
+pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
     let threshold_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
         .and_then(|v| v.trim().parse::<i64>().ok());
     let months_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_MONTHS")
@@ -87,19 +88,19 @@ fn organization_problems(value: &str) -> Vec<String> {
 fn record_of(row: &pay_assessment_records::Model) -> Record {
     Record {
         justified: row.justified,
-        remedied_on: row.remedied_on,
-        assessed_on: row.assessed_on,
+        remedied_on: row.remedied_on.map(SqlDate::get),
+        assessed_on: row.assessed_on.map(SqlDate::get),
     }
 }
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct SignalQuery {
     organization: String,
-    as_of: Option<NaiveDate>,
+    as_of: Option<Date>,
     currency: Option<String>,
     variable: Option<String>,
     /// The date of reporting; default the latest recorded for each category.
-    reported_on: Option<NaiveDate>,
+    reported_on: Option<Date>,
 }
 
 /// `GET /api/pay-transparency/joint-assessment?organization=&reported_on=&as_of=&currency=` — for each category, whether a
@@ -124,7 +125,7 @@ pub(crate) async fn signals(
     .await?;
     let configured = configured(
         Some(&Scope::for_organization(crate::db::pool(&ctx), &query.organization).await?),
-        chrono::Utc::now().date_naive(),
+        crate::dates::today(),
     );
     let config = configured.config;
     let records = sqlx::query_as!(
@@ -143,10 +144,10 @@ pub(crate) async fn signals(
     for c in &built.report.categories {
         let name = c.category.to_lowercase();
         let latest = records.iter().find(|r| r.category.to_lowercase() == name);
-        let reported_on = query.reported_on.or(latest.map(|r| r.reported_on));
-        let record = records
-            .iter()
-            .find(|r| r.category.to_lowercase() == name && Some(r.reported_on) == reported_on);
+        let reported_on = query.reported_on.or(latest.map(|r| r.reported_on.get()));
+        let record = records.iter().find(|r| {
+            r.category.to_lowercase() == name && Some(r.reported_on) == reported_on.map(SqlDate)
+        });
         let signal = rules::signal(
             &c.basic,
             record.map(record_of).as_ref(),
@@ -224,12 +225,12 @@ pub(crate) async fn list_records(
 pub(crate) struct RecordPayload {
     organization_ref: String,
     category: String,
-    reported_on: NaiveDate,
+    reported_on: Date,
     #[serde(default)]
     justified: bool,
     justification: Option<String>,
-    remedied_on: Option<NaiveDate>,
-    assessed_on: Option<NaiveDate>,
+    remedied_on: Option<Date>,
+    assessed_on: Option<Date>,
     outcome: Option<String>,
     /// The body or group of workers' representatives the assessment was done with, by name (never a person).
     representatives: Option<String>,
@@ -276,7 +277,7 @@ pub(crate) async fn put_record(
         "SELECT pid, category FROM pay_assessment_records
          WHERE organization_ref = $1 AND reported_on = $2",
         payload.organization_ref,
-        payload.reported_on,
+        SqlDate(payload.reported_on),
     )
     .fetch_all(pool(&ctx))
     .await?
@@ -303,8 +304,8 @@ pub(crate) async fn put_record(
             category,
             payload.justified,
             justification,
-            payload.remedied_on,
-            payload.assessed_on,
+            payload.remedied_on.map(SqlDate),
+            payload.assessed_on.map(SqlDate),
             payload.outcome,
             representatives,
             caller.actor(),
@@ -322,11 +323,11 @@ pub(crate) async fn put_record(
             pid,
             payload.organization_ref,
             category,
-            payload.reported_on,
+            SqlDate(payload.reported_on),
             payload.justified,
             justification,
-            payload.remedied_on,
-            payload.assessed_on,
+            payload.remedied_on.map(SqlDate),
+            payload.assessed_on.map(SqlDate),
             payload.outcome,
             representatives,
             caller.actor(),

@@ -1,9 +1,10 @@
 //! Positions (WPM-R152, WPM-D104): budgeted seats, their moves, their links and the establishment per cost centre. A position
 //! holds no pay. Who holds it is HR's to see: other callers get the state and the count, not the holder. Spec: `spec/positions.md`.
 
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -98,7 +99,7 @@ pub(crate) struct Payload {
     title: String,
     budget_fte_percent: i32,
     funding_kind: String,
-    funding_ends_on: Option<NaiveDate>,
+    funding_ends_on: Option<Date>,
     programme_ref: Option<String>,
     /// The plan demand line this position came from, if any. Recorded when a person chooses it, never silently.
     demand_line_pid: Option<Uuid>,
@@ -209,7 +210,7 @@ async fn create(
         payload.title.trim(),
         payload.budget_fte_percent,
         payload.funding_kind,
-        payload.funding_ends_on,
+        payload.funding_ends_on.map(SqlDate),
         payload.programme_ref,
         payload.overtime_status.as_deref().unwrap_or("unknown"),
         payload.demand_line_pid,
@@ -288,7 +289,7 @@ async fn update(
         payload.title.trim(),
         payload.budget_fte_percent,
         payload.funding_kind,
-        payload.funding_ends_on,
+        payload.funding_ends_on.map(SqlDate),
         payload.programme_ref,
         payload.overtime_status,
         number,

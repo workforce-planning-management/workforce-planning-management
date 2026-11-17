@@ -12,9 +12,10 @@
 //! administrator of the organization.
 
 use super::ensure_org_in_scope;
+use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::Datelike;
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -89,7 +90,7 @@ fn strip_deciding_body(status: &mut serde_json::Value) {
 /// # Errors
 ///
 /// A database error.
-pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Result<packs::Model> {
+pub async fn freeze(ctx: &AppContext, org: &str, today: Date) -> Result<packs::Model> {
     let (month, payload) = pack_payload(ctx, org, today).await?;
     insert_pack(&mut *pool(ctx).acquire().await?, org, today, month, payload).await
 }
@@ -98,11 +99,12 @@ pub async fn freeze(ctx: &AppContext, org: &str, today: chrono::NaiveDate) -> Re
 async fn pack_payload(
     ctx: &AppContext,
     org: &str,
-    today: chrono::NaiveDate,
-) -> Result<(chrono::NaiveDate, serde_json::Value)> {
-    let this_month = today.with_day(1).unwrap_or(today);
+    today: Date,
+) -> Result<(Date, serde_json::Value)> {
+    let this_month = today.first_of_month();
     let month = this_month
-        .checked_sub_months(chrono::Months::new(1))
+        .checked_sub(jiff::Span::new().months(1))
+        .ok()
         .unwrap_or(this_month);
     let mut status = oversight::status_json(ctx, org, today).await?;
     strip_deciding_body(&mut status);
@@ -125,8 +127,8 @@ async fn pack_payload(
 async fn insert_pack(
     connection: &mut sqlx::PgConnection,
     org: &str,
-    today: chrono::NaiveDate,
-    month: chrono::NaiveDate,
+    today: Date,
+    month: Date,
     payload: serde_json::Value,
 ) -> Result<packs::Model> {
     Ok(sqlx::query_as!(
@@ -136,8 +138,8 @@ async fn insert_pack(
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, as_of, month, payload"#,
         Uuid::new_v4(),
         org,
-        today,
-        month,
+        SqlDate(today),
+        SqlDate(month),
         payload,
     )
     .fetch_one(connection)
@@ -178,7 +180,7 @@ async fn create(
 ) -> Result<Response> {
     ensure_org_in_scope(&ctx, &caller, &p.organization_ref).await?;
     ensure_may_freeze(&ctx, &caller, &p.organization_ref).await?;
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let (month, payload) = pack_payload(&ctx, &p.organization_ref, today).await?;
     let mut tx = pool(&ctx).begin().await?;
     let row = insert_pack(&mut tx, &p.organization_ref, today, month, payload).await?;
@@ -304,7 +306,7 @@ async fn withdraw(
            RETURNING created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, pack_pid, withdrawn_on, reason"#,
         Uuid::new_v4(),
         row.pid,
-        chrono::Utc::now().date_naive(),
+        SqlDate(crate::dates::today()),
         p.reason,
     )
     .fetch_one(&mut *tx)

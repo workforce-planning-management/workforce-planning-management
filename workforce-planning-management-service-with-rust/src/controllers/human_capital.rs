@@ -4,7 +4,7 @@
 //! Nothing is stored. Spec: `spec/human-capital-reporting.md`.
 
 use axa::prelude::*;
-use chrono::{Months, NaiveDate, Utc};
+use jiff::civil::Date;
 use serde::Deserialize;
 use serde_json::json;
 use std::collections::BTreeMap;
@@ -19,11 +19,12 @@ use crate::models::_entities::payroll_runs;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::human_capital::{self as rules, Inputs, Plan, TypeCount, WageRun};
 use crate::rules::metrics::time_to_fill_days;
+use crate::sql_time::SqlDate;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct ReportQuery {
     organization: String,
-    as_of: Option<NaiveDate>,
+    as_of: Option<Date>,
 }
 
 fn n(v: i64) -> usize {
@@ -31,12 +32,13 @@ fn n(v: i64) -> usize {
 }
 
 /// Read what the report is made of, for one organization.
-async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<Inputs> {
+async fn read(ctx: &AppContext, organization: &str, as_of: Date) -> Result<Inputs> {
     let from = as_of
-        .checked_sub_months(Months::new(12))
-        .and_then(|d| d.succ_opt())
+        .checked_sub(jiff::Span::new().months(12))
+        .ok()
+        .and_then(|d| d.tomorrow().ok())
         .unwrap_or(as_of);
-    let opening_date = from.pred_opt().unwrap_or(from);
+    let opening_date = from.yesterday().ok().unwrap_or(from);
     // "Employed on the date" is written out in each statement, because each is checked as it stands.
     let by_type = sqlx::query!(
         r#"SELECT w.employment_type,
@@ -47,7 +49,7 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
              AND (w.terminated_on IS NULL OR w.terminated_on > $2)
            GROUP BY w.employment_type"#,
         organization,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -59,9 +61,9 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
              count(*) FILTER (WHERE terminated_on >= $4 AND terminated_on <= $3) AS "leavers!"
            FROM workers WHERE deleted_at IS NULL AND organization_ref = $1"#,
         organization,
-        opening_date,
-        as_of,
-        from,
+        SqlDate(opening_date),
+        SqlDate(as_of),
+        SqlDate(from),
     )
     .fetch_one(pool(ctx))
     .await?;
@@ -70,13 +72,13 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
            FROM requisitions
            WHERE deleted_at IS NULL AND organization_ref = $1 AND filled_on >= $2 AND filled_on <= $3"#,
         organization,
-        from,
-        as_of,
+        SqlDate(from),
+        SqlDate(as_of),
     )
     .fetch_all(pool(ctx))
     .await?
     .iter()
-    .filter_map(|r| time_to_fill_days(r.opened_on, r.filled_on))
+    .filter_map(|r| time_to_fill_days(r.opened_on.map(SqlDate::get), r.filled_on.map(SqlDate::get)))
     .collect();
     let training = sqlx::query!(
         r#"SELECT count(*) AS "enrolments!",
@@ -86,7 +88,7 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
              AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
              AND (w.terminated_on IS NULL OR w.terminated_on > $2)"#,
         organization,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_one(pool(ctx))
     .await?;
@@ -123,7 +125,7 @@ async fn read(ctx: &AppContext, organization: &str, as_of: NaiveDate) -> Result<
 async fn succession(
     ctx: &AppContext,
     organization: &str,
-    as_of: NaiveDate,
+    as_of: Date,
 ) -> Result<(Vec<Plan>, usize)> {
     let plans = sqlx::query!(
         r#"SELECT p.criticality,
@@ -136,7 +138,7 @@ async fn succession(
              AND w.deleted_at IS NULL AND w.organization_ref = $1 AND w.hired_on <= $2
              AND (w.terminated_on IS NULL OR w.terminated_on > $2)"#,
         organization,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -150,7 +152,7 @@ async fn succession(
                  AND (w.terminated_on IS NULL OR w.terminated_on > $2)
            )"#,
         organization,
-        as_of,
+        SqlDate(as_of),
     )
     .fetch_one(pool(ctx))
     .await?;
@@ -168,15 +170,15 @@ async fn succession(
 async fn injuries(
     ctx: &AppContext,
     organization: &str,
-    from: NaiveDate,
-    as_of: NaiveDate,
+    from: Date,
+    as_of: Date,
 ) -> Result<(Vec<String>, usize)> {
     let rows = sqlx::query!(
         r#"SELECT class, (occurred_at AT TIME ZONE 'UTC')::date BETWEEN $2 AND $3 AS "in_period!"
            FROM injury_records WHERE organization_ref = $1"#,
         organization,
-        from,
-        as_of,
+        SqlDate(from),
+        SqlDate(as_of),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -194,8 +196,8 @@ async fn injuries(
 async fn wage_runs(
     ctx: &AppContext,
     organization: &str,
-    from: NaiveDate,
-    as_of: NaiveDate,
+    from: Date,
+    as_of: Date,
 ) -> Result<Vec<WageRun>> {
     let runs = sqlx::query_as!(
         payroll_runs::Model,
@@ -209,8 +211,8 @@ async fn wage_runs(
              AND period_end >= $2
              AND period_end <= $3"#,
         organization,
-        from,
-        as_of,
+        SqlDate(from),
+        SqlDate(as_of),
     )
     .fetch_all(pool(ctx))
     .await?;
@@ -241,8 +243,8 @@ async fn human_capital(
 ) -> Result<Response> {
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
-    let as_of = query.as_of.unwrap_or_else(|| Utc::now().date_naive());
-    if as_of > Utc::now().date_naive() {
+    let as_of = query.as_of.unwrap_or_else(crate::dates::today);
+    if as_of > crate::dates::today() {
         return Err(unprocessable("as_of must not be in the future"));
     }
     let inputs = read(&ctx, &query.organization, as_of).await?;

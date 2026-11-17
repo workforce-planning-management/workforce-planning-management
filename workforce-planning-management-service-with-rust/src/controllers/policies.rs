@@ -3,11 +3,12 @@
 //! and that read is audited. An acknowledgement is the worker's own act: HR cannot make one for them. Spec:
 //! `spec/communication-and-leadership.md`.
 
+use crate::sql_time::SqlDate;
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 use axa::extract::{Json, Path};
 use axa::prelude::*;
-use chrono::{NaiveDate, Utc};
 use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
@@ -222,7 +223,7 @@ async fn rename(
 struct VersionPayload {
     title: String,
     document_ref: String,
-    effective_on: NaiveDate,
+    effective_on: Date,
     audience: String,
     audience_value: Option<String>,
     acknowledge_within_days: Option<i32>,
@@ -273,7 +274,7 @@ async fn add_version(
         latest + 1,
         payload.title.trim(),
         payload.document_ref.trim(),
-        payload.effective_on,
+        SqlDate(payload.effective_on),
         payload.audience,
         payload
             .audience_value
@@ -312,15 +313,15 @@ async fn of_worker(
 
 /// What `worker` is asked to acknowledge and where they stand. Also served as `GET /api/me/policies`.
 pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Result<Response> {
-    let today = Utc::now().date_naive();
-    let acked: BTreeMap<Uuid, NaiveDate> = sqlx::query!(
+    let today = crate::dates::today();
+    let acked: BTreeMap<Uuid, Date> = sqlx::query!(
         "SELECT version_pid, acknowledged_on FROM policy_acknowledgements WHERE worker_pid = $1",
         worker.pid,
     )
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-    .map(|a| (a.version_pid, a.acknowledged_on))
+    .map(|a| (a.version_pid, a.acknowledged_on.get()))
     .collect();
     let rows = policies_of(ctx, &worker.organization_ref).await?;
     let mut out = Vec::new();
@@ -331,7 +332,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
             .iter()
             .map(|v| Fact {
                 version: v.version,
-                effective_on: v.effective_on,
+                effective_on: v.effective_on.get(),
             })
             .collect();
         let Some(i) = rules::current(&facts, today) else {
@@ -347,7 +348,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
             continue;
         }
         let standing = rules::standing(
-            v.effective_on,
+            v.effective_on.get(),
             v.acknowledge_within_days,
             acked.get(&v.pid).copied(),
             today,
@@ -370,7 +371,7 @@ async fn applicable(
     ctx: &AppContext,
     worker: &workers::Model,
     version_pid: Uuid,
-    today: NaiveDate,
+    today: Date,
 ) -> Result<policy_versions::Model> {
     let v = version_by_pid(ctx, version_pid).await?;
     let policy = policy_by_pid(ctx, v.policy_pid).await?;
@@ -389,7 +390,7 @@ async fn applicable(
         .iter()
         .map(|x| Fact {
             version: x.version,
-            effective_on: x.effective_on,
+            effective_on: x.effective_on.get(),
         })
         .collect();
     let newest = rules::current(&facts, today).map(|i| versions[i].pid);
@@ -410,7 +411,7 @@ pub(crate) async fn acknowledge_for(
     worker: &workers::Model,
     payload: AckPayload,
 ) -> Result<Response> {
-    let today = Utc::now().date_naive();
+    let today = crate::dates::today();
     let version = applicable(ctx, worker, payload.version_pid, today).await?;
     let existing = sqlx::query_scalar!(
         "SELECT acknowledged_on FROM policy_acknowledgements WHERE version_pid = $1 AND worker_pid = $2 LIMIT 1",
@@ -429,7 +430,7 @@ pub(crate) async fn acknowledge_for(
         ack_pid,
         version.pid,
         worker.pid,
-        today,
+        SqlDate(today),
     )
     .execute(&mut *tx)
     .await?;
@@ -471,7 +472,7 @@ async fn audience_workers(
     ctx: &AppContext,
     version: &policy_versions::Model,
     organization: &str,
-    on: NaiveDate,
+    on: Date,
 ) -> Result<Vec<workers::Model>> {
     Ok(sqlx::query_as!(
         workers::Model,
@@ -486,7 +487,7 @@ async fn audience_workers(
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-        .filter(|w| is_employed_on(on, w.hired_on, w.terminated_on))
+        .filter(|w| is_employed_on(on, w.hired_on.get(), w.terminated_on.map(SqlDate::get)))
         .filter(|w| {
             rules::in_audience(
                 &version.audience_kind,
@@ -535,7 +536,7 @@ async fn team_counts(
     if someone_else && !privileged(&ctx, &caller, &organization).await? {
         return Err(forbidden("a manager's team counts are for that manager"));
     }
-    let team: Vec<Uuid> = audience_workers(&ctx, &version, &organization, Utc::now().date_naive())
+    let team: Vec<Uuid> = audience_workers(&ctx, &version, &organization, crate::dates::today())
         .await?
         .into_iter()
         .filter(|w| w.manager_pid == Some(manager.pid))
@@ -568,15 +569,15 @@ async fn named_record(
     if !privileged(&ctx, &caller, &organization).await? {
         return Err(forbidden("the named record is for HR"));
     }
-    let people = audience_workers(&ctx, &version, &organization, Utc::now().date_naive()).await?;
-    let acked: BTreeMap<Uuid, NaiveDate> = sqlx::query!(
+    let people = audience_workers(&ctx, &version, &organization, crate::dates::today()).await?;
+    let acked: BTreeMap<Uuid, Date> = sqlx::query!(
         "SELECT worker_pid, acknowledged_on FROM policy_acknowledgements WHERE version_pid = $1",
         version.pid,
     )
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .map(|a| (a.worker_pid, a.acknowledged_on))
+    .map(|a| (a.worker_pid, a.acknowledged_on.get()))
     .collect();
     db::audit(
         &mut *db::pool(&ctx).acquire().await?,

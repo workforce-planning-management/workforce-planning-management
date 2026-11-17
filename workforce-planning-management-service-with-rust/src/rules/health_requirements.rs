@@ -13,8 +13,7 @@
 //!   their own; occupational health sees the detail.
 //! - **Never an input to any score or decision about a person** apart from that clearance, which
 //!   the deployer's own rule for the area applies.
-
-use chrono::{Days, NaiveDate};
+use jiff::civil::Date;
 use std::collections::BTreeMap;
 
 /// The default calendar days before a due date at which a reminder shows.
@@ -61,8 +60,8 @@ impl Standing {
 #[must_use]
 pub fn standing(
     status: Option<&str>,
-    next_due: Option<NaiveDate>,
-    today: NaiveDate,
+    next_due: Option<Date>,
+    today: Date,
     reminder_calendar_days: u32,
 ) -> Standing {
     let Some(status) = status else {
@@ -76,8 +75,10 @@ pub fn standing(
         Some(due) if today > due => Standing::Overdue,
         Some(due)
             if !exempt
-                && due
-                    .checked_sub_days(Days::new(u64::from(reminder_calendar_days)))
+                && jiff::Span::new()
+                    .try_days(reminder_calendar_days)
+                    .ok()
+                    .and_then(|span| due.checked_sub(span).ok())
                     .is_some_and(|start| today >= start) =>
         {
             Standing::DueSoon
@@ -109,11 +110,12 @@ pub fn applies(departments: &[String], department: &str) -> bool {
 /// The date a record falls due again: the day recorded plus the requirement's re-check period in
 /// calendar days; `None` for a one-off requirement.
 #[must_use]
-pub fn next_due_after(
-    recorded_on: NaiveDate,
-    recheck_calendar_days: Option<u32>,
-) -> Option<NaiveDate> {
-    recheck_calendar_days.and_then(|d| recorded_on.checked_add_days(Days::new(u64::from(d))))
+pub fn next_due_after(recorded_on: Date, recheck_calendar_days: Option<u32>) -> Option<Date> {
+    recheck_calendar_days.and_then(|d| {
+        recorded_on
+            .checked_add(jiff::Span::new().try_days(d).ok()?)
+            .ok()
+    })
 }
 
 /// Check a requirement definition.
@@ -163,9 +165,9 @@ pub fn validate_requirement(
 /// A status that is not on the list, a date in the future, or a due date not after the day recorded.
 pub fn validate_record(
     status: &str,
-    recorded_on: NaiveDate,
-    next_due: Option<NaiveDate>,
-    today: NaiveDate,
+    recorded_on: Date,
+    next_due: Option<Date>,
+    today: Date,
 ) -> Result<(), String> {
     if !STATUSES.contains(&status) {
         return Err(format!("status must be one of {}", STATUSES.join(", ")));
@@ -321,8 +323,8 @@ mod tests {
         );
     }
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     #[test]

@@ -5,7 +5,7 @@
 //! `expired`, `never_completed`, `not_applicable`, or `unknown` when their assignments do not record a category the audience is
 //! defined by. **Unknown is never compliant and never missing**, and a roll-up counts it apart.
 
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 
 /// The two bases a requirement can rest on; a statutory one names its source.
 pub const BASES: &[&str] = &["statutory", "mandatory"];
@@ -133,7 +133,7 @@ pub fn applies(audience: &Audience, assignments: &[Categories]) -> Applies {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Completion {
     /// The day it was completed.
-    pub on: NaiveDate,
+    pub on: Date,
     /// Whether another of the person's organizations recorded it.
     pub transferred: bool,
 }
@@ -157,8 +157,12 @@ pub enum Status {
 
 /// The day a completion stops being in date: the refresher period on. `None` when once is enough.
 #[must_use]
-pub fn expires_on(completed: NaiveDate, refresher_months: Option<u32>) -> Option<NaiveDate> {
-    refresher_months.and_then(|m| completed.checked_add_months(Months::new(m)))
+pub fn expires_on(completed: Date, refresher_months: Option<u32>) -> Option<Date> {
+    refresher_months.and_then(|m| {
+        completed
+            .checked_add(jiff::Span::new().try_months(m).ok()?)
+            .ok()
+    })
 }
 
 /// A person's status. `accepts_transferred` is the requirement's own setting (R167); a completion after `as_of` is ignored.
@@ -169,7 +173,7 @@ pub fn status(
     completions: &[Completion],
     accepts_transferred: bool,
     refresher_months: Option<u32>,
-    as_of: NaiveDate,
+    as_of: Date,
     due_soon_days: i64,
 ) -> Status {
     match applies {
@@ -189,7 +193,7 @@ pub fn status(
         None if refresher_months.is_none() => Status::Compliant,
         None => Status::Unknown,
         Some(e) if as_of > e => Status::Expired,
-        Some(e) if (e - as_of).num_days() <= due_soon_days => Status::DueSoon,
+        Some(e) if crate::dates::days_between(as_of, e) <= due_soon_days => Status::DueSoon,
         Some(_) => Status::Compliant,
     }
 }
@@ -299,11 +303,11 @@ pub fn requirement_problems(
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn own(on: NaiveDate) -> Completion {
+    fn own(on: Date) -> Completion {
         Completion {
             on,
             transferred: false,
@@ -326,7 +330,7 @@ mod tests {
         }
     }
 
-    const NOW: fn() -> NaiveDate = || d(2026, 10, 28);
+    const NOW: fn() -> Date = || d(2026, 10, 28);
 
     #[test]
     fn the_organization_audience_takes_everyone_even_with_nothing_recorded() {

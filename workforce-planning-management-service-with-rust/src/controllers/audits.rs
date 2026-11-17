@@ -2,8 +2,10 @@
 //! slice, the **department-scoped query** (spec `audit.md`), and the
 //! recent event stream.
 
+use crate::sql_time::SqlTimestamp;
 use axa::extract::{Path, Query};
 use axa::prelude::*;
+use jiff::Timestamp;
 use serde::Deserialize;
 
 use crate::db;
@@ -145,7 +147,7 @@ async fn for_entity(State(ctx): State<AppContext>, Path(pid): Path<String>) -> R
 #[derive(Debug, Deserialize)]
 struct DepartmentParams {
     department: String,
-    since: chrono::DateTime<chrono::FixedOffset>,
+    since: Timestamp,
 }
 
 /// The cap on the department-scoped query.
@@ -162,7 +164,7 @@ async fn department(
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, entity, entity_pid, action, actor,
                   snapshot, chain_seq, prev_hash, entry_hash
              FROM audit_logs WHERE created_at >= $1 ORDER BY id DESC LIMIT $2"#,
-        params.since,
+        SqlTimestamp(params.since),
         i64::try_from(DEPARTMENT_LIMIT * 10).unwrap_or(i64::MAX),
     )
     .fetch_all(db::pool(&ctx))

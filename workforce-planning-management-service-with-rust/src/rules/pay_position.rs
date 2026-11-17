@@ -7,8 +7,7 @@
 //! the employer's own conditions for progression are met is not modelled, so the
 //! wording is always "eligible", never "will move". All dates are arguments: the
 //! module never reads a clock.
-
-use chrono::{Months, NaiveDate};
+use jiff::civil::Date;
 use serde::Serialize;
 
 use super::grade;
@@ -39,7 +38,7 @@ pub fn validate(
 ///
 /// # Errors
 /// A message when `step_since` is in the future.
-pub fn validate_step_since(step_since: NaiveDate, today: NaiveDate) -> Result<(), String> {
+pub fn validate_step_since(step_since: Date, today: Date) -> Result<(), String> {
     if step_since > today {
         Err("step_since cannot be in the future".to_string())
     } else {
@@ -51,15 +50,13 @@ pub fn validate_step_since(step_since: NaiveDate, today: NaiveDate) -> Result<()
 /// `step_since` plus the step's whole years. `None` on the top step or a single
 /// rate (nowhere to go), when `step` is not on the band, or on a date overflow.
 #[must_use]
-pub fn eligible_on(
-    band: &pay_scale::Band,
-    step: usize,
-    step_since: NaiveDate,
-) -> Option<NaiveDate> {
+pub fn eligible_on(band: &pay_scale::Band, step: usize, step_since: Date) -> Option<Date> {
     let current = band.steps.get(step.checked_sub(1)?)?;
     band.steps.get(step)?;
     let years = current.years_to_next?;
-    step_since.checked_add_months(Months::new(u32::from(years) * 12))
+    step_since
+        .checked_add(jiff::Span::new().try_months(u32::from(years) * 12).ok()?)
+        .ok()
 }
 
 /// Where a person stands on progression, with dates.
@@ -71,14 +68,14 @@ pub enum Standing {
     /// Eligible now (since `eligible_on`).
     Due {
         /// The date they became eligible.
-        eligible_on: NaiveDate,
+        eligible_on: Date,
         /// Annual pay on the next step, in pence.
         next_annual_minor: i64,
     },
     /// Not yet.
     NotYet {
         /// The date they become eligible.
-        eligible_on: NaiveDate,
+        eligible_on: Date,
         /// Whole days from today until then.
         days_remaining: i64,
         /// Annual pay on the next step, in pence.
@@ -92,8 +89,8 @@ pub enum Standing {
 pub fn standing(
     band: &pay_scale::Band,
     step: usize,
-    step_since: NaiveDate,
-    today: NaiveDate,
+    step_since: Date,
+    today: Date,
 ) -> Option<Standing> {
     band.steps.get(step.checked_sub(1)?)?;
     let (Some(on), Some(next)) = (eligible_on(band, step, step_since), band.steps.get(step)) else {
@@ -107,7 +104,7 @@ pub fn standing(
     } else {
         Standing::NotYet {
             eligible_on: on,
-            days_remaining: (on - today).num_days(),
+            days_remaining: crate::dates::days_between(today, on),
             next_annual_minor: next.annual_minor,
         }
     })
@@ -127,8 +124,8 @@ pub fn annual_minor(scale: &PayScale, band: &str, step: usize) -> Option<i64> {
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
     fn national() -> PayScale {

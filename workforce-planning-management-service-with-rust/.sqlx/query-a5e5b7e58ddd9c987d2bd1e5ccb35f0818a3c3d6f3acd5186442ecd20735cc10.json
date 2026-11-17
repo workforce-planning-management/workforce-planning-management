@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now() WHERE id = $1\n        RETURNING created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, start_on, end_on,\n                  days, status, negative_balance, reason, decided_by, decided_at AS \"decided_at: _\",\n                  deleted_at AS \"deleted_at: _\"",
+  "query": "SELECT created_at, updated_at, id, pid, worker_pid, framework_slug,\n                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at,\n                  ended_at, recorded_by, on_behalf\n             FROM worker_framework_roles\n            WHERE worker_pid = $1 AND framework_slug = $2 AND ended_at IS NULL\n            LIMIT 1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_requests",
+            "table": "worker_framework_roles",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_requests",
+            "table": "worker_framework_roles",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "leave_requests",
+            "table": "worker_framework_roles",
             "name": "id"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "leave_requests",
+            "table": "worker_framework_roles",
             "name": "pid"
           }
         }
@@ -53,127 +53,115 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "leave_requests",
+            "table": "worker_framework_roles",
             "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "kind",
+        "name": "framework_slug",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "kind"
+            "table": "worker_framework_roles",
+            "name": "framework_slug"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "start_on",
-        "type_info": "Date",
+        "name": "role_profile_pid",
+        "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "start_on"
+            "table": "worker_framework_roles",
+            "name": "role_profile_pid"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "end_on",
-        "type_info": "Date",
+        "name": "esco_occupation_uri",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "end_on"
+            "table": "worker_framework_roles",
+            "name": "esco_occupation_uri"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "days",
-        "type_info": "Int4",
+        "name": "role_label",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "days"
+            "table": "worker_framework_roles",
+            "name": "role_label"
           }
         }
       },
       {
         "ordinal": 9,
-        "name": "status",
-        "type_info": "Varchar",
+        "name": "selected_on",
+        "type_info": "Date",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "status"
+            "table": "worker_framework_roles",
+            "name": "selected_on"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "negative_balance",
-        "type_info": "Bool",
+        "name": "started_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "negative_balance"
+            "table": "worker_framework_roles",
+            "name": "started_at"
           }
         }
       },
       {
         "ordinal": 11,
-        "name": "reason",
-        "type_info": "Varchar",
+        "name": "ended_at",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "reason"
+            "table": "worker_framework_roles",
+            "name": "ended_at"
           }
         }
       },
       {
         "ordinal": 12,
-        "name": "decided_by",
+        "name": "recorded_by",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "decided_by"
+            "table": "worker_framework_roles",
+            "name": "recorded_by"
           }
         }
       },
       {
         "ordinal": 13,
-        "name": "decided_at: _",
-        "type_info": "Timestamptz",
+        "name": "on_behalf",
+        "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "leave_requests",
-            "name": "decided_at"
-          }
-        }
-      },
-      {
-        "ordinal": 14,
-        "name": "deleted_at: _",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "leave_requests",
-            "name": "deleted_at"
+            "table": "worker_framework_roles",
+            "name": "on_behalf"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "Int4",
-        "Varchar",
-        "Varchar"
+        "Uuid",
+        "Text"
       ]
     },
     "nullable": [
@@ -183,16 +171,15 @@
       false,
       false,
       false,
-      false,
-      false,
+      true,
+      true,
       false,
       false,
       false,
       true,
       true,
-      true,
-      true
+      false
     ]
   },
-  "hash": "31fa765c60d886384d6b1176a23a0af1631acc7d2fdf6d7605496aa45afbd2b6"
+  "hash": "a5e5b7e58ddd9c987d2bd1e5ccb35f0818a3c3d6f3acd5186442ecd20735cc10"
 }

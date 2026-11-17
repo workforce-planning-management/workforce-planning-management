@@ -17,9 +17,8 @@
 //! towards more than one pool, so a total would count them twice, and beside the cells it could give a hidden one away. A pool-month
 //! is not a person, so the third sub-count is not floored.
 
+use jiff::civil::Date;
 use std::collections::BTreeMap;
-
-use chrono::NaiveDate;
 
 use crate::rules::capacity::{CellStatus, ends_before_programme};
 use crate::rules::suppression::visible;
@@ -46,7 +45,7 @@ pub struct Committed {
     /// Whether the engagement is fixed-term or a contract.
     pub contingent: bool,
     /// When the engagement ends, if recorded.
-    pub engagement_ends: Option<NaiveDate>,
+    pub engagement_ends: Option<Date>,
 }
 
 /// One pool-month in which the programme holds a claim the pool counts, and what the month comes to.
@@ -55,7 +54,7 @@ pub struct ClaimedMonth {
     /// The pool's key.
     pub pool: String,
     /// The month (its first day).
-    pub month: NaiveDate,
+    pub month: Date,
     /// What the pool-month comes to in the capacity view.
     pub status: CellStatus,
 }
@@ -97,7 +96,7 @@ pub struct Over {
     /// Of those, the months that cannot be said.
     pub unknown: usize,
     /// By pool (in key order): the months over and the months unknown. A pool with neither is left out.
-    pub pools: Vec<(String, Vec<NaiveDate>, Vec<NaiveDate>)>,
+    pub pools: Vec<(String, Vec<Date>, Vec<Date>)>,
 }
 
 fn floored(n: usize, floor: usize) -> Option<usize> {
@@ -135,8 +134,8 @@ pub fn workers_committed(committed: &[Committed], pools: &[String], floor: usize
 pub fn contingent_ending(
     committed: &[Committed],
     pools: &[String],
-    today: NaiveDate,
-    ends_on: Option<NaiveDate>,
+    today: Date,
+    ends_on: Option<Date>,
     floor: usize,
 ) -> Sub<Ending> {
     let Some(end) = ends_on else {
@@ -166,7 +165,7 @@ pub fn over_committed(months: &[ClaimedMonth]) -> Sub<Over> {
     if months.is_empty() {
         return Sub::Unknown(NO_DEMAND);
     }
-    let mut pools: BTreeMap<&str, (Vec<NaiveDate>, Vec<NaiveDate>)> = BTreeMap::new();
+    let mut pools: BTreeMap<&str, (Vec<Date>, Vec<Date>)> = BTreeMap::new();
     let mut seen = std::collections::BTreeSet::new();
     for m in months {
         if !seen.insert((m.pool.as_str(), m.month)) {
@@ -211,11 +210,11 @@ floor is hidden (null, hidden true); zero is shown.";
 mod tests {
     use super::*;
 
-    fn d(y: i32, m: u32, day: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(y, m, day).unwrap()
+    fn d(y: i32, m: u32, day: u32) -> Date {
+        crate::dates::ymd(y, m, day).unwrap()
     }
 
-    fn person(pools: &[&str], contingent: bool, ends: Option<NaiveDate>) -> Committed {
+    fn person(pools: &[&str], contingent: bool, ends: Option<Date>) -> Committed {
         Committed {
             pools: pools.iter().map(ToString::to_string).collect(),
             contingent,

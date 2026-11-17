@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, start_on, end_on,\n                  days, status, negative_balance, reason, decided_by, decided_at AS \"decided_at: _\",\n                  deleted_at AS \"deleted_at: _\"\n             FROM leave_requests WHERE worker_pid = $1 AND deleted_at IS NULL ORDER BY id",
+  "query": "UPDATE leave_requests SET status = $2, decided_by = $3, decided_at = now() WHERE id = $1\n        RETURNING created_at, updated_at, id, pid, worker_pid, kind, start_on, end_on,\n                  days, status, negative_balance, reason, decided_by, decided_at,\n                  deleted_at",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -148,7 +148,7 @@
       },
       {
         "ordinal": 13,
-        "name": "decided_at: _",
+        "name": "decided_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -159,7 +159,7 @@
       },
       {
         "ordinal": 14,
-        "name": "deleted_at: _",
+        "name": "deleted_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -171,7 +171,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Int4",
+        "Varchar",
+        "Varchar"
       ]
     },
     "nullable": [
@@ -192,5 +194,5 @@
       true
     ]
   },
-  "hash": "3479f6cbe6f194611d4cd9cc37ed7530ced4bfd21b26f91cfbceb65008df2798"
+  "hash": "74ede91463b738f7cc9028692c1197be666acb418974f4d27552ed49b3db76b0"
 }

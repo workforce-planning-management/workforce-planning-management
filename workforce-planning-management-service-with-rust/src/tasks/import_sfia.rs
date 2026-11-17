@@ -11,6 +11,7 @@
 
 use axa::prelude::*;
 use axa::task::{TaskInfo, Vars};
+use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use uuid::Uuid;
@@ -102,11 +103,11 @@ pub struct Report {
 }
 
 /// The licence record must be complete before anything is read: a version, and the day the licence was checked.
-pub(crate) fn check_licence(licence: &Licence) -> Result<chrono::NaiveDate> {
+pub(crate) fn check_licence(licence: &Licence) -> Result<Date> {
     if licence.version.trim().is_empty() {
         return Err(Error::string("version:<SFIA version> is required"));
     }
-    chrono::NaiveDate::parse_from_str(licence.checked_on.trim(), "%Y-%m-%d").map_err(|_| {
+    Date::strptime("%Y-%m-%d", licence.checked_on.trim()).map_err(|_| {
         Error::string(
             "licence_checked_on:<YYYY-MM-DD> is required: record when you checked your SFIA licence",
         )
@@ -271,7 +272,7 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
     }
 
     // The framework row: internal use only, whatever it said before.
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let note = "Loaded by the licensee from their own download. WPM ships no SFIA content; \
                 it must not be published or redistributed.";
     sqlx::query!(
@@ -291,13 +292,13 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
         "https://sfia-online.org/",
         "SFIA Foundation corporate licence (internal use)",
         rules::SFIA_SCALE_MAX,
-        today,
+        crate::sql_time::SqlDate(today),
         note,
         version,
         Redistribution::InternalOnly.token(),
         licence.holder,
         licence.reference,
-        checked_on,
+        crate::sql_time::SqlDate(checked_on),
     )
     .execute(&mut *tx)
     .await?;

@@ -1,9 +1,15 @@
 //! Cost + affordability (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, Deserialize, MaybeAuthUser, Response, Result, State, auth, cost_rules,
+    debug_handler, departments_of, format, people_by_department, plan_demand_lines, plan_lines,
+    record_rejection, resolve_attrition, role_titles, rules, salaries_by_department, scoped_plan,
+    unprocessable,
+};
 use axa::extract::Path;
+#[allow(clippy::wildcard_imports)]
+use jiff::civil::Date;
 
 /// Query for the cost view.
 #[derive(Debug, Default, Deserialize)]
@@ -57,7 +63,7 @@ pub(super) async fn cost_value(
         return Err(unprocessable("currency must be an ISO-4217 code, e.g. GBP"));
     }
     let on_cost_bp = plan.on_cost_bp.unwrap_or(0);
-    let today = chrono::Utc::now().date_naive();
+    let today = crate::dates::today();
     let (attrition, source) = resolve_attrition(ctx, &plan).await?;
     let lines = plan_lines(ctx, plan.pid).await?;
     let departments_named = departments_of(&lines);
@@ -86,23 +92,22 @@ pub(super) async fn cost_value(
         .map(|b| (b.job_title.trim().to_lowercase(), b.median_minor))
         .collect();
 
-    let mut groups: BTreeMap<(String, chrono::NaiveDate), Vec<&plan_demand_lines::Model>> =
-        BTreeMap::new();
+    let mut groups: BTreeMap<(String, Date), Vec<&plan_demand_lines::Model>> = BTreeMap::new();
     for line in &lines {
         groups
-            .entry((line.department.clone(), line.target_on))
+            .entry((line.department.clone(), line.target_on.get()))
             .or_default()
             .push(line);
     }
     // department → (target date, annual cost) at the latest costed date.
-    let mut latest: BTreeMap<String, (chrono::NaiveDate, i64)> = BTreeMap::new();
+    let mut latest: BTreeMap<String, (Date, i64)> = BTreeMap::new();
     let mut uncosted = 0usize;
     let rows: Vec<serde_json::Value> = groups
         .iter()
         .map(|((department, target_on), group)| {
             let headcount = people_in.get(department).map_or(0, Vec::len);
             let demand: i64 = group.iter().map(|l| i64::from(l.target_headcount)).sum();
-            let days = (*target_on - today).num_days().max(0);
+            let days = crate::dates::days_between(today, *target_on).max(0);
             let gap = attrition
                 .map(|bp| rules::headcount_gap(demand, rules::project_supply(headcount, bp, days)));
             let hires = gap.map(cost_rules::hires_to_close);

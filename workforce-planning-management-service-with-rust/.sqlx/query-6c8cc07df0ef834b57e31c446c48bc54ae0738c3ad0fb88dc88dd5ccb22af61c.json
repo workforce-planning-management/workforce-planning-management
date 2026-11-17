@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, framework_slug,\n                  role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at AS \"started_at: _\",\n                  ended_at AS \"ended_at: _\", recorded_by, on_behalf\n             FROM worker_framework_roles\n            WHERE worker_pid = $1 AND ended_at IS NULL\n            ORDER BY id",
+  "query": "INSERT INTO worker_framework_roles (pid, worker_pid, framework_slug, role_profile_pid, esco_occupation_uri, role_label,\n                                             selected_on, started_at, recorded_by, on_behalf)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n           RETURNING created_at, updated_at, id, pid, worker_pid, framework_slug,\n                     role_profile_pid, esco_occupation_uri, role_label, selected_on, started_at,\n                     ended_at, recorded_by, on_behalf",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -16,7 +16,7 @@
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -115,7 +115,7 @@
       },
       {
         "ordinal": 10,
-        "name": "started_at: _",
+        "name": "started_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -126,7 +126,7 @@
       },
       {
         "ordinal": 11,
-        "name": "ended_at: _",
+        "name": "ended_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
@@ -160,7 +160,16 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Timestamptz",
+        "Varchar",
+        "Bool"
       ]
     },
     "nullable": [
@@ -180,5 +189,5 @@
       false
     ]
   },
-  "hash": "2ed9edf36865431f8619622828bcf8639ee5d4f1ae996e9d2f65d72bff869fd3"
+  "hash": "6c8cc07df0ef834b57e31c446c48bc54ae0738c3ad0fb88dc88dd5ccb22af61c"
 }
