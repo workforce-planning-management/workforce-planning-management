@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — mutation testing (WPM-T526)
+
+`.cargo/mutants.toml` points cargo-mutants at the pure core (`src/rules/`, `src/security.rs`) with the lib's unit tests, and
+leaves out the security wiring only the database-backed `security` binary drives. Two new unit tests drive the security-header
+middleware through a router: the headers, HSTS only over TLS, and a handler's own `Cache-Control` kept.
+
 ### Changed — `axa` 0.17 (WPM-T524)
 
 `axa` 0.15.0 to 0.17.0 and `axa-test` 0.6.0 to 0.8.0. `workforce-planning-management health [--ready] [--port PORT]` asks the

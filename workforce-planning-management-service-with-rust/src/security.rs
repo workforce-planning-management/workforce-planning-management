@@ -469,4 +469,60 @@ mod tests {
             assert!(warning.contains("TRUSTED_PROXIES"), "{warning}");
         }
     }
+
+    // The middleware itself, through a router (WPM-T526: cargo-mutants found these lines checked only by the
+    // database-backed `security` binary, which a mutant run does not reach). Assumes `WPM_HSTS` is not set.
+    async fn answer(proto: Option<&str>, path: &str) -> axum::http::Response<axum::body::Body> {
+        use tower::ServiceExt as _;
+        let app = axum::Router::new()
+            .route("/api/plain", axum::routing::get(|| async { "plain" }))
+            .route(
+                "/api/cached",
+                axum::routing::get(|| async {
+                    ([(header::CACHE_CONTROL, "private, max-age=60")], "cached")
+                }),
+            )
+            .layer(axum::middleware::from_fn(security_headers_mw));
+        let mut request = axum::http::Request::builder().uri(path);
+        if let Some(proto) = proto {
+            request = request.header("x-forwarded-proto", proto);
+        }
+        app.oneshot(request.body(axum::body::Body::empty()).expect("a request"))
+            .await
+            .expect("an answer")
+    }
+
+    #[tokio::test]
+    async fn the_middleware_sets_the_headers_and_hsts_only_over_tls() {
+        let plain = answer(None, "/api/plain").await;
+        assert_eq!(plain.status(), axum::http::StatusCode::OK);
+        assert_eq!(plain.headers()[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+        assert_eq!(plain.headers()[header::CACHE_CONTROL], "no-store");
+        assert!(
+            !plain
+                .headers()
+                .contains_key(header::STRICT_TRANSPORT_SECURITY)
+        );
+        let tls = answer(Some("HTTPS"), "/api/plain").await;
+        assert!(
+            tls.headers()
+                .contains_key(header::STRICT_TRANSPORT_SECURITY)
+        );
+        let http = answer(Some("http"), "/api/plain").await;
+        assert!(
+            !http
+                .headers()
+                .contains_key(header::STRICT_TRANSPORT_SECURITY)
+        );
+    }
+
+    #[tokio::test]
+    async fn a_handlers_own_cache_control_wins_and_every_other_header_is_set() {
+        let cached = answer(None, "/api/cached").await;
+        assert_eq!(
+            cached.headers()[header::CACHE_CONTROL],
+            "private, max-age=60"
+        );
+        assert_eq!(cached.headers()[header::X_CONTENT_TYPE_OPTIONS], "nosniff");
+    }
 }

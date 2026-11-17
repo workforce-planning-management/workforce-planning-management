@@ -5699,6 +5699,28 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T526 **Mutation testing with cargo-mutants.** *The owner asked on 2026-11-17 ("improve mutation testing").* *([testing.md](testing.md))*
+      Until now mutation testing was by hand: a task broke its code on purpose and wrote "mutation-checked". Now `cargo-mutants`
+      27.1.0 has a configuration in each Rust crate. The service's `.cargo/mutants.toml` examines the pure core (`src/rules/**`,
+      `src/security.rs`) with the lib's unit tests only, since controllers are tested by the database-backed suites a mutant run
+      cannot afford; the matcher's examines the whole crate. `scripts/mutants-diff.sh [base]` tests the mutants in the lines changed
+      since a commit (the working tree, so uncommitted changes count), fails on one that survives or hangs, and above a cap (15 for
+      the service, 40 for the matcher) tests an even round-robin sample and says so. **It runs in place**, because the service's
+      unit tests `include_str!` files from `spec/`, outside the crate, so a copied crate does not build; each file is put back after
+      its mutant. CI's new `mutants` job runs it on every push and pull request (`CARGO_INCREMENTAL=1`, a 45-minute limit,
+      `cargo-mutants` installed by the pinned `taiki-e/install-action`). **First runs:** the matcher, 195 mutants: 19 survived;
+      nine new tests kill them all, so the 192 viable ones are all caught (2 unviable, and `NicknameTable::empty`, which is
+      `Default::default`, left out as equivalent). The service, `src/security.rs`, 33 mutants: 6 survived in the security-header
+      middleware and `is_https`, which only `tests/security.rs` drove; two new unit tests through a router kill them; 6 more (the
+      rate-limit middleware, the posture probe, the route table) need the database and are left out with that reason; 22 caught,
+      5 unviable. **Verified:** the matcher's full run, then 18 of 18 caught on `--iterate` after the tests; `src/security.rs`
+      in place; the script on the matcher with no changes (nothing to test), with a cap of 5 (a sample of 5 of 9, 4 caught and 1
+      unviable) and with a test removed and its line touched (it fails, naming the mutant); the matcher's and the service's
+      security tests pass; zizmor, the pinning and time-limit checks and the YAML parse. **Not done:** the rest of the service's
+      pure rules, 6,144 mutants (`--list`), which take hours at about a minute each on a shared laptop; a sharded run over `access`,
+      `policy`, `link_token`, `privacy`, `org_access`, `idempotency`, `suppression` and `security.rs` (236 mutants) reached only
+      `security.rs`'s before it was stopped for time. **Not
+      checked:** the job in CI; how long it takes there.
 - [x] (2026-11-17) WPM-T525 **A formal security policy.** *The owner asked on 2026-11-17.* *([special-files-for-public-repos](special-files-for-public-repos/index.md))*
       `SECURITY.md` from an informal note to version 2.0.0, in the shape of `AI_STATEMENT.md` (version, status, canonical location,
       review cadence, ISO verbal forms, a change log and a machine-readable annex). New: terms; a scope table (the service, the UI,

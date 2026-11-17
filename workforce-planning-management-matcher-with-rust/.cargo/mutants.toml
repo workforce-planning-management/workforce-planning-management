@@ -1,0 +1,10 @@
+# cargo-mutants (WPM-T526; spec/testing.md, "Mutation testing"). `cargo mutants` in this directory tests every mutant;
+# CI tests the ones in a push's or a pull request's changed lines.
+
+# Equivalent mutants: no test can tell them from the code, so they are left out, each with its reason.
+exclude_re = [
+    # `empty()` is documented as, and is, `Self::default()`.
+    "replace NicknameTable::empty -> Self with Default::default\\(\\)",
+]
+
+timeout_multiplier = 5.0

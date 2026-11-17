@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — mutation testing with cargo-mutants (WPM-T526, 2026-11-17)
+
+CI's new `mutants` job tests the mutants in each push's changed lines of the service's pure rules and of the matcher
+(`scripts/mutants-diff.sh`), and fails on one that survives. The matcher now catches every viable mutant (nine new tests); the
+service's security headers gained the two unit tests the first run showed were missing.
+
 ### Added — a formal security policy (WPM-T525, 2026-11-17)
 
 `SECURITY.md` 2.0.0 sets out the scope and what is out of it, the supported versions, what a report contains, target times by

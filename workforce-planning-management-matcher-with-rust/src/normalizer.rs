@@ -222,4 +222,24 @@ mod tests {
         assert_eq!(soundex("lee").as_deref(), Some("L000"));
         assert_eq!(soundex("123"), None);
     }
+
+    // Mutation-checked (WPM-T526): each letter that NFKD leaves alone has its own spelling.
+    #[test]
+    fn fold_spells_out_each_letter_that_does_not_decompose() {
+        assert_eq!(fold("Æsa").as_deref(), Some("aesa"));
+        assert_eq!(fold("Œuvre").as_deref(), Some("oeuvre"));
+        assert_eq!(fold("Øre").as_deref(), Some("ore"));
+        assert_eq!(fold("Đorđe").as_deref(), Some("dorde"));
+        assert_eq!(fold("Guðrún").as_deref(), Some("gudrun"));
+        assert_eq!(fold("Þór").as_deref(), Some("thor"));
+        assert_eq!(fold("Işık").as_deref(), Some("isik"));
+    }
+
+    // Mutation-checked (WPM-T526): the codes for l (4) and for m and n (5).
+    #[test]
+    fn soundex_codes_l_m_and_n() {
+        assert_eq!(soundex("miller").as_deref(), Some("M460"));
+        assert_eq!(soundex("lennon").as_deref(), Some("L550"));
+        assert_eq!(soundex("amy").as_deref(), Some("A500"));
+    }
 }

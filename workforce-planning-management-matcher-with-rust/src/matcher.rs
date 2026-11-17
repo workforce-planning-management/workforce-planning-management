@@ -843,4 +843,89 @@ mod tests {
             assert!(!shown.contains(leak), "{shown}");
         }
     }
+
+    // The tests below were added from a cargo-mutants run (WPM-T526); each fails under the mutant it names.
+
+    /// `x == y` turned into `!=` gave every pair of different given names a full score.
+    #[test]
+    fn different_given_names_do_not_score_as_the_same() {
+        let b = WorkerRecord::new()
+            .with_given_name("Zoe")
+            .with_family_name("Williams");
+        let r = MatchingEngine::default().match_workers(&alice(), &b);
+        assert!(r.breakdown.given_name.is_some_and(|s| s < 0.5), "{r:?}");
+    }
+
+    /// `||` turned into `&&` scored an address or a number held on one side only as a mismatch.
+    #[test]
+    fn an_email_or_phone_on_one_side_only_is_unknown() {
+        let a = alice()
+            .with_email("alice@example.com")
+            .with_phone("+44 20 7946 0958");
+        let r = MatchingEngine::default().match_workers(&a, &alice());
+        assert_eq!(r.breakdown.email, None);
+        assert_eq!(r.breakdown.phone, None);
+        let r = MatchingEngine::default().match_workers(&alice(), &a);
+        assert_eq!(r.breakdown.email, None);
+        assert_eq!(r.breakdown.phone, None);
+        assert_eq!(r.fields_compared, 3);
+    }
+
+    /// `> 0.0` turned into `>= 0.0` counted a field with weight zero as compared.
+    #[test]
+    fn a_field_with_weight_zero_is_not_counted() {
+        let config = MatchConfig {
+            weights: Weights {
+                email: 0.0,
+                ..Weights::default()
+            },
+            ..MatchConfig::default()
+        };
+        let a = alice().with_email("alice@example.com");
+        let r = MatchingEngine::new(config)
+            .expect("a valid configuration")
+            .match_workers(&a, &a);
+        assert_eq!(r.breakdown.email, Some(1.0));
+        assert_eq!(r.fields_compared, 3);
+    }
+
+    /// `r > m` turned into `r >= m` refused a review threshold equal to the match threshold.
+    #[test]
+    fn a_review_threshold_equal_to_the_match_threshold_is_allowed() {
+        let config = MatchConfig {
+            match_threshold: 0.9,
+            review_threshold: 0.9,
+            ..MatchConfig::default()
+        };
+        assert_eq!(config.validate(), Ok(()));
+    }
+
+    /// Deleting a field from a preset fell back to the default value.
+    #[test]
+    fn the_presets_differ_from_the_default_where_they_say() {
+        let strict = MatchConfig::strict();
+        assert_eq!(
+            (
+                strict.match_threshold,
+                strict.review_threshold,
+                strict.min_fields,
+                strict.use_nicknames
+            ),
+            (0.95, 0.85, 3, false)
+        );
+        let lenient = MatchConfig::lenient();
+        assert_eq!(
+            (lenient.match_threshold, lenient.review_threshold),
+            (0.82, 0.60)
+        );
+        assert_eq!(strict.validate(), Ok(()));
+        assert_eq!(lenient.validate(), Ok(()));
+    }
+
+    /// `config()` replaced with a default configuration.
+    #[test]
+    fn the_engine_reports_the_configuration_it_was_given() {
+        let engine = MatchingEngine::new(MatchConfig::strict()).expect("a valid configuration");
+        assert_eq!(engine.config(), &MatchConfig::strict());
+    }
 }
