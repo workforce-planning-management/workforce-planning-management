@@ -610,7 +610,12 @@ test("security.txt names the contact and the policy, and has not expired", async
   expect(response.status()).toBe(200);
   const text = await response.text();
   const field = (name: string) => text.match(new RegExp(`^${name}: (.+)$`, "m"))?.[1] ?? "";
-  expect(field("Contact")).toBe("mailto:joel@joelparkerhenderson.com");
+  const contacts = [...text.matchAll(/^Contact: (.+)$/gm)].map((m) => m[1]);
+  expect(contacts).toEqual([
+    "mailto:joel@joelparkerhenderson.com",
+    // GitHub's private vulnerability reporting (WPM-T537).
+    "https://github.com/workforce-planning-management/workforce-planning-management/security/advisories/new",
+  ]);
   expect(field("Policy")).toMatch(/\/SECURITY\.md$/);
   expect(field("Canonical")).toBe("https://workforce-planning-management.github.io/.well-known/security.txt");
   const expires = Date.parse(field("Expires"));

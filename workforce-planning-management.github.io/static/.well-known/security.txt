@@ -1,5 +1,6 @@
 # Workforce Planning Management. The policy is SECURITY.md (WPM-T525).
 Contact: mailto:joel@joelparkerhenderson.com
+Contact: https://github.com/workforce-planning-management/workforce-planning-management/security/advisories/new
 Expires: 2027-11-16T00:00:00Z
 Policy: https://github.com/workforce-planning-management/workforce-planning-management/blob/main/SECURITY.md
 Canonical: https://workforce-planning-management.github.io/.well-known/security.txt

@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — GitHub's private vulnerability reporting is on (WPM-T537, 2026-11-17)
+
+A vulnerability can be reported privately through the repository's Security tab as well as by email. `SECURITY.md` 2.1.0 and
+the site's `security.txt` name both.
+
 ### Changed — the integration tests in fewer binaries (WPM-T534, 2026-11-17)
 
 `tests/main.rs` holds the request suites and the checks; `tests/enforcement/` holds every suite that needs only sign-in and the

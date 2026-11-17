@@ -5699,6 +5699,14 @@ No new requirement: each task restores a rule in `AGENTS/`. The four defects com
       with no failed request, a headless Chromium session saw no console or CSP error on the pages it opened, an Arabic brief is `lang="ar-001" dir="rtl"`, the home page does not overflow at 390 pixels wide, and the screenshots were read.
       **Not checked:** axe was not run against the live URL, and browsers other than Chromium. **Not done:** no sibling clone of the export, and no `404.html` (a wrong address gets GitHub's own 404 page).
 - [x] (2026-11-04) WPM-T457 **The tutorial, run end to end.** *(WPM-R231)* Every step run from this repository on macOS with PostgreSQL 18 on a throwaway database: migrate, seed, the service with `WPM_REQUIRE_AUTH=0`, `scripts/demo-data.py` (0 steps failed), the UI with `WPM_DEMO_API_URL`, and sign-in as example@example.com in Chromium, which opened `/en-001/demo` with the fictitious-data banner and a tour of 35 steps. The tutorial named no way to reach the database, so step 2 now gives `DATABASE_URL` and its default. **Not checked:** a fresh clone on a clean machine (step 1 was not run; the build was an existing checkout), and the other pages of the tour past the first.
+- [x] (2026-11-17) WPM-T537 **GitHub's private vulnerability reporting is on.** *The owner asked on 2026-11-17.* *([special-files-for-public-repos](special-files-for-public-repos/index.md))*
+      Turned on with `gh api -X PUT repos/workforce-planning-management/workforce-planning-management/private-vulnerability-reporting`;
+      the same endpoint now answers `{"enabled":true}` (it said `false` in WPM-T525). `SECURITY.md` 2.1.0: §4 names both private
+      routes, the repository's **Report a vulnerability** form first and email second, and drops "email is the only private
+      route"; Annex A has the 2.1.0 row; Annex B says `private-vulnerability-reporting: true`. The site's `security.txt` lists the
+      form as a second `Contact` (RFC 9116 allows several), and its test checks both. **Verified:** the endpoint's answer; the
+      site's `security.txt` test passes. **Not checked:** a report through the form end to end; the site is not republished, so
+      the live `security.txt` is unchanged until `make publish-github-pages`.
 - [x] (2026-11-17) WPM-T535 **chrono accepted as a test-only advisory.** *The owner chose, on 2026-11-17, to accept RUSTSEC-2026-0543 for the test-only route that is left (option 1 of three: accept it, stop checking test dependencies, or wait).*
       After WPM-T530 to WPM-T532 the service, the domain crate and the matcher build no chrono; it remains only in the tests,
       through `axum-test` 21.1.0, whose `expect-json` 1.11.0 requires it with no feature to turn it off (22.0.0-rc.1 likewise),

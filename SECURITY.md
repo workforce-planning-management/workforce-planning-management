@@ -1,6 +1,6 @@
 # Security policy
 
-Version 2.0.0, status is active.
+Version 2.1.0, status is active.
 
 Canonical location is `SECURITY.md` at the repository root. A machine-readable
 pointer to it is at <https://workforce-planning-management.github.io/.well-known/security.txt>
@@ -86,8 +86,15 @@ older version shall not receive a backported fix.
 
 ## 4. How to report
 
-Email <joel@joelparkerhenderson.com> with **"Security:"** at the start of the
-subject line.
+Use either private route:
+
+- **GitHub:** the repository's Security tab, **Report a vulnerability**
+  (<https://github.com/workforce-planning-management/workforce-planning-management/security/advisories/new>).
+  The report is a draft advisory that only the reporter and the maintainer can see.
+- **Email:** <joel@joelparkerhenderson.com> with **"Security:"** at the start of
+  the subject line.
+
+Then:
 
 - A reporter **shall not** open a public issue, discussion, pull request or
   commit for a vulnerability that has not been disclosed (§6).
@@ -98,9 +105,8 @@ subject line.
 - A report **shall not** contain real personal data. This software holds only
   synthetic data, and a reproduction needs nothing else. If real data was
   exposed, describe it without copying it.
-- There is no PGP key and no bug bounty. GitHub's private vulnerability
-  reporting is not turned on for this repository, so email is the only private
-  route.
+- There is no PGP key and no bug bounty. For a report that must not travel by
+  email, use GitHub's private reporting above.
 
 ## 5. What happens to a report
 
@@ -269,6 +275,7 @@ disclose.io safe-harbour wording; the ISO/IEC Directives Part 2 verbal forms.
 | --- | --- | --- |
 | 1.0.0 | 2026-09-28 | First issue: the reporting address, the scope, what deployers must know, the protections in place, publishing. |
 | 2.0.0 | 2026-11-17 | Made formal (WPM-T525): terms; scope that covers the matcher crate, the site and the release, with what is out of scope; supported versions; what a report contains; target times and severity; coordinated disclosure, advisories, CVE ids and credit; safe harbour; the build and release protections; review; references; `security.txt`. Corrected "no CI-driven publish step": the release workflow publishes the container image, using only `GITHUB_TOKEN`. |
+| 2.1.0 | 2026-11-17 | GitHub's private vulnerability reporting is on, beside email (WPM-T537): §4, Annex B and `security.txt`. |
 
 ## Annex B. Machine-readable summary
 
@@ -276,11 +283,11 @@ The prose above is authoritative where the two could ever disagree.
 
 ```yaml
 security-policy:
-  version: 2.0.0
+  version: 2.1.0
   last-updated: 2026-11-17
   contact: mailto:joel@joelparkerhenderson.com
   subject-prefix: "Security:"
-  private-vulnerability-reporting: false
+  private-vulnerability-reporting: true
   encryption: none
   bug-bounty: false
   supported:
