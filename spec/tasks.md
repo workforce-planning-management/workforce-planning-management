@@ -6300,3 +6300,36 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
       and the two UI strings that said 你 now say 您, the formal "you" the rest of the UI already used (141 times); 你们的协议
       became 贵组织的协议. Verified: no 你 is left in any Chinese text; UI vitest 362 passed; the site's catalogue and privacy
       tests, 59, passed.
+
+## Follow-ups left open on 2026-11-17 (proposed; the owner's to confirm)
+
+Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says what was not done.
+
+- [ ] WPM-T540 **Remove the stale `RUSTSEC-2024-0449` entry from `deny.toml`.** `cargo deny` reports it "not encountered"
+      (unsafe-libyaml is gone from the graph), and the file's own rule says an entry that matches nothing comes out, so the
+      advisory would fail the build again if it came back. (S)
+- [ ] WPM-T541 **Select `[profile.mutants]`, or rethink it.** The profile in each `Cargo.toml` (`debug = "none"`,
+      `incremental = false`) is selected by neither `.cargo/mutants.toml` (no `profile = "mutants"`), so it does nothing. For the
+      service, which `scripts/mutants-diff.sh` mutates in place, `incremental = false` would likely make each mutant slower; measure
+      before choosing. (S)
+- [ ] WPM-T542 **Publish the site.** `make publish-github-pages`, so the live `/.well-known/security.txt` lists GitHub's
+      private-reporting form (WPM-T537) and the site has the docs written since it was last published. (S)
+- [ ] WPM-T543 **Tests for the least-covered files** (WPM-T539): `scheduler.rs` (25.5%: the loop that starts jobs),
+      `tasks/seed.rs` (34.0%), `auth/paseto.rs` (64.9%: the key fetch and refresh), `compat.rs` (65.2%) and `app.rs` (78.8%: the
+      start-up paths). (M)
+- [ ] WPM-T544 **A coverage floor for the whole service.** Run tarpaulin over the database-backed suites in CI (95.61% locally,
+      about 13 minutes instrumented on a loaded laptop) and hold it a little below the measured figure; and measure the `keycloak`
+      feature's code, which no figure covers yet. (M)
+- [ ] WPM-T545 **A full mutation run of the domain crate.** 6,098 mutants (`cargo mutants --workspace` in the service), which
+      take hours; CI only samples changed lines. Kill or justify each survivor, as WPM-T526 did for the matcher and
+      `security.rs`. Best on an idle machine or a scheduled job. (L)
+- [ ] WPM-T546 **Benchmark figures from a quiet machine** (WPM-T527, WPM-T538): rerun `--bench rules` (in the domain crate) and
+      `--bench requests` with nothing else running, replace the figures in `BENCHMARKS.md` that were taken under a load of 16 to
+      36, and add 200,000. (S)
+- [ ] WPM-T547 **Find why `audit_export::the_department_query_keeps_to_the_department_and_the_time` failed once.** An empty
+      answer in one long serial run of the request suite (WPM-T529); it passed in the roles drill's rerun and three times alone.
+      Suspect the one-minute `since` window or the 2,000-row cap under load. (S)
+- [ ] WPM-T548 **Try the `ring` JWT provider's other algorithms against a real issuer** (WPM-T536): `PS256`–`PS512`, `ES384` and
+      `EdDSA`; Keycloak's keys are `RS256`, and only `ES256` is checked by a unit test. (S)
+- [ ] WPM-T549 **Take out the chrono acceptance when `expect-json` drops chrono** (WPM-T535): watch `axum-test` and
+      `expect-json`; then remove `RUSTSEC-2026-0543` from `deny.toml`. (S)
