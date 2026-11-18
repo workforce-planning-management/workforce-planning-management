@@ -45,6 +45,8 @@ for crate in ${MUTANTS_CRATES:-workforce-planning-management-service-with-rust w
     echo "mutants: $crate: no mutants in the changed lines"
     continue
   fi
+  # cargo-mutants makes the report directory but not its parent, which a fresh checkout has no `target/` for.
+  mkdir -p "${MUTANTS_OUT:-target/mutants-diff}"
   args=(--workspace --in-diff "$diff" --output "${MUTANTS_OUT:-target/mutants-diff}")
   if [ "$n" -gt "$cap" ]; then
     shards=$(((n + cap - 1) / cap))
