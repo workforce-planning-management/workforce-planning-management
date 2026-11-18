@@ -11,7 +11,7 @@ Based on my analysis of your **Workforce Planning Management (WPM)** project—a
 | [👋 New Visitor Onboarding](#-new-visitor-onboarding) | 15 | High |
 | [📢 Promotion & Visibility](#-promotion--visibility) | 12 | High |
 | [🎓 Upskilling & Learning](#-upskilling--learning) | 18 | Medium-High |
-| [⚙️ Engineering & Architecture](#️-engineering--architecture) | 22 | High |
+| [⚙️ Engineering & Architecture](#-engineering--architecture) | 22 | High |
 | [💻 Coding & Implementation](#-coding--implementation) | 28 | High |
 | [🧪 Testing & QA](#-testing--qa) | 25 | High |
 | [🔍 Auditing & Compliance](#-auditing--compliance) | 15 | Medium-High |
