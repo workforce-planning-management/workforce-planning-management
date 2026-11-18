@@ -121,8 +121,10 @@ describe("every server vocabulary token has a value entry", () => {
     root,
     "..",
     "workforce-planning-management-service-with-rust",
+    // The rules are the domain crate's since WPM-T529.
+    "crates",
+    "workforce-planning-management-domain",
     "src",
-    "rules",
   );
   const tables = new Set<string>();
   const tokens = new Set<string>();
