@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — exact minor units at the JSON boundary (WPM-T552)
+
+Every JSON body, query and response field ending in `_minor` stays within the
+inclusive exact-integer range shared with browser clients. Writes outside it
+receive 422, and a stored or derived value outside it fails the response
+instead of crossing JSON with changed digits.
+
 ### Added — coverage with cargo-tarpaulin (WPM-T539)
 
 `cargo tarpaulin --engine llvm`: the domain crate 97.21% from its own tests, held at 95% in CI; the service with its

@@ -1063,8 +1063,9 @@ The proposed order reflects the consequence of recording the wrong value.
    minor units, while the UI reads a decimal amount into a JavaScript
    `number` before scaling it. With two decimal places, `70368744177664.01`
    became `7036874417766402` minor units. Define the range that survives the
-   full write, read, edit, and export journey. Test at the boundary in each
-   supported currency precision. [Task acceptance criteria](tasks.md)
+   full write, read, edit, and export journey. WPM-T552 sets the inclusive
+   JSON boundary at ±9,007,199,254,740,991 minor units and preserves the
+   decimal digits on either side of it. [Worldwide decision WPM-D206](worldwide.md)
 
 **Deployment advice.** Keep trials on synthetic records. Before the first
 deployment with real records, have professional reviewers exercise the target

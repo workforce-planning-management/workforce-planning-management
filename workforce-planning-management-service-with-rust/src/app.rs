@@ -418,6 +418,9 @@ impl App {
     pub async fn router(ctx: &AppContext) -> Result<AxumRouter> {
         let router = app_routes()
             .into_router(ctx.clone())
+            .layer(axum::middleware::from_fn(
+                crate::money_boundary::exact_minor_mw,
+            ))
             .layer(axum::middleware::from_fn(crate::problem::problem_mw));
         let router = axa::middleware::apply(router, &ctx.config.http)?;
         Self::after_routes(router, ctx).await

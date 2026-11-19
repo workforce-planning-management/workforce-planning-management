@@ -157,6 +157,14 @@ time or its zone clears the chosen offset. In `tests/unit/injury-time.test.ts`,
 Samoa's skipped date and Lord Howe's half-hour overlap exercise changes of
 other sizes. [Worldwide decision WPM-D205](worldwide.md)
 
+WPM-T552 checks exact decimal conversion, formatting, editing, request JSON,
+response JSON and export-shaped nested values at the shared integer boundary.
+The cases cover currency exponents 0, 2, 3 and 4, rounding on both sides of a
+half, and the first value outside the range. A planning browser test verifies
+that the largest CLF budget is sent unchanged and the next minor unit sends no
+request. Service unit tests drive the boundary middleware for request and
+response JSON and a query parameter. [Worldwide decision WPM-D206](worldwide.md)
+
 - **vitest — 313 tests / 37 files (as of 2026-10-30)**: the API client **path map** (every
   function's exact proxied path), `money()` honesty and the money formatter and parser
   (`tests/unit/money.test.ts`: JPY, EUR, KWD and CLF exponents, a decimal comma, no built-in

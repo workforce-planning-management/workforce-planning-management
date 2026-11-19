@@ -465,3 +465,10 @@ page locale. The German expense case and acceptance criteria are in
 
 The recorder can set a zone for each timestamp and must resolve a repeated
 clock time before submission. See the [worldwide specification](worldwide.md).
+
+## WPM-D206 — Minor units stay exact at the JSON boundary
+
+Money remains a JSON number within the inclusive exact-integer range shared
+by Rust, PostgreSQL and supported browsers. Decimal entry and display retain
+every digit, and either side refuses an amount outside the range. See the
+[worldwide specification](worldwide.md).

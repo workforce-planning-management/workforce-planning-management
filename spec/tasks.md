@@ -6362,11 +6362,23 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       repeated time screenshots at phone width. The live service, other
       browser engines, and professional translation review remain unchecked.
       [Review](plan.md)
-- [ ] WPM-T552 **Preserve exact minor units through the UI and API boundary.**
-      *(Proposed, WPM-R214, WPM-D151)* Establish the supported range from the
-      service fields, JSON representation, and UI consumers. Convert typed
-      decimals to integer units without losing digits. Preserve the existing
-      rounding rule for excess decimal places and refuse out-of-range values
-      before submission. Verify create, read, edit, and export with synthetic
-      amounts at and beyond the supported bounds for exponents 0, 2, 3, and 4.
+- [x] WPM-T552 (2026-11-19) **Preserve exact minor units through the UI and API boundary.**
+      *(WPM-R214, WPM-D151, WPM-D206)* The inclusive supported JSON range is
+      ±9,007,199,254,740,991 minor units. Decimal entry, display and edit text
+      now work from integer digits; excess places round to nearest with an
+      exact half towards positive infinity. The service middleware rejects an
+      out-of-range `*_minor` body or query with 422 and an unsafe response with
+      500. The UI applies the same checks before writes and after reads. A
+      database-backed journey created, read, edited and subject-access-exported
+      boundary salaries in JPY, EUR, KWD and CLF, then verified that the next
+      integer was refused. Verified with 1,126 domain and 171 service unit
+      tests, the focused request test, clippy over all targets, 373 UI unit
+      tests in 46 files, lint, Svelte checks (zero errors and warnings), and 7
+      Chromium planning tests over a production build. Clippy exited cleanly;
+      Cargo still reported the manifest's unused `mimalloc` dependency warning.
+      The first request-test
+      run expected an update response to disclose salary; the established API
+      masks that response, so the corrected journey reads after editing and
+      passed. The full database suite, full Playwright suite, other browser
+      engines and equivalent sibling-application changes were not run or made.
       [Reproduced precision loss](plan.md)

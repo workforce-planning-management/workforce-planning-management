@@ -393,6 +393,40 @@ test.describe("a plan's budget (WPM-T373, WPM-T376)", () => {
     expect(created[0]).not.toHaveProperty("budget_minor");
     expect(created[0]).not.toHaveProperty("budget_currency");
   });
+
+  test("keeps the largest exact budget and refuses the next minor unit before sending", async ({
+    page,
+  }) => {
+    await signIn(page);
+    await stub(page);
+    const created: Array<Record<string, unknown>> = [];
+    await page.route("**/api/proxy/workforce-plans", (route) => {
+      if (route.request().method() !== "POST") return route.fallback();
+      created.push(route.request().postDataJSON());
+      return route.fulfill({ json: { pid: PLAN } });
+    });
+    await page.goto("/en-001/planning");
+    await page.getByTestId("plan-name").fill("Exact budget");
+    await page
+      .getByTestId("plan-org")
+      .fill("organization:33333333-3333-4333-8333-333333333333");
+    await page.getByTestId("plan-start").fill("2027-01-01");
+    await page.getByTestId("plan-end").fill("2027-12-31");
+    await page.getByTestId("plan-currency").fill("CLF");
+    await page.getByTestId("plan-budget").fill("900719925474.0991");
+    await page.getByTestId("plan-create").click();
+    await expect.poll(() => created.length).toBe(1);
+    expect(created[0]).toMatchObject({
+      budget_minor: Number.MAX_SAFE_INTEGER,
+      budget_currency: "CLF",
+    });
+
+    await page.getByTestId("plan-name").fill("Unsafe budget");
+    await page.getByTestId("plan-budget").fill("900719925474.0992");
+    await page.getByTestId("plan-create").click();
+    await expect(page.getByTestId("error")).toBeVisible();
+    expect(created).toHaveLength(1);
+  });
 });
 
 test.describe("a plan's percentages (WPM-T375)", () => {

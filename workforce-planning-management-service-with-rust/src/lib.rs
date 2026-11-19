@@ -52,6 +52,7 @@ pub mod idempotency;
 pub mod metrics;
 pub mod migrations;
 pub mod models;
+pub mod money_boundary;
 pub mod need_to_know;
 pub mod openapi;
 pub mod problem;

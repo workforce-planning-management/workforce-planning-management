@@ -141,6 +141,22 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   sends the resolved UTC instant through the existing API. The zone and offset
   choice live only in the form.
 
+- **WPM-D206 Minor units stay exact at the JSON boundary** (WPM-R214,
+  WPM-D151, WPM-T552). A money field carried as a JSON number is supported
+  from −9,007,199,254,740,991 through 9,007,199,254,740,991 minor units, the
+  inclusive range every supported browser represents as an exact integer.
+  A feature may set a narrower range, such as the expense-item cap. The API
+  refuses an out-of-range `*_minor` body or query value with 422 and refuses
+  to send an out-of-range `*_minor` value with 500, including one stored
+  before this decision. This failure is preferable to disclosing a changed
+  amount. The UI applies the same check before a write and after a read.
+  Typed decimals are converted as decimal digits, without passing through a
+  binary floating-point value. Extra decimal places retain the existing
+  rounding rule: nearest minor unit, with an exact half towards positive
+  infinity. Formatting and edit fields derive their integer and fractional
+  digits from the exact minor-unit integer. JSON remains a number within the
+  supported range, preserving the API contract.
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.

@@ -1,4 +1,5 @@
 //! Currency codes and their minor units (WPM-T400, WPM-D151; WPM-R214, WPM-D143).
+
 //!
 //! No currency is built in. A stored amount is an integer count of its currency's minor unit, and the number of
 //! decimal places of that unit (the exponent: 0 for JPY, 2 for EUR, 3 for KWD, 4 for CLF) is the ISO 4217 one in
@@ -11,6 +12,10 @@
 //! expense claim, a salary, a plan budget, a contractor rate, a benefit plan, a benchmark or a requisition in a code
 //! the table does not hold is refused with 422, so every new stored code has a known exponent. Codes stored before
 //! WPM-T400 are not checked (see spec/worldwide.md).
+
+/// Largest minor-unit integer that every supported JSON consumer represents
+/// exactly (WPM-T552, WPM-D206).
+pub const MAX_EXACT_MINOR: i64 = 9_007_199_254_740_991;
 
 /// ISO 4217 minor-unit exponents: the active codes, sorted, with the number of decimal places of
 /// the minor unit. Funds and metals with no minor unit (`XAU`, `XDR`, `XXX`, ...) are left out, so

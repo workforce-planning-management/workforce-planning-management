@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — exact minor units through the service and UI (WPM-T552, 2026-11-19)
+
+Typed money is converted and formatted from decimal digits, and the service
+and UI enforce the shared exact JSON integer range on writes and reads.
+
 ### Added — test coverage with cargo-tarpaulin (WPM-T539, 2026-11-17)
 
 CI's `coverage` job holds the domain crate and the matcher at 95% of lines (97.21% and 98.75% today); with every database-backed

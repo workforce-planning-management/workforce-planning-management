@@ -22,6 +22,28 @@ export class ApiError extends Error {
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
+ * Money crosses JSON as a number. Every `*_minor` value must therefore stay
+ * within JavaScript's exact-integer range on writes and reads (WPM-D206).
+ */
+export function assertExactMinorUnits(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(assertExactMinorUnits);
+    return;
+  }
+  if (typeof value !== "object" || value === null) return;
+  for (const [key, item] of Object.entries(value)) {
+    if (
+      key.endsWith("_minor") &&
+      item !== null &&
+      (typeof item !== "number" || !Number.isSafeInteger(item))
+    ) {
+      throw new RangeError(`${key} is outside the exact JSON integer range`);
+    }
+    assertExactMinorUnits(item);
+  }
+}
+
+/**
  * A fresh key for one user action (WPM-R132): a random UUID, or, where
  * `crypto.randomUUID` is missing (an insecure context), 128 random bits in
  * hexadecimal. The key names the *action*, not the request, so a retry of
@@ -53,6 +75,7 @@ async function send<T>(
   if (!SAFE_METHODS.has(method)) {
     headers["idempotency-key"] = init?.idempotencyKey ?? newIdempotencyKey();
   }
+  if (init?.body !== undefined) assertExactMinorUnits(init.body);
   const response = await doFetch(url, {
     method,
     headers,
@@ -61,6 +84,7 @@ async function send<T>(
   const text = await response.text();
   const parsed: unknown = text ? JSON.parse(text) : null;
   if (!response.ok) throw new ApiError(response.status, parsed);
+  assertExactMinorUnits(parsed);
   return { parsed: parsed as T, response };
 }
 

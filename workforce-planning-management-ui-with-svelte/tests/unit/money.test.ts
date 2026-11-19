@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 import { LOCALES } from "../../src/lib/locales";
 import {
   MINOR_UNITS,
+  MAX_MINOR_UNITS,
   currencyCode,
   exponentOf,
   minorToInput,
@@ -225,6 +226,43 @@ describe("parseAmount and toMinor", () => {
     expect(toMinor("0,5", "EUR", "de-001")).toBe(50);
     expect(toMinor("1.2345", "CLF", "en-001")).toBe(12345);
     expect(toMinor("x", "EUR", "en-001")).toBeNull();
+  });
+
+  it("keeps every digit through the exact JSON boundary (WPM-T552)", () => {
+    for (const [currency, typed] of [
+      ["JPY", "9007199254740991"],
+      ["EUR", "90071992547409.91"],
+      ["KWD", "9007199254740.991"],
+      ["CLF", "900719925474.0991"],
+    ] as const) {
+      expect(toMinor(typed, currency, "en-001"), currency).toBe(
+        MAX_MINOR_UNITS,
+      );
+      expect(minorToInput(MAX_MINOR_UNITS, currency, "en-001"), currency).toBe(
+        typed,
+      );
+      const [whole, fraction] = typed.split(".");
+      const shown = `${whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${
+        fraction ? `.${fraction}` : ""
+      }`;
+      expect(money(MAX_MINOR_UNITS, currency, "en-001"), currency).toContain(
+        shown,
+      );
+    }
+  });
+
+  it("rounds excess decimal places exactly and refuses a minor unit beyond the boundary", () => {
+    expect(toMinor("1.0049", "EUR", "en-001")).toBe(100);
+    expect(toMinor("1.0050", "EUR", "en-001")).toBe(101);
+    expect(toMinor("-1.0050", "EUR", "en-001")).toBe(-100);
+    expect(toMinor("-1.0051", "EUR", "en-001")).toBe(-101);
+    expect(toMinor("90071992547409.914", "EUR", "en-001")).toBe(
+      MAX_MINOR_UNITS,
+    );
+    expect(toMinor("90071992547409.915", "EUR", "en-001")).toBeNull();
+    expect(toMinor("9007199254740992", "JPY", "en-001")).toBeNull();
+    expect(money(MAX_MINOR_UNITS + 1, "JPY", "en-001")).toBe("—");
+    expect(minorToInput(MAX_MINOR_UNITS + 1, "JPY", "en-001")).toBe("");
   });
 });
 

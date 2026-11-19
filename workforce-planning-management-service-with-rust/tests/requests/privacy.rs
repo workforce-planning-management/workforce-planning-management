@@ -12,6 +12,69 @@ use sqlx::Row;
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn exact_minor_units_survive_create_read_edit_and_export() {
+    crate::requests::request_open(|request, _ctx| async move {
+        const MAX: i64 = workforce_planning_management::rules::currency::MAX_EXACT_MINOR;
+        let org = an_org();
+        for currency in ["JPY", "EUR", "KWD", "CLF"] {
+            let created: Value = request
+                .post("/api/workers")
+                .json(&json!({
+                    "person_ref": crate::requests::a_person(),
+                    "organization_ref": org,
+                    "worker_number": format!("EXACT-{currency}"),
+                    "display_name": format!("Exact {currency}"),
+                    "employment_type": "permanent",
+                    "department": "finance",
+                    "job_title": "Boundary tester",
+                    "salary_minor": MAX - 1,
+                    "salary_currency": currency,
+                    "hired_on": "2026-01-05"
+                }))
+                .await
+                .json();
+            let pid = created["pid"].as_str().unwrap();
+            let read: Value = request.get(&format!("/api/workers/{pid}")).await.json();
+            assert_eq!(read["salary_minor"], MAX - 1, "create/read {currency}");
+
+            request
+                .put(&format!("/api/workers/{pid}"))
+                .json(&json!({ "salary_minor": MAX, "salary_currency": currency }))
+                .await
+                .assert_status_ok();
+            let edited: Value = request.get(&format!("/api/workers/{pid}")).await.json();
+            assert_eq!(edited["salary_minor"], MAX, "edit/read {currency}");
+
+            let export: Value = request
+                .get(&format!("/api/workers/{pid}/subject-access"))
+                .await
+                .json();
+            assert_eq!(export["worker"]["salary_minor"], MAX, "export {currency}");
+        }
+
+        let refused = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": crate::requests::a_person(),
+                "organization_ref": org,
+                "worker_number": "EXACT-OVER",
+                "display_name": "Unsafe amount",
+                "employment_type": "permanent",
+                "department": "finance",
+                "job_title": "Boundary tester",
+                "salary_minor": MAX + 1,
+                "salary_currency": "JPY",
+                "hired_on": "2026-01-05"
+            }))
+            .await;
+        assert_eq!(refused.status_code(), 422);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one seeded life, the whole rights surface
 async fn subject_rights_round_trip() {
     crate::requests::request_open(|request, ctx| async move {

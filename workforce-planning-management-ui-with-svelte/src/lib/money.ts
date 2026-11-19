@@ -20,6 +20,9 @@
 
 import { i18n } from "./i18n.svelte.js";
 
+/** Largest integer JSON can carry exactly through every supported browser. */
+export const MAX_MINOR_UNITS = Number.MAX_SAFE_INTEGER;
+
 /** The reader's locale: the one in the URL. */
 export function currentLocale(): string {
   return i18n.locale;
@@ -82,14 +85,31 @@ function format(
   options: Intl.NumberFormatOptions = {},
 ): string {
   const e = exponentOf(currency, locale);
+  if (!Number.isSafeInteger(minor)) return "—";
   try {
-    return new Intl.NumberFormat(locale, {
+    const formatter = new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       minimumFractionDigits: e,
       maximumFractionDigits: e,
       ...options,
-    }).format(minor / 10 ** e);
+    });
+    const showFraction = (options.maximumFractionDigits ?? e) > 0;
+    const scale = 10n ** BigInt(e);
+    const absolute = BigInt(Math.abs(minor));
+    const major = absolute / scale;
+    const fraction = (absolute % scale).toString().padStart(e, "0");
+    const value: bigint | number =
+      minor < 0 ? (major === 0n ? -0 : -major) : major;
+    const digits = symbols(locale).digits;
+    return formatter
+      .formatToParts(value)
+      .map((part) =>
+        part.type === "fraction" && showFraction
+          ? [...fraction].map((digit) => digits[Number(digit)]).join("")
+          : part.value,
+      )
+      .join("");
   } catch {
     return `${currency} ${minor}`;
   }
@@ -143,16 +163,18 @@ export function minorToInput(
   currency: string,
   locale: string = currentLocale(),
 ): string {
+  if (!Number.isSafeInteger(minor)) return "";
   const e = exponentOf(currency, locale);
-  try {
-    return new Intl.NumberFormat(locale, {
-      minimumFractionDigits: e,
-      maximumFractionDigits: e,
-      useGrouping: false,
-    }).format(minor / 10 ** e);
-  } catch {
-    return String(minor / 10 ** e);
-  }
+  const { decimal, negativePrefix, digits } = symbols(locale);
+  const scale = 10n ** BigInt(e);
+  const absolute = BigInt(Math.abs(minor));
+  const major = (absolute / scale).toString();
+  const fraction = (absolute % scale).toString().padStart(e, "0");
+  const localize = (text: string) =>
+    [...text].map((digit) => digits[Number(digit)]).join("");
+  return `${minor < 0 ? negativePrefix : ""}${localize(major)}${
+    e ? `${decimal}${localize(fraction)}` : ""
+  }`;
 }
 
 function symbols(locale: string) {
@@ -179,11 +201,13 @@ function symbols(locale: string) {
   };
 }
 
-/** A plain number in the page locale. Validate grouping before removing it (WPM-D204). */
-export function parseAmount(
+type DecimalParts = { negative: boolean; whole: string; fraction: string };
+
+/** ASCII decimal parts after locale digit and grouping validation (WPM-D204). */
+function decimalParts(
   text: string,
   locale: string = currentLocale(),
-): number | null {
+): DecimalParts | null {
   let s = text.trim();
   if (!s) return null;
   const { decimal, group, lastWidth, innerWidth, negativePrefix, digits } =
@@ -222,7 +246,19 @@ export function parseAmount(
     }
   }
   if ((!whole && !fraction) || !/^\d*$/.test(whole)) return null;
-  const n = Number(`${sign ? "-" : ""}${whole}.${fraction}`);
+  return { negative: Boolean(sign), whole: whole || "0", fraction };
+}
+
+/** A plain number in the page locale. Validate grouping before removing it (WPM-D204). */
+export function parseAmount(
+  text: string,
+  locale: string = currentLocale(),
+): number | null {
+  const parts = decimalParts(text, locale);
+  if (!parts) return null;
+  const n = Number(
+    `${parts.negative ? "-" : ""}${parts.whole}.${parts.fraction}`,
+  );
   return Number.isFinite(n) ? n : null;
 }
 
@@ -232,12 +268,25 @@ export function toMinor(
   currency: string,
   locale: string = currentLocale(),
 ): number | null {
-  const n = parseAmount(text, locale);
-  if (n === null) return null;
+  const parts = decimalParts(text, locale);
+  if (!parts) return null;
   const e = exponentOf(currency, locale);
-  // "1.005e2" is exactly 100.5, where 1.005 * 100 is 100.49999…
-  const scaled = Number(`${n}e${e}`);
-  return Number.isFinite(scaled) ? Math.round(scaled) : null;
+  const kept = parts.fraction.slice(0, e).padEnd(e, "0");
+  const discarded = parts.fraction.slice(e);
+  let magnitude = BigInt(`${parts.whole}${kept}`);
+  if (discarded) {
+    const half = `5${"0".repeat(discarded.length - 1)}`;
+    // Preserve Math.round: nearest minor unit, with an exact half toward +∞.
+    if (discarded > half || (!parts.negative && discarded === half))
+      magnitude += 1n;
+  }
+  const result = parts.negative ? -magnitude : magnitude;
+  if (
+    result < BigInt(Number.MIN_SAFE_INTEGER) ||
+    result > BigInt(MAX_MINOR_UNITS)
+  )
+    return null;
+  return Number(result);
 }
 
 /** A currency code as typed: three letters, upper-cased; `null` when it is not three letters. */

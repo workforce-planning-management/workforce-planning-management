@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — exact minor units at the JSON boundary (WPM-T552)
+
+Money input, display and edit fields preserve every decimal digit through the
+largest integer browsers can carry exactly in JSON. Values beyond that range
+are refused before a request, and an unsafe API answer is not displayed or
+exported as a changed amount.
+
 ### Fixed — injury record time entry (WPM-T551)
 
 Each incident and report timestamp shows its time zone. The recorder can
