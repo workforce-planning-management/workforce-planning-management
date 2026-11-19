@@ -27,6 +27,10 @@ Read the long texts first: they carry meaning (an unknown is never a pass; the g
 
 The 2026-10-21 additions (86 keys for the My details page and eight status words) were written by the same assistant, also unreviewed. The equality and health notices on that page are the service's English text.
 
+The 2026-11-19 additions for injury record time entry (WPM-T551) add six
+strings for time zone validation and offset choice. All 12 translations were
+written by an AI assistant and await review.
+
 The 2026-10-23 additions (the `errors.*` keys: eight sentences saying what a failed call means) were written by the same assistant, also unreviewed.
 
 The 2026-10-28 additions (nine value words in all 12 translated locales: the leave kind `public_holiday`, and `site`, `area_of_work`, `job_role`, `staff_group`, `occupation_code`, `mandatory`, `performance`, `padr`) were written by the same assistant, also unreviewed. `padr` ("personal development review") and the three staff-record words (`job_role`, `staff_group`, `occupation_code`) are terms of art that differ between health, government and commercial employers; a reviewer should check them against the employer's own vocabulary. Two French words equal the English and are allow-listed (`site`, `performance`) in `tests/unit/untranslated.allow.json`.

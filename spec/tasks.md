@@ -6349,13 +6349,19 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       Verification covered all 17 page locales at the parser, and German at
       the form. Live-service writes, other browser engines, and professional
       language review remain outside this check.
-- [ ] WPM-T551 **Resolve local times on the injury form before recording an instant.**
-      *(Proposed, WPM-R221, WPM-R214)* Show the time zone for occurred, learned,
-      due, and sent times. Refuse a skipped wall-clock time with a localized
-      explanation. For a repeated time, let the recorder choose between the
-      two offsets. Check the submitted instants in a browser across both
-      Berlin transitions and an ordinary time in Kolkata. Include a recorder
-      entering an incident from another zone. [Review](plan.md)
+- [x] WPM-T551 (2026-11-19) **Resolve local times on the injury form before recording an instant.**
+      *(WPM-R221, WPM-R214, WPM-D205)* Occurred, learned, due, and sent times
+      each show an editable IANA zone, initially the browser's. Temporal
+      resolves the wall-clock time. A skipped time needs correction, and a
+      repeated time needs a fresh choice of offset after any time or zone edit.
+      Chromium tests inspected the submitted UTC instants across both Berlin
+      transitions and for a New York recorder entering a Kolkata incident.
+      Verified with 367 UI unit tests, lint, Svelte checks (zero errors and
+      warnings), and 9 Chromium tests over a production build and stubbed
+      API, including light and dark axe checks. Reviewed the skipped and
+      repeated time screenshots at phone width. The live service, other
+      browser engines, and professional translation review remain unchecked.
+      [Review](plan.md)
 - [ ] WPM-T552 **Preserve exact minor units through the UI and API boundary.**
       *(Proposed, WPM-R214, WPM-D151)* Establish the supported range from the
       service fields, JSON representation, and UI consumers. Convert typed

@@ -3088,7 +3088,13 @@
     "sent_no_due": "Enviada, sem prazo indicado",
     "waiting": "Ainda não enviada",
     "past_due": "Não enviada, passada a hora indicada",
-    "no_due": "Não enviada, sem prazo indicado"
+    "no_due": "Não enviada, sem prazo indicado",
+    "timeZone": "Fuso horário",
+    "invalidZone": "Introduza um fuso horário como Europe/Berlin ou UTC.",
+    "invalidTime": "Introduza uma data e uma hora no intervalo suportado.",
+    "skippedTime": "Esta hora foi saltada no fuso horário selecionado. Introduza outra hora.",
+    "repeatedTime": "Esta hora ocorre duas vezes. Escolha a diferença em relação a UTC.",
+    "chooseOffset": "Escolher a diferença em relação a UTC"
   },
   "payslips": {
     "link": "Os meus recibos de vencimento",

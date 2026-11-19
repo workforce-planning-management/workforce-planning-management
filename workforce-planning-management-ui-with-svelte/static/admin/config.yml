@@ -4163,6 +4163,12 @@ collections:
               - { name: "waiting", label: "Waiting", widget: string, required: false, i18n: true }
               - { name: "past_due", label: "Past_due", widget: string, required: false, i18n: true }
               - { name: "no_due", label: "No_due", widget: string, required: false, i18n: true }
+              - { name: "timeZone", label: "Time Zone", widget: string, required: false, i18n: true }
+              - { name: "invalidZone", label: "Invalid Zone", widget: string, required: false, i18n: true }
+              - { name: "invalidTime", label: "Invalid Time", widget: string, required: false, i18n: true }
+              - { name: "skippedTime", label: "Skipped Time", widget: string, required: false, i18n: true }
+              - { name: "repeatedTime", label: "Repeated Time", widget: string, required: false, i18n: true }
+              - { name: "chooseOffset", label: "Choose Offset", widget: string, required: false, i18n: true }
           - name: "payslips"
             label: "Payslips"
             widget: object

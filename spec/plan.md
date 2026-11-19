@@ -1049,14 +1049,16 @@ still available. For any demo data under review, compare a suspect item
 with its original claim before correcting it. The stored cents alone cannot
 identify affected items. [Worldwide decision WPM-D204](worldwide.md)
 
-Two other boundaries can change a value before the service sees it.
+The review identified two other boundaries that could change a value before
+the service sees it.
 The proposed order reflects the consequence of recording the wrong value.
 
 1. **Incident and report times (WPM-T551).** The injury form converts each
    local time with `new Date(local).toISOString()`. In a runtime set to
    Berlin, entering 02:30 on 29 March 2026 yielded 03:30 local. On 25 October
-   the same entry selected the first of two possible instants. Make the zone
-   visible and require the recorder to resolve these cases before saving.
+   the same entry selected the first of two possible instants. WPM-T551 makes
+   the zone visible and requires the recorder to resolve both cases before
+   saving. [Worldwide decision WPM-D205](worldwide.md)
 2. **Large budgets and salaries (WPM-T552).** The service accepts integer
    minor units, while the UI reads a decimal amount into a JavaScript
    `number` before scaling it. With two decimal places, `70368744177664.01`

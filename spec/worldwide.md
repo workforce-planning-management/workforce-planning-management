@@ -131,6 +131,16 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   `1.234` on that same page means 1234. This applies to money, FTE, percentages,
   and other localized decimal inputs that share the parser.
 
+- **WPM-D205 Resolve injury record times in the selected zone** (WPM-R214,
+  WPM-R221, WPM-T551). Occurred, learned, due, and sent each show an editable
+  IANA time zone, initially the reader's browser zone when available. The
+  recorder chooses each zone independently of page language and incident
+  jurisdiction. A blank optional timestamp stays absent. A skipped time
+  prompts for correction. A repeated time requires an explicit choice between
+  the two UTC offsets, and editing its time or zone clears the choice. The UI
+  sends the resolved UTC instant through the existing API. The zone and offset
+  choice live only in the form.
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.

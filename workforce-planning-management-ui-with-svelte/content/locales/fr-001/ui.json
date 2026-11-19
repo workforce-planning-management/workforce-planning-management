@@ -3088,7 +3088,13 @@
     "sent_no_due": "Envoyée, sans échéance indiquée",
     "waiting": "Pas encore envoyée",
     "past_due": "Non envoyée, délai indiqué dépassé",
-    "no_due": "Non envoyée, sans échéance indiquée"
+    "no_due": "Non envoyée, sans échéance indiquée",
+    "timeZone": "Fuseau horaire",
+    "invalidZone": "Saisissez un fuseau horaire comme Europe/Berlin ou UTC.",
+    "invalidTime": "Saisissez une date et une heure dans la plage prise en charge.",
+    "skippedTime": "Cette heure a été sautée dans le fuseau horaire sélectionné. Saisissez une autre heure.",
+    "repeatedTime": "Cette heure se produit deux fois. Choisissez son décalage par rapport à l’UTC.",
+    "chooseOffset": "Choisir un décalage par rapport à l’UTC"
   },
   "payslips": {
     "link": "Mes bulletins de paie",

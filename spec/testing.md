@@ -150,6 +150,13 @@ numbers across the shipped locales and refuses misplaced separators.
 `tests/e2e/expenses.spec.ts` checks a German claim through correction and
 inspects the amount submitted in euro cents. [Worldwide decision](worldwide.md)
 
+The WPM-T551 browser tests in `tests/e2e/injury-records.spec.ts` check the
+submitted instants across both Berlin clock changes and for a New York
+recorder entering a Kolkata incident. They verify that changing an ambiguous
+time or its zone clears the chosen offset. In `tests/unit/injury-time.test.ts`,
+Samoa's skipped date and Lord Howe's half-hour overlap exercise changes of
+other sizes. [Worldwide decision WPM-D205](worldwide.md)
+
 - **vitest — 313 tests / 37 files (as of 2026-10-30)**: the API client **path map** (every
   function's exact proxied path), `money()` honesty and the money formatter and parser
   (`tests/unit/money.test.ts`: JPY, EUR, KWD and CLF exponents, a decimal comma, no built-in

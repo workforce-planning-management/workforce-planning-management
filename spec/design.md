@@ -460,3 +460,8 @@ banner, because each item gives the service the reader asked for ([github-pages-
 Money, FTE, and percentage inputs use the group widths and separators of the
 page locale. The German expense case and acceptance criteria are in
 [worldwide.md](worldwide.md).
+
+## WPM-D205 — Resolve injury record times in the selected zone
+
+The recorder can set a zone for each timestamp and must resolve a repeated
+clock time before submission. See the [worldwide specification](worldwide.md).

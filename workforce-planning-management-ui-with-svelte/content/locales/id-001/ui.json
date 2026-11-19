@@ -3070,7 +3070,13 @@
     "sent_no_due": "Dikirim, tanpa waktu jatuh tempo",
     "waiting": "Belum dikirim",
     "past_due": "Belum dikirim, melewati waktu yang dimasukkan",
-    "no_due": "Belum dikirim, tanpa waktu jatuh tempo"
+    "no_due": "Belum dikirim, tanpa waktu jatuh tempo",
+    "timeZone": "Zona waktu",
+    "invalidZone": "Masukkan zona waktu seperti Europe/Berlin atau UTC.",
+    "invalidTime": "Masukkan tanggal dan waktu dalam rentang yang didukung.",
+    "skippedTime": "Waktu ini dilewati di zona waktu yang dipilih. Masukkan waktu lain.",
+    "repeatedTime": "Waktu ini terjadi dua kali. Pilih selisih waktunya dari UTC.",
+    "chooseOffset": "Pilih selisih waktu dari UTC"
   },
   "payslips": {
     "link": "Slip gaji saya",

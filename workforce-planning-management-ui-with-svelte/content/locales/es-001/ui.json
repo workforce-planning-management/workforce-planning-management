@@ -3088,7 +3088,13 @@
     "sent_no_due": "Enviada, sin hora de vencimiento indicada",
     "waiting": "Aún no enviada",
     "past_due": "No enviada, pasada la hora indicada",
-    "no_due": "No enviada, sin hora de vencimiento indicada"
+    "no_due": "No enviada, sin hora de vencimiento indicada",
+    "timeZone": "Zona horaria",
+    "invalidZone": "Introduzca una zona horaria como Europe/Berlin o UTC.",
+    "invalidTime": "Introduzca una fecha y una hora dentro del intervalo admitido.",
+    "skippedTime": "Esta hora se omitió en la zona horaria seleccionada. Introduzca otra hora.",
+    "repeatedTime": "Esta hora se repite. Elija su desfase respecto a UTC.",
+    "chooseOffset": "Elegir un desfase respecto a UTC"
   },
   "payslips": {
     "link": "Mis nóminas",

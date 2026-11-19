@@ -3070,7 +3070,13 @@
     "sent_no_due": "已发送，未填写到期时间",
     "waiting": "尚未发送",
     "past_due": "未发送，已超过填写的时间",
-    "no_due": "未发送，未填写到期时间"
+    "no_due": "未发送，未填写到期时间",
+    "timeZone": "时区",
+    "invalidZone": "请输入时区，例如 Europe/Berlin 或 UTC。",
+    "invalidTime": "请输入支持范围内的日期和时间。",
+    "skippedTime": "所选时区跳过了这一时间。请输入其他时间。",
+    "repeatedTime": "这一时间出现两次。请选择它的 UTC 偏移量。",
+    "chooseOffset": "选择 UTC 偏移量"
   },
   "payslips": {
     "link": "我的工资单",

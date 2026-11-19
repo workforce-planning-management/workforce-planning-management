@@ -3115,7 +3115,13 @@
     "sent_no_due": "Anfonwyd, heb nodi amser dyledus",
     "waiting": "Heb ei anfon eto",
     "past_due": "Heb ei anfon, wedi pasio’r amser a nodwyd",
-    "no_due": "Heb ei anfon, heb nodi amser dyledus"
+    "no_due": "Heb ei anfon, heb nodi amser dyledus",
+    "timeZone": "Parth amser",
+    "invalidZone": "Rhowch barth amser fel Europe/Berlin neu UTC.",
+    "invalidTime": "Rhowch ddyddiad ac amser o fewn yr ystod a gefnogir.",
+    "skippedTime": "Cafodd yr amser hwn ei hepgor yn y parth amser a ddewiswyd. Rhowch amser gwahanol.",
+    "repeatedTime": "Mae’r amser hwn yn digwydd ddwywaith. Dewiswch ei wrthbwysiad UTC.",
+    "chooseOffset": "Dewiswch wrthbwysiad UTC"
   },
   "payslips": {
     "link": "Fy slipiau cyflog",

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — injury record time entry (WPM-T551)
+
+Each incident and report timestamp shows its time zone. The recorder can
+choose a different zone for each field, correct a skipped local time, or pick
+the UTC offset for a repeated time. The form sends the resulting UTC instant.
+
 ### Fixed — localized number entry (WPM-T550)
 
 Expense claims, budgets, salaries, percentages, and FTE fields check digit

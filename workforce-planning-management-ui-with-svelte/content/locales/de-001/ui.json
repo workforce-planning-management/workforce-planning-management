@@ -3079,7 +3079,13 @@
     "sent_no_due": "Gesendet, keine Fälligkeit eingetragen",
     "waiting": "Noch nicht gesendet",
     "past_due": "Nicht gesendet, eingetragene Zeit überschritten",
-    "no_due": "Nicht gesendet, keine Fälligkeit eingetragen"
+    "no_due": "Nicht gesendet, keine Fälligkeit eingetragen",
+    "timeZone": "Zeitzone",
+    "invalidZone": "Geben Sie eine Zeitzone wie Europe/Berlin oder UTC ein.",
+    "invalidTime": "Geben Sie ein Datum und eine Uhrzeit im unterstützten Bereich ein.",
+    "skippedTime": "Diese Uhrzeit wurde in der gewählten Zeitzone übersprungen. Geben Sie eine andere Uhrzeit ein.",
+    "repeatedTime": "Diese Uhrzeit kommt zweimal vor. Wählen Sie die Abweichung von UTC.",
+    "chooseOffset": "Abweichung von UTC wählen"
   },
   "payslips": {
     "link": "Meine Gehaltsabrechnungen",

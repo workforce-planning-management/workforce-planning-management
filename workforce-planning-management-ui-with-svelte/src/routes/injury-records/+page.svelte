@@ -7,8 +7,10 @@
   import { page } from "$app/state";
   import { attempt, errorText } from "#lib/write.js";
   import ErrorNote from "#lib/components/ErrorNote.svelte";
+  import InjuryTimeInput from "#lib/components/InjuryTimeInput.svelte";
   import { formatDate, formatDateTime } from "#lib/locale-format.js";
   import { t } from "#lib/i18n.svelte.js";
+  import { readerTimeZone } from "#lib/reader-calendar.js";
   import {
     addInjuryRecord,
     addInjuryReport,
@@ -23,6 +25,10 @@
   const RECIPIENTS = ["safety_authority", "labour_inspectorate", "insurer", "social_insurance", "health_authority"] as const;
   const METHODS = ["online", "phone", "form"] as const;
   const REFERENCE = "[A-Za-z0-9_.\\/:#\\-]+";
+  const zoneList = $props.id();
+  const initialZone = readerTimeZone() ?? "";
+  const zones = new Set(["UTC", ...(Intl.supportedValuesOf?.("timeZone") ?? [])]);
+  type FormSubmit = SubmitEvent & { currentTarget: HTMLFormElement };
 
   const organizations = $derived((page.data.scope ?? []) as string[]);
   let organization = $state("");
@@ -37,8 +43,7 @@
   let jurisdiction = $state("");
   let kind = $state("accident");
   let worker = $state("");
-  let occurredAt = $state("");
-  let learnedAt = $state("");
+  let incidentDraft = $state(0);
   let incidentClass = $state("absence");
   let days = $state("");
   let affected = $state("1");
@@ -47,8 +52,6 @@
 
   // One small form per incident and per report, kept by pid.
   let recipient = $state<Record<string, string>>({});
-  let dueAt = $state<Record<string, string>>({});
-  let sentAt = $state<Record<string, string>>({});
   let method = $state<Record<string, string>>({});
   let reference = $state<Record<string, string>>({});
 
@@ -76,7 +79,6 @@
     };
   });
 
-  const instant = (local: string) => (local ? new Date(local).toISOString() : undefined);
   const count = (text: string) => {
     const n = Number.parseInt(text, 10);
     return Number.isFinite(n) ? n : undefined;
@@ -93,8 +95,12 @@
     return failed === null;
   }
 
-  async function add(event: SubmitEvent) {
+  async function add(event: FormSubmit) {
     event.preventDefault();
+    const fields = new FormData(event.currentTarget);
+    const occurredAt = fields.get("occurred_at");
+    const learnedAt = fields.get("learned_at");
+    if (!occurredAt || typeof occurredAt !== "string" || typeof learnedAt !== "string") return;
     const ok = await done(() =>
       addInjuryRecord({
         organization,
@@ -102,8 +108,8 @@
         kind,
         class: incidentClass,
         worker_pid: worker || undefined,
-        occurred_at: instant(occurredAt) ?? "",
-        learned_at: instant(learnedAt),
+        occurred_at: occurredAt,
+        learned_at: learnedAt || undefined,
         absence_days: count(days),
         people_affected: count(affected),
         statutory_record_ref: recordRef.trim() || undefined,
@@ -111,26 +117,31 @@
       }),
     );
     if (ok) {
-      jurisdiction = worker = occurredAt = learnedAt = days = recordRef = keepUntil = "";
+      jurisdiction = worker = days = recordRef = keepUntil = "";
+      incidentDraft += 1;
       affected = "1";
     }
   }
 
-  function addReport(event: SubmitEvent, pid: string) {
+  function addReport(event: FormSubmit, pid: string) {
     event.preventDefault();
+    const dueAt = new FormData(event.currentTarget).get("due_at");
+    if (typeof dueAt !== "string") return;
     void done(() =>
       addInjuryReport(pid, {
         recipient: recipient[pid] ?? "safety_authority",
-        due_at: instant(dueAt[pid] ?? ""),
+        due_at: dueAt || undefined,
       }),
     );
   }
 
-  function markSent(event: SubmitEvent, report: InjuryReport) {
+  function markSent(event: FormSubmit, report: InjuryReport) {
     event.preventDefault();
+    const sentAt = new FormData(event.currentTarget).get("sent_at");
+    if (!sentAt || typeof sentAt !== "string") return;
     void done(() =>
       markInjuryReportSent(report.pid, {
-        sent_at: instant(sentAt[report.pid] ?? "") ?? "",
+        sent_at: sentAt,
         method: method[report.pid] ?? "online",
         reference: reference[report.pid]?.trim() || undefined,
       }),
@@ -152,6 +163,9 @@
 {#if error}<ErrorNote testid="error" prefixed message={error} />{/if}
 
 {#if organization}
+  <datalist id={zoneList}>
+    {#each zones as zone (zone)}<option value={zone}></option>{/each}
+  </datalist>
   {#if records}
     {#if records.length === 0}
       <p data-testid="injury-none">{t("injuryRecords.none")}</p>
@@ -192,9 +206,7 @@
                     {#if report.reference}· {report.reference}{/if}
                   {:else}
                     <form class="stack" onsubmit={(event) => markSent(event, report)}>
-                      <label>{t("injuryRecords.sentAt")}
-                        <input type="datetime-local" required bind:value={sentAt[report.pid]} data-testid="injury-sent-at" />
-                      </label>
+                      <InjuryTimeInput label={t("injuryRecords.sentAt")} name="sent_at" testid="injury-sent-at" {zoneList} {initialZone} required />
                       <label>{t("injuryRecords.method")}
                         <select bind:value={method[report.pid]} data-testid="injury-method">
                           {#each METHODS as m (m)}<option value={m}>{t(`injuryRecords.${m}`)}</option>{/each}
@@ -216,9 +228,7 @@
                 {#each RECIPIENTS as to (to)}<option value={to}>{t(`injuryRecords.${to}`)}</option>{/each}
               </select>
             </label>
-            <label>{t("injuryRecords.dueAt")}
-              <input type="datetime-local" bind:value={dueAt[r.pid]} data-testid="injury-due-at" />
-            </label>
+            <InjuryTimeInput label={t("injuryRecords.dueAt")} name="due_at" testid="injury-due-at" {zoneList} {initialZone} />
             <button type="submit" data-testid="injury-add-report">{t("injuryRecords.addReport")}</button>
           </form>
         </section>
@@ -249,12 +259,10 @@
           {#each people as w (w.pid)}<option value={w.pid}>{w.display_name}</option>{/each}
         </select>
       </label>
-      <label>{t("injuryRecords.occurredAt")}
-        <input type="datetime-local" required bind:value={occurredAt} data-testid="inj-occurred" />
-      </label>
-      <label>{t("injuryRecords.learnedAt")}
-        <input type="datetime-local" bind:value={learnedAt} data-testid="inj-learned" />
-      </label>
+      {#key incidentDraft}
+        <InjuryTimeInput label={t("injuryRecords.occurredAt")} name="occurred_at" testid="inj-occurred" {zoneList} {initialZone} required />
+        <InjuryTimeInput label={t("injuryRecords.learnedAt")} name="learned_at" testid="inj-learned" {zoneList} {initialZone} />
+      {/key}
       <label>{t("injuryRecords.absenceDays")}
         <input bind:value={days} inputmode="numeric" data-testid="inj-days" />
       </label>

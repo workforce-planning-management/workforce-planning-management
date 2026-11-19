@@ -3079,7 +3079,13 @@
     "sent_no_due": "Sent, no due time entered",
     "waiting": "Not sent yet",
     "past_due": "Not sent, past the time entered",
-    "no_due": "Not sent, no due time entered"
+    "no_due": "Not sent, no due time entered",
+    "timeZone": "Time zone",
+    "invalidZone": "Enter a time zone such as Europe/Berlin or UTC.",
+    "invalidTime": "Enter a date and time within the supported range.",
+    "skippedTime": "This time was skipped in the selected time zone. Enter a different time.",
+    "repeatedTime": "This time occurs twice. Choose its UTC offset.",
+    "chooseOffset": "Choose a UTC offset"
   },
   "payslips": {
     "link": "My payslips",

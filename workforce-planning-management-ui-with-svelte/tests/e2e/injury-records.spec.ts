@@ -185,4 +185,160 @@ test.describe("Injury records", () => {
     );
     await expect(page.getByTestId("injury-none")).toHaveCount(0);
   });
+
+  test.describe("Berlin clock changes (WPM-T551, WPM-R221)", () => {
+    test.use({
+      timezoneId: "Europe/Berlin",
+      viewport: { width: 390, height: 844 },
+    });
+
+    test("a skipped time is explained in German and kept until corrected", async ({
+      page,
+    }, testInfo) => {
+      let sent: unknown;
+      await page.route("**/api/proxy/injury-records?organization=*", (route) =>
+        route.fulfill({ json: [] }),
+      );
+      await page.route("**/api/proxy/injury-records", async (route) => {
+        sent = route.request().postDataJSON();
+        await route.fulfill({ json: { pid: "new" } });
+      });
+      await page.goto("/de-de/injury-records");
+      await page
+        .getByTestId("injury-organization")
+        .selectOption(WORKER.organization_ref);
+      await expect(page.getByTestId("inj-occurred-zone")).toHaveValue(
+        "Europe/Berlin",
+      );
+      await page.getByTestId("inj-jurisdiction").fill("DE");
+      const occurred = page.getByTestId("inj-occurred");
+      await occurred.fill("2026-03-29T02:30");
+      await expect(
+        page.getByText(
+          "Diese Uhrzeit wurde in der gewählten Zeitzone übersprungen.",
+          { exact: false },
+        ),
+      ).toBeVisible();
+      await page.getByTestId("inj-save").click();
+      await expect(occurred).toHaveValue("2026-03-29T02:30");
+      expect(sent).toBeUndefined();
+      await occurred.blur();
+      await page
+        .getByTestId("injury-admin")
+        .screenshot({ path: testInfo.outputPath("skipped-time-light.png") });
+
+      await occurred.fill("2026-03-29T03:30");
+      await page.getByTestId("inj-save").click();
+      await expect(page.getByTestId("inj-saved")).toBeVisible();
+      expect(sent).toMatchObject({ occurred_at: "2026-03-29T01:30:00.000Z" });
+      expect(sent).not.toHaveProperty("learned_at");
+    });
+
+    test("reports require a fresh choice between the two offsets", async ({
+      page,
+    }, testInfo) => {
+      await page.addInitScript(() =>
+        localStorage.setItem("mxi.wpm.theme", "dark"),
+      );
+      const calls: unknown[] = [];
+      await page.route("**/api/proxy/injury-records?organization=*", (route) =>
+        route.fulfill({ json: [incident({ reports: [report({})] })] }),
+      );
+      for (const path of ["injury-records/i1/reports", "injury-reports/r1"]) {
+        await page.route(`**/api/proxy/${path}`, async (route) => {
+          calls.push(route.request().postDataJSON());
+          await route.fulfill({ json: { pid: "r1" } });
+        });
+      }
+      await page.goto("/en-001/injury-records");
+      await page
+        .getByTestId("injury-organization")
+        .selectOption(WORKER.organization_ref);
+      for (const field of ["injury-due-at", "injury-sent-at"]) {
+        await expect(page.getByTestId(`${field}-zone`)).toHaveValue(
+          "Europe/Berlin",
+        );
+        await page.getByTestId(field).fill("2026-10-25T02:30");
+        await expect(
+          page.getByTestId(`${field}-offset`).locator("option"),
+        ).toHaveText(["Choose a UTC offset", "UTC+02:00", "UTC+01:00"]);
+      }
+      const due = page.getByTestId("injury-due-at");
+      const dueOffset = page.getByTestId("injury-due-at-offset");
+      const dueZone = page.getByTestId("injury-due-at-zone");
+      const add = page.getByTestId("injury-add-report");
+      await add.click();
+      expect(calls).toHaveLength(0);
+      await dueOffset.selectOption({ label: "UTC+02:00" });
+      await due.fill("2026-10-25T02:31");
+      await expect(dueOffset).toHaveValue("");
+      await dueOffset.selectOption({ label: "UTC+02:00" });
+      await dueZone.fill("Europe/Paris");
+      await expect(dueOffset).toHaveValue("");
+      await dueZone.fill("Europe/Berlin");
+      await due.fill("2026-10-25T02:30");
+      await dueOffset.selectOption({ label: "UTC+02:00" });
+      await add.click();
+      await expect
+        .poll(() => calls)
+        .toEqual([
+          { recipient: "safety_authority", due_at: "2026-10-25T00:30:00.000Z" },
+        ]);
+
+      const send = page.getByTestId("injury-mark-sent");
+      const sentOffset = page.getByTestId("injury-sent-at-offset");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      await page
+        .locator("fieldset")
+        .filter({ has: sentOffset })
+        .screenshot({ path: testInfo.outputPath("repeated-time-dark.png") });
+      await send.click();
+      expect(calls).toHaveLength(1);
+      await sentOffset.selectOption({ label: "UTC+01:00" });
+      await send.click();
+      await expect
+        .poll(() => calls[1])
+        .toMatchObject({ sent_at: "2026-10-25T01:30:00.000Z" });
+    });
+  });
+
+  test.describe("an incident elsewhere (WPM-T551, WPM-R214)", () => {
+    test.use({ timezoneId: "America/New_York" });
+
+    test("a recorder can enter the Kolkata incident and a New York learned time", async ({
+      page,
+    }) => {
+      let sent: unknown;
+      await page.route("**/api/proxy/injury-records?organization=*", (route) =>
+        route.fulfill({ json: [] }),
+      );
+      await page.route("**/api/proxy/injury-records", async (route) => {
+        sent = route.request().postDataJSON();
+        await route.fulfill({ json: { pid: "new" } });
+      });
+      await page.goto("/en-001/injury-records");
+      await page
+        .getByTestId("injury-organization")
+        .selectOption(WORKER.organization_ref);
+      await page.getByTestId("inj-jurisdiction").fill("IN");
+      const incidentZone = page.getByTestId("inj-occurred-zone");
+      await expect(incidentZone).toHaveValue("America/New_York");
+      await expect(page.getByTestId("inj-learned-zone")).toHaveValue(
+        "America/New_York",
+      );
+      await page.getByTestId("inj-occurred").fill("2026-04-09T14:15");
+      await page.getByTestId("inj-learned").fill("2026-04-09T05:30");
+      await incidentZone.fill("Asia/Unknown");
+      await expect(incidentZone).toHaveAttribute("aria-invalid", "true");
+      await page.getByTestId("inj-save").click();
+      expect(sent).toBeUndefined();
+      await incidentZone.fill("Asia/Kolkata");
+      await page.getByTestId("inj-save").click();
+      await expect(page.getByTestId("inj-saved")).toBeVisible();
+      expect(sent).toMatchObject({
+        occurred_at: "2026-04-09T08:45:00.000Z",
+        learned_at: "2026-04-09T09:30:00.000Z",
+      });
+    });
+  });
 });

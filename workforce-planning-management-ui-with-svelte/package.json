@@ -62,6 +62,7 @@
     "esbuild@0.25.12": true
   },
   "dependencies": {
+    "@js-temporal/polyfill": "0.5.1",
     "@lilydesignsystem/svelte-calendar": "0.7.2",
     "@lilydesignsystem/svelte-data-grid": "0.11.2",
     "@lilydesignsystem/svelte-gantt-chart": "0.8.2",
