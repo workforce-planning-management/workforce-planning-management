@@ -6314,8 +6314,11 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       default profile took 37.65 s cold and 15.05 s warm; selecting the non-incremental profile took 43.78 s cold and 15.91 s warm.
       All seven mutants were caught in every run. The slower unused profiles are removed, and each mutation config records the
       deliberate default.
-- [ ] WPM-T542 **Publish the site.** `make publish-github-pages`, so the live `/.well-known/security.txt` lists GitHub's
-      private-reporting form (WPM-T537) and the site has the docs written since it was last published. (S)
+- [x] (2026-11-19) WPM-T542 **Publish the site.** The current site subtree was pushed to the exported repository at
+      `91a18e0d`; GitHub's “Deploy to GitHub Pages” workflow 44575244710 passed. The live `/.well-known/security.txt` lists the
+      email and GitHub private-advisory form from WPM-T537. **Verified before publishing:** the document copy was current,
+      `svelte-check` found 0 errors and 0 warnings, the static build wrote 360 HTML pages, and all 474 Playwright and axe tests
+      passed. **Not checked:** browsers other than Chromium or a live-site axe run.
 - [x] (2026-11-19) WPM-T543 **Tests for the least-covered files** (WPM-T539). The scheduler's due selection, finite CLI and
       child-start failure paths; the demo seed's documented synthetic shape and non-demo refusal; PASETO key parsing and a live
       periodic refresh; environment-variable compatibility; and production, demo and development start-up configuration now have

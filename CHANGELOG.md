@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — the documentation site is current (WPM-T542, 2026-11-19)
+
+The accumulated site and documentation changes are published at
+<https://workforce-planning-management.github.io/>; the live security notice
+includes GitHub's private-advisory form.
+
 ### Changed — mutation tests retain incremental builds (WPM-T541, 2026-11-19)
 
 The service and matcher use cargo-mutants' default test profile after controlled
