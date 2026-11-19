@@ -6305,9 +6305,10 @@ Why: the owner finds GitHub-hosted CI unreliable and costly. The assessment, the
 
 Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says what was not done.
 
-- [ ] WPM-T540 **Remove the stale `RUSTSEC-2024-0449` entry from `deny.toml`.** `cargo deny` reports it "not encountered"
-      (unsafe-libyaml is gone from the graph), and the file's own rule says an entry that matches nothing comes out, so the
-      advisory would fail the build again if it came back. (S)
+- [x] (2026-11-19) WPM-T540 **Remove the stale `RUSTSEC-2024-0449` entry from `deny.toml`.** `unsafe-libyaml` is absent from
+      the locked dependency graph (`cargo tree -i unsafe-libyaml` finds no package), so its accepted-advisory entry is gone. The
+      advisory will fail `cargo deny check` if a dependency brings it back. **Verified:** advisories, bans, licences and sources
+      pass `cargo deny check`.
 - [ ] WPM-T541 **Select `[profile.mutants]`, or rethink it.** The profile in each `Cargo.toml` (`debug = "none"`,
       `incremental = false`) is selected by neither `.cargo/mutants.toml` (no `profile = "mutants"`), so it does nothing. For the
       service, which `scripts/mutants-diff.sh` mutates in place, `incremental = false` would likely make each mutant slower; measure

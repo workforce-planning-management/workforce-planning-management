@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — stale advisory exception removed (WPM-T540, 2026-11-19)
+
+`unsafe-libyaml` is no longer in the locked Rust dependency graph, so
+RUSTSEC-2024-0449 is no longer accepted by `cargo deny` and will fail policy if
+it returns.
+
 ### Added — a 95% whole-service coverage gate (WPM-T543, WPM-T544, 2026-11-19)
 
 CI now runs the service's database-backed suites under tarpaulin and fails below

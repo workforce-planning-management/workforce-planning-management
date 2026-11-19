@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — stale advisory exception removed (WPM-T540)
+
+`unsafe-libyaml` is absent from the locked graph, so RUSTSEC-2024-0449 is no
+longer ignored and will fail `cargo deny` if it returns.
+
 ### Added — a 95% whole-service coverage gate (WPM-T543, WPM-T544)
 
 CI runs unit and database-backed suites under tarpaulin and fails below 95%; a
