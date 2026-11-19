@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a 95% whole-service coverage gate (WPM-T543, WPM-T544)
+
+CI runs unit and database-backed suites under tarpaulin and fails below 95%; a
+clean run is 95.71% (35,770/37,374). Direct tests exercise scheduler selection
+and process starts, the demo seed, PASETO refresh, compatibility variables and
+start-up configuration. The alternate Keycloak unit build is reported separately.
+
+### Fixed — typed money results pass the JSON boundary (WPM-T552)
+
+A safe `{status, value}` result is accepted on response fields ending in
+`_minor`; an unsafe nested integer still fails closed, and request writes remain
+scalar-only.
+
 ### Fixed — exact minor units at the JSON boundary (WPM-T552)
 
 Every JSON body, query and response field ending in `_minor` stays within the

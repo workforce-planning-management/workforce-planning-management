@@ -6314,12 +6314,18 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       before choosing. (S)
 - [ ] WPM-T542 **Publish the site.** `make publish-github-pages`, so the live `/.well-known/security.txt` lists GitHub's
       private-reporting form (WPM-T537) and the site has the docs written since it was last published. (S)
-- [ ] WPM-T543 **Tests for the least-covered files** (WPM-T539): `scheduler.rs` (25.5%: the loop that starts jobs),
-      `tasks/seed.rs` (34.0%), `auth/paseto.rs` (64.9%: the key fetch and refresh), `compat.rs` (65.2%) and `app.rs` (78.8%: the
-      start-up paths). (M)
-- [ ] WPM-T544 **A coverage floor for the whole service.** Run tarpaulin over the database-backed suites in CI (95.61% locally,
-      about 13 minutes instrumented on a loaded laptop) and hold it a little below the measured figure; and measure the `keycloak`
-      feature's code, which no figure covers yet. (M)
+- [x] (2026-11-19) WPM-T543 **Tests for the least-covered files** (WPM-T539). The scheduler's due selection, finite CLI and
+      child-start failure paths; the demo seed's documented synthetic shape and non-demo refusal; PASETO key parsing and a live
+      periodic refresh; environment-variable compatibility; and production, demo and development start-up configuration now have
+      direct tests. Clean full-suite coverage moved `scheduler.rs` 25.5% -> 67.21% (41/61), `tasks/seed.rs` 34.0% -> 68.00%
+      (34/50), `auth/paseto.rs` 64.9% -> 72.62% (61/84), `compat.rs` 65.2% -> 83.33% (40/48), and `app.rs` 78.8% -> 82.86%
+      (324/391). The run also exposed that the WPM-T552 response guard rejected a safe typed `{status, value}` money result;
+      response wrappers now accept a safe value and still reject an unsafe nested integer, while writes remain scalar-only.
+- [x] (2026-11-19) WPM-T544 **A coverage floor for the whole service.** CI now runs the default service's unit and
+      database-backed suites serially on PostgreSQL 18 and Redis 8, with a 300-second per-test timeout for the chaos suite, and
+      fails below **95%**. A clean local run passed at **95.71%** (35,770/37,374). The mutually exclusive Keycloak feature is a
+      separate reported-only unit run: 27.92% overall (10,496/37,595), because request suites are excluded, and 60.48% (101/167)
+      in `src/auth/keycloak.rs`. **Not checked:** the changed coverage job on GitHub Actions.
 - [ ] WPM-T545 **A full mutation run of the domain crate.** 6,098 mutants (`cargo mutants --workspace` in the service), which
       take hours; CI only samples changed lines. Kill or justify each survivor, as WPM-T526 did for the matcher and
       `security.rs`. Best on an idle machine or a scheduled job. (L)

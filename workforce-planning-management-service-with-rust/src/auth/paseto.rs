@@ -107,8 +107,23 @@ pub fn spawn_key_refresh() {
     }
     let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
     let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
+    drop(spawn_refresh(
+        url,
+        issuer,
+        audience,
+        std::time::Duration::from_secs(secs),
+    ));
+    tracing::info!(secs, "polling WPM_PASETO_KEYS_URL for key rotation");
+}
+
+fn spawn_refresh(
+    url: String,
+    issuer: String,
+    audience: String,
+    interval: std::time::Duration,
+) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        let mut ticker = tokio::time::interval(std::time::Duration::from_secs(secs));
+        let mut ticker = tokio::time::interval(interval);
         ticker.tick().await; // the first tick is immediate — skip it
         loop {
             ticker.tick().await;
@@ -122,8 +137,7 @@ pub fn spawn_key_refresh() {
                 }
             }
         }
-    });
-    tracing::info!(secs, "polling WPM_PASETO_KEYS_URL for key rotation");
+    })
 }
 
 /// Build a verifier by fetching the published key set from `url`
@@ -163,11 +177,19 @@ pub async fn fetch_or(url: &str, issuer: &str, audience: &str, fallback: Verifie
 fn build_from_env() -> Verifier {
     let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
     let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
-    let keys = crate::compat::env_var("WPM_PASETO_KEYS")
-        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+    build(
+        crate::compat::env_var("WPM_PASETO_KEYS").as_deref(),
+        &issuer,
+        &audience,
+    )
+}
+
+fn build(raw_keys: Option<&str>, issuer: &str, audience: &str) -> Verifier {
+    let keys = raw_keys
+        .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
         .unwrap_or_else(|| serde_json::json!({ "keys": [] }));
-    Verifier::from_paseto_keys_value(&keys, &issuer, &audience)
-        .unwrap_or_else(|_| empty_verifier(&issuer, &audience))
+    Verifier::from_paseto_keys_value(&keys, issuer, audience)
+        .unwrap_or_else(|_| empty_verifier(issuer, audience))
 }
 
 /// A verifier with no keys: rejects every token until a real key set is
@@ -846,5 +868,44 @@ mod tests {
         assert_eq!(verifier.key_count(), 1);
         let token = sign(&kid, 3_600);
         assert!(bearer_claims(&bearer(&token), &verifier).is_ok());
+    }
+
+    #[test]
+    fn verifier_build_falls_back_for_missing_or_malformed_keys() {
+        assert_eq!(build(None, ISSUER, AUDIENCE).key_count(), 0);
+        assert_eq!(build(Some("not json"), ISSUER, AUDIENCE).key_count(), 0);
+        assert_eq!(
+            build(Some(r#"{"keys":"wrong shape"}"#), ISSUER, AUDIENCE).key_count(),
+            0
+        );
+        let (keys, _) = test_keys_and_kid();
+        assert_eq!(
+            build(Some(&keys.to_string()), ISSUER, AUDIENCE).key_count(),
+            1
+        );
+    }
+
+    /// The periodic path performs a later fetch and replaces the live verifier, rather than only
+    /// exercising the boot-time helper.
+    #[tokio::test]
+    async fn refresh_fetches_and_swaps_the_live_key_set() {
+        let (keys, _) = test_keys_and_kid();
+        let url = serve_keys(keys).await;
+        verifier().store(empty_verifier(ISSUER, AUDIENCE));
+        let refresh = spawn_refresh(
+            url,
+            ISSUER.to_string(),
+            AUDIENCE.to_string(),
+            std::time::Duration::from_millis(10),
+        );
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            while verifier().current().key_count() == 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("the refresh fetches the local key set");
+        refresh.abort();
+        assert_eq!(verifier().current().key_count(), 1);
     }
 }

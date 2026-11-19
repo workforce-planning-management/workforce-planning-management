@@ -328,6 +328,38 @@ fn cors_origins(origin: Option<&str>, required: bool) -> Result<Vec<String>> {
     }
 }
 
+fn config_from(
+    environment: &Environment,
+    get: impl Fn(&str) -> Option<String> + Copy,
+) -> Result<Config> {
+    let mut config = Config::from_lookup(environment, &defaults(), |name| setting(name, get))?;
+    if *environment == Environment::Production {
+        config.http.timeout_seconds = request_timeout_seconds(
+            crate::compat::env_var_from("WPM_REQUEST_TIMEOUT_MS", get).as_deref(),
+        )?;
+        config.http.compression = true;
+        config.http.cors_origins = cors_origins(
+            crate::compat::env_var_from("WPM_CORS_ORIGIN", get).as_deref(),
+            true,
+        )?;
+    } else {
+        // Only production lets a browser call the API directly: the UI calls it through its own server.
+        config.http.cors_origins = Vec::new();
+    }
+    if environment.to_string() == "demo" {
+        // `axa` reads any other name as production-like. The container demo runs in the clear, on a database it migrates itself.
+        config.http.timeout_seconds = 0;
+        config.http.compression = false;
+        config.http.hsts = false;
+        config.database.auto_migrate = crate::compat::env_var_from("DB_AUTO_MIGRATE", get)
+            .is_none_or(|value| crate::auth::parse_bool(&value));
+    }
+    if config.logger.override_filter.is_none() {
+        config.logger.override_filter = Some(log_filter(config.logger.level));
+    }
+    Ok(config)
+}
+
 /// The application.
 impl App {
     /// The service's version, with the build it came from.
@@ -347,32 +379,7 @@ impl App {
     /// # Errors
     /// A setting is missing or does not parse.
     pub fn config(environment: &Environment) -> Result<Config> {
-        let mut config = Config::from_lookup(environment, &defaults(), |name| {
-            setting(name, |name| std::env::var(name).ok())
-        })?;
-        if *environment == Environment::Production {
-            config.http.timeout_seconds = request_timeout_seconds(
-                crate::compat::env_var("WPM_REQUEST_TIMEOUT_MS").as_deref(),
-            )?;
-            config.http.compression = true;
-            config.http.cors_origins =
-                cors_origins(crate::compat::env_var("WPM_CORS_ORIGIN").as_deref(), true)?;
-        } else {
-            // Only production lets a browser call the API directly: the UI calls it through its own server.
-            config.http.cors_origins = Vec::new();
-        }
-        if environment.to_string() == "demo" {
-            // `axa` reads any other name as production-like. The container demo runs in the clear, on a database it migrates itself.
-            config.http.timeout_seconds = 0;
-            config.http.compression = false;
-            config.http.hsts = false;
-            config.database.auto_migrate = crate::compat::env_var("DB_AUTO_MIGRATE")
-                .is_none_or(|value| crate::auth::parse_bool(&value));
-        }
-        if config.logger.override_filter.is_none() {
-            config.logger.override_filter = Some(log_filter(config.logger.level));
-        }
-        Ok(config)
+        config_from(environment, |name| std::env::var(name).ok())
     }
 
     /// How the service logs, for a process that serves nothing.
@@ -787,6 +794,8 @@ mod tests {
     #[test]
     fn a_request_timeout_rounds_up_to_whole_seconds() {
         assert_eq!(request_timeout_seconds(None).unwrap(), 30);
+        assert_eq!(request_timeout_seconds(Some("0")).unwrap(), 0);
+        assert_eq!(request_timeout_seconds(Some("1001")).unwrap(), 2);
         assert_eq!(request_timeout_seconds(Some("1500")).unwrap(), 2);
         assert!(request_timeout_seconds(Some("soon")).is_err());
     }
@@ -800,10 +809,54 @@ mod tests {
             cors_origins(Some("https://hr.example"), true).unwrap(),
             ["https://hr.example"]
         );
+        assert_eq!(cors_origins(None, false).unwrap(), Vec::<String>::new());
     }
 
     #[test]
     fn the_request_tracing_never_logs_a_uri() {
         assert!(log_filter(axa::logger::LogLevel::Debug).ends_with("tower_http=warn"));
+    }
+
+    #[test]
+    fn development_and_demo_startup_defaults_are_deliberate() {
+        let fallback = defaults();
+        assert_eq!(fallback.database, "workforce_planning_management");
+        assert_eq!(fallback.port, 1241);
+        assert_eq!(fallback.production_port, Some(1241));
+        assert_eq!(fallback.max_connections, 20);
+
+        let read = |name: &str| {
+            [("DB_URL", "postgres://example/wpm?sslmode=require")]
+                .into_iter()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| value.to_string())
+        };
+        let development = config_from(&Environment::Development, read).unwrap();
+        assert_eq!(development.http.cors_origins, Vec::<String>::new());
+        assert!(development.logger.override_filter.is_some());
+
+        let demo = config_from(&Environment::Other("demo".to_string()), read).unwrap();
+        assert_eq!(demo.http.timeout_seconds, 0);
+        assert!(!demo.http.compression);
+        assert!(!demo.http.hsts);
+        assert_eq!(demo.http.cors_origins, Vec::<String>::new());
+        assert!(demo.database.auto_migrate);
+
+        let production = config_from(&Environment::Production, |name| {
+            [
+                ("DB_URL", "postgres://example/wpm?sslmode=require"),
+                ("WPM_CORS_ORIGIN", "https://hr.example"),
+                ("WPM_REQUEST_TIMEOUT_MS", "1500"),
+            ]
+            .into_iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, value)| value.to_string())
+        })
+        .unwrap();
+        assert_eq!(production.http.timeout_seconds, 2);
+        assert!(production.http.compression);
+        assert_eq!(production.http.cors_origins, ["https://hr.example"]);
+
+        assert!(App::version().starts_with(env!("CARGO_PKG_VERSION")));
     }
 }

@@ -42,6 +42,37 @@ fn invalid_minor(value: &Value) -> Option<&str> {
     }
 }
 
+fn payload_outside(value: &Value) -> bool {
+    match value {
+        Value::Number(number) => outside(number),
+        Value::Array(items) => items.iter().any(payload_outside),
+        Value::Object(fields) => fields.values().any(payload_outside),
+        _ => false,
+    }
+}
+
+fn invalid_response_minor(value: &Value) -> Option<&str> {
+    match value {
+        Value::Array(items) => items.iter().find_map(invalid_response_minor),
+        Value::Object(fields) => fields.iter().find_map(|(name, value)| {
+            if name.ends_with("_minor") {
+                match value {
+                    Value::Null => None,
+                    Value::Number(number) if !outside(number) => None,
+                    // Aggregate figures are typed wrappers such as
+                    // `{ "status": "shown", "value": 123 }`. Check every number in the
+                    // wrapper; its value no longer carries the `_minor` suffix itself.
+                    Value::Array(_) | Value::Object(_) if !payload_outside(value) => None,
+                    _ => Some(name.as_str()),
+                }
+            } else {
+                invalid_response_minor(value)
+            }
+        }),
+        _ => None,
+    }
+}
+
 fn invalid_query(query: &str) -> Option<&str> {
     query.split('&').find_map(|pair| {
         let (name, value) = pair.split_once('=')?;
@@ -123,7 +154,7 @@ async fn exact_response(response: Response) -> Response {
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     };
     if let Ok(value) = serde_json::from_slice::<Value>(&bytes)
-        && let Some(field) = invalid_minor(&value)
+        && let Some(field) = invalid_response_minor(&value)
     {
         tracing::error!(field, "refused an inexact minor-unit JSON response");
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
@@ -155,6 +186,37 @@ mod tests {
         assert_eq!(
             invalid_minor(&json!({ "ordinary_integer": i64::MAX })),
             None
+        );
+    }
+
+    #[test]
+    fn response_figures_check_their_nested_value() {
+        assert_eq!(
+            invalid_response_minor(&json!({
+                "female_average_minor": { "status": "shown", "value": 9_000_000 }
+            })),
+            None
+        );
+        assert_eq!(
+            invalid_response_minor(&json!({
+                "female_average_minor": { "status": "withheld" }
+            })),
+            None
+        );
+        assert_eq!(
+            invalid_response_minor(&json!({
+                "female_average_minor": {
+                    "status": "shown", "value": 9_007_199_254_740_992_i64
+                }
+            })),
+            Some("female_average_minor")
+        );
+        assert_eq!(
+            invalid_minor(&json!({
+                "female_average_minor": { "status": "shown", "value": 9_000_000 }
+            })),
+            Some("female_average_minor"),
+            "writes keep the scalar field contract"
         );
     }
 

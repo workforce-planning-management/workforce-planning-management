@@ -88,13 +88,20 @@ fn warn_once(legacy: &str, current: &str) {
 /// directly) once no deployment sets `HCM_*`.
 #[must_use]
 pub fn env_var(name: &str) -> Option<String> {
+    env_var_from(name, |name| std::env::var(name).ok())
+}
+
+/// As [`env_var`], with the source passed in. This keeps precedence and blank-value handling
+/// testable without mutating the process environment.
+#[must_use]
+pub(crate) fn env_var_from(name: &str, get: impl Fn(&str) -> Option<String>) -> Option<String> {
     let nonblank = |v: &String| !v.trim().is_empty();
 
-    if let Some(value) = std::env::var(name).ok().filter(nonblank) {
+    if let Some(value) = get(name).filter(nonblank) {
         return Some(value);
     }
     let legacy = legacy_name(name)?;
-    let value = std::env::var(&legacy).ok().filter(nonblank)?;
+    let value = get(&legacy).filter(nonblank)?;
     warn_once(&legacy, name);
     Some(value)
 }
@@ -178,6 +185,42 @@ mod tests {
         assert_eq!(legacy_name("RUST_LOG"), None);
         assert_eq!(legacy_name("HCM_REQUIRE_AUTH"), None, "no reverse mapping");
         assert_eq!(legacy_name("XWPM_FOO"), None, "prefix must be at the start");
+    }
+
+    #[test]
+    fn current_environment_name_wins_and_blanks_fall_back() {
+        let read = |pairs: &[(&str, &str)], name: &str| {
+            pairs
+                .iter()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| (*value).to_string())
+        };
+        assert_eq!(
+            env_var_from("WPM_MODE", |name| read(
+                &[("WPM_MODE", "current"), ("HCM_MODE", "legacy")],
+                name
+            )),
+            Some("current".to_string())
+        );
+        assert_eq!(
+            env_var_from("WPM_MODE", |name| read(
+                &[("WPM_MODE", "  "), ("HCM_MODE", "legacy")],
+                name
+            )),
+            Some("legacy".to_string())
+        );
+        assert_eq!(
+            env_var_from("WPM_MODE", |name| read(&[("HCM_MODE", "\t")], name)),
+            None
+        );
+        assert_eq!(
+            env_var_from("DATABASE_URL", |name| read(
+                &[("DATABASE_URL", "postgres://example")],
+                name
+            )),
+            Some("postgres://example".to_string())
+        );
+        assert_eq!(env_var_from("DATABASE_URL", |_| None), None);
     }
 
     /// A rule keyed on the legacy entity is rewritten, in both the

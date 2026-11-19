@@ -132,13 +132,36 @@ jobs:
       # Each Criterion benchmark once (WPM-T495).
       - run: cargo test --locked --bench matching
 
-  # WPM-T539: unit-test coverage with cargo-tarpaulin (llvm engine, as on macOS). The domain crate and the matcher are tested
-  # by their own unit tests, so each is held at 95% or more; the service's unit-test figure is printed and not held, because its
-  # controllers are tested by the database-backed suites (spec/testing.md, "Coverage").
+  # WPM-T539/T544: coverage with cargo-tarpaulin (llvm engine, as on macOS). The service includes its database-backed suites,
+  # because controller coverage from unit tests alone is not meaningful. The alternate keycloak build is measured separately.
   coverage:
-    name: coverage · the domain crate and the matcher held at 95% (tarpaulin)
+    name: coverage · service, domain and matcher ≥95% (tarpaulin)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
+        env:
+          POSTGRES_USER: loco
+          POSTGRES_PASSWORD: loco
+          POSTGRES_DB: workforce_planning_management_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
+      WPM_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -155,9 +178,12 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
         # Only the domain's own files: a `-p` run still lists the service's, uncovered, and would count them.
         run: cargo tarpaulin --locked --engine llvm -p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*' --fail-under 95
-      - name: the service's unit tests, reported
+      - name: the whole service, held at 95%
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo tarpaulin --locked --engine llvm --workspace --lib
+        run: cargo tarpaulin --locked --engine llvm --workspace --lib --tests --ignored --timeout 300 --fail-under 95 -- --test-threads=1
+      - name: the alternate keycloak build, reported
+        working-directory: workforce-planning-management-service-with-rust
+        run: cargo tarpaulin --locked --engine llvm --workspace --lib --no-default-features --features keycloak
       - name: the matcher, held at 95%
         working-directory: workforce-planning-management-matcher-with-rust
         run: cargo tarpaulin --locked --engine llvm --fail-under 95

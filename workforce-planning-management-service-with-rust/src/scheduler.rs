@@ -181,6 +181,20 @@ fn start(job: &Job, exe: &std::path::Path) -> Option<tokio::process::Child> {
     }
 }
 
+/// Split the jobs due on this turn into starts and overlaps. Keeping this decision separate from
+/// process creation makes the scheduler's no-overlap promise directly testable.
+fn due_jobs(
+    upcoming: &[(Timestamp, Job)],
+    soonest: Timestamp,
+    is_running: impl Fn(&str) -> bool,
+) -> (Vec<Job>, Vec<Job>) {
+    upcoming
+        .iter()
+        .filter(|(at, _)| *at == soonest)
+        .map(|(_, job)| *job)
+        .partition(|job| !is_running(job.name))
+}
+
 /// `scheduler ...`: list the schedule, or keep it until the process is stopped.
 ///
 /// # Errors
@@ -224,12 +238,82 @@ pub async fn run(arguments: &[String]) -> axa::Result<()> {
             _ = tokio::signal::ctrl_c() => return Ok(()),
         }
         running.retain(|_, child| matches!(child.try_wait(), Ok(None)));
-        for (_, job) in upcoming.iter().filter(|(at, _)| *at == soonest) {
-            if running.contains_key(job.name) {
-                tracing::warn!(job = job.name, "still running, so this turn is skipped");
-            } else if let Some(child) = start(job, &exe) {
+        let (starts, overlaps) = due_jobs(&upcoming, soonest, |name| running.contains_key(name));
+        for job in overlaps {
+            tracing::warn!(job = job.name, "still running, so this turn is skipped");
+        }
+        for job in starts {
+            if let Some(child) = start(&job, &exe) {
                 running.insert(job.name, child);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FIRST: Job = Job {
+        name: "first",
+        task: "first_task",
+        cron: "0 * * * * *",
+        tags: &["test"],
+    };
+    const SECOND: Job = Job {
+        name: "second",
+        task: "second_task",
+        cron: "0 * * * * *",
+        tags: &["test"],
+    };
+
+    #[test]
+    fn due_jobs_start_once_and_skip_an_overlap() {
+        let due: Timestamp = "2026-11-19T12:00:00Z".parse().unwrap();
+        let later: Timestamp = "2026-11-19T12:01:00Z".parse().unwrap();
+        let upcoming = [(due, FIRST), (due, SECOND), (later, FIRST)];
+        let (starts, overlaps) = due_jobs(&upcoming, due, |name| name == "second");
+        assert_eq!(starts, [FIRST]);
+        assert_eq!(overlaps, [SECOND]);
+    }
+
+    #[test]
+    fn an_invalid_expression_names_its_job() {
+        let invalid = Job {
+            cron: "not cron",
+            ..FIRST
+        };
+        assert!(
+            next_after(&invalid, Timestamp::now())
+                .unwrap_err()
+                .starts_with("first:")
+        );
+    }
+
+    #[tokio::test]
+    async fn a_child_starts_and_a_missing_executable_is_reported() {
+        let mut child = start(&FIRST, std::path::Path::new("/usr/bin/true")).expect("starts");
+        assert!(child.wait().await.expect("wait").success());
+        assert!(start(&FIRST, std::path::Path::new("/definitely/not/wpm")).is_none());
+    }
+
+    #[tokio::test]
+    async fn finite_command_lines_list_or_explain_the_error() {
+        run(&["--list".to_string()]).await.unwrap();
+        assert!(
+            run(&[])
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("say which jobs")
+        );
+        assert!(
+            run(&["--tag".to_string(), "missing".to_string()])
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("no job has the tag missing")
+        );
+        assert!(run(&["--unknown".to_string()]).await.is_err());
     }
 }

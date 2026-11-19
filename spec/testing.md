@@ -113,17 +113,20 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 
 **Benchmarks** (Criterion, WPM-D195): `cargo bench -p workforce-planning-management-domain --bench rules` (the domain crate, from the service's directory; WPM-T538) and `cargo bench --bench matching` in the matcher measure the pure functions a view runs once per worker, at 1,000, 10,000 and 50,000; `cargo bench --bench requests` (WPM-T527) measures what a request pays apart from the database: the read classification, the directory search and its JSON, the CSV import and export, and a link token's hash. `scripts/bench-compare.py` reads Criterion's change estimates after `--baseline <name>` and exits 1 when the whole 95% interval of a benchmark's change is above a threshold (10% by default), for a comparison on one quiet machine; CI does not run it. CI runs each once with `cargo test --bench`, so a benchmark that panics or stops building fails; the timings are in [`BENCHMARKS.md`](../BENCHMARKS.md).
 
-**Coverage** (`cargo-tarpaulin` 0.37.6, `--engine llvm`, WPM-T539). CI's `coverage` job holds the domain crate and the matcher
-at 95% of lines or more, from their unit tests alone, and prints the service's unit-test figure without holding it, because the
-service's controllers and tasks are tested by the database-backed suites. **Measured on 2026-11-17:** the domain crate 97.21%
-(7,984 of 8,213 lines; `-p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*'`),
-the matcher 98.75% (317 of 321), the workspace's unit tests 27.41% (10,212 of 37,256: the controllers are 1.4% from unit tests).
-**With the database-backed suites** (`--workspace --lib --tests --ignored -- --test-threads=1` on PostgreSQL 18, about 13
-minutes, 2,895 tests): **95.61%** (35,630 of 37,266): the controllers 95.6%, the rules 98.5%, the models 99.3%, the top-level
-modules 91.3%, the tasks 87.4%, `src/auth` 64.9%. The least covered: `scheduler.rs` (25.5%: the loop that starts jobs),
-`tasks/seed.rs` (34.0%), `auth/paseto.rs` (64.9%: the key fetch and refresh), `compat.rs` (65.2%) and `app.rs` (78.8%: the start-up paths).
-The `keycloak` feature's code is not in these figures. Coverage counts lines a test ran, not what it checked: mutation testing
-answers that.
+**Coverage** (`cargo-tarpaulin` 0.37.6, `--engine llvm`, WPM-T539, WPM-T543, WPM-T544). CI's `coverage` job holds the domain
+crate, the matcher and the complete default-feature service at 95% of lines or more. The service command includes every
+database-backed suite (`--workspace --lib --tests --ignored --timeout 300 -- --test-threads=1`) against PostgreSQL 18 and Redis
+8; the five-minute per-test limit accommodates the deliberate service disruption in the chaos suite. **Measured on 2026-11-19:**
+the complete service is **95.71%** (35,770 of 37,374 lines). Tests for the former low points moved `scheduler.rs` from 25.5% to
+67.21% (41/61), `tasks/seed.rs` from 34.0% to 68.00% (34/50), `auth/paseto.rs` from 64.9% to 72.62% (61/84), `compat.rs` from
+65.2% to 83.33% (40/48), and `app.rs` from 78.8% to 82.86% (324/391). The domain's separate measurement remains 97.21%
+(7,984 of 8,213 lines; `-p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*'`)
+and the matcher 98.75% (317 of 321).
+
+The mutually exclusive `keycloak` feature is measured in a separate, reported-only unit run
+(`--workspace --lib --no-default-features --features keycloak`): **27.92%** overall (10,496 of 37,595), because that command does
+not run the database-backed request suites, and 60.48% (101 of 167) in `src/auth/keycloak.rs`. It is not the service's gated
+figure. Coverage counts lines a test ran, not what it checked: mutation testing answers that.
 
 **Test binaries** (WPM-T534): one file under `tests/` is one binary, and each links the whole service, so tests that can share a process share one. `tests/main.rs` holds the request suites (`requests/`) and the checks (`checks/`: the source and schema guards, the route table, the schedule, the `health` command, the migration adoption); `tests/enforcement/` holds the twelve suites that need only sign-in and the reference policy, signing with one throwaway key. Sign-in, the ABAC policy and the PASETO verifier are each read once into a `OnceLock`, so a suite that needs another policy or setting stays a binary of its own: the eleven `enforcement_*.rs`, `security`, `retention_schedule`, `request_log`, `chaos`, `shared_cache_upstream`, and `keycloak` and `oidc_entra` under their feature. 37 binaries became 20; relinking them after a change to the library took a median of 15.1 s against 18.5 s before, measured back to back on one loaded laptop.
 

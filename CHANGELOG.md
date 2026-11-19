@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — a 95% whole-service coverage gate (WPM-T543, WPM-T544, 2026-11-19)
+
+CI now runs the service's database-backed suites under tarpaulin and fails below
+95%; the clean measurement is 95.71% (35,770/37,374). Direct tests cover the
+former low points, and the alternate Keycloak unit build is reported separately.
+
 ### Fixed — exact minor units through the service and UI (WPM-T552, 2026-11-19)
 
 Typed money is converted and formatted from decimal digits, and the service

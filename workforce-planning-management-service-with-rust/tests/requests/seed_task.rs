@@ -18,6 +18,48 @@ async fn workers(ctx: &axa::AppContext) -> i64 {
 #[tokio::test]
 #[serial]
 #[ignore = "needs a database"]
+async fn the_seed_creates_only_the_documented_synthetic_demo_shape() {
+    crate::requests::request_open(|_server, ctx| async move {
+        let mut tasks = Tasks::default();
+        App::register_tasks(&mut tasks);
+        let before = workers(&ctx).await;
+        tasks
+            .run("seed", &ctx, &Vars::default())
+            .await
+            .expect("the seed runs under test");
+        let pool = workforce_planning_management::db::pool(&ctx);
+        assert_eq!(workers(&ctx).await - before, 46);
+        let currencies: Vec<(String, i64)> = sqlx::query_as(
+            "SELECT salary_currency, count(*) FROM workers WHERE display_name LIKE 'Test %' AND salary_currency IS NOT NULL GROUP BY salary_currency ORDER BY salary_currency",
+        )
+        .fetch_all(pool)
+        .await
+        .unwrap();
+        assert_eq!(
+            currencies,
+            [("GBP".to_string(), 40), ("INR".to_string(), 3), ("JPY".to_string(), 3)]
+        );
+        let homes: Vec<String> = sqlx::query_scalar(
+            "SELECT home_jurisdiction FROM organization_settings ORDER BY home_jurisdiction",
+        )
+        .fetch_all(pool)
+        .await
+        .unwrap();
+        assert_eq!(homes, ["GB", "IN", "JP"]);
+        let non_synthetic: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM workers WHERE display_name NOT LIKE 'Test %' OR person_ref NOT LIKE 'person:%'",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        assert_eq!(non_synthetic, 0);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "needs a database"]
 async fn the_seed_is_refused_outside_development_and_test() {
     crate::requests::request_open(|_server, ctx| async move {
         let mut tasks = Tasks::default();
