@@ -6309,10 +6309,11 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       the locked dependency graph (`cargo tree -i unsafe-libyaml` finds no package), so its accepted-advisory entry is gone. The
       advisory will fail `cargo deny check` if a dependency brings it back. **Verified:** advisories, bans, licences and sources
       pass `cargo deny check`.
-- [ ] WPM-T541 **Select `[profile.mutants]`, or rethink it.** The profile in each `Cargo.toml` (`debug = "none"`,
-      `incremental = false`) is selected by neither `.cargo/mutants.toml` (no `profile = "mutants"`), so it does nothing. For the
-      service, which `scripts/mutants-diff.sh` mutates in place, `incremental = false` would likely make each mutant slower; measure
-      before choosing. (S)
+- [x] (2026-11-19) WPM-T541 **Use cargo-mutants' default test profile.** The dormant `[profile.mutants]` in both crates was
+      never selected. A controlled matcher run tested the same seven mutants serially and in place against isolated targets: the
+      default profile took 37.65 s cold and 15.05 s warm; selecting the non-incremental profile took 43.78 s cold and 15.91 s warm.
+      All seven mutants were caught in every run. The slower unused profiles are removed, and each mutation config records the
+      deliberate default.
 - [ ] WPM-T542 **Publish the site.** `make publish-github-pages`, so the live `/.well-known/security.txt` lists GitHub's
       private-reporting form (WPM-T537) and the site has the docs written since it was last published. (S)
 - [x] (2026-11-19) WPM-T543 **Tests for the least-covered files** (WPM-T539). The scheduler's due selection, finite CLI and

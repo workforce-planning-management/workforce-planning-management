@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — mutation tests retain incremental builds (WPM-T541)
+
+The unused non-incremental `mutants` Cargo profile is removed after controlled
+cold and warm matcher runs found cargo-mutants' default test profile faster.
+
 ### Changed — stale advisory exception removed (WPM-T540)
 
 `unsafe-libyaml` is absent from the locked graph, so RUSTSEC-2024-0449 is no

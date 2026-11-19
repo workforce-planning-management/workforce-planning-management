@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed — mutation tests retain incremental builds (WPM-T541, 2026-11-19)
+
+The service and matcher use cargo-mutants' default test profile after controlled
+cold and warm runs found the dormant non-incremental profile slower.
+
 ### Changed — stale advisory exception removed (WPM-T540, 2026-11-19)
 
 `unsafe-libyaml` is no longer in the locked Rust dependency graph, so

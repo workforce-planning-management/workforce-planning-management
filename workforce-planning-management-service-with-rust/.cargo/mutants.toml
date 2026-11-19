@@ -1,4 +1,6 @@
 # cargo-mutants (WPM-T526; spec/testing.md, "Mutation testing").
+# It deliberately uses cargo-mutants' default test profile: WPM-T541 measured the former non-incremental
+# `mutants` profile slower on both cold and warm repeated-mutant runs.
 #
 # The pure core is where a mutant should die: the rules in the domain crate (`crates/workforce-planning-management-domain/src/`, WPM-D203) are DB-free and clock-free and tested exhaustively by
 # the lib's unit tests (AGENTS.md, rule 2), and `src/security.rs` holds the pure parts of the security settings. A controller is

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Mutation testing (WPM-T541) uses cargo-mutants' default incremental test
+  profile; controlled cold and warm runs were both faster than the former,
+  unused non-incremental profile.
 - Coverage (WPM-T539): 98.75% of lines (317 of 321) with `cargo tarpaulin --engine llvm`; CI holds it at 95%.
 
 ## 0.2.0 - 2026-11-17
