@@ -266,7 +266,7 @@ export function arrow(loc?: string): string {
 }
 
 // Typed numbers. The parsing core is `money.ts`'s `parseAmount`, so a decimal typed into any field is read the same
-// way an amount is: the locale's decimal mark is the only decimal mark, its group mark and spaces are ignored, and
+// way an amount is: the locale's decimal mark is the only decimal mark, grouping follows the locale's integer group widths, and
 // its own digits are digits.
 
 /** A number typed in the page's format ("2,5" in German), or `null` when it is not a plain number. */

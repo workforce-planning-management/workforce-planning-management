@@ -120,6 +120,17 @@ worked cases, not the design.** This file is the rule that stops them becoming t
     the UI under WPM-T373 from one an API client sent in fillér. What an operator checks is in WPM-T400.
   - **The family changes together.** The three `money.ts` files and the three tables share this rule; a fix to one is copied to the others.
 
+- **WPM-D204 Validate digit grouping before converting a localized number** (WPM-R214,
+  WPM-T550). The page locale determines the decimal mark, grouping mark, and sizes
+  of the integer groups. Ungrouped input remains valid. A French reader may type
+  an ordinary space for a non-breaking grouping space. A reader may paste a signed
+  number with the sign and directional mark supplied by the locale's formatter.
+  A misplaced separator, including one in the fraction, makes the input invalid.
+  For example, `12.50` in German is neither twelve and a half nor a grouped
+  integer. The form keeps the value for correction and sends no request. A valid
+  `1.234` on that same page means 1234. This applies to money, FTE, percentages,
+  and other localized decimal inputs that share the parser.
+
 ## Tasks
 
 - [x] (2026-10-29) WPM-T367 **Worldwide audit of the spec.** *(WPM-R214, WPM-D143)* Done: 19 rows in the audit table above. `spec/` only: code, seed data and UI strings are not audited. Wording fixes (rows 10, 11) are left to T370.
@@ -275,7 +286,7 @@ worked cases, not the design.** This file is the rule that stops them becoming t
   "pages.planning.budget_needs_currency"); a plan with no budget sends no currency. The organization has no currency in the API, so there is
   nothing to take one from; an expense item and a pay-scale salary take the record's own currency. An amount is read by `parseAmount` in the
   page's locale: its decimal mark is the only decimal mark ("12,50" and "1.234,50" in German, "1 234,50" in French, "1,234.50" in English),
-  its group mark and spaces are ignored, its own digits are read (Bengali), and anything else is refused before a request
+  its group mark and spaces were originally ignored (tightened by WPM-D204), its own digits are read (Bengali), and anything else is refused before a request
   ("expenses.badAmount", "pages.planning.bad_budget", the existing "payScales.badSalary"). The plan budget is now a text input with
   `inputmode="decimal"`, not `type="number"` (whose decimal mark follows the browser, not the page). The pay-gap and pay-range currency
   filters use the same `currencyCode`. Four new keys in all 13 `-001` locales, AI-written and unreviewed (recorded in

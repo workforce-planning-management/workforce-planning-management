@@ -1039,3 +1039,35 @@ integration hub being rewritten in Rust, spec-driven as WPM is. **Advised order:
 The hub's single gate and run record fold into the local-first CI work already planned (WPM-T437, WPM-T441). Proposed
 WPM-R248 to WPM-R252 and WPM-D197 to WPM-D200; tasks WPM-T508 to WPM-T521. Every decision is the owner's.
 
+
+## W. Worldwide production readiness review (2026-11-19)
+
+A German expense entry of `12.50` produced 125,000 euro cents in the UI
+parser. The form had no way to distinguish that result from an intentional
+entry of `1.250,00`. WPM-T550 fixes the point where the original text is
+still available. For any demo data under review, compare a suspect item
+with its original claim before correcting it. The stored cents alone cannot
+identify affected items. [Worldwide decision WPM-D204](worldwide.md)
+
+Two other boundaries can change a value before the service sees it.
+The proposed order reflects the consequence of recording the wrong value.
+
+1. **Incident and report times (WPM-T551).** The injury form converts each
+   local time with `new Date(local).toISOString()`. In a runtime set to
+   Berlin, entering 02:30 on 29 March 2026 yielded 03:30 local. On 25 October
+   the same entry selected the first of two possible instants. Make the zone
+   visible and require the recorder to resolve these cases before saving.
+2. **Large budgets and salaries (WPM-T552).** The service accepts integer
+   minor units, while the UI reads a decimal amount into a JavaScript
+   `number` before scaling it. With two decimal places, `70368744177664.01`
+   became `7036874417766402` minor units. Define the range that survives the
+   full write, read, edit, and export journey. Test at the boundary in each
+   supported currency precision. [Task acceptance criteria](tasks.md)
+
+**Deployment advice.** Keep trials on synthetic records. Before the first
+deployment with real records, have professional reviewers exercise the target
+languages in the actual workflows (WPM-T155), commission the independent
+security and accessibility assessments (WPM-T201–T202), and rehearse recovery
+on the intended platform, including replay of erasures (WPM-G4). The deployer's
+privacy sign-off (WPM-G5) and validation of any payroll rules it intends to
+use (WPM-G2) also remain open. [Path to production](../locales/en-001/path-to-production/index.md)

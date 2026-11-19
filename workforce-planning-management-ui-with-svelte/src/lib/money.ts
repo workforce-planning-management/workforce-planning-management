@@ -155,51 +155,74 @@ export function minorToInput(
   }
 }
 
-function symbols(locale: string): {
-  decimal: string;
-  group: string;
-  digits: string[];
-} {
-  let decimal = ".";
-  let group = ",";
-  const digits: string[] = [];
+function symbols(locale: string) {
+  let format: Intl.NumberFormat;
   try {
-    const nf = new Intl.NumberFormat(locale);
-    for (const p of nf.formatToParts(1234567.5)) {
-      if (p.type === "decimal") decimal = p.value;
-      if (p.type === "group") group = p.value;
-    }
-    for (let d = 0; d < 10; d++) digits.push(nf.format(d));
+    format = new Intl.NumberFormat(locale);
   } catch {
-    for (let d = 0; d < 10; d++) digits.push(String(d));
+    format = new Intl.NumberFormat("en");
   }
-  return { decimal, group, digits };
+  // A long integer exposes both group widths, e.g. 12,34,56,789 in Hindi.
+  const parts = format.formatToParts(-123456789.5);
+  const groups = parts.filter((part) => part.type === "integer");
+  const firstDigit = parts.findIndex((part) => part.type === "integer");
+  return {
+    decimal: parts.find((part) => part.type === "decimal")!.value,
+    group: parts.find((part) => part.type === "group")?.value,
+    lastWidth: [...groups.at(-1)!.value].length,
+    innerWidth: [...(groups.at(-2) ?? groups.at(-1))!.value].length,
+    negativePrefix: parts
+      .slice(0, firstDigit)
+      .map((part) => part.value)
+      .join(""),
+    digits: Array.from({ length: 10 }, (_, i) => format.format(i)),
+  };
 }
 
-/**
- * An amount typed in `locale`'s own format to a number of major units, or `null` when it is not a
- * plain number. The locale's decimal mark is the only decimal mark ("1,5" and "1 234,50" in a
- * decimal-comma locale, "1,234.50" in an English one); its group mark and any space are ignored, and
- * the locale's own digits (০–৯, ٠–٩) are read as digits.
- */
+/** A plain number in the page locale. Validate grouping before removing it (WPM-D204). */
 export function parseAmount(
   text: string,
   locale: string = currentLocale(),
 ): number | null {
-  const { decimal, group, digits } = symbols(locale);
   let s = text.trim();
-  if (s === "") return null;
-  s = s.replace(/[\s\u00a0\u202f']/g, "");
-  if (group !== decimal && group.trim() !== "") s = s.split(group).join("");
-  s = s.split(decimal).join(".");
+  if (!s) return null;
+  const { decimal, group, lastWidth, innerWidth, negativePrefix, digits } =
+    symbols(locale);
+  // Intl may put a directional mark before the minus sign on an RTL page.
+  const sign = s.startsWith(negativePrefix)
+    ? negativePrefix
+    : s.startsWith("-")
+      ? "-"
+      : "";
+  s = s.slice(sign.length);
   s = [...s]
     .map((c) => {
       const i = digits.indexOf(c);
       return i >= 0 ? String(i) : c;
     })
     .join("");
-  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
-  const n = Number(s);
+
+  const [integer = "", fraction = "", extra] = s.split(decimal);
+  if (extra !== undefined || !/^\d*$/.test(fraction)) return null;
+  let whole = integer;
+  if (group) {
+    // Keyboards commonly offer an ordinary space for a non-breaking group separator.
+    if (group.trim() === "") whole = whole.replace(/[ \u00a0\u202f]/gu, group);
+    const chunks = whole.split(group);
+    if (chunks.length > 1) {
+      const first = chunks[0]!;
+      if (
+        !first.length ||
+        first.length > innerWidth ||
+        chunks.at(-1)!.length !== lastWidth ||
+        chunks.slice(1, -1).some((chunk) => chunk.length !== innerWidth)
+      )
+        return null;
+      whole = chunks.join("");
+    }
+  }
+  if ((!whole && !fraction) || !/^\d*$/.test(whole)) return null;
+  const n = Number(`${sign ? "-" : ""}${whole}.${fraction}`);
   return Number.isFinite(n) ? n : null;
 }
 

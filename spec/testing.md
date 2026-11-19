@@ -145,6 +145,11 @@ nothing behind, that every worker present has its one audit row, and that the se
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 
+The WPM-T550 regression in `tests/unit/money.test.ts` reads signed, grouped
+numbers across the shipped locales and refuses misplaced separators.
+`tests/e2e/expenses.spec.ts` checks a German claim through correction and
+inspects the amount submitted in euro cents. [Worldwide decision](worldwide.md)
+
 - **vitest — 313 tests / 37 files (as of 2026-10-30)**: the API client **path map** (every
   function's exact proxied path), `money()` honesty and the money formatter and parser
   (`tests/unit/money.test.ts`: JPY, EUR, KWD and CLF exponents, a decimal comma, no built-in

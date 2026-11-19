@@ -6333,3 +6333,34 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       `EdDSA`; Keycloak's keys are `RS256`, and only `ES256` is checked by a unit test. (S)
 - [ ] WPM-T549 **Take out the chrono acceptance when `expect-json` drops chrono** (WPM-T535): watch `axum-test` and
       `expect-json`; then remove `RUSTSEC-2026-0543` from `deny.toml`. (S)
+
+## Worldwide production readiness review (2026-11-19)
+
+- [x] WPM-T550 (2026-11-19) **Reject misplaced digit grouping before a form submits.**
+      *(WPM-R214, WPM-D204, [worldwide](worldwide.md))* With the original
+      parser, the regression returned 125,000 cents for German `12.50` and
+      refused the runtime's own signed Arabic number. The parser now checks
+      grouping and accepts the locale's negative prefix. The expense form
+      keeps the invalid text for correction. A corrected `1.234,50` sends
+      123,450 cents. The two new unit tests failed before the fix and passed
+      after it. Verified locally with 364 UI unit tests, Svelte checks (zero
+      errors or warnings), lint, and 58 Chromium tests over a production build
+      and stubbed API (expenses, pay scales, planning, oversight, and CPD).
+      Verification covered all 17 page locales at the parser, and German at
+      the form. Live-service writes, other browser engines, and professional
+      language review remain outside this check.
+- [ ] WPM-T551 **Resolve local times on the injury form before recording an instant.**
+      *(Proposed, WPM-R221, WPM-R214)* Show the time zone for occurred, learned,
+      due, and sent times. Refuse a skipped wall-clock time with a localized
+      explanation. For a repeated time, let the recorder choose between the
+      two offsets. Check the submitted instants in a browser across both
+      Berlin transitions and an ordinary time in Kolkata. Include a recorder
+      entering an incident from another zone. [Review](plan.md)
+- [ ] WPM-T552 **Preserve exact minor units through the UI and API boundary.**
+      *(Proposed, WPM-R214, WPM-D151)* Establish the supported range from the
+      service fields, JSON representation, and UI consumers. Convert typed
+      decimals to integer units without losing digits. Preserve the existing
+      rounding rule for excess decimal places and refuse out-of-range values
+      before submission. Verify create, read, edit, and export with synthetic
+      amounts at and beyond the supported bounds for exponents 0, 2, 3, and 4.
+      [Reproduced precision loss](plan.md)

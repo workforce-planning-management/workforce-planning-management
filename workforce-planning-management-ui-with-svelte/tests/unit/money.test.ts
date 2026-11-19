@@ -6,6 +6,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { LOCALES } from "../../src/lib/locales";
 import {
   MINOR_UNITS,
   currencyCode,
@@ -178,6 +179,38 @@ describe("parseAmount and toMinor", () => {
   });
   it("reads the locale's own digits", () => {
     expect(parseAmount("১২৩৪.৫০", "bn-001")).toBe(1234.5);
+  });
+  it("reads each shipped locale's grouped numbers, including its negative sign (WPM-R214)", () => {
+    for (const locale of LOCALES) {
+      const format = new Intl.NumberFormat(locale);
+      for (const n of [1234.5, -12345678.5]) {
+        expect(parseAmount(format.format(n), locale), locale).toBe(n);
+      }
+    }
+    expect(parseAmount("১২,৩৪,৫৬৭.৫০", "bn-001")).toBe(1234567.5);
+    expect(parseAmount("1\u00a0234,50", "fr-001")).toBe(1234.5);
+  });
+
+  it("rejects misplaced separators before converting to minor units (WPM-R214)", () => {
+    for (const [value, locale] of [
+      ["12.50", "de-001"],
+      ["12,50", "en-001"],
+      ["1234,567", "en-001"],
+      ["1,,234", "en-001"],
+      [",123", "en-001"],
+      ["123,", "en-001"],
+      ["1.23,456", "en-001"],
+      ["1 23,50", "fr-001"],
+      ["1\t234,50", "fr-001"],
+      ["1 234.50", "en-001"],
+      ["1'234.50", "en-001"],
+      ["1,234,567.50", "hi-001"],
+      ["12,34,567.50", "en-001"],
+    ] as const) {
+      expect(toMinor(value, "EUR", locale), value).toBeNull();
+    }
+    expect(toMinor("1.234", "EUR", "de-001")).toBe(123400);
+    expect(toMinor("1234567.50", "EUR", "hi-001")).toBe(123456750);
   });
   it("never turns text into a number", () => {
     expect(parseAmount("", "en-001")).toBeNull();

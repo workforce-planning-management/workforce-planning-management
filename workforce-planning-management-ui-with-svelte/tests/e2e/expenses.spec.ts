@@ -259,6 +259,12 @@ test.describe("Expense claims", () => {
     await panel.getByTestId("expense-currency").fill("EUR");
     await panel.getByTestId("expense-create").click();
     await panel.getByTestId("expense-date").fill("2026-10-01");
+    // WPM-R214, WPM-D204: "12.50" used to post 125,000 euro cents.
+    await panel.getByTestId("expense-amount").fill("12.50");
+    await panel.getByTestId("expense-add").click();
+    await expect(panel.getByTestId("expense-error")).toBeVisible();
+    await expect(panel.getByTestId("expense-amount")).toHaveValue("12.50");
+    expect(items).toHaveLength(0);
     await panel.getByTestId("expense-amount").fill("1.234,50");
     await panel.getByTestId("expense-add").click();
     await expect.poll(() => items.at(-1)?.amount_minor).toBe(123_450);

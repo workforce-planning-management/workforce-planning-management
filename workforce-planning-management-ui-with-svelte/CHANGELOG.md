@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — localized number entry (WPM-T550)
+
+Expense claims, budgets, salaries, percentages, and FTE fields check digit
+grouping before submission. A German entry of `12.50` now prompts for a
+correction. `12,50` still means twelve and a half, and `1.234,50` means one
+thousand two hundred and thirty-four and a half.
+
 ### Added — a footer that links to the privacy notice (WPM-T523)
 
 Every page ends with a "Privacy notice" link to the notice on the website, in the app's language
