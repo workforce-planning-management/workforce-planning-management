@@ -333,6 +333,27 @@ mod tests {
     }
 
     #[test]
+    fn leaver_window_excludes_the_old_and_future_boundaries() {
+        let as_of = d("2026-10-26");
+        let current = row("care", "permanent", None, "2020-01-01", None);
+        let leavers = |ended| {
+            pack(
+                &[
+                    current.clone(),
+                    row("care", "permanent", None, "2020-01-01", Some(ended)),
+                ],
+                as_of,
+                1,
+            )
+            .leavers_last_year
+        };
+        assert_eq!(leavers("2025-10-26"), Cell::Withheld);
+        assert_eq!(leavers("2025-10-27"), Cell::Shown { count: 1 });
+        assert_eq!(leavers("2026-10-26"), Cell::Shown { count: 1 });
+        assert_eq!(leavers("2026-10-27"), Cell::Withheld);
+    }
+
+    #[test]
     fn the_last_day_is_in_work_until_the_day_after_it() {
         let mut all = rows(10, "care", "permanent", None);
         all.push(row(

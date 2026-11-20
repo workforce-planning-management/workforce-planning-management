@@ -324,6 +324,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn width_folding_includes_the_ideographic_space() {
+        assert_eq!(fold_width('\u{3000}'), ' ');
+        assert_eq!(fold_width('＋'), '+');
+        assert_eq!(fold_width('A'), 'A');
+    }
+
+    #[test]
     fn blank_is_absent() {
         assert_eq!(clean(None), None);
         assert_eq!(clean(Some("")), None);

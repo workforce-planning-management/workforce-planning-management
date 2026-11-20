@@ -175,6 +175,30 @@ mod tests {
     }
 
     #[test]
+    fn text_and_link_limits_are_inclusive() {
+        assert!(validate(&"t".repeat(MAX_TITLE), &"b".repeat(MAX_BODY), d(5), None).is_ok());
+        let url = format!("https://example.org/{}", "x".repeat(480));
+        assert_eq!(url.chars().count(), 500);
+        assert!(validate_links(&[("l".repeat(100), url)]).is_ok());
+        assert!(
+            validate_links(&[
+                ("a".into(), "https://a.io".into()),
+                ("b".into(), "https://b.io".into()),
+                ("c".into(), "https://c.io".into()),
+            ])
+            .is_ok()
+        );
+        assert!(validate_links(&[("l".repeat(101), "https://a.io".into())]).is_err());
+        assert!(
+            validate_links(&[(
+                "l".into(),
+                format!("{}/x", "https://example.org/".to_owned() + &"x".repeat(480))
+            )])
+            .is_err()
+        );
+    }
+
+    #[test]
     fn a_department_post_is_for_that_department_and_editors() {
         let mine = vec!["Finance".to_string()];
         assert!(audience_includes(None, &[], false), "everyone");

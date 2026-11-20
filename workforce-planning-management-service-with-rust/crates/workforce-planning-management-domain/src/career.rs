@@ -202,6 +202,33 @@ mod tests {
     }
 
     #[test]
+    fn past_and_note_upper_boundaries_are_inclusive() {
+        let start = at(2026, 1, 1);
+        let now = at(2026, 1, 2);
+        assert!(validate_past(start, now, now).is_ok());
+        assert!(
+            validate_aspiration(
+                "role",
+                None,
+                "within_1y",
+                "idea",
+                Some(&"n".repeat(MAX_NOTE_LEN)),
+            )
+            .is_ok()
+        );
+        assert!(
+            validate_aspiration(
+                "role",
+                None,
+                "within_1y",
+                "idea",
+                Some(&"n".repeat(MAX_NOTE_LEN + 1)),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
     fn past_entries_are_validated() {
         let now = at(2026, 10, 3);
         assert!(validate_past(at(2020, 1, 1), at(2022, 1, 1), now).is_ok());

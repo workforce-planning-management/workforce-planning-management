@@ -545,6 +545,12 @@ mod tests {
     }
 
     #[test]
+    fn a_wildcard_never_matches_an_empty_segment() {
+        assert!(!matches("workers/{}", "workers/"));
+        assert!(matches("workers/{}", "workers/x"));
+    }
+
+    #[test]
     fn the_worker_pid_is_the_segment_after_workers() {
         assert_eq!(worker_pid_of("/api/workers/abc"), Some("abc"));
         assert_eq!(

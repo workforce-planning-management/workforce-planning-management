@@ -2,7 +2,7 @@
 //!
 //! `cargo bench -p workforce-planning-management-domain --bench rules` measures (from the service's directory); `cargo test -p workforce-planning-management-domain --bench rules` runs each once, as CI does, so a benchmark that
 //! panics or no longer builds fails there. The sizes are the load test's (`scripts/load-test.sh`): 1,000, 10,000 and 50,000
-//! workers. Every input is synthetic and deterministic, made from the worker's index, so two runs measure the same work.
+//! workers, plus the supported 200,000-worker organization. Every input is synthetic and deterministic, made from the worker's index, so two runs measure the same work.
 //! Results, and what they do and do not show, go in `BENCHMARKS.md`.
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
@@ -18,7 +18,7 @@ use workforce_planning_management_domain::{
     working_time,
 };
 
-const SIZES: [usize; 3] = [1_000, 10_000, 50_000];
+const SIZES: [usize; 4] = [1_000, 10_000, 50_000, 200_000];
 
 fn date(y: i32, m: u32, d: u32) -> Date {
     workforce_planning_management_domain::dates::ymd(y, m, d).expect("a valid date")

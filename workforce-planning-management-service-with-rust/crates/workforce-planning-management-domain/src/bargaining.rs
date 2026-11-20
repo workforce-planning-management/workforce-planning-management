@@ -256,6 +256,26 @@ mod tests {
             },
             &f
         ));
+        assert!(!covers(
+            &UnitRule {
+                location: Some("York"),
+                ..UnitRule::default()
+            },
+            &f
+        ));
+        assert!(!covers(
+            &UnitRule {
+                employment_type: Some("contractor"),
+                ..UnitRule::default()
+            },
+            &f
+        ));
+    }
+
+    #[test]
+    fn text_length_limits_are_inclusive() {
+        assert!(length_problem("field", &"x".repeat(SHORT_MAX), SHORT_MAX).is_none());
+        assert!(length_problem("field", &"x".repeat(SHORT_MAX + 1), SHORT_MAX).is_some());
     }
 
     #[test]

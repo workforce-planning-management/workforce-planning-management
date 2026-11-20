@@ -167,6 +167,11 @@ mod tests {
             Some(2),
             "rounds to nearest"
         );
+        assert_eq!(
+            cohort_average_minor(&[1, 1, 2, 2, 2]),
+            Some(2),
+            "a fractional mean at the rounding boundary rounds up"
+        );
     }
 
     /// On-cost is a stated percentage, rounded; negative input is ignored.
@@ -205,6 +210,7 @@ mod tests {
     #[test]
     fn weighted_and_annual() {
         assert_eq!(weighted_unit_cost(&[(100, 1), (200, 3)]), Some(175));
+        assert_eq!(weighted_unit_cost(&[(1, 2), (2, 2)]), Some(2));
         assert_eq!(weighted_unit_cost(&[(100, 0)]), None);
         assert_eq!(weighted_unit_cost(&[]), None);
         assert_eq!(annual_cost(3, 4_000_000, 2500), 15_000_000);

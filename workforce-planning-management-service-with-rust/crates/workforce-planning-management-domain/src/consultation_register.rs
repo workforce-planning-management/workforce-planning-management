@@ -224,6 +224,33 @@ mod tests {
     }
 
     #[test]
+    fn opening_boundaries_are_inclusive_and_checked_independently() {
+        let t = topics(&["redundancy"]);
+        assert!(
+            open_problems(
+                &"e".repeat(ESTABLISHMENT_MAX),
+                0,
+                1,
+                Some(&"r".repeat(REF_MAX)),
+                &t,
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            open_problems("e", 0, 1, Some(""), &t),
+            [format!(
+                "document_ref must be a reference of 1 to {REF_MAX} characters with no spaces (WPM holds no document text)"
+            )]
+        );
+        assert_eq!(open_problems("e", -1, 1, None, &t).len(), 1);
+        assert_eq!(open_problems("e", 0, 0, None, &t).len(), 1);
+        assert_eq!(
+            open_problems("e", 0, 1, Some(&"r".repeat(REF_MAX + 1)), &t).len(),
+            1
+        );
+    }
+
+    #[test]
     fn beginning_is_once_and_not_in_the_future() {
         assert_eq!(
             begin_problems(d("2026-05-01"), d("2026-05-01"), false),
@@ -275,6 +302,16 @@ mod tests {
             close_problems("agreed", d("2026-05-20"), None, t, false).len(),
             1,
             "never begun: only withdrawn"
+        );
+        assert!(
+            close_problems(
+                "agreed",
+                d("2026-05-01"),
+                Some(d("2026-05-01")),
+                d("2026-05-01"),
+                false,
+            )
+            .is_empty()
         );
     }
 

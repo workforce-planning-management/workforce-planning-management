@@ -323,6 +323,7 @@ mod tests {
             "recorded meets it; verified does not yet"
         );
         assert_eq!(done.remaining(), 0);
+        assert!(progress(&[(1000, true)], 1000).met_verified());
         let none = progress(&[], 500);
         assert_eq!((none.recorded, none.remaining()), (0, 500));
         assert_eq!(

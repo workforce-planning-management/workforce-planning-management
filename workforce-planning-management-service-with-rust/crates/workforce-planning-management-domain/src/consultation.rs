@@ -348,6 +348,73 @@ mod tests {
         }
     }
 
+    #[test]
+    fn profile_lookup_returns_each_named_profile_only() {
+        assert_eq!(profile("great_britain").unwrap().id, "great_britain");
+        assert_eq!(
+            profile("eu_directive_98_59").unwrap().id,
+            "eu_directive_98_59"
+        );
+        assert!(profile("unknown").is_none());
+    }
+
+    #[test]
+    fn windows_include_both_endpoints_and_must_include_the_proposal_day() {
+        let date = day(6, 30);
+        let others = [
+            (date - crate::dates::days(9), 2),
+            (date + crate::dates::days(9), 4),
+            (date - crate::dates::days(10), 8),
+            (date + crate::dates::days(10), 16),
+        ];
+        assert_eq!(counted_in_window(date, 1, &others, 10), 5);
+    }
+
+    fn selection_profile(tests: Vec<Test>) -> Profile {
+        Profile {
+            id: "selection",
+            source: "test",
+            tests,
+            consultation: vec![],
+            authority_notice: vec![],
+            checklist: vec![],
+        }
+    }
+
+    #[test]
+    fn the_met_test_with_the_largest_count_wins_and_a_tie_keeps_the_first() {
+        let tests = vec![
+            Test {
+                size_from: 0,
+                size_to: None,
+                threshold: Threshold::Count(5),
+                window_days: 10,
+            },
+            Test {
+                size_from: 0,
+                size_to: None,
+                threshold: Threshold::Count(5),
+                window_days: 30,
+            },
+        ];
+        let mut p = proposal(100, 5);
+        p.others = vec![(p.earliest_termination - crate::dates::days(20), 5)];
+        assert_eq!(
+            assess(&selection_profile(tests.clone()), &p, day(1, 1))
+                .evidence
+                .window_days,
+            Some(30)
+        );
+        p.others.clear();
+        assert_eq!(
+            assess(&selection_profile(tests), &p, day(1, 1))
+                .evidence
+                .window_days,
+            Some(10),
+            "an equal count keeps the first applicable test"
+        );
+    }
+
     /// Great Britain: 19 is under, 20 is the threshold; 99 gets 30 days and 100 gets 45.
     #[test]
     fn gb_thresholds_and_periods_at_each_edge() {

@@ -94,6 +94,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn today_is_the_current_utc_date() {
+        let before = date_of(Timestamp::now());
+        let actual = today();
+        let after = date_of(Timestamp::now());
+        assert!(actual == before || actual == after);
+    }
+
+    #[test]
     fn ymd_refuses_a_day_that_does_not_exist() {
         assert_eq!(ymd(2026, 2, 28), Some(jiff::civil::date(2026, 2, 28)));
         assert_eq!(ymd(2026, 2, 29), None);

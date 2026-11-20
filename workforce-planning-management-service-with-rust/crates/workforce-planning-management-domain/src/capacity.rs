@@ -1283,10 +1283,55 @@ mod tests {
         assert_eq!(m, vec![d(2026, 1, 1), d(2026, 2, 1), d(2026, 3, 1)]);
         assert!(months(d(2026, 1, 1), 0).is_err());
         assert!(months(d(2026, 1, 1), MAX_HORIZON_MONTHS + 1).is_err());
+        assert_eq!(
+            months(d(2026, 1, 1), MAX_HORIZON_MONTHS).unwrap().len(),
+            MAX_HORIZON_MONTHS as usize
+        );
         assert_eq!(days_in_month(d(2026, 2, 1)), 28);
         assert_eq!(days_in_month(d(2028, 2, 1)), 29);
         assert!(validate_month(d(2026, 2, 1)).is_ok());
         assert!(validate_month(d(2026, 2, 2)).is_err());
+    }
+
+    #[test]
+    fn public_status_tokens_are_exact() {
+        assert_eq!(CellStatus::Fits.as_str(), "fits");
+        assert_eq!(CellStatus::FitsWithPartners.as_str(), "fits_with_partners");
+        assert_eq!(CellStatus::Over.as_str(), "over");
+        assert_eq!(CellStatus::Unknown.as_str(), "unknown");
+        assert_eq!(Fit::Yes.as_str(), "yes");
+        assert_eq!(Fit::No.as_str(), "no");
+        assert_eq!(Fit::Unknown.as_str(), "unknown");
+        assert_eq!(Answer::Fits.as_str(), "fits");
+        assert_eq!(Answer::Breaks.as_str(), "breaks");
+        assert_eq!(Answer::Unknown.as_str(), "unknown");
+        assert_eq!(PeerDemandOutcome::Recorded.as_str(), "recorded");
+        assert_eq!(PeerDemandOutcome::Updated.as_str(), "updated");
+        assert_eq!(PeerDemandOutcome::Reopened.as_str(), "reopened");
+        assert_eq!(PeerDemandOutcome::Withdrawn.as_str(), "withdrawn");
+        assert_eq!(
+            PeerDemandOutcome::AlreadyWithdrawn.as_str(),
+            "already_withdrawn"
+        );
+        assert_eq!(
+            PeerDemandOutcome::NothingToWithdraw.as_str(),
+            "nothing_to_withdraw"
+        );
+        assert_eq!(PeerDemandOutcome::Stale.as_str(), "stale");
+    }
+
+    #[test]
+    fn only_positive_active_demand_names_a_programme() {
+        let month = d(2026, 1, 1);
+        let demands = [
+            demand("positive", month, 1, DemandStatus::Active),
+            demand("zero", month, 0, DemandStatus::Active),
+            demand("proposed", month, 1, DemandStatus::Proposed),
+        ];
+        assert_eq!(
+            programmes_drawing(&demands),
+            BTreeSet::from(["positive".to_string()])
+        );
     }
 
     #[test]
@@ -1810,6 +1855,57 @@ mod tests {
         );
         assert_eq!(w.earliest_shift_months, Some(0));
         assert_eq!((w.constraint_before, w.constraint_after), (None, None));
+        assert_eq!(w.cells[0].after_balance_centi, 100);
+    }
+
+    #[test]
+    fn unchanged_over_and_unknown_cells_are_not_made_worse() {
+        let over = wi_pool(100, &[wi_demand("programme:a", 1, 200)], &[]);
+        let w = what_if(&over, &wi_none(), &[wi_change(1, -1)]);
+        assert_eq!(w.answer, Answer::Fits, "no held demand can be returned");
+        assert_eq!(
+            w.cells[0].before_balance_centi,
+            w.cells[0].after_balance_centi
+        );
+        assert_eq!(w.constraint_before, w.constraint_after);
+
+        let partner = commit("organization:p", wi_m(2), 1, CommitmentStatus::Requested);
+        let unknown = wi_pool(100, &[wi_demand("programme:a", 1, 200)], &[partner]);
+        let w = what_if(&unknown, &wi_none(), &[wi_change(1, -1)]);
+        assert_eq!(
+            w.answer,
+            Answer::Fits,
+            "unchanged unknown is not made unknown"
+        );
+        assert_eq!(w.cells[0].before, CellStatus::Unknown);
+        assert_eq!(w.cells[0].after, CellStatus::Unknown);
+    }
+
+    #[test]
+    fn change_validation_names_one_based_lines_and_accepts_the_limit() {
+        let views = wi_pool(500, &[], &[]);
+        let months = wi_six();
+        assert!(change_problems(&views, &months, &[wi_change(1, MAX_FTE_CENTI)]).is_empty());
+        let problems = change_problems(
+            &views,
+            &months,
+            &[
+                Change {
+                    pool: "missing-a".into(),
+                    month: wi_m(1),
+                    fte_centi: 1,
+                },
+                Change {
+                    pool: "missing-b".into(),
+                    month: wi_m(1),
+                    fte_centi: 1,
+                },
+            ],
+        );
+        assert_eq!(
+            problems,
+            ["change 1: no such pool", "change 2: no such pool"]
+        );
     }
 
     #[test]

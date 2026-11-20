@@ -6331,15 +6331,28 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       fails below **95%**. A clean local run passed at **95.71%** (35,770/37,374). The mutually exclusive Keycloak feature is a
       separate reported-only unit run: 27.92% overall (10,496/37,595), because request suites are excluded, and 60.48% (101/167)
       in `src/auth/keycloak.rs`. **Not checked:** the changed coverage job on GitHub Actions.
-- [ ] WPM-T545 **A full mutation run of the domain crate.** 6,098 mutants (`cargo mutants --workspace` in the service), which
-      take hours; CI only samples changed lines. Kill or justify each survivor, as WPM-T526 did for the matcher and
-      `security.rs`. Best on an idle machine or a scheduled job. (L)
+- [ ] WPM-T545 **A full mutation run of the domain crate.** 6,108 mutants (`cargo mutants --package
+      workforce-planning-management-domain` in the service), which take hours; CI only samples changed lines. Kill or justify
+      each survivor, as WPM-T526 did for the matcher and `security.rs`. Best on an idle machine or a scheduled job. (L)
+      **Work in progress, 2026-11-20:** focused boundary and malformed-input tests now kill the survivors observed in the first
+      partial run; cost-centre traversal is structurally bounded, and stored-gzip reads verify the block complement and size.
+      A clean domain run passed 1,148 tests. The authoritative run used the default test profile with the ambient `kache`
+      wrapper and test runner unset; it was stopped at the owner's requested handoff after classifying 1,377 mutants: 1,284
+      caught, 75 unviable, 18 surviving and no timeouts. The surviving list is retained in
+      `/private/tmp/wpm-t545-valid/mutants.out/missed.txt` on the machine; add focused tests or a narrow equivalence exclusion for
+      each, then run all 6,108 to completion before checking this task.
 - [ ] WPM-T546 **Benchmark figures from a quiet machine** (WPM-T527, WPM-T538): rerun `--bench rules` (in the domain crate) and
       `--bench requests` with nothing else running, replace the figures in `BENCHMARKS.md` that were taken under a load of 16 to
-      36, and add 200,000. (S)
+      36, and add 200,000. (S) **Work in progress, 2026-11-20:** both benchmark harnesses now include 200,000; no figures were
+      recorded because the mutation run left the machine under heavy load. Run both harnesses when idle and update
+      `BENCHMARKS.md` before checking this task.
 - [ ] WPM-T547 **Find why `audit_export::the_department_query_keeps_to_the_department_and_the_time` failed once.** An empty
       answer in one long serial run of the request suite (WPM-T529); it passed in the roles drill's rerun and three times alone.
-      Suspect the one-minute `since` window or the 2,000-row cap under load. (S)
+      Suspect the one-minute `since` window or the 2,000-row cap under load. (S) **Work in progress, 2026-11-20:** the cause is
+      the cap: the query selected the newest 2,000 rows across every department and only then filtered in memory, so unrelated
+      traffic could hide an in-window result. The query now filters the snapshot department in SQL before its 200-row response
+      cap, and the regression inserts 2,001 newer unrelated rows. The database-backed verification and refreshed SQLx offline
+      metadata remain to be completed before checking this task.
 - [ ] WPM-T548 **Try the `ring` JWT provider's other algorithms against a real issuer** (WPM-T536): `PS256`–`PS512`, `ES384` and
       `EdDSA`; Keycloak's keys are `RS256`, and only `ES256` is checked by a unit test. (S)
 - [ ] WPM-T549 **Take out the chrono acceptance when `expect-json` drops chrono** (WPM-T535): watch `axum-test` and

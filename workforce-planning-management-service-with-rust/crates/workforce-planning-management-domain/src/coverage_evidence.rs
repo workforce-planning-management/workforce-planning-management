@@ -132,6 +132,7 @@ mod tests {
     fn a_record_is_not_yet_valid_in_force_ending_soon_or_expired() {
         let today = d(2026, 11, 3);
         let s = |from, to| standing(from, to, today, 60);
+        assert_ne!(s(Some(today), Some(d(2027, 11, 3))), Standing::NotYetValid);
         assert_eq!(
             s(Some(d(2026, 11, 4)), Some(d(2027, 11, 3))),
             Standing::NotYetValid
@@ -210,6 +211,52 @@ mod tests {
                 None,
                 Some(d(2027, 1, 1)),
                 Some(d(2026, 1, 1))
+            )
+            .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn currency_shape_faults_are_independent() {
+        let check = |currency| {
+            problems(
+                "XA",
+                "private_insurance",
+                Some("Acme"),
+                Some("P-1"),
+                Some(1),
+                Some(currency),
+                None,
+                None,
+            )
+        };
+        assert!(check("GBP").is_empty());
+        assert_eq!(check("GB").len(), 1, "length alone is invalid");
+        assert_eq!(check("gbp").len(), 1, "case alone is invalid");
+        assert!(
+            problems(
+                "XA",
+                "self_insured",
+                None,
+                None,
+                Some(0),
+                Some("GBP"),
+                Some(d(2026, 1, 1)),
+                Some(d(2026, 1, 1)),
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            problems(
+                "XA",
+                "self_insured",
+                None,
+                None,
+                Some(-1),
+                Some("GBP"),
+                None,
+                None,
             )
             .len(),
             1

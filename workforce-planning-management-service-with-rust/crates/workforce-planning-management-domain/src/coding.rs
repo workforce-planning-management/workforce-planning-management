@@ -289,11 +289,17 @@ pub fn check_open(register: &[CostCentre], code: &str, on: Date) -> Result<(), S
 pub fn chain(register: &[CostCentre], code: &str) -> Vec<String> {
     let mut out = vec![code.to_string()];
     let mut here = code.to_string();
-    while let Some(parent) = register
-        .iter()
-        .find(|c| c.code == here)
-        .and_then(|c| c.parent.clone())
-    {
+    // A valid chain cannot visit more rows than the register contains. Keep the traversal
+    // structurally bounded as well as stopping on a repeat, so malformed imported data cannot
+    // turn this read into an unbounded loop.
+    for _ in 0..register.len() {
+        let Some(parent) = register
+            .iter()
+            .find(|c| c.code == here)
+            .and_then(|c| c.parent.clone())
+        else {
+            break;
+        };
         if out.contains(&parent) || !register.iter().any(|c| c.code == parent) {
             break;
         }
@@ -312,6 +318,24 @@ pub fn creates_cycle(register: &[CostCentre], code: &str, parent: &str) -> bool 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn segment_count_limit_is_inclusive() {
+        let segment = |n| Segment {
+            name: format!("segment-{n}"),
+            length: 1,
+            source: Source::Fixed("x".to_string()),
+        };
+        let maximum: Vec<_> = (0..SEGMENTS_MAX).map(segment).collect();
+        assert!(structure_problems(&maximum).is_empty());
+        let over: Vec<_> = (0..=SEGMENTS_MAX).map(segment).collect();
+        assert_eq!(
+            structure_problems(&over),
+            [format!(
+                "a coding structure has 1 to {SEGMENTS_MAX} segments"
+            )]
+        );
+    }
 
     fn d(y: i32, m: u32, day: u32) -> Date {
         crate::dates::ymd(y, m, day).unwrap()

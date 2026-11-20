@@ -169,6 +169,7 @@ mod tests {
         assert_eq!(ok("exact", "hunch", "x").len(), 1);
         assert_eq!(ok("exact", "judgement", "  ").len(), 1);
         assert_eq!(ok("exact", "judgement", &"x".repeat(301)).len(), 1);
+        assert!(ok("exact", "judgement", &"x".repeat(SOURCE_MAX)).is_empty());
     }
 
     #[test]
@@ -228,6 +229,17 @@ mod tests {
             (gaps[0].status, gaps[0].shortfall),
             (Status::Below, Some(1))
         );
+        let mut gaps = merge(&[need(needed, 5)], &BTreeMap::new());
+        apply(
+            &mut gaps,
+            &BTreeMap::from([(held, 2)]),
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "exact",
+            }],
+        );
+        assert_eq!(gaps[0].shortfall, Some(3));
     }
 
     #[test]

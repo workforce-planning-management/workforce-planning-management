@@ -97,6 +97,13 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
             *bytes.get(at + 1).ok_or("truncated")?,
             *bytes.get(at + 2).ok_or("truncated")?,
         ]));
+        let complement = u16::from_le_bytes([
+            *bytes.get(at + 3).ok_or("truncated")?,
+            *bytes.get(at + 4).ok_or("truncated")?,
+        ]);
+        if complement != !u16::try_from(len).unwrap_or(u16::MAX) {
+            return Err("stored block length check does not match".to_string());
+        }
         let body = bytes.get(at + 5..at + 5 + len).ok_or("truncated")?;
         out.extend_from_slice(body);
         at += 5 + len;
@@ -108,6 +115,10 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
     let crc = u32::from_le_bytes([tail[0], tail[1], tail[2], tail[3]]);
     if crc != crc32(&out) {
         return Err("the checksum does not match".to_string());
+    }
+    let size = u32::from_le_bytes([tail[4], tail[5], tail[6], tail[7]]);
+    if u64::from(size) != u64::try_from(out.len()).unwrap_or(u64::MAX) % (1_u64 << 32) {
+        return Err("the uncompressed length does not match".to_string());
     }
     Ok(out)
 }
@@ -382,6 +393,16 @@ mod tests {
         assert!(
             gunzip_stored(&z).is_err(),
             "a changed byte fails the checksum"
+        );
+        assert_eq!(
+            gunzip_stored(&[0; 17]),
+            Err("not a gzip member".to_string())
+        );
+        let mut wrong_magic = gzip_stored(b"abc");
+        wrong_magic[0] = 0;
+        assert_eq!(
+            gunzip_stored(&wrong_magic),
+            Err("not a gzip member".to_string())
         );
     }
 

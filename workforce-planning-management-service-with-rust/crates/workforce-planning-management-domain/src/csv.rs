@@ -115,6 +115,7 @@ mod tests {
         assert_eq!(rows[1][1], "Dev, senior");
         assert_eq!(rows[1][2], "Line one\nline \"two\"");
         assert_eq!(rows[2], ["y", "z", ""], "a trailing empty field is kept");
+        assert_eq!(parse_csv("a\"b,c").unwrap(), [["a\"b", "c"]]);
     }
 
     #[test]
@@ -122,6 +123,9 @@ mod tests {
         let rows = parse_csv("\u{feff}a,b\n\n1,2").unwrap();
         assert_eq!(rows, [["a", "b"], ["1", "2"]]);
         assert_eq!(parse_csv("").unwrap(), Vec::<Vec<String>>::new());
+        assert_eq!(parse_csv(",").unwrap(), [["", ""]]);
+        assert_eq!(parse_csv("a,").unwrap(), [["a", ""]]);
+        assert_eq!(parse_csv(",b").unwrap(), [["", "b"]]);
     }
 
     #[test]

@@ -103,13 +103,25 @@ async fn the_trail_is_exported_in_order_and_resumes_where_it_stopped() {
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 async fn the_department_query_keeps_to_the_department_and_the_time() {
-    crate::requests::request_open(|request, _ctx| async move {
+    crate::requests::request_open(|request, ctx| async move {
         let org = an_org();
         let since = workforce_planning_management::dates::rfc3339_seconds(
             Timestamp::now() - jiff::SignedDuration::from_mins(1),
         );
         let first = seed_worker!(&request, &org, "d1", None::<i64>).await;
         let second = seed_worker!(&request, &org, "d2", None::<i64>).await;
+
+        // More newer rows than the old ten-times-cap pre-filter used to read. Filtering after that
+        // cap returned an empty answer even though both engineering rows are in the time window.
+        sqlx::query(
+            "INSERT INTO audit_logs (entity, entity_pid, action, snapshot) \
+             SELECT 'noise', $1, 'read', jsonb_build_object('department', 'elsewhere') \
+             FROM generate_series(1, 2001)",
+        )
+        .bind(uuid::Uuid::new_v4())
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .expect("newer unrelated audit activity");
 
         let found = request
             .get(&format!("/api/audits?department=engineering&since={since}"))

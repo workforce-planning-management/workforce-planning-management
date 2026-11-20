@@ -369,6 +369,29 @@ mod tests {
     }
 
     #[test]
+    fn retention_note_limit_is_inclusive() {
+        let today = d(2026, 10, 24);
+        assert!(
+            validate(
+                &Entry {
+                    retention_note: Some("n".repeat(500)),
+                    ..Entry::default()
+                },
+                today,
+            )
+            .is_empty()
+        );
+        let problems = validate(
+            &Entry {
+                retention_note: Some("n".repeat(501)),
+                ..Entry::default()
+            },
+            today,
+        );
+        assert_eq!(problems, ["retention_note is at most 500 characters"]);
+    }
+
+    #[test]
     fn the_features_are_the_register_s1_to_s8_with_no_risk_of_loss() {
         let ids: Vec<&str> = FEATURES.iter().map(|f| f.id).collect();
         assert_eq!(ids, ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"]);

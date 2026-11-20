@@ -229,6 +229,25 @@ mod tests {
     }
 
     #[test]
+    fn decision_and_review_may_be_today() {
+        let p = Proposal {
+            target_on: TODAY,
+            review_on: Some(TODAY),
+            ..base()
+        };
+        assert!(validate_proposal(&p, TODAY).is_ok());
+    }
+
+    #[test]
+    fn flag_tokens_are_exact() {
+        assert_eq!(
+            Flag::PastEndWithoutApprovedPlan.as_str(),
+            "past_end_without_approved_plan"
+        );
+        assert_eq!(Flag::ReviewDue.as_str(), "review_due");
+    }
+
+    #[test]
     fn an_unknown_intent_is_refused() {
         let p = Proposal {
             intent: "promote",

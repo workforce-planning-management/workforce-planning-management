@@ -138,6 +138,7 @@ mod tests {
         );
         assert_eq!(gate_problems("coffee_machine", None).len(), 1);
         assert_eq!(gate_problems("other", Some(&"n".repeat(201))).len(), 1);
+        assert!(gate_problems("other", Some(&"n".repeat(NOTE_MAX))).is_empty());
     }
 
     #[test]
@@ -202,6 +203,8 @@ mod tests {
             Vec::<String>::new(),
             "365 days"
         );
+        assert!(facility_problems(d("2026-01-01"), d("2026-01-01"), 0, None, &none,).is_empty());
+        assert!(facility_problems(d("2026-01-01"), d("2027-01-01"), 0, None, &none,).is_empty());
         assert_eq!(
             facility_problems(
                 d("2026-04-01"),

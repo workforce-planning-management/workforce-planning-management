@@ -413,6 +413,21 @@ mod tests {
             ("B".to_string(), NoHolder, 2),
         ];
         assert_eq!(key_person(true, &mixed).status, Readiness::AtRisk);
+        assert_eq!(
+            key_person(true, &[("A".to_string(), NoHolder, 1)]).details[0].code,
+            "key_no_holder_unplaced"
+        );
+        assert_eq!(
+            key_person(true, &[("A".to_string(), SinglePointOfFailure, 1)]).details[0].code,
+            "key_single_holder_unplaced"
+        );
+    }
+
+    #[test]
+    fn readiness_tokens_are_exact() {
+        assert_eq!(Readiness::Ready.as_str(), "ready");
+        assert_eq!(Readiness::Unknown.as_str(), "unknown");
+        assert_eq!(Readiness::AtRisk.as_str(), "at_risk");
     }
 
     #[test]

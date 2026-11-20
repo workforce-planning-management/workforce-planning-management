@@ -98,6 +98,7 @@ mod tests {
     fn a_backup_is_valid_only_for_someone_else_with_a_sane_window() {
         let (a, b) = (Uuid::from_u128(1), Uuid::from_u128(2));
         assert!(validate_backup(a, b, 1, Some(day(1)), Some(day(5))).is_ok());
+        assert!(validate_backup(a, b, 1, Some(day(5)), Some(day(5))).is_ok());
         assert!(validate_backup(a, b, 1, None, None).is_ok());
         assert!(validate_backup(a, a, 1, None, None).is_err());
         assert!(validate_backup(a, b, 0, None, None).is_err());

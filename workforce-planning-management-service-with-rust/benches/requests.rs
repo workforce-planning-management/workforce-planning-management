@@ -3,7 +3,7 @@
 //! The domain crate's `benches/rules.rs` measures the rules a view runs once per worker; this file measures the work around them: the read
 //! classification every `GET` runs before its handler, the directory search and its JSON answer, the CSV import and
 //! export, and the hash a link token is looked up by. `cargo bench --bench requests` measures; `cargo test --bench
-//! requests` runs each once, as CI does. The sizes are the load test's (1,000, 10,000 and 50,000). Every input is synthetic
+//! requests` runs each once, as CI does. The sizes are the load test's (1,000, 10,000, 50,000 and the supported 200,000). Every input is synthetic
 //! and made from an index, so two runs measure the same work. Results go in `BENCHMARKS.md`.
 
 use std::hint::black_box;
@@ -16,7 +16,7 @@ use workforce_planning_management::rules::{
     link_token,
 };
 
-const SIZES: [usize; 3] = [1_000, 10_000, 50_000];
+const SIZES: [usize; 4] = [1_000, 10_000, 50_000, 200_000];
 
 const DEPARTMENTS: [&str; 5] = ["Wards", "Theatres", "Pharmacy", "Estates", "Finance"];
 const TITLES: [&str; 4] = ["Staff nurse", "Ward clerk", "Porter", "Analyst"];

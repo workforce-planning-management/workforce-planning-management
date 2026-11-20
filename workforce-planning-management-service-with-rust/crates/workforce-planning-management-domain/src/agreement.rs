@@ -197,6 +197,33 @@ mod tests {
     }
 
     #[test]
+    fn agreement_text_limits_are_inclusive() {
+        assert!(
+            agreement_problems(
+                &"t".repeat(TITLE_MAX),
+                &"s".repeat(SOURCE_MAX),
+                d("2026-04-01"),
+                None,
+                &Terms::default(),
+                known,
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            agreement_problems(
+                &"t".repeat(TITLE_MAX + 1),
+                "s",
+                d("2026-04-01"),
+                None,
+                &Terms::default(),
+                known,
+            )
+            .len(),
+            1
+        );
+    }
+
+    #[test]
     fn a_new_version_comes_after_the_newest() {
         assert_eq!(
             version_problems(d("2026-04-01"), None),

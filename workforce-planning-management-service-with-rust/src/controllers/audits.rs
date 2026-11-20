@@ -158,28 +158,21 @@ async fn department(
     State(ctx): State<AppContext>,
     Query(params): Query<DepartmentParams>,
 ) -> Result<Response> {
-    // Ten times the cap since the timestamp, then the department filter over the snapshot JSON, newest first.
+    // Filter before the cap: unrelated high-volume audit activity must not hide this department's
+    // entries merely because it filled a larger pre-filter page (WPM-T547).
     let rows = sqlx::query_as!(
         Audit,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, entity, entity_pid, action, actor,
                   snapshot, chain_seq, prev_hash, entry_hash
-             FROM audit_logs WHERE created_at >= $1 ORDER BY id DESC LIMIT $2"#,
+             FROM audit_logs
+             WHERE created_at >= $1 AND snapshot->>'department' = $2
+             ORDER BY id DESC LIMIT $3"#,
         SqlTimestamp(params.since),
-        i64::try_from(DEPARTMENT_LIMIT * 10).unwrap_or(i64::MAX),
+        params.department,
+        i64::try_from(DEPARTMENT_LIMIT).unwrap_or(i64::MAX),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let rows: Vec<Audit> = rows
-        .into_iter()
-        .filter(|row| {
-            row.snapshot
-                .as_ref()
-                .and_then(|s| s.get("department"))
-                .and_then(serde_json::Value::as_str)
-                == Some(params.department.as_str())
-        })
-        .take(DEPARTMENT_LIMIT)
-        .collect();
     format::json(rows)
 }
 

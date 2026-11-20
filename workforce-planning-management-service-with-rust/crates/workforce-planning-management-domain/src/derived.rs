@@ -130,6 +130,11 @@ mod tests {
         assert_eq!(turnover_bp(0, 100, 100, 10), Some(0));
         // 1 / mean 15 = 6.67 % -> 667, rounded half up.
         assert_eq!(turnover_bp(1, 14, 16, 10), Some(667));
+        assert_eq!(
+            turnover_bp(1, 0, 10, 0),
+            Some(2_000),
+            "one end may be zero when the other supplies a denominator"
+        );
     }
 
     #[test]
