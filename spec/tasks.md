@@ -6352,8 +6352,9 @@ Each comes out of the work of WPM-T525 to WPM-T539, where the task entry says wh
       the cap: the query selected the newest 2,000 rows across every department and only then filtered in memory, so unrelated
       traffic could hide an in-window result. The query now filters the snapshot department in SQL before its 200-row response
       cap, and the regression inserts 2,001 newer unrelated rows. SQLx generated offline metadata for the corrected query on
-      2026-11-20, but the owner stopped the preparation during its final `cargo check`; the database-backed regression and a
-      complete `cargo sqlx prepare --check` remain before checking this task.
+      2026-11-20, but the owner stopped the preparation during its final `cargo check`; a subsequent focused database-backed
+      regression was also stopped before it produced a result. A complete regression run and `cargo sqlx prepare --check`
+      remain before checking this task.
 - [ ] WPM-T548 **Try the `ring` JWT provider's other algorithms against a real issuer** (WPM-T536): `PS256`–`PS512`, `ES384` and
       `EdDSA`; Keycloak's keys are `RS256`, and only `ES256` is checked by a unit test. (S)
 - [ ] WPM-T549 **Take out the chrono acceptance when `expect-json` drops chrono** (WPM-T535): watch `axum-test` and
