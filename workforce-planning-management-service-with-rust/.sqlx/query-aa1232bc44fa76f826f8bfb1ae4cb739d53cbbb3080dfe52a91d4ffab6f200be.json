@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, entity, entity_pid, action, actor,\n                  snapshot, chain_seq, prev_hash, entry_hash\n             FROM audit_logs WHERE created_at >= $1 ORDER BY id DESC LIMIT $2",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, entity, entity_pid, action, actor,\n                  snapshot, chain_seq, prev_hash, entry_hash\n             FROM audit_logs\n             WHERE created_at >= $1 AND snapshot->>'department' = $2\n             ORDER BY id DESC LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -128,6 +128,7 @@
     "parameters": {
       "Left": [
         "Timestamptz",
+        "Text",
         "Int8"
       ]
     },
@@ -145,5 +146,5 @@
       false
     ]
   },
-  "hash": "81d6d74fefe9160906f07dacf5df8ccef4046b7dfc6b9cf49e44de82198debd8"
+  "hash": "aa1232bc44fa76f826f8bfb1ae4cb739d53cbbb3080dfe52a91d4ffab6f200be"
 }
