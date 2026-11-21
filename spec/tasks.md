@@ -7209,3 +7209,19 @@ the entry records only the evidence it needs.
         first expectations were wrong (a tie order, and `Intl`'s spaced en dash in a range).
       - **Not done:** `src/lib/server/content.ts` (379 lines) has no unit test of its own; the service's remaining 1.77% and the
         domain's 0.33% (see WPM-T599, WPM-T602) are unchanged.
+
+- [ ] WPM-T632 (2026-11-21) **Translate the UI into the site's other locale languages (the owner: "Translate the UI into the locale languages").**
+      - The UI had 13 `-001` catalogues; the repository's locales and the docs site have 21 languages. Eight languages had no UI
+        catalogue: `da`, `it`, `ja`, `ko`, `nl`, `sv`, `sw`, `vi`. Each is a complete `-001` file of 3,005 keys, with the plural
+        groups its language uses (CLDR), written by the AI assistant and **not reviewed by a native speaker** (a row in
+        `content/locales/REVIEW.md`). Done serially, one language per commit.
+      - Per language: `content/locales/<l>-001/ui.json`; the code in `LOCALES`, `LOCALE_LABELS` and `CMS_UI_LOCALE`
+        (`src/lib/locales.ts`); `pnpm cms-config`; the Lily label pack glob in `src/lib/data-table-labels.ts`; the allow-list
+        entries for words that are the same as English in that language (`tests/unit/untranslated.allow.json`); the locale count in
+        `tests/unit/data-table.test.ts`.
+      - Done: `da-001` (Danish; Lily has a `da-001` label pack and the CMS ships `da`). **To do:** `it`, `ja`, `ko`, `nl`, `sv`,
+        `sw`, `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
+        and `pnpm check`.
+      - Verified for `da-001`: 47 unit-test files, 382 tests pass (key parity, no English left over, label pack, review register,
+        CMS config). **Not verified:** the pages in a browser in Danish; any native-speaker review.
+

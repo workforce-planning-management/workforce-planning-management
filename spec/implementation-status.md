@@ -10,7 +10,7 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Measure | Count |
 | --- | ---: |
 | Tasks done in `spec/tasks.md` | 483 |
-| Tasks not done (open or proposed) | 144 |
+| Tasks not done (open or proposed) | 145 |
 | Highest task number marked done | WPM-T631 |
 | Database migrations | 134 |
 | Controllers | 97 |
@@ -23,7 +23,7 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Front-end unit tests (`it(` / `test(`) | 311 |
 | Playwright tests (`test(`) | 343 |
 | Front-end pages (`+page.svelte`) | 70 |
-| Content locales | 17 |
+| Content locales | 18 |
 | Topic files in `spec/` (not counting this one) | 68 |
 | Assessment checklist answers: met | 16 |
 | Assessment checklist answers: partly met | 16 |

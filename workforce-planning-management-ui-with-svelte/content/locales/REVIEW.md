@@ -11,6 +11,7 @@ to offer a service in that language.
 | `ar-001` | Arabic | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `bn-001` | Bengali | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `cy-001` | Welsh | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
+| `da-001` | Danish | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `de-001` | German | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `es-001` | Spanish | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `fr-001` | French | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
