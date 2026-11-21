@@ -7051,3 +7051,12 @@ the entry records only the evidence it needs.
       - Site: catalogue `ru-001.json` (also used by `ru-ru`, `ru-by`), `ru` in `i18n.ts`, the three locales in
         `HOME_LOCALES`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `ru-ru` and `ru-by` have no regional edits.
+- [x] WPM-T615 (2026-11-21) **Locale group `bn`: the website in Bengali, role pages, language line and sitemaps.**
+      - `bn-001`, `bn-bd` and `bn-in` had briefs, path-to-production and privacy but no home. Added a translated home
+        (`index.md`, with the language line `ভাষা: …`), `start/`, `মূল্যায়ন/` (evaluate),
+        `for/প্রধান-অর্থ-কর্মকর্তা` and `for/প্রধান-জনবল-পরিকল্পনা-কর্মকর্তা`, with the shared
+        `.locale-peer-id` values and `README.md` symlinks; rows added to each `for/index.md`; a `sitemap.xml` in each
+        folder (from the built site). `bn-bd` and `bn-in` copy `bn-001`.
+      - Site: catalogue `bn-001.json` (also used by `bn-bd`, `bn-in`), `bn` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `bn-bd` and `bn-in` have no regional edits.
