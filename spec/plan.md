@@ -231,14 +231,14 @@ the existing production gates WPM-G1 and WPM-G2 in [tasks.md](tasks.md).
   Playwright, prettier, a Markdown link check, a check that durations say
   calendar or business days, and dependency audits (`cargo deny` or
   `cargo audit`, and `pnpm audit`). A failing check blocks a merge.
-- **WPM-R78 Licence files.** A root `LICENSE.md` (the SPDX summary, linking
-  the texts) and a `LICENSE/` directory holding `LICENSE/index.md` (with a
-  `README.md` copy)
-  and the full text of every licence the subprojects offer, one file each
-  (MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only and GPL-3.0-only). The API
-  offers all five; the UI offers MIT and Apache-2.0.
+- **WPM-R78 Licence files.** A root `LICENSE.md` (the SPDX summary, the reason
+  for the options, and links to the texts) and a `LICENSES/` directory holding
+  the full text of every licence the subprojects offer, one
+  `LICENSES/<lowercase-spdx-id>/index.md` each
+  (MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, OGL-UK-3.0 and
+  CC-BY-NC-SA-4.0). The API offers all seven; the UI offers MIT and Apache-2.0.
 
-  `LICENSE/index.md` links to each text. The `license` fields in `Cargo.toml`
+  `LICENSE.md` links to each text. The `license` fields in `Cargo.toml`
   and `package.json` and the files agree, and a CI check keeps them in step.
 
 ### G. Programme-linked planning and contingent workforce

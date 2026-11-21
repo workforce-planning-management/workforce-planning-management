@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Check that the license fields and the LICENSE/ directory agree.
+"""Check that the license fields and the LICENSES/ directory agree.
 
 Run from anywhere: `python3 scripts/check-licenses.py`. Exits 1 on a mismatch.
 
 For each subproject manifest (`Cargo.toml`, `package.json`) it reads the SPDX
-`OR` expression, checks that every option has its full-text file in `LICENSE/`,
-and checks that the root `LICENSE.md` and `LICENSE/index.md` state the same expression.
+`OR` expression, checks that every option has `LICENSES/<lowercase-spdx-id>/index.md`
+holding a full text, and checks that the root `LICENSE.md` states the same
+expression. It also checks that `LICENSES/` holds only those directories (each
+with only `index.md`), that the old `LICENSE/` directory is gone, and that no
+other license text file (`LICENSE-*`, `COPYING`, ...) sits outside `LICENSES/`.
 """
 import json
 import os
@@ -16,12 +19,14 @@ import sys
 ROOT = subprocess.run(
     ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
 ).stdout.strip()
-TEXTS = {
-    "MIT": "LICENSE-MIT",
-    "Apache-2.0": "LICENSE-APACHE",
-    "BSD-3-Clause": "LICENSE-BSD-3-CLAUSE",
-    "GPL-2.0-only": "LICENSE-GPL-2.0",
-    "GPL-3.0-only": "LICENSE-GPL-3.0",
+KNOWN = {
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "GPL-2.0-only",
+    "GPL-3.0-only",
+    "OGL-UK-3.0",
+    "CC-BY-NC-SA-4.0",
 }
 API = "workforce-planning-management-service-with-rust"
 UI = "workforce-planning-management-ui-with-svelte"
@@ -46,28 +51,68 @@ def manifests():
     }
 
 
+def stray_texts():
+    """License-named files outside LICENSES/ that git tracks or would commit."""
+    listed = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        capture_output=True, text=True, check=True, cwd=ROOT,
+    ).stdout.split("\0")
+    found = []
+    for rel in filter(None, listed):
+        name = os.path.basename(rel).lower()
+        stem = name.split(".")[0]
+        named = any(
+            stem == base or stem.startswith(base + "-")
+            for base in ("license", "licence", "copying")
+        )
+        in_licenses = rel.startswith("LICENSES/")
+        if named and not in_licenses and rel != "LICENSE.md" and os.path.exists(os.path.join(ROOT, rel)):
+            found.append(rel)
+    return found
+
+
 def main():
     problems = []
-    summaries = {}
-    for name in ("LICENSE.md", os.path.join("LICENSE", "index.md")):
-        path = os.path.join(ROOT, name)
-        if not os.path.isfile(path):
-            problems.append(f"{name} is missing")
-            continue
+    path = os.path.join(ROOT, "LICENSE.md")
+    summary = ""
+    if os.path.isfile(path):
         with open(path, encoding="utf-8") as handle:
-            summaries[name] = handle.read()
+            summary = handle.read()
+    else:
+        problems.append("LICENSE.md is missing")
+    if os.path.exists(os.path.join(ROOT, "LICENSE")):
+        problems.append("LICENSE/ must not exist: texts live in LICENSES/<id>/index.md")
     for manifest, expression in manifests().items():
-        for name, text in summaries.items():
-            if expression not in text:
-                problems.append(f"{name} does not state `{expression}` ({manifest})")
+        if summary and expression not in summary:
+            problems.append(f"LICENSE.md does not state `{expression}` ({manifest})")
         for option in (part.strip() for part in expression.split(" OR ")):
-            name = TEXTS.get(option)
-            if name is None:
-                problems.append(f"{manifest}: no text file known for `{option}`")
-            elif not os.path.isfile(os.path.join(ROOT, "LICENSE", name)):
-                problems.append(f"{manifest}: LICENSE/{name} is missing (for `{option}`)")
-            elif os.path.getsize(os.path.join(ROOT, "LICENSE", name)) < 900:
-                problems.append(f"LICENSE/{name} is too short to be a license text")
+            if option not in KNOWN:
+                problems.append(f"{manifest}: unknown license `{option}`")
+                continue
+            rel = os.path.join("LICENSES", option.lower(), "index.md")
+            full = os.path.join(ROOT, rel)
+            if not os.path.isfile(full):
+                problems.append(f"{manifest}: {rel} is missing (for `{option}`)")
+                continue
+            with open(full, encoding="utf-8") as handle:
+                text = handle.read()
+            if "```text" not in text or len(text) < 900:
+                problems.append(f"{rel} holds no full license text in a text fence")
+            if f"LICENSES/{option.lower()}/index.md" not in summary:
+                problems.append(f"LICENSE.md does not link {rel}")
+    licenses_dir = os.path.join(ROOT, "LICENSES")
+    if os.path.isdir(licenses_dir):
+        allowed = {option.lower() for option in KNOWN}
+        for entry in sorted(os.listdir(licenses_dir)):
+            full = os.path.join(licenses_dir, entry)
+            if entry not in allowed or not os.path.isdir(full):
+                problems.append(f"LICENSES/{entry} is not a known license directory")
+            elif sorted(os.listdir(full)) != ["index.md"]:
+                problems.append(f"LICENSES/{entry} must hold only index.md")
+    else:
+        problems.append("LICENSES/ is missing")
+    for rel in stray_texts():
+        problems.append(f"{rel}: license text outside LICENSES/")
     for problem in problems:
         print(problem)
     print(f"{len(problems)} license problem(s)")

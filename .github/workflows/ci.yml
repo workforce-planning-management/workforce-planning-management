@@ -44,7 +44,7 @@ jobs:
         run: python3 scripts/check-links.py
       - name: durations say calendar days or business days
         run: python3 scripts/check-days.py
-      - name: license fields match the LICENSE/ directory
+      - name: license fields match LICENSE.md and the LICENSES/ directory
         run: python3 scripts/check-licenses.py
       - name: every action is pinned to a commit SHA
         run: python3 scripts/check-actions-pinned.py

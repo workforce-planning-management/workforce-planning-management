@@ -7,7 +7,7 @@
 | Specification | `spec/*.md` (+ topic folders) — the source of truth |
 | Guides | `docs/` — tutorials and jurisdiction notes that use the spec, never restate it |
 | Per-subproject | `README.md`, `index.md`, `AGENTS.md`, `CHANGELOG.md`, `spec/index.md` |
-| Repo special files | `README.md`, `INSTALL.md`, `NEWS.md`, `CHANGELOG.md`, `COMPARISONS.md`, `BENCHMARKS.md`, `CONTRIBUTING.md`, `RFC.md`, `GOVERNANCE.md`, `SECURITY.md`, `MAINTAINERS.md`, `AI_STATEMENT.md`, `CODEOWNERS`, `CITATION.cff`, `LICENSE.md`, `LICENSE/` |
+| Repo special files | `README.md`, `INSTALL.md`, `NEWS.md`, `CHANGELOG.md`, `COMPARISONS.md`, `BENCHMARKS.md`, `CONTRIBUTING.md`, `RFC.md`, `GOVERNANCE.md`, `SECURITY.md`, `MAINTAINERS.md`, `AI_STATEMENT.md`, `CODEOWNERS`, `CITATION.cff`, `LICENSE.md`, `LICENSES/` |
 | Agent files | `AGENTS.md` + `AGENTS/*.md` (this set), the two subproject `AGENTS.md`, `llms.txt`, `llms.json` |
 
 **Not present** (and not to be assumed, checked 2026-10-30): `*-skill` folders. The

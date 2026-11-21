@@ -726,7 +726,7 @@
     {
       "title": "LICENSE.md",
       "path": "LICENSE.md",
-      "description": "the licence choices; texts in LICENSE/"
+      "description": "the licence choices; texts in LICENSES/"
     }
   ],
   "see_also": "llms.txt"

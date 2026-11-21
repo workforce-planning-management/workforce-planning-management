@@ -139,5 +139,5 @@ counts, never a record. Walk-through: [docs/tutorials/family-bridges.md](docs/tu
 
 ## License
 
-See [LICENSE.md](LICENSE.md) (texts in [LICENSE/](LICENSE/index.md)). Each subproject declares its own SPDX
+See [LICENSE.md](LICENSE.md) (texts in [LICENSES/](LICENSES)). Each subproject declares its own SPDX
 license expression in its manifest.

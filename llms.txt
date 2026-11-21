@@ -172,4 +172,4 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [AI_STATEMENT.md](AI_STATEMENT.md): how AI tools are used, and what they may merge and publish (sections 6 and 7)
 - [MAINTAINERS.md](MAINTAINERS.md): who maintains the project
 - [RFC.md](RFC.md): what the project wants feedback on, and how to send it
-- [LICENSE.md](LICENSE.md): the licence choices; texts in LICENSE/
+- [LICENSE.md](LICENSE.md): the licence choices; texts in LICENSES/
