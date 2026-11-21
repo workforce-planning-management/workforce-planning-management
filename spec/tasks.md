@@ -7078,3 +7078,12 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `ja-jp` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `ja`.
+- [x] WPM-T618 (2026-11-21) **Locale group `ko`: the website and every page in Korean, language line and sitemaps.**
+      - `ko-001` and `ko-kr` did not exist. Created `ko-001` in full (home with the language line `언어: …`, `start/`,
+        `평가/` (evaluate), `for/` with the index and thirteen role pages in Korean slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `ko-kr` copies `ko-001`.
+      - Site: catalogue `ko-001.json` (also used by `ko-kr`), `ko` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `ko-kr` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `ko`.
