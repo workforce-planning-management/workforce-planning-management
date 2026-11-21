@@ -7123,3 +7123,14 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `vi-vn` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `vi`.
+- [x] WPM-T623 (2026-11-21) **Locale group `de`: the website and every page in German, language line and sitemaps.**
+      - `de-001`, `de-de` and `de-at` had role pages, `path-to-production/` and `privacy/` but no home, `start/`,
+        evaluate page, CFO page or Workforce Planning Manager page. Added them to `de-001` (home with the language line
+        `Sprache: …`, `start/`, `bewertung/`, `for/finanzleitung/`, `for/leitung-personalplanung/`), updated the `for/`
+        index, pointed the AI-translation notes at `locales/en-001/`, and added the shared `.locale-peer-id` values,
+        `README.md` symlinks and a `sitemap.xml` (from the built site). `de-de` and `de-at` copy `de-001`.
+      - Site: catalogue `de-001.json` (also used by `de-de` and `de-at`), `de` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
+        re-translated; `de-de` and `de-at` have no regional edits; the axe tests and the picker hover in a browser were
+        not run for `de`.

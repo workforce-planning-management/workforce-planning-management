@@ -1,0 +1,77 @@
+{
+  "locale": "de-001",
+  "brand": "Personalplanung",
+  "skip": "Zum Hauptinhalt springen",
+  "siteNav": "Website",
+  "nav": {
+    "home": "Startseite",
+    "readme": "README",
+    "install": "Installation",
+    "familyBridges": "Familienbrücken",
+    "spec": "Spezifikation",
+    "worldwide": "Weltweit",
+    "briefs": "Rollenbeschreibungen",
+    "start": "Anleitung",
+    "production": "Weg in den Produktivbetrieb",
+    "docs": "Dokumentation",
+    "compare": "Vergleich",
+    "privacy": "Datenschutz"
+  },
+  "pickers": {
+    "pages": "Seiten",
+    "search": "Website durchsuchen",
+    "searchInput": "Suchbegriffe",
+    "searchSubmit": "Suchen",
+    "theme": "Design",
+    "language": "Sprache",
+    "textSize": "Schriftgröße",
+    "share": "Teilen"
+  },
+  "textSizes": {
+    "largest": "Am größten",
+    "larger": "Größer",
+    "large": "Groß",
+    "normal": "Normal",
+    "small": "Klein",
+    "smaller": "Kleiner",
+    "smallest": "Am kleinsten"
+  },
+  "share": {
+    "copy": "Link kopieren",
+    "copied": "Link kopiert",
+    "copyFailed": "Der Link konnte nicht kopiert werden",
+    "email": "Link per E-Mail senden",
+    "linkedin": "Auf LinkedIn teilen",
+    "reddit": "Auf Reddit teilen",
+    "bluesky": "Auf Bluesky teilen",
+    "mastodon": "Auf Mastodon teilen"
+  },
+  "footer": {
+    "builtFrom": "Erstellt aus den Dokumenten im",
+    "repository": "Repository von Personalplanung",
+    "counts": "{documents} Dokumente und {briefs} Rollenbeschreibungen in {locales} Sprachen und Regionen",
+    "countsEnd": ".",
+    "notice": "Demonstrationssoftware, nur mit synthetischen Daten. Die Übersetzungen stammen von einer KI und wurden nicht von Muttersprachlerinnen und Muttersprachlern geprüft.",
+    "export": "Diese Website ist ein Export des Verzeichnisses {directory} des Repositorys, erzeugt mit {tool}."
+  },
+  "translations": "Übersetzungen:",
+  "source": "Quelle:",
+  "readiness": {
+    "note": "Jeder Regler beginnt bei der Schätzung der Autorin oder des Autors. Ziehen Sie ihn, um Ihre eigene Schätzung auszuprobieren. Nichts wird gespeichert oder gesendet.",
+    "label": "Schätzung des Reifegrads: {name}",
+    "author": "Schätzung der Autorin oder des Autors: {value}"
+  },
+  "search": {
+    "title": "Suche",
+    "label": "Suchbegriffe",
+    "submit": "Suchen",
+    "noscript": "Die Suche auf der Website benötigt JavaScript.",
+    "failed": "Der Suchindex konnte nicht geladen werden. Diese Suche wurde nicht ausgeführt.",
+    "count": "{count} Seiten enthalten alle Wörter von „{query}“"
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "body": "Die Website hat keine solche Adresse.",
+    "home": "Zurück zur Startseite"
+  }
+}
