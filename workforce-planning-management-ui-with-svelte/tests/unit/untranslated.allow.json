@@ -415,6 +415,9 @@
     ],
     "sw-001": [
       "· FTE {fte_percent}%"
+    ],
+    "ko-001": [
+      "· FTE {fte_percent}%"
     ]
   }
 }
