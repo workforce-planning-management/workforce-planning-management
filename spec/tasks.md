@@ -7000,3 +7000,8 @@ the entry records only the evidence it needs.
       - Picker labels: `Cymraeg - Prydain Fawr`, `English - Great Britain - Oxford`.
       - **Not done:** the other 18 locales have none of the three role pages or a `sitemap.xml`; `ja`, `ko`, `sw`, `sv`,
         `nl`, `vi`, `da`, `it` are not created. Translations are AI-written, not native-reviewed.
+- [x] WPM-T609 (2026-11-21) **Locale group `hi`: the missing role pages, language line and sitemaps.**
+      - Added `मूल्यांकन-सूची` (evaluate), `for/मुख्य-वित्त-अधिकारी` and `for/कार्यबल-योजना-प्रबंधक` to `hi-in`, `hi-001`,
+        `hi-np`, with the shared `.locale-peer-id` values of WPM-T608 and `README.md` symlinks; rows added to each `for/index.md`.
+      - A language line (`भाषा: …`) after each home's introduction, and a `sitemap.xml` in each folder (from the built site).
+      - **Not done:** translations are AI-written, not native-reviewed; `hi-np` is a copy of `hi-in` without Nepali edits.
