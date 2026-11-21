@@ -1,0 +1,77 @@
+{
+  "locale": "it-001",
+  "brand": "Pianificazione della forza lavoro",
+  "skip": "Vai al contenuto principale",
+  "siteNav": "Sito",
+  "nav": {
+    "home": "Home",
+    "readme": "README",
+    "install": "Installazione",
+    "familyBridges": "Ponti tra applicazioni",
+    "spec": "Specifica",
+    "worldwide": "In tutto il mondo",
+    "briefs": "Schede per ruolo",
+    "start": "Tutorial",
+    "production": "Il percorso verso la produzione",
+    "docs": "Documentazione",
+    "compare": "Confronta",
+    "privacy": "Privacy"
+  },
+  "pickers": {
+    "pages": "Pagine",
+    "search": "Cerca nel sito",
+    "searchInput": "Termini di ricerca",
+    "searchSubmit": "Cerca",
+    "theme": "Tema",
+    "language": "Lingua",
+    "textSize": "Dimensione del testo",
+    "share": "Condividi"
+  },
+  "textSizes": {
+    "largest": "Massima",
+    "larger": "Più grande",
+    "large": "Grande",
+    "normal": "Normale",
+    "small": "Piccola",
+    "smaller": "Più piccola",
+    "smallest": "Minima"
+  },
+  "share": {
+    "copy": "Copia il collegamento",
+    "copied": "Collegamento copiato",
+    "copyFailed": "Impossibile copiare il collegamento",
+    "email": "Invia il collegamento per email",
+    "linkedin": "Condividi su LinkedIn",
+    "reddit": "Condividi su Reddit",
+    "bluesky": "Condividi su Bluesky",
+    "mastodon": "Condividi su Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Realizzato a partire dai documenti nel",
+    "repository": "repository di Pianificazione della forza lavoro",
+    "counts": "{documents} documenti e {briefs} schede per ruolo in {locales} lingue e varianti regionali",
+    "countsEnd": ".",
+    "notice": "Software dimostrativo con soli dati sintetici. Le traduzioni sono state prodotte da un'IA e non sono state riviste da madrelingua.",
+    "export": "Questo sito è un'esportazione della cartella {directory} del repository, realizzata con {tool}."
+  },
+  "translations": "Traduzioni:",
+  "source": "Fonte:",
+  "readiness": {
+    "note": "Ogni cursore parte dalla stima dell'autore. Spostalo per provare la tua stima. Nulla viene salvato o inviato.",
+    "label": "Stima di prontezza: {name}",
+    "author": "Stima dell'autore: {value}"
+  },
+  "search": {
+    "title": "Cerca",
+    "label": "Termini di ricerca",
+    "submit": "Cerca",
+    "noscript": "La ricerca nel sito richiede JavaScript.",
+    "failed": "Impossibile caricare l'indice di ricerca. Questa ricerca non è stata eseguita.",
+    "count": "{count} pagine con tutte le parole «{query}»"
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "body": "Il sito non ha un indirizzo di questo tipo.",
+    "home": "Torna alla home"
+  }
+}

@@ -7162,3 +7162,13 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS` (`Dansk`), and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
         were not run for `da`.
+- [x] WPM-T627 (2026-11-21) **Locales `it-001` and `it-it`: created in full in Italian, with home, language line, role pages and sitemaps.**
+      - Neither locale existed. Translated all 19 pages into `it-001` (home with the language line `Lingua: …`, `start/`,
+        `valuta/`, `for/` and its 13 role pages, `path-to-production/`, `privacy/`) with translated slugs, the shared
+        `.locale-peer-id` values, `README.md` symlinks and a 19-URL `sitemap.xml` (from the built site). `it-it` copies
+        `it-001` with light edits (`e-mail`).
+      - Site: catalogue `it-001.json` (59 keys, parity with `de-001.json`), `it` in `i18n.ts`, both locales in
+        `BRIEF_LOCALES`, `HOME_LOCALES` and `LOCALE_LABELS` (`Italiano`, `Italiano - Italia`), and the home headlines in the
+        e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
+        were not run for `it`.
