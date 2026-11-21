@@ -7012,3 +7012,11 @@ the entry records only the evidence it needs.
       - A language line (`Iaith: …`) after each home's introduction, and a `sitemap.xml` in each folder (from the built site).
       - **Not done:** translations are AI-written, not native-reviewed; `cy-ar` is a copy of `cy-gb` without Argentine
         (Patagonian) Welsh edits.
+
+- [x] WPM-T611 (2026-11-21) **Locale group `ar`: the missing role pages, language line and sitemaps.**
+      - Added `قائمة-التقييم` (evaluate), `for/رئيس-الشؤون-المالية` and `for/مدير-تخطيط-القوى-العاملة` to `ar-eg`, `ar-001`,
+        `ar-dz`, with the shared `.locale-peer-id` values of WPM-T608 and `README.md` symlinks; rows added to each
+        `for/index.md`.
+      - A language line (`اللغة: …`) before each home's demo-software note, and a `sitemap.xml` in each folder (from the built site).
+      - **Not done:** translations are AI-written, not native-reviewed; `ar-eg` and `ar-dz` are copies of `ar-001` without
+        Egyptian or Algerian edits.
