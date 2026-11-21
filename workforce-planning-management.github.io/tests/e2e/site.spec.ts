@@ -431,6 +431,8 @@ for (const [locale, headline] of [
   ["ru-001", "Управление планированием персонала"],
   ["ru-by", "Управление планированием персонала"],
   ["ru-ru", "Управление планированием персонала"],
+  ["sv-001", "Arbetskraftsplanering"],
+  ["sv-se", "Arbetskraftsplanering"],
   ["sw-001", "Usimamizi wa Mipango ya Wafanyakazi"],
   ["sw-tz", "Usimamizi wa Mipango ya Wafanyakazi"],
 ] as const)

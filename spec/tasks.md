@@ -7096,3 +7096,12 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `sw-tz` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `sw`.
+- [x] WPM-T620 (2026-11-21) **Locale group `sv`: the website and every page in Swedish, language line and sitemaps.**
+      - `sv-001` and `sv-se` did not exist. Created `sv-001` in full (home with the language line `Språk: …`, `start/`,
+        `utvärdera/` (evaluate), `for/` with the index and thirteen role pages in Swedish slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `sv-se` copies `sv-001`.
+      - Site: catalogue `sv-001.json` (also used by `sv-se`), `sv` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `sv-se` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `sv`.

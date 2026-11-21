@@ -1,0 +1,77 @@
+{
+  "locale": "sv-001",
+  "brand": "Arbetskraftsplanering",
+  "skip": "Hoppa till huvudinnehållet",
+  "siteNav": "Webbplats",
+  "nav": {
+    "home": "Hem",
+    "readme": "README",
+    "install": "Installation",
+    "familyBridges": "Familjebroar",
+    "spec": "Specifikation",
+    "worldwide": "Hela världen",
+    "briefs": "Rollbeskrivningar",
+    "start": "Handledning",
+    "production": "Vägen till produktion",
+    "docs": "Dokumentation",
+    "compare": "Jämför",
+    "privacy": "Integritet"
+  },
+  "pickers": {
+    "pages": "Sidor",
+    "search": "Sök på webbplatsen",
+    "searchInput": "Sökord",
+    "searchSubmit": "Sök",
+    "theme": "Tema",
+    "language": "Språk",
+    "textSize": "Textstorlek",
+    "share": "Dela"
+  },
+  "textSizes": {
+    "largest": "Störst",
+    "larger": "Större",
+    "large": "Stor",
+    "normal": "Normal",
+    "small": "Liten",
+    "smaller": "Mindre",
+    "smallest": "Minst"
+  },
+  "share": {
+    "copy": "Kopiera länk",
+    "copied": "Länken har kopierats",
+    "copyFailed": "Det gick inte att kopiera länken",
+    "email": "Skicka länken med e-post",
+    "linkedin": "Dela på LinkedIn",
+    "reddit": "Dela på Reddit",
+    "bluesky": "Dela på Bluesky",
+    "mastodon": "Dela på Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Byggd från dokumenten i",
+    "repository": "arkivet för Arbetskraftsplanering",
+    "counts": "{documents} dokument och {briefs} rollbeskrivningar på {locales} språk och språkvarianter",
+    "countsEnd": ".",
+    "notice": "Demonstrationsprogramvara med endast syntetiska data. Översättningarna är gjorda av AI och har inte granskats av personer med språket som modersmål.",
+    "export": "Den här webbplatsen är en export av arkivets mapp {directory}, gjord med {tool}."
+  },
+  "translations": "Översättningar:",
+  "source": "Källa:",
+  "readiness": {
+    "note": "Varje reglage startar på upphovspersonens uppskattning. Flytta det för att pröva din egen uppskattning. Inget sparas eller skickas.",
+    "label": "Beredskapsuppskattning: {name}",
+    "author": "Upphovspersonens uppskattning: {value}"
+  },
+  "search": {
+    "title": "Sök",
+    "label": "Sökord",
+    "submit": "Sök",
+    "noscript": "Sökning på webbplatsen kräver JavaScript.",
+    "failed": "Sökindexet kunde inte läsas in. Den här sökningen utfördes inte.",
+    "count": "{count} sidor med alla orden \"{query}\""
+  },
+  "notFound": {
+    "title": "Sidan hittades inte",
+    "body": "Webbplatsen har ingen sådan adress.",
+    "home": "Tillbaka till startsidan"
+  }
+}
