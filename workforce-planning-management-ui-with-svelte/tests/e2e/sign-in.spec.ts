@@ -49,8 +49,8 @@ test.describe("sign-in gate (WPM-T38)", () => {
     expect(sitemap.headers()["content-type"]).toContain("application/xml");
     const origin = new URL(sitemap.url()).origin;
     const xml = await sitemap.text();
-    // 17 locales × 4 public pages (the splash, the tour, help and sign-in), each with hreflang alternates and x-default.
-    expect(xml.match(/<url>/g)).toHaveLength(68);
+    // 25 locales × 4 public pages (the splash, the tour, help and sign-in), each with hreflang alternates and x-default.
+    expect(xml.match(/<url>/g)).toHaveLength(100);
     expect(xml).toContain(`<loc>${origin}/cy-001/tour</loc>`);
     expect(xml).toContain(`<loc>${origin}/cy-001/help</loc>`);
     expect(xml).toContain(`hreflang="x-default" href="${origin}/en-001"`);
@@ -114,7 +114,7 @@ test.describe("sign-in gate (WPM-T38)", () => {
     await expect(page).toHaveURL(/\/cy-001$/);
     // …and an unserved browser language falls back to that header's pick.
     const other = await browser.newContext({
-      locale: "ja-JP",
+      locale: "tr-TR",
       extraHTTPHeaders: { "accept-language": "fr" },
     });
     const p2 = await other.newPage();
@@ -127,7 +127,7 @@ test.describe("sign-in gate (WPM-T38)", () => {
   test("bare / with a browser language the app does not serve falls back to the server's pick", async ({
     browser,
   }) => {
-    const context = await browser.newContext({ locale: "ja-JP" });
+    const context = await browser.newContext({ locale: "tr-TR" });
     const page = await context.newPage();
     await page.goto("/");
     await expect(page).toHaveURL(/\/en-001$/);
