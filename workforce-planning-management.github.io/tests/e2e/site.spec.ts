@@ -436,6 +436,7 @@ for (const [locale, headline] of [
   ["pt-001", "Planeamento de Pessoal"],
   ["pt-pt", "Planeamento de Pessoal"],
   ["pt-br", "Planejamento de Pessoal"],
+  ["ur-001", "ورک فورس پلاننگ مینجمنٹ"],
   ["vi-001", "Hoạch định nhân lực"],
   ["vi-vn", "Hoạch định nhân lực"],
   ["ru-001", "Управление планированием персонала"],

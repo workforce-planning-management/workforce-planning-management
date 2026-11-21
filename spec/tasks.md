@@ -7145,3 +7145,12 @@ the entry records only the evidence it needs.
         and the home headlines in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
         re-translated; the axe tests and the picker hover in a browser were not run for `pt`.
+- [x] WPM-T625 (2026-11-21) **Locale `ur-001`: the website and every page in Urdu, language line and sitemap.**
+      - `ur-001` had role pages, `path-to-production/` and `privacy/` but no home, `start/`, evaluate page, CFO page or
+        Workforce Planning Manager page. Added them (home with the language line `زبان: …`, `start/`, `جائزہ/`,
+        `for/چیف-فنانس-آفیسر/`, `for/ورک-فورس-پلاننگ-مینیجر/`), updated the `for/` index, pointed the AI-translation
+        notes at `locales/en-001/`, and added the shared `.locale-peer-id` values, `README.md` symlinks and a 19-URL
+        `sitemap.xml` (from the built site).
+      - Site: catalogue `ur-001.json`, `ur` in `i18n.ts`, `ur-001` in `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
+        re-translated; the axe tests and the picker hover in a browser were not run for `ur`.

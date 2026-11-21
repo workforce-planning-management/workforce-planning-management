@@ -123,6 +123,7 @@ export const HOME_LOCALES = [
   "sv-se",
   "sw-001",
   "sw-tz",
+  "ur-001",
   "vi-001",
   "vi-vn",
   "zh-001",
