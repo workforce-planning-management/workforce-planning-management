@@ -7187,3 +7187,14 @@ the entry records only the evidence it needs.
         translation note; brief counts are 13 except the three English variants (11); the root Translations line lists
         all 21 languages; the de picker button is "Sprache" and lands on `/de-001/`.
       - Full e2e run (axe included): 967 passed. **Not done:** the picker hover in a real browser by eye.
+- [x] WPM-T630 (2026-11-21) **Update Lily: `svelte-headless` 0.12.0, `svelte-picker-bar` 0.8.0, `themes` 0.7.0.**
+      - Bumped the three packages in `package.json` and the lockfile; `pnpm-workspace.yaml` excludes the new versions from the
+        publish-age rule in place of the old ones (Lily is the owner's own library).
+      - New capability in use, with no code change: the picker bar now labels the NHS themes shortly ("NHS England
+        (patients)") and orders the themes as 36 generic ones, then 27 company and public-body ones, each alphabetically. The
+        e2e check that expected the UK and US themes last now checks that order and the short names.
+      - Not adopted, because this site has no use for them: `card` whole-card links, `statistic` change and as-of time,
+        `observation-view` meter, the picker bar's time zone picker (`labels.timeZone`). The site uses only `PickerBar`
+        and `Slider`.
+      - Verified: build; full e2e (axe included) 966 passed on the first run, then the one stale theme-order test fixed
+        and re-run alone (passes). **Not done:** a second full run; the picker in a browser by eye; publish.

@@ -301,13 +301,22 @@ test("hovering each picker button changes its colour", async ({ page }) => {
   }
 });
 
-test("the bar offers every Lily theme, the UK and US themes last, and every text size", async ({ page }) => {
+test("the bar offers every Lily theme by its short name, in two alphabetical groups, and every text size", async ({ page }) => {
   await open(page, "/readme/", "light");
   await page.getByRole("button", { name: "Theme", exact: true }).click();
   const themes = await page.locator(".theme-picker-option").allTextContents();
   expect(themes).toHaveLength(THEMES.length);
-  const national = themes.map((t) => /^\s*United (Kingdom|States)/.test(t));
-  expect(national.indexOf(true)).toBe(national.lastIndexOf(false) + 1);
+  // Lily 0.8.0 names the NHS themes shortly ("NHS England (patients)"): the 36 generic themes alphabetically, then the
+  // 27 that follow a company's or a public body's design system, alphabetically by that name.
+  const names = themes.map((t) => t.trim());
+  expect(names).toContain("NHS England (patients)");
+  expect(names.some((t) => /^United Kingdom National Health Service/.test(t))).toBe(false);
+  const byName = (a: string, b: string) => a.localeCompare(b, "en", { sensitivity: "base" });
+  const generic = names.slice(0, 36);
+  const branded = names.slice(36);
+  expect(branded).toHaveLength(27);
+  expect(generic).toEqual([...generic].sort(byName));
+  expect(branded).toEqual([...branded].sort(byName));
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Text size", exact: true }).click();
   expect((await page.locator(".text-size-picker-option").allTextContents()).map((t) => t.trim())).toEqual([
