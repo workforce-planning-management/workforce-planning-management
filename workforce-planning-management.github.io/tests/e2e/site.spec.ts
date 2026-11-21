@@ -430,6 +430,8 @@ for (const [locale, headline] of [
   ["ko-kr", "인력 계획 관리"],
   ["nl-001", "Personeelsplanning"],
   ["nl-nl", "Personeelsplanning"],
+  ["vi-001", "Hoạch định nhân lực"],
+  ["vi-vn", "Hoạch định nhân lực"],
   ["ru-001", "Управление планированием персонала"],
   ["ru-by", "Управление планированием персонала"],
   ["ru-ru", "Управление планированием персонала"],

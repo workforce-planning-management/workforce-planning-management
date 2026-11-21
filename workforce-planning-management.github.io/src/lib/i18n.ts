@@ -15,12 +15,13 @@ import nl from "../content/locales/nl-001.json" with { type: "json" };
 import ru from "../content/locales/ru-001.json" with { type: "json" };
 import sv from "../content/locales/sv-001.json" with { type: "json" };
 import sw from "../content/locales/sw-001.json" with { type: "json" };
+import vi from "../content/locales/vi-001.json" with { type: "json" };
 import zh from "../content/locales/zh-001.json" with { type: "json" };
 import zhTw from "../content/locales/zh-tw.json" with { type: "json" };
 
 export type Ui = typeof en;
 
-const CATALOGUES: Record<string, Ui> = { ar, bn, cy, en, es, fr, hi, id, ja, ko, nl, ru, sv, sw, zh, "zh-tw": zhTw };
+const CATALOGUES: Record<string, Ui> = { ar, bn, cy, en, es, fr, hi, id, ja, ko, nl, ru, sv, sw, vi, zh, "zh-tw": zhTw };
 
 /** The catalogue for a page's locale: its own where it has one (`zh-tw`), else by language, so `cy-gb` reads `cy-001`, and English where there is none yet. */
 export function ui(locale: string | null | undefined): Ui {

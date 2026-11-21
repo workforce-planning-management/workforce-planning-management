@@ -7114,3 +7114,12 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `nl-nl` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `nl`.
+- [x] WPM-T622 (2026-11-21) **Locale group `vi`: the website and every page in Vietnamese, language line and sitemaps.**
+      - `vi-001` and `vi-vn` did not exist. Created `vi-001` in full (home with the language line `Ngôn ngữ: …`, `start/`,
+        `đánh-giá/` (evaluate), `for/` with the index and thirteen role pages in Vietnamese slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `vi-vn` copies `vi-001`.
+      - Site: catalogue `vi-001.json` (also used by `vi-vn`), `vi` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `vi-vn` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `vi`.

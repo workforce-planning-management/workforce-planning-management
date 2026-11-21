@@ -1,0 +1,77 @@
+{
+  "locale": "vi-001",
+  "brand": "Hoạch định nhân lực",
+  "skip": "Chuyển đến nội dung chính",
+  "siteNav": "Trang web",
+  "nav": {
+    "home": "Trang chủ",
+    "readme": "README",
+    "install": "Cài đặt",
+    "familyBridges": "Cầu nối gia đình",
+    "spec": "Đặc tả",
+    "worldwide": "Toàn cầu",
+    "briefs": "Tóm tắt theo vai trò",
+    "start": "Hướng dẫn",
+    "production": "Lộ trình đến môi trường sản xuất",
+    "docs": "Tài liệu",
+    "compare": "So sánh",
+    "privacy": "Quyền riêng tư"
+  },
+  "pickers": {
+    "pages": "Các trang",
+    "search": "Tìm kiếm trên trang web",
+    "searchInput": "Từ khóa tìm kiếm",
+    "searchSubmit": "Tìm kiếm",
+    "theme": "Giao diện",
+    "language": "Ngôn ngữ",
+    "textSize": "Cỡ chữ",
+    "share": "Chia sẻ"
+  },
+  "textSizes": {
+    "largest": "Lớn nhất",
+    "larger": "Lớn hơn",
+    "large": "Lớn",
+    "normal": "Bình thường",
+    "small": "Nhỏ",
+    "smaller": "Nhỏ hơn",
+    "smallest": "Nhỏ nhất"
+  },
+  "share": {
+    "copy": "Sao chép liên kết",
+    "copied": "Đã sao chép liên kết",
+    "copyFailed": "Không thể sao chép liên kết",
+    "email": "Gửi liên kết qua email",
+    "linkedin": "Chia sẻ trên LinkedIn",
+    "reddit": "Chia sẻ trên Reddit",
+    "bluesky": "Chia sẻ trên Bluesky",
+    "mastodon": "Chia sẻ trên Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Được dựng từ các tài liệu trong",
+    "repository": "kho mã của Hoạch định nhân lực",
+    "counts": "{documents} tài liệu và {briefs} bản tóm tắt theo vai trò bằng {locales} ngôn ngữ và vùng",
+    "countsEnd": ".",
+    "notice": "Phần mềm trình diễn chỉ dùng dữ liệu tổng hợp. Các bản dịch do AI tạo ra và chưa được người bản ngữ rà soát.",
+    "export": "Trang web này là bản xuất từ thư mục {directory} của kho mã, được tạo bằng {tool}."
+  },
+  "translations": "Bản dịch:",
+  "source": "Nguồn:",
+  "readiness": {
+    "note": "Mỗi thanh trượt bắt đầu ở ước lượng của tác giả. Hãy kéo nó để thử ước lượng của riêng bạn. Không có gì được lưu hay gửi đi.",
+    "label": "Ước lượng mức độ sẵn sàng: {name}",
+    "author": "Ước lượng của tác giả: {value}"
+  },
+  "search": {
+    "title": "Tìm kiếm",
+    "label": "Từ khóa tìm kiếm",
+    "submit": "Tìm kiếm",
+    "noscript": "Tìm kiếm trên trang web cần có JavaScript.",
+    "failed": "Không tải được chỉ mục tìm kiếm. Lần tìm kiếm này chưa được thực hiện.",
+    "count": "{count} trang chứa tất cả các từ \"{query}\""
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "body": "Trang web không có địa chỉ như vậy.",
+    "home": "Quay về trang chủ"
+  }
+}
