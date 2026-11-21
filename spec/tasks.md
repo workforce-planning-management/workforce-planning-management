@@ -7180,3 +7180,10 @@ the entry records only the evidence it needs.
         to reword or check. `en-gb` reads "English - Great Britain" and `en-gb-oxendict` "English - Great Britain - Oxford".
       - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
         were not run.
+- [x] WPM-T629 (2026-11-21) **Fix-ups: stale e2e expectations, `da` catalogue quotes, missing symlink.**
+      - Added the missing `locales/en-001/for/chief-finance-officer/README.md` symlink.
+      - `da-001.json` search count used escaped quotes, which the empty-string check misread; it now uses `«{query}»`.
+      - e2e: the "no empty string" check ignores escaped quotes; privacy shape ignores the `locales/…` path in the
+        translation note; brief counts are 13 except the three English variants (11); the root Translations line lists
+        all 21 languages; the de picker button is "Sprache" and lands on `/de-001/`.
+      - Full e2e run (axe included): 967 passed. **Not done:** the picker hover in a real browser by eye.

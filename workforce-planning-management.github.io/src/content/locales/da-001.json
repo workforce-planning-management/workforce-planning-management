@@ -67,7 +67,7 @@
     "submit": "Søg",
     "noscript": "Søgning på webstedet kræver JavaScript.",
     "failed": "Søgeindekset kunne ikke indlæses. Denne søgning blev ikke udført.",
-    "count": "{count} sider med alle ordene \"{query}\""
+    "count": "{count} sider med alle ordene «{query}»"
   },
   "notFound": {
     "title": "Siden blev ikke fundet",

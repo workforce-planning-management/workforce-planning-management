@@ -74,8 +74,9 @@ async function overflow(page: Page): Promise<number> {
 test("every page is built and answers 200", async ({ request }) => {
   const all = [...docRoutes, ...homeRoutes, ...productionRoutes, ...privacyRoutes, ...listRoutes, ...briefRoutes];
   expect(all.length).toBe(2 + COMPARE_SLUGS.length + DOC_PAGES.length + 2 * HOME_LOCALES.length + 3 * BRIEF_LOCALES.length + BRIEFS.length);
-  // Every locale has the 11 shared briefs; en-001 also has the chief finance officer's and the workforce planning manager's.
-  for (const l of BRIEF_LOCALES) expect(BRIEFS.filter((b) => b.locale === l).length, l).toBe(l === "en-001" ? 13 : 11);
+  // Every locale has the 13 briefs, except the three English regional variants, which have the 11 shared ones.
+  for (const l of BRIEF_LOCALES)
+    expect(BRIEFS.filter((b) => b.locale === l).length, l).toBe(["en-gb", "en-gb-oxendict", "en-us"].includes(l) ? 11 : 13);
   for (const route of all) {
     const res = await request.get(encodeURI(route));
     expect(res.status(), route).toBe(200);
@@ -128,13 +129,13 @@ test("the locale switcher on a list opens the other locale's list; on an English
   page,
 }) => {
   await open(page, "/de-001/for/", "light");
-  await page.getByRole("button", { name: "Language" }).click();
+  await page.getByRole("button", { name: "Sprache" }).click();
   await page.locator(".locale-picker-option").filter({ hasText: /^\s*Français\s*$/ }).click();
   await expect(page).toHaveURL(/\/fr-001\/for\/$/);
   await open(page, "/readme/", "light");
   await page.getByRole("button", { name: "Language" }).click();
   await page.locator(".locale-picker-option").filter({ hasText: /^\s*Deutsch\s*$/ }).click();
-  await expect(page).toHaveURL(/\/de-001\/for\/$/);
+  await expect(page).toHaveURL(/\/de-001\/$/);
   await open(page, "/readme/", "light");
   await page.getByRole("button", { name: "Language" }).click();
   await page.locator(".locale-picker-option").filter({ hasText: /^\s*Cymraeg\s*$/ }).click();
@@ -396,7 +397,7 @@ test("every catalogue has every key of the English source, and no empty string",
   const source = keysOf(catalogues.en!).sort();
   for (const [language, catalogue] of Object.entries(catalogues)) {
     expect(keysOf(catalogue).sort(), language).toEqual(source);
-    expect(JSON.stringify(catalogue), language).not.toContain('""');
+    expect(JSON.stringify(catalogue).replace(/\\./g, ""), language).not.toContain('""');
   }
 });
 
@@ -608,7 +609,7 @@ test("the root home has the hero and Translations line, and the language picker 
   await expect(page.locator("main h1")).toHaveText("Workforce Planning Management");
   await expect(page.getByRole("heading", { name: "Comparison", exact: true })).toBeVisible();
   await expect(page.locator("main table")).toContainText("Typical fit");
-  await expect(page.getByTestId("translations")).toContainText("Translations: العربية, Cymraeg, English, हिन्दी, 中文");
+  await expect(page.getByTestId("translations")).toContainText("Translations: العربية, বাংলা, Cymraeg, Dansk, Deutsch, English, Español, Français, हिन्दी, Bahasa Indonesia, Italiano, 日本語, 한국어, Nederlands, Português, Русский, Svenska, Kiswahili, اردو, Tiếng Việt, 中文");
   await page.getByTestId("translations").getByRole("link", { name: "中文" }).click();
   await expect(page).toHaveURL(/\/zh-001\/$/);
   await expect(page.locator(".brand")).toHaveText("劳动力规划管理");
@@ -780,7 +781,7 @@ const shape = (md: string) => ({
   headings: md.split("\n").filter((l) => /^#{1,6} /.test(l)).map((l) => l.match(/^#+/)![0]),
   items: md.split("\n").filter((l) => /^- /.test(l)).length,
   rows: md.split("\n").filter((l) => /^\|/.test(l)).map((l) => l.split("|").length),
-  code: [...md.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort(),
+  code: [...md.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((c) => !c!.startsWith("locales/")).sort(),
   links: [...md.matchAll(/\]\(([^)]+)\)|<(https:[^>]+)>/g)].map((m) => m[1] ?? m[2]).sort(),
 });
 test("every locale's privacy notice has the English notice's shape, names and links", () => {
