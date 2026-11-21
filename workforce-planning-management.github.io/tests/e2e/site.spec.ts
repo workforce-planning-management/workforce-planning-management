@@ -431,6 +431,8 @@ for (const [locale, headline] of [
   ["ru-001", "Управление планированием персонала"],
   ["ru-by", "Управление планированием персонала"],
   ["ru-ru", "Управление планированием персонала"],
+  ["sw-001", "Usimamizi wa Mipango ya Wafanyakazi"],
+  ["sw-tz", "Usimamizi wa Mipango ya Wafanyakazi"],
 ] as const)
   test(`/${locale}/ is the locale's home: hero, wordmark, chrome and Translations line in its language`, async ({ page }) => {
     const s = ui(locale);

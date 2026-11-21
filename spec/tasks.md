@@ -7087,3 +7087,12 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `ko-kr` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `ko`.
+- [x] WPM-T619 (2026-11-21) **Locale group `sw`: the website and every page in Swahili, language line and sitemaps.**
+      - `sw-001` and `sw-tz` did not exist. Created `sw-001` in full (home with the language line `Lugha: …`, `start/`,
+        `tathmini/` (evaluate), `for/` with the index and thirteen role pages in Swahili slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `sw-tz` copies `sw-001`.
+      - Site: catalogue `sw-001.json` (also used by `sw-tz`), `sw` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `sw-tz` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `sw`.

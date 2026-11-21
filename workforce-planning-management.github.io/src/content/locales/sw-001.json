@@ -1,0 +1,77 @@
+{
+  "locale": "sw-001",
+  "brand": "Usimamizi wa Mipango ya Wafanyakazi",
+  "skip": "Ruka hadi maudhui makuu",
+  "siteNav": "Tovuti",
+  "nav": {
+    "home": "Mwanzo",
+    "readme": "README",
+    "install": "Usakinishaji",
+    "familyBridges": "Madaraja ya familia",
+    "spec": "Maelezo ya kiufundi",
+    "worldwide": "Ulimwenguni kote",
+    "briefs": "Muhtasari wa majukumu",
+    "start": "Mafunzo",
+    "production": "Njia ya kuelekea uzalishaji",
+    "docs": "Nyaraka",
+    "compare": "Linganisha",
+    "privacy": "Faragha"
+  },
+  "pickers": {
+    "pages": "Kurasa",
+    "search": "Tafuta kwenye tovuti",
+    "searchInput": "Maneno ya kutafuta",
+    "searchSubmit": "Tafuta",
+    "theme": "Mandhari",
+    "language": "Lugha",
+    "textSize": "Ukubwa wa maandishi",
+    "share": "Shiriki"
+  },
+  "textSizes": {
+    "largest": "Kubwa kuliko yote",
+    "larger": "Kubwa zaidi",
+    "large": "Kubwa",
+    "normal": "Kawaida",
+    "small": "Ndogo",
+    "smaller": "Ndogo zaidi",
+    "smallest": "Ndogo kuliko zote"
+  },
+  "share": {
+    "copy": "Nakili kiungo",
+    "copied": "Kiungo kimenakiliwa",
+    "copyFailed": "Imeshindikana kunakili kiungo",
+    "email": "Tuma kiungo kwa barua pepe",
+    "linkedin": "Shiriki kwenye LinkedIn",
+    "reddit": "Shiriki kwenye Reddit",
+    "bluesky": "Shiriki kwenye Bluesky",
+    "mastodon": "Shiriki kwenye Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Imejengwa kutoka nyaraka katika",
+    "repository": "hazina ya Usimamizi wa Mipango ya Wafanyakazi",
+    "counts": "Nyaraka {documents} na muhtasari {briefs} wa majukumu katika lugha na maeneo {locales}",
+    "countsEnd": ".",
+    "notice": "Programu ya maonyesho, yenye data bandia pekee. Tafsiri zilitolewa na akili bandia na hazijakaguliwa na wazungumzaji asilia.",
+    "export": "Tovuti hii ni usafirishaji wa folda ya {directory} ya hazina, uliofanywa na {tool}."
+  },
+  "translations": "Tafsiri:",
+  "source": "Chanzo:",
+  "readiness": {
+    "note": "Kila kitelezi huanza kwenye makadirio ya mwandishi. Kisogeze ili kujaribu makadirio yako mwenyewe. Hakuna kinachohifadhiwa wala kutumwa.",
+    "label": "Makadirio ya utayari: {name}",
+    "author": "Makadirio ya mwandishi: {value}"
+  },
+  "search": {
+    "title": "Tafuta",
+    "label": "Maneno ya kutafuta",
+    "submit": "Tafuta",
+    "noscript": "Kutafuta kwenye tovuti kunahitaji JavaScript.",
+    "failed": "Faharasa ya utafutaji haikuweza kupakiwa. Utafutaji huu haukufanyika.",
+    "count": "Kurasa {count} zenye maneno yote ya \"{query}\""
+  },
+  "notFound": {
+    "title": "Ukurasa haukupatikana",
+    "body": "Tovuti hii haina anwani hiyo.",
+    "home": "Rudi mwanzo"
+  }
+}
