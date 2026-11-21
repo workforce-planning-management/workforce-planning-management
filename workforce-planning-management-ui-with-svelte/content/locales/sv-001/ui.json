@@ -158,7 +158,7 @@
     "inPlace": "På plats"
   },
   "brand": {
-    "name": "Personalplanering"
+    "name": "Arbetskraftsplanering"
   },
   "chrome": {
     "language": "Språk",
@@ -244,7 +244,7 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "Personalplanering",
+      "eyebrow": "Arbetskraftsplanering",
       "headline": "Personalfrågor, allt på ett ställe",
       "subhead": "Planera rekrytering, kör lönerna, stöd välbefinnandet och hjälp människor att växa – en sammanhängande arbetsyta för HR, chefer och alla medarbetare.",
       "cta": "Logga in",
@@ -358,7 +358,7 @@
   "tour": {
     "hero": {
       "title": "Se hur allt hänger ihop",
-      "subhead": "En guidad titt på vad Personalplanering faktiskt gör, avsnitt för avsnitt – ingen inloggning krävs."
+      "subhead": "En guidad titt på vad Arbetskraftsplanering faktiskt gör, avsnitt för avsnitt – ingen inloggning krävs."
     },
     "toc": {
       "label": "På den här sidan"
@@ -1352,7 +1352,7 @@
       "page_title": "{rota} — WPM"
     },
     "signin": {
-      "page_title": "Logga in – Personalplanering",
+      "page_title": "Logga in – Arbetskraftsplanering",
       "sign_in": "Logga in",
       "check_your_email_for_a_sign_in": "Kolla din e-post efter en inloggningslänk.",
       "email": "E-post",
@@ -1397,7 +1397,7 @@
       "showing_200_of_narrow_the_search": "Visar 200 av {shown}; snäva in sökningen."
     },
     "verify": {
-      "page_title": "Inloggningslänk – Personalplanering",
+      "page_title": "Inloggningslänk – Arbetskraftsplanering",
       "sign_in_link": "Inloggningslänk",
       "request_a_new_link": "Begär en ny länk",
       "missing": "Den här inloggningslänken saknar sin token.",
@@ -1405,7 +1405,7 @@
       "invalid": "Den här inloggningslänken är ogiltig eller har gått ut."
     },
     "verifySso": {
-      "page_title": "Inloggningslänk – Personalplanering",
+      "page_title": "Inloggningslänk – Arbetskraftsplanering",
       "sign_in_link": "Inloggningslänk",
       "request_a_new_link": "Begär en ny länk",
       "missing": "Den här inloggningslänken saknar sin kod.",
@@ -1561,11 +1561,11 @@
     "planning": "Planering — WPM",
     "roles": "Rollprofiler — WPM",
     "rota": "Jourschema — WPM",
-    "signin": "Logga in – Personalplanering",
+    "signin": "Logga in – Arbetskraftsplanering",
     "skillGaps": "Kompetensluckor — WPM",
     "skills": "Kompetenser — WPM",
-    "verify": "Inloggningslänk – Personalplanering",
-    "verifySso": "Inloggningslänk – Personalplanering",
+    "verify": "Inloggningslänk – Arbetskraftsplanering",
+    "verifySso": "Inloggningslänk – Arbetskraftsplanering",
     "contingent": "Inhyrd arbetskraft — WPM",
     "capacity": "Kapacitet — WPM",
     "resilience": "Motståndskraft — WPM",

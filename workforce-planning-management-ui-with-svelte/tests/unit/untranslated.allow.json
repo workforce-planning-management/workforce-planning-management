@@ -418,6 +418,12 @@
     ],
     "ko-001": [
       "· FTE {fte_percent}%"
+    ],
+    "vi-001": [
+      "Email",
+      "Menu",
+      "web",
+      "· FTE {fte_percent}%"
     ]
   }
 }

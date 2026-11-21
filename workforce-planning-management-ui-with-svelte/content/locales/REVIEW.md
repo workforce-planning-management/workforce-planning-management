@@ -26,6 +26,7 @@ to offer a service in that language.
 | `sv-001` | Swedish | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `sw-001` | Swahili | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `ur-001` | Urdu | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
+| `vi-001` | Vietnamese | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `zh-001` | Chinese | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 
 The 2026-10-13 additions (88 keys for the capacity, resilience, oversight, cutover and early-warning pages, including the long

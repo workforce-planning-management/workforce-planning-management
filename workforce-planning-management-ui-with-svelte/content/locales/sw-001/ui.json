@@ -158,7 +158,7 @@
     "inPlace": "Yamewekwa"
   },
   "brand": {
-    "name": "Usimamizi wa Mipango ya Nguvukazi"
+    "name": "Usimamizi wa Mipango ya Wafanyakazi"
   },
   "chrome": {
     "language": "Lugha",
@@ -244,7 +244,7 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "Usimamizi wa Mipango ya Nguvukazi",
+      "eyebrow": "Usimamizi wa Mipango ya Wafanyakazi",
       "headline": "Shughuli zote za watu, mahali pamoja",
       "subhead": "Panga ajira, endesha mishahara, saidia ustawi, na uwasaidie watu kukua — nafasi moja ya kazi iliyounganishwa kwa ajili ya Rasilimali Watu, mameneja na kila mfanyakazi.",
       "cta": "Ingia",
@@ -358,7 +358,7 @@
   "tour": {
     "hero": {
       "title": "Ona jinsi kila kitu kinavyofungamana",
-      "subhead": "Mwongozo wa kuangalia Usimamizi wa Mipango ya Nguvukazi hufanya nini hasa, sehemu kwa sehemu — hakuna haja ya kuingia."
+      "subhead": "Mwongozo wa kuangalia Usimamizi wa Mipango ya Wafanyakazi hufanya nini hasa, sehemu kwa sehemu — hakuna haja ya kuingia."
     },
     "toc": {
       "label": "Katika ukurasa huu"
@@ -1352,7 +1352,7 @@
       "page_title": "{rota} — WPM"
     },
     "signin": {
-      "page_title": "Ingia — Usimamizi wa Mipango ya Nguvukazi",
+      "page_title": "Ingia — Usimamizi wa Mipango ya Wafanyakazi",
       "sign_in": "Ingia",
       "check_your_email_for_a_sign_in": "Angalia barua pepe yako kwa kiungo cha kuingia.",
       "email": "Barua pepe",
@@ -1397,7 +1397,7 @@
       "showing_200_of_narrow_the_search": "Inaonyesha 200 kati ya {shown}; punguza utafutaji."
     },
     "verify": {
-      "page_title": "Kiungo cha kuingia — Usimamizi wa Mipango ya Nguvukazi",
+      "page_title": "Kiungo cha kuingia — Usimamizi wa Mipango ya Wafanyakazi",
       "sign_in_link": "Kiungo cha kuingia",
       "request_a_new_link": "Omba kiungo kipya",
       "missing": "Kiungo hiki cha kuingia hakina tokeni yake.",
@@ -1405,7 +1405,7 @@
       "invalid": "Kiungo hiki cha kuingia si sahihi au kimeisha muda."
     },
     "verifySso": {
-      "page_title": "Kiungo cha kuingia — Usimamizi wa Mipango ya Nguvukazi",
+      "page_title": "Kiungo cha kuingia — Usimamizi wa Mipango ya Wafanyakazi",
       "sign_in_link": "Kiungo cha kuingia",
       "request_a_new_link": "Omba kiungo kipya",
       "missing": "Kiungo hiki cha kuingia hakina msimbo wake.",
@@ -1561,11 +1561,11 @@
     "planning": "Mipango — WPM",
     "roles": "Wasifu wa majukumu — WPM",
     "rota": "Ratiba ya kuwa zamu — WPM",
-    "signin": "Ingia — Usimamizi wa Mipango ya Nguvukazi",
+    "signin": "Ingia — Usimamizi wa Mipango ya Wafanyakazi",
     "skillGaps": "Mapengo ya ujuzi — WPM",
     "skills": "Ujuzi — WPM",
-    "verify": "Kiungo cha kuingia — Usimamizi wa Mipango ya Nguvukazi",
-    "verifySso": "Kiungo cha kuingia — Usimamizi wa Mipango ya Nguvukazi",
+    "verify": "Kiungo cha kuingia — Usimamizi wa Mipango ya Wafanyakazi",
+    "verifySso": "Kiungo cha kuingia — Usimamizi wa Mipango ya Wafanyakazi",
     "contingent": "Nguvukazi ya muda — WPM",
     "capacity": "Uwezo — WPM",
     "resilience": "Ustahimilivu — WPM",

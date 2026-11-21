@@ -7211,7 +7211,7 @@ the entry records only the evidence it needs.
         first expectations were wrong (a tie order, and `Intl`'s spaced en dash in a range).
       - **Not done:** the service's remaining 1.77% and the domain's 0.33% (see WPM-T599, WPM-T602) are unchanged.
 
-- [ ] WPM-T632 (2026-11-21) **Translate the UI into the site's other locale languages (the owner: "Translate the UI into the locale languages").**
+- [x] WPM-T632 (2026-11-21) **Translate the UI into the site's other locale languages (the owner: "Translate the UI into the locale languages").**
       - The UI had 13 `-001` catalogues; the repository's locales and the docs site have 21 languages. Eight languages had no UI
         catalogue: `da`, `it`, `ja`, `ko`, `nl`, `sv`, `sw`, `vi`. Each is a complete `-001` file of 3,005 keys, with the plural
         groups its language uses (CLDR), written by the AI assistant and **not reviewed by a native speaker** (a row in
@@ -7221,8 +7221,8 @@ the entry records only the evidence it needs.
         entries for words that are the same as English in that language (`tests/unit/untranslated.allow.json`); the locale count in
         `tests/unit/data-table.test.ts`.
       - Done: `da-001` (Danish; Lily has a `da-001` label pack and the CMS ships `da`) `it-001` (Italian; three plural forms,
-        `one`, `many`, `other`, as CLDR gives it) `nl-001` (Dutch) and `sv-001` (Swedish) `sw-001` (Swahili; the CMS ships no Swahili, so it falls back to `en-US`) `ja-001` (Japanese; one plural form, `other`) and `ko-001` (Korean; one plural form). **To do:** `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
-        and `pnpm check`.
-      - Verified for `da-001`, `it-001`, `nl-001`, `sv-001`, `sw-001`, `ja-001` and `ko-001`: 47 unit-test files, 412 tests pass (key parity, no English left over, label pack, review register,
-        CMS config). **Not verified:** the pages in a browser in Danish; any native-speaker review.
+        `one`, `many`, `other`, as CLDR gives it) `nl-001` (Dutch) and `sv-001` (Swedish) `sw-001` (Swahili; the CMS ships no Swahili, so it falls back to `en-US`) `ja-001` (Japanese; one plural form, `other`) and `ko-001` (Korean; one plural form) and `vi-001` (Vietnamese; one plural form). All eight are done. The locale list and count (25) are updated in
+        `AGENTS/localization.md`, the UI's `README.md`, the root `README.md` and `llms.json`; the brand names match the docs site's catalogues.
+      - Verified for `da-001`, `it-001`, `nl-001`, all eight: 47 unit-test files, 417 tests pass; `pnpm check` has 0 errors; the Playwright `locale-and-chrome` spec passes (5 tests) (key parity, no English left over, label pack, review register,
+        CMS config). **Not verified:** the pages read in a browser in the eight new languages; any native-speaker review (the eight are "unreviewed" in `content/locales/REVIEW.md`); the older prose that says "17 locales" in the translated `locales/*` documents.
 

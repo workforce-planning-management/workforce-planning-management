@@ -7,7 +7,7 @@ record and directory, org chart, self-service, benefits, wellbeing,
 ergonomics, subject rights), talent management & development (reviews, 360°s,
 training, skills gaps and training time, succession), strategic workforce
 planning, joiners and leavers, announcements, a one-screen CEO dashboard, and
-payroll & compensation — in **17 locales**. See
+payroll & compensation — in **25 locales**. See
 [spec/index.md](spec/index.md) for the full specification.
 
 > ⚠️ **Demo software, not yet ready for production use** ([the path to
@@ -93,7 +93,7 @@ commands.
 | Joiners and leavers | dated checklists; a leaver's **last-day handover** with an audit trail |
 | Communication | **announcements** with audiences, links and read counts |
 | Rights and wellbeing | wellbeing prompts, the anonymous pulse, adjustments, subject access / erasure / retention |
-| Global | 17 content locales at `/en-001/`, `/cy-001/`, … each at its one full-code address; strings edited through Sveltia CMS |
+| Global | 25 content locales at `/en-001/`, `/cy-001/`, … each at its one full-code address; strings edited through Sveltia CMS |
 
 Design stance (see [spec/index.md](spec/index.md)): what must not be stored gets
 no column; what must not be disclosed gets no endpoint; an unknown is never a

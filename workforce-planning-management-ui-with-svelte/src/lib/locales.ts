@@ -35,6 +35,7 @@ export const LOCALES = [
   "sv-001",
   "sw-001",
   "ur-001",
+  "vi-001",
   "zh-001",
 ] as const;
 
@@ -78,6 +79,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   "sv-001": "Svenska",
   "sw-001": "Kiswahili",
   "ur-001": "اردو",
+  "vi-001": "Tiếng Việt",
   "zh-001": "中文",
 };
 
@@ -230,5 +232,6 @@ export const CMS_UI_LOCALE: Record<Locale, (typeof CMS_UI_LANGUAGES)[number]> =
     "sv-001": "sv",
     "sw-001": "en-US",
     "ur-001": "en-US",
+    "vi-001": "vi",
     "zh-001": "zh-CN",
   };

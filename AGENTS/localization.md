@@ -11,10 +11,10 @@ See [spec/worldwide.md](../spec/worldwide.md) (WPM-R214, WPM-D143).
 
 ## Locales
 
-17 content locales in
+25 content locales in
 `workforce-planning-management-ui-with-svelte/content/locales/<locale>/ui.json`:
-`ar-001 bn-001 cy-001 de-001 de-de en-001 en-gb en-us es-001 es-es fr-001 hi-001
-id-001 pt-001 ru-001 ur-001 zh-001`.
+`ar-001 bn-001 cy-001 da-001 de-001 de-de en-001 en-gb en-us es-001 es-es fr-001
+hi-001 id-001 it-001 ja-001 ko-001 nl-001 pt-001 ru-001 sv-001 sw-001 ur-001 vi-001 zh-001`.
 
 - **Every directory under `content/locales/` is `<language>-<region>`** — lower-case ISO 639
   language, then an ISO 3166-1 alpha-2 country or the UN numeric `001`; never a bare

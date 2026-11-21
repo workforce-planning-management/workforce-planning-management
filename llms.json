@@ -1,7 +1,7 @@
 {
   "name": "Workforce Planning Management",
   "slug": "workforce-planning-management",
-  "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Axum, axa) and SvelteKit, in 17 locales. Demo software; synthetic data only.",
+  "summary": "Open-source, spec-driven all-in-one HR platform demo (hiring to retirement) in Rust (Axum, axa) and SvelteKit, in 25 locales. Demo software; synthetic data only.",
   "status": {
     "tasks_delivered": "WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md)",
     "highest_requirement": "WPM-R217",

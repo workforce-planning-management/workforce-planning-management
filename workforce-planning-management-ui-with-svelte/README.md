@@ -44,7 +44,7 @@ auth service and this service side by side.
 
 SvelteKit 3 · Svelte 5 runes · TypeScript strict · SPA mode with a
 same-origin BFF proxy (session cookie → short-lived PASETO; no token
-in browser JS) · **17 content locales under `/<locale>/` routes** (e.g.
+in browser JS) · **25 content locales under `/<locale>/` routes** (e.g.
 `/en-001/workers`, `/cy-001/workers`; `/en/…` redirects to `/en-001/…`) with
 strings as content in `content/locales/<locale>/ui.json` edited through
 **Sveltia CMS** at `/<locale>/admin/` · Lily Design System (headless +
@@ -54,7 +54,7 @@ vitest + Playwright (`page.route`-stubbed).
 ### Sitemap and robots.txt
 
 `/sitemap.xml` is generated per request: every public page (`/`, `/tour`,
-`/signin`) in every locale — 17 × 3 URLs — each with `hreflang` alternates for its
+`/signin`) in every locale — 25 × 3 URLs — each with `hreflang` alternates for its
 sibling locales and `x-default` → `en-001` (a `<language>-001` locale is its bare
 language; `en-gb` is `en-GB`). `/robots.txt` names it and keeps crawlers off the
 API, the CMS and sign-out. Signed-in pages are never listed (they redirect to
