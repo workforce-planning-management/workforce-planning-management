@@ -6983,3 +6983,7 @@ the entry records only the evidence it needs.
       by `hasText` and now met two, "Cymraeg" and the new regional draft "Cymraeg - Ariannin" (from `6d2686cc`). It now
       picks the option by its exact accessible name, as the file's other picker tests already did; the site's 647 tests pass
       locally.
+      **CI on that (`151f80d3`):** all green but coverage, which timed out twice (a rerun too): tarpaulin's `--timeout 300`
+      bounds how long one test binary may go without answering, and the instrumented `main` binary, larger by this
+      session's tests, now runs past it (locally it needs 1,200, as recorded under WPM-T602). `ci.yml` now passes
+      `--timeout 1200`; the job's own limit is 45 minutes.

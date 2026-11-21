@@ -180,7 +180,8 @@ jobs:
         run: cargo tarpaulin --locked --engine llvm -p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*' --fail-under 95
       - name: the whole service, held at 95%
         working-directory: workforce-planning-management-service-with-rust
-        run: cargo tarpaulin --locked --engine llvm --workspace --lib --tests --ignored --timeout 300 --fail-under 95 -- --test-threads=1
+        # `--timeout` bounds how long one test binary may go without answering; instrumented, `main` runs past 300 s (WPM-T607).
+        run: cargo tarpaulin --locked --engine llvm --workspace --lib --tests --ignored --timeout 1200 --fail-under 95 -- --test-threads=1
       - name: the alternate keycloak build, reported
         working-directory: workforce-planning-management-service-with-rust
         run: cargo tarpaulin --locked --engine llvm --workspace --lib --no-default-features --features keycloak
