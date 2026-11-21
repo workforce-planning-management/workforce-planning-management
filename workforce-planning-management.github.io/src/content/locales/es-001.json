@@ -1,0 +1,77 @@
+{
+  "locale": "es-001",
+  "brand": "Gestión de la planificación de la plantilla",
+  "skip": "Saltar al contenido",
+  "siteNav": "Sitio",
+  "nav": {
+    "home": "Inicio",
+    "readme": "README",
+    "install": "Instalación",
+    "familyBridges": "Puentes familiares",
+    "spec": "Especificación",
+    "worldwide": "En todo el mundo",
+    "briefs": "Informes por rol",
+    "start": "Tutorial",
+    "production": "Camino a producción",
+    "docs": "Documentación",
+    "compare": "Comparar",
+    "privacy": "Privacidad"
+  },
+  "pickers": {
+    "pages": "Páginas",
+    "search": "Buscar en este sitio",
+    "searchInput": "Palabras que buscar",
+    "searchSubmit": "Buscar",
+    "theme": "Tema",
+    "language": "Idioma",
+    "textSize": "Tamaño del texto",
+    "share": "Compartir"
+  },
+  "textSizes": {
+    "largest": "El más grande",
+    "larger": "Más grande",
+    "large": "Grande",
+    "normal": "Normal",
+    "small": "Pequeño",
+    "smaller": "Más pequeño",
+    "smallest": "El más pequeño"
+  },
+  "share": {
+    "copy": "Copiar enlace",
+    "copied": "Enlace copiado",
+    "copyFailed": "No se pudo copiar el enlace",
+    "email": "Enviar enlace por correo",
+    "linkedin": "Compartir en LinkedIn",
+    "reddit": "Compartir en Reddit",
+    "bluesky": "Compartir en Bluesky",
+    "mastodon": "Compartir en Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Creado a partir de los documentos de",
+    "repository": "el repositorio de Workforce Planning Management",
+    "counts": "{documents} documentos y {briefs} informes por rol en {locales} locales",
+    "countsEnd": ".",
+    "notice": "Software de demostración con datos solo sintéticos; las traducciones las escribió un asistente de IA y ningún hablante nativo las ha revisado.",
+    "export": "Este sitio es el directorio {directory} del repositorio, exportado con {tool}."
+  },
+  "translations": "Traducciones:",
+  "source": "Fuente:",
+  "readiness": {
+    "note": "Cada control deslizante empieza en la estimación del autor. Mueva uno para probar la suya; no se guarda ni se envía nada.",
+    "label": "Estimación de preparación: {name}",
+    "author": "estimación del autor: {value}"
+  },
+  "search": {
+    "title": "Buscar",
+    "label": "Palabras que buscar",
+    "submit": "Buscar",
+    "noscript": "Buscar en este sitio requiere JavaScript.",
+    "failed": "No se pudo cargar el índice de búsqueda, así que esta búsqueda no se ha realizado.",
+    "count": "Páginas con todas las palabras de «{query}»: {count}"
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "Esta dirección no existe en el sitio.",
+    "home": "Ir a la página de inicio"
+  }
+}

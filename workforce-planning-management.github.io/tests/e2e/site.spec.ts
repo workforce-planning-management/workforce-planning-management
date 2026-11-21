@@ -412,6 +412,9 @@ for (const [locale, headline] of [
   ["zh-001", "劳动力规划管理"],
   ["hi-in", "वर्कफ़ोर्स प्लानिंग मैनेजमेंट"],
   ["hi-001", "वर्कफ़ोर्स प्लानिंग मैनेजमेंट"],
+  ["es-001", "Gestión de la planificación de la plantilla"],
+  ["es-es", "Gestión de la planificación de la plantilla"],
+  ["es-mx", "Gestión de la planificación de la plantilla"],
 ] as const)
   test(`/${locale}/ is the locale's home: hero, wordmark, chrome and Translations line in its language`, async ({ page }) => {
     const s = ui(locale);

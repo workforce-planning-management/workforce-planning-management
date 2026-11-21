@@ -7020,3 +7020,13 @@ the entry records only the evidence it needs.
       - A language line (`اللغة: …`) before each home's demo-software note, and a `sitemap.xml` in each folder (from the built site).
       - **Not done:** translations are AI-written, not native-reviewed; `ar-eg` and `ar-dz` are copies of `ar-001` without
         Egyptian or Algerian edits.
+
+- [x] WPM-T612 (2026-11-21) **Locale group `es`: the website in Spanish, role pages, language line and sitemaps.**
+      - `es-001`, `es-es` and `es-mx` had briefs, path-to-production and privacy but no home. Added a translated home
+        (`index.md`, with the language line `Idioma: …`), `start/`, `lista-de-evaluación/` (evaluate),
+        `for/dirección-financiera` and `for/dirección-de-planificación-de-la-plantilla`, with the shared
+        `.locale-peer-id` values and `README.md` symlinks; rows added to each `for/index.md`; a `sitemap.xml` in each
+        folder (from the built site). `es-es` and `es-mx` copy `es-001`; `es-mx` says "computadora".
+      - Site: catalogue `es-001.json` (also used by `es-es`, `es-mx`), `es` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `es-es` and `es-mx` have no further regional edits.
