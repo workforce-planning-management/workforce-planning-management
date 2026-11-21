@@ -7201,14 +7201,15 @@ the entry records only the evidence it needs.
 
 - [x] WPM-T631 (2026-11-21) **Unit tests and a coverage gate for the docs site's `src/lib` (the owner's /loop, "aim for test coverage 100%").**
       - The site had only Playwright tests. Added `vitest` 5.1.1 and `@vitest/coverage-v8` (devDependencies, the UI's version) and
-        `tests/unit/` for `search.ts`, `i18n.ts`, `locale-format.ts`, `site.ts` and `href.ts` (`$app/paths` stubbed): 43 tests.
-      - Measured: **100%** of lines (97/97), statements and functions; branches 97.65% (125/128). The three branches not run are
-        `?? ""` fallbacks of `split()[0]`, which cannot be undefined; `vitest.config.ts` holds lines, statements and functions at
-        100 and branches at 95. `src/lib/server/` (the build-time content reader) is excluded and is covered by the e2e run.
+        `tests/unit/` for `search.ts`, `i18n.ts`, `locale-format.ts`, `site.ts` and `href.ts` (`$app/paths` stubbed): 43 tests. Extended the same day to `src/lib/server/content.ts` (the build-time content reader: link
+        rewriting, dates, the Markdown renderer, readiness lists, the index and sitemaps, and the four load-time locale checks, by
+        `vi.doMock` of `docs.json`): 74 tests in all.
+      - Measured: **100%** of lines (267/267), statements and functions; branches 95.22% (259/272). The branches not run are
+        `?? ""` fallbacks of `split()[0]`, which cannot be undefined, and a few defensive `?? ` defaults in `content.ts`;
+        `vitest.config.ts` holds lines, statements and functions at 100 and branches at 95.
       - CI's `site` job runs `pnpm run test:coverage` before the build. Found by writing them: nothing wrong in the code; two of my
         first expectations were wrong (a tie order, and `Intl`'s spaced en dash in a range).
-      - **Not done:** `src/lib/server/content.ts` (379 lines) has no unit test of its own; the service's remaining 1.77% and the
-        domain's 0.33% (see WPM-T599, WPM-T602) are unchanged.
+      - **Not done:** the service's remaining 1.77% and the domain's 0.33% (see WPM-T599, WPM-T602) are unchanged.
 
 - [ ] WPM-T632 (2026-11-21) **Translate the UI into the site's other locale languages (the owner: "Translate the UI into the locale languages").**
       - The UI had 13 `-001` catalogues; the repository's locales and the docs site have 21 languages. Eight languages had no UI

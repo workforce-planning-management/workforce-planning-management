@@ -8,7 +8,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/lib/**/*.ts"],
-      exclude: ["src/lib/server/**", "src/lib/index.ts"],
+      exclude: ["src/lib/index.ts"],
       reporter: ["text"],
       // The branches not run are `?? ""` fallbacks of `split()[0]`, which cannot be undefined, so branches are held at 95.
       thresholds: { lines: 100, statements: 100, functions: 100, branches: 95 },
