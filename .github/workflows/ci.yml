@@ -623,6 +623,8 @@ jobs:
         run: node scripts/sync-content.mjs --check
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
+      - name: unit tests of src/lib, held at 100% of lines, statements and functions (WPM-T631)
+        run: pnpm run test:coverage
       - run: pnpm run build
       - run: pnpm exec playwright install --with-deps chromium
       - name: Playwright (every page, axe, every picker and theme, locales, search, sitemaps, ar-001 and ur-001 right to left)

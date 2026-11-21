@@ -7198,3 +7198,14 @@ the entry records only the evidence it needs.
         and `Slider`.
       - Verified: build; full e2e (axe included) 966 passed on the first run, then the one stale theme-order test fixed
         and re-run alone (passes). **Not done:** a second full run; the picker in a browser by eye; publish.
+
+- [x] WPM-T631 (2026-11-21) **Unit tests and a coverage gate for the docs site's `src/lib` (the owner's /loop, "aim for test coverage 100%").**
+      - The site had only Playwright tests. Added `vitest` 5.1.1 and `@vitest/coverage-v8` (devDependencies, the UI's version) and
+        `tests/unit/` for `search.ts`, `i18n.ts`, `locale-format.ts`, `site.ts` and `href.ts` (`$app/paths` stubbed): 43 tests.
+      - Measured: **100%** of lines (97/97), statements and functions; branches 97.65% (125/128). The three branches not run are
+        `?? ""` fallbacks of `split()[0]`, which cannot be undefined; `vitest.config.ts` holds lines, statements and functions at
+        100 and branches at 95. `src/lib/server/` (the build-time content reader) is excluded and is covered by the e2e run.
+      - CI's `site` job runs `pnpm run test:coverage` before the build. Found by writing them: nothing wrong in the code; two of my
+        first expectations were wrong (a tie order, and `Intl`'s spaced en dash in a range).
+      - **Not done:** `src/lib/server/content.ts` (379 lines) has no unit test of its own; the service's remaining 1.77% and the
+        domain's 0.33% (see WPM-T599, WPM-T602) are unchanged.
