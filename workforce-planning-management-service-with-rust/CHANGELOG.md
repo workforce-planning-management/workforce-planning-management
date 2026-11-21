@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — reading your own allocations is not audited, whatever else you hold (WPM-T607, 2026-11-21)
+
+`allocation::named_read_is_audited` audits a named read of another person's allocations, and no longer a person reading
+their own because they also hold HR or a manager's standing (WPM-R275). Domain test assertions use `assert_eq!` against an
+empty list (clippy `assert_is_empty`).
+
 ### Changed — `axa` 0.20.1 (WPM-T606, 2026-11-20)
 
 `axa` 0.20.0 to 0.20.1, at the owner's request inside the minimum publish age. Only the unused `mail` feature changed; no code

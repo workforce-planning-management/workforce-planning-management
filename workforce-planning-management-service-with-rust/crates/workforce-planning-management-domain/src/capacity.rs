@@ -1896,7 +1896,10 @@ mod tests {
     fn change_validation_names_one_based_lines_and_accepts_the_limit() {
         let views = wi_pool(500, &[], &[]);
         let months = wi_six();
-        assert!(change_problems(&views, &months, &[wi_change(1, MAX_FTE_CENTI)]).is_empty());
+        assert_eq!(
+            change_problems(&views, &months, &[wi_change(1, MAX_FTE_CENTI)]),
+            [] as [std::string::String; 0]
+        );
         let problems = change_problems(
             &views,
             &months,

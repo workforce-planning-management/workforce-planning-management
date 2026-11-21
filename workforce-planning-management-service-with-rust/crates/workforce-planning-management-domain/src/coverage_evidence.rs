@@ -239,10 +239,10 @@ mod tests {
                 None,
             )
         };
-        assert!(check("GBP").is_empty());
+        assert_eq!(check("GBP"), [] as [std::string::String; 0]);
         assert_eq!(check("GB").len(), 1, "length alone is invalid");
         assert_eq!(check("gbp").len(), 1, "case alone is invalid");
-        assert!(
+        assert_eq!(
             problems(
                 "XA",
                 "self_insured",
@@ -252,8 +252,8 @@ mod tests {
                 Some("GBP"),
                 Some(d(2026, 1, 1)),
                 Some(d(2026, 1, 1)),
-            )
-            .is_empty()
+            ),
+            [] as [std::string::String; 0]
         );
         assert_eq!(
             problems(

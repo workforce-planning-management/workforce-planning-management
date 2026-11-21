@@ -173,8 +173,8 @@ async fn nobody_decides_their_own_claim() {
         assert!(queue(mgr).await.contains(&pid));
         assert!(queue(hr).await.contains(&pid));
         assert!(!queue(emp).await.contains(&pid), "never your own claim in your queue");
-        assert!(queue(peer).await.is_empty());
-        assert!(queue(stranger).await.is_empty());
+        assert_eq!(queue(peer).await, [] as [std::string::String; 0]);
+        assert_eq!(queue(stranger).await, [] as [std::string::String; 0]);
 
         // Deciding: not the claimant, not a peer; the manager can.
         let approve = format!("/api/expense-claims/{pid}/approve");

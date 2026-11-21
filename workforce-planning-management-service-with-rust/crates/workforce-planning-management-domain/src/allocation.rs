@@ -534,12 +534,7 @@ pub fn read_access(reader: Reader, source_owners_named: bool) -> Read {
 /// Whether a named read is audited: every read of **another** person's allocations is; a person reading their own is not.
 #[must_use]
 pub fn named_read_is_audited(reader: Reader, source_owners_named: bool) -> bool {
-    read_access(reader, source_owners_named) == Read::Named
-        && (reader.line_manager
-            || reader.hr
-            || reader.resource_manager
-            || reader.source_owner
-            || !reader.is_self)
+    read_access(reader, source_owners_named) == Read::Named && !reader.is_self
 }
 
 /// Whether the caller may create, change or end allocations in the person's organization: HR and resource managers. A line
@@ -1183,6 +1178,17 @@ mod tests {
                 true
             ),
             "your own is not audited"
+        );
+        assert!(
+            !named_read_is_audited(
+                Reader {
+                    is_self: true,
+                    hr: true,
+                    ..none
+                },
+                true
+            ),
+            "nor is your own when you also hold HR access: it is still your own"
         );
         assert!(named_read_is_audited(
             Reader {

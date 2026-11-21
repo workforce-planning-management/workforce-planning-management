@@ -226,15 +226,15 @@ mod tests {
     #[test]
     fn opening_boundaries_are_inclusive_and_checked_independently() {
         let t = topics(&["redundancy"]);
-        assert!(
+        assert_eq!(
             open_problems(
                 &"e".repeat(ESTABLISHMENT_MAX),
                 0,
                 1,
                 Some(&"r".repeat(REF_MAX)),
                 &t,
-            )
-            .is_empty()
+            ),
+            [] as [std::string::String; 0]
         );
         assert_eq!(
             open_problems("e", 0, 1, Some(""), &t),
@@ -303,15 +303,15 @@ mod tests {
             1,
             "never begun: only withdrawn"
         );
-        assert!(
+        assert_eq!(
             close_problems(
                 "agreed",
                 d("2026-05-01"),
                 Some(d("2026-05-01")),
                 d("2026-05-01"),
                 false,
-            )
-            .is_empty()
+            ),
+            [] as [std::string::String; 0]
         );
     }
 
