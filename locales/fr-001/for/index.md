@@ -9,12 +9,14 @@ Une page pour chaque rôle de direction, qui dit ce que Workforce Planning Manag
 | Direction technique (CTO) | [direction-technique](direction-technique/index.md) |
 | Direction des systèmes d’information (CIO) | [direction-des-systèmes-dinformation](direction-des-systèmes-dinformation/index.md) |
 | Direction des risques (CRO) | [direction-des-risques](direction-des-risques/index.md) |
+| Direction financière (CFO) | [direction-financière](direction-financière/index.md) |
 | Direction juridique (CLO) | [direction-juridique](direction-juridique/index.md) |
 | Direction des ressources humaines (CPO) | [direction-des-ressources-humaines](direction-des-ressources-humaines/index.md) |
 | Direction de la stratégie | [direction-de-la-stratégie](direction-de-la-stratégie/index.md) |
 | Direction de la sécurité | [direction-de-la-sécurité](direction-de-la-sécurité/index.md) |
 | Gouvernance, risques, conformité | [gouvernance-risques-conformité](gouvernance-risques-conformité/index.md) |
 | Test de sécurité indépendant (note de cadrage pour le commander) | [test-de-sécurité-indépendant](test-de-sécurité-indépendant/index.md) |
+| Direction de la planification des effectifs | [direction-de-la-planification-des-effectifs](direction-de-la-planification-des-effectifs/index.md) |
 
 Commencez par l’[évaluation de préparation](../../../spec/readiness-assessment.md) : le verdict est qu’il s’agit d’un logiciel de démonstration, qui n’est pas prêt pour un usage en production dans une organisation exigeant un haut niveau de garantie.
 

@@ -7030,3 +7030,15 @@ the entry records only the evidence it needs.
       - Site: catalogue `es-001.json` (also used by `es-es`, `es-mx`), `es` in `i18n.ts`, the three locales in
         `HOME_LOCALES`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `es-es` and `es-mx` have no further regional edits.
+
+- [x] WPM-T613 (2026-11-21) **Locale group `fr`: the website in French, role pages, language line and sitemaps.**
+      - `fr-001`, `fr-fr` and `fr-ca` had briefs, path-to-production and privacy but no home. Added a translated home
+        (`index.md`, with the language line `Langue: …`), `start/`, `évaluation/` (evaluate),
+        `for/direction-financière` and `for/direction-de-la-planification-des-effectifs`, with the shared
+        `.locale-peer-id` values and `README.md` symlinks; rows added to each `for/index.md`; a `sitemap.xml` in each
+        folder (from the built site). `fr-fr` and `fr-ca` copy `fr-001`; `fr-ca` says "ordinateur local".
+      - Site: catalogue `fr-001.json` (also used by `fr-fr`, `fr-ca`), `fr` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `fr-fr` and `fr-ca` have no further regional
+        edits; the language line uses `Langue:` (no space before the colon) as the locale rule's pattern says, not
+        French typography.

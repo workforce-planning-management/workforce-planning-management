@@ -1,0 +1,77 @@
+{
+  "locale": "fr-001",
+  "brand": "Gestion de la planification des effectifs",
+  "skip": "Aller au contenu",
+  "siteNav": "Site",
+  "nav": {
+    "home": "Accueil",
+    "readme": "README",
+    "install": "Installation",
+    "familyBridges": "Passerelles familiales",
+    "spec": "Spécification",
+    "worldwide": "Dans le monde",
+    "briefs": "Notes par rôle",
+    "start": "Tutoriel",
+    "production": "Chemin vers la production",
+    "docs": "Documentation",
+    "compare": "Comparer",
+    "privacy": "Confidentialité"
+  },
+  "pickers": {
+    "pages": "Pages",
+    "search": "Rechercher sur ce site",
+    "searchInput": "Mots à rechercher",
+    "searchSubmit": "Rechercher",
+    "theme": "Thème",
+    "language": "Langue",
+    "textSize": "Taille du texte",
+    "share": "Partager"
+  },
+  "textSizes": {
+    "largest": "Le plus grand",
+    "larger": "Plus grand",
+    "large": "Grand",
+    "normal": "Normal",
+    "small": "Petit",
+    "smaller": "Plus petit",
+    "smallest": "Le plus petit"
+  },
+  "share": {
+    "copy": "Copier le lien",
+    "copied": "Lien copié",
+    "copyFailed": "Impossible de copier le lien",
+    "email": "Envoyer le lien par courriel",
+    "linkedin": "Partager sur LinkedIn",
+    "reddit": "Partager sur Reddit",
+    "bluesky": "Partager sur Bluesky",
+    "mastodon": "Partager sur Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Construit à partir des documents de",
+    "repository": "le dépôt Workforce Planning Management",
+    "counts": "{documents} documents et {briefs} notes par rôle dans {locales} locales",
+    "countsEnd": ".",
+    "notice": "Logiciel de démonstration avec données uniquement synthétiques ; les traductions ont été écrites par une IA et n’ont été relues par aucun locuteur natif.",
+    "export": "Ce site est le répertoire {directory} du dépôt, exporté avec {tool}."
+  },
+  "translations": "Traductions :",
+  "source": "Source :",
+  "readiness": {
+    "note": "Chaque curseur démarre à l’estimation de l’auteur. Déplacez-en un pour essayer la vôtre ; rien n’est enregistré ni envoyé.",
+    "label": "Estimation de préparation : {name}",
+    "author": "estimation de l’auteur : {value}"
+  },
+  "search": {
+    "title": "Rechercher",
+    "label": "Mots à rechercher",
+    "submit": "Rechercher",
+    "noscript": "La recherche sur ce site nécessite JavaScript.",
+    "failed": "L’index de recherche n’a pas pu être chargé : cette recherche n’a pas été effectuée.",
+    "count": "Pages contenant tous les mots de « {query} » : {count}"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "Cette adresse n’existe pas sur le site.",
+    "home": "Aller à la page d’accueil"
+  }
+}
