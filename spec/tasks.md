@@ -7060,3 +7060,12 @@ the entry records only the evidence it needs.
       - Site: catalogue `bn-001.json` (also used by `bn-bd`, `bn-in`), `bn` in `i18n.ts`, the three locales in
         `HOME_LOCALES`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `bn-bd` and `bn-in` have no regional edits.
+- [x] WPM-T616 (2026-11-21) **Locale group `id`: the website in Indonesian, role pages, language line and sitemaps.**
+      - `id-001`, `id-id` and `id-my` had briefs, path-to-production and privacy but no home. Added a translated home
+        (`index.md`, with the language line `Bahasa: …`), `start/`, `evaluasi/` (evaluate),
+        `for/direktur-keuangan` and `for/direktur-perencanaan-tenaga-kerja`, with the shared
+        `.locale-peer-id` values and `README.md` symlinks; rows added to each `for/index.md`; a `sitemap.xml` in each
+        folder (from the built site). `id-id` and `id-my` copy `id-001`.
+      - Site: catalogue `id-001.json` (also used by `id-id`, `id-my`), `id` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `id-id` and `id-my` have no regional edits.

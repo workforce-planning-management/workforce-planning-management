@@ -1,0 +1,77 @@
+{
+  "locale": "id-001",
+  "brand": "Manajemen Perencanaan Tenaga Kerja",
+  "skip": "Lompat ke konten",
+  "siteNav": "Situs",
+  "nav": {
+    "home": "Beranda",
+    "readme": "README",
+    "install": "Instalasi",
+    "familyBridges": "Jembatan keluarga",
+    "spec": "Spesifikasi",
+    "worldwide": "Seluruh dunia",
+    "briefs": "Dokumentasi peran",
+    "start": "Panduan",
+    "production": "Jalan menuju produksi",
+    "docs": "Dokumentasi",
+    "compare": "Perbandingan",
+    "privacy": "Privasi"
+  },
+  "pickers": {
+    "pages": "Halaman",
+    "search": "Cari di situs",
+    "searchInput": "Kata pencarian",
+    "searchSubmit": "Cari",
+    "theme": "Tema",
+    "language": "Bahasa",
+    "textSize": "Ukuran teks",
+    "share": "Bagikan"
+  },
+  "textSizes": {
+    "largest": "Terbesar",
+    "larger": "Lebih besar",
+    "large": "Besar",
+    "normal": "Normal",
+    "small": "Kecil",
+    "smaller": "Lebih kecil",
+    "smallest": "Terkecil"
+  },
+  "share": {
+    "copy": "Salin tautan",
+    "copied": "Tautan disalin",
+    "copyFailed": "Tautan tidak dapat disalin",
+    "email": "Kirim tautan lewat email",
+    "linkedin": "Bagikan di LinkedIn",
+    "reddit": "Bagikan di Reddit",
+    "bluesky": "Bagikan di Bluesky",
+    "mastodon": "Bagikan di Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Dibangun dari dokumen di",
+    "repository": "repositori Manajemen Perencanaan Tenaga Kerja",
+    "counts": "{documents} dokumen dan {briefs} dokumentasi peran dalam {locales} lokal",
+    "countsEnd": ".",
+    "notice": "Perangkat lunak demonstrasi, hanya data sintetis; terjemahan ditulis oleh AI dan belum ditinjau oleh penutur asli.",
+    "export": "Situs ini adalah folder {directory} dari repositori, diekspor dengan {tool}."
+  },
+  "translations": "Terjemahan:",
+  "source": "Sumber:",
+  "readiness": {
+    "note": "Setiap penggeser dimulai dari perkiraan penulis. Geser untuk mencoba perkiraan Anda sendiri; tidak ada yang disimpan atau dikirim.",
+    "label": "Perkiraan kesiapan: {name}",
+    "author": "Perkiraan penulis: {value}"
+  },
+  "search": {
+    "title": "Cari",
+    "label": "Kata pencarian",
+    "submit": "Cari",
+    "noscript": "Pencarian di situs memerlukan JavaScript.",
+    "failed": "Indeks pencarian tidak dapat dimuat: pencarian ini tidak dijalankan.",
+    "count": "{count} halaman berisi semua kata dari “{query}”"
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "body": "Situs ini tidak memiliki alamat seperti itu.",
+    "home": "Ke beranda"
+  }
+}
