@@ -32,15 +32,31 @@ export function assertExactMinorUnits(value: unknown): void {
   }
   if (typeof value !== "object" || value === null) return;
   for (const [key, item] of Object.entries(value)) {
-    if (
-      key.endsWith("_minor") &&
-      item !== null &&
-      (typeof item !== "number" || !Number.isSafeInteger(item))
-    ) {
+    if (key.endsWith("_minor") && item !== null && !exactMinor(item)) {
       throw new RangeError(`${key} is outside the exact JSON integer range`);
     }
     assertExactMinorUnits(item);
   }
+}
+
+/**
+ * A `*_minor` value is a safe integer, or (as the service's boundary allows) a typed wrapper of one, such as
+ * `{ "status": "shown", "value": 123 }` for an aggregate that may be withheld: then every number inside it must be a
+ * safe integer.
+ */
+function exactMinor(item: unknown): boolean {
+  if (typeof item === "number") return Number.isSafeInteger(item);
+  if (typeof item === "object" && item !== null) return exactWithin(item);
+  return false;
+}
+
+/** Inside a wrapper: a number must be a safe integer; anything else is checked for numbers in turn. */
+function exactWithin(inner: unknown): boolean {
+  if (typeof inner === "number") return Number.isSafeInteger(inner);
+  if (Array.isArray(inner)) return inner.every(exactWithin);
+  if (typeof inner === "object" && inner !== null)
+    return Object.values(inner).every(exactWithin);
+  return true;
 }
 
 /**

@@ -330,7 +330,10 @@ mod tests {
         );
         let backwards = a(50, d(2026, 2, 1), Some(d(2026, 1, 1)), true);
         assert_eq!(assignment_problems(&backwards).len(), 1);
-        assert!(assignment_problems(&a(1, d(2026, 1, 1), Some(d(2026, 1, 1)), true,)).is_empty());
+        assert_eq!(
+            assignment_problems(&a(1, d(2026, 1, 1), Some(d(2026, 1, 1)), true,)),
+            [] as [std::string::String; 0]
+        );
     }
 
     #[test]

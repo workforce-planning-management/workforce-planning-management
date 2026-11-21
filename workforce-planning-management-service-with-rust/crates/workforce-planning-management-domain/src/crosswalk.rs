@@ -169,7 +169,10 @@ mod tests {
         assert_eq!(ok("exact", "hunch", "x").len(), 1);
         assert_eq!(ok("exact", "judgement", "  ").len(), 1);
         assert_eq!(ok("exact", "judgement", &"x".repeat(301)).len(), 1);
-        assert!(ok("exact", "judgement", &"x".repeat(SOURCE_MAX)).is_empty());
+        assert_eq!(
+            ok("exact", "judgement", &"x".repeat(SOURCE_MAX)),
+            [] as [std::string::String; 0]
+        );
     }
 
     #[test]

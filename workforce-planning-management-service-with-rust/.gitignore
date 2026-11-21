@@ -6,3 +6,7 @@ target/
 # resolves different versions and the SBOM describes a graph nobody
 # can reconstruct.
 !Cargo.lock
+
+# cargo mutants output from a local run (CI writes to target/mutants-diff)
+mutants.out/
+mutants.out.old/

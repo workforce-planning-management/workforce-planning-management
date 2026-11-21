@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — a withheld figure no longer stops a page loading (WPM-T607, 2026-11-21)
+
+- The exact-money check on API responses accepts the service's typed wrapper of an aggregate (`{ status, value }` under a
+  `*_minor` key) when every number in it is a safe integer. A pay information answer with a withheld average loaded as an
+  error before.
+
 ### Changed — settings are named `WORKFORCE_PLANNING_MANAGEMENT_*` (WPM-R278, WPM-T604, 2026-11-20)
 
 - `WORKFORCE_PLANNING_MANAGEMENT_API_URL`, `_PUBLIC_URL` and `_DEMO_API_URL`, with `withLegacy` reading the old names

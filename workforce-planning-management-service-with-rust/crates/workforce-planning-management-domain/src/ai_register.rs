@@ -371,15 +371,15 @@ mod tests {
     #[test]
     fn retention_note_limit_is_inclusive() {
         let today = d(2026, 10, 24);
-        assert!(
+        assert_eq!(
             validate(
                 &Entry {
                     retention_note: Some("n".repeat(500)),
                     ..Entry::default()
                 },
                 today,
-            )
-            .is_empty()
+            ),
+            [] as [std::string::String; 0]
         );
         let problems = validate(
             &Entry {

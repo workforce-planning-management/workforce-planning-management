@@ -54,4 +54,22 @@ describe("exact minor units at the API boundary (WPM-T552, WPM-D206)", () => {
       }),
     ).toThrow("fee_minor is outside the exact JSON integer range");
   });
+
+  it("accepts the service's typed wrapper of an aggregate, and checks the number inside it", () => {
+    // The service sends a figure that may be withheld as `{ status, value }` under a `*_minor` key.
+    expect(() =>
+      assertExactMinorUnits({
+        female_average_minor: { status: "shown", value: 3_900_000 },
+        male_average_minor: { status: "withheld" },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertExactMinorUnits({
+        female_average_minor: { status: "shown", value: MAX_MINOR_UNITS + 1 },
+      }),
+    ).toThrow("female_average_minor is outside the exact JSON integer range");
+    expect(() => assertExactMinorUnits({ salary_minor: "3900000" })).toThrow(
+      "salary_minor is outside the exact JSON integer range",
+    );
+  });
 });

@@ -6955,3 +6955,28 @@ the entry records only the evidence it needs.
       WPM-T547), `enforcement` 21 and `security` 3. Stopping a background coverage run to make the change left the local
       test schema half-migrated; `sqlx migrate run` completed it before the checks. **Not run:** CI, the other enforcement
       binaries, chaos and Keycloak.
+- [x] WPM-T607 (2026-11-21) **CI after the 2026-11-21 push to `main`.** *(follow-up to WPM-T552, WPM-T597, WPM-T602)* The push
+      `fa7d824f` cleared two jobs that were red on `main` before it (docs, coverage) and left five red. Four were already red
+      on the previous run, `6d2686cc`; the fifth (`mutants`) tests only changed lines. Fixed:
+      - **clippy `assert_is_empty`** in 13 domain test assertions (`agreement`, `ai_register`, `assignment`, `capacity`,
+        `coding`, `consultation_register`, `coverage_evidence`, `crosswalk`, `decision_gate`) and one in
+        `tests/enforcement_expenses.rs`, by `clippy --fix`. Local runs had missed them: they ran clippy without `--workspace`,
+        so the domain crate's tests were not linted. This was the `api · fmt, clippy, unit tests` job and the OIDC job.
+      - **The UI refused a typed aggregate under a `*_minor` key.** `assertExactMinorUnits` (WPM-T552) required a number, but
+        the service sends a figure that may be withheld as `{ "status": "shown", "value": 3900000 }`, and its boundary allows
+        that wrapper (`money_boundary::invalid_response_minor`). So a pay information answer failed to load in the UI, and the
+        `pay-information` end-to-end test failed. The UI now accepts a wrapper when every number inside it is a safe integer;
+        unit tests cover a shown and a withheld wrapper, an unsafe value inside one, and a string.
+      - **The site's copy of the documents** (`docs.json`) was stale; `pnpm run sync` regenerated it.
+      - **`allocation::named_read_is_audited`** audited a person reading their own allocations when they also held HR, line
+        manager, resource manager or source owner standing, contrary to its own comment and to WPM-R275 ("every read of another
+        person's allocations is audited"). The mutation test found the extra conditions untested. The rule is now a named read
+        that is not your own; a unit test pins an HR holder reading their own as not audited.
+      **Correction (WPM-T606):** its note blamed the `jurisdiction_neutrality` failure on the owner's uncommitted
+      `coverage_evidence.rs`. In fact the committed file already failed it, because the test input `"GB"` had no allow-list
+      entry. The entry was added before the push. **Verified locally:** `clippy --workspace --all-targets -D warnings` with
+      default features and with `keycloak` clean; the domain tests (1,230) and service lib (182); the allocation request
+      and enforcement tests; `cargo mutants -F named_read_is_audited`, 10 caught; UI lint, check, unit (377), and Playwright
+      (537 passed, 19 skipped); the site check and `sync-content --check`. The local `cargo mutants` run wrote `mutants.out/`
+      into the service directory, which was not ignored and was nearly committed; it is now in the service's `.gitignore`.
+      **Not verified:** CI on the fix, until it is pushed.

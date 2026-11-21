@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn agreement_text_limits_are_inclusive() {
-        assert!(
+        assert_eq!(
             agreement_problems(
                 &"t".repeat(TITLE_MAX),
                 &"s".repeat(SOURCE_MAX),
@@ -206,8 +206,8 @@ mod tests {
                 None,
                 &Terms::default(),
                 known,
-            )
-            .is_empty()
+            ),
+            [] as [std::string::String; 0]
         );
         assert_eq!(
             agreement_problems(

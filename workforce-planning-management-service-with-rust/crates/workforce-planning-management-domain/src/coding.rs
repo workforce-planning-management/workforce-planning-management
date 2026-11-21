@@ -327,7 +327,7 @@ mod tests {
             source: Source::Fixed("x".to_string()),
         };
         let maximum: Vec<_> = (0..SEGMENTS_MAX).map(segment).collect();
-        assert!(structure_problems(&maximum).is_empty());
+        assert_eq!(structure_problems(&maximum), [] as [std::string::String; 0]);
         let over: Vec<_> = (0..=SEGMENTS_MAX).map(segment).collect();
         assert_eq!(
             structure_problems(&over),
