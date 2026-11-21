@@ -649,6 +649,11 @@
   ],
   "optional": [
     {
+      "title": "licenses spec",
+      "path": "spec/licenses/index.md",
+      "description": "Which licenses the project is offered under, and how the license files, manifests and documentation stay consistent"
+    },
+    {
       "title": "monorepo-github-pages spec",
       "path": "spec/monorepo-github-pages/index.md",
       "description": "The family pattern for a GitHub Pages site exported with git subtree; WPM applies it in spec/github-pages-site.md"
