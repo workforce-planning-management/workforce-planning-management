@@ -1,0 +1,77 @@
+{
+  "locale": "pt-br",
+  "brand": "Planejamento de Pessoal",
+  "skip": "Saltar para o conteúdo principal",
+  "siteNav": "Site",
+  "nav": {
+    "home": "Início",
+    "readme": "README",
+    "install": "Instalação",
+    "familyBridges": "Pontes familiares",
+    "spec": "Especificação",
+    "worldwide": "Mundo",
+    "briefs": "Documentação por função",
+    "start": "Tutorial",
+    "production": "Caminho para a produção",
+    "docs": "Documentação",
+    "compare": "Comparação",
+    "privacy": "Privacidade"
+  },
+  "pickers": {
+    "pages": "Páginas",
+    "search": "Pesquisar no site",
+    "searchInput": "Termos de pesquisa",
+    "searchSubmit": "Pesquisar",
+    "theme": "Tema",
+    "language": "Idioma",
+    "textSize": "Tamanho do texto",
+    "share": "Compartilhar"
+  },
+  "textSizes": {
+    "largest": "Maior",
+    "larger": "Muito grande",
+    "large": "Grande",
+    "normal": "Normal",
+    "small": "Pequeno",
+    "smaller": "Muito pequeno",
+    "smallest": "Menor"
+  },
+  "share": {
+    "copy": "Copiar link",
+    "copied": "Link copiado",
+    "copyFailed": "Não foi possível copiar o link",
+    "email": "Enviar link por e-mail",
+    "linkedin": "Compartilhar no LinkedIn",
+    "reddit": "Compartilhar no Reddit",
+    "bluesky": "Compartilhar no Bluesky",
+    "mastodon": "Compartilhar no Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Construído a partir dos documentos no",
+    "repository": "repositório de Planejamento de Pessoal",
+    "counts": "{documents} documentos e {briefs} fichas por função em {locales} idiomas e regiões",
+    "countsEnd": ".",
+    "notice": "Software de demonstração, apenas com dados sintéticos. As traduções foram feitas por IA e não foram revistas por falantes nativos.",
+    "export": "Este site é uma exportação da pasta {directory} do repositório, gerada com {tool}."
+  },
+  "translations": "Traduções:",
+  "source": "Origem:",
+  "readiness": {
+    "note": "Cada controlo deslizante começa na estimativa do autor. Arraste-o para experimentar a sua. Nada é guardado nem enviado.",
+    "label": "Estimativa de prontidão: {name}",
+    "author": "Estimativa do autor: {value}"
+  },
+  "search": {
+    "title": "Pesquisa",
+    "label": "Termos de pesquisa",
+    "submit": "Pesquisar",
+    "noscript": "A pesquisa no site requer JavaScript.",
+    "failed": "Não foi possível carregar o índice de pesquisa. Esta pesquisa não foi feita.",
+    "count": "{count} páginas contêm todas as palavras de «{query}»"
+  },
+  "notFound": {
+    "title": "Página não encontrada",
+    "body": "O site não tem este endereço.",
+    "home": "Voltar ao início"
+  }
+}

@@ -7172,3 +7172,11 @@ the entry records only the evidence it needs.
         e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
         were not run for `it`.
+- [x] WPM-T628 (2026-11-21) **Fix-ups: `pt-br` catalogue, English `Language:` line, picker-label check.**
+      - `pt-br` shared the `pt-001` catalogue, so its title and brand read "Planeamento". Added `pt-br.json` (brand
+        "Planejamento de Pessoal", `Compartilhar`, `link`, `e-mail`) and registered it in `i18n.ts`.
+      - Added the `Language: …` line to the four English homes (`en-001`, `en-gb`, `en-gb-oxendict`, `en-us`).
+      - The Scots, Gàidhlig and Kernewek picker labels: this repository has no such locales or labels, so there was nothing
+        to reword or check. `en-gb` reads "English - Great Britain" and `en-gb-oxendict` "English - Great Britain - Oxford".
+      - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
+        were not run.

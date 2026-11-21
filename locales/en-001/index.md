@@ -2,6 +2,8 @@
 
 **An open-source HR platform covering the employee lifecycle from hire to retire.**
 
+Language: العربية, বাংলা, Cymraeg, English, Español, हिन्दी, 日本語, 한국어, Русский, اردو, 中文
+
 Workforce Planning Management (WPM) combines recruitment, time and leave, employee development, workforce planning and payroll in one application. It is demonstration software, intended for evaluation and as a reference design.
 
 > **Demo software, not yet ready for production use.** WPM uses synthetic data only, and its statutory calculations are illustrative. Do not enter real personal data. [The path to production](path-to-production/index.md) says what production use would need and how ready each part is. See also [the regulatory position](../../spec/regulatory.md).
