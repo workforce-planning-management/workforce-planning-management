@@ -1,0 +1,77 @@
+{
+  "locale": "da-001",
+  "brand": "Planlægning af arbejdsstyrken",
+  "skip": "Gå til hovedindholdet",
+  "siteNav": "Websted",
+  "nav": {
+    "home": "Hjem",
+    "readme": "README",
+    "install": "Installation",
+    "familyBridges": "Familiebroer",
+    "spec": "Specifikation",
+    "worldwide": "Hele verden",
+    "briefs": "Rollebeskrivelser",
+    "start": "Vejledning",
+    "production": "Vejen til produktion",
+    "docs": "Dokumentation",
+    "compare": "Sammenlign",
+    "privacy": "Privatliv"
+  },
+  "pickers": {
+    "pages": "Sider",
+    "search": "Søg på webstedet",
+    "searchInput": "Søgeord",
+    "searchSubmit": "Søg",
+    "theme": "Tema",
+    "language": "Sprog",
+    "textSize": "Tekststørrelse",
+    "share": "Del"
+  },
+  "textSizes": {
+    "largest": "Størst",
+    "larger": "Større",
+    "large": "Stor",
+    "normal": "Normal",
+    "small": "Lille",
+    "smaller": "Mindre",
+    "smallest": "Mindst"
+  },
+  "share": {
+    "copy": "Kopiér link",
+    "copied": "Linket er kopieret",
+    "copyFailed": "Linket kunne ikke kopieres",
+    "email": "Send linket med e-mail",
+    "linkedin": "Del på LinkedIn",
+    "reddit": "Del på Reddit",
+    "bluesky": "Del på Bluesky",
+    "mastodon": "Del på Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Bygget ud fra dokumenterne i",
+    "repository": "repositoriet for Planlægning af arbejdsstyrken",
+    "counts": "{documents} dokumenter og {briefs} rollebeskrivelser på {locales} sprog og sprogvarianter",
+    "countsEnd": ".",
+    "notice": "Demonstrationssoftware med kun syntetiske data. Oversættelserne er lavet af AI og er ikke gennemgået af personer med sproget som modersmål.",
+    "export": "Dette websted er en eksport af repositoriets mappe {directory}, lavet med {tool}."
+  },
+  "translations": "Oversættelser:",
+  "source": "Kilde:",
+  "readiness": {
+    "note": "Hver skyder starter på forfatterens skøn. Flyt den for at prøve dit eget skøn. Intet gemmes eller sendes.",
+    "label": "Skøn over parathed: {name}",
+    "author": "Forfatterens skøn: {value}"
+  },
+  "search": {
+    "title": "Søg",
+    "label": "Søgeord",
+    "submit": "Søg",
+    "noscript": "Søgning på webstedet kræver JavaScript.",
+    "failed": "Søgeindekset kunne ikke indlæses. Denne søgning blev ikke udført.",
+    "count": "{count} sider med alle ordene \"{query}\""
+  },
+  "notFound": {
+    "title": "Siden blev ikke fundet",
+    "body": "Webstedet har ingen sådan adresse.",
+    "home": "Tilbage til forsiden"
+  }
+}

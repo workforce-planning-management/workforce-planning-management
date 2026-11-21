@@ -6502,7 +6502,7 @@ the entry records only the evidence it needs.
       WIGTK supplier material and DHCW's third-party accreditation, two or more health boards' supplier policies, the current
       Cyber Essentials requirements (the patch window), the records management code that applies in Wales, and NADEX with Entra.
       Record dates read and what could not be reached. (S)
-- [ ] WPM-T575 **Licence note for a hosted supplier.** *(WPM-D214)* In [LICENSE/index.md](../LICENSE/index.md): which option a
+- [ ] WPM-T575 **Licence note for a hosted supplier.** *(WPM-D214)* In [LICENSE.md](../LICENSE.md): which option a
       supplier should take (MIT or Apache-2.0), why hosting under them creates no duty to disclose changes, and the GPL options'
       distribution duty. Third-party content is licensed apart (SFIA). Not legal advice. (S)
 - [ ] WPM-T576 **Support access grants, pure core.** *(WPM-R267)* Grant states (requested, approved, live, expired, revoked),
@@ -7154,3 +7154,11 @@ the entry records only the evidence it needs.
       - Site: catalogue `ur-001.json`, `ur` in `i18n.ts`, `ur-001` in `HOME_LOCALES`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
         re-translated; the axe tests and the picker hover in a browser were not run for `ur`.
+- [x] WPM-T626 (2026-11-21) **Locale `da-001`: created in full in Danish, with home, language line, role pages and sitemap.**
+      - `da-001` did not exist. Translated all 19 pages (home with the language line `Sprog: …`, `start/`, `vurder/`,
+        `for/` and its 13 role pages, `path-to-production/`, `privacy/`) with translated slugs, the shared
+        `.locale-peer-id` values, `README.md` symlinks and a 19-URL `sitemap.xml` (from the built site).
+      - Site: catalogue `da-001.json` (59 keys, parity with `de-001.json`), `da` in `i18n.ts`, `da-001` in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS` (`Dansk`), and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; the axe tests and the picker hover in a browser
+        were not run for `da`.

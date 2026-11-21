@@ -5,6 +5,7 @@ import ar from "../content/locales/ar-001.json" with { type: "json" };
 import en from "../content/locales/en-001.json" with { type: "json" };
 import bn from "../content/locales/bn-001.json" with { type: "json" };
 import cy from "../content/locales/cy-001.json" with { type: "json" };
+import da from "../content/locales/da-001.json" with { type: "json" };
 import de from "../content/locales/de-001.json" with { type: "json" };
 import es from "../content/locales/es-001.json" with { type: "json" };
 import fr from "../content/locales/fr-001.json" with { type: "json" };
@@ -24,7 +25,7 @@ import zhTw from "../content/locales/zh-tw.json" with { type: "json" };
 
 export type Ui = typeof en;
 
-const CATALOGUES: Record<string, Ui> = { ar, bn, cy, de, en, es, fr, hi, id, ja, ko, nl, pt, ru, sv, sw, ur, vi, zh, "zh-tw": zhTw };
+const CATALOGUES: Record<string, Ui> = { ar, bn, cy, da, de, en, es, fr, hi, id, ja, ko, nl, pt, ru, sv, sw, ur, vi, zh, "zh-tw": zhTw };
 
 /** The catalogue for a page's locale: its own where it has one (`zh-tw`), else by language, so `cy-gb` reads `cy-001`, and English where there is none yet. */
 export function ui(locale: string | null | undefined): Ui {

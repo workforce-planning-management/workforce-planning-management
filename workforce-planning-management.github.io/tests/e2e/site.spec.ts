@@ -430,6 +430,7 @@ for (const [locale, headline] of [
   ["ko-kr", "인력 계획 관리"],
   ["nl-001", "Personeelsplanning"],
   ["nl-nl", "Personeelsplanning"],
+  ["da-001", "Planlægning af arbejdsstyrken"],
   ["de-001", "Personalplanung"],
   ["de-at", "Personalplanung"],
   ["de-de", "Personalplanung"],
