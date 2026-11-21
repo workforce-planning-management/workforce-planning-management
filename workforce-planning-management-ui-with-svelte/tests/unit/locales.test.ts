@@ -97,7 +97,7 @@ describe("browser language to locale route", () => {
   });
 
   it("walks navigator.languages in order and skips what the app does not serve", () => {
-    expect(localeFromNavigator({ languages: ["ja-JP", "fr-CA", "en"] })).toBe(
+    expect(localeFromNavigator({ languages: ["tr-TR", "fr-CA", "en"] })).toBe(
       "fr-001",
     );
     expect(
@@ -110,8 +110,8 @@ describe("browser language to locale route", () => {
   });
 
   it("says null — not the default — when nothing matches, so the caller chooses", () => {
-    expect(localeFromNavigator({ language: "ja-JP" })).toBeNull();
-    expect(localeFromNavigator({ languages: ["ja", "ko"] })).toBeNull();
+    expect(localeFromNavigator({ language: "tr-TR" })).toBeNull();
+    expect(localeFromNavigator({ languages: ["tr", "pl"] })).toBeNull();
     expect(localeFromNavigator({ languages: [], language: "" })).toBeNull();
     expect(localeFromNavigator({})).toBeNull();
     expect(localeFromNavigator({ language: null, languages: null })).toBeNull();

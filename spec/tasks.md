@@ -7221,8 +7221,8 @@ the entry records only the evidence it needs.
         entries for words that are the same as English in that language (`tests/unit/untranslated.allow.json`); the locale count in
         `tests/unit/data-table.test.ts`.
       - Done: `da-001` (Danish; Lily has a `da-001` label pack and the CMS ships `da`) `it-001` (Italian; three plural forms,
-        `one`, `many`, `other`, as CLDR gives it) `nl-001` (Dutch) and `sv-001` (Swedish) and `sw-001` (Swahili; the CMS ships no Swahili, so it falls back to `en-US`). **To do:** `ja`, `ko`, `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
+        `one`, `many`, `other`, as CLDR gives it) `nl-001` (Dutch) and `sv-001` (Swedish) `sw-001` (Swahili; the CMS ships no Swahili, so it falls back to `en-US`) and `ja-001` (Japanese; one plural form, `other`). **To do:** `ko`, `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
         and `pnpm check`.
-      - Verified for `da-001`, `it-001`, `nl-001`, `sv-001` and `sw-001`: 47 unit-test files, 402 tests pass (key parity, no English left over, label pack, review register,
+      - Verified for `da-001`, `it-001`, `nl-001`, `sv-001`, `sw-001` and `ja-001`: 47 unit-test files, 407 tests pass (key parity, no English left over, label pack, review register,
         CMS config). **Not verified:** the pages in a browser in Danish; any native-speaker review.
 

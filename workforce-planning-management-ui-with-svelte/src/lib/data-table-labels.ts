@@ -63,7 +63,7 @@ export function dataTableLabels({ t, tf }: Say, o: TableOptions) {
 // label the catalogue does not name at all, so a grid feature added later is announced in the
 // reader's language instead of left unnamed. Both are unreviewed drafts (content/locales/REVIEW.md).
 const packs = import.meta.glob<LabelPack>(
-  "../../node_modules/@lilydesignsystem/svelte-locale-translations/label-packs/{ar,bn,cy,da,de,en,es,fr,hi,id,it,nl,pt,ru,sv,sw,ur,zh}-001.json",
+  "../../node_modules/@lilydesignsystem/svelte-locale-translations/label-packs/{ar,bn,cy,da,de,en,es,fr,hi,id,it,ja,nl,pt,ru,sv,sw,ur,zh}-001.json",
   { import: "default" },
 );
 
