@@ -1,0 +1,77 @@
+{
+  "locale": "nl-001",
+  "brand": "Personeelsplanning",
+  "skip": "Ga naar de hoofdinhoud",
+  "siteNav": "Website",
+  "nav": {
+    "home": "Home",
+    "readme": "README",
+    "install": "Installatie",
+    "familyBridges": "Familiebruggen",
+    "spec": "Specificatie",
+    "worldwide": "Wereldwijd",
+    "briefs": "Rolbeschrijvingen",
+    "start": "Handleiding",
+    "production": "De weg naar productie",
+    "docs": "Documentatie",
+    "compare": "Vergelijk",
+    "privacy": "Privacy"
+  },
+  "pickers": {
+    "pages": "Pagina's",
+    "search": "Zoeken op de website",
+    "searchInput": "Zoektermen",
+    "searchSubmit": "Zoeken",
+    "theme": "Thema",
+    "language": "Taal",
+    "textSize": "Tekstgrootte",
+    "share": "Delen"
+  },
+  "textSizes": {
+    "largest": "Grootst",
+    "larger": "Groter",
+    "large": "Groot",
+    "normal": "Normaal",
+    "small": "Klein",
+    "smaller": "Kleiner",
+    "smallest": "Kleinst"
+  },
+  "share": {
+    "copy": "Link kopiëren",
+    "copied": "Link gekopieerd",
+    "copyFailed": "De link kon niet worden gekopieerd",
+    "email": "Link per e-mail versturen",
+    "linkedin": "Delen op LinkedIn",
+    "reddit": "Delen op Reddit",
+    "bluesky": "Delen op Bluesky",
+    "mastodon": "Delen op Mastodon"
+  },
+  "footer": {
+    "builtFrom": "Gebouwd uit de documenten in",
+    "repository": "de repository van Personeelsplanning",
+    "counts": "{documents} documenten en {briefs} rolbeschrijvingen in {locales} talen en taalvarianten",
+    "countsEnd": ".",
+    "notice": "Demonstratiesoftware met uitsluitend synthetische gegevens. De vertalingen zijn door AI gemaakt en niet beoordeeld door moedertaalsprekers.",
+    "export": "Deze website is een export van de map {directory} van de repository, gemaakt met {tool}."
+  },
+  "translations": "Vertalingen:",
+  "source": "Bron:",
+  "readiness": {
+    "note": "Elk schuifje begint bij de schatting van de auteur. Verschuif het om uw eigen schatting te beproeven. Er wordt niets opgeslagen of verzonden.",
+    "label": "Gereedheidsschatting: {name}",
+    "author": "Schatting van de auteur: {value}"
+  },
+  "search": {
+    "title": "Zoeken",
+    "label": "Zoektermen",
+    "submit": "Zoeken",
+    "noscript": "Zoeken op de website vereist JavaScript.",
+    "failed": "De zoekindex kon niet worden geladen. Deze zoekopdracht is niet uitgevoerd.",
+    "count": "{count} pagina's met alle woorden \"{query}\""
+  },
+  "notFound": {
+    "title": "Pagina niet gevonden",
+    "body": "De website heeft geen dergelijk adres.",
+    "home": "Terug naar de startpagina"
+  }
+}

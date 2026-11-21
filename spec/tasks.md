@@ -7105,3 +7105,12 @@ the entry records only the evidence it needs.
         `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `sv-se` has no regional edits; the axe tests
         and the picker hover in a browser were not run for `sv`.
+- [x] WPM-T621 (2026-11-21) **Locale group `nl`: the website and every page in Dutch, language line and sitemaps.**
+      - `nl-001` and `nl-nl` did not exist. Created `nl-001` in full (home with the language line `Taal: …`, `start/`,
+        `beoordelen/` (evaluate), `for/` with the index and thirteen role pages in Dutch slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `nl-nl` copies `nl-001`.
+      - Site: catalogue `nl-001.json` (also used by `nl-nl`), `nl` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `nl-nl` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `nl`.
