@@ -7005,3 +7005,10 @@ the entry records only the evidence it needs.
         `hi-np`, with the shared `.locale-peer-id` values of WPM-T608 and `README.md` symlinks; rows added to each `for/index.md`.
       - A language line (`भाषा: …`) after each home's introduction, and a `sitemap.xml` in each folder (from the built site).
       - **Not done:** translations are AI-written, not native-reviewed; `hi-np` is a copy of `hi-in` without Nepali edits.
+- [x] WPM-T610 (2026-11-21) **Locale group `cy`: the missing role pages, language line and sitemaps.**
+      - Added `rhestr-wirio-gwerthuso` (evaluate), `for/prif-swyddog-cyllid` and `for/rheolwr-cynllunio-gweithlu` to `cy-gb`,
+        `cy-001`, `cy-ar`, with the shared `.locale-peer-id` values of WPM-T608 and `README.md` symlinks; rows added to each
+        `for/index.md`.
+      - A language line (`Iaith: …`) after each home's introduction, and a `sitemap.xml` in each folder (from the built site).
+      - **Not done:** translations are AI-written, not native-reviewed; `cy-ar` is a copy of `cy-gb` without Argentine
+        (Patagonian) Welsh edits.

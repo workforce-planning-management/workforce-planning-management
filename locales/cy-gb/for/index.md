@@ -10,11 +10,13 @@ Un dudalen ar gyfer pob rôl arwain, sy'n dweud beth mae Workforce Planning Mana
 | Prif Swyddog Gwybodaeth | [prif-swyddog-gwybodaeth](prif-swyddog-gwybodaeth/index.md) |
 | Prif Swyddog Risg | [prif-swyddog-risg](prif-swyddog-risg/index.md) |
 | Prif Swyddog Cyfreithiol | [prif-swyddog-cyfreithiol](prif-swyddog-cyfreithiol/index.md) |
+| Prif Swyddog Cyllid | [prif-swyddog-cyllid](prif-swyddog-cyllid/index.md) |
 | Prif Swyddog Pobl | [prif-swyddog-pobl](prif-swyddog-pobl/index.md) |
 | Prif Swyddog Strategaeth | [prif-swyddog-strategaeth](prif-swyddog-strategaeth/index.md) |
 | Prif Swyddog Diogelwch | [prif-swyddog-diogelwch](prif-swyddog-diogelwch/index.md) |
 | Llywodraethu, Risg, Cydymffurfio | [llywodraethu-risg-cydymffurfio](llywodraethu-risg-cydymffurfio/index.md) |
 | Profi diogelwch annibynnol (briff ar gyfer ei gomisiynu) | [profi-diogelwch-annibynnol](profi-diogelwch-annibynnol/index.md) |
+| Rheolwr Cynllunio'r Gweithlu | [rheolwr-cynllunio-gweithlu](rheolwr-cynllunio-gweithlu/index.md) |
 
 Dechreuwch gyda'r [asesiad parodrwydd](../../../spec/readiness-assessment.md): y dyfarniad yw mai meddalwedd arddangos yw hwn ac nad yw'n barod i'w ddefnyddio'n gynhyrchiol mewn sefydliad sydd angen sicrwydd uchel.
 
