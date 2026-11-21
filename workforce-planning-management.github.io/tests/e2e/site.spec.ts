@@ -424,6 +424,8 @@ for (const [locale, headline] of [
   ["id-001", "Manajemen Perencanaan Tenaga Kerja"],
   ["id-id", "Manajemen Perencanaan Tenaga Kerja"],
   ["id-my", "Manajemen Perencanaan Tenaga Kerja"],
+  ["ja-001", "ワークフォース・プランニング・マネジメント"],
+  ["ja-jp", "ワークフォース・プランニング・マネジメント"],
   ["ru-001", "Управление планированием персонала"],
   ["ru-by", "Управление планированием персонала"],
   ["ru-ru", "Управление планированием персонала"],

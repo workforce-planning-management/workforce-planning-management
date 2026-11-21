@@ -1,0 +1,77 @@
+{
+  "locale": "ja-001",
+  "brand": "ワークフォース・プランニング・マネジメント",
+  "skip": "本文へスキップ",
+  "siteNav": "サイト",
+  "nav": {
+    "home": "ホーム",
+    "readme": "README",
+    "install": "インストール",
+    "familyBridges": "ファミリーブリッジ",
+    "spec": "仕様",
+    "worldwide": "世界各地",
+    "briefs": "役割別ブリーフ",
+    "start": "チュートリアル",
+    "production": "本番への道筋",
+    "docs": "ドキュメント",
+    "compare": "比較",
+    "privacy": "プライバシー"
+  },
+  "pickers": {
+    "pages": "ページ",
+    "search": "サイト内検索",
+    "searchInput": "検索語",
+    "searchSubmit": "検索",
+    "theme": "テーマ",
+    "language": "言語",
+    "textSize": "文字サイズ",
+    "share": "共有"
+  },
+  "textSizes": {
+    "largest": "最大",
+    "larger": "より大きい",
+    "large": "大",
+    "normal": "標準",
+    "small": "小",
+    "smaller": "より小さい",
+    "smallest": "最小"
+  },
+  "share": {
+    "copy": "リンクをコピー",
+    "copied": "リンクをコピーしました",
+    "copyFailed": "リンクをコピーできませんでした",
+    "email": "リンクをメールで送る",
+    "linkedin": "LinkedIn で共有",
+    "reddit": "Reddit で共有",
+    "bluesky": "Bluesky で共有",
+    "mastodon": "Mastodon で共有"
+  },
+  "footer": {
+    "builtFrom": "次の場所の文書から構築:",
+    "repository": "ワークフォース・プランニング・マネジメントのリポジトリ",
+    "counts": "{documents} 件の文書と、{locales} ロケールの {briefs} 件の役割別ブリーフ",
+    "countsEnd": "。",
+    "notice": "デモ用ソフトウェアで、合成データのみ。翻訳は AI が作成したもので、ネイティブスピーカーによる確認は受けていません。",
+    "export": "このサイトは、リポジトリの {directory} フォルダーを {tool} でエクスポートしたものです。"
+  },
+  "translations": "翻訳:",
+  "source": "ソース:",
+  "readiness": {
+    "note": "各スライダーは作成者の見積もりから始まります。動かして自分の見積もりを試せます。何も保存も送信もされません。",
+    "label": "準備状況の見積もり: {name}",
+    "author": "作成者の見積もり: {value}"
+  },
+  "search": {
+    "title": "検索",
+    "label": "検索語",
+    "submit": "検索",
+    "noscript": "サイト内検索には JavaScript が必要です。",
+    "failed": "検索インデックスを読み込めませんでした。この検索は実行されていません。",
+    "count": "「{query}」のすべての語を含むページ: {count} 件"
+  },
+  "notFound": {
+    "title": "ページが見つかりません",
+    "body": "このサイトには、そのようなアドレスはありません。",
+    "home": "ホームへ"
+  }
+}

@@ -7069,3 +7069,12 @@ the entry records only the evidence it needs.
       - Site: catalogue `id-001.json` (also used by `id-id`, `id-my`), `id` in `i18n.ts`, the three locales in
         `HOME_LOCALES`, and the home headline in the e2e table.
       - **Not done:** translations are AI-written, not native-reviewed; `id-id` and `id-my` have no regional edits.
+- [x] WPM-T617 (2026-11-21) **Locale group `ja`: the website and every page in Japanese, language line and sitemaps.**
+      - `ja-001` and `ja-jp` did not exist. Created `ja-001` in full (home with the language line `言語: …`, `start/`,
+        `評価/` (evaluate), `for/` with the index and thirteen role pages in Japanese slugs, `path-to-production/`,
+        `privacy/`), with the shared `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built
+        site); `ja-jp` copies `ja-001`.
+      - Site: catalogue `ja-001.json` (also used by `ja-jp`), `ja` in `i18n.ts`, the two locales in `BRIEF_LOCALES`,
+        `HOME_LOCALES` and `LOCALE_LABELS`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `ja-jp` has no regional edits; the axe tests
+        and the picker hover in a browser were not run for `ja`.
