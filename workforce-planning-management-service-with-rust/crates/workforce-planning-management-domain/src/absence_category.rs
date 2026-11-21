@@ -216,4 +216,13 @@ mod tests {
         );
         assert_eq!(Balance::MayGoNegative.token(), "may_go_negative");
     }
+
+    #[test]
+    fn every_balance_has_its_token() {
+        let tokens: Vec<&str> = [Balance::Enforced, Balance::MayGoNegative, Balance::None]
+            .iter()
+            .map(|b| b.token())
+            .collect();
+        assert_eq!(tokens, ["enforced", "may_go_negative", "none"]);
+    }
 }

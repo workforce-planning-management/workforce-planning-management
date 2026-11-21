@@ -3,7 +3,7 @@
 //! added without one of the two, which is the rule in `AGENTS/privacy-and-data-rules.md` made checkable.
 //!
 //! This reads the migrations and `src/controllers/privacy.rs` (no database), and keeps `spec/governance/personal-data-inventory.md`
-//! current: run `WPM_WRITE_INVENTORY=1 cargo test --test main` to rewrite it.
+//! current: run `WORKFORCE_PLANNING_MANAGEMENT_WRITE_INVENTORY=1 cargo test --test main` to rewrite it.
 //!
 //! What it **cannot** see: a person-keyed table whose link is not one of the column names below, personal data in a column of a table
 //! that is not keyed to a person, and whether an export or an erasure statement does the right thing. A reviewer still reads those.
@@ -209,7 +209,7 @@ fn inventory() -> String {
         "# Personal-data inventory\n\n\
          Every table that is keyed to a person, and what happens to it on a subject-access request and on erasure. **Generated** by\n\
          `workforce-planning-management-service-with-rust/tests/personal_data_inventory.rs` from the migrations and `src/controllers/privacy.rs`;\n\
-         do not edit by hand. Rewrite it with `WPM_WRITE_INVENTORY=1 cargo test --test main`; the test fails when it is out of date.\n\n\
+         do not edit by hand. Rewrite it with `WORKFORCE_PLANNING_MANAGEMENT_WRITE_INVENTORY=1 cargo test --test main`; the test fails when it is out of date.\n\n\
          - **Export**: the table is in `GET /api/workers/{pid}/subject-access` (or, for applicants, `GET /api/candidates/{pid}/subject-access`).\n\
          - **Erasure**: a statement in `erasure_statements` deletes or scrubs it when a worker is erased (WPM-D22).\n\
          - **Retention**: the table is on the retention schedule ([retention-schedule.md](retention-schedule.md)); a soft-deleted row is removed for good after its horizon.\n\
@@ -253,13 +253,13 @@ fn inventory() -> String {
 fn the_inventory_document_is_current() {
     let path = root().join("../spec/governance/personal-data-inventory.md");
     let fresh = inventory();
-    if std::env::var("WPM_WRITE_INVENTORY").is_ok() {
+    if std::env::var("WORKFORCE_PLANNING_MANAGEMENT_WRITE_INVENTORY").is_ok() {
         fs::write(&path, &fresh).unwrap();
         return;
     }
     let have = fs::read_to_string(&path).unwrap_or_default();
     assert_eq!(
         have, fresh,
-        "spec/governance/personal-data-inventory.md is out of date: run `WPM_WRITE_INVENTORY=1 cargo test --test main`"
+        "spec/governance/personal-data-inventory.md is out of date: run `WORKFORCE_PLANNING_MANAGEMENT_WRITE_INVENTORY=1 cargo test --test main`"
     );
 }

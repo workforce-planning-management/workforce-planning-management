@@ -307,6 +307,25 @@ mod tests {
     }
 
     #[test]
+    fn each_kind_of_rule_can_define_a_unit_on_its_own() {
+        let f = facts();
+        assert!(covers(
+            &UnitRule {
+                employment_type: Some("permanent"),
+                ..UnitRule::default()
+            },
+            &f
+        ));
+        assert!(covers(
+            &UnitRule {
+                job_title: Some("carer"),
+                ..UnitRule::default()
+            },
+            &f
+        ));
+    }
+
+    #[test]
     fn coverage_is_a_count_only_from_the_floor() {
         assert_eq!(coverage(0, 10), Coverage::NoOne);
         assert_eq!(coverage(1, 10), Coverage::Withheld);

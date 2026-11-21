@@ -32,6 +32,8 @@ pub const KINDS: &[&str] = &[
     "padr_to_sign",
     "course_requested",
     "course_decided",
+    "allocation_confirmed",
+    "allocation_changed",
 ];
 
 /// Recipients of an appraisal lifecycle move:
@@ -120,7 +122,9 @@ mod tests {
                 "padr_opened",
                 "padr_to_sign",
                 "course_requested",
-                "course_decided"
+                "course_decided",
+                "allocation_confirmed",
+                "allocation_changed"
             ]
         );
     }

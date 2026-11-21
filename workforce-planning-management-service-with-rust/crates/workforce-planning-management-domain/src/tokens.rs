@@ -101,6 +101,7 @@ pub const ORGANIZATION_ROLES: &[&str] = &[
     "org_admin",
     "viewer",
     "partner",
+    "resource_manager",
 ];
 
 /// Whether `value` is a member of the closed set `set`.

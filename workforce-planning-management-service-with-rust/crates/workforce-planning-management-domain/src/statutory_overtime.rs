@@ -794,4 +794,22 @@ mod tests {
         assert_eq!(over_cap(36 * H + 1, Some(i64::from(36 * H))), Some(true));
         assert_eq!(over_cap(5, None), None);
     }
+
+    #[test]
+    fn a_monthly_band_parses_a_bad_week_start_is_monday_and_no_minutes_has_no_premium() {
+        let bands = parse_premiums(&["month:9000:15000".to_string()]).unwrap();
+        assert_eq!(bands[0].period, Period::Month);
+        let monday = crate::dates::ymd(2026, 3, 2).unwrap();
+        let wednesday = crate::dates::ymd(2026, 3, 4).unwrap();
+        let days: BTreeMap<Date, u32> = [(wednesday, 60)].into_iter().collect();
+        assert_eq!(
+            weeks_beginning_between(&days, 0, monday, monday),
+            weeks_beginning_between(&days, 1, monday, monday),
+            "a week start outside 1 to 7 is read as Monday"
+        );
+        let derived = Derived {
+            minutes_at: BTreeMap::new(),
+        };
+        assert_eq!(derived.premium_minor(1_000, 0), None);
+    }
 }

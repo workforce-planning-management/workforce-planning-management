@@ -214,3 +214,69 @@ async fn workers_are_provisioned_once_with_employment_facts_and_retried_when_the
     })
     .await;
 }
+
+/// A SCIM server whose answers are fixed: `POST /Users` answers `post`, a lookup answers `found`.
+async fn fixed(post: (u16, Value), found: Value) -> String {
+    let app = Router::new().route(
+        "/Users",
+        axum::routing::post(move || {
+            let (code, body) = post.clone();
+            async move { (StatusCode::from_u16(code).unwrap(), Json(body)) }
+        })
+        .get(move || {
+            let found = found.clone();
+            async move { Json(found) }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    url
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A provider that accepts a user but gives no id, one that answers 409 and then cannot find the user, and one that is not
+// there at all: each push is a failure, recorded, and nothing is taken as sent.
+async fn a_push_with_no_id_an_unresolved_conflict_or_no_provider_fails() {
+    crate::requests::request_open(|request, ctx| async move {
+        let now = Timestamp::now();
+        let cases = [
+            (
+                "no id",
+                fixed((201, json!({})), json!({ "Resources": [] })).await,
+            ),
+            (
+                "unresolved conflict",
+                fixed((409, json!({})), json!({ "Resources": [] })).await,
+            ),
+            ("no provider", "http://127.0.0.1:1".to_string()),
+        ];
+        for (why, base) in cases {
+            let org = an_org();
+            let pid = hire(
+                &request,
+                &org,
+                &format!("SF-{}", uuid::Uuid::new_v4().simple()),
+                None,
+                "2024-01-05",
+            )
+            .await;
+            request
+                .post(&format!("/api/workers/{pid}/status"))
+                .json(&json!({ "to": "active" }))
+                .await
+                .assert_status_ok();
+            let cfg = Config {
+                base_url: base,
+                token: "scim-secret".into(),
+                organization: Some(org),
+            };
+            let summary = run(&ctx, &cfg, today(), now).await.unwrap();
+            assert_eq!(summary.failed, 1, "{why}: {summary:?}");
+            assert_eq!(summary.created, 0, "{why}: {summary:?}");
+        }
+    })
+    .await;
+}

@@ -14,7 +14,7 @@
 | Exposure | Bound to `127.0.0.1` only | Never expose the demo |
 
 The compose file starts PostgreSQL and the API. **The UI is not containerized**: it
-builds for Node (`adapter-node`, since WPM-T265): `pnpm build`, then `node build` with `WPM_API_URL` pointing at the API. A
+builds for Node (`adapter-node`, since WPM-T265): `pnpm build`, then `node build` with `WORKFORCE_PLANNING_MANAGEMENT_API_URL` pointing at the API. A
 deployer on another platform swaps the adapter. The image build and
 the compose file are written but were not built where this was written; try them first.
 
@@ -28,45 +28,45 @@ not a statement that your deployment is under that regime.
 | --- | --- | --- | --- |
 | `DB_URL` (or `DATABASE_URL`) | yes | none | PostgreSQL 18 connection string. `axa` reads `DB_URL`; WPM falls back to `DATABASE_URL` when it is unset or blank, the name `sqlx`'s own tools read (WPM-T482). From `axa` 0.13, `DB_URL_FILE` may name a file that holds it instead, as a mounted secret does; set it alone, as with `DB_URL` or `DATABASE_URL` also set the service does not start (WPM-T490). **In production it must require TLS across a network**: add `?sslmode=verify-full` (best: the server's certificate is checked) or `require` or `verify-ca`; boot refuses a plaintext connection to another host. A loopback address or a Unix socket needs no TLS |
 | `REDIS_URL` | no | none: an in-memory cache per instance, with a boot warning (demo: `redis://127.0.0.1:6379`) | Redis for the service's cache, shared by every instance (WPM-D78). It holds only non-personal lookups (organization and course names, ESCO searches) and a Redis that is down is a cache miss, never an error. Use `rediss://` across a network; boot refuses a plaintext `redis://` to another host |
-| `WPM_ALLOW_PLAINTEXT_REDIS` | no | off | Set to `1` only if the network path to Redis is protected another way and you accept the risk; boot then logs a warning |
-| `WPM_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
+| `WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_REDIS` | no | off | Set to `1` only if the network path to Redis is protected another way and you accept the risk; boot then logs a warning |
+| `WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE` | no | off | Set to `1` only if the network path to the database is protected another way (a private link, a tunnel) and you accept the risk; boot then logs a warning every start |
 | *(profiles first)* | | | **Since WPM-T384 (WPM-D153)** the flexible working, resignation notice, pay information, pay range, joint assessment, pay-gap tier and retention settings below are the **fallback**: an organization's jurisdiction profile is read first (over a worker's `work_jurisdiction` for a reader about one worker, over the organization's home jurisdiction for one about the organization), then the setting, then the default. `GET /api/statutory-defaults?organization=` says which each value came from |
-| `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS` | no | `28` | The notice a resignation must allow (0 to 366 calendar days); a worker's proposed last day cannot be earlier unless HR agrees one |
-| `WPM_FLEXIBLE_DECISION_MONTHS`, `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS` | no | `2`, `2`, `14` | Flexible working: calendar months a decision may take (1 to 12), requests a worker may make in 12 calendar months (`0` for no limit), calendar days to appeal a refusal. A jurisdiction may fix these; **confirm them** |
-| `WPM_FLEXIBLE_REFUSAL_REASONS` | no | a built-in list of nine | Comma-separated lowercase tokens a refusal must choose from; replace to match the grounds your jurisdiction allows |
-| `WPM_EQUALITY_MONITORING_BASIS` | no | off | **Equality monitoring is off unless this is set** to the lawful basis you rely on, in your words (for example a reference to your assessment). It is special-category data: do your own impact assessment first. Boot logs a warning that it is enabled |
-| `WPM_EQUALITY_CATEGORIES` | with the basis | none | A JSON object of category to list of values, for example `{"sex":["female","male"]}`. **WPM ships no classification**: the categories and their values are yours to define, as lowercase tokens; `prefer_not_to_say` is always offered. Boot refuses a basis with no valid categories |
-| `WPM_EQUALITY_FLOOR` | no | `10` | The smallest group an aggregate may show (at least 5) |
-| `WPM_PAYROLL_STUB_CURRENCY`, `WPM_PAYROLL_STUB_ALLOWANCE_MINOR`, `WPM_PAYROLL_STUB_RATE_PERCENT` | no | `GBP`, `104750`, `20` | The payroll **stub**'s tax (demo only, not any country's tax; WPM-T383): the currency it is written for, the monthly tax-free allowance in that currency's minor unit, and the flat rate above it (0 to 100). The defaults are an example in the shape of the UK's 2025-26 personal allowance and basic rate. Another currency is taken only with its own allowance and rate; a run that would pay anyone in a currency other than the stub's is refused |
-| `WPM_PAYROLL_MONTH_MINUTES`, `WPM_CONTRACTED_DAY_MINUTES` | no | `9750`, `450` | Working minutes in a month for the overtime rate (1 to 44,640), and the full-time contracted day (1 to 1,440 minutes; overtime is time beyond it, scaled by FTE). Starting points, no regime's: change both together |
-| `WPM_PAY_INFORMATION_MONTHS` | no | `2` | Calendar months HR has to answer a worker's pay information request, 1 to 12 (the Directive's period is two months, WPM-R145) |
-| `WPM_PAY_GAP_TIERS` | no | `250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07` | The pay-gap reporting tiers (WPM-T384): `from_workers:every_years:first_report_on`, comma-separated, or `none` for no reporting duty. The default is the EU Directive's Article 9; set what your national law says |
-| `WPM_REQUIRE_PAY_RANGE` | no | on | A vacancy must state its pay range (a minimum and a maximum) before it is opened. **On by default** (Article 5 of the Pay Transparency Directive); turn it off (`0`, `false`, `no`, `off`) only where the Directive does not apply |
-| `WPM_AI_ACT_APPLIES_FROM` | no | `2027-12-02` | The date the AI Act's Annex III duties apply to a deployer (`YYYY-MM-DD`); shown on the AI register. The date moved once already, so it is configuration, not code |
-| `WPM_MCP_ALLOWED_ORIGINS` | no | none | Comma-separated `Origin` values that may call `POST /mcp` from a browser. An agent sends no `Origin` and is unaffected; any other `Origin` is refused (DNS-rebinding protection). `/mcp` is outside `axa`'s stack, so `CORS_ALLOWED_ORIGINS` does not apply to it |
+| `WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS` | no | `28` | The notice a resignation must allow (0 to 366 calendar days); a worker's proposed last day cannot be earlier unless HR agrees one |
+| `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS`, `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR`, `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS` | no | `2`, `2`, `14` | Flexible working: calendar months a decision may take (1 to 12), requests a worker may make in 12 calendar months (`0` for no limit), calendar days to appeal a refusal. A jurisdiction may fix these; **confirm them** |
+| `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS` | no | a built-in list of nine | Comma-separated lowercase tokens a refusal must choose from; replace to match the grounds your jurisdiction allows |
+| `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS` | no | off | **Equality monitoring is off unless this is set** to the lawful basis you rely on, in your words (for example a reference to your assessment). It is special-category data: do your own impact assessment first. Boot logs a warning that it is enabled |
+| `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES` | with the basis | none | A JSON object of category to list of values, for example `{"sex":["female","male"]}`. **WPM ships no classification**: the categories and their values are yours to define, as lowercase tokens; `prefer_not_to_say` is always offered. Boot refuses a basis with no valid categories |
+| `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR` | no | `10` | The smallest group an aggregate may show (at least 5) |
+| `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY`, `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR`, `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT` | no | `GBP`, `104750`, `20` | The payroll **stub**'s tax (demo only, not any country's tax; WPM-T383): the currency it is written for, the monthly tax-free allowance in that currency's minor unit, and the flat rate above it (0 to 100). The defaults are an example in the shape of the UK's 2025-26 personal allowance and basic rate. Another currency is taken only with its own allowance and rate; a run that would pay anyone in a currency other than the stub's is refused |
+| `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES`, `WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES` | no | `9750`, `450` | Working minutes in a month for the overtime rate (1 to 44,640), and the full-time contracted day (1 to 1,440 minutes; overtime is time beyond it, scaled by FTE). Starting points, no regime's: change both together |
+| `WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS` | no | `2` | Calendar months HR has to answer a worker's pay information request, 1 to 12 (the Directive's period is two months, WPM-R145) |
+| `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS` | no | `250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07` | The pay-gap reporting tiers (WPM-T384): `from_workers:every_years:first_report_on`, comma-separated, or `none` for no reporting duty. The default is the EU Directive's Article 9; set what your national law says |
+| `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE` | no | on | A vacancy must state its pay range (a minimum and a maximum) before it is opened. **On by default** (Article 5 of the Pay Transparency Directive); turn it off (`0`, `false`, `no`, `off`) only where the Directive does not apply |
+| `WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM` | no | `2027-12-02` | The date the AI Act's Annex III duties apply to a deployer (`YYYY-MM-DD`); shown on the AI register. The date moved once already, so it is configuration, not code |
+| `WORKFORCE_PLANNING_MANAGEMENT_MCP_ALLOWED_ORIGINS` | no | none | Comma-separated `Origin` values that may call `POST /mcp` from a browser. An agent sends no `Origin` and is unaffected; any other `Origin` is refused (DNS-rebinding protection). `/mcp` is outside `axa`'s stack, so `CORS_ALLOWED_ORIGINS` does not apply to it |
 | `CORS_ALLOWED_ORIGINS` | no | none | Comma-separated origins that a browser page may call `/api` from; production refuses `*`. **From `axa` 0.13 it also lets them write:** a browser's `POST`, `PUT`, `PATCH` or `DELETE` that is marked `sec-fetch-site: cross-site`, or that has an `Origin` other than the service's own host and no `sec-fetch-site`, is refused with `403` unless its origin is listed here (WPM-T490). The UI needs no entry: it calls the service from its own server, which sends neither header |
-| `WPM_MCP_RESOURCE` | for MCP clients that discover OAuth | none | The URL of the MCP endpoint as clients reach it (`https`, or `http` to this machine), for example `https://wpm.example/mcp`. Set, `/mcp` also refuses any token whose audience is not this URL, so set `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same value. With `WPM_MCP_AUTHORIZATION_SERVERS` it turns on the OAuth protected-resource metadata (RFC 9728) at `/.well-known/oauth-protected-resource` and `.../mcp`, and the `401` from `/mcp` points at it. Unset, the metadata answers 404 |
-| `WPM_MCP_AUTHORIZATION_SERVERS` | with `WPM_MCP_RESOURCE` | none | Comma-separated issuer URLs (`https`) of the authorization servers whose tokens the deployment accepts. WPM is not an authorization server: this states what the deployer configured |
-| `WPM_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo run -- task scim_push` on a schedule |
-| `WPM_CREDENTIAL_ISSUER` | for credentials | none | The issuer's public URL (`https`, or `http` to this machine), the id in each credential and the base of the revocation list's address |
-| `WPM_CREDENTIAL_SIGNING_KEY` | for credentials | none | The Ed25519 signing key: 32 bytes, base64url. Held outside the database; never logged or returned. Without it issuing answers 422 |
-| `WPM_CREDENTIAL_ISSUER_NAME` | no | the issuer URL | The issuer's name as a verifier shows it |
-| `WPM_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
-| `WPM_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
-| `WPM_CURSOR_KEY` | with more than one instance | a key per process | Signs every list's cursors (WPM-R241): base64url of at least 32 random bytes, such as `openssl rand -base64 32 \| tr '+/' '-_' \| tr -d '='`. Never logged or returned. A value that is not base64url or is too short stops the start. Unset, each instance makes its own, so behind a load balancer a cursor from one is refused by another with `422`; changing it refuses the cursors already handed out, which a client recovers from by starting again at the first page |
-| `WPM_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo run -- task webhook_deliver` on a schedule |
-| `WPM_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WPM_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
-| `WPM_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
-| `WPM_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
-| `WPM_REQUEST_TIMEOUT_MS` | no | `30000` | In production, a request running longer is answered `408`; rounded up to whole seconds. Production reads this and not `axa`'s `REQUEST_TIMEOUT_SECONDS`. Outside production there is no limit unless `REQUEST_TIMEOUT_SECONDS` sets one, and the container demo has none |
-| `WPM_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
-| `WPM_PASETO_KEYS_URL` or `WPM_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WPM_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |
-| `WPM_TOKEN_ISSUER`, `WPM_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
-| `WPM_KEYCLOAK_ISSUER`, `WPM_KEYCLOAK_AUDIENCE` | with the OIDC backend | none | Expected `iss` and `aud` |
-| `WPM_ABAC_POLICY_FILE` or `WPM_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
+| `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` | for MCP clients that discover OAuth | none | The URL of the MCP endpoint as clients reach it (`https`, or `http` to this machine), for example `https://wpm.example/mcp`. Set, `/mcp` also refuses any token whose audience is not this URL, so set `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` (or the Keycloak audience) to the same value. With `WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS` it turns on the OAuth protected-resource metadata (RFC 9728) at `/.well-known/oauth-protected-resource` and `.../mcp`, and the `401` from `/mcp` points at it. Unset, the metadata answers 404 |
+| `WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS` | with `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` | none | Comma-separated issuer URLs (`https`) of the authorization servers whose tokens the deployment accepts. WPM is not an authorization server: this states what the deployer configured |
+| `WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL` | for `scim_push` | none | The identity provider's SCIM 2.0 base URL (`https`, or `http` to this machine). Run `cargo run -- task scim_push` on a schedule |
+| `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER` | for credentials | none | The issuer's public URL (`https`, or `http` to this machine), the id in each credential and the base of the revocation list's address |
+| `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY` | for credentials | none | The Ed25519 signing key: 32 bytes, base64url. Held outside the database; never logged or returned. Without it issuing answers 422 |
+| `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER_NAME` | no | the issuer URL | The issuer's name as a verifier shows it |
+| `WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN` | for `scim_push` | none | The bearer token for the SCIM service. Never logged or stored |
+| `WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION` | no | all | Only provision this organization's workers (`organization:<uuid>`) |
+| `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY` | with more than one instance | a key per process | Signs every list's cursors (WPM-R241): base64url of at least 32 random bytes, such as `openssl rand -base64 32 \| tr '+/' '-_' \| tr -d '='`. Never logged or returned. A value that is not base64url or is too short stops the start. Unset, each instance makes its own, so behind a load balancer a cursor from one is refused by another with `422`; changing it refuses the cursors already handed out, which a client recovers from by starting again at the first page |
+| `WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_<NAME>` | for each webhook subscription | none | The signing secret of a webhook subscription whose `secret_ref` is this name. Held in the environment, never stored, returned or logged. Run `cargo run -- task webhook_deliver` on a schedule |
+| `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY` | no | `sex` | The equality category the pay gap report reads as female or male (values `female` and `male`; any other value counts as left out). It must be one of `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES`, and the report needs equality monitoring on (WPM-R144) |
+| `WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS` | no | off | **Workplace health requirements are off unless this is set** to the lawful basis you rely on, in your words. It is health data: do your own impact assessment and agree the role with your occupational health provider first. Only a token with the attribute `occupational_health=true` can record a status |
+| `WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR` | no | `10` | The smallest group the compliance counts may show (at least 5) |
+| `WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS` | no | `30000` | In production, a request running longer is answered `408`; rounded up to whole seconds. Production reads this and not `axa`'s `REQUEST_TIMEOUT_SECONDS`. Outside production there is no limit unless `REQUEST_TIMEOUT_SECONDS` sets one, and the container demo has none |
+| `WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN` | yes | none | The one browser origin allowed to call the API directly. Boot fails if unset |
+| `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` or `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS` | one key source | none | The token keys (PASETO backend). Or `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` (OIDC backend, see [entra-sign-in.md](entra-sign-in.md)) |
+| `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER`, `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` | no | `authentication-service`, `main-x-service` | Expected `iss` and `aud` (PASETO) |
+| `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER`, `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE` | with the OIDC backend | none | Expected `iss` and `aud` |
+| `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` or `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY` | recommended | built-in default | The authorization policy; start from `config/abac-policy.reference.json` (hot-reloads) |
 | `PORT`, `HOST` | no | `1241`, `http://localhost` | Listen port; the host used in links |
 | `DB_MIN_CONNECTIONS`, `DB_MAX_CONNECTIONS`, `DB_CONNECT_TIMEOUT`, `DB_IDLE_TIMEOUT` | no | `2`, `20`, `5000`, `600000` | Pool sizes, and timeouts in milliseconds |
-| `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DB_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WPM_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
+| `DB_ALLOW_INSECURE` | no | off | `axa`'s own refusal of a production `DB_URL` with no `sslmode` on a remote host. A plaintext path needs this as well as `WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE`. The compose demo sets it |
 | `MAX_CONNECTIONS` | no | `10000` | Open connections the server holds; more wait to be accepted. The server speaks HTTP/1 only, so a proxy in front offers HTTP/2 |
 | `KEEP_ALIVE_TIMEOUT_SECONDS` | no | `75` | How long an idle connection is kept, counted from the last byte written. A load balancer that keeps idle connections longer needs a higher value, or it can reuse one as it closes and answer `502` |
 | `SEND_STALL_TIMEOUT_SECONDS` | no | `60` | How long a response may wait on a client that has stopped reading before the connection is dropped. Any byte that goes through starts it again, so a slow download is unaffected (`axa` 0.7) |
@@ -81,22 +81,22 @@ not a statement that your deployment is under that regime.
 
 | Variable | Default | Effect |
 | --- | --- | --- |
-| `WPM_REQUIRE_AUTH` | on | Only an explicit `0`/`false`/`no`/`off` disables sign-in; production refuses that |
-| `WPM_RATE_LIMIT_PER_MINUTE` | 600 | Requests per caller per minute (`0` disables) |
-| `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` | 20 | Erase, sweep, import, merge, token and export routes |
+| `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` | on | Only an explicit `0`/`false`/`no`/`off` disables sign-in; production refuses that |
+| `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE` | 600 | Requests per caller per minute (`0` disables) |
+| `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE` | 20 | Erase, sweep, import, merge, token and export routes |
 | `TRUSTED_PROXIES` | none | Comma-separated addresses or CIDR ranges of your proxies, such as `10.0.0.5,192.168.1.0/24`. **Needed behind any proxy**: see [Proxy and TLS](#proxy-and-tls). A bad list stops production from starting; elsewhere it logs a warning and trusts no proxy |
 | `LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT` | off | `401`s one client address may earn in 15 minutes before every request from it is refused with `429` until they end (WPM-R242). Unset or `0` is off; a value that is not a whole number stops the start. The address is counted as the rate limit counts it, so behind a proxy set `TRUSTED_PROXIES`, or one client's expired tokens lock out every client behind it |
-| `WPM_TRUST_FORWARDED` | retired | Does nothing (WPM-D187). If it is set, boot logs a warning. Remove it and set `TRUSTED_PROXIES` |
-| `WPM_MAX_TOKEN_LIFETIME_SECONDS` | `86400` | The longest token lifetime accepted (`exp` minus `iat`); a longer one, or one with no issue time, is `401`. `0` or `off` removes the limit. Tighten it to what your identity provider issues, see [Token age and revocation](../auth.md#token-age-and-revocation-wpm-r72-wpm-t200) |
-| `WPM_MAX_ORG_WORKERS` | `200000` | The most employed workers the plan forecast and cost views will read for one request (the workers of the departments the plan names); over it they answer `422`. The default is the largest size the load test ran with no failure; raise it only after running `scripts/load-test.sh` on your hardware (see `BENCHMARKS.md`) |
-| `WPM_LMS_COURSE_URL` | unset | A link template to a course in your learning management system, e.g. `https://lms.example.org/course/{course}`. `{course}` is replaced by the id of the course URN. `https` only, one placeholder, a real host with no user-info; anything else is ignored with a warning in the log. Unset means no links. See [skills-and-training](../skills-and-training.md) (WPM-R138, WPM-D91) |
-| `WPM_HSTS` | off | Send HSTS even when the request is not seen as TLS |
-| `WPM_RETENTION_DAYS` | unset | Legacy: one horizon for every record kind without its own override |
-| `WPM_RETENTION_<KIND>_DAYS` | per kind | Retention per record kind; see [retention-schedule](../governance/retention-schedule.md) |
-| `WPM_EVENT_TRANSPORT` | `memory` | Event transport |
-| `WPM_UPSTREAM_MODE` | `stub` | Upstream identity lookups: `stub` or `http` |
+| `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` | retired | Does nothing (WPM-D187). If it is set, boot logs a warning. Remove it and set `TRUSTED_PROXIES` |
+| `WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS` | `86400` | The longest token lifetime accepted (`exp` minus `iat`); a longer one, or one with no issue time, is `401`. `0` or `off` removes the limit. Tighten it to what your identity provider issues, see [Token age and revocation](../auth.md#token-age-and-revocation-wpm-r72-wpm-t200) |
+| `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` | `200000` | The most employed workers the plan forecast and cost views will read for one request (the workers of the departments the plan names); over it they answer `422`. The default is the largest size the load test ran with no failure; raise it only after running `scripts/load-test.sh` on your hardware (see `BENCHMARKS.md`) |
+| `WORKFORCE_PLANNING_MANAGEMENT_LMS_COURSE_URL` | unset | A link template to a course in your learning management system, e.g. `https://lms.example.org/course/{course}`. `{course}` is replaced by the id of the course URN. `https` only, one placeholder, a real host with no user-info; anything else is ignored with a warning in the log. Unset means no links. See [skills-and-training](../skills-and-training.md) (WPM-R138, WPM-D91) |
+| `WORKFORCE_PLANNING_MANAGEMENT_HSTS` | off | Send HSTS even when the request is not seen as TLS |
+| `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` | unset | Legacy: one horizon for every record kind without its own override |
+| `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS` | per kind | Retention per record kind; see [retention-schedule](../governance/retention-schedule.md) |
+| `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` | `memory` | Event transport |
+| `WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE` | `stub` | Upstream identity lookups: `stub` or `http` |
 
-The UI reads `WPM_API_URL`, `AUTH_API_URL` and `WPM_PUBLIC_URL`.
+The UI reads `WORKFORCE_PLANNING_MANAGEMENT_API_URL`, `AUTH_API_URL` and `WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL`.
 
 ## Mail in the demo
 
@@ -132,8 +132,8 @@ the rate limiter a dependency whose outage blocks every request, so that is left
 
 1. **Limit at the proxy or gateway** (recommended): enforce the per-client limit where all traffic meets, for example nginx `limit_req`,
    an ingress controller's rate-limit annotations, or your cloud's WAF. Keep WPM's own limits as a second, looser layer.
-2. **Divide the limits by the number of instances**: with 3 instances set `WPM_RATE_LIMIT_PER_MINUTE=200` and
-   `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=7`. This is right only when the balancer spreads one caller's requests evenly, and it is
+2. **Divide the limits by the number of instances**: with 3 instances set `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE=200` and
+   `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE=7`. This is right only when the balancer spreads one caller's requests evenly, and it is
    wrong while instances are being added or removed.
 3. **Pin a caller to an instance** (sticky routing by client address): then each caller meets one counter again. It costs even load
    and does not survive an instance restart.
@@ -154,7 +154,7 @@ makes two:
 
 ```sh
 psql "$ADMIN_DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -v migrator_password="$WPM_MIGRATOR_PASSWORD" -v runtime_password="$WPM_APP_PASSWORD" \
+  -v migrator_password="$WORKFORCE_PLANNING_MANAGEMENT_MIGRATOR_PASSWORD" -v runtime_password="$WORKFORCE_PLANNING_MANAGEMENT_APP_PASSWORD" \
   -f postgres-roles/roles.sql                      # once, before the first migration
 DATABASE_URL=postgres://wpm_migrator:...@db/wpm workforce-planning-management db migrate
 psql ... -f postgres-roles/roles.sql               # again after every migration: it grants on what was just created
@@ -199,7 +199,7 @@ test fails if a task is neither scheduled there nor named as run by hand. Or sch
 | Task | When | Why |
 | --- | --- | --- |
 | `task webhook_deliver` | every minute | Sends the queued webhook deliveries; retries are spaced by the task's own back-off |
-| `task scim_push` | every 15 minutes | Reconciles the SCIM provider; needs `WPM_SCIM_BASE_URL` and `WPM_SCIM_TOKEN`, and fails every run without them |
+| `task scim_push` | every 15 minutes | Reconciles the SCIM provider; needs `WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL` and `WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN`, and fails every run without them |
 | `task early_warning_sweep` | daily | Opens and closes early warnings; the day a condition is first true is the day of the first sweep that saw it |
 | `task oversight_pack_freeze` | first days of the month | Freezes last month's oversight pack, once per organization and month |
 | `task verify_audit_chain` | daily | Checks the audit hash chain; exits with an error when it is broken. Keep its head hash outside the database |

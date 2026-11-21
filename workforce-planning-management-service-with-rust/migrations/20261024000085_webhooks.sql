@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS webhook_subscriptions (
                  name VARCHAR NOT NULL CHECK (length(btrim(name)) BETWEEN 1 AND 80),
                  url VARCHAR NOT NULL CHECK (length(url) BETWEEN 8 AND 500),
                  kinds TEXT[] NOT NULL CHECK (cardinality(kinds) >= 1),
-                 secret_ref VARCHAR NOT NULL CHECK (secret_ref ~ '^WPM_WEBHOOK_SECRET_[A-Z0-9_]{1,60}$'),
+                 secret_ref VARCHAR NOT NULL CHECK (secret_ref ~ '^WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_[A-Z0-9_]{1,60}$'),
                  active BOOLEAN NOT NULL DEFAULT TRUE,
                  created_by VARCHAR
              );

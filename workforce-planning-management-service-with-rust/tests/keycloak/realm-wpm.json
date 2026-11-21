@@ -8,6 +8,7 @@
     "realm": [
       { "name": "wpm-hr" },
       { "name": "wpm-payroll" },
+      { "name": "wpm-resource-manager" },
       { "name": "wpm-admin" }
     ]
   },

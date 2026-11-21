@@ -9,7 +9,7 @@
 //! * does the service **heal** by itself once the database is back.
 //!
 //! Then a seeded "monkey" flips the proxy's mode at random while writes are in flight. The seed is
-//! printed (and `WPM_CHAOS_SEED` replays it), so a failure can be reproduced.
+//! printed (and `WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED` replays it), so a failure can be reproduced.
 //!
 //! Its own test binary: it points `DATABASE_URL` at the proxy for the whole process.
 //! `#[ignore]`d: needs PostgreSQL. Run with `cargo test --test chaos -- --ignored`.
@@ -91,7 +91,7 @@ async fn start_proxy(upstream: String) -> (Arc<Chaos>, u16) {
 /// `host:port` of the real database, from `DATABASE_URL` or the test default.
 fn upstream_address() -> String {
     let url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://loco:loco@localhost:5432/x".to_string());
+        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/x".to_string());
     let after_at = url.rsplit('@').next().unwrap_or("localhost:5432/x");
     after_at
         .split('/')
@@ -103,7 +103,7 @@ fn upstream_address() -> String {
 /// The database URL with its host and port replaced by the proxy's.
 fn through_proxy(port: u16) -> String {
     let url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "postgres://loco:loco@localhost:5432/workforce_planning_management_test".to_string()
+        "postgres://postgres:postgres@localhost:5432/workforce_planning_management_test".to_string()
     });
     let (credentials, rest) = url.rsplit_once('@').expect("a URL with credentials");
     let database = rest.split_once('/').map_or("", |(_, d)| d);
@@ -128,7 +128,7 @@ fn assert_no_leak(body: &str) {
     for word in [
         "postgres",
         "sqlx",
-        "loco:loco",
+        "postgres:postgres",
         "password",
         "127.0.0.1",
         "select ",
@@ -159,11 +159,14 @@ async fn the_service_fails_cleanly_and_heals() {
         // Both names: the service reads `DB_URL` first, so setting only `DATABASE_URL` would go round the proxy (WPM-T482).
         std::env::set_var("DATABASE_URL", through_proxy(port));
         std::env::set_var("DB_URL", through_proxy(port));
-        std::env::set_var("WPM_REQUIRE_AUTH", "0");
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "0");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+            "0",
+        );
     }
-    let seed = std::env::var("WPM_CHAOS_SEED")
+    let seed = std::env::var("WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or_else(|| {
@@ -171,7 +174,7 @@ async fn the_service_fails_cleanly_and_heals() {
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_or(1, |d| d.as_secs())
         });
-    println!("chaos seed: {seed} (replay with WPM_CHAOS_SEED={seed})");
+    println!("chaos seed: {seed} (replay with WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED={seed})");
 
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());

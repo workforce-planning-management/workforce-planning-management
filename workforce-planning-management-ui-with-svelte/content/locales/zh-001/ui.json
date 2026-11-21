@@ -57,7 +57,8 @@
     "coverageEvidence": "保障证明",
     "qualifications": "资格",
     "injuryRecords": "伤害记录",
-    "help": "帮助"
+    "help": "帮助",
+    "allocations": "分配"
   },
   "pr": {
     "retention": "保留",
@@ -1516,6 +1517,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "每个月谁计划从事什么工作，按姓名排序。这是计划，不是衡量任何人的工作：从不给人排名，也不打分。",
+      "organization": "组织",
+      "notAllowed": "此视图供人力资源和资源经理使用。",
+      "empty": "没有可显示的人员。",
+      "person": "人员",
+      "confirm": "确认",
+      "end": "结束",
+      "remove": "删除",
+      "add": "添加分配",
+      "job": "职位",
+      "from": "起始月份",
+      "to": "结束月份",
+      "sharePercent": "职位份额（全职当量的百分之一）",
+      "confirmNow": "立即确认（会通知本人）"
     }
   },
   "titles": {
@@ -1862,6 +1879,7 @@
     "payroll_admin": "薪资管理员",
     "viewer": "查看者",
     "partner": "合作伙伴",
+    "resource_manager": "资源经理",
     "past_end_without_approved_plan": "已到期且无获批计划",
     "review_due": "复核到期",
     "not_started": "未开始",
@@ -3439,5 +3457,29 @@
   },
   "footer": {
     "privacyNotice": "隐私声明"
+  },
+  "allocations": {
+    "title": "分配",
+    "hint": "您每个月计划从事的工作。这是计划，不是衡量您做了什么，也从不给任何人打分。",
+    "untracked": "您的组织不记录分配，因此不会把任何月份显示为已满或空闲。",
+    "none": "没有分配。",
+    "source": "项目、产品或服务",
+    "months": "月份",
+    "share": "份额（全职当量）",
+    "status": "状态",
+    "monthRange": "{from} 至 {to}",
+    "runsPastEnd": "超出 {date} 的职位或合同结束日",
+    "allocated": "已分配 {allocated}，共 {available} 全职当量",
+    "state": {
+      "tentative": "暂定",
+      "confirmed": "已确认",
+      "ended": "已结束"
+    },
+    "signal": {
+      "overAllocated": "超额分配 {fte} 全职当量",
+      "leaveClash": "已批准的休假造成 {fte} 全职当量的缺口",
+      "available": "空闲 {fte} 全职当量",
+      "assignmentOver": "一个职位超出其自身全职当量 {fte}"
+    }
   }
 }

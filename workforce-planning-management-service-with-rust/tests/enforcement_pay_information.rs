@@ -80,15 +80,24 @@ const CATEGORIES: &str = r#"{"sex":["female","male"]}"#;
 async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answer_it_can() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
         std::env::set_var(
-            "WPM_EQUALITY_MONITORING_BASIS",
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS",
             "Test deployment: impact assessment PI-2",
         );
-        std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES);
-        std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES",
+            CATEGORIES,
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
     }
     let bearer = |t: String| format!("Bearer {t}");
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));

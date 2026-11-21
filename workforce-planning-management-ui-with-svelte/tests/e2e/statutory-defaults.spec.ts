@@ -12,7 +12,7 @@ const origin = (regime: string | null, status: string, reference: string) => ({
 
 const SETTINGS = [
   {
-    setting: "WPM_AI_ACT_APPLIES_FROM",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",
     area: "ai_register",
     value: "2027-12-02",
     set: false,
@@ -24,7 +24,7 @@ const SETTINGS = [
     ),
   },
   {
-    setting: "WPM_FLEXIBLE_DECISION_MONTHS",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
     area: "flexible_working",
     value: 3,
     set: true,
@@ -36,7 +36,7 @@ const SETTINGS = [
     ),
   },
   {
-    setting: "WPM_PAY_GAP_TIERS",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
     area: "pay_transparency",
     value: [
       { from_workers: 250, every_years: 1, first_report_on: "2027-06-07" },
@@ -50,7 +50,7 @@ const SETTINGS = [
     ),
   },
   {
-    setting: "WPM_REQUIRE_PAY_RANGE",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",
     area: "pay_transparency",
     value: true,
     set: false,
@@ -62,7 +62,7 @@ const SETTINGS = [
     ),
   },
   {
-    setting: "WPM_RETENTION_PAY_DAYS",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS",
     area: "retention",
     value: 2190,
     set: false,
@@ -74,7 +74,7 @@ const SETTINGS = [
     ),
   },
   {
-    setting: "WPM_PAYROLL_STUB_CURRENCY",
+    setting: "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
     area: "payroll",
     value: "GBP",
     set: false,
@@ -112,34 +112,46 @@ test.describe("Statutory defaults", () => {
     ).toBeVisible();
     await expect(page).toHaveTitle("Statutory defaults — WPM");
 
-    const ai = page.getByTestId("default-WPM_AI_ACT_APPLIES_FROM");
+    const ai = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",
+    );
     await expect(ai).toContainText("AI register");
     await expect(ai).toContainText("2 Dec 2027");
     await expect(ai).toContainText("EU");
     await expect(ai).toContainText("Not checked against the text");
     await expect(ai).toContainText("Not set: the default");
 
-    const months = page.getByTestId("default-WPM_FLEXIBLE_DECISION_MONTHS");
+    const months = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+    );
     await expect(months).toContainText("Set by this deployment");
     await expect(months).toContainText("GB");
 
-    const tiers = page.getByTestId("default-WPM_PAY_GAP_TIERS");
+    const tiers = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
+    );
     await expect(tiers).toContainText(
       "workers, at least: 250; years between reports: 1; first report: 7 Jun 2027",
     );
     // The Directive was read only as search excerpts, so its defaults are not checked (WPM-T404).
     await expect(tiers).toContainText("Not checked against the text");
     await expect(
-      page.getByTestId("default-WPM_REQUIRE_PAY_RANGE"),
+      page.getByTestId(
+        "default-WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",
+      ),
     ).toContainText("On");
 
     // A starting point names no regime, and a number is in the page's format.
-    const retention = page.getByTestId("default-WPM_RETENTION_PAY_DAYS");
+    const retention = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS",
+    );
     await expect(retention).toContainText("No regime's");
     await expect(retention).toContainText("A starting point");
     await expect(retention).toContainText("2,190");
     await expect(
-      page.getByTestId("default-WPM_PAYROLL_STUB_CURRENCY"),
+      page.getByTestId(
+        "default-WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
+      ),
     ).toContainText("An example in a regime's shape");
 
     // Read only: no control writes a setting.
@@ -164,7 +176,9 @@ test.describe("Statutory defaults", () => {
         name: "Gesetzliche Voreinstellungen",
       }),
     ).toBeVisible();
-    const retention = page.getByTestId("default-WPM_RETENTION_PAY_DAYS");
+    const retention = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS",
+    );
     await expect(retention).toContainText("Keiner Rechtsordnung");
     await expect(retention).toContainText("2.190");
     await expect(retention).toContainText(
@@ -206,7 +220,10 @@ test.describe("Statutory defaults", () => {
               reader: "organization",
               came_from: forOrg
                 ? profile("XB")
-                : { kind: "default", setting: "WPM_PAY_GAP_TIERS" },
+                : {
+                    kind: "default",
+                    setting: "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
+                  },
             },
             {
               ...SETTINGS[1],
@@ -214,7 +231,8 @@ test.describe("Statutory defaults", () => {
               reader: "worker",
               came_from: {
                 kind: "setting",
-                setting: "WPM_FLEXIBLE_DECISION_MONTHS",
+                setting:
+                  "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
               },
               ...(forOrg
                 ? {
@@ -235,7 +253,9 @@ test.describe("Statutory defaults", () => {
       });
     });
     await page.goto("/en-001/statutory-defaults");
-    const tiers = page.getByTestId("default-WPM_PAY_GAP_TIERS");
+    const tiers = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
+    );
     await expect(tiers).toContainText("The default");
     await expect(tiers).toContainText("The organization's home jurisdiction");
     await expect(page.getByTestId("defaults-home")).toHaveCount(0);
@@ -247,14 +267,18 @@ test.describe("Statutory defaults", () => {
     await expect(tiers).toContainText(
       "Profile: XB (An example in a regime's shape)",
     );
-    const months = page.getByTestId("default-WPM_FLEXIBLE_DECISION_MONTHS");
+    const months = page.getByTestId(
+      "default-WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+    );
     await expect(months).toContainText("This deployment's setting");
     await expect(months).toContainText("Each worker's place of work");
     await expect(months).toContainText(
       "XA: 1 (Profile: XA (An example in a regime's shape))",
     );
     await expect(
-      page.getByTestId("default-WPM_PAYROLL_STUB_CURRENCY"),
+      page.getByTestId(
+        "default-WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
+      ),
     ).toContainText("The whole deployment");
     expect(asked).toEqual(["", `?organization=${encodeURIComponent(org)}`]);
     await page.screenshot({

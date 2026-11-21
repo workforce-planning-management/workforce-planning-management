@@ -4,7 +4,7 @@
 -- This is health data, so it is narrow on purpose: a status token, the day it was recorded and the
 -- day it falls due again. There is no column for a diagnosis, a product, a batch or the reason for
 -- an exemption. The tables exist always but nothing writes to them unless a deployer records a
--- lawful basis (`WPM_HEALTH_REQUIREMENTS_BASIS`). Records are exported to the worker alone, erased
+-- lawful basis (`WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS`). Records are exported to the worker alone, erased
 -- with them, and not in the retention sweep.
 
 CREATE TABLE IF NOT EXISTS health_requirements (

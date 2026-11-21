@@ -24,16 +24,18 @@ use crate::db::{self, pool};
 use crate::rules::lms as rules;
 use crate::sql_time::SqlDate;
 
-/// The link to a course in the learning system, from the deployer's `WPM_LMS_COURSE_URL` (WPM-R138,
+/// The link to a course in the learning system, from the deployer's `WORKFORCE_PLANNING_MANAGEMENT_LMS_COURSE_URL` (WPM-R138,
 /// WPM-D91); `None` when it is unset or not valid. An invalid one is logged, once.
 #[must_use]
 pub fn course_url(course_ref: &str) -> Option<String> {
     static WARNED: std::sync::Once = std::sync::Once::new();
-    let raw = crate::compat::env_var("WPM_LMS_COURSE_URL")?;
+    let raw = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_LMS_COURSE_URL")?;
     match rules::parse_template(&raw) {
         Ok(template) => rules::course_url(&template, course_ref),
         Err(why) => {
-            WARNED.call_once(|| tracing::warn!("WPM_LMS_COURSE_URL is ignored: {why}"));
+            WARNED.call_once(|| {
+                tracing::warn!("WORKFORCE_PLANNING_MANAGEMENT_LMS_COURSE_URL is ignored: {why}");
+            });
             None
         }
     }

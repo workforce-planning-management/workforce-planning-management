@@ -4,7 +4,7 @@
 //! The service holds personal data. A connection to the database that crosses a network without
 //! TLS exposes every query and every row to anyone on the path, so in the `production`
 //! environment the service refuses to start on one, unless the operator says in so many words
-//! that they accept it (`WPM_ALLOW_PLAINTEXT_DATABASE`). A connection that never leaves the host
+//! that they accept it (`WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE`). A connection that never leaves the host
 //! (a loopback address or a Unix socket) is not on a network and needs no override.
 //!
 //! Nothing here connects to anything. It reads the connection URL.
@@ -98,13 +98,13 @@ pub fn database_check(
         )),
         Transport::Plain if !production => Ok(None),
         Transport::Plain if allow_plaintext => Ok(Some(
-            "the database connection is NOT encrypted and WPM_ALLOW_PLAINTEXT_DATABASE accepts that; \
+            "the database connection is NOT encrypted and WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE accepts that; \
              anyone on the network path can read personal data"
                 .to_string(),
         )),
         Transport::Plain => Err(
             "refusing to start: the database connection is not encrypted. Add `?sslmode=verify-full` \
-             (or `require`) to DATABASE_URL, or set WPM_ALLOW_PLAINTEXT_DATABASE=1 if the network path is \
+             (or `require`) to DATABASE_URL, or set WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE=1 if the network path is \
              protected another way and you accept the risk"
                 .to_string(),
         ),
@@ -146,12 +146,12 @@ pub fn redis_check(
     }
     if allow_plaintext {
         return Ok(Some(
-            "the Redis connection is NOT encrypted and WPM_ALLOW_PLAINTEXT_REDIS accepts that"
+            "the Redis connection is NOT encrypted and WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_REDIS accepts that"
                 .to_string(),
         ));
     }
     Err("refusing to start: the Redis connection is not encrypted. Use a `rediss://` REDIS_URL, or set \
-         WPM_ALLOW_PLAINTEXT_REDIS=1 if the network path is protected another way and you accept the risk"
+         WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_REDIS=1 if the network path is protected another way and you accept the risk"
         .to_string())
 }
 

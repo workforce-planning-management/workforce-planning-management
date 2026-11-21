@@ -397,6 +397,7 @@ async fn capacity_view_start_check_and_decisions() {
                 .assert_status_ok();
         }
 
+        assert_eq!(request.get("/api/capacity").await.status_code(), 422, "the view needs an organization");
         // Claims are proposed, so the view does not yet count them.
         let before: Value = request
             .get(&format!("/api/capacity?organization={org}&from=2027-01-01&months=3"))
@@ -612,6 +613,18 @@ async fn capacity_view_start_check_and_decisions() {
             .json();
         assert!(!audits.is_empty());
         assert!(!serde_json::to_string(&audits).unwrap().contains("Sponsor decision"));
+
+        // The monthly pack carries the same pools and names the one that constrains, by pool name only.
+        let pack = request.post("/api/oversight/packs").json(&json!({ "organization_ref": org })).await;
+        assert_eq!(pack.status_code(), 200, "{}", pack.text());
+        let pack_pid = pack.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let frozen: Value = request.get(&format!("/api/oversight/packs/{pack_pid}")).await.json();
+        let capacity = &frozen["pack"]["capacity"];
+        assert!(capacity["pools"].as_array().is_some_and(|p| !p.is_empty()), "{capacity}");
+        assert!(
+            capacity["constraint_pool"].as_str().is_some_and(|name| name.starts_with("Engineering ")),
+            "the over-committed pool constrains, named: {capacity}"
+        );
     })
     .await;
 }
@@ -1115,6 +1128,13 @@ async fn early_warnings_open_once_tell_hr_without_figures_and_measure_time_to_re
         assert_eq!(l["warnings"].as_array().unwrap().len(), 3);
         assert_eq!(l["unacknowledged"], 1);
         assert_eq!(request.get("/api/early-warnings").await.status_code(), 422);
+        // The same sweep through the API: nothing has changed since the last one, so it opens and clears nothing.
+        let swept = request.post(&format!("/api/early-warnings/sweep?organization={org}")).await;
+        assert_eq!(swept.status_code(), 200, "{}", swept.text());
+        let swept: Value = swept.json();
+        assert_eq!((swept["opened"].as_u64(), swept["cleared"].as_u64()), (Some(0), Some(0)), "{swept}");
+        assert_eq!(swept["organization_ref"], org.as_str());
+        assert_eq!(request.post("/api/early-warnings/sweep").await.status_code(), 422, "an organization is required");
     })
     .await;
 }
@@ -1278,6 +1298,11 @@ async fn cutover_readiness_reports_the_people_side_and_never_reads_unknown_as_re
         let mut blank = cutover(None, 10, 12);
         blank["site"] = json!("  ");
         assert_eq!(request.post("/api/cutovers").json(&blank).await.status_code(), 422, "a blank site");
+        for aliases in [json!(vec!["a"; 11]), json!(["  "]), json!(["x".repeat(201)])] {
+            let mut bad = cutover(None, 10, 12);
+            bad["site_aliases"] = aliases.clone();
+            assert_eq!(request.post("/api/cutovers").json(&bad).await.status_code(), 422, "site aliases {aliases}");
+        }
         let made: Value = request.post("/api/cutovers").json(&cutover(good_rota["pid"].as_str(), 10, 12)).await.json();
         let id = made["pid"].as_str().unwrap().to_string();
         let ready = || async { request.get(&format!("/api/cutovers/{id}/readiness")).await.json::<Value>() };
@@ -2260,6 +2285,72 @@ async fn people_impact_for_a_programme_is_counts_known_or_unknown_floored_and_au
         // Every answered request is audited.
         let audits_after = scalar(&ctx, "SELECT count(*) AS n FROM audit_logs WHERE action = 'people_impact_asked'".to_string()).await;
         assert_eq!(audits_after - audits_before, 3);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A measure is removed with its readings, after which the criterion has no measures and is unknown; an unknown origin and a
+// position on another organization's level are refused.
+async fn an_oversight_measure_is_removed_with_its_readings_and_a_level_stays_its_organizations() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let (org, other) = (an_org(), an_org());
+        let level = |org: &str, name: &str| {
+            let (request, body) = (&request, json!({ "organization_ref": org, "ordinal": 1, "name": name }));
+            async move { request.post("/api/oversight/levels").json(&body).await.json::<Value>()["pid"].as_str().unwrap().to_string() }
+        };
+        let (mine, theirs) = (level(&org, "Routine").await, level(&other, "Routine").await);
+        let position = |level: &str| json!({ "organization_ref": org, "level_pid": level, "effective_on": "2026-01-01",
+                                             "deciding_body": "The panel", "reason": "Review" });
+        let refused = request.post("/api/oversight/positions").json(&position(&theirs)).await;
+        assert_eq!(refused.status_code(), 422, "{}", refused.text());
+        request.post("/api/oversight/positions").json(&position(&mine)).await.assert_status_ok();
+
+        let criterion: Value = request.post("/api/oversight/criteria").json(&json!({ "level_pid": mine, "name": "Stable" })).await.json();
+        let body = |origin: &str| json!({ "criterion_pid": criterion["pid"], "name": "Vacancy rate", "origin": origin,
+                                          "unit": "basis points", "threshold": 800, "direction": "at_most", "sustain": 1 });
+        assert_eq!(request.post("/api/oversight/measures").json(&body("guessed")).await.status_code(), 422);
+        let measure: Value = request.post("/api/oversight/measures").json(&body("reported")).await.json();
+        let measure = measure["pid"].as_str().unwrap().to_string();
+        let last_month = workforce_planning_management::dates::today().first_of_month() - jiff::Span::new().months(1);
+        request
+            .put(&format!("/api/oversight/measures/{measure}/readings"))
+            .json(&json!({ "period_on": last_month.to_string(), "value": 500, "evidence": "Return", "source_document": "Return" }))
+            .await
+            .assert_status_ok();
+        let removed = request.delete(&format!("/api/oversight/measures/{measure}")).await;
+        assert_eq!(removed.status_code(), 200, "{}", removed.text());
+        assert_eq!(removed.json::<Value>()["removed"], measure.as_str());
+        let status: Value = request.get(&format!("/api/oversight/status?organization={org}")).await.json();
+        assert_eq!(status["criteria"][0]["status"], "unknown", "{status}");
+        assert_eq!(status["criteria"][0]["measures"], json!([]), "the measure and its readings are gone: {status}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A skill pool needs an organization and a name, keeps its description short, and takes a name once per organization.
+async fn a_skill_pool_refuses_a_blank_a_long_and_a_repeated_name() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let name = format!("Pool {}", uuid::Uuid::new_v4().simple());
+        let pool = |body: Value| {
+            let request = &request;
+            async move { request.post("/api/skill-pools").json(&body).await.status_code() }
+        };
+        for (body, why) in [
+            (json!({ "name": name, "operations_reservation_bp": 0 }), "no organization"),
+            (json!({ "organization_ref": org, "name": " ", "operations_reservation_bp": 0 }), "a blank name"),
+            (json!({ "organization_ref": org, "name": name, "description": "x".repeat(1025), "operations_reservation_bp": 0 }), "a long description"),
+        ] {
+            assert_eq!(pool(body).await, 422, "{why}");
+        }
+        make_pool(&request, &org, &name, 0).await;
+        assert_eq!(pool(json!({ "organization_ref": org, "name": name, "operations_reservation_bp": 0 })).await, 422, "the name is taken");
     })
     .await;
 }

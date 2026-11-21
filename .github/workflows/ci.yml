@@ -142,8 +142,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
@@ -160,8 +160,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
-      WPM_TEST_REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/workforce_planning_management_test
+      WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -267,8 +267,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
@@ -285,8 +285,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
-      WPM_TEST_REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/workforce_planning_management_test
+      WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -320,13 +320,16 @@ jobs:
       - run: cargo test --locked --test enforcement_pay_gap -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_pay_information -- --ignored --test-threads=1
       - run: cargo test --locked --test enforcement_what_if -- --ignored --test-threads=1
+      - run: cargo test --locked --test enforcement_allocations -- --ignored --test-threads=1
+      # The outbox event transport is read once per process, so it has its own binary (WPM-R16).
+      - run: cargo test --locked --test event_outbox -- --ignored --test-threads=1
       # Not #[ignore]d, so `--lib` above does not reach them and `--ignored` would run none of them (WPM-T396).
       - run: cargo test --locked --test main
       - run: cargo test --locked --test security -- --ignored --test-threads=1
       - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
       # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.
       - run: cargo test --locked --test request_log -- --ignored --test-threads=1
-      # Chaos: a proxy resets, swallows and slows the database connection; the seed is in the log (WPM_CHAOS_SEED replays it).
+      # Chaos: a proxy resets, swallows and slows the database connection; the seed is in the log (WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED replays it).
       - run: cargo test --locked --test chaos -- --ignored --nocapture
 
   api-oidc:
@@ -340,8 +343,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
@@ -358,8 +361,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
-      WPM_TEST_REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/workforce_planning_management_test
+      WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -384,8 +387,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
         ports: ['5432:5432']
         options: >-
@@ -423,9 +426,9 @@ jobs:
         run: cargo build --locked --bin workforce-planning-management
       - name: restore drill
         env:
-          ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
+          ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: |
-          export WPM_BIN="$PWD/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management"
+          export WORKFORCE_PLANNING_MANAGEMENT_BIN="$PWD/workforce-planning-management-service-with-rust/target/debug/workforce-planning-management"
           # the service reads config/ from its working directory
           cd workforce-planning-management-service-with-rust
           ../scripts/restore-drill.sh
@@ -474,8 +477,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
@@ -492,8 +495,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_test
-      WPM_TEST_REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/workforce_planning_management_test
+      WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -514,8 +517,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_test
         ports: ['5432:5432']
         options: >-
@@ -532,8 +535,8 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      ADMIN_DATABASE_URL: postgres://loco:loco@localhost:5432/postgres
-      WPM_TEST_REDIS_URL: redis://localhost:6379
+      ADMIN_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -646,8 +649,8 @@ jobs:
       postgres:
         image: postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4
         env:
-          POSTGRES_USER: loco
-          POSTGRES_PASSWORD: loco
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: workforce_planning_management_demo
         ports: ['5432:5432']
         options: >-
@@ -675,7 +678,7 @@ jobs:
         working-directory: workforce-planning-management-service-with-rust
         env:
           APP_ENV: demo
-          DATABASE_URL: postgres://loco:loco@localhost:5432/workforce_planning_management_demo
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/workforce_planning_management_demo
         run: |
           cargo build --locked --release --bin workforce-planning-management
           ./target/release/workforce-planning-management start > service.log 2>&1 &

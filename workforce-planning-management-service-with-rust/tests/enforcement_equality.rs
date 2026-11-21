@@ -83,12 +83,18 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
 {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
-        std::env::remove_var("WPM_EQUALITY_MONITORING_BASIS");
-        std::env::remove_var("WPM_EQUALITY_CATEGORIES");
-        std::env::remove_var("WPM_EQUALITY_FLOOR");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS");
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES");
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR");
     }
     let people: Vec<uuid::Uuid> = (0..16).map(|_| uuid::Uuid::new_v4()).collect();
     let bearer = |t: String| format!("Bearer {t}");
@@ -146,13 +152,13 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
         assert_eq!(put(0, json!({ "declarations": { "sex": "female" } })).await.status_code(), 404, "it does not exist");
         assert_eq!(get("/api/equality-monitoring/summary?category=sex", hr.clone()).await.status_code(), 404);
         // Categories alone switch nothing on: the basis is what does.
-        unsafe { std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES); }
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES", CATEGORIES); }
         assert_eq!(put(0, json!({ "declarations": { "sex": "female" } })).await.status_code(), 404);
 
         // ── On: a basis, a floor of five ──────────────────────────────────────────────
         unsafe {
-            std::env::set_var("WPM_EQUALITY_MONITORING_BASIS", "Test deployment: impact assessment EQ-1");
-            std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS", "Test deployment: impact assessment EQ-1");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
         }
         let on: Value = get("/api/me/equality-monitoring", token(0)).await.json();
         assert_eq!(on["enabled"], true);
@@ -254,7 +260,7 @@ async fn monitoring_is_off_until_a_basis_is_recorded_and_then_only_the_worker_re
         assert_eq!(request.post(&format!("/api/workers/{}/erase", pids[2])).add_header("authorization", svc.clone()).await.status_code(), 200);
         assert_eq!(count(&pids[2]).await, 0, "erased with the person");
         // Switching the basis off again removes the feature, and the data stays only in the table.
-        unsafe { std::env::remove_var("WPM_EQUALITY_MONITORING_BASIS"); }
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS"); }
         assert_eq!(get("/api/me/equality-monitoring", token(3)).await.json::<Value>(), json!({ "enabled": false }));
         assert_eq!(get("/api/equality-monitoring/summary?category=sex", hr.clone()).await.status_code(), 404);
     })

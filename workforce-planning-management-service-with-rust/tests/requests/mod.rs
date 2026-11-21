@@ -8,6 +8,7 @@
 use jiff::Timestamp;
 mod adjustments;
 mod ai_register;
+mod allocations;
 mod announcements;
 mod appraisals;
 mod assessments;
@@ -61,6 +62,7 @@ mod payroll;
 mod phone_forms;
 mod plan_views;
 mod policies;
+mod policy_loading;
 mod positions;
 mod privacy;
 mod problem;
@@ -153,7 +155,7 @@ pub fn text_without_ids(value: &serde_json::Value) -> String {
 /// (`String`, the worker pid), await it like a function call.
 ///
 /// A macro, not a function: the `request` handed to each test by
-/// loco's `request()` helper is a `loco_rs`-internal-pinned
+/// the test harness's `request()` helper is an `axa_test`-pinned
 /// `axa_test::TestServer` — a type this crate cannot name directly
 /// without pulling in that exact same `axum-test` version as a direct
 /// dependency (defeating the point of tracking a newer one for the
@@ -220,21 +222,24 @@ where
         // `set_var` is `unsafe` in edition 2024; this runs once, before any
         // boot reads the flag.
         unsafe {
-            std::env::set_var("WPM_REQUIRE_AUTH", "0");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "0");
             // The suites share one caller bucket; the limiter has its own
             // test binary (`tests/security.rs`).
-            std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
-            std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "0");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+                "0",
+            );
         };
     });
     axa_test::prelude::request::<workforce_planning_management::app::App, _, _>(callback).await;
 }
 
 /// Run set-up DDL for a test (a trigger that refuses audit rows, and its removal). The runtime database role may not change the schema,
-/// so the least-privilege drill (`scripts/verify-db-roles.sh`, WPM-R123) sets `WPM_TEST_DDL_URL` to the schema owner's URL and the DDL
+/// so the least-privilege drill (`scripts/verify-db-roles.sh`, WPM-R123) sets `WORKFORCE_PLANNING_MANAGEMENT_TEST_DDL_URL` to the schema owner's URL and the DDL
 /// goes through that connection; everywhere else it goes through the test's own connection.
 pub(crate) async fn ddl(ctx: &axa::AppContext, sql: &str) {
-    match std::env::var("WPM_TEST_DDL_URL")
+    match std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_DDL_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
     {

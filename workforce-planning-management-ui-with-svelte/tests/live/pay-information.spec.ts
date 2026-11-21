@@ -1,4 +1,4 @@
-// Pay information against the real service (see README.md). Needs `WPM_EQUALITY_MONITORING_BASIS` and `WPM_EQUALITY_CATEGORIES`, the
+// Pay information against the real service (see README.md). Needs `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS` and `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES`, the
 // organization `PAY_INFO_ORG` with workers of both sexes on pay and a category, and (set in the database, since a request is made by the
 // worker through /api/me, which needs a token) one overdue request from a woman in a category with at least ten of each sex, and one
 // open request from a man in a category with fewer than ten men. With enforcement off the service reports no organization scope, so that
@@ -7,8 +7,8 @@
 import { expect, test } from "@playwright/test";
 
 test.skip(
-  !process.env.WPM_LIVE_API,
-  "needs a running service: set WPM_LIVE_API=1",
+  !process.env.WORKFORCE_PLANNING_MANAGEMENT_LIVE_API,
+  "needs a running service: set WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1",
 );
 
 const org = process.env.PAY_INFO_ORG ?? "";

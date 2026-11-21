@@ -48,6 +48,13 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
             request.post(&reqs).json(&json!({ "title": "Degree", "kind": "hobby" })).await.status_code(),
             422
         );
+        for bad in [
+            json!({ "title": " " }),
+            json!({ "title": "Degree", "kind": "academic", "framework": "x".repeat(41), "min_level": 6 }),
+            json!({ "title": "Degree", "kind": "academic", "framework": "RQF", "min_level": 21 }),
+        ] {
+            assert_eq!(request.post(&reqs).json(&bad).await.status_code(), 422, "{bad}");
+        }
         request
             .post(&reqs)
             .json(&json!({ "title": "Degree", "kind": "academic", "framework": "RQF", "min_level": 6 }))
@@ -85,6 +92,11 @@ async fn a_declared_qualification_is_not_met_until_hr_verifies_it() {
             json!({ "kind": "licence", "title": "X", "awarded_on": (workforce_planning_management::dates::today() + workforce_planning_management::dates::days(5)).to_string() }),
             json!({ "kind": "licence", "title": "X", "framework": "RQF" }),
             json!({ "kind": "nope", "title": "X" }),
+            json!({ "kind": "licence", "title": " " }),
+            json!({ "kind": "licence", "title": "x".repeat(201) }),
+            json!({ "kind": "licence", "title": "X", "awarding_body": "x".repeat(201) }),
+            json!({ "kind": "academic", "title": "X", "framework": "x".repeat(41), "level": 3 }),
+            json!({ "kind": "academic", "title": "X", "framework": "RQF", "level": 21 }),
         ] {
             assert_eq!(request.post(&quals).json(&bad).await.status_code(), 422, "{bad}");
         }

@@ -694,4 +694,10 @@ mod tests {
         assert_eq!(tenure_bucket(119), "5_to_10y");
         assert_eq!(tenure_bucket(120), "over_10y");
     }
+
+    #[test]
+    fn an_unknown_placement_status_is_named() {
+        let err = placement_transition(PLACEMENT_STATUSES[0], "bogus").unwrap_err();
+        assert!(err.starts_with("unknown status `bogus`"), "{err}");
+    }
 }

@@ -7,7 +7,7 @@ horizons, oversight levels, signals) is not built. No user interface exists yet.
 
 ## The model in one paragraph
 
-Capacity is planned by **skill pool**, not by person (WPM-D45). A pool groups role profiles
+Capacity is planned by **skill pool**, not by person (WPM-D45; amended 2026-11-20 by WPM-D211, so a tracked pool can also say *who* is allocated, [WPM-R275](workforce-planning-and-scenarios.md)). A pool groups role profiles
 and skills; a worker counts toward it through a role profile or a skill at a minimum
 proficiency. Programmes claim FTE from a pool month by month. Partner organizations record the
 aggregate FTE they can add. The service answers: how much can the pool supply, is it

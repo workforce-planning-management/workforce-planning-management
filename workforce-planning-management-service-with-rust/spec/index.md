@@ -27,20 +27,20 @@ tracing + OTLP, Podman.
 
 - **Config**: `config/{development,test,production}.yaml`;
   development and test default upstream clients to `stub` and
-  `WPM_EVENT_TRANSPORT=memory`.
-- **Env vars**: `WPM_REQUIRE_AUTH`, `WPM_PASETO_KEYS[_URL]`
-  (+ `_REFRESH_SECS`), `WPM_ABAC_POLICY[_FILE]`,
-  `WPM_EVENT_TRANSPORT`, `WPM_RETENTION_DAYS` (default 365, floor
-  30), upstream base URLs (`WPM_PERSON_SERVICE_URL`,
-  `WPM_WORKER_SERVICE_URL`, `WPM_ORGANIZATION_SERVICE_URL`,
-  `WPM_COURSE_SERVICE_URL`), `WPM_UPSTREAM_MODE` (default `stub`).
+  `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT=memory`.
+- **Env vars**: `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH`, `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS[_URL]`
+  (+ `_REFRESH_SECS`), `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY[_FILE]`,
+  `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT`, `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` (default 365, floor
+  30), upstream base URLs (`WORKFORCE_PLANNING_MANAGEMENT_PERSON_SERVICE_URL`,
+  `WORKFORCE_PLANNING_MANAGEMENT_WORKER_SERVICE_URL`, `WORKFORCE_PLANNING_MANAGEMENT_ORGANIZATION_SERVICE_URL`,
+  `WORKFORCE_PLANNING_MANAGEMENT_COURSE_SERVICE_URL`), `WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE` (default `stub`).
   Legacy `HCM_*` spellings still read with a deprecation warning
   (`src/compat.rs`).
 - **Identifiers**: public UUID `pid` on every owned record; EntityRef
   URNs for all upstream references; worker number unique per
   organization.
-- **Table names all-plural** (the loco `create_table` pluralization
-  lesson); `event_outbox` as explicit SQL.
+- **Table names all-plural** (a lesson from the framework the service
+  used before `axa`, whose table helper pluralized names); `event_outbox` as explicit SQL.
 
 ## Edition-specific implementation notes (as landed)
 

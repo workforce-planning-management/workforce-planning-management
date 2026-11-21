@@ -167,8 +167,8 @@ example, the limiter names callers by network address, not by token or
 These capabilities are prerequisites for any use beyond a demo. They extend
 the existing production gates WPM-G1 and WPM-G2 in [tasks.md](tasks.md).
 
-- **WPM-R72 Login enforcement is on by default.** `WPM_REQUIRE_AUTH` defaults
-  to on. Running without it needs an explicit `WPM_REQUIRE_AUTH=0`, logs a
+- **WPM-R72 Login enforcement is on by default.** `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` defaults
+  to on. Running without it needs an explicit `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0`, logs a
   warning at boot and on a timer, and shows a "sign-in not enforced" banner in
   the UI. With enforcement on and no key source or policy configured, the
   service refuses to start rather than starting open (WPM-D52).
@@ -559,7 +559,7 @@ section. The details now live in topic files: [pay-transparency.md](pay-transpar
 - **WPM-R158 Skills framework crosswalk.** Mappings between ESCO, SFIA and other frameworks so a
   skill declared in one counts in gap analysis under another. Each mapping states its basis and
   confidence; a skill with no mapping is `unknown`. Licensed taxonomies are handled as SFIA is.
-- **WPM-R159 The MCP endpoint takes only tokens meant for it.** When `WPM_MCP_RESOURCE` is set, `POST /mcp` accepts a bearer token only if
+- **WPM-R159 The MCP endpoint takes only tokens meant for it.** When `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` is set, `POST /mcp` accepts a bearer token only if
   its audience is that URL (RFC 8707 and the MCP authorization section); a token for another audience is a `401` that points at the
   metadata. Unset, nothing is bound and the token only has to verify.
 - **WPM-R160 A manager sees how many of their team hold equipment.** The count of direct reports in work who hold equipment, and of those who
@@ -735,7 +735,9 @@ separation record.
 - **WPM-D45 Capacity is planned by pool, not by person.** Supply comes from
   FTE and leave that WPM already holds. No timesheets and no per-person
   allocation percentages. Team-level planning gets most of the value without
-  creating surveillance data.
+  creating surveillance data. *Amended 2026-11-20 by WPM-D211 (the owner's
+  decision): per-person allocation is recorded, with guards; no timesheets
+  still holds.*
 - **WPM-D46 Unknown capacity is unknown.** A month with no partner commitment,
   or a pool with no declared skills, reports `unknown`, and the heatmap shows
   it. Over-commitment is never computed against an assumed zero.
@@ -781,7 +783,9 @@ separation record.
 - **WPM-D59 Programmes link through posts and plans, not time.** A worker's
   link to a programme is the funding of their post or the plan line they fill,
   both facts HR already holds. There are no per-person time allocations, in
-  keeping with WPM-D45.
+  keeping with WPM-D45. *Amended 2026-11-20 by WPM-D211: a person's planned
+  allocation to a programme is recorded (WPM-R275); posts and plans remain the
+  funding link.*
 - **WPM-D99 A pay gap is withheld, never guessed.** A cell under the floor shows "withheld", a
   worker with no recorded sex is excluded and the exclusion counted, and an indicator with too few
   people on either side is `unknown`. The categories of equal value are configuration with a stated
@@ -807,7 +811,7 @@ separation record.
   the database.
 - **WPM-D110 One audience for the service, equal to the MCP resource.** The token verifier checks one audience, so the MCP
   endpoint is bound by requiring that audience to be the resource URL, not by a second verifier. The deployer sets
-  `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the `WPM_MCP_RESOURCE` URL; a token for any other audience is refused on
+  `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` (or the Keycloak audience) to the `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` URL; a token for any other audience is refused on
   `/mcp` (and by the verifier on the API). Rejected: a second audience for `/mcp` only (a second verifier to keep in step through key
   rotation on both backends, and the call inside the service would then need the caller's claims passed in rather than the token,
   which touches every extractor).
@@ -1074,3 +1078,125 @@ security and accessibility assessments (WPM-T201–T202), and rehearse recovery
 on the intended platform, including replay of erasures (WPM-G4). The deployer's
 privacy sign-off (WPM-G5) and validation of any payroll rules it intends to
 use (WPM-G2) also remain open. [Path to production](../locales/en-001/path-to-production/index.md)
+
+
+## X. Customer feedback: planning depth, pay configuration and versioned scenarios (assessed 2026-11-20)
+
+A customer sent a list of goals, needs, two bonus frameworks and scenario capabilities for workforce planning, with NHS Agenda
+for Change named. Each item was checked against `spec/`. The full assessment, proposed requirements **WPM-R254–R266** and
+decisions **WPM-D207–D213** are in [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md); tasks
+**WPM-T553–T573** are in [tasks.md](tasks.md). Nothing is built, and every decision is the owner's.
+
+**Assessment.** The current-state pillar answers most of the list already: headcount and FTE, roles, levels, a role's band
+and a worker's band and step, positions and the establishment, pools with programme demand and the constraint pool, the
+start check, contingent tracking, plans with forecast, competency gap and cost, and the org-shape diff. The gaps fall into five
+groups.
+
+1. **Pay configuration (the customer's sharpest need).** Scales are code constants (WPM-D38), so an authorized user cannot
+   change a band, pay point or value, and a post has no grade. R254 makes scales dated, sourced data published by two people
+   (WPM-D207); R255 gives a post its band and pay point as a reference, not an amount (WPM-D208).
+2. **Combined analysis.** Aggregates exist one dimension at a time. R256 allows up to three combined, with complementary
+   suppression, because a floor per cell does not stop recovery by subtraction (WPM-D209).
+3. **Structure and services.** No directorate or team levels and no services as demand. R257 adds organizational units and the
+   service delivery model; R258 lets products and services claim capacity and gives a critical service a floor, the bottleneck
+   warning.
+4. **Scenarios.** Plans coexist but have no lineage, versions, levers beyond attrition, or comparison. R261 adds budget change or
+   freeze, hiring freeze, shortage, recruitment lag and priority levers, with immutable versions (WPM-D212); R262 assembles the
+   impact on workforce, cost, skills, training and timelines; R263 is the as-is versus to-be view; R265 measures forecast accuracy
+   against later snapshots.
+5. **Allocation and finance.** Slack, conflict, reallocation suggestions and an internal-first check (R259, WPM-D210); planned
+   versus actual at pool level (R260, WPM-D211); the cost forecast out to finance and budget envelopes in (R264); an overview
+   page (R266).
+
+**Where the feedback meets an existing decision.** "Resource allocation", "over-allocation" and "planned versus actual effort"
+read naturally as per-person allocation percentages and timesheets. WPM-D45 and WPM-D59 declined both. **The owner decided on
+2026-11-20 that WPM tracks per-person allocation** (WPM-D211, WPM-R275). A person's planned share of time per programme,
+product or service is recorded, with over-allocation, availability and clashes with leave. Named reads are limited and
+audited, tracking is switched on per scope, and no utilization score exists. Timesheets stay out, so actual effort remains a
+pool aggregate (R260), and scheduling stays in PPM (WPM-D55). The first draft of this section kept WPM-D45; it was rewritten
+the same day.
+
+**Bonus frameworks.** ITIL (Version 5) is real (released 2026 by PeopleCert, with AI Governance as its extension module), but its
+practices are available only to members, so WPM maps names (product, service, value stream) and copies no text (WPM-D100,
+WPM-T569). The AI governance part already has a home in the deployer register (R148). The Agile Manifesto is served by stable
+team capacity and cheap, frequent re-planning, never by individual velocity (WPM-D213, WPM-T570).
+
+**Advice to the customer.** WPM can meet the Agenda for Change asks (configurable scales, a grade per post, reporting by band
+and pay point) and the scenario asks as proposed. It deliberately won't track individuals' time or effort, and it hands
+timeline impact to the portfolio tool. Treat it as demo software on synthetic data until the path to production is complete.
+
+**Order.** The spec round and the two research tasks come first (WPM-T553–T554). Then pay configuration (T555–T558), because it is
+the customer's sharpest need and others read it. Organizational units and analysis follow (T559, T568), then services and
+allocation signals (T560–T563). After those come scenarios and impact (T565–T567, T572), then finance and the overview (T571,
+T573). Per-person allocation (T596–T600) follows organizational units and services (T559–T561), because an allocation names
+a demand source and is tracked per unit; planned versus actual (T564) reads it.
+
+### Open questions (section X)
+
+- ~~WPM-D211: keep allocation at pool level, or allow per-person allocation?~~ **Answered 2026-11-20: WPM tracks per-person
+  allocation** (WPM-R275). **"Resource manager" is a role** (answered 2026-11-20, WPM-R276): a membership role an `org_admin`
+  grants, or the identity-provider role `wpm-resource-manager`. Still open: should the owner of a demand source see named
+  allocations to it by default, or only when the deployer turns that on?
+- Should per-person actual effort follow later (a timesheet), or stay out? WPM-D211 keeps it out for now.
+- Where do actuals come from: PPM through the bridge, the pool owner by hand, or both? Does PPM's contract (not yet agreed)
+  carry them?
+- Who holds `pay_scale_admin`: HR, payroll or a separate role? Is a second person always required to publish, or can a small
+  deployer turn that off with a recorded reason?
+- Should a scenario's hiring freeze move positions to `frozen` when the scenario is adopted, or only report the effect?
+- Organizational units versus cost centres: two trees (proposed), or the cost-centre tree with levels?
+- Which service catalogue owns products and services (a CMDB, PPM or a WPM register)? WPM-D134 says WPM keeps only references.
+- Should ABAC scope by unit subtree replace the flat `department` attribute?
+
+
+## Y. Supplier assurance for a health buyer: NHS Wales as the worked example (assessed 2026-11-20)
+
+The owner supplied preparation notes for a security audit by NHS Wales of an organization that hosts, supplies and supports
+WPM. The assessment, proposed requirements **WPM-R267–R274** and decisions **WPM-D214–D219** are in
+[supplier-assurance.md](supplier-assurance.md); tasks **WPM-T574–T595** are in [tasks.md](tasks.md). Nothing is built, and
+every decision is the owner's.
+
+**Assessment.** The notes are right about the central point: the buyer assesses **the supplier**, not the open-source
+project. About half of what they list is organizational: the Article 28 agreement, Cyber Essentials Plus, ISO/IEC 27001, WIGTK
+onboarding, vetting, UK-based support, a 24/7 incident service and insurance. No code meets those; they are supplier's tasks
+(WPM-T590–T593). Several figures in the notes (24 to 48 hours for a breach notice, 14 calendar days for critical patches,
+vetting levels) were **not found in a primary source** and are recorded as unverified until WPM-T574 reads them.
+
+The software's position is strong where WPM's design rules already bite. No sickness reason can be recorded (WPM-D73), no
+diagnosis column exists, and there is no disciplinary case record at all, so the hardest field-separation question has the
+best answer: the field does not exist. Pay is masked and reads are need-to-know. Sign-in goes only through the identity
+provider, with no local passwords and no shared accounts. The audit trail is hash-chained and exportable to a SIEM, and backups
+are encrypted. The licences (MIT or Apache-2.0 among the options; no AGPL) permit hosted supply without disclosing changes.
+
+**The gaps the software should close**, in order of what a buyer's test would find first:
+
+1. **Support access** (R267): there is no support role, so today a supplier's engineer would need an administrator account.
+   That is the "unmonitored vendor access" the buyer fears most. Grants approved by the buyer, scoped, expiring and audited fix it.
+2. **Exit** (R273, R274): no whole-organization export and no destruction record. Both are contractual must-haves.
+3. **Isolation and residency** (R268, R272, R277): a pin to one buyer, a database that knows which deployment it belongs to
+   and refuses any other (R277, added 2026-11-20 to match CRM-R105 in the sibling CRM), and a declared, checked list of where
+   data goes, which is also the software's half of the sub-processor register.
+4. **Audit anchoring** (R271): the open "truncated tail" gap on the path to production.
+5. **MFA required** (R269) and **column encryption** (R270) for free text and special-category fields, not for salary
+   (WPM-D217).
+
+**Advice.** Do not answer "met" for any control until its evidence exists (WPM-D61). Begin the long-lead supplier items now,
+in parallel with the software work: Cyber Essentials Plus, the ISO/IEC 27001 scope, DHCW onboarding, and booking a CREST or
+CHECK tester. Build R267 and R273–R274 before the test is booked, so the tester exercises them. Keep the buyer's configuration
+and the supplier's certificates out of this public repository (WPM-D214). Until the path to production is complete, offer
+WPM to a buyer only as a pilot on synthetic data.
+
+**Order.** WPM-T574 (sources) and WPM-T589 (the pack template and a refresh of stale checklist answers) come first. Then
+support access (T576–T577, T586), exit (T594–T595), the deployment binding, the pin and residency (T603, T578, T584), anchoring (T588), MFA (T579),
+encryption (T582), and scanning and the SLA (T580–T581). The pen-test scope (T587) follows those. The supplier's tasks
+(T590–T593) run alongside from the start.
+
+### Open questions (section Y)
+
+- Who is the supplier: the owner's own organization, or a partner? The answer decides who holds the supplier's tasks.
+- Break glass (R267): offer it at all, and if so, is 1 hour right?
+- Column encryption (WPM-D217): is leaving salary in the clear acceptable to the buyer, or must it be encrypted at the cost of
+  moving aggregates into the service?
+- IP address in the audit trail (WPM-D218): refuse, or offer it as a buyer's setting?
+- Which key management service, and is a hardware-backed key required?
+- Destruction of backups (WPM-D219): is "destroyed on expiry, with dates" acceptable, or must backups be held per buyer so that
+  destroying a key destroys them at once?

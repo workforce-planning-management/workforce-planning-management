@@ -70,9 +70,11 @@ struct Evaluation {
     expires_on: Option<Date>,
 }
 
-/// The deployment's due-soon window in calendar days: `WPM_LEARNING_DUE_SOON_DAYS`, 1 to 366, else 90 (WPM-T434).
+/// The deployment's due-soon window in calendar days: `WORKFORCE_PLANNING_MANAGEMENT_LEARNING_DUE_SOON_DAYS`, 1 to 366, else 90 (WPM-T434).
 fn due_soon_days() -> i64 {
-    rules::due_soon_window(std::env::var("WPM_LEARNING_DUE_SOON_DAYS").ok().as_deref())
+    rules::due_soon_window(
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_LEARNING_DUE_SOON_DAYS").as_deref(),
+    )
 }
 
 fn evaluate(

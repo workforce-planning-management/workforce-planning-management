@@ -109,10 +109,10 @@ pnpm check                  # svelte-kit sync && svelte-check (0 errors)
 pnpm lint                   # eslint, then prettier --check
 pnpm test                   # vitest (313 in 37 files, 2026-10-30)
 PW_PORT=4193 pnpm exec playwright test   # 335 pass, 19 skip, stubbed API (2026-10-30); pick a free port
-WPM_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 23 tests in 10 files against a REAL service (tests/live/README.md)
+WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1 pnpm exec playwright test -c playwright.live.config.ts   # 23 tests in 10 files against a REAL service (tests/live/README.md)
 pnpm build
-# The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WPM_DEMO_API_URL names a SEPARATE
-# service instance (WPM_REQUIRE_AUTH=0, nothing real in it, filled by scripts/demo-data.py); signing in as
+# The demo (guided tour, fictitious data): see INSTALL.md "Try the demo". WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL names a SEPARATE
+# service instance (WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0, nothing real in it, filled by scripts/demo-data.py); signing in as
 # example@example.com then opens /demo. Unset = no demo.
 pnpm cms-config             # regenerate static/admin/config.yml from en-001
 ```

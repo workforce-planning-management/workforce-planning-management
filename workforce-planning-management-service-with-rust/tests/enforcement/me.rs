@@ -81,9 +81,15 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 async fn a_worker_manages_only_their_own_details() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (p1, p2, p3) = (
         uuid::Uuid::new_v4(),
@@ -368,9 +374,15 @@ async fn a_worker_manages_only_their_own_details() {
 async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (worker_p, mgr_p, other_p, hr_p) = (
         uuid::Uuid::new_v4(),
@@ -464,6 +476,8 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
         let listed = request.get("/api/resignations").add_header("authorization", hr_m.clone()).await;
         assert_eq!(listed.status_code(), 200);
         assert!(!listed.text().contains("pay_or_benefits"));
+        let unknown = request.get("/api/resignations?status=pending").add_header("authorization", hr_m.clone()).await;
+        assert_eq!(unknown.status_code(), 422, "{}", unknown.text());
         // The audit names the event and holds no reason.
         let audits = request.get(&format!("/api/audits/{w}")).add_header("authorization", svc.clone()).await.text();
         assert!(audits.contains("resignation_logged") && !audits.contains("pay_or_benefits"));
@@ -529,9 +543,15 @@ async fn a_resignation_is_logged_by_the_worker_and_decided_by_a_person() {
 async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (p1, p2) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
     let bearer = |t: String| format!("Bearer {t}");
@@ -713,6 +733,11 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
         assert_eq!(found["display_name"], "Person PS-1");
         assert_eq!(found["period_end"], "2026-07-31");
         assert_eq!(found["comment"], "The overtime looks short");
+        let bad_status = request
+            .get("/api/payslip-queries?status=pending")
+            .add_header("authorization", payroll.clone())
+            .await;
+        assert_eq!(bad_status.status_code(), 422, "{}", bad_status.text());
 
         // Payroll with no seat in this organization neither sees it nor can close it.
         let elsewhere: Value = request
@@ -779,9 +804,15 @@ async fn my_payslips_are_mine_and_a_query_changes_no_amount() {
 async fn the_directory_search_stops_at_the_organizations_the_caller_can_read() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (one, both) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
     let bearer = |t: String| format!("Bearer {t}");

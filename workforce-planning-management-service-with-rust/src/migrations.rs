@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn every_migration_file_has_a_seaorm_shaped_version() {
-        assert_eq!(MIGRATOR.iter().count(), 133);
+        assert_eq!(MIGRATOR.iter().count(), 134);
         for m in MIGRATOR.iter() {
             let name = format!(
                 "m{}_{}_x",

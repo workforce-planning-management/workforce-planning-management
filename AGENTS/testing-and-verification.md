@@ -39,7 +39,7 @@ green gate. A justified `#[allow(clippy::…)]` carries a reason comment.
 per-task test run had covered: `cargo fmt --check` (run `cargo fmt`, then clippy again: it can expose lints), `pnpm lint` (Prettier can need two
 `--write` passes), `gitleaks detect --redact` over the whole history (a reviewed test fixture goes in `.gitleaksignore` as
 `<commit>:<file>:<rule>:<line>` with a reason), and `scripts/verify-db-roles.sh` (the request suite as the least-privilege role: a test that
-runs DDL must go through `crate::requests::ddl`, which uses the schema owner's `WPM_TEST_DDL_URL` in that drill).
+runs DDL must go through `crate::requests::ddl`, which uses the schema owner's `WORKFORCE_PLANNING_MANAGEMENT_TEST_DDL_URL` in that drill).
 
 ## Running the service tests
 
@@ -51,10 +51,10 @@ database-backed suites:
 1. (Only if you want to keep `target/` out of your checkout, copy the service —
    `rsync -a --delete --exclude target --exclude .git` — and run there.)
 2. Start a throwaway Postgres 18 with **Podman** (never Docker) on a free port:
-   `podman run -d --rm --name <unique> -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco
+   `podman run -d --rm --name <unique> -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres
    -e POSTGRES_DB=workforce_planning_management_test -p 55440:5432 --tmpfs
    /var/lib/postgresql <postgres-18-image>`; wait a few seconds.
-3. `DATABASE_URL=postgres://loco:loco@localhost:55440/workforce_planning_management_test
+3. `DATABASE_URL=postgres://postgres:postgres@localhost:55440/workforce_planning_management_test
    cargo test --test main -- --ignored --test-threads=1` in the service directory.
    A local PostgreSQL works as well: `createdb -U postgres -O <you> <throwaway name>`, point
    `DATABASE_URL` at it, and `dropdb -U postgres <name>` afterwards. A database reused across

@@ -1229,4 +1229,20 @@ mod tests {
                 .contains("at most")
         );
     }
+
+    #[test]
+    fn the_walk_to_the_next_report_stops_at_the_end_of_the_calendar() {
+        let first = crate::dates::ymd(9999, 1, 1).unwrap();
+        let obligation = Obligation {
+            from_workers: 1,
+            every_years: 1,
+            first_report_on: first,
+        };
+        let today = crate::dates::ymd(9999, 12, 31).unwrap();
+        assert_eq!(
+            next_due(obligation, today),
+            first,
+            "no later report fits the calendar"
+        );
+    }
 }

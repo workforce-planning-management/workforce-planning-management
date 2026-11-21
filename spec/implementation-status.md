@@ -9,22 +9,22 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 
 | Measure | Count |
 | --- | ---: |
-| Tasks done in `spec/tasks.md` | 451 |
-| Tasks not done (open or proposed) | 97 |
-| Highest task number marked done | WPM-T552 |
-| Database migrations | 133 |
-| Controllers | 96 |
-| Pure rule modules | 127 |
-| OpenAPI paths | 513 |
-| Rust unit tests (`#[test]` in `src/`) | 1316 |
-| Rust request tests (`tests/requests/`) | 233 |
-| Rust test binaries beside the request suite | 19 |
-| Front-end unit test files | 46 |
-| Front-end unit tests (`it(` / `test(`) | 307 |
-| Playwright tests (`test(`) | 335 |
-| Front-end pages (`+page.svelte`) | 69 |
+| Tasks done in `spec/tasks.md` | 458 |
+| Tasks not done (open or proposed) | 144 |
+| Highest task number marked done | WPM-T606 |
+| Database migrations | 134 |
+| Controllers | 97 |
+| Pure rule modules | 128 |
+| OpenAPI paths | 518 |
+| Rust unit tests (`#[test]` in `src/`) | 1421 |
+| Rust request tests (`tests/requests/`) | 277 |
+| Rust test binaries beside the request suite | 21 |
+| Front-end unit test files | 47 |
+| Front-end unit tests (`it(` / `test(`) | 310 |
+| Playwright tests (`test(`) | 343 |
+| Front-end pages (`+page.svelte`) | 70 |
 | Content locales | 17 |
-| Topic files in `spec/` (not counting this one) | 66 |
+| Topic files in `spec/` (not counting this one) | 68 |
 | Assessment checklist answers: met | 16 |
 | Assessment checklist answers: partly met | 16 |
 | Assessment checklist answers: not met | 6 |

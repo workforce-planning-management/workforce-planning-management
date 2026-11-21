@@ -30,10 +30,10 @@ describe("the proxy and a demo session", () => {
   async function call(demoUrl: string, sessionId: string | null) {
     vi.resetModules();
     vi.doMock("../../src/lib/server/config", () => ({
-      WPM_API_URL: "http://real.test",
-      WPM_DEMO_API_URL: demoUrl,
+      WORKFORCE_PLANNING_MANAGEMENT_API_URL: "http://real.test",
+      WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL: demoUrl,
       AUTH_API_URL: "http://auth.test",
-      WPM_PUBLIC_URL: "",
+      WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL: "",
     }));
     const { GET } =
       await import("../../src/routes/api/proxy/[...path]/+server");
@@ -67,10 +67,10 @@ describe("the proxy and a demo session", () => {
   it("makes up the demo user's memberships from the demo service's people, as an administrator of its organization", async () => {
     vi.resetModules();
     vi.doMock("../../src/lib/server/config", () => ({
-      WPM_API_URL: "http://real.test",
-      WPM_DEMO_API_URL: "http://demo.test",
+      WORKFORCE_PLANNING_MANAGEMENT_API_URL: "http://real.test",
+      WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL: "http://demo.test",
       AUTH_API_URL: "http://auth.test",
-      WPM_PUBLIC_URL: "",
+      WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL: "",
     }));
     const { GET } =
       await import("../../src/routes/api/proxy/[...path]/+server");
@@ -168,10 +168,10 @@ describe("signing in as the example address", () => {
   async function signIn(demoUrl: string, email: string) {
     vi.resetModules();
     vi.doMock("../../src/lib/server/config", () => ({
-      WPM_API_URL: "http://real.test",
-      WPM_DEMO_API_URL: demoUrl,
+      WORKFORCE_PLANNING_MANAGEMENT_API_URL: "http://real.test",
+      WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL: demoUrl,
       AUTH_API_URL: "http://auth.test",
-      WPM_PUBLIC_URL: "",
+      WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL: "",
     }));
     const { actions } = await import("../../src/routes/signin/+page.server");
     const set: Array<[string, string]> = [];

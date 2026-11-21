@@ -44,6 +44,15 @@ async fn wellbeing_round_trip() {
             422,
             "zero doses refused"
         );
+        assert_eq!(
+            request
+                .post("/api/wellbeing-entitlements")
+                .json(&json!({ "name": "Bad", "description": "x", "active_from": "2026-09-01", "active_until": "2026-06-01" }))
+                .await
+                .status_code(),
+            422,
+            "a window that ends before it starts refused"
+        );
 
         // ── A department-scoped, two-dose rule (flu-style for frontline).
         let flu: Value = request
@@ -454,6 +463,11 @@ async fn pulse_round_trip() {
                            "active_until": "2026-06-30" }))
             .await
             .json();
+        let backwards = request
+            .post("/api/pulse-surveys")
+            .json(&json!({ "name": "Backwards", "question": "How?", "active_from": "2026-09-01", "active_until": "2026-06-01" }))
+            .await;
+        assert_eq!(backwards.status_code(), 422, "{}", backwards.text());
         let open: Value = request
             .post("/api/pulse-surveys")
             .json(&json!({ "name": "July pulse", "question": "How are you doing this week?" }))

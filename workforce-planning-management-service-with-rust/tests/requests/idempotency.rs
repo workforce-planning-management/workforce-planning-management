@@ -166,3 +166,39 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A key that is not text is refused before anything runs, and a keyed body over 1 MiB is refused as too large.
+async fn a_key_that_is_not_text_and_a_body_too_large_are_refused() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let name = axum::http::HeaderName::from_static("idempotency-key");
+        let not_text =
+            axum::http::HeaderValue::from_bytes(b"key-\xff\xfe-0123456789abcdef").unwrap();
+        let refused = request
+            .post("/api/announcements")
+            .add_header(name.clone(), not_text)
+            .json(&json!({ "organization_ref": an_org(), "title": "x", "body": "y" }))
+            .await;
+        assert_eq!(refused.status_code(), 422, "{}", refused.text());
+        assert!(refused.text().contains("not text"), "{}", refused.text());
+
+        let big = "x".repeat(1024 * 1024 + 1);
+        let too_large = request
+            .post("/api/announcements")
+            .add_header(
+                name,
+                axum::http::HeaderValue::from_static("0123456789abcdef-too-large"),
+            )
+            .json(&json!({ "organization_ref": an_org(), "title": "x", "body": big }))
+            .await;
+        assert_eq!(too_large.status_code(), 413, "{}", too_large.text());
+        assert!(
+            too_large.text().contains("request body too large"),
+            "refused by the key check: {}",
+            too_large.text()
+        );
+    })
+    .await;
+}

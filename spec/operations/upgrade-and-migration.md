@@ -19,7 +19,7 @@
    now needs a token; `GET /api/retention` returns `horizons` per record kind in place of
    `horizon_days`; the pay scale id became `national-2026-27`. In the 2026-11 changes:
    **behind a proxy, `TRUSTED_PROXIES` must be set before you upgrade**, or every caller
-   shares the proxy's rate-limit bucket. `WPM_TRUST_FORWARDED` does nothing now, so remove
+   shares the proxy's rate-limit bucket. `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` does nothing now, so remove
    it (WPM-R239).
 2. Take and verify a backup: `scripts/backup.sh` (the `.sha256` file is checked on
    restore). Start the next restore drill on a copy if you can.
@@ -30,7 +30,7 @@
    `workforce-planning-management db migrate`.
 5. Start it. Check `GET /_health/ready`, `GET /_posture` (`auth_enforced: true`), and a read.
 6. Watch the logs for `WARN` lines: the service warns when sign-in is off, when it is
-   on with no key source, and when `WPM_TRUST_FORWARDED` is still set.
+   on with no key source, and when `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` is still set.
 7. Keep the previous image and the backup until the new version has run a full
    scheduled-task cycle.
 
@@ -58,5 +58,5 @@ restoring the backup taken before the upgrade.
 ## Compatibility
 
 The API is versioned by header (`Accepts-version`), never by URL (`/api/v1` is not used; WPM-D98); an unsupported version is a `406`.
-Environment variables are renamed with a compatibility layer (`HCM_` to `WPM_`); a
+Environment variables are renamed with a compatibility layer (`HCM_` to `WPM_` on 2026-07-23, then `WPM_` to `WORKFORCE_PLANNING_MANAGEMENT_` on 2026-11-20, WPM-R278); a
 deprecated name still works but logs. Check the changelog before relying on either.

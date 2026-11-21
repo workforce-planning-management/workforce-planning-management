@@ -125,13 +125,14 @@ pub fn security_headers(path: &str, https: bool) -> Vec<(HeaderName, HeaderValue
 }
 
 /// Whether the request arrived over TLS, as a proxy reports it, or HSTS was
-/// forced on with `WPM_HSTS`.
+/// forced on with `WORKFORCE_PLANNING_MANAGEMENT_HSTS`.
 fn is_https(headers: &HeaderMap) -> bool {
     headers
         .get("x-forwarded-proto")
         .and_then(|v| v.to_str().ok())
         .is_some_and(|v| v.eq_ignore_ascii_case("https"))
-        || crate::compat::env_var("WPM_HSTS").is_some_and(|v| crate::auth::parse_bool(&v))
+        || crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_HSTS")
+            .is_some_and(|v| crate::auth::parse_bool(&v))
 }
 
 /// Middleware: set the security headers on every response, including errors.
@@ -192,8 +193,8 @@ impl RateLimits {
         }
     }
 
-    /// The limits `WPM_RATE_LIMIT_PER_MINUTE` and
-    /// `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` set, or the defaults.
+    /// The limits `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE` and
+    /// `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE` set, or the defaults.
     #[must_use]
     pub fn from_env(trusted: Vec<ProxyNet>) -> Self {
         let read = |name: &str, default: u32| {
@@ -202,9 +203,12 @@ impl RateLimits {
                 .unwrap_or(default)
         };
         Self::new(
-            read("WPM_RATE_LIMIT_PER_MINUTE", DEFAULT_LIMIT),
             read(
-                "WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+                "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE",
+                DEFAULT_LIMIT,
+            ),
+            read(
+                "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
                 DEFAULT_SENSITIVE_LIMIT,
             ),
             trusted,
@@ -235,12 +239,12 @@ pub fn caller(address: Option<IpAddr>) -> Option<IpAddr> {
     client_key(&extensions)
 }
 
-/// What to log when the retired `WPM_TRUST_FORWARDED` is still set. It does
+/// What to log when the retired `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` is still set. It does
 /// nothing now, and a deployment that relies on it needs `TRUSTED_PROXIES`.
 #[must_use]
 pub fn trust_forwarded_warning(setting: Option<&str>) -> Option<&'static str> {
     setting.map(|_| {
-        "WPM_TRUST_FORWARDED does nothing and TRUSTED_PROXIES replaces it; \
+        "WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED does nothing and TRUSTED_PROXIES replaces it; \
          behind a proxy, list it there or every caller shares its rate limit"
     })
 }
@@ -471,7 +475,7 @@ mod tests {
     }
 
     // The middleware itself, through a router (WPM-T526: cargo-mutants found these lines checked only by the
-    // database-backed `security` binary, which a mutant run does not reach). Assumes `WPM_HSTS` is not set.
+    // database-backed `security` binary, which a mutant run does not reach). Assumes `WORKFORCE_PLANNING_MANAGEMENT_HSTS` is not set.
     async fn answer(proto: Option<&str>, path: &str) -> axum::http::Response<axum::body::Body> {
         use tower::ServiceExt as _;
         let app = axum::Router::new()

@@ -326,4 +326,13 @@ mod tests {
         assert_eq!(risk_deviation(4, 0), Some(0));
         assert_eq!(risk_deviation(4, 3), Some(3));
     }
+
+    #[test]
+    fn each_dimension_states_its_unit() {
+        let units: Vec<&str> = Dimension::ALL.iter().map(|d| d.unit()).collect();
+        assert_eq!(
+            units,
+            ["calendar_days", "basis_points", "basis_points", "roles"]
+        );
+    }
 }

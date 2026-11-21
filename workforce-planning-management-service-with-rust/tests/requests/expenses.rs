@@ -462,3 +462,62 @@ fn names_figure(text: &str, figure: &str) -> bool {
         !before.is_some_and(part) && !after.is_some_and(part)
     })
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A claim holds at most 50 items; a submitted claim's items cannot be changed; a withdrawn claim is a draft again.
+async fn a_claim_holds_fifty_items_and_only_a_draft_changes() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(
+            &request,
+            &org,
+            format!("EX-{}", uuid::Uuid::new_v4().simple()),
+            None
+        )
+        .await;
+        activate!(&request, &worker).await;
+        let claim: Value = request
+            .post(&format!("/api/workers/{worker}/expense-claims"))
+            .json(&json!({ "title": "Many receipts", "currency": "GBP" }))
+            .await
+            .json();
+        let pid = claim["pid"].as_str().unwrap().to_string();
+        let items = format!("/api/expense-claims/{pid}/items");
+        let item =
+            json!({ "incurred_on": "2026-10-01", "category": "travel", "amount_minor": 100 });
+        let mut first = String::new();
+        for i in 0..50 {
+            let added = request.post(&items).json(&item).await;
+            assert_eq!(added.status_code(), 200, "item {i}: {}", added.text());
+            if i == 0 {
+                let body: Value = added.json();
+                first = body["items"][0]["pid"]
+                    .as_str()
+                    .or_else(|| body["pid"].as_str())
+                    .unwrap()
+                    .to_string();
+            }
+        }
+        let over = request.post(&items).json(&item).await;
+        assert_eq!(over.status_code(), 422, "the 51st: {}", over.text());
+
+        request
+            .post(&format!("/api/expense-claims/{pid}/submit"))
+            .await
+            .assert_status_ok();
+        let locked = request.delete(&format!("/api/expense-items/{first}")).await;
+        assert_eq!(locked.status_code(), 422, "{}", locked.text());
+        let withdrawn: Value = request
+            .post(&format!("/api/expense-claims/{pid}/withdraw"))
+            .await
+            .json();
+        assert_eq!(withdrawn["status"], "draft");
+        request
+            .delete(&format!("/api/expense-items/{first}"))
+            .await
+            .assert_status_ok();
+    })
+    .await;
+}

@@ -69,6 +69,12 @@ pub const ATTRIBUTE_WRITES: &[(&str, &str, &str)] = &[
     ),
     // Payroll reads pay and writes nothing under the reference policy, but a payslip query is theirs to close (WPM-R178).
     ("payroll", "POST", "payslip-queries/{}/close"),
+    // A resource manager plans people's allocations and writes nothing else (WPM-R276); the handler checks again and refuses
+    // their own.
+    ("resource_manager", "POST", "workers/{}/allocations"),
+    ("resource_manager", "PUT", "allocations/{}"),
+    ("resource_manager", "POST", "allocations/{}/status"),
+    ("resource_manager", "DELETE", "allocations/{}"),
 ];
 
 /// The attribute that lets this request past the action check, if it is on the attribute list.

@@ -122,9 +122,15 @@ async fn leaver(request: &axa_test::TestServer, token: &str, worker: &str, day: 
 async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (me, boss) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
     let as_me = bearer(sign_as(&kid, &me.to_string(), &[]));
@@ -196,6 +202,15 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .await
             .json();
         assert_eq!(done["missing"], json!([]));
+        // A correction replaces the record rather than adding a second one.
+        let corrected: Value = request
+            .put(&path)
+            .add_header("authorization", hr.clone())
+            .json(&json!({ "final_pay_on": "2027-04-25", "pay_summary_ref": "payroll:run-43" }))
+            .await
+            .json();
+        assert_eq!(corrected["missing"], json!([]));
+        assert!(corrected.to_string().contains("payroll:run-43"), "{corrected}");
 
         // A joiner has none, and a cancelled leaver has none.
         let cancelled = request
@@ -229,7 +244,7 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
         assert_eq!(rows.len(), 3, "{text}");
         assert!(rows[1].contains("S-4") && rows[1].contains("final_pay_on pay_summary_ref"), "{text}");
         assert!(rows[1].contains("'=Person S-4"), "{text}");
-        assert!(rows[2].contains("2027-04-25,payroll:run-42,"), "{text}");
+        assert!(rows[2].contains("2027-04-25,payroll:run-43,"), "{text}");
         assert!(!text.contains("S-3"), "a cancelled leaver is not in it");
 
         // Audited with no content, and in the person's own export.
@@ -258,7 +273,7 @@ async fn a_separation_record_is_built_from_the_leaver_record_for_hr_only() {
             .add_header("authorization", svc.clone())
             .await
             .json();
-        assert!(export.to_string().contains("payroll:run-42"), "{export}");
+        assert!(export.to_string().contains("payroll:run-43"), "{export}");
 
         // Erasure takes the record and why they left; the dates stay, as for any leaver.
         for to in ["offboarding", "terminated"] {

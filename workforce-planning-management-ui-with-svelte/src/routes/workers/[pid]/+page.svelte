@@ -16,6 +16,7 @@
   import ExpenseClaims from "#lib/components/ExpenseClaims.svelte";
   import EquipmentPanel from "#lib/components/EquipmentPanel.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
+  import MyAllocations from "#lib/components/MyAllocations.svelte";
   import EngagementPanel from "#lib/components/EngagementPanel.svelte";
   import ConversionPanel from "#lib/components/ConversionPanel.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
@@ -467,6 +468,7 @@
   <DeclaredSkills workerPid={worker.pid} />
   <JobLevel workerPid={worker.pid} />
   <PayPosition workerPid={worker.pid} />
+  <MyAllocations workerPid={worker.pid} />
   <EquipmentPanel workerPid={worker.pid} organizationRef={worker.organization_ref} />
   <ExpenseClaims workerPid={worker.pid} />
   <EmergencyContacts workerPid={worker.pid} />

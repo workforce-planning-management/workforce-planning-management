@@ -1,6 +1,6 @@
 <!--
   Statutory defaults (`/statutory-defaults`, WPM-T403): a read-only view of `GET /api/statutory-defaults`. For each
-  `WPM_*` setting whose default is one regime's value, or a starting point that is no regime's: the value in force,
+  `WORKFORCE_PLANNING_MANAGEMENT_*` setting whose default is one regime's value, or a starting point that is no regime's: the value in force,
   whether this deployment set it, the default, and whose the default is (a jurisdiction code, what it rests on, and
   whether that source was read). Configuration, not personal data: anyone signed in reads it. Nothing here changes a
   setting; the deployer does that in the service's configuration. What a default rests on is the service's English text.

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # The restore drill (WPM-R89): prove a backup can be restored, every run.
 #
-#   ADMIN_DATABASE_URL=postgres://loco:loco@localhost:5432/postgres \
-#   WPM_BIN=target/debug/workforce-planning-management \
+#   ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
+#   WORKFORCE_PLANNING_MANAGEMENT_BIN=target/debug/workforce-planning-management \
 #     scripts/restore-drill.sh
 #
 # ADMIN_DATABASE_URL names a server where the role may create databases; the
 # drill makes two scratch databases there and drops them at the end (or leaves
-# them with KEEP=1). WPM_BIN is the built service binary.
+# them with KEEP=1). WORKFORCE_PLANNING_MANAGEMENT_BIN is the built service binary.
 #
 # What it does:
 #   1. migrate and seed a source database;
@@ -28,7 +28,7 @@
 set -euo pipefail
 
 : "${ADMIN_DATABASE_URL:?set ADMIN_DATABASE_URL (a server where databases can be created)}"
-: "${WPM_BIN:?set WPM_BIN to the built service binary}"
+: "${WORKFORCE_PLANNING_MANAGEMENT_BIN:?set WORKFORCE_PLANNING_MANAGEMENT_BIN to the built service binary}"
 here="$(cd "$(dirname "$0")" && pwd)"
 port="${DRILL_PORT:-5199}"
 work="$(mktemp -d)"
@@ -66,9 +66,9 @@ checksums() {
 }
 
 start_service() { # url
-  DATABASE_URL="$1" APP_ENV=demo WPM_REQUIRE_AUTH=0 PORT="$port" \
-    WPM_RATE_LIMIT_PER_MINUTE=0 WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=0 \
-    "$WPM_BIN" start > "$work/service.log" 2>&1 &
+  DATABASE_URL="$1" APP_ENV=demo WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 PORT="$port" \
+    WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE=0 WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE=0 \
+    "$WORKFORCE_PLANNING_MANAGEMENT_BIN" start > "$work/service.log" 2>&1 &
   pid=$!
   for _ in $(seq 1 60); do
     curl -fs "http://localhost:$port/_health/live" >/dev/null 2>&1 && return 0
@@ -83,9 +83,9 @@ api() { curl -fsS -H 'content-type: application/json' "$@"; }
 step "1. migrate and seed the source database ($src)"
 psql "$ADMIN_DATABASE_URL" -qc "CREATE DATABASE $src"
 export APP_ENV=demo
-DATABASE_URL="$SRC_URL" "$WPM_BIN" db migrate >/dev/null
+DATABASE_URL="$SRC_URL" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" db migrate >/dev/null
 # The seed loads made-up records, so it runs only in development or test (WPM-R240).
-APP_ENV=development DATABASE_URL="$SRC_URL" "$WPM_BIN" task seed >/dev/null
+APP_ENV=development DATABASE_URL="$SRC_URL" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" task seed >/dev/null
 src_workers="$(psql "$SRC_URL" -Atc 'select count(*) from workers where deleted_at is null')"
 [ "$src_workers" -gt 0 ] || fail "the seed produced no workers"
 # The seed writes no audit entries; add a few through the database's own chain trigger, so the
@@ -95,12 +95,12 @@ psql "$SRC_URL" -qc "insert into audit_logs (entity, entity_pid, action, actor) 
 step "2. back up, and fingerprint every table at that moment"
 # The drill runs the real, encrypted path (WPM-R117) with a key made for the run.
 ( umask 077; openssl rand -base64 48 > "$work/backup.key" )
-export WPM_BACKUP_KEY_FILE="$work/backup.key"
+export WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE="$work/backup.key"
 dump="$(DATABASE_URL="$SRC_URL" BACKUP_RETENTION_DAYS=35 "$here/backup.sh" "$work/backups")"
 checksums "$SRC_URL" > "$work/before.sums"
 # The audit trail's hash chain (WPM-R115): record its head hash now, as an operator would
 # keep it elsewhere, and check the restored copy has the same chain.
-chain_before="$(DATABASE_URL="$SRC_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)"
+chain_before="$(DATABASE_URL="$SRC_URL" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" task verify_audit_chain 2>/dev/null | tail -1)"
 tables="$(wc -l < "$work/before.sums" | tr -d ' ')"
 echo "backed up $dump ($tables tables)" >&2
 
@@ -132,7 +132,7 @@ applied_src="$(psql "$SRC_URL" -Atc 'select count(*) from _sqlx_migrations')"
 applied_dst="$(psql "$DST_URL" -Atc 'select count(*) from _sqlx_migrations')"
 [ "$applied_src" = "$applied_dst" ] || fail "migrations differ: $applied_src vs $applied_dst"
 echo "$applied_dst migrations recorded" >&2
-chain_after="$(DATABASE_URL="$DST_URL" "$WPM_BIN" task verify_audit_chain 2>/dev/null | tail -1)" \
+chain_after="$(DATABASE_URL="$DST_URL" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" task verify_audit_chain 2>/dev/null | tail -1)" \
   || fail "the restored audit chain is broken: $chain_after"
 [ "$chain_before" = "$chain_after" ] || fail "the audit chain differs after the restore: $chain_before vs $chain_after"
 echo "audit chain intact and identical after the restore: $chain_after" >&2
@@ -141,7 +141,7 @@ back="$(psql "$DST_URL" -Atc "select count(*) from workers where pid = '$victim'
 echo "the person erased after the backup is back (as expected before the replay)" >&2
 
 step "6. replay the exported ledger"
-DATABASE_URL="$DST_URL" "$WPM_BIN" task replay_erasures "file:$work/ledger.csv" 2>&1 | tail -2 >&2
+DATABASE_URL="$DST_URL" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" task replay_erasures "file:$work/ledger.csv" 2>&1 | tail -2 >&2
 gone="$(psql "$DST_URL" -Atc "select count(*) from workers where pid = '$victim' and display_name = '[erased]' and salary_minor is null")"
 [ "$gone" = "1" ] || fail "the replay did not erase the person again"
 echo "erased again" >&2

@@ -629,5 +629,16 @@ mod tests {
             vec!["A", "B"],
             "a stored loop does not run forever"
         );
+        let unknown_parent = [CostCentre {
+            code: "A".into(),
+            parent: Some("MISSING".into()),
+            valid_from: d(2020, 1, 1),
+            valid_to: None,
+        }];
+        assert_eq!(
+            chain(&unknown_parent, "A"),
+            vec!["A"],
+            "an unknown parent is not invented as a register row"
+        );
     }
 }

@@ -24,7 +24,7 @@ struct PersonGroup {
 }
 
 /// The employed people of each department, as the projection sees them. Refused over the deployer's
-/// ceiling (`WPM_MAX_ORG_WORKERS`, WPM-D90). "Employed" is the rule [`is_employed_on`], in SQL.
+/// ceiling (`WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS`, WPM-D90). "Employed" is the rule [`is_employed_on`], in SQL.
 pub(super) async fn people_by_department(
     ctx: &AppContext,
     org: &str,

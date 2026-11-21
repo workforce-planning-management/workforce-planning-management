@@ -59,7 +59,7 @@ takes, and when I would finish at a pace I choose.*
 The LMS owns courses and learners (WPM-D10); WPM holds a course only as a `course:` or `courseinstance:` URN. So that a person can
 get from WPM to the course, every place that names a course also carries a link to it.
 
-- **One setting, the deployer's:** `WPM_LMS_COURSE_URL`, a template such as `https://lms.example.org/course/{course}`. Unset means no
+- **One setting, the deployer's:** `WORKFORCE_PLANNING_MANAGEMENT_LMS_COURSE_URL`, a template such as `https://lms.example.org/course/{course}`. Unset means no
   links, which is the default; a template that is not valid (WPM-D91) is ignored with a warning at boot, never half-used.
 - **Where a link appears** (`lms_url`, `null` when there is no template): a CPD entry that came from the LMS, a worker's training
   enrolment, a learning-path step, a skill's catalogue course, a cutover role's course. Nowhere else.
@@ -149,7 +149,7 @@ refused. The achievement is **named by the activity title the worker typed**, so
   list as a signed credential) are **public**: see WPM-D109.
 - Subject access lists the issuances. Erasure revokes a live credential and cuts the row from the person (worker and entry set to the
   nil id), keeping its place on the list.
-- Settings: `WPM_CREDENTIAL_ISSUER`, `WPM_CREDENTIAL_SIGNING_KEY`, `WPM_CREDENTIAL_ISSUER_NAME` (deployment.md).
+- Settings: `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER`, `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY`, `WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER_NAME` (deployment.md).
 - **Skill alignment (WPM-T285, 2026-10-25).** A CPD entry may name the skill it developed (`skill_pid` on `POST
   /api/workers/{pid}/cpd-entries`, checked against the catalogue; migration `m20261025_000091_cpd_entry_skill`; optional). A
   credential issued from such an entry carries an Open Badges `alignment` for **every external reference the catalogue holds for that

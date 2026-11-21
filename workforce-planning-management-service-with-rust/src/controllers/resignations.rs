@@ -30,11 +30,11 @@ use super::jurisdictions::Scope;
 use super::statutory_defaults::{self as statutory, InForce};
 
 /// The notice period in calendar days: the worker's profile (`resignation.notice_calendar_days`),
-/// else `WPM_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting is ignored with a warning,
+/// else `WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting is ignored with a warning,
 /// never silently shortened.
 #[must_use]
 pub fn notice_days(scope: Option<&Scope>, as_of: Date) -> InForce<i64> {
-    let name = "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS";
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS";
     let configured =
         crate::compat::env_var(name).and_then(|text| match text.trim().parse::<i64>() {
             Ok(n) if rules::validate_notice(n).is_ok() => Some(n),

@@ -1,4 +1,4 @@
-//! Whose each default is (WPM-T384): `GET /api/statutory-defaults` names, for every listed `WPM_*`
+//! Whose each default is (WPM-T384): `GET /api/statutory-defaults` names, for every listed `WORKFORCE_PLANNING_MANAGEMENT_*`
 //! setting, the value in force, whether the deployer set it, the default and whose it is.
 
 use serde_json::{Value, json};
@@ -63,85 +63,124 @@ async fn each_default_names_its_regime_and_a_setting_replaces_it() {
             assert!(list.iter().any(|s| s["area"] == area), "{area}");
         }
         // One regime's defaults name it; a starting point names none.
-        let flexible = entry(&list, "WPM_FLEXIBLE_DECISION_MONTHS");
+        let flexible = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+        );
         assert_eq!(flexible["default_from"]["regime"], "GB");
         assert_eq!(flexible["default_from"]["status"], "unverified");
         assert_eq!(flexible["value"], 2);
         assert_eq!(flexible["set"], false);
-        let notice = entry(&list, "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS");
+        let notice = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS",
+        );
         assert_eq!(notice["default_from"]["regime"], Value::Null);
         assert_eq!(notice["default_from"]["status"], "starting_point");
         assert_eq!(notice["value"], 28);
-        let months = entry(&list, "WPM_PAY_INFORMATION_MONTHS");
+        let months = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS",
+        );
         assert_eq!(months["default_from"]["regime"], "EU");
         // The Directive was seen only as search excerpts (WPM-T268), so it is not `read` (WPM-T404).
         assert_eq!(months["default_from"]["status"], "unverified");
         let reference = months["default_from"]["reference"].as_str().unwrap();
         assert!(reference.contains("Article 7"));
         assert!(reference.contains("search excerpts"));
-        let threshold = entry(&list, "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT");
+        let threshold = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+        );
         assert_eq!(threshold["value"], 5);
         assert_eq!(threshold["default_from"]["regime"], "EU");
-        let tiers = entry(&list, "WPM_PAY_GAP_TIERS");
+        let tiers = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS");
         assert_eq!(tiers["value"].as_array().unwrap().len(), 3);
         assert_eq!(tiers["value"][0]["from_workers"], 250);
-        let pay = entry(&list, "WPM_RETENTION_PAY_DAYS");
+        let pay = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS");
         assert_eq!(pay["value"], 2190);
         assert_eq!(pay["default_from"]["regime"], Value::Null);
         // The AI Act's date is the EU's, from a secondary page, so unverified; the sex category is no regime's.
-        let ai = entry(&list, "WPM_AI_ACT_APPLIES_FROM");
+        let ai = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM");
         assert_eq!(ai["area"], "ai_register");
         assert_eq!(ai["value"], "2027-12-02");
         assert_eq!(ai["default_from"]["regime"], "EU");
         assert_eq!(ai["default_from"]["status"], "unverified");
-        let sex = entry(&list, "WPM_PAY_GAP_SEX_CATEGORY");
+        let sex = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY");
         assert_eq!(sex["value"], "sex");
         assert_eq!(sex["default_from"]["regime"], Value::Null);
         assert_eq!(sex["default_from"]["status"], "starting_point");
-        let stub = entry(&list, "WPM_PAYROLL_STUB_CURRENCY");
+        let stub = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY");
         assert_eq!(stub["value"], "GBP");
         assert_eq!(stub["default_from"]["status"], "example");
 
         // A deployer's own values replace the defaults and are shown as set; a value that does not
         // check is set but not used. The tests run serially, so the process environment is ours here.
         unsafe {
-            std::env::set_var("WPM_FLEXIBLE_DECISION_MONTHS", "3");
-            std::env::set_var("WPM_PAY_GAP_TIERS", "none");
-            std::env::set_var("WPM_RESIGNATION_NOTICE_CALENDAR_DAYS", "junk");
-            std::env::set_var("WPM_AI_ACT_APPLIES_FROM", "2028-08-02");
-            std::env::set_var("WPM_PAY_GAP_SEX_CATEGORY", "gender");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+                "3",
+            );
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS", "none");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS",
+                "junk",
+            );
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",
+                "2028-08-02",
+            );
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY",
+                "gender",
+            );
         }
         let list = read().await;
         unsafe {
-            std::env::remove_var("WPM_FLEXIBLE_DECISION_MONTHS");
-            std::env::remove_var("WPM_PAY_GAP_TIERS");
-            std::env::remove_var("WPM_RESIGNATION_NOTICE_CALENDAR_DAYS");
-            std::env::remove_var("WPM_AI_ACT_APPLIES_FROM");
-            std::env::remove_var("WPM_PAY_GAP_SEX_CATEGORY");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY");
         }
-        let flexible = entry(&list, "WPM_FLEXIBLE_DECISION_MONTHS");
+        let flexible = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+        );
         assert_eq!(flexible["value"], 3);
         assert_eq!(flexible["set"], true);
         assert_eq!(flexible["default"], "2");
-        let tiers = entry(&list, "WPM_PAY_GAP_TIERS");
+        let tiers = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS");
         assert_eq!(tiers["value"], serde_json::json!([]), "no reporting duty");
         assert_eq!(tiers["set"], true);
-        let notice = entry(&list, "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS");
+        let notice = entry(
+            &list,
+            "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS",
+        );
         assert_eq!(notice["value"], 28, "a junk value is not used");
         assert_eq!(notice["set"], true);
-        let ai = entry(&list, "WPM_AI_ACT_APPLIES_FROM");
+        let ai = entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM");
         assert_eq!(ai["value"], "2028-08-02");
         assert_eq!(ai["set"], true);
-        assert_eq!(entry(&list, "WPM_PAY_GAP_SEX_CATEGORY")["value"], "gender");
+        assert_eq!(
+            entry(&list, "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY")["value"],
+            "gender"
+        );
         // And back to the defaults.
         let list = read().await;
-        assert_eq!(entry(&list, "WPM_FLEXIBLE_DECISION_MONTHS")["set"], false);
+        assert_eq!(
+            entry(
+                &list,
+                "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS"
+            )["set"],
+            false
+        );
     })
     .await;
 }
 
 /// A reader about one worker (WPM-D153): the refusal reasons a flexible working request may be refused for come from that
-/// worker's chain first, then `WPM_FLEXIBLE_REFUSAL_REASONS`, then the defaults; never from the organization's home.
+/// worker's chain first, then `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS`, then the defaults; never from the organization's home.
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
@@ -194,13 +233,13 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
         };
         let (at, none_set, none_default) = (waiting(placed.clone()).await, waiting(nowhere.clone()).await, waiting(nowhere.clone()).await);
 
-        unsafe { std::env::set_var("WPM_FLEXIBLE_REFUSAL_REASONS", "env_reason") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS", "env_reason") };
         let profile_over_setting = refuse(at.clone(), "env_reason").await;
         let profile_used = refuse(at, "xa_reason").await;
         let not_the_home = refuse(none_set.clone(), "home_reason").await;
         let setting_used = refuse(none_set, "env_reason").await;
         let listed: Value = request.get(&format!("/api/statutory-defaults?organization={org}")).await.json();
-        unsafe { std::env::remove_var("WPM_FLEXIBLE_REFUSAL_REASONS") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS") };
         assert_eq!(profile_over_setting, 422, "the worker's profile wins over the setting");
         assert_eq!(profile_used, 200);
         assert_eq!(not_the_home, 422, "a worker reader never takes the organization's home");
@@ -211,7 +250,7 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
         // The list for the organization says where each value came from.
         let entry = |name: &str| listed["settings"].as_array().unwrap().iter().find(|s| s["setting"] == name).unwrap().clone();
         assert_eq!(listed["home_jurisdiction"], "XB");
-        let reasons = entry("WPM_FLEXIBLE_REFUSAL_REASONS");
+        let reasons = entry("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS");
         assert_eq!(reasons["reader"], "worker");
         assert_eq!(reasons["key"], key);
         assert_eq!(reasons["value"], json!(["env_reason"]), "a worker with no place of work gets the setting");
@@ -224,19 +263,19 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
         assert_eq!(place("QZ")["came_from"]["kind"], "setting", "no row at the bloc: the setting");
         assert_eq!(place("QZ")["came_from"]["profile"]["resolution"]["reason"], "not_configured");
         // An organization reader resolves over the home's chain: XB's tier, not the bloc's `none` (XB is not under QZ).
-        let tiers = entry("WPM_PAY_GAP_TIERS");
+        let tiers = entry("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS");
         assert_eq!(tiers["reader"], "organization");
         assert_eq!(tiers["value"][0]["from_workers"], 50);
         assert_eq!(tiers["came_from"]["kind"], "profile");
         assert_eq!(tiers["came_from"]["from"][0]["code"], "XB");
         assert_eq!(tiers.get("by_place"), None);
         // A setting that has not moved names no key and no reader.
-        let stub = entry("WPM_PAYROLL_STUB_CURRENCY");
+        let stub = entry("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY");
         assert_eq!(stub["key"], Value::Null);
         assert_eq!(stub["came_from"]["kind"], "default");
         // Without an organization, the deployment's: no profile is looked at.
         let plain: Value = request.get("/api/statutory-defaults").await.json();
-        let tiers = plain["settings"].as_array().unwrap().iter().find(|s| s["setting"] == "WPM_PAY_GAP_TIERS").unwrap().clone();
+        let tiers = plain["settings"].as_array().unwrap().iter().find(|s| s["setting"] == "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS").unwrap().clone();
         assert_eq!(tiers["came_from"]["kind"], "default");
         assert_eq!(tiers["came_from"].get("profile"), None);
         assert_eq!(request.get("/api/statutory-defaults?organization=nope").await.status_code(), 422);
@@ -245,7 +284,7 @@ async fn a_worker_reader_takes_the_workers_profile_then_the_setting_then_the_def
 }
 
 /// A reader about the organization as a whole (WPM-D153): whether a vacancy must state its pay range comes from the
-/// organization's home jurisdiction's chain first, then `WPM_REQUIRE_PAY_RANGE`, then the default (on); the gap report and the
+/// organization's home jurisdiction's chain first, then `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE`, then the default (on); the gap report and the
 /// retention schedule say where theirs came from.
 #[tokio::test]
 #[serial]
@@ -279,10 +318,10 @@ async fn an_organization_reader_takes_the_home_profile_then_the_setting_then_the
 
         assert_eq!(open_without_a_range(relaxed.clone()).await, 200, "the home's profile: not required");
         assert_eq!(open_without_a_range(homeless.clone()).await, 422, "no home, no setting: the default, required");
-        unsafe { std::env::set_var("WPM_REQUIRE_PAY_RANGE", "off") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE", "off") };
         let strict_with_setting = open_without_a_range(strict.clone()).await;
         let homeless_with_setting = open_without_a_range(homeless.clone()).await;
-        unsafe { std::env::remove_var("WPM_REQUIRE_PAY_RANGE") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE") };
         assert_eq!(strict_with_setting, 422, "the home's profile wins over the setting");
         assert_eq!(homeless_with_setting, 200, "no home: the setting");
 
@@ -314,7 +353,7 @@ async fn an_organization_reader_takes_the_home_profile_then_the_setting_then_the
 }
 
 /// The AI Act's date in the jurisdiction profile (WPM-T409): for an organization, its home's `ai_act.applies_from`, then
-/// `WPM_AI_ACT_APPLIES_FROM`, then the default; the register says which. A date that is not one is refused.
+/// `WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM`, then the default; the register says which. A date that is not one is refused.
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
@@ -348,11 +387,11 @@ async fn the_ai_act_date_comes_from_the_home_profile_then_the_setting_then_the_d
         assert_eq!(deployment["applies_from_came_from"]["kind"], "default");
         assert_eq!(deployment["applies_from_came_from"]["default_from"]["regime"], "EU");
         // The home's profile wins over the setting; without an organization the setting is used.
-        unsafe { std::env::set_var("WPM_AI_ACT_APPLIES_FROM", "2028-08-02") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM", "2028-08-02") };
         let with_org: Value = request.get(&format!("/api/ai-register?organization={org}")).await.json();
         let without: Value = request.get("/api/ai-register").await.json();
         let listed: Value = request.get(&format!("/api/statutory-defaults?organization={org}")).await.json();
-        unsafe { std::env::remove_var("WPM_AI_ACT_APPLIES_FROM") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM") };
         assert_eq!(with_org["applies_from"], "2028-01-15");
         assert_eq!(without["applies_from"], "2028-08-02");
         assert_eq!(without["applies_from_came_from"]["kind"], "setting");
@@ -360,7 +399,7 @@ async fn the_ai_act_date_comes_from_the_home_profile_then_the_setting_then_the_d
             .as_array()
             .unwrap()
             .iter()
-            .find(|s| s["setting"] == "WPM_AI_ACT_APPLIES_FROM")
+            .find(|s| s["setting"] == "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM")
             .unwrap()
             .clone();
         assert_eq!(ai["key"], key);
@@ -372,4 +411,40 @@ async fn the_ai_act_date_comes_from_the_home_profile_then_the_setting_then_the_d
         set_home(&request, &org, Value::Null).await;
     })
     .await;
+}
+
+#[tokio::test]
+#[serial]
+// A flexible-working setting that does not check is ignored, with a warning, and the default stands.
+async fn a_flexible_working_setting_that_does_not_check_falls_back_to_the_default() {
+    use workforce_planning_management::controllers::flexible_working as fw;
+    let today = jiff::civil::date(2026, 11, 20);
+    let (months, reasons) = (
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS",
+    );
+    let (default_months, default_reasons) = (
+        fw::decision_months(None, today).value,
+        fw::refusal_reasons(None, today).value,
+    );
+    for bad in ["13", "twelve"] {
+        unsafe { std::env::set_var(months, bad) };
+        assert_eq!(
+            fw::decision_months(None, today).value,
+            default_months,
+            "{bad}"
+        );
+    }
+    unsafe { std::env::set_var(months, " 3 ") };
+    assert_eq!(
+        fw::decision_months(None, today).value,
+        3,
+        "a value that checks is used"
+    );
+    unsafe {
+        std::env::remove_var(months);
+        std::env::set_var(reasons, "Not A Token");
+    }
+    assert_eq!(fw::refusal_reasons(None, today).value, default_reasons);
+    unsafe { std::env::remove_var(reasons) };
 }

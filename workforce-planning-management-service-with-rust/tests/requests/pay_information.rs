@@ -14,11 +14,14 @@ impl MonitoringOn {
     fn new() -> Self {
         unsafe {
             std::env::set_var(
-                "WPM_EQUALITY_MONITORING_BASIS",
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS",
                 "Test deployment: impact assessment PI-1",
             );
-            std::env::set_var("WPM_EQUALITY_CATEGORIES", r#"{"sex":["female","male"]}"#);
-            std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES",
+                r#"{"sex":["female","male"]}"#,
+            );
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
         }
         Self
     }
@@ -27,9 +30,9 @@ impl MonitoringOn {
 impl Drop for MonitoringOn {
     fn drop(&mut self) {
         unsafe {
-            std::env::remove_var("WPM_EQUALITY_MONITORING_BASIS");
-            std::env::remove_var("WPM_EQUALITY_CATEGORIES");
-            std::env::remove_var("WPM_EQUALITY_FLOOR");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR");
         }
     }
 }
@@ -227,9 +230,9 @@ async fn a_vacancy_states_its_pay_range_before_it_is_opened() {
         assert_eq!(open(make(json!({ "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" })).await).await.status_code(), 200);
         assert_eq!(open(make(json!({ "salary_min_minor": 3_500_000, "salary_max_minor": 3_500_000, "salary_currency": "GBP" })).await).await.status_code(), 200);
         // The gate is a setting: a deployment outside the Directive's reach may turn it off.
-        unsafe { std::env::set_var("WPM_REQUIRE_PAY_RANGE", "off") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE", "off") };
         let off = open(make(json!({})).await).await.status_code();
-        unsafe { std::env::remove_var("WPM_REQUIRE_PAY_RANGE") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE") };
         assert_eq!(off, 200, "off: opens without a range");
         // A draft can still be cancelled or left alone without a range: only opening is gated.
         let draft = make(json!({})).await;

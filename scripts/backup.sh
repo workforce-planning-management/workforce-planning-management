@@ -2,7 +2,7 @@
 # Back the database up (WPM-R89, WPM-R117): a custom-format pg_dump, ENCRYPTED, owner-only, with a
 # checksum and a keyed tag, and old backups pruned.
 #
-#   WPM_BACKUP_KEY_FILE=/path/to/key DATABASE_URL=postgres://… scripts/backup.sh [OUTPUT_DIR]
+#   WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE=/path/to/key DATABASE_URL=postgres://… scripts/backup.sh [OUTPUT_DIR]
 #
 # The key file's first line is the passphrase. Make one with
 #   umask 077; openssl rand -base64 48 > backup.key
@@ -17,7 +17,7 @@
 # a pragmatic choice that every host has; where you can, use your platform's own encrypted
 # storage or a KMS as well.
 #
-# Without WPM_BACKUP_KEY_FILE the script REFUSES, unless WPM_BACKUP_ALLOW_PLAINTEXT=1 says you accept
+# Without WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE the script REFUSES, unless WORKFORCE_PLANNING_MANAGEMENT_BACKUP_ALLOW_PLAINTEXT=1 says you accept
 # an unencrypted backup (then it warns). Database dumps hold everyone's personal data.
 #
 # OUTPUT_DIR defaults to ./backups. Keep the output off the host that holds the database.
@@ -31,19 +31,19 @@ out="${1:-./backups}"
 keep="${BACKUP_RETENTION_DAYS:-35}"
 case "$keep" in '' | *[!0-9]*) echo "BACKUP_RETENTION_DAYS must be a whole number of calendar days" >&2; exit 2 ;; esac
 
-key="${WPM_BACKUP_KEY_FILE:-}"
+key="${WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE:-}"
 if [ -n "$key" ]; then
-  [ -r "$key" ] || { echo "WPM_BACKUP_KEY_FILE $key is not a readable file" >&2; exit 2; }
+  [ -r "$key" ] || { echo "WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE $key is not a readable file" >&2; exit 2; }
   pass="$(head -n1 "$key")"
   [ "${#pass}" -ge 32 ] || { echo "the first line of the key file must be at least 32 characters (use: openssl rand -base64 48)" >&2; exit 2; }
   if [ -n "$(find "$key" -maxdepth 0 -perm +077 2>/dev/null)" ]; then
     echo "warning: $key is readable by group or others; chmod 600 it" >&2
   fi
-elif [ "${WPM_BACKUP_ALLOW_PLAINTEXT:-}" = "1" ]; then
-  echo "WARNING: writing an UNENCRYPTED backup (WPM_BACKUP_ALLOW_PLAINTEXT=1). It holds everyone's personal data." >&2
+elif [ "${WORKFORCE_PLANNING_MANAGEMENT_BACKUP_ALLOW_PLAINTEXT:-}" = "1" ]; then
+  echo "WARNING: writing an UNENCRYPTED backup (WORKFORCE_PLANNING_MANAGEMENT_BACKUP_ALLOW_PLAINTEXT=1). It holds everyone's personal data." >&2
 else
-  echo "refusing: no WPM_BACKUP_KEY_FILE. Backups are encrypted by default; see this script's header." >&2
-  echo "(To accept an unencrypted backup, set WPM_BACKUP_ALLOW_PLAINTEXT=1.)" >&2
+  echo "refusing: no WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE. Backups are encrypted by default; see this script's header." >&2
+  echo "(To accept an unencrypted backup, set WORKFORCE_PLANNING_MANAGEMENT_BACKUP_ALLOW_PLAINTEXT=1.)" >&2
   exit 2
 fi
 

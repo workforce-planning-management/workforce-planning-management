@@ -325,7 +325,7 @@ pub(crate) async fn build(
     let sex_category = sex_category();
     if !config.has_category(&sex_category) {
         return Err(unprocessable(
-            "the sex category is not monitored on this deployment (WPM_PAY_GAP_SEX_CATEGORY names it)",
+            "the sex category is not monitored on this deployment (WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY names it)",
         ));
     }
     let as_of = query.as_of.unwrap_or_else(crate::dates::today);
@@ -472,33 +472,35 @@ async fn audit_read(
     Ok(())
 }
 
-/// The equality category read as female or male: `WPM_PAY_GAP_SEX_CATEGORY` (trimmed), else `sex`. It names a category
-/// the deployment monitors (`WPM_EQUALITY_CATEGORIES`), not a value of a regime (WPM-T402).
+/// The equality category read as female or male: `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY` (trimmed), else `sex`. It names a category
+/// the deployment monitors (`WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES`), not a value of a regime (WPM-T402).
 pub(crate) fn sex_category() -> String {
-    crate::compat::env_var("WPM_PAY_GAP_SEX_CATEGORY").map_or_else(
+    crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY").map_or_else(
         || DEFAULT_SEX_CATEGORY.to_string(),
         |v| v.trim().to_string(),
     )
 }
 
 /// The reporting tiers: the organization's profile over its home jurisdiction's chain
-/// (`pay_transparency.reporting_tiers`), else `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`,
+/// (`pay_transparency.reporting_tiers`), else `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`,
 /// comma-separated, or `none`), else the Directive's own (Article 9). A value that does not parse is
 /// ignored with a warning, never half-applied (WPM-T384).
 pub(crate) fn reporting_tiers(
     scope: Option<&super::jurisdictions::Scope>,
     as_of: Date,
 ) -> super::statutory_defaults::InForce<Vec<pay_gap::Obligation>> {
-    let configured = crate::compat::env_var("WPM_PAY_GAP_TIERS")
+    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS")
         .filter(|v| !v.trim().is_empty())
         .and_then(|text| {
             pay_gap::parse_tiers(&text)
-                .inspect_err(|why| tracing::warn!("WPM_PAY_GAP_TIERS ignored: {why}"))
+                .inspect_err(|why| {
+                    tracing::warn!("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS ignored: {why}");
+                })
                 .ok()
         });
     super::statutory_defaults::pick(
         scope,
-        "WPM_PAY_GAP_TIERS",
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
         as_of,
         |value| {
             value
@@ -543,7 +545,7 @@ pub(crate) async fn gap_report(
             "next_report_on": pay_gap::next_due(t, built.as_of),
         })),
         // Whose tiers these are: the deployer's, or the Directive's by default (WPM-T384).
-        "reporting_basis": super::statutory_defaults::basis("WPM_PAY_GAP_TIERS", &tiers.came_from),
+        "reporting_basis": super::statutory_defaults::basis("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS", &tiers.came_from),
         "report": built.report,
         "derivation": "Counts and means come from the pay on the worker record and the sex each worker chose to declare. \
                        A figure shows only when both sexes reach the floor in it; a side with nobody is unknown; no figure \
@@ -777,4 +779,53 @@ pub fn routes() -> Routes {
         .add("/pay-categories/{pid}", delete(remove_category))
         .add("/pay-transparency/gap-report", get(gap_report))
         .add("/pay-transparency/gap-report/csv", get(gap_report_csv))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::composition_rows;
+    use crate::rules::pay_gap::{self, Declared, Variable, VariableBasis, WorkerPay};
+
+    /// `n` women and `n` men, every one with basic and variable pay recorded.
+    fn staff(n: usize) -> Vec<WorkerPay> {
+        (0..2 * n)
+            .map(|i| WorkerPay {
+                key: format!("w{i:03}"),
+                sex: Some(if i % 2 == 0 {
+                    Declared::Female
+                } else {
+                    Declared::Male
+                }),
+                category: None,
+                basic_minor: Some(3_000_000 + i64::try_from(i).unwrap() * 10_000),
+                variable: Variable::Known(if i % 3 == 0 { 50_000 } else { 0 }),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_compositions_are_shown_when_the_groups_are_big_enough_and_withheld_when_not() {
+        // The service holds no variable pay yet, so through the API these rows are always "unknown"; here the report is
+        // built with variable pay recorded, as it will be once a source for it exists.
+        let shown =
+            composition_rows(&pay_gap::report(&staff(40), 5, VariableBasis::AllKnown).unwrap());
+        assert!(
+            shown.contains("(e) share receiving a variable component,organization,shown,"),
+            "{shown}"
+        );
+        assert!(
+            shown.contains("(f) quartile 1 composition,organization,shown,"),
+            "{shown}"
+        );
+        let withheld =
+            composition_rows(&pay_gap::report(&staff(4), 5, VariableBasis::AllKnown).unwrap());
+        assert!(
+            withheld.contains("(e) share receiving a variable component,organization,withheld,"),
+            "{withheld}"
+        );
+        assert!(
+            withheld.contains("(f) quartile 1 composition,organization,withheld,"),
+            "{withheld}"
+        );
+    }
 }

@@ -68,6 +68,7 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
             json!({ "funding_kind": "programme" }),
             json!({ "title": "" }),
             json!({ "demand_line_pid": "11111111-2222-4333-8444-555555555555" }),
+            json!({ "number": "x".repeat(41) }),
         ] {
             assert_eq!(request.post("/api/positions").json(&bad(fault.clone())).await.status_code(), 422, "{fault}");
         }
@@ -146,6 +147,15 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
         let upd = request.put(&format!("/api/positions/{a}")).json(&bad(json!({}))).await;
         assert_eq!(upd.status_code(), 422);
         assert_eq!(hold(&a, Some(&w)).await, 422, "an ended seat has no holder");
+        let req = request.put(&format!("/api/positions/{a}/requisition")).json(&json!({ "requisition_pid": null })).await;
+        assert_eq!(req.status_code(), 422, "an ended seat takes no requisition: {}", req.text());
+        // A seat stays in its organization.
+        let live = seat(&request, &org, "CC-9", 100).await;
+        let mut moved = bad(json!({}));
+        moved["organization_ref"] = json!(other);
+        let refused = request.put(&format!("/api/positions/{live}")).json(&moved).await;
+        assert_eq!(refused.status_code(), 422, "{}", refused.text());
+        assert!(refused.text().contains("another organization"), "{}", refused.text());
 
         // An unknown holder (the worker's record is gone) makes the figures unknown, not zero.
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w2}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();

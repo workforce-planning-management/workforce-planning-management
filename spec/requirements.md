@@ -179,7 +179,7 @@ data.*
 *As a deployment operator I can activate authentication and express
 persona policies without code changes.*
 
-- Family stack: offline PASETO verify, blanket `WPM_REQUIRE_AUTH`
+- Family stack: offline PASETO verify, blanket `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH`
   guard (default on, WPM-D52), shared ABAC engine; record-level attrs
   (`resource.person`, `resource.department`, `resource.status`);
   `mask` obligation redacts salary/payslip amounts/review content;
@@ -190,7 +190,7 @@ persona policies without code changes.*
 *As a compliance officer I can reconstruct who did and saw what.*
 
 - Every mutation audited + evented (family envelope,
-  `WPM_EVENT_TRANSPORT` memory/outbox); sensitive reads (salary,
+  `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` memory/outbox); sensitive reads (salary,
   payslips, review content, succession) audited; approvals/waivers
   carry reasons.
 
@@ -450,7 +450,7 @@ pretending WPM can do things it cannot.*
   soft-deleted rows older than the horizon and the expired-consent
   candidates; `POST /api/retention/sweep` (destructive-classified)
   hard-deletes those rows and scrubs expired candidates. The horizon
-  is `WPM_RETENTION_DAYS` (default 365, floor 30 — a sweep that could
+  is `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` (default 365, floor 30 — a sweep that could
   run at 0 calendar days would turn soft-delete into hard-delete); the sweep
   is audited with its counts.
 - Out of code scope, still gate WPM-G2: lawful-basis mapping,
@@ -633,3 +633,8 @@ acceptance criteria and traces to the tasks that delivered it:
   [lessons/integration-hub-rewrite-it-in-rust/index.md](lessons/integration-hub-rewrite-it-in-rust/index.md) (proposed; WPM-T508–T521).
 - **WPM-R253** the website keeps a reader's theme (in `localStorage` and a first-party cookie) and text size only when they choose them, and a privacy notice at `/<locale>/privacy/` in every locale, linked from every page of the website and the application, names everything either keeps in a browser, why, and how to remove it — [github-pages-site.md](github-pages-site.md) (WPM-D201; WPM-T522).
 - **WPM-R245** an employee finds their mandatory training and the certifications their role requires in one place from `/me`, most urgent first, with expiry days and a link to act — [help-and-learning.md](help-and-learning.md).
+- **WPM-R254–R266** (proposed 2026-11-20, from customer feedback) pay scales as configuration published by two people, a post's band and pay point, analysis over up to three combined dimensions with complementary suppression, organizational units and service delivery models, products and services as demand with critical-service floors, slack, conflict and reallocation signals with an internal-first check, planned versus actual at pool level, scenarios with levers, lineage and immutable versions, impact per version, as-is versus to-be, cost to and from finance, forecast accuracy, and a planning overview — [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md) (WPM-T553–T573).
+- **WPM-R275** (decided by the owner 2026-11-20) per-person allocation across programmes, products and services by month, with over-allocation, availability, leave clashes and reconciliation with pool demand; named reads limited and audited; no utilization score — [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md) (WPM-D211; WPM-T596–T600).
+- **WPM-R276** (decided by the owner 2026-11-20) the resource manager role: a membership role an `org_admin` grants or the identity-provider role `wpm-resource-manager`; reads and writes allocations, not their own, and nothing else of HR's — [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md) (WPM-T601).
+- **WPM-R267–R274** (proposed 2026-11-20) supplier assurance for a health buyer: support access approved by the buyer, scoped, expiring and audited; a deployment pinned to its organizations; a required MFA context in the token; application-level encryption of free text and special-category columns; the audit chain's head anchored outside the database; declared and checked data residency with a processing-destinations list; a whole-organization export at exit; and a destruction record — [supplier-assurance.md](supplier-assurance.md) (WPM-T574–T595).
+- **WPM-R277** (proposed 2026-11-20) one deployment, one database: `WORKFORCE_PLANNING_MANAGEMENT_DEPLOYMENT_ID` is bound into the database on the first start and checked at every start, before migrations, so a service never starts against another buyer's database; follows CRM-R105 in the sibling CRM — [supplier-assurance.md](supplier-assurance.md) (WPM-D220; WPM-T603).

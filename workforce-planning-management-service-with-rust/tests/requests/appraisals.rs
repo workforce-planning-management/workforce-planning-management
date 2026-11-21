@@ -352,3 +352,94 @@ async fn appraisal_round_trip() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// More than 12 competencies, a repeated one, a `self` nomination, a rater nominated twice and a rater past the twelfth are
+// refused; the worker's appraisals are listed with their counts.
+async fn an_appraisal_refuses_too_much_and_is_listed() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let subject = seed_worker!(&request, &org, format!("AP-{tag}-S"), None).await;
+        activate!(&request, &subject).await;
+        let url = format!("/api/workers/{subject}/appraisals");
+        let thirteen: Vec<String> = (0..13).map(|i| format!("skill-{i}")).collect();
+        assert_eq!(
+            request
+                .post(&url)
+                .json(&json!({ "competencies": thirteen }))
+                .await
+                .status_code(),
+            422,
+            "over 12"
+        );
+        assert_eq!(
+            request
+                .post(&url)
+                .json(&json!({ "competencies": ["delivery", "delivery"] }))
+                .await
+                .status_code(),
+            422,
+            "repeated"
+        );
+        let appraisal: Value = request
+            .post(&url)
+            .json(&json!({ "competencies": ["delivery"] }))
+            .await
+            .json();
+        let pid = appraisal["pid"].as_str().unwrap().to_string();
+        let nominations = format!("/api/appraisals/{pid}/nominations");
+
+        let mut raters = Vec::new();
+        for n in 0..13 {
+            let rater = seed_worker!(&request, &org, format!("AP-{tag}-{n}"), None).await;
+            activate!(&request, &rater).await;
+            raters.push(rater);
+        }
+        assert_eq!(
+            request
+                .post(&nominations)
+                .json(&json!({ "rater_pid": raters[0], "group": "self" }))
+                .await
+                .status_code(),
+            422
+        );
+        request
+            .post(&nominations)
+            .json(&json!({ "rater_pid": raters[0], "group": "peer" }))
+            .await
+            .assert_status_ok();
+        let again = request
+            .post(&nominations)
+            .json(&json!({ "rater_pid": raters[0], "group": "peer" }))
+            .await;
+        assert_eq!(again.status_code(), 422, "{}", again.text());
+        let mut refused = None;
+        for rater in &raters[1..] {
+            let r = request
+                .post(&nominations)
+                .json(&json!({ "rater_pid": rater, "group": "peer" }))
+                .await;
+            if r.status_code() != 200 {
+                refused = Some((r.status_code(), r.text()));
+                break;
+            }
+        }
+        let (status, text) = refused.expect("a rater past the limit is refused");
+        assert_eq!(status, 422);
+        assert!(text.contains("at most 12 raters"), "{text}");
+
+        let listed: Value = request.get(&url).await.json();
+        let row = listed
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| a["pid"] == pid.as_str())
+            .expect("listed");
+        assert_eq!(row["status"], "draft");
+        assert!(row["nominated"].as_u64().unwrap() >= 12, "{row}");
+    })
+    .await;
+}

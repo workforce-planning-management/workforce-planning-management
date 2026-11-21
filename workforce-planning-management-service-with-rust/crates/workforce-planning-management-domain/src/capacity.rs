@@ -1649,6 +1649,17 @@ mod tests {
     }
 
     #[test]
+    fn a_firm_partner_commitment_adds_to_capacity() {
+        let months = months(d(2026, 1, 1), 1).unwrap();
+        let commitments = [commit("urn:a", months[0], 50, CommitmentStatus::Confirmed)];
+        let view = build_pool(&months, &[100], &[], &commitments);
+        let pools = BTreeMap::from([("pool".to_string(), view)]);
+        let check = start_check(&wish(&[(1, 150)]), &pools, None, None, &BTreeSet::new());
+        assert_eq!(check.fit, Fit::Yes);
+        assert_eq!(check.lines[0].available_centi, Some(150));
+    }
+
+    #[test]
     fn a_pool_the_view_does_not_know_is_outside_the_horizon() {
         let pools = one_pool(&[100], &[0]);
         let check = start_check(
@@ -2107,6 +2118,19 @@ mod tests {
             let again = moved(&view, &BTreeMap::new());
             assert_eq!(again.cells[0].status, status);
             assert_eq!(again.cells[0].remaining_shortfall_centi, remaining);
+            let summary = match status {
+                CellStatus::Over => (remaining, 1, 0),
+                CellStatus::Unknown => (0, 0, 1),
+                _ => (0, 0, 0),
+            };
+            assert_eq!(
+                (
+                    again.over_total_centi,
+                    again.over_months,
+                    again.unknown_months
+                ),
+                summary
+            );
         }
     }
 

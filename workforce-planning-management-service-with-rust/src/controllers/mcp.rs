@@ -32,12 +32,14 @@ pub struct Mcp {
 }
 
 fn allowed_origins() -> Vec<String> {
-    crate::compat::env_var("WPM_MCP_ALLOWED_ORIGINS").map_or_default(|v| {
-        v.split(',')
-            .map(|o| o.trim().to_string())
-            .filter(|o| !o.is_empty())
-            .collect()
-    })
+    crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_ALLOWED_ORIGINS").map_or_default(
+        |v| {
+            v.split(',')
+                .map(|o| o.trim().to_string())
+                .filter(|o| !o.is_empty())
+                .collect()
+        },
+    )
 }
 
 fn json_status(status: StatusCode, body: &Value) -> Response {
@@ -131,23 +133,25 @@ async fn handle(
     }
 }
 
-/// What the deployer configured to describe this resource: `WPM_MCP_RESOURCE` (the URL of the MCP endpoint as clients reach it) and
-/// `WPM_MCP_AUTHORIZATION_SERVERS` (comma-separated issuer URLs). `None` until both are set.
+/// What the deployer configured to describe this resource: `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` (the URL of the MCP endpoint as clients reach it) and
+/// `WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS` (comma-separated issuer URLs). `None` until both are set.
 fn resource_settings() -> Option<(String, Vec<String>)> {
-    let resource = crate::compat::env_var("WPM_MCP_RESOURCE").filter(|r| !r.trim().is_empty())?;
-    let servers: Vec<String> = crate::compat::env_var("WPM_MCP_AUTHORIZATION_SERVERS")?
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .collect();
+    let resource = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE")
+        .filter(|r| !r.trim().is_empty())?;
+    let servers: Vec<String> =
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS")?
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
     (!servers.is_empty()).then_some((resource, servers))
 }
 
-/// Whether the caller's token was issued for this MCP resource. With `WPM_MCP_RESOURCE` unset nothing is bound (the token only has to
-/// verify); set, its `aud` must be that URL, so the deployer sets `WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL.
+/// Whether the caller's token was issued for this MCP resource. With `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` unset nothing is bound (the token only has to
+/// verify); set, its `aud` must be that URL, so the deployer sets `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL.
 #[must_use]
 pub fn token_is_for_this_resource(aud: &str) -> bool {
-    crate::compat::env_var("WPM_MCP_RESOURCE")
+    crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE")
         .filter(|r| !r.trim().is_empty())
         .is_none_or(|resource| mcp::audience_ok(&resource, aud))
 }
@@ -158,7 +162,7 @@ async fn protected_resource_metadata() -> Response {
     let Some((resource, servers)) = resource_settings() else {
         return json_status(
             StatusCode::NOT_FOUND,
-            &json!({ "error": "not_configured", "description": "this deployment has not set WPM_MCP_RESOURCE and WPM_MCP_AUTHORIZATION_SERVERS" }),
+            &json!({ "error": "not_configured", "description": "this deployment has not set WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE and WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS" }),
         );
     };
     match mcp::protected_resource(&resource, &servers) {

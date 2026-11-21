@@ -754,4 +754,36 @@ mod tests {
             assert!(key.starts_with("minimum_wage."), "{key}");
         }
     }
+
+    #[test]
+    fn every_outcome_has_its_name_and_severity() {
+        let all = [
+            Outcome::Below,
+            Outcome::Near,
+            Outcome::Ok,
+            Outcome::NoneByLaw,
+            Outcome::Unknown("why"),
+        ];
+        let names: Vec<&str> = all.iter().map(|o| o.name()).collect();
+        assert_eq!(names, ["below", "near", "ok", "none_by_law", "unknown"]);
+        let severities: Vec<u8> = all.iter().map(|o| o.severity()).collect();
+        assert_eq!(severities, [3, 2, 1, 0, 0]);
+    }
+
+    #[test]
+    fn no_payments_a_year_uses_the_default() {
+        let given = Inputs {
+            period_days: 365,
+            payments_per_year: DEFAULT_PAYMENTS_PER_YEAR,
+            ..inputs(1_000_000, 0)
+        };
+        let unstated = Inputs {
+            payments_per_year: 0,
+            ..given
+        };
+        assert_eq!(
+            run(&monthly_only(), Band::Adult, &unstated),
+            run(&monthly_only(), Band::Adult, &given)
+        );
+    }
 }

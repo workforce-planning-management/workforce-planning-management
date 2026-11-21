@@ -246,8 +246,9 @@ async fn standings(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, St
     let today = crate::dates::today();
     let last = last_completed(ctx, people).await?;
     let starts = primary_starts(ctx, people, today).await?;
-    let months =
-        rules::first_after_months(std::env::var("WPM_PADR_FIRST_AFTER_MONTHS").ok().as_deref());
+    let months = rules::first_after_months(
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PADR_FIRST_AFTER_MONTHS").as_deref(),
+    );
     Ok(people
         .iter()
         .map(|pid| {

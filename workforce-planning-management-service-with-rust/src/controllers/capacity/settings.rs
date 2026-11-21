@@ -12,6 +12,9 @@ pub(super) struct SettingsPayload {
     /// The most programmes that may be active on the constraint pool; absent for no limit.
     #[serde(default)]
     wip_limit: Option<i32>,
+    /// Whether the organization records per-person allocation (WPM-R275); absent keeps what is set.
+    #[serde(default)]
+    allocation_tracked: Option<bool>,
 }
 
 /// `PUT /api/capacity/settings` — the organization's work-in-progress limit.
@@ -36,12 +39,15 @@ pub(super) async fn set_settings(
     // One row per organization: one upsert on its unique key rather than a read and a write. A row already there
     // keeps its pid.
     let row = sqlx::query!(
-        "INSERT INTO capacity_settings (pid, organization_ref, wip_limit) VALUES ($1, $2, $3)
-         ON CONFLICT (organization_ref) DO UPDATE SET wip_limit = EXCLUDED.wip_limit
-         RETURNING pid, organization_ref, wip_limit",
+        "INSERT INTO capacity_settings (pid, organization_ref, wip_limit, allocation_tracked)
+         VALUES ($1, $2, $3, COALESCE($4, FALSE))
+         ON CONFLICT (organization_ref) DO UPDATE SET wip_limit = EXCLUDED.wip_limit,
+                allocation_tracked = COALESCE($4, capacity_settings.allocation_tracked)
+         RETURNING pid, organization_ref, wip_limit, allocation_tracked",
         Uuid::new_v4(),
         payload.organization_ref,
         payload.wip_limit,
+        payload.allocation_tracked,
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -55,7 +61,11 @@ pub(super) async fn set_settings(
     )
     .await?;
     tx.commit().await?;
-    format::json(json!({ "organization_ref": row.organization_ref, "wip_limit": row.wip_limit }))
+    format::json(json!({
+        "organization_ref": row.organization_ref,
+        "wip_limit": row.wip_limit,
+        "allocation_tracked": row.allocation_tracked,
+    }))
 }
 
 pub(super) async fn wip_limit_of(ctx: &AppContext, org: &str) -> Result<Option<i32>> {
@@ -79,5 +89,16 @@ pub(super) async fn get_settings(
         .organization
         .ok_or_else(|| unprocessable("organization is required"))?;
     ensure_org_in_scope(&ctx, &caller, &org).await?;
-    format::json(json!({ "organization_ref": org, "wip_limit": wip_limit_of(&ctx, &org).await? }))
+    let tracked = sqlx::query_scalar!(
+        "SELECT allocation_tracked FROM capacity_settings WHERE organization_ref = $1",
+        org
+    )
+    .fetch_optional(crate::db::pool(&ctx))
+    .await?
+    .unwrap_or(false);
+    format::json(json!({
+        "organization_ref": org,
+        "wip_limit": wip_limit_of(&ctx, &org).await?,
+        "allocation_tracked": tracked,
+    }))
 }

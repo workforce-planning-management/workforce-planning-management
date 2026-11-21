@@ -12,24 +12,24 @@
 //! called from `App::after_routes`, before the app serves traffic) and
 //! built from the environment:
 //!
-//! - `WPM_PASETO_KEYS_URL` — optional URL of the auth service's
+//! - `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` — optional URL of the auth service's
 //!   published key set (`/.well-known/paseto-keys`). Set (non-blank) ⇒
 //!   the key set is fetched over HTTP **once at boot** via
 //!   [`Verifier::from_paseto_keys_url`]; on success the fetched key set
-//!   wins over `WPM_PASETO_KEYS` (`tracing::info!`), on failure the
+//!   wins over `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS` (`tracing::info!`), on failure the
 //!   service logs a `tracing::warn!` and falls back to the env path
 //!   below — the service always boots. The key set is then **re-fetched
 //!   periodically** ([`spawn_key_refresh`]) so a key rotation is picked
-//!   up without a restart (interval `WPM_PASETO_KEYS_REFRESH_SECS`,
+//!   up without a restart (interval `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS`,
 //!   default 1 h; `0` disables; keeps the current keys on a failed
 //!   fetch).
-//! - `WPM_PASETO_KEYS` — the Ed25519 key set (JSON, OKP/Ed25519
+//! - `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS` — the Ed25519 key set (JSON, OKP/Ed25519
 //!   JWK form) the auth service publishes at `/.well-known/paseto-keys`.
 //!   Absent ⇒ an empty key set, so every token is rejected (the service
 //!   still boots).
-//! - `WPM_TOKEN_ISSUER` — expected `iss` (default
+//! - `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER` — expected `iss` (default
 //!   `authentication-service`).
-//! - `WPM_TOKEN_AUDIENCE` — expected `aud` (default
+//! - `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` — expected `aud` (default
 //!   `main-x-service`).
 
 use super::{
@@ -59,17 +59,20 @@ pub fn verifier() -> &'static ReloadableVerifier {
 }
 
 /// Seed the process-wide [`verifier`] before the app serves traffic
-/// (called from `App::after_routes`). When `WPM_PASETO_KEYS_URL` is set
+/// (called from `App::after_routes`). When `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` is set
 /// (non-blank) the published key set is fetched over HTTP **once at boot**
 /// and, on success, swapped in over the env-built one; on fetch failure,
 /// or with the URL unset/blank, the env-built verifier stands, so the
 /// service always boots. Idempotent enough to call once at boot.
 pub async fn init() {
-    if let Some(url) =
-        crate::compat::env_var("WPM_PASETO_KEYS_URL").filter(|s| !s.trim().is_empty())
+    if let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL")
+        .filter(|s| !s.trim().is_empty())
     {
-        let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-        let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
+        let issuer = env_or("WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER", DEFAULT_ISSUER);
+        let audience = env_or(
+            "WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE",
+            DEFAULT_AUDIENCE,
+        );
         // `fetch_or` keeps the env-built verifier as the fallback on a
         // failed fetch, so the service always has a usable verifier.
         let fetched = fetch_or(url.trim(), &issuer, &audience, build_from_env()).await;
@@ -78,42 +81,48 @@ pub async fn init() {
 }
 
 /// Default key-set refresh interval (seconds) when
-/// `WPM_PASETO_KEYS_REFRESH_SECS` is unset. One hour — key rotation is
+/// `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS` is unset. One hour — key rotation is
 /// infrequent, so a slow poll suffices.
 const KEY_REFRESH_DEFAULT_SECS: u64 = 3600;
 
 /// Spawn a background task that periodically re-fetches the published
-/// key set from `WPM_PASETO_KEYS_URL` and swaps it into the live
+/// key set from `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` and swaps it into the live
 /// [`verifier`], so a **key rotation** at the auth-service is picked up
 /// **without restarting** this service. On a failed fetch it keeps the
 /// current key set (a transient auth-service outage never locks callers
-/// out). Interval from `WPM_PASETO_KEYS_REFRESH_SECS` (default
+/// out). Interval from `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS` (default
 /// [`KEY_REFRESH_DEFAULT_SECS`]); **`0` disables** the loop.
 ///
-/// A no-op when `WPM_PASETO_KEYS_URL` is unset (env-supplied keys have
+/// A no-op when `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` is unset (env-supplied keys have
 /// nothing to re-fetch). Call once at boot (`app.rs::after_routes`).
 pub fn spawn_key_refresh() {
-    let Some(url) = crate::compat::env_var("WPM_PASETO_KEYS_URL")
+    let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL")
         .map(|u| u.trim().to_string())
         .filter(|u| !u.is_empty())
     else {
         return;
     };
-    let secs = crate::compat::env_var("WPM_PASETO_KEYS_REFRESH_SECS")
+    let secs = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS")
         .and_then(|v| v.trim().parse::<u64>().ok())
         .unwrap_or(KEY_REFRESH_DEFAULT_SECS);
     if secs == 0 {
         return; // explicitly disabled
     }
-    let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-    let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
+    let issuer = env_or("WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER", DEFAULT_ISSUER);
+    let audience = env_or(
+        "WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE",
+        DEFAULT_AUDIENCE,
+    );
     drop(spawn_refresh(
         url,
         issuer,
         audience,
         std::time::Duration::from_secs(secs),
     ));
-    tracing::info!(secs, "polling WPM_PASETO_KEYS_URL for key rotation");
+    tracing::info!(
+        secs,
+        "polling WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL for key rotation"
+    );
 }
 
 fn spawn_refresh(
@@ -175,10 +184,13 @@ pub async fn fetch_or(url: &str, issuer: &str, audience: &str, fallback: Verifie
 /// set yields an empty key set (every token rejected) so the service still
 /// boots without credentials configured.
 fn build_from_env() -> Verifier {
-    let issuer = env_or("WPM_TOKEN_ISSUER", DEFAULT_ISSUER);
-    let audience = env_or("WPM_TOKEN_AUDIENCE", DEFAULT_AUDIENCE);
+    let issuer = env_or("WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER", DEFAULT_ISSUER);
+    let audience = env_or(
+        "WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE",
+        DEFAULT_AUDIENCE,
+    );
     build(
-        crate::compat::env_var("WPM_PASETO_KEYS").as_deref(),
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS").as_deref(),
         &issuer,
         &audience,
     )
@@ -482,7 +494,7 @@ mod tests {
     }
 
     /// SEC-G8 — the **exposure pin**. With enforcement off (now only by an
-    /// explicit `WPM_REQUIRE_AUTH=0`; the default is on, WPM-D52), the most
+    /// explicit `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0`; the default is on, WPM-D52), the most
     /// sensitive reads — the audit trail, patient locate, and a single
     /// stay's PII — are **open without a token**. This test documents that
     /// exposure explicitly, so the consequence of opting out stays visible.
@@ -907,5 +919,29 @@ mod tests {
         .expect("the refresh fetches the local key set");
         refresh.abort();
         assert_eq!(verifier().current().key_count(), 1);
+    }
+
+    #[tokio::test]
+    async fn a_fetched_key_set_wins_and_a_failed_fetch_keeps_the_fallback() {
+        let (keys, _) = test_keys_and_kid();
+        let app = axum::Router::new()
+            .route(
+                "/keys",
+                axum::routing::get(move || async move { axum::Json(keys.clone()) }),
+            )
+            .route(
+                "/down",
+                axum::routing::get(|| async { axum::http::StatusCode::SERVICE_UNAVAILABLE }),
+            );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!("http://{}", listener.local_addr().unwrap());
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+
+        let fallback = || build(None, ISSUER, AUDIENCE);
+        assert_eq!(fallback().key_count(), 0, "the fallback holds no keys");
+        let fetched = fetch_or(&format!("{base}/keys"), ISSUER, AUDIENCE, fallback()).await;
+        assert_eq!(fetched.key_count(), 1, "the published key set wins");
+        let kept = fetch_or(&format!("{base}/down"), ISSUER, AUDIENCE, fallback()).await;
+        assert_eq!(kept.key_count(), 0, "a failed fetch keeps the fallback");
     }
 }

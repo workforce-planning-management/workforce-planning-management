@@ -43,13 +43,19 @@ const LIMIT: usize = 8;
 fn settings() {
     // `set_var` is `unsafe` in edition 2024; these tests are serial.
     unsafe {
-        std::env::remove_var("WPM_REQUIRE_AUTH");
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", LIMIT.to_string());
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "1");
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE",
+            LIMIT.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+            "1",
+        );
         // Loopback is the test client, and 10.0.0.0/8 the proxies in the direct requests.
         std::env::set_var("TRUSTED_PROXIES", "127.0.0.1/32, 10.0.0.0/8");
         // Retired: it must neither stop the boot nor believe a header.
-        std::env::set_var("WPM_TRUST_FORWARDED", "1");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED", "1");
         // Off, so the unauthenticated requests above count only towards the rate limit.
         std::env::remove_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT");
     }
@@ -172,7 +178,7 @@ async fn headers_everywhere_and_the_limiter_trips() {
                     "{name} missing on {path} ({expect})"
                 );
             }
-            // The framework's `X-Powered-By: loco.rs` names the stack to a scanner (ZAP 10037).
+            // An `X-Powered-By` header names the stack to a scanner (ZAP 10037).
             assert!(
                 !response.headers().contains_key("x-powered-by"),
                 "x-powered-by present on {path} ({expect})"

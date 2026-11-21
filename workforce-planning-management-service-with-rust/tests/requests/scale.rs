@@ -23,7 +23,7 @@ struct Ceiling;
 impl Ceiling {
     fn set(value: &str) -> Self {
         // SAFETY: the tests that read this setting are `#[serial]`.
-        unsafe { std::env::set_var("WPM_MAX_ORG_WORKERS", value) };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS", value) };
         Self
     }
 }
@@ -31,7 +31,7 @@ impl Ceiling {
 impl Drop for Ceiling {
     fn drop(&mut self) {
         // SAFETY: as above.
-        unsafe { std::env::remove_var("WPM_MAX_ORG_WORKERS") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS") };
     }
 }
 
@@ -67,7 +67,7 @@ async fn the_plan_views_refuse_over_the_ceiling_and_the_paged_views_have_none() 
                 let refused = request.get(route).await;
                 assert_eq!(refused.status_code(), 422, "{route}: {}", refused.text());
                 let body: Value = refused.json();
-                assert!(body.to_string().contains("WPM_MAX_ORG_WORKERS"), "{body}");
+                assert!(body.to_string().contains("WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS"), "{body}");
             }
             // the directory pages in SQL and the capacity view reads in batches: neither has a ceiling
             request.get("/api/directory").await.assert_status_ok();

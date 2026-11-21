@@ -31,6 +31,7 @@ async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
             (code("XB", "national", Some("XB")), "its own parent"),
             (code("QZ", "supranational", Some("XA-01")), "a bloc under a state"),
             (code("XA", "national", Some("XA")), "a cycle of one"),
+            (json!({ "organization_ref": org, "code": "XC", "layer": "national", "name": "x".repeat(101) }), "a name over 100 characters"),
         ] {
             assert_eq!(request.post("/api/jurisdictions").json(&body).await.status_code(), 422, "{why}");
         }
@@ -49,6 +50,8 @@ async fn a_profile_is_recorded_append_only_and_refuses_what_does_not_fit() {
             (row("working_time.reference_weeks", json!(0), "example"), "out of range"),
             (row("working_time.reference_weeks", json!(17), "read"), "read without checked_on"),
             (row("working_time.reference_weeks", json!(17), "verified"), "no such status"),
+            (json!({ "organization_ref": org, "code": "not a code", "key": "working_time.reference_weeks", "value": 17,
+                     "effective_from": "2026-01-01", "source": "synthetic", "status": "example" }), "a code that is not a jurisdiction"),
         ] {
             assert_eq!(request.post("/api/jurisdiction-parameters").json(&body).await.status_code(), 422, "{why}");
         }

@@ -990,3 +990,52 @@ export interface CoverageRecord {
   days_left: number | null;
   retired_on: string | null;
 }
+
+/** One allocation of a share of an assignment to a programme, product or service (WPM-R275). FTE in hundredths. */
+export interface Allocation {
+  pid: string;
+  assignment_pid: string;
+  source_ref: string;
+  pool_pid: string | null;
+  from_month: string;
+  to_month: string;
+  fte_centi: number;
+  status: "tentative" | "confirmed" | "ended";
+  note: string | null;
+  /** The last day of the assignment or engagement, when the allocation runs past it. */
+  runs_past_end: string | null;
+}
+
+/** What a month says about a person's allocations. Never a score. */
+export type AllocationSignal =
+  | { kind: "over_allocated"; by_centi: number }
+  | { kind: "leave_clash"; short_centi: number }
+  | { kind: "available"; free_centi: number }
+  | {
+      kind: "assignment_over_allocated";
+      assignment_pid: string | null;
+      by_centi: number;
+    };
+
+/** One month: unknown where the organization does not track allocation, never zero. */
+export type AllocationMonth =
+  | { month: string; standing: "unknown" }
+  | {
+      month: string;
+      standing: "known";
+      contracted_centi: number;
+      available_centi: number;
+      allocated_centi: number;
+      tentative_centi: number;
+      signals: AllocationSignal[];
+    };
+
+/** A person's allocations and month standings. */
+export interface WorkerAllocations {
+  worker_pid: string;
+  display_name: string;
+  tracked?: boolean;
+  derivation?: string;
+  allocations: Allocation[];
+  months: AllocationMonth[];
+}

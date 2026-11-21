@@ -57,7 +57,8 @@
     "coverageEvidence": "Coverage evidence",
     "qualifications": "Qualifications",
     "injuryRecords": "Injury records",
-    "help": "Help"
+    "help": "Help",
+    "allocations": "Allocations"
   },
   "pr": {
     "retention": "Retention",
@@ -1523,6 +1524,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Who is planned to work on what, month by month, in name order. A plan, not a measure of anyone's work: it never ranks people and gives no score.",
+      "organization": "Organization",
+      "notAllowed": "This view is for HR and resource managers.",
+      "empty": "Nobody to show.",
+      "person": "Person",
+      "confirm": "Confirm",
+      "end": "End",
+      "remove": "Remove",
+      "add": "Add an allocation",
+      "job": "Job",
+      "from": "From month",
+      "to": "To month",
+      "sharePercent": "Share of the job (hundredths of an FTE)",
+      "confirmNow": "Confirm now (the person is told)"
     }
   },
   "titles": {
@@ -1869,6 +1886,7 @@
     "payroll_admin": "payroll administrator",
     "viewer": "viewer",
     "partner": "partner",
+    "resource_manager": "resource manager",
     "past_end_without_approved_plan": "Past its end with no approved plan",
     "review_due": "Review due",
     "not_started": "Not started",
@@ -3448,5 +3466,29 @@
   },
   "footer": {
     "privacyNotice": "Privacy notice"
+  },
+  "allocations": {
+    "title": "Allocations",
+    "hint": "What you are planned to work on, month by month. It is a plan, not a measure of what you did, and it never scores anyone.",
+    "untracked": "Your organization does not record allocations, so no month is shown as full or free.",
+    "none": "No allocations.",
+    "source": "Programme, product or service",
+    "months": "Months",
+    "share": "Share (FTE)",
+    "status": "Status",
+    "monthRange": "{from} to {to}",
+    "runsPastEnd": "Runs past the end of the job or contract on {date}",
+    "allocated": "{allocated} of {available} FTE allocated",
+    "state": {
+      "tentative": "Tentative",
+      "confirmed": "Confirmed",
+      "ended": "Ended"
+    },
+    "signal": {
+      "overAllocated": "Over-allocated by {fte} FTE",
+      "leaveClash": "Approved leave leaves it {fte} FTE short",
+      "available": "{fte} FTE free",
+      "assignmentOver": "One job is over its own FTE by {fte}"
+    }
   }
 }

@@ -240,6 +240,11 @@ const ALLOWED: &[(&str, &str, &str)] = &[
         "gb",
         "the example in the currency message, and a test input that is not an ISO 4217 code",
     ),
+    (
+        "coverage_evidence.rs",
+        "gb",
+        "a test input: a two-letter string is not an ISO 4217 code",
+    ),
 ];
 
 /// One hit: the file (relative to the domain crate's `src`), the line, and the word or phrase found.

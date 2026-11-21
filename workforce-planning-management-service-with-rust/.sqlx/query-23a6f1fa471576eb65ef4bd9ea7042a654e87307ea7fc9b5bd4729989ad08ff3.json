@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO capacity_settings (pid, organization_ref, wip_limit) VALUES ($1, $2, $3)\n         ON CONFLICT (organization_ref) DO UPDATE SET wip_limit = EXCLUDED.wip_limit\n         RETURNING pid, organization_ref, wip_limit",
+  "query": "INSERT INTO capacity_settings (pid, organization_ref, wip_limit, allocation_tracked)\n         VALUES ($1, $2, $3, COALESCE($4, FALSE))\n         ON CONFLICT (organization_ref) DO UPDATE SET wip_limit = EXCLUDED.wip_limit,\n                allocation_tracked = COALESCE($4, capacity_settings.allocation_tracked)\n         RETURNING pid, organization_ref, wip_limit, allocation_tracked",
   "describe": {
     "columns": [
       {
@@ -35,20 +35,33 @@
             "name": "wip_limit"
           }
         }
+      },
+      {
+        "ordinal": 3,
+        "name": "allocation_tracked",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "capacity_settings",
+            "name": "allocation_tracked"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
         "Varchar",
-        "Int4"
+        "Int4",
+        "Bool"
       ]
     },
     "nullable": [
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "ef14ea06ce44f49d09084e85264a38eccc547486015a717c5d8bf80728634fae"
+  "hash": "23a6f1fa471576eb65ef4bd9ea7042a654e87307ea7fc9b5bd4729989ad08ff3"
 }

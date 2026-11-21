@@ -84,10 +84,16 @@ fn policy_with_deciders() -> String {
 async fn only_an_administrator_plans_a_cutover_and_only_the_organization_reads_it() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
-        std::env::set_var("WPM_ABAC_POLICY", policy_with_deciders());
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
     }
     let ids: Vec<uuid::Uuid> = (0..4).map(|_| uuid::Uuid::new_v4()).collect();
     let [member_p, admin_p, partner_p, outsider_p] = [0, 1, 2, 3].map(|i| ids[i]);

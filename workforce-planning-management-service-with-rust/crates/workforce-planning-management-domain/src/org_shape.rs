@@ -551,4 +551,28 @@ mod tests {
         assert!(bad(vec![node("a b", None, "x", "T", 1)]).contains("no spaces"));
         assert!(bad(vec![node("a", None, "", "T", 1)]).contains("department"));
     }
+
+    #[test]
+    fn a_target_has_at_most_two_thousand_roles_and_a_loop_cannot_hang_the_depth() {
+        let node = |key: String, parent: Option<String>| Node {
+            key,
+            parent,
+            department: "d".into(),
+            title: "t".into(),
+            headcount: 1,
+        };
+        let many: Vec<Node> = (0..2_001).map(|i| node(format!("n{i}"), None)).collect();
+        let err = validate_target(&many).unwrap_err();
+        assert!(
+            err.iter().any(|e| e == "a target has at most 2000 roles"),
+            "{err:?}"
+        );
+        // validate_target refuses a loop; the depth count stops on one anyway.
+        let looped = [
+            node("a".into(), Some("b".into())),
+            node("b".into(), Some("a".into())),
+        ];
+        let side = target_side(&looped);
+        assert!(side.layers <= 3, "{side:?}");
+    }
 }

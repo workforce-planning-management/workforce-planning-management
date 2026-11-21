@@ -72,6 +72,8 @@ mod tests {
         // A read: the overtime check changes nothing, and its entry holds counts (WPM-D157).
         ("controllers/payroll.rs", "overtime_checked"),
         ("controllers/payroll.rs", "comparison_read"),
+        // A read: another person's allocations, with a count (WPM-R275).
+        ("controllers/allocations.rs", "allocations_read"),
     ];
 
     /// The audit writer (WPM-D184).

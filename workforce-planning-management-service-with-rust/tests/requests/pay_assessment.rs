@@ -13,11 +13,14 @@ impl MonitoringOn {
     fn new() -> Self {
         unsafe {
             std::env::set_var(
-                "WPM_EQUALITY_MONITORING_BASIS",
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS",
                 "Test deployment: impact assessment JA-1",
             );
-            std::env::set_var("WPM_EQUALITY_CATEGORIES", r#"{"sex":["female","male"]}"#);
-            std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES",
+                r#"{"sex":["female","male"]}"#,
+            );
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
         }
         Self
     }
@@ -26,11 +29,13 @@ impl MonitoringOn {
 impl Drop for MonitoringOn {
     fn drop(&mut self) {
         unsafe {
-            std::env::remove_var("WPM_EQUALITY_MONITORING_BASIS");
-            std::env::remove_var("WPM_EQUALITY_CATEGORIES");
-            std::env::remove_var("WPM_EQUALITY_FLOOR");
-            std::env::remove_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT");
-            std::env::remove_var("WPM_JOINT_ASSESSMENT_MONTHS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR");
+            std::env::remove_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+            );
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS");
         }
     }
 }
@@ -168,8 +173,8 @@ async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
 
         // Threshold and period are configuration.
         unsafe {
-            std::env::set_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT", "12");
-            std::env::set_var("WPM_JOINT_ASSESSMENT_MONTHS", "3");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT", "12");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS", "3");
         }
         let strict: Value = request.get(&url("&as_of=2026-10-24&reported_on=2026-09-01")).await.json();
         assert_eq!(strict["threshold_bp"], 1_200);

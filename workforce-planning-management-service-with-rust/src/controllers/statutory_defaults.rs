@@ -1,4 +1,4 @@
-//! **Whose each default is** (WPM-T384): `GET /api/statutory-defaults` lists every `WPM_*` setting
+//! **Whose each default is** (WPM-T384): `GET /api/statutory-defaults` lists every `WORKFORCE_PLANNING_MANAGEMENT_*` setting
 //! whose default is, or might be read as, one regime's value, with the value in force, whether the
 //! deployer set it, the default and whose the default is ([`crate::statutory_defaults`]).
 //! Configuration, not personal data: any signed-in caller may read it, so a worker can see whose rule
@@ -6,7 +6,7 @@
 //!
 //! **Profile, then setting, then default** (WPM-D153): [`pick`] is the one order every reader of a
 //! moved setting follows. With `?organization=` the list says, for that organization, where each value
-//! came from: its profile (the code, layer, status and source), the `WPM_*` setting, or the default.
+//! came from: its profile (the code, layer, status and source), the `WORKFORCE_PLANNING_MANAGEMENT_*` setting, or the default.
 
 use jiff::civil::Date;
 use std::collections::BTreeSet;
@@ -40,7 +40,7 @@ pub(crate) fn is_set(setting: &str) -> bool {
 }
 
 /// The value of `setting` in force: the profile's over `scope`'s chain if it resolves and
-/// `from_profile` accepts it, else `from_setting` (the deployer's `WPM_*` value that checked), else
+/// `from_profile` accepts it, else `from_setting` (the deployer's `WORKFORCE_PLANNING_MANAGEMENT_*` value that checked), else
 /// `default`. `scope` is `None` for a read with no organization, which has no profile to look at.
 pub fn pick<T>(
     scope: Option<&Scope>,
@@ -126,33 +126,57 @@ fn value_of(setting: &str, scope: Option<&Scope>, as_of: Date) -> (Value, Value)
         (value, came_from)
     };
     match setting {
-        "WPM_AI_ACT_APPLIES_FROM" => shown(super::ai_register::applies_from_in(scope, as_of)),
-        "WPM_PAY_GAP_SEX_CATEGORY" => fixed(json!(pay_transparency::sex_category())),
-        "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS" => {
+        "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM" => {
+            shown(super::ai_register::applies_from_in(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY" => {
+            fixed(json!(pay_transparency::sex_category()))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS" => {
             shown(flexible_working::appeal_calendar_days(scope, as_of))
         }
-        "WPM_FLEXIBLE_DECISION_MONTHS" => shown(flexible_working::decision_months(scope, as_of)),
-        "WPM_FLEXIBLE_REFUSAL_REASONS" => shown(flexible_working::refusal_reasons(scope, as_of)),
-        "WPM_FLEXIBLE_REQUESTS_PER_YEAR" => {
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS" => {
+            shown(flexible_working::decision_months(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS" => {
+            shown(flexible_working::refusal_reasons(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR" => {
             shown(flexible_working::requests_per_year(scope, as_of))
         }
-        "WPM_JOINT_ASSESSMENT_MONTHS" => {
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS" => {
             let c = pay_assessment::configured(scope, as_of);
             (json!(c.config.remedy_months), c.months_from)
         }
-        "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
             let c = pay_assessment::configured(scope, as_of);
             (json!(c.config.threshold_bp / 100), c.threshold_from)
         }
-        "WPM_PAY_GAP_TIERS" => shown(pay_transparency::reporting_tiers(scope, as_of)),
-        "WPM_PAY_INFORMATION_MONTHS" => shown(pay_information::answer_months(scope, as_of)),
-        "WPM_REQUIRE_PAY_RANGE" => shown(pay_information::pay_range_required(scope, as_of)),
-        "WPM_CONTRACTED_DAY_MINUTES" => fixed(json!(payroll::contracted_day())),
-        "WPM_PAYROLL_MONTH_MINUTES" => fixed(json!(payroll::tax_stub().0.month_minutes)),
-        "WPM_PAYROLL_STUB_ALLOWANCE_MINOR" => fixed(json!(payroll::tax_stub().0.allowance_minor)),
-        "WPM_PAYROLL_STUB_CURRENCY" => fixed(json!(payroll::tax_stub().0.currency)),
-        "WPM_PAYROLL_STUB_RATE_PERCENT" => fixed(json!(payroll::tax_stub().0.rate_percent)),
-        "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS" => {
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS" => {
+            shown(pay_transparency::reporting_tiers(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS" => {
+            shown(pay_information::answer_months(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE" => {
+            shown(pay_information::pay_range_required(scope, as_of))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES" => {
+            fixed(json!(payroll::contracted_day()))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES" => {
+            fixed(json!(payroll::tax_stub().0.month_minutes))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR" => {
+            fixed(json!(payroll::tax_stub().0.allowance_minor))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY" => {
+            fixed(json!(payroll::tax_stub().0.currency))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT" => {
+            fixed(json!(payroll::tax_stub().0.rate_percent))
+        }
+        "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS" => {
             shown(super::resignations::notice_days(scope, as_of))
         }
         other => super::privacy::horizons(scope, as_of)
@@ -325,7 +349,7 @@ mod tests {
     #[test]
     fn the_profile_wins_then_the_setting_then_the_default() {
         let on = day(2026, 10, 31);
-        let name = "WPM_FLEXIBLE_DECISION_MONTHS";
+        let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS";
         let at = scope(Reader::Worker, Some("XA"));
         let found = integer(Some(&at), name, on, Some(3_u32), 2);
         assert_eq!(found.value, 1, "the profile wins over the setting");
@@ -379,7 +403,7 @@ mod tests {
         assert_eq!(tiers.came_from["from"][0]["code"], "QZ");
         let unusable = pick(
             Some(&home),
-            "WPM_PAY_GAP_TIERS",
+            "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
             on,
             |_| None::<u8>,
             None,
@@ -394,55 +418,68 @@ mod tests {
     fn the_listed_defaults_are_the_codes_defaults() {
         let text = |s: &str| find(s).unwrap().default.to_string();
         let fw = rules::flexible_working::DEFAULT_DECISION_MONTHS;
-        assert_eq!(text("WPM_FLEXIBLE_DECISION_MONTHS"), fw.to_string());
-        let fw = rules::flexible_working::DEFAULT_REQUESTS_PER_YEAR;
-        assert_eq!(text("WPM_FLEXIBLE_REQUESTS_PER_YEAR"), fw.to_string());
-        let fw = rules::flexible_working::DEFAULT_APPEAL_CALENDAR_DAYS;
-        assert_eq!(text("WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS"), fw.to_string());
         assert_eq!(
-            text("WPM_RESIGNATION_NOTICE_CALENDAR_DAYS"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS"),
+            fw.to_string()
+        );
+        let fw = rules::flexible_working::DEFAULT_REQUESTS_PER_YEAR;
+        assert_eq!(
+            text("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR"),
+            fw.to_string()
+        );
+        let fw = rules::flexible_working::DEFAULT_APPEAL_CALENDAR_DAYS;
+        assert_eq!(
+            text("WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS"),
+            fw.to_string()
+        );
+        assert_eq!(
+            text("WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS"),
             rules::resignation::DEFAULT_NOTICE_CALENDAR_DAYS.to_string()
         );
         assert_eq!(
-            text("WPM_PAY_INFORMATION_MONTHS"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS"),
             rules::pay_information::DEFAULT_ANSWER_MONTHS.to_string()
         );
         assert_eq!(
-            text("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
             (rules::joint_assessment::DEFAULT_THRESHOLD_BP / 100).to_string()
         );
         assert_eq!(
-            text("WPM_JOINT_ASSESSMENT_MONTHS"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS"),
             rules::joint_assessment::DEFAULT_REMEDY_MONTHS.to_string()
         );
         assert_eq!(
-            rules::pay_gap::parse_tiers(&text("WPM_PAY_GAP_TIERS")).unwrap(),
+            rules::pay_gap::parse_tiers(&text("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS"))
+                .unwrap(),
             rules::pay_gap::directive_tiers()
         );
         assert_eq!(
-            text("WPM_AI_ACT_APPLIES_FROM"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM"),
             rules::ai_register::default_applies_from().to_string()
         );
         assert_eq!(
-            text("WPM_PAY_GAP_SEX_CATEGORY"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY"),
             crate::controllers::pay_transparency::DEFAULT_SEX_CATEGORY
         );
         let stub = rules::payroll::TaxStub::example();
-        assert_eq!(text("WPM_PAYROLL_STUB_CURRENCY"), stub.currency);
         assert_eq!(
-            text("WPM_PAYROLL_STUB_ALLOWANCE_MINOR"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY"),
+            stub.currency
+        );
+        assert_eq!(
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR"),
             stub.allowance_minor.to_string()
         );
         assert_eq!(
-            text("WPM_PAYROLL_STUB_RATE_PERCENT"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT"),
             stub.rate_percent.to_string()
         );
         assert_eq!(
-            text("WPM_PAYROLL_MONTH_MINUTES"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES"),
             stub.month_minutes.to_string()
         );
         assert_eq!(
-            text("WPM_CONTRACTED_DAY_MINUTES"),
+            text("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES"),
             rules::workforce::CONTRACTED_DAY_MINUTES.to_string()
         );
         // Every retention kind is listed with its own default.
@@ -457,7 +494,7 @@ mod tests {
         assert_eq!(rules::flexible_working::DEFAULT_REFUSAL_REASONS.len(), 9);
     }
 
-    /// Sorted by area then setting, no duplicate, every entry a `WPM_` name with a known status, and a
+    /// Sorted by area then setting, no duplicate, every entry a `WORKFORCE_PLANNING_MANAGEMENT_` name with a known status, and a
     /// regime only where the status is not a starting point.
     #[test]
     fn the_table_is_sorted_unique_and_says_whose() {
@@ -467,7 +504,11 @@ mod tests {
         sorted.dedup();
         assert_eq!(keys, sorted);
         for d in DEFAULTS {
-            assert!(d.setting.starts_with("WPM_"), "{}", d.setting);
+            assert!(
+                d.setting.starts_with("WORKFORCE_PLANNING_MANAGEMENT_"),
+                "{}",
+                d.setting
+            );
             assert!(
                 ["read", "unverified", "example", "starting_point"].contains(&d.origin.status),
                 "{}",
@@ -497,8 +538,14 @@ mod tests {
                 );
             }
         }
-        assert_eq!(basis("WPM_NOT_LISTED", &Value::Null), Value::Null);
-        let tiers = basis("WPM_PAY_GAP_TIERS", &json!({ "kind": "default" }));
+        assert_eq!(
+            basis("WORKFORCE_PLANNING_MANAGEMENT_NOT_LISTED", &Value::Null),
+            Value::Null
+        );
+        let tiers = basis(
+            "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
+            &json!({ "kind": "default" }),
+        );
         assert_eq!(tiers["default_from"]["regime"], "EU");
         assert_eq!(tiers["came_from"]["kind"], "default");
     }

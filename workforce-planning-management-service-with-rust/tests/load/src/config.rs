@@ -59,44 +59,44 @@ impl LoadTestConfig {
         use std::env;
         
         Self {
-            base_url: env::var("WPM_BASE_URL").unwrap_or_else(|_| "http://localhost:1241".to_string()),
+            base_url: env::var("WORKFORCE_PLANNING_MANAGEMENT_BASE_URL").unwrap_or_else(|_| "http://localhost:1241".to_string()),
             duration: Duration::from_secs(
-                env::var("WPM_LOAD_TEST_DURATION")
+                env::var("WORKFORCE_PLANNING_MANAGEMENT_LOAD_TEST_DURATION")
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(60),
             ),
-            target_rps: env::var("WPM_TARGET_RPS")
+            target_rps: env::var("WORKFORCE_PLANNING_MANAGEMENT_TARGET_RPS")
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(100),
-            num_workers: env::var("WPM_LOAD_TEST_WORKERS")
+            num_workers: env::var("WORKFORCE_PLANNING_MANAGEMENT_LOAD_TEST_WORKERS")
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(4),
-            max_requests_per_worker: env::var("WPM_MAX_REQUESTS")
+            max_requests_per_worker: env::var("WORKFORCE_PLANNING_MANAGEMENT_MAX_REQUESTS")
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(10000),
             warmup: Duration::from_secs(
-                env::var("WPM_WARMUP_SECONDS")
+                env::var("WORKFORCE_PLANNING_MANAGEMENT_WARMUP_SECONDS")
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(10),
             ),
             rampup: Duration::from_secs(
-                env::var("WPM_RAMPUP_SECONDS")
+                env::var("WORKFORCE_PLANNING_MANAGEMENT_RAMPUP_SECONDS")
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(20),
             ),
             rampdown: Duration::from_secs(
-                env::var("WPM_RAMPDOWN_SECONDS")
+                env::var("WORKFORCE_PLANNING_MANAGEMENT_RAMPDOWN_SECONDS")
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(10),
             ),
-            scenario: env::var("WPM_SCENARIO")
+            scenario: env::var("WORKFORCE_PLANNING_MANAGEMENT_SCENARIO")
                 .ok()
                 .and_then(|s| s.parse().ok())
                 .unwrap_or(ScenarioType::Mixed),

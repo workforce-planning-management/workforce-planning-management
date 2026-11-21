@@ -1,0 +1,66 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.pool_pid, d.programme_ref, d.month, d.fte_centi\n           FROM programme_demands d JOIN skill_pools p ON p.pid = d.pool_pid AND p.deleted_at IS NULL\n          WHERE p.organization_ref = $1 AND d.deleted_at IS NULL AND d.status = 'active'\n            AND d.month BETWEEN $2 AND $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "programme_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "programme_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "month"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "fte_centi",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "programme_demands",
+            "name": "fte_centi"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ad0123b630a425839b8f960fe97bc47457919a1d4b17919014f12f5c0dc6cc04"
+}

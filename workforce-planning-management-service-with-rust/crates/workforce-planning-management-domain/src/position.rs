@@ -563,4 +563,13 @@ mod tests {
             "{text}"
         );
     }
+
+    #[test]
+    fn withheld_beats_unknown_and_unknown_beats_a_number() {
+        let n = |percent| Fte::Known { percent };
+        assert_eq!(add(Fte::Withheld, Fte::Unknown), Fte::Withheld);
+        assert_eq!(add(n(10), Fte::Withheld), Fte::Withheld);
+        assert_eq!(add(Fte::Unknown, n(10)), Fte::Unknown);
+        assert_eq!(add(n(10), n(5)), n(15));
+    }
 }

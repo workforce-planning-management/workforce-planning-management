@@ -27,12 +27,12 @@ const tokenKid = b64u(createHash("sha256").update(Buffer.from(rawPublic(privateO
 
 if (process.argv.includes("--print-env")) {
   const jwks = { keys: [{ kty: "OKP", crv: "Ed25519", use: "sig", kid: tokenKid, x: rawPublic(privateOf(TOKEN_SEED)) }] };
-  console.log("export WPM_REQUIRE_AUTH=1");
-  console.log(`export WPM_PASETO_KEYS='${JSON.stringify(jwks)}'`);
-  console.log(`export WPM_ABAC_POLICY_FILE='${path.join(HERE, "../workforce-planning-management-service-with-rust/config/abac-policy.reference.json")}'`);
-  console.log(`export WPM_MCP_RESOURCE='${API}/mcp'`);
-  console.log(`export WPM_TOKEN_AUDIENCE='${API}/mcp'`); // a token is for the MCP resource (RFC 8707), so this is its audience
-  console.log("export WPM_MCP_AUTHORIZATION_SERVERS='https://login.example.org/realms/wpm'");
+  console.log("export WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=1");
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS='${JSON.stringify(jwks)}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE='${path.join(HERE, "../workforce-planning-management-service-with-rust/config/abac-policy.reference.json")}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE='${API}/mcp'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE='${API}/mcp'`); // a token is for the MCP resource (RFC 8707), so this is its audience
+  console.log("export WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS='https://login.example.org/realms/wpm'");
   process.exit(0);
 }
 

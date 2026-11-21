@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT allocation_tracked FROM capacity_settings WHERE organization_ref = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "allocation_tracked",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "capacity_settings",
+            "name": "allocation_tracked"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "edf386ac9391b102d414228c49b9115d23dd987998958d108e3aeba2da206bd6"
+}

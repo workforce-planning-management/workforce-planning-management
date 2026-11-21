@@ -170,3 +170,85 @@ async fn a_role_links_a_level_to_a_pay_band_by_the_editors_say_so() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A worker's job level is cleared, reads back as none, and a second clear finds nothing to clear.
+async fn a_workers_level_is_cleared_once() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(
+            &request,
+            &org,
+            format!("GC-{}", uuid::Uuid::new_v4().simple()),
+            None
+        )
+        .await;
+        activate!(&request, &worker).await;
+        let url = format!("/api/workers/{worker}/job-level");
+        request
+            .put(&url)
+            .json(&json!({ "framework": "google-levels", "level": "L5" }))
+            .await
+            .assert_status_ok();
+        let cleared = request.delete(&url).await;
+        assert!(cleared.status_code().is_success(), "{}", cleared.text());
+        assert_eq!(
+            request.get(&url).await.json::<Value>()["job_level"],
+            Value::Null
+        );
+        assert_eq!(
+            request.delete(&url).await.status_code(),
+            404,
+            "nothing left to clear"
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A level or band recorded on a ladder or scale the service no longer carries is shown as retired, not dropped.
+async fn a_level_and_a_band_on_a_retired_ladder_are_shown_not_dropped() {
+    crate::requests::request_open(|request, ctx| async move {
+        let pool = workforce_planning_management::db::pool(&ctx);
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, format!("GX-{}", uuid::Uuid::new_v4().simple()), None).await;
+        activate!(&request, &worker).await;
+        let level_url = format!("/api/workers/{worker}/job-level");
+        request.put(&level_url).json(&json!({ "framework": "google-levels", "level": "L5" })).await.assert_status_ok();
+        sqlx::query("UPDATE worker_job_levels SET framework = 'retired-ladder' WHERE worker_pid = $1::uuid")
+            .bind(&worker)
+            .execute(pool)
+            .await
+            .unwrap();
+        let level: Value = request.get(&level_url).await.json();
+        assert_eq!(level["job_level"]["framework"], "retired-ladder", "{level}");
+        assert!(level["job_level"]["framework_name"].is_null(), "{level}");
+        assert_eq!(level["job_level"]["level_number"], 5, "{level}");
+
+        let profile: Value = request
+            .post("/api/role-profiles")
+            .json(&json!({ "job_title": format!("Retired grade {}", uuid::Uuid::new_v4().simple()), "source_ref": "test:grade" }))
+            .await
+            .json();
+        let grade_url = format!("/api/role-profiles/{}/grade", profile["pid"].as_str().unwrap());
+        request
+            .put(&grade_url)
+            .json(&json!({ "pay_band": { "scale": "national-2026-27", "band": "7" } }))
+            .await
+            .assert_status_ok();
+        sqlx::query("UPDATE role_profiles SET pay_scale_id = 'retired-scale' WHERE pid = $1::uuid")
+            .bind(profile["pid"].as_str().unwrap())
+            .execute(pool)
+            .await
+            .unwrap();
+        let grade: Value = request.get(&grade_url).await.json();
+        assert_eq!(grade["pay_band"]["scale"], "retired-scale", "{grade}");
+        assert!(grade["pay_band"]["scale_name"].is_null(), "{grade}");
+        assert_eq!(grade["pay_band"]["band"], "7", "{grade}");
+    })
+    .await;
+}

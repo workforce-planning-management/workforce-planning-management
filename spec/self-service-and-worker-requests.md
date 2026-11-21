@@ -50,7 +50,7 @@ Voluntary, self-declared protected characteristics (for example ethnic origin, r
 sexual orientation, disability status, sex, age band) so an employer can monitor the equality of its
 workforce and the quality of that data (WPM-D74).
 
-- **Off until a deployer enables it and records the lawful basis** (`WPM_EQUALITY_MONITORING_BASIS`). The
+- **Off until a deployer enables it and records the lawful basis** (`WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS`). The
   categories and their allowed values are the deployer's configuration; every category always offers
   **prefer not to say**, and a worker can change or withdraw a declaration at any time.
 - Held in its own table, readable and writable **by the worker only**. **No one else reads an individual's
@@ -112,7 +112,7 @@ Records of the **corporate requirements** a role or area sets, such as required 
   detail, and only for their reports. HR sees the same. Occupational health sees the detail.
 - Reminders go to the worker (a configurable number of calendar days ahead). Aggregates give compliance
   by area with the small-group floor.
-- Off until enabled with a recorded lawful basis (`WPM_HEALTH_REQUIREMENTS_BASIS`). Exported with the
+- Off until enabled with a recorded lawful basis (`WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS`). Exported with the
   worker and erased with them. A health requirement is never an input to any score.
 
 ## WPM-R129 — My time-off

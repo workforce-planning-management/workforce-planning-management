@@ -475,4 +475,20 @@ mod tests {
             .collect();
         assert_eq!(mapped, [1, 2, 2, 3, 4, 4, 5]);
     }
+
+    #[test]
+    fn a_row_with_the_wrong_number_of_columns_is_named() {
+        let levels = format!("{}\n1,a,b\n", LEVEL_COLUMNS.join(","));
+        let err = parse_levels(&levels).unwrap_err();
+        assert!(
+            err.starts_with("row 2: expected 8 columns, found 3"),
+            "{err}"
+        );
+        let resources = format!("{}\nPROG,3,course\n", RESOURCE_COLUMNS.join(","));
+        let err = parse_resources(&resources).unwrap_err();
+        assert!(
+            err.starts_with("row 2: expected 6 columns, found 3"),
+            "{err}"
+        );
+    }
 }

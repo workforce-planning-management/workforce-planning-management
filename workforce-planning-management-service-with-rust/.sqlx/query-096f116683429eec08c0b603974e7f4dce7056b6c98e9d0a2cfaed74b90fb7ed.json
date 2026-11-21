@@ -1,0 +1,208 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, assignment_pid,\n                  organization_ref, source_ref, pool_pid, from_month, to_month, fte_centi, status, note, recorded_by,\n                  deleted_at AS \"deleted_at: _\"\n             FROM allocations WHERE pid = $1 AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "updated_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "assignment_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "assignment_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "source_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "source_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "from_month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "from_month"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "to_month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "to_month"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "fte_centi",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "fte_centi"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "status",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "note"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "recorded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "deleted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "096f116683429eec08c0b603974e7f4dce7056b6c98e9d0a2cfaed74b90fb7ed"
+}

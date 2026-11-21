@@ -902,4 +902,13 @@ mod tests {
             "Bearer resource_metadata=\"https://wpm.example/.well-known/oauth-protected-resource/mcp\""
         );
     }
+
+    #[test]
+    fn each_value_kind_is_checked_and_no_arguments_is_an_empty_object() {
+        assert_eq!(valid(Kind::Urn, &json!("no-colon")), None);
+        assert_eq!(valid(Kind::Number, &json!(5)), Some("5".to_string()));
+        assert_eq!(valid(Kind::Number, &json!(10_000)), None);
+        let tool = tool("my_contact_details").unwrap();
+        assert!(target(tool, &Value::Null).is_ok());
+    }
 }

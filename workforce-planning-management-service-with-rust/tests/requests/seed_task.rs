@@ -87,3 +87,68 @@ async fn the_seed_is_refused_outside_development_and_test() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "needs a database"]
+// Each reminder task runs with a stated day and window, and refuses a day that is not a date and a window out of range.
+async fn the_reminder_tasks_read_their_day_and_window_and_refuse_bad_ones() {
+    crate::requests::request_open(|_server, ctx| async move {
+        let mut tasks = Tasks::default();
+        App::register_tasks(&mut tasks);
+        let vars = |pairs: &[(&str, &str)]| {
+            Vars::from_cli_args(
+                pairs
+                    .iter()
+                    .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+                    .collect(),
+            )
+        };
+        for name in [
+            "pay_progression_reminders",
+            "qualification_expiry_reminders",
+            "engagement_end_reminders",
+            "policy_reminders",
+            "coverage_expiry_reminders",
+            "rota_reminders",
+        ] {
+            tasks
+                .run(
+                    name,
+                    &ctx,
+                    &vars(&[("as_of", "2026-06-01"), ("days_ahead", "7")]),
+                )
+                .await
+                .unwrap_or_else(|e| panic!("{name} runs: {e}"));
+            assert!(
+                tasks
+                    .run(name, &ctx, &vars(&[("as_of", "June")]))
+                    .await
+                    .is_err(),
+                "{name}: not a date"
+            );
+            assert!(
+                tasks
+                    .run(name, &ctx, &vars(&[("days_ahead", "9999")]))
+                    .await
+                    .is_err(),
+                "{name}: window out of range"
+            );
+        }
+        // The tasks that take only a day refuse one that is not a date, before doing anything.
+        for name in [
+            "early_warning_sweep",
+            "oversight_pack_freeze",
+            "snapshot_headcount",
+        ] {
+            assert!(
+                tasks
+                    .run(name, &ctx, &vars(&[("as_of", "June")]))
+                    .await
+                    .is_err(),
+                "{name}: not a date"
+            );
+        }
+    })
+    .await;
+}

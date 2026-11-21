@@ -364,4 +364,17 @@ mod tests {
         );
         assert_eq!(summarise(&[], 5).len(), 0);
     }
+
+    #[test]
+    fn a_negative_notice_or_a_day_at_the_end_of_the_calendar_is_refused() {
+        let logged = crate::dates::ymd(2026, 3, 2).unwrap();
+        assert_eq!(earliest_last_day(logged, -1), None);
+        let err = validate_proposal(logged, logged, -1).unwrap_err();
+        assert!(err.contains("supported calendar"), "{err}");
+        let last = crate::dates::ymd(9999, 12, 1).unwrap();
+        assert_eq!(
+            validate_agreed(last, last),
+            Err("outside the supported calendar".to_string())
+        );
+    }
 }

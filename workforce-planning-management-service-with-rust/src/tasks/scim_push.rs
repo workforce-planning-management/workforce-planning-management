@@ -6,8 +6,8 @@
 //! under only one of them). A failure is recorded as a status code and retried with back-off; no body, name or contact detail
 //! is kept. Managers are sent first so the Enterprise `manager` can carry the provider's own id.
 //!
-//! Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN` (a bearer token, never logged or stored),
-//! `WPM_SCIM_ORGANIZATION` (optional: only this organization's workers).
+//! Settings: `WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL` (https, or http to this machine), `WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN` (a bearer token, never logged or stored),
+//! `WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION` (optional: only this organization's workers).
 
 use jiff::{Timestamp, civil::Date};
 use std::collections::{BTreeMap, HashMap};
@@ -56,12 +56,14 @@ pub struct Summary {
 ///
 /// When the base URL or the token is missing or the URL is not acceptable.
 pub fn config_from_env() -> std::result::Result<Config, String> {
-    let base = crate::compat::env_var("WPM_SCIM_BASE_URL").ok_or("WPM_SCIM_BASE_URL is not set")?;
-    let token = crate::compat::env_var("WPM_SCIM_TOKEN").ok_or("WPM_SCIM_TOKEN is not set")?;
+    let base = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL")
+        .ok_or("WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL is not set")?;
+    let token = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN")
+        .ok_or("WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN is not set")?;
     Ok(Config {
         base_url: scim::check_base_url(&base)?,
         token,
-        organization: crate::compat::env_var("WPM_SCIM_ORGANIZATION")
+        organization: crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION")
             .filter(|o| !o.trim().is_empty()),
     })
 }

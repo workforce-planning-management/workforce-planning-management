@@ -129,7 +129,7 @@ URNs (`person:<uuid>`), never duplicated demographics
 
 ```bash
 cargo run -- db migrate && cargo run -- task seed
-WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default (WPM-D52)
+WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default (WPM-D52)
 cargo test --lib                    # DB-free unit tests (1,040 on 2026-10-30)
 cargo test --test main -- --ignored --test-threads=1    # request tests (Postgres; serial, they share a database)
 cargo test --test enforcement -- --ignored             # auth persona matrix

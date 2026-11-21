@@ -5,7 +5,7 @@
 //! This is the one deliberate exception to "WPM holds no demographics", and it is bounded:
 //!
 //! - **Off** until a deployer records the lawful basis they rely on
-//!   (`WPM_EQUALITY_MONITORING_BASIS`) and defines the categories (`WPM_EQUALITY_CATEGORIES`).
+//!   (`WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS`) and defines the categories (`WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES`).
 //!   WPM ships no classification. Until then every route answers that monitoring is off.
 //! - **The worker only** reads or changes their own declarations (`/api/me/equality-monitoring`).
 //!   No manager, no HR, no payroll and no administrator can read an individual's.
@@ -37,9 +37,9 @@ use crate::sql_time::SqlDate;
 pub fn gate_from_env() -> std::result::Result<Gate, String> {
     let read = |name: &str| crate::compat::env_var(name);
     rules::gate(
-        read("WPM_EQUALITY_MONITORING_BASIS").as_deref(),
-        read("WPM_EQUALITY_CATEGORIES").as_deref(),
-        read("WPM_EQUALITY_FLOOR").as_deref(),
+        read("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS").as_deref(),
+        read("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES").as_deref(),
+        read("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR").as_deref(),
     )
 }
 

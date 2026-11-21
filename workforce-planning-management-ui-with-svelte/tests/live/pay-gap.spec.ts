@@ -1,4 +1,4 @@
-// Pay gap against the real service (see README.md). Needs `WPM_EQUALITY_MONITORING_BASIS` and `WPM_EQUALITY_CATEGORIES` on the service, an
+// Pay gap against the real service (see README.md). Needs `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS` and `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES` on the service, an
 // organization (`PAY_GAP_ORG`) with at least ten of each sex on one job title with pay, fewer than ten men on a second title, and two
 // categories (one per title). With enforcement off the service reports no organization scope, so that one call is stubbed to name the
 // organization; the report and categories are real. Asserts rules and shapes, never exact figures. `PAGE_SHOTS=<dir>` writes screenshots.
@@ -6,8 +6,8 @@
 import { expect, test } from "@playwright/test";
 
 test.skip(
-  !process.env.WPM_LIVE_API,
-  "needs a running service: set WPM_LIVE_API=1",
+  !process.env.WORKFORCE_PLANNING_MANAGEMENT_LIVE_API,
+  "needs a running service: set WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1",
 );
 
 const org = process.env.PAY_GAP_ORG ?? "";

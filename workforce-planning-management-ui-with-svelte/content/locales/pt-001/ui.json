@@ -57,7 +57,8 @@
     "coverageEvidence": "Comprovativo de cobertura",
     "qualifications": "Qualificações",
     "injuryRecords": "Registos de lesões",
-    "help": "Ajuda"
+    "help": "Ajuda",
+    "allocations": "Alocações"
   },
   "pr": {
     "retention": "Retenção",
@@ -1530,6 +1531,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Quem está previsto trabalhar em quê, mês a mês, por ordem de nome. É um plano, não uma medida do trabalho de ninguém: nunca ordena pessoas nem dá pontuações.",
+      "organization": "Organização",
+      "notAllowed": "Esta vista é para RH e gestores de recursos.",
+      "empty": "Ninguém para mostrar.",
+      "person": "Pessoa",
+      "confirm": "Confirmar",
+      "end": "Terminar",
+      "remove": "Remover",
+      "add": "Adicionar uma alocação",
+      "job": "Posto",
+      "from": "Do mês",
+      "to": "Ao mês",
+      "sharePercent": "Parte do posto (centésimas de ETI)",
+      "confirmNow": "Confirmar agora (a pessoa é avisada)"
     }
   },
   "titles": {
@@ -1876,6 +1893,7 @@
     "payroll_admin": "administrador de folha de pagamento",
     "viewer": "leitor",
     "partner": "parceiro",
+    "resource_manager": "gestor de recursos",
     "past_end_without_approved_plan": "Terminado sem plano aprovado",
     "review_due": "Revisão em atraso",
     "not_started": "Não iniciado",
@@ -3457,5 +3475,29 @@
   },
   "footer": {
     "privacyNotice": "Aviso de privacidade"
+  },
+  "allocations": {
+    "title": "Alocações",
+    "hint": "No que está previsto trabalhar, mês a mês. É um plano, não uma medida do que fez, e nunca pontua ninguém.",
+    "untracked": "A sua organização não regista alocações, por isso nenhum mês aparece como cheio ou livre.",
+    "none": "Sem alocações.",
+    "source": "Programa, produto ou serviço",
+    "months": "Meses",
+    "share": "Parte (ETI)",
+    "status": "Estado",
+    "monthRange": "De {from} a {to}",
+    "runsPastEnd": "Ultrapassa o fim do posto ou do contrato em {date}",
+    "allocated": "{allocated} de {available} ETI alocados",
+    "state": {
+      "tentative": "Provisória",
+      "confirmed": "Confirmada",
+      "ended": "Terminada"
+    },
+    "signal": {
+      "overAllocated": "Sobrealocado em {fte} ETI",
+      "leaveClash": "As ausências aprovadas deixam {fte} ETI em falta",
+      "available": "{fte} ETI livres",
+      "assignmentOver": "Um posto excede o seu próprio ETI em {fte}"
+    }
   }
 }

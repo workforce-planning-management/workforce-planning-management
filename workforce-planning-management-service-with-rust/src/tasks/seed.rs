@@ -412,7 +412,7 @@ pub struct ExampleProfile {
 /// The example `GB` profile: working time in the shape of the Working Time Regulations 1998 (a 17-week reference period, an average
 /// of 48 hours a week, 11 hours' daily rest), the values the service used to hard-code; and flexible working in the shape of the
 /// Employment Rights Act 1996, Part 8A as amended from 6 April 2024 (two calendar months to decide, two requests a year, the eight
-/// business reasons and `other_recorded`), the `WPM_FLEXIBLE_*` defaults (WPM-T384). **Example, unverified**: neither was read against
+/// business reasons and `other_recorded`), the `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_*` defaults (WPM-T384). **Example, unverified**: neither was read against
 /// the text in this work.
 #[must_use]
 #[allow(clippy::too_many_lines)] // a table of example rows
@@ -538,7 +538,7 @@ pub const fn example_profile_gb() -> ExampleProfile {
 }
 
 /// The example `EU` profile (WPM-T384): a supranational code holding the Pay Transparency Directive's values, the
-/// `WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`, `WPM_JOINT_ASSESSMENT_*` and `WPM_PAY_GAP_TIERS` defaults (two calendar
+/// `WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS`, `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE`, `WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_*` and `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS` defaults (two calendar
 /// months to answer, a pay range before a vacancy opens, a 5% gap and six calendar months to remedy it, the three reporting tiers),
 /// from the date its transposition was due. **Example, unverified**: the Directive was seen only as search excerpts (WPM-T268,
 /// WPM-T404). A country is under it only where an organization records the country with `EU` as its parent; the seed records none.
@@ -799,15 +799,15 @@ mod tests {
                 for d in listed {
                     let came = |c: &serde_json::Value| c["kind"] == "profile";
                     let (value, from_profile) = match d.setting {
-                        "WPM_FLEXIBLE_DECISION_MONTHS" => (
+                        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS" => (
                             fw::decision_months(s, as_of).value.to_string(),
                             came(&fw::decision_months(s, as_of).came_from),
                         ),
-                        "WPM_FLEXIBLE_REQUESTS_PER_YEAR" => (
+                        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR" => (
                             fw::requests_per_year(s, as_of).value.to_string(),
                             came(&fw::requests_per_year(s, as_of).came_from),
                         ),
-                        "WPM_FLEXIBLE_REFUSAL_REASONS" => {
+                        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS" => {
                             let found = fw::refusal_reasons(s, as_of);
                             let mut want: Vec<String> =
                                 crate::rules::flexible_working::DEFAULT_REFUSAL_REASONS
@@ -820,29 +820,29 @@ mod tests {
                             assert_eq!(got, want);
                             (d.default.to_string(), came(&found.came_from))
                         }
-                        "WPM_PAY_INFORMATION_MONTHS" => (
+                        "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS" => (
                             pi::answer_months(s, as_of).value.to_string(),
                             came(&pi::answer_months(s, as_of).came_from),
                         ),
-                        "WPM_REQUIRE_PAY_RANGE" => {
+                        "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE" => {
                             let found = pi::pay_range_required(s, as_of);
                             (
                                 (if found.value { "on" } else { "off" }).to_string(),
                                 came(&found.came_from),
                             )
                         }
-                        "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
+                        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
                             let c = pa::configured(s, as_of);
                             (
                                 (c.config.threshold_bp / 100).to_string(),
                                 came(&c.threshold_from),
                             )
                         }
-                        "WPM_JOINT_ASSESSMENT_MONTHS" => {
+                        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS" => {
                             let c = pa::configured(s, as_of);
                             (c.config.remedy_months.to_string(), came(&c.months_from))
                         }
-                        "WPM_PAY_GAP_TIERS" => {
+                        "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS" => {
                             let found =
                                 crate::controllers::pay_transparency::reporting_tiers(s, as_of);
                             assert_eq!(found.value, crate::rules::pay_gap::directive_tiers());

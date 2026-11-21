@@ -498,6 +498,19 @@ describe("api path map", () => {
     await wpm.checkDecisionGate("organization:abc", "other");
     await wpm.getStatutoryDefaults();
     await wpm.getStatutoryDefaults("organization:abc");
+    await wpm.getWorkerAllocations("w1");
+    await wpm.getWorkerAllocations("w1", "2027-01-01", 6);
+    await wpm.listAllocations("organization:abc", "2027-01-01", 3, "thing:p");
+    await wpm.setAllocationStatus("a1", "confirmed");
+    await wpm.deleteAllocation("a1");
+    await wpm.getWorkerAssignments("w1");
+    await wpm.createAllocation("w1", {
+      assignment_pid: "as1",
+      source_ref: "thing:p",
+      from_month: "2027-01-01",
+      to_month: "2027-02-01",
+      fte_centi: 50,
+    });
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -739,6 +752,13 @@ describe("api path map", () => {
       "/api/proxy/decision-gates/check?organization=organization%3Aabc&change=other",
       "/api/proxy/statutory-defaults",
       "/api/proxy/statutory-defaults?organization=organization%3Aabc",
+      "/api/proxy/workers/w1/allocations",
+      "/api/proxy/workers/w1/allocations?from=2027-01-01&months=6",
+      "/api/proxy/allocations?organization=organization%3Aabc&from=2027-01-01&months=3&source=thing%3Ap",
+      "/api/proxy/allocations/a1/status",
+      "/api/proxy/allocations/a1",
+      "/api/proxy/workers/w1/assignments",
+      "/api/proxy/workers/w1/allocations",
     ]);
     vi.unstubAllGlobals();
   });

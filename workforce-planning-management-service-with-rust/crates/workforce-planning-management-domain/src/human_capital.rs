@@ -1113,4 +1113,10 @@ mod tests {
             assert!(!json.contains(word), "{word}");
         }
     }
+
+    #[test]
+    fn a_share_of_nothing_is_unknown() {
+        assert_eq!(basis_points(1, 0), None);
+        assert_eq!(basis_points(1, 4), Some(2_500));
+    }
 }

@@ -1866,7 +1866,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. With ?organization= (in scope), applies_from is the date for that organization: its home jurisdiction's profile (ai_act.applies_from), then WPM_AI_ACT_APPLIES_FROM, then the default; applies_from_came_from says which. Any signed-in caller",
+        "summary": "Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. With ?organization= (in scope), applies_from is the date for that organization: its home jurisdiction's profile (ai_act.applies_from), then WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM, then the default; applies_from_came_from says which. Any signed-in caller",
         "tags": [
           "ai-register"
         ]
@@ -1901,6 +1901,132 @@
         "summary": "Replace what is recorded for a feature: category, oversight role (a role, not a person), the two informed dates (not in the future), log retention in months (under six needs a note naming the other law). A field left out is cleared. Audited in the same transaction",
         "tags": [
           "ai-register"
+        ]
+      }
+    },
+    "/api/allocations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "People with allocations"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "The people of an organization (?organization=, optional ?source=, ?from=&months=) with their allocations and month standings, by name, in name order, never ranked. HR and resource managers; audited with the count on the page. Paged",
+        "tags": [
+          "allocations"
+        ]
+      }
+    },
+    "/api/allocations/summary": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The cells"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Per pool, source and month: the confirmed FTE and the number of people allocated, the active claim, and staffed, understaffed, overstaffed, not_claimed or unknown. Names no one; a caller who may not read named allocations sees cells under the floor withheld (?organization=&from=&months=)",
+        "tags": [
+          "allocations"
+        ]
+      }
+    },
+    "/api/allocations/{pid}": {
+      "delete": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Remove an allocation made in error (soft delete); a confirmed one tells the person. HR and resource managers",
+        "tags": [
+          "allocations"
+        ]
+      },
+      "put": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Change an allocation's source, pool, months, share or note; an ended one is not changed. A confirmed one tells the person. HR and resource managers",
+        "tags": [
+          "allocations"
+        ]
+      }
+    },
+    "/api/allocations/{pid}/status": {
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new status",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Move an allocation: tentative and confirmed either way, either to ended; ended is final. Confirming tells the person. HR and resource managers",
+        "tags": [
+          "allocations"
         ]
       }
     },
@@ -3306,7 +3432,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "The organization's limit on active programmes drawing on the constraint pool (?organization=)",
+        "summary": "The organization's limit on active programmes drawing on the constraint pool, and whether it tracks per-person allocation (?organization=)",
         "tags": [
           "capacity"
         ]
@@ -3336,7 +3462,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Set or clear the work-in-progress limit",
+        "summary": "Set or clear the work-in-progress limit, and optionally switch per-person allocation tracking on or off (allocation_tracked; absent keeps it)",
         "tags": [
           "capacity"
         ]
@@ -6374,7 +6500,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Set or clear (null or blank) the organization's home jurisdiction: the legal entity's registered jurisdiction, whose chain the organization-level readers (the pay gap report, the joint assessment, retention) resolve over; unset, they fall back to the WPM_* setting and then the default. HR of the organization, audited with the code (WPM-D153)",
+        "summary": "Set or clear (null or blank) the organization's home jurisdiction: the legal entity's registered jurisdiction, whose chain the organization-level readers (the pay gap report, the joint assessment, retention) resolve over; unset, they fall back to the WORKFORCE_PLANNING_MANAGEMENT_* setting and then the default. HR of the organization, audited with the code (WPM-D153)",
         "tags": [
           "reporting"
         ]
@@ -8371,7 +8497,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Log an intent to resign: a proposed last day that allows the notice (calendar days, default 28, WPM_RESIGNATION_NOTICE_CALENDAR_DAYS) and an optional reason from a closed list; the manager is told that it was logged, not why; nothing ends here",
+        "summary": "Log an intent to resign: a proposed last day that allows the notice (calendar days, default 28, WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS) and an optional reason from a closed list; the manager is told that it was logged, not why; nothing ends here",
         "tags": [
           "me"
         ]
@@ -11557,7 +11683,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WPM_RETENTION_DAYS, WPM_RETENTION_<KIND>_DAYS, or with ?organization= that organization's profile retention.<kind>.days over its home jurisdiction, WPM-D153)",
+        "summary": "Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS, WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS, or with ?organization= that organization's profile retention.<kind>.days over its home jurisdiction, WPM-D153)",
         "tags": [
           "privacy"
         ]
@@ -13429,7 +13555,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, the jurisdiction code and source of its default, its profile registry key and reader, and came_from (profile, setting or default). ?organization= resolves an organization-level setting over the organization's home jurisdiction and lists a worker-level one by_place for each code the organization keeps (WPM-T384, WPM-D153)",
+        "summary": "Whose each default is: every WORKFORCE_PLANNING_MANAGEMENT_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, the jurisdiction code and source of its default, its profile registry key and reader, and came_from (profile, setting or default). ?organization= resolves an organization-level setting over the organization's home jurisdiction and lists a worker-level one by_place for each code the organization keeps (WPM-T384, WPM-D153)",
         "tags": [
           "reporting"
         ]
@@ -13807,7 +13933,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WPM_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction",
+        "summary": "Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction",
         "tags": [
           "webhooks"
         ]
@@ -14219,6 +14345,52 @@
         "summary": "Ask for a reasonable adjustment: barrier + impact + change, all required; no diagnosis field exists (WPM-D25)",
         "tags": [
           "adjustments"
+        ]
+      }
+    },
+    "/api/workers/{pid}/allocations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The allocations and standings"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "A person's allocations (?from=&months=, at most 36) with each month's standing: contracted, available after approved leave (dates only), allocated and tentative FTE in hundredths, and the signals over_allocated, leave_clash, available and assignment_over_allocated; unknown where the organization does not track allocation. Each allocation says if it runs past the end of its assignment or engagement. The person, their line managers, HR and resource managers; another person's read is audited. No score (WPM-R275)",
+        "tags": [
+          "allocations"
+        ]
+      },
+      "post": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pid of the allocation",
+            "headers": {
+              "Idempotent-Replayed": {
+                "$ref": "#/components/headers/IdempotentReplayed"
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/IdempotencyInProgress"
+          },
+          "422": {
+            "$ref": "#/components/responses/IdempotencyRefused"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "Allocate a share (fte_centi, 1 to the assignment's FTE) of one of the person's assignments to a programme, product or service URN for a run of months (first days, at most 36), optionally from a pool; tentative unless status is confirmed, which tells the person. HR and resource managers, not for themselves (WPM-R276)",
+        "tags": [
+          "allocations"
         ]
       }
     },
@@ -17527,7 +17699,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS",
+        "summary": "A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WORKFORCE_PLANNING_MANAGEMENT_MCP_ALLOWED_ORIGINS",
         "tags": [
           "mcp"
         ]

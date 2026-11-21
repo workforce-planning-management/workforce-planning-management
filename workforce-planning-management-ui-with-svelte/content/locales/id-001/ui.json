@@ -57,7 +57,8 @@
     "coverageEvidence": "Bukti perlindungan",
     "qualifications": "Kualifikasi",
     "injuryRecords": "Catatan cedera",
-    "help": "Bantuan"
+    "help": "Bantuan",
+    "allocations": "Alokasi"
   },
   "pr": {
     "retention": "Retensi",
@@ -1516,6 +1517,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Siapa yang direncanakan mengerjakan apa, bulan demi bulan, menurut urutan nama. Ini rencana, bukan ukuran pekerjaan siapa pun: tidak pernah memeringkat orang dan tidak memberi skor.",
+      "organization": "Organisasi",
+      "notAllowed": "Tampilan ini untuk SDM dan manajer sumber daya.",
+      "empty": "Tidak ada yang ditampilkan.",
+      "person": "Orang",
+      "confirm": "Konfirmasi",
+      "end": "Akhiri",
+      "remove": "Hapus",
+      "add": "Tambah alokasi",
+      "job": "Jabatan",
+      "from": "Dari bulan",
+      "to": "Sampai bulan",
+      "sharePercent": "Porsi jabatan (perseratus FTE)",
+      "confirmNow": "Konfirmasi sekarang (orangnya diberi tahu)"
     }
   },
   "titles": {
@@ -1862,6 +1879,7 @@
     "payroll_admin": "administrator penggajian",
     "viewer": "pemirsa",
     "partner": "mitra",
+    "resource_manager": "manajer sumber daya",
     "past_end_without_approved_plan": "Berakhir tanpa rencana yang disetujui",
     "review_due": "Tinjauan jatuh tempo",
     "not_started": "Belum dimulai",
@@ -3439,5 +3457,29 @@
   },
   "footer": {
     "privacyNotice": "Pemberitahuan privasi"
+  },
+  "allocations": {
+    "title": "Alokasi",
+    "hint": "Apa yang direncanakan untuk Anda kerjakan, bulan demi bulan. Ini rencana, bukan ukuran apa yang Anda lakukan, dan tidak pernah menilai siapa pun.",
+    "untracked": "Organisasi Anda tidak mencatat alokasi, jadi tidak ada bulan yang ditampilkan penuh atau kosong.",
+    "none": "Tidak ada alokasi.",
+    "source": "Program, produk, atau layanan",
+    "months": "Bulan",
+    "share": "Porsi (FTE)",
+    "status": "Status",
+    "monthRange": "{from} sampai {to}",
+    "runsPastEnd": "Melewati akhir jabatan atau kontrak pada {date}",
+    "allocated": "{allocated} dari {available} FTE dialokasikan",
+    "state": {
+      "tentative": "Sementara",
+      "confirmed": "Dikonfirmasi",
+      "ended": "Berakhir"
+    },
+    "signal": {
+      "overAllocated": "Kelebihan alokasi {fte} FTE",
+      "leaveClash": "Cuti yang disetujui membuatnya kurang {fte} FTE",
+      "available": "{fte} FTE kosong",
+      "assignmentOver": "Satu jabatan melebihi FTE-nya sendiri sebesar {fte}"
+    }
   }
 }

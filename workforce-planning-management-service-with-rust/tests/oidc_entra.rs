@@ -339,17 +339,26 @@ async fn entra_sign_in_gates_and_authorises() {
     // ── Configure the service exactly as the runbook says; sign-in is NOT switched off.
     // `set_var` is `unsafe` in edition 2024; single-threaded setup before boot.
     unsafe {
-        std::env::remove_var("WPM_REQUIRE_AUTH");
-        std::env::set_var("WPM_KEYCLOAK_ISSUER", discovery["issuer"].as_str().unwrap());
-        std::env::set_var("WPM_KEYCLOAK_AUDIENCE", CLIENT_ID);
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH");
         std::env::set_var(
-            "WPM_KEYCLOAK_JWKS_URL",
+            "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER",
+            discovery["issuer"].as_str().unwrap(),
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE", CLIENT_ID);
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL",
             discovery["jwks_uri"].as_str().unwrap(),
         );
-        std::env::set_var("WPM_OIDC_SUBJECT_CLAIM", "oid");
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM", "oid");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "0");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+            "0",
+        );
     }
 
     let wrong_audience =

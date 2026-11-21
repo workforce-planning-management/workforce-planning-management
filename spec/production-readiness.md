@@ -11,14 +11,14 @@ file.
 
 ## WPM-R72 — Sign-in is enforced by default
 
-- `WPM_REQUIRE_AUTH` is **on** unless it is an explicit `0`, `false`, `no` or
+- `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` is **on** unless it is an explicit `0`, `false`, `no` or
   `off` (case-insensitive). Unset, empty and unrecognized values leave it on, so
   a typo can only make the service stricter.
 - With it off the service logs a warning at boot and every ten minutes, and
   `GET /_posture` (public) answers `{"auth_enforced": false}`.
 - **Boot refuses** in the `production` environment when enforcement is off, and
-  when no token key source is set (`WPM_PASETO_KEYS`, `WPM_PASETO_KEYS_URL` or
-  `WPM_KEYCLOAK_JWKS_URL`). Outside production, no key source is a warning: every
+  when no token key source is set (`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS`, `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` or
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL`). Outside production, no key source is a warning: every
   request is then a `401`.
 - Public paths are `/_health/live`, `/_health/ready`, `/_health/startup`, `/_posture`, `/api-docs/openapi.json`
   and `/swagger-ui*`. **`/metrics.prom` is not public**: a scraper presents a
@@ -33,7 +33,7 @@ file.
   `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`,
   `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy:
   same-origin`, `Strict-Transport-Security` when the request is over TLS (a
-  proxy's `X-Forwarded-Proto: https`, or `WPM_HSTS`), and `Cache-Control:
+  proxy's `X-Forwarded-Proto: https`, or `WORKFORCE_PLANNING_MANAGEMENT_HSTS`), and `Cache-Control:
   no-store` on every `/api` response.
 - The UI sends the same set from `hooks.server.ts` (pure helper
   `src/lib/security-headers.ts`, plus `X-Frame-Options: DENY` for older
@@ -47,14 +47,14 @@ file.
   sends its own policy, since `kit.csp` does not reach it: the inline language script by its
   `sha256` hash (no `'unsafe-inline'` for scripts), Sveltia's documented sources, and the GitHub
   backend's `api.github.com` and avatars (WPM-T249). A new CMS version needs a new hash.
-- **CORS** in production is an allow-list from `WPM_CORS_ORIGIN`, required: boot
+- **CORS** in production is an allow-list from `WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN`, required: boot
   fails when it is unset rather than falling back to `*`. Methods and headers are
   listed, credentials are off.
 
 ## WPM-R74 — Rate limiting
 
-- Per caller and per minute: `WPM_RATE_LIMIT_PER_MINUTE` (default 600) for any
-  route, and `WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE` (default 20) for erase,
+- Per caller and per minute: `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE` (default 600) for any
+  route, and `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE` (default 20) for erase,
   sweep, import, merge, deduplicate and token routes and for exports, counted
   apart. A refusal is a `429` problem with `code` `too_many_requests`,
   `Retry-After` and the `RateLimit-*` headers; a counted request that is let
@@ -132,10 +132,10 @@ sign-in enforcement explicitly off** (see its header).
 - **Database TLS.** In the `production` environment, boot refuses a `DATABASE_URL` that reaches another host
   without TLS (`sslmode` of `require`, `verify-ca` or `verify-full`). `disable`, `allow`, `prefer` (which falls
   back to plaintext) and no `sslmode` all count as plaintext. A loopback address or a Unix socket is not on a
-  network and needs nothing. `WPM_ALLOW_PLAINTEXT_DATABASE=1` is the explicit, logged override, and `axa` asks for `DB_ALLOW_INSECURE=true` as well. `require` and
+  network and needs nothing. `WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE=1` is the explicit, logged override, and `axa` asks for `DB_ALLOW_INSECURE=true` as well. `require` and
   `verify-ca` start with a warning to use `verify-full`, because they do not check the server's identity.
 - **Request timeout.** The production configuration answers a request that runs past
-  `WPM_REQUEST_TIMEOUT_MS` (default 30000 milliseconds) with `408`.
+  `WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS` (default 30000 milliseconds) with `408`.
 - Pure checks in `src/hardening.rs`, unit-tested over nineteen URLs; verified by booting the real binary in
   production against a non-loopback address (refused; started with the override and the warning; a loopback
   address started without either). The request identifier is on every response (`x-request-id`).
@@ -202,7 +202,7 @@ sign-in enforcement explicitly off** (see its header).
   failure is a miss, so a Redis that is down slows nothing and breaks nothing. Keys are versioned and generational
   (`wpm:v1:{namespace}:{generation}:{key}`); the ESCO import bumps its namespace's generation. `REDIS_URL` is optional: unset, the cache is in
   memory per instance and boot logs a warning. In production, a plaintext `redis://` link to another host refuses to
-  start unless `WPM_ALLOW_PLAINTEXT_REDIS=1`; `rediss://` works (rustls, `ring`).
+  start unless `WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_REDIS=1`; `rediss://` works (rustls, `ring`).
 
 - **WPM-D52 Secure by default.** A fresh install enforces sign-in. Turning it
   off is explicit, logged, visible at `/_posture`, and refused in production; a
@@ -212,7 +212,7 @@ sign-in enforcement explicitly off** (see its header).
   address and dropped within two windows; no address, subject or token is stored or logged. A bearer token is
   never the key, because varying it would buy a fresh bucket on every request.
   The left end of `X-Forwarded-For` is the same, which is why WPM-D187 replaced
-  `WPM_TRUST_FORWARDED`.
+  `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED`.
 
 ## WPM-R137 — The service fails cleanly when its database misbehaves, and heals
 
@@ -222,7 +222,7 @@ sign-in enforcement explicitly off** (see its header).
   exactly one `created` audit row. There may be more workers than success replies, because a cut can lose the reply to a write that
   committed; never fewer, and never a write applied twice.
 - **It heals.** Once the database answers again, the service answers `200` within seconds, without a restart.
-- **Reproducible.** The fault schedule comes from a seed that is printed, and `WPM_CHAOS_SEED` replays it.
+- **Reproducible.** The fault schedule comes from a seed that is printed, and `WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED` replays it.
 
 ## WPM-D88 — Chaos by a proxy in the test, not by killing containers
 
@@ -272,7 +272,7 @@ including unrelated ones. Three changes, each with the largest effect for its vi
 - **The plan forecast and cost views** read only the departments the plan names, and only the skills its roles ask for.
 
 What is **still read whole** is the plan views' planned-department workers. For them, one `COUNT` before the load and a `422` over
-`WPM_MAX_ORG_WORKERS` (default 10,000 then; at 50,000 they failed; **200,000 since WPM-D95**). A refusal that names the number is better than a request that holds
+`WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` (default 10,000 then; at 50,000 they failed; **200,000 since WPM-D95**). A refusal that names the number is better than a request that holds
 a connection for a second and a runtime for the others. **The cost is real**: a plan over 10,000 workers loses its forecast and cost until
 the setting is raised or the arithmetic is moved into SQL aggregates.
 
@@ -281,7 +281,7 @@ the setting is raised or the arithmetic is moved into SQL aggregates.
 The requirement changed from "bounded and refused above a measured ceiling" (WPM-D90) to **200,000 workers in one organization**.
 The rule for every view that loads an organization: its work is done by the database (aggregates, pages, joins) or in batches whose
 memory does not depend on the organization, and it answers **within 2 seconds at the 95th percentile with 8 concurrent connections and
-no failed request** on `scripts/load-test.sh 200000`. The `WPM_MAX_ORG_WORKERS` refusal stays as a deployer's guard; its default **is 200,000** since the plan forecast and cost views
+no failed request** on `scripts/load-test.sh 200000`. The `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` refusal stays as a deployer's guard; its default **is 200,000** since the plan forecast and cost views
 met the bar (WPM-T239). The views that still do not are listed in `BENCHMARKS.md`. Seeding 200,000 workers is the evidence; a claim without it is not
 made. **The cost:** the arithmetic of the plan views (forecast, cost, capacity) has to move into SQL aggregates, which is the largest
 part of the work and is done view by view (WPM-T239).
@@ -383,21 +383,21 @@ service instance, and a database on another host.
 
 - A paged list takes `?limit=` and `?cursor=` and answers a bare JSON array. While more rows follow it carries `Link: <path?...&cursor=...>; rel="next"`, which names the path the client called with its filters and limit kept; the last page has no `Link`.
 - There is no `X-Total-Count`, `X-Limit` or `X-Offset`. A client knows only that more follow.
-- A cursor is signed (HMAC-SHA256) over its position, the path and every parameter but `cursor` and `limit`, under `WPM_CURSOR_KEY`. One the service did not make, one edited, or one carried to another list or another filter is a `422`. `limit` may change between pages.
+- A cursor is signed (HMAC-SHA256) over its position, the path and every parameter but `cursor` and `limit`, under `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY`. One the service did not make, one edited, or one carried to another list or another filter is a `422`. `limit` may change between pages.
 - A `limit` that is zero, not a number, given twice or over 500 is a `422`, never clamped or defaulted. An absent one is the list's default.
 - `?offset=` is a `422` that says to follow the `Link`, so a client still paging by offset is told and not given the first page again.
 - Every refusal has `code: unprocessable_entity` and quotes nothing the caller sent.
 - The row read past a page to see whether more follow is never sent, and nothing is done for it: a list that audits a salary read records only the rows it sends (WPM-D147).
 
 **Why:** a total counts rows the caller's record policy hides, so it can say that records exist which the caller may not see, and a caller could name any offset, so one request could make the database read and discard rows up to it (SEC-G7). A cursor's position is the service's: a deep page is reached only by reading each page before it. WPM-D189 says how.
-**Not claimed:** the position inside a cursor is still an offset, so a deep page still costs a scan to it, and the old bound of 10,000 rows is gone (a client walking every page is bounded by the rate limit, not by paging); and a row added or removed between two pages can make a later page skip or repeat one row; each list orders by something that ends in a unique column so that the order itself is stable. Without `WPM_CURSOR_KEY`, each instance signs with its own key, and a cursor from one is refused by another.
+**Not claimed:** the position inside a cursor is still an offset, so a deep page still costs a scan to it, and the old bound of 10,000 rows is gone (a client walking every page is bounded by the rate limit, not by paging); and a row added or removed between two pages can make a later page skip or repeat one row; each list orders by something that ends in a unique column so that the order itself is stable. Without `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY`, each instance signs with its own key, and a cursor from one is refused by another.
 ## WPM-R239 — A caller cannot name its own rate-limit bucket
 
 - The rate limit counts by the address `axa::client::resolve` gives. `X-Forwarded-For` is believed only from a peer listed in `TRUSTED_PROXIES`, and is read from the right, stopping at the first address that is not listed. With no list, the header is ignored.
 - A left entry the caller wrote buys no new bucket, a header from an unlisted peer changes nothing, and two clients behind one listed proxy are counted apart.
 - With no address at all, every caller shares one bucket.
 - IPv6 counts by its `/64`, and an IPv4-mapped address counts as the IPv4 address. An ordinary and a sensitive request from one caller are counted apart, and no two callers' classes share a counter.
-- `WPM_TRUST_FORWARDED` does nothing. If it is still set, boot logs a warning and goes on.
+- `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` does nothing. If it is still set, boot logs a warning and goes on.
 
 **Why:** a proxy that appends leaves the caller's own value first, so the first entry was the caller's choice, and each forged value was a fresh limit. The old rule was safe only if the operator's proxy overwrote the header, and nothing checked that it did.
 **Not claimed:** a limit is still per instance. A client that shares a listed range can write the entries left of its own, so `TRUSTED_PROXIES` should name the proxies and not a whole network that callers are in. A shared address (a carrier's, or an office's) is one caller.
@@ -422,3 +422,32 @@ service instance, and a database on another host.
 **Why:** the container defaults to `APP_ENV=production`, and `db reset` drops every table. Migrations only go forward and the way back is a
 restore ([upgrade-and-migration.md](operations/upgrade-and-migration.md)), so nothing in a deployment needs these. **Not claimed:** this guards
 the commands, not the database: a role with the rights to drop tables can still do so by other means, which is why the service runs as `wpm_app`.
+
+## WPM-R278 — Every setting is named `WORKFORCE_PLANNING_MANAGEMENT_*`
+
+*As an operator I can tell at a glance which application a setting belongs to, in an environment that runs several of the
+family's services side by side.* (Decided by the owner on 2026-11-20.)
+
+- Every environment variable that the service, the UI's server, the scripts, CI and the deployment files read under WPM's own
+  prefix is named `WORKFORCE_PLANNING_MANAGEMENT_<NAME>`. That covers, for example, `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH`,
+  `WORKFORCE_PLANNING_MANAGEMENT_API_URL` and `WORKFORCE_PLANNING_MANAGEMENT_DEPLOYMENT_ID` (WPM-R277). The `<NAME>` part is
+  unchanged from the `WPM_` name. Settings shared with other software keep their names: `DATABASE_URL`, `DB_URL`, `REDIS_URL`,
+  `RUST_LOG`, `AUTH_API_URL`.
+- **The old names still work, with a warning** (WPM-D221). The service reads the new name first, then `WPM_<NAME>`, then the
+  older `HCM_<NAME>` (the 2026-07-23 rename), and logs a deprecation warning once per variable that names the new one. The UI's
+  server does the same for its own variables. A blank value counts as unset at every name, as before.
+- **The new name wins.** Where both are set, the old one is ignored and the warning says so, so a half-finished change cannot
+  mix two values.
+- **Transitional.** The fallback exists so that a deployment survives the rename across one release. It is removed once no
+  deployment sets the old names (WPM-T604 records when).
+- Not renamed: the `WPM-R`, `WPM-D` and `WPM-T` identifiers of the spec, the ABAC entity `wpm`, and code identifiers such as
+  `WPM_SCALE_MAX`, which are not settings.
+
+## WPM-D221 — A renamed setting is honoured, loudly, never silently dropped
+
+The service already did this once, for the `HCM_` to `WPM_` rename (`src/compat.rs`), and for the same reason. A setting that
+stops being read falls back to its default, and some defaults change behaviour that matters, such as the CORS origins, the
+retention horizons or the payroll stub. A deployment that upgrades without renaming must keep working, and must be told. The
+alternatives were rejected. A clean break would silently change a live deployment. Refusing to start whenever an old name is set
+would turn a routine upgrade into an outage, for a mistake that the warning already makes visible. Changelogs and the
+milestone record keep the old names where they describe the past.

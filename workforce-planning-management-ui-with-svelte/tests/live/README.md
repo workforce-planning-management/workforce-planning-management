@@ -1,15 +1,15 @@
 # Live tests (real service, no stubs)
 
-`live.spec.ts` drives the built UI against a running API. It is skipped unless `WPM_LIVE_API=1`.
+`live.spec.ts` drives the built UI against a running API. It is skipped unless `WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1`.
 
 1. Start Postgres and the API with enforcement off (a demo posture, never for production):
-   `WPM_REQUIRE_AUTH=0 DATABASE_URL=… cargo run -- start` (port 1241).
+   `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 DATABASE_URL=… cargo run -- start` (port 1241).
 2. Seed it: `cargo run -- task seed`, then add contingent data through the API: at least ten contractors and ten fixed-term
    people in one department, each with a programme funding (`PUT /api/workers/{pid}/funding`), a plan with demand lines of
    more than one basis and a programme, a fixed-term requisition with a duration, and three
    `cargo run -- task snapshot_headcount as_of:YYYY-MM-DD` runs at least 60 calendar days apart.
    `scripts/` of the scratch run is not kept; the spec reads whatever is there and asserts shapes and rules, not exact numbers.
-3. `WPM_LIVE_API=1 PW_PORT=4510 pnpm exec playwright test -c playwright.live.config.ts`
+3. `WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1 PW_PORT=4510 pnpm exec playwright test -c playwright.live.config.ts`
 
 `oversight.spec.ts` (capacity, oversight with a pack, cutover, early warnings, resilience) needs no seed data: each run uses its own
 organization reference, typed in because enforcement is off. The service rate-limits writes, so a run straight after another can meet
@@ -24,7 +24,7 @@ light, a dark and a phone screenshot. Do not run the service's own request tests
 (`cargo run -- start` itself does not).
 
 `pay-gap.spec.ts` (`PAY_GAP_ORG`) and `pay-information.spec.ts` (`PAY_INFO_ORG`) need the service started with
-`WPM_EQUALITY_MONITORING_BASIS` and `WPM_EQUALITY_CATEGORIES='{"sex":["female","male"]}'`, workers with pay and a sex answer (set in the
+`WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS` and `WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES='{"sex":["female","male"]}'`, workers with pay and a sex answer (set in the
 database), and two pay categories. A pay information request is made by the worker through `/api/me`, which needs a token, so the
 spec expects two rows inserted in the database: one overdue from a woman in a category with at least ten of each sex, one open from a
 man in a category with fewer than ten men. It answers one of them, so seed again to rerun.

@@ -79,10 +79,16 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 async fn a_manager_sees_cleared_or_not_and_never_the_status() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
-        std::env::remove_var("WPM_HEALTH_REQUIREMENTS_BASIS");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS");
     }
     let p: Vec<uuid::Uuid> = (0..8).map(|_| uuid::Uuid::new_v4()).collect();
     let [worker_p, office_p, mgr_p, neighbour_p, hr_p, oh_p, _a, _b] =
@@ -138,7 +144,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(get("/api/me/health-requirements".into(), worker.clone()).await.json::<Value>(), json!({ "enabled": false }));
         assert_eq!(post("/api/health-requirements".into(), hr.clone(), json!({ "name": "Hepatitis B" })).await.status_code(), 404);
         assert_eq!(get("/api/health-requirements/clearance".into(), manager.clone()).await.status_code(), 404);
-        unsafe { std::env::set_var("WPM_HEALTH_REQUIREMENTS_BASIS", "Test deployment: occupational health policy OH-1"); }
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS", "Test deployment: occupational health policy OH-1"); }
 
         // ── Requirements: defined by HR; what is required, not why ─────────────────────
         assert_eq!(post("/api/health-requirements".into(), worker.clone(), json!({ "name": "x" })).await.status_code(), 403, "the policy: only HR writes");
@@ -272,7 +278,7 @@ async fn a_manager_sees_cleared_or_not_and_never_the_status() {
         assert_eq!(request.post(&format!("/api/workers/{w}/erase")).add_header("authorization", svc.clone()).await.status_code(), 200);
         assert_eq!(count().await, 0, "erased with the person");
         // Switched off again: the feature disappears.
-        unsafe { std::env::remove_var("WPM_HEALTH_REQUIREMENTS_BASIS"); }
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS"); }
         assert_eq!(get("/api/health-requirements".into(), worker.clone()).await.status_code(), 404);
         let _ = post;
     })

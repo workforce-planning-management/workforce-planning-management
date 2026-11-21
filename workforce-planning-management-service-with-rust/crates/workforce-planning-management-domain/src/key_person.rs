@@ -149,4 +149,26 @@ mod tests {
         assert_eq!(bar(&[]), None);
         assert_eq!(bar(&[2, 4, 3]), Some(4));
     }
+
+    #[test]
+    fn every_status_has_its_token() {
+        let tokens: Vec<&str> = [
+            Status::NoHolder,
+            Status::SinglePointOfFailure,
+            Status::CoveredSingleHolder,
+            Status::Shared,
+        ]
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+        assert_eq!(
+            tokens,
+            [
+                "no_holder",
+                "single_point_of_failure",
+                "covered_single_holder",
+                "shared"
+            ]
+        );
+    }
 }

@@ -84,10 +84,10 @@ describe("the proxy route", () => {
   async function route() {
     vi.resetModules();
     vi.doMock("../../src/lib/server/config", () => ({
-      WPM_API_URL: "http://real.test",
-      WPM_DEMO_API_URL: "",
+      WORKFORCE_PLANNING_MANAGEMENT_API_URL: "http://real.test",
+      WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL: "",
       AUTH_API_URL: "http://auth.test",
-      WPM_PUBLIC_URL: "",
+      WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL: "",
     }));
     return (await import("../../src/routes/api/proxy/[...path]/+server")).GET;
   }

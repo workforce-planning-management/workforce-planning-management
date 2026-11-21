@@ -158,15 +158,15 @@ pub fn gate(
         .map(str::trim)
         .filter(|c| !c.is_empty())
         .ok_or_else(|| {
-            "WPM_EQUALITY_MONITORING_BASIS is set but WPM_EQUALITY_CATEGORIES is not: the categories are yours to define (WPM ships none)".to_string()
+            "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS is set but WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES is not: the categories are yours to define (WPM ships none)".to_string()
         })?;
     let config = Config::parse(categories)?;
     let floor = match floor.map(str::trim).filter(|f| !f.is_empty()) {
         None => DEFAULT_FLOOR,
         Some(text) => {
-            let n: usize = text
-                .parse()
-                .map_err(|_| "WPM_EQUALITY_FLOOR is not a whole number".to_string())?;
+            let n: usize = text.parse().map_err(|_| {
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR is not a whole number".to_string()
+            })?;
             validate_floor(n)?;
             n
         }

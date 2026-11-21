@@ -346,11 +346,23 @@ async fn the_payroll_stub_refuses_a_currency_it_was_not_written_for() {
 struct YenStub;
 
 const YEN_STUB: [(&str, &str); 5] = [
-    ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
-    ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "100000"),
-    ("WPM_PAYROLL_STUB_RATE_PERCENT", "10"),
-    ("WPM_PAYROLL_MONTH_MINUTES", "9600"),
-    ("WPM_CONTRACTED_DAY_MINUTES", "480"),
+    ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
+    (
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+        "100000",
+    ),
+    (
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+        "10",
+    ),
+    (
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+        "9600",
+    ),
+    (
+        "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
+        "480",
+    ),
 ];
 
 impl YenStub {
@@ -466,14 +478,19 @@ struct SixHourDay;
 
 impl SixHourDay {
     fn new() -> Self {
-        unsafe { std::env::set_var("WPM_CONTRACTED_DAY_MINUTES", "360") };
+        unsafe {
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
+                "360",
+            )
+        };
         Self
     }
 }
 
 impl Drop for SixHourDay {
     fn drop(&mut self) {
-        unsafe { std::env::remove_var("WPM_CONTRACTED_DAY_MINUTES") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES") };
     }
 }
 
@@ -517,7 +534,7 @@ async fn timesheet_overtime(request: &axa_test::TestServer, worker: &str) -> Vec
 #[tokio::test]
 #[serial]
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
-// WPM-T405 (follows WPM-T401's "Not tested"): with WPM_CONTRACTED_DAY_MINUTES set to 360, the
+// WPM-T405 (follows WPM-T401's "Not tested"): with WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES set to 360, the
 // timesheet's derived overtime and the payslip's overtime line both count from the deployer's day,
 // scaled by FTE, not from the 450-minute example.
 async fn overtime_counts_from_a_configured_contracted_day() {
@@ -1227,6 +1244,53 @@ async fn employer_cost_lines_follow_the_place_the_class_and_the_wage_base_and_ne
         assert_eq!((injury["class"].clone(), injury["amount_minor"].as_i64()), (json!("low"), Some(base / 200)));
         let capped = line(&a, "unemployment").unwrap();
         assert_eq!((capped["base_minor"].as_i64(), capped["amount_minor"].as_i64()), (Some(150_000), Some(1_500)));
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A period that ends before it starts is refused; a calculated run reopens to draft; a worker with no salary gets no payslip
+// and no row in the benchmark comparison.
+async fn a_reversed_period_a_reopened_run_and_a_worker_without_pay() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let paid = seed_worker!(&request, &org, "E-4101", Some(3_600_000)).await;
+        let unpaid = seed_worker!(&request, &org, "E-4102", None).await;
+        for w in [&paid, &unpaid] {
+            activate!(&request, w).await;
+        }
+        let reversed = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-31", "period_end": "2026-07-01" }))
+            .await;
+        assert_eq!(reversed.status_code(), 422, "{}", reversed.text());
+        let run: Value = request
+            .post("/api/payroll-runs")
+            .json(&json!({ "organization_ref": org, "period_start": "2026-07-01", "period_end": "2026-07-31" }))
+            .await
+            .json();
+        let run_pid = run["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/payroll-runs/{run_pid}/calculate")).await.assert_status_ok();
+        let slips: Value = request.get(&format!("/api/payroll-runs/{run_pid}/payslips")).await.json();
+        let text = slips.to_string();
+        assert!(text.contains(&paid) && !text.contains(&unpaid), "only the salaried worker is paid: {slips}");
+        let reopened = request.post(&format!("/api/payroll-runs/{run_pid}/reopen")).await;
+        assert_eq!(reopened.status_code(), 200, "{}", reopened.text());
+        let back: Value = request.get(&format!("/api/payroll-runs/{run_pid}")).await.json();
+        assert_eq!(back["status"], "draft", "{back}");
+
+        request
+            .post("/api/benchmarks")
+            .json(&json!({ "job_title": "Engineer", "currency": "GBP", "min_minor": 3_000_000, "median_minor": 3_800_000,
+                            "max_minor": 4_600_000, "source": "survey", "as_of": "2026-04-01" }))
+            .await
+            .assert_status_ok();
+        let comparison: Value = request.get(&format!("/api/benchmarks/comparison?organization={org}")).await.json();
+        let rows = comparison["rows"].as_array().unwrap();
+        assert!(rows.iter().any(|r| r["worker_pid"] == paid.as_str()));
+        assert!(!rows.iter().any(|r| r["worker_pid"] == unpaid.as_str()), "no salary, no comparison");
     })
     .await;
 }

@@ -52,8 +52,8 @@ State as of 2026-10-07 (WPM-T97).
   withheld unless every cell passes; the export gives the answers to the worker and a note to anyone else; the audit
   holds no value; erasure removes them. A unit test scans the source so no other code names the table.
 - **Shared cache** (`tests/requests/shared_cache.rs`, `tests/shared_cache_upstream.rs`): ESCO searches cached until invalidated;
-  namespaces separate; against a real Redis (`WPM_TEST_REDIS_URL`) shared between two handles and failing open when down; with a
-  password (`WPM_TEST_REDIS_AUTH_URL`, `..._WRONG_PASSWORD_URL`, `..._NO_PASSWORD_URL`); over TLS (`WPM_TEST_REDIS_TLS_URL` plus
+  namespaces separate; against a real Redis (`WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL`) shared between two handles and failing open when down; with a
+  password (`WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_AUTH_URL`, `..._WRONG_PASSWORD_URL`, `..._NO_PASSWORD_URL`); over TLS (`WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_TLS_URL` plus
   `SSL_CERT_FILE` naming the server's CA, then the same server refused with an empty trust store); and name lookups through a stub
   sibling service (organization names shared, a person's never).
 - **Conversion plans binary** (`tests/enforcement_conversion.rs`, own process; the reference policy plus a `decider` rule): the
@@ -100,7 +100,7 @@ State as of 2026-10-07 (WPM-T97).
 (WPM-T123) and `authentication-verifier` comes from crates.io, so a fresh clone
 builds and tests with no scratch workspace. Start a throwaway Postgres 18 and a
 Redis 8 under **Podman** (`podman compose -f compose.test.yaml up -d --wait`, which
-mounts `postgres-init/`; set `WPM_TEST_REDIS_URL=redis://localhost:6379` so the
+mounts `postgres-init/`; set `WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL=redis://localhost:6379` so the
 Redis-backed shared-cache tests run instead of skipping), then run `cargo test --lib`,
 `cargo test --test main -- --ignored --test-threads=1` (serial — the tests share
 one database), and the enforcement, `enforcement_expenses` and `security`
@@ -117,10 +117,10 @@ binaries, each in its own process. Sign-in enforcement is **on by default**
 crate, the matcher and the complete default-feature service at 95% of lines or more. The service command includes every
 database-backed suite (`--workspace --lib --tests --ignored --timeout 300 -- --test-threads=1`) against PostgreSQL 18 and Redis
 8; the five-minute per-test limit accommodates the deliberate service disruption in the chaos suite. **Measured on 2026-11-19:**
-the complete service is **95.71%** (35,770 of 37,374 lines). Tests for the former low points moved `scheduler.rs` from 25.5% to
+the complete service is **95.71%** (35,770 of 37,374 lines), and **98.23%** (37,408 of 38,081) on 2026-11-21, with Redis (WPM-T602, run locally with `--timeout 1200`). Tests for the former low points moved `scheduler.rs` from 25.5% to
 67.21% (41/61), `tasks/seed.rs` from 34.0% to 68.00% (34/50), `auth/paseto.rs` from 64.9% to 72.62% (61/84), `compat.rs` from
-65.2% to 83.33% (40/48), and `app.rs` from 78.8% to 82.86% (324/391). The domain's separate measurement remains 97.21%
-(7,984 of 8,213 lines; `-p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*'`)
+65.2% to 83.33% (40/48), and `app.rs` from 78.8% to 82.86% (324/391). The domain's separate measurement was 97.21%
+(7,984 of 8,213 lines, 2026-11-19) and is **99.67%** (8,348 of 8,376) on 2026-11-20 (WPM-T602; `-p workforce-planning-management-domain --lib --include-files 'crates/workforce-planning-management-domain/src/*'`)
 and the matcher 98.75% (317 of 321).
 
 The mutually exclusive `keycloak` feature is measured in a separate, reported-only unit run
@@ -144,7 +144,7 @@ the service's unit tests read files from `spec/`, outside the crate, so a copy o
 **Chaos** (`tests/chaos.rs`, WPM-R137): a TCP proxy between the app and Postgres resets, swallows or slows connections, and a seeded monkey flips it
 at random during writes. It asserts every request ends soon as a plain `5xx` that leaks no connection detail, that a refused write leaves
 nothing behind, that every worker present has its one audit row, and that the service answers again once the database does. The seed is printed;
-`WPM_CHAOS_SEED=<n>` replays a run. Its own binary, because it points `DATABASE_URL` at the proxy for the process.
+`WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED=<n>` replays a run. Its own binary, because it points `DATABASE_URL` at the proxy for the process.
 
 ## Front-end edition (`workforce-planning-management-ui-with-svelte`)
 

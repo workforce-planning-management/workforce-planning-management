@@ -335,6 +335,9 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             .json();
         assert_eq!(ok["status"], "accepted");
         assert_eq!(ok["days_moved"], 1, "one stretch");
+        let again = request.post(&format!("/api/rota-swap-requests/{first}/accept")).await;
+        assert_eq!(again.status_code(), 422, "{}", again.text());
+        assert!(again.text().contains("already accepted"), "{}", again.text());
         let now: Value = request
             .get(&format!("/api/rotas/{rota}/on-call"))
             .await
@@ -402,6 +405,73 @@ async fn swap_requests_move_only_the_requesters_days_when_accepted() {
             a.as_str(),
             "declined and cancelled swaps move nothing"
         );
+
+        // If A's days are given to someone else before the swap is taken, there is nothing left to hand over.
+        let fourth: Value = request
+            .post(&url)
+            .json(&json!({ "requester_pid": a, "taker_pid": c, "starts_on": day(21), "ends_on": day(27) }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/rotas/{rota}/overrides"))
+            .json(&json!({ "worker_pid": b, "starts_on": day(21), "ends_on": day(27) }))
+            .await
+            .assert_status_ok();
+        let stale = request.post(&format!("/api/rota-swap-requests/{}/accept", fourth["pid"].as_str().unwrap())).await;
+        assert_eq!(stale.status_code(), 422, "{}", stale.text());
+        assert!(stale.text().contains("no longer on call"), "{}", stale.text());
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A rota refuses a blank name and another organization's member; a description is kept and cleared; its swaps are listed;
+// a window that ends before it starts is refused.
+async fn a_rota_refuses_what_cannot_be_and_lists_its_swaps() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut people = Vec::new();
+        for n in ["A", "B"] {
+            let pid = seed_worker!(&request, &org, format!("RT-{tag}-{n}"), None).await;
+            activate!(&request, &pid).await;
+            people.push(pid);
+        }
+        let stranger = seed_worker!(&request, &an_org(), format!("RT-{tag}-X"), None).await;
+        activate!(&request, &stranger).await;
+        let today = workforce_planning_management::dates::today();
+        let rota = |name: &str, members: Vec<&String>| {
+            json!({ "organization_ref": org, "name": name, "period_days": 7, "starts_on": today.to_string(),
+                    "members": members, "description": "  Out of hours  " })
+        };
+        assert_eq!(request.post("/api/rotas").json(&rota(" ", vec![&people[0]])).await.status_code(), 422, "blank name");
+        let foreign = request.post("/api/rotas").json(&rota("Support", vec![&people[0], &stranger])).await;
+        assert_eq!(foreign.status_code(), 422, "{}", foreign.text());
+        let made: Value = request.post("/api/rotas").json(&rota("Support", vec![&people[0], &people[1]])).await.json();
+        let pid = made["pid"].as_str().unwrap().to_string();
+        let url = format!("/api/rotas/{pid}");
+        let read = || async { request.get(&url).await.json::<Value>() };
+        assert_eq!(read().await["description"], "Out of hours", "trimmed and kept");
+
+        assert_eq!(request.put(&url).json(&json!({ "name": " " })).await.status_code(), 422);
+        request.put(&url).json(&json!({ "description": " " })).await.assert_status_ok();
+        let cleared = read().await;
+        assert!(cleared["description"].is_null(), "a blank description clears it: {cleared}");
+
+        let tomorrow = today + workforce_planning_management::dates::days(1);
+        request
+            .post(&format!("{url}/overrides"))
+            .json(&json!({ "worker_pid": people[1], "starts_on": tomorrow.to_string(), "ends_on": tomorrow.to_string(), "note": "swap" }))
+            .await
+            .assert_status_ok();
+        let view = read().await;
+        assert_eq!(view["overrides"][0]["worker_pid"], people[1].as_str(), "{view}");
+        assert_eq!(view["overrides"][0]["note"], "swap");
+
+        let backwards = request.get(&format!("{url}?from={tomorrow}&to={today}")).await;
+        assert_eq!(backwards.status_code(), 422, "{}", backwards.text());
     })
     .await;
 }

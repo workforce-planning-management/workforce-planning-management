@@ -20,6 +20,19 @@
 | **Expense claim** | A worker's request to be repaid for money spent for work: dated, categorised items in one currency, decided by someone other than the claimant ([expense-claims.md](expense-claims.md)) |
 | **Job level** | A rung on a published career ladder (e.g. Google's L3–L11); not a salary ([job-levels.md](job-levels.md)) |
 | **Pay band / step** | A grade on a pay scale and one pay point within it (entry, intermediate, top), each with the years before eligibility to progress |
+| **Pay point** | One value on a pay band, in minor units; in WPM-R254 a configured, dated, sourced value (Agenda for Change calls the steps pay points) |
+| **Grade (of a post)** | The scale, band and optional pay point a position or assignment is graded at; a reference, not an amount (WPM-R255, WPM-D208) |
+| **Organizational unit** | A node in the organization's management tree (for example directorate, department, team), dated and never deleted (WPM-R257) |
+| **Critical-service floor** | The FTE a critical service needs from a pool to run safely; going under it is `below_floor`, a warning, not a block (WPM-R258) |
+| **Resource manager** | A role that plans who works on what: reads and writes people's allocations, not their own, and no other HR record (WPM-R276) |
+| **Allocation** | A person's planned share of an assignment's FTE for a programme, product or service in a month (WPM-R275); a plan of work, never a measure of effort or performance |
+| **Slack** | A pool-month whose committed demand is below a configured share of supply; no demand recorded is `unknown`, not slack (WPM-R259) |
+| **Scenario version** | An immutable, numbered snapshot of a scenario's levers, lines and forecast, used for comparison and forecast accuracy (WPM-R261, WPM-D212) |
+| **Complementary suppression** | Withholding further cells so that no cell withheld under the floor can be recovered from totals (WPM-D209) |
+| **Deployment name** | `WORKFORCE_PLANNING_MANAGEMENT_DEPLOYMENT_ID`, bound into the database on the first start and checked at every start, so a service never starts against another buyer's database (WPM-R277) |
+| **Support access grant** | A buyer administrator's time-limited, scoped, audited permission for a supplier's engineer to read records (WPM-R267) |
+| **Audit anchor** | A signed copy of the audit chain's head kept outside the database, so a cut or rewritten chain is detected (WPM-R271) |
+| **Destruction record** | The dated list of data, storage and keys destroyed at exit, with each backup's expiry (WPM-R274); signed by the supplier, not certified by the software |
 | **Benchmark**       | Recorded market pay data (min/median/max) for a job title                                        |
 | **Calibration**     | HR moderation pass over submitted reviews before ratings are shared                              |
 | **Candidate pool**  | Retained applicant profiles, consent-bounded                                                     |
@@ -49,7 +62,7 @@
 | **Readiness estimate** | The author's dated judgement, 0 to 100 per cent, of how ready one item on the path to production is, with what it rests on (WPM-R246) |
 | **Readiness**       | Succession rating: `ready_now` / `ready_1y` / `ready_2y`                                         |
 | **Requisition**     | A funded job opening with headcount and a hiring pipeline                                        |
-| **Retention horizon** | `WPM_RETENTION_DAYS` (default 365, floor 30) — soft-deletes past it are swept                  |
+| **Retention horizon** | `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` (default 365, floor 30) — soft-deletes past it are swept                  |
 | **Right to work**   | A check that a person may lawfully work where the work is done, recorded during onboarding where the jurisdiction requires one (for example the UK's right-to-work check); whether there is a check, and what it is, differs by country |
 | **Subject access**  | The one-document export of everything WPM holds for an employee, exclusions named                |
 | **Tombstone URN**   | `person:00000000-…` — the valid-but-resolves-to-no-one ref an erased employee's identity becomes |

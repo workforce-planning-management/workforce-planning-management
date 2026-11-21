@@ -2,13 +2,13 @@
 //!
 //! ```text
 //! workforce-planning-management scheduler --tag wpm    # the tasks that need nothing configured
-//! workforce-planning-management scheduler --tag scim   # only where WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN are set
+//! workforce-planning-management scheduler --tag scim   # only where WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL and WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN are set
 //! workforce-planning-management scheduler --list       # what is scheduled
 //! ```
 //!
 //! Run ONE scheduler per deployment: two would run every task twice. Every task here is idempotent (a second run in the same window
 //! sends and records nothing new), so a double run is untidy, not harmful. A job runs as a child process of the scheduler, so it needs
-//! the same environment as the server (`DATABASE_URL`, `WPM_*`), and a job already running is not started again. Times are UTC. Cron
+//! the same environment as the server (`DATABASE_URL`, `WORKFORCE_PLANNING_MANAGEMENT_*`), and a job already running is not started again. Times are UTC. Cron
 //! fields: second minute hour day-of-month month day-of-week. A job's output goes to the scheduler's own output, so a failure is
 //! visible.
 //!
@@ -113,7 +113,7 @@ pub const JOBS: &[Job] = &[
         cron: "0 0 4 * * *",
         tags: &["wpm"],
     },
-    // SCIM provisioning: needs WPM_SCIM_BASE_URL and WPM_SCIM_TOKEN, and fails every run without them, so it is not tagged `wpm`.
+    // SCIM provisioning: needs WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL and WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN, and fails every run without them, so it is not tagged `wpm`.
     Job {
         name: "scim_push",
         task: "scim_push",

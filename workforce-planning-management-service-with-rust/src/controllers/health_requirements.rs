@@ -5,7 +5,7 @@
 //! This is the narrow exception to "WPM holds no health data", and it is bounded:
 //!
 //! - **Off** until a deployer records the lawful basis they rely on
-//!   (`WPM_HEALTH_REQUIREMENTS_BASIS`). Until then every route answers `404`.
+//!   (`WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS`). Until then every route answers `404`.
 //! - **A status, never a reason.** A record is one of `up_to_date`, `exempt_recorded` or `declined`,
 //!   the day it was recorded and the day it falls due again. There is no column for a diagnosis, a
 //!   product, a batch, or why someone is exempt.
@@ -38,18 +38,23 @@ const ATTRIBUTE: &str = "occupational_health";
 
 /// The recorded lawful basis, or `404`: the feature does not exist until one is recorded.
 fn on() -> Result<String> {
-    rules::gate(crate::compat::env_var("WPM_HEALTH_REQUIREMENTS_BASIS").as_deref())
-        .ok_or(Error::NotFound)
+    rules::gate(
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS")
+            .as_deref(),
+    )
+    .ok_or(Error::NotFound)
 }
 
-/// The small-group floor for aggregates: `WPM_HEALTH_FLOOR`, default 10, at least 5.
+/// The small-group floor for aggregates: `WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR`, default 10, at least 5.
 fn floor() -> usize {
-    match crate::compat::env_var("WPM_HEALTH_FLOOR") {
+    match crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR") {
         None => DEFAULT_FLOOR,
         Some(text) => match text.trim().parse::<usize>() {
             Ok(n) if validate_floor(n).is_ok() => n,
             _ => {
-                tracing::warn!("WPM_HEALTH_FLOOR is not a number of at least 5; using the default");
+                tracing::warn!(
+                    "WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR is not a number of at least 5; using the default"
+                );
                 DEFAULT_FLOOR
             }
         },

@@ -56,10 +56,13 @@ async fn nobody_decides_their_own_claim() {
     // Every signed-in caller passes the blanket guard; the controller decides.
     let open_policy = r#"{"rules":[{"effect":"allow","actions":["read","write","delete","destructive"],"when":{}}]}"#;
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY", open_policy);
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY", open_policy);
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
     }
     let people: Vec<uuid::Uuid> = (0..5).map(|_| uuid::Uuid::new_v4()).collect();
     let [emp, mgr, hr, stranger, peer] = [0, 1, 2, 3, 4].map(|i| people[i]);

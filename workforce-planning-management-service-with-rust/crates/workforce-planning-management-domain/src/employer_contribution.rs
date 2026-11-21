@@ -272,4 +272,23 @@ mod tests {
         assert!(cost_lines(&[], None, -1, 0).is_err());
         assert!(cost_lines(&[], None, 0, -1).is_err());
     }
+
+    #[test]
+    fn an_overflowing_total_is_refused() {
+        let cost = |amount_minor| Cost {
+            name: "x".into(),
+            class: None,
+            rate_bp: 1,
+            base_minor: 1,
+            amount_minor,
+        };
+        let outcome = Outcome {
+            costs: vec![cost(i64::MAX), cost(1)],
+            unresolved: Vec::new(),
+        };
+        assert_eq!(
+            outcome.total_minor(),
+            Err("employer cost overflows".to_string())
+        );
+    }
 }

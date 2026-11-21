@@ -81,31 +81,31 @@ cargo run --release --manifest-path tests/load/Cargo.toml -- run -s write-heavy
 
 ```bash
 # Service URL (default: http://localhost:1241)
-export WPM_BASE_URL=http://localhost:1241
+export WORKFORCE_PLANNING_MANAGEMENT_BASE_URL=http://localhost:1241
 
 # Test duration in seconds (default: 60)
-export WPM_LOAD_TEST_DURATION=300
+export WORKFORCE_PLANNING_MANAGEMENT_LOAD_TEST_DURATION=300
 
 # Target RPS (default: 100)
-export WPM_TARGET_RPS=500
+export WORKFORCE_PLANNING_MANAGEMENT_TARGET_RPS=500
 
 # Number of workers (default: 4)
-export WPM_LOAD_TEST_WORKERS=8
+export WORKFORCE_PLANNING_MANAGEMENT_LOAD_TEST_WORKERS=8
 
 # Maximum requests per worker (default: 10000)
-export WPM_MAX_REQUESTS=100000
+export WORKFORCE_PLANNING_MANAGEMENT_MAX_REQUESTS=100000
 
 # Warmup seconds (default: 10)
-export WPM_WARMUP_SECONDS=30
+export WORKFORCE_PLANNING_MANAGEMENT_WARMUP_SECONDS=30
 
 # Rampup seconds (default: 20)
-export WPM_RAMPUP_SECONDS=60
+export WORKFORCE_PLANNING_MANAGEMENT_RAMPUP_SECONDS=60
 
 # Rampdown seconds (default: 10)
-export WPM_RAMPDOWN_SECONDS=30
+export WORKFORCE_PLANNING_MANAGEMENT_RAMPDOWN_SECONDS=30
 
 # Scenario (default: mixed)
-export WPM_SCENARIO=mixed
+export WORKFORCE_PLANNING_MANAGEMENT_SCENARIO=mixed
 ```
 
 ## Output
@@ -197,7 +197,7 @@ choco install k6
 
 Create a k6 script (see `k6/` directory):
 ```bash
-k6 run -e WPM_BASE_URL=http://localhost:1241 k6/load-test.js
+k6 run -e WORKFORCE_PLANNING_MANAGEMENT_BASE_URL=http://localhost:1241 k6/load-test.js
 ```
 
 ### Option 2: Distributed Rust Workers
@@ -310,7 +310,7 @@ jobs:
 ### Common Problems
 
 1. **Connection Refused** - Service not running or wrong URL
-   - Check `WPM_BASE_URL`
+   - Check `WORKFORCE_PLANNING_MANAGEMENT_BASE_URL`
    - Verify service is running: `curl http://localhost:1241/_health/live`
 
 2. **High Error Rate** - Service returning errors

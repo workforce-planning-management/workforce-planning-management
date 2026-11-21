@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Restore a backup into an EMPTY database, then replay erasures (WPM-R89).
 #
-#   WPM_BIN=/path/to/workforce-planning-management \
+#   WORKFORCE_PLANNING_MANAGEMENT_BIN=/path/to/workforce-planning-management \
 #     scripts/restore.sh DUMP TARGET_DATABASE_URL [LEDGER_FILE]
 #
 # - Refuses a target that already has tables.
 # - Verifies DUMP.sha256 when it is there.
-# - A DUMP ending .enc is an encrypted backup (WPM-R117): set WPM_BACKUP_KEY_FILE to its key file.
+# - A DUMP ending .enc is an encrypted backup (WPM-R117): set WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE to its key file.
 #   The .hmac tag is checked first (a wrong key or a damaged or altered file is named as such),
 #   then it is decrypted into a private temporary directory that is removed on exit.
-# - Replays erasures before you start the service. WPM_BIN is required for that;
+# - Replays erasures before you start the service. WORKFORCE_PLANNING_MANAGEMENT_BIN is required for that;
 #   pass --skip-replay as the first argument to restore without it (the script
 #   then says loudly that erased people may have come back).
 # - LEDGER_FILE is an export from scripts/export-erasure-ledger.sh; without it
@@ -24,7 +24,7 @@ ledger="${3:-}"
 
 # Decide about the replay first, so a missing binary stops us before anything is restored.
 if [ "$skip" != "1" ]; then
-  : "${WPM_BIN:?set WPM_BIN to the service binary so erasures can be replayed (or pass --skip-replay)}"
+  : "${WORKFORCE_PLANNING_MANAGEMENT_BIN:?set WORKFORCE_PLANNING_MANAGEMENT_BIN to the service binary so erasures can be replayed (or pass --skip-replay)}"
 fi
 
 if [ -f "$dump.sha256" ]; then
@@ -45,10 +45,10 @@ trap cleanup EXIT
 restore_from="$dump"
 case "$dump" in
   *.enc)
-    : "${WPM_BACKUP_KEY_FILE:?this backup is encrypted: set WPM_BACKUP_KEY_FILE to its key file}"
-    [ -r "$WPM_BACKUP_KEY_FILE" ] || { echo "WPM_BACKUP_KEY_FILE is not a readable file" >&2; exit 2; }
+    : "${WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE:?this backup is encrypted: set WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE to its key file}"
+    [ -r "$WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE" ] || { echo "WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE is not a readable file" >&2; exit 2; }
     [ -f "$dump.hmac" ] || { echo "refusing: $dump.hmac is missing, so the file cannot be checked before it is decrypted" >&2; exit 4; }
-    pass="$(head -n1 "$WPM_BACKUP_KEY_FILE")"
+    pass="$(head -n1 "$WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE")"
     mac_key="$(printf 'wpm-backup-mac:%s' "$pass" | openssl dgst -sha256 -r | cut -d' ' -f1)"
     expected="$(cat "$dump.hmac")"
     actual="$(openssl dgst -sha256 -mac HMAC -macopt "hexkey:$mac_key" -r "$dump" | cut -d' ' -f1)"
@@ -59,7 +59,7 @@ case "$dump" in
     umask 077
     work="$(mktemp -d)"
     restore_from="$work/restore.dump"
-    openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass "file:$WPM_BACKUP_KEY_FILE" -in "$dump" -out "$restore_from"
+    openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass "file:$WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE" -in "$dump" -out "$restore_from"
     ;;
   *) echo "warning: restoring an unencrypted backup" >&2 ;;
 esac
@@ -76,10 +76,10 @@ echo "restored in $(( $(date +%s) - start )) seconds" >&2
 
 if [ "$skip" = "1" ]; then
   echo "WARNING: erasures were NOT replayed. Anyone erased after this backup is back." >&2
-  echo "Run: DATABASE_URL=… \$WPM_BIN task replay_erasures [file:LEDGER_FILE] before starting the service." >&2
+  echo "Run: DATABASE_URL=… \$WORKFORCE_PLANNING_MANAGEMENT_BIN task replay_erasures [file:LEDGER_FILE] before starting the service." >&2
   exit 0
 fi
 args=()
 [ -n "$ledger" ] && args+=("file:$ledger")
-DATABASE_URL="$target" APP_ENV="${APP_ENV:-demo}" "$WPM_BIN" task replay_erasures ${args[@]+"${args[@]}"}
+DATABASE_URL="$target" APP_ENV="${APP_ENV:-demo}" "$WORKFORCE_PLANNING_MANAGEMENT_BIN" task replay_erasures ${args[@]+"${args[@]}"}
 echo "erasures replayed" >&2

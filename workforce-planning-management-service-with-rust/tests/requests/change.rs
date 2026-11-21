@@ -101,3 +101,58 @@ async fn the_department_audit_and_recent_event_views_answer_and_need_their_param
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// An over-long description, an unknown impact and a readiness bar outside 1 to 5 are refused; the list counts each
+// initiative's roles and skills; a created role has no reskilling coverage, as it has no holders to reskill.
+async fn the_initiative_list_counts_impacts_and_a_created_role_has_no_coverage() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let long = "x".repeat(1025);
+        let too_long = json!({ "name": format!("Long {tag}"), "kind": "ai_assistance", "description": long });
+        assert_eq!(request.post("/api/change-initiatives").json(&too_long).await.status_code(), 422);
+        let initiative: Value = request
+            .post("/api/change-initiatives")
+            .json(&json!({ "name": format!("Counted {tag}"), "kind": "ai_assistance", "description": "Two roles, one skill" }))
+            .await
+            .json();
+        let id = initiative["pid"].as_str().unwrap().to_string();
+        let base = format!("/api/change-initiatives/{id}");
+        let role = |title: String| {
+            let request = &request;
+            async move {
+                let r: Value = request.post("/api/role-profiles").json(&json!({ "job_title": title })).await.json();
+                r["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let (reshaped, created) = (role(format!("Clerk {tag}")).await, role(format!("Prompt lead {tag}")).await);
+        let impact = |role: &str, impact: &str| json!({ "role_profile_pid": role, "impact": impact, "timeframe": "within_1y" });
+        assert_eq!(request.put(&format!("{base}/role-impacts")).json(&impact(&reshaped, "vanished")).await.status_code(), 422);
+        for (r, i) in [(&reshaped, "reshaped"), (&created, "created")] {
+            request.put(&format!("{base}/role-impacts")).json(&impact(r, i)).await.assert_status_ok();
+        }
+        let skill: Value = request
+            .post("/api/skills")
+            .json(&json!({ "name": format!("Prompting {tag}"), "category": "technical" }))
+            .await
+            .json();
+        request
+            .put(&format!("{base}/skill-shifts"))
+            .json(&json!({ "skill_pid": skill["pid"], "direction": "rising", "note": "new tooling" }))
+            .await
+            .assert_status_ok();
+
+        let list: Value = request.get("/api/change-initiatives").await.json();
+        let mine = list.as_array().unwrap().iter().find(|i| i["pid"] == id.as_str()).expect("listed");
+        assert_eq!((mine["roles_affected"].as_u64(), mine["skills_shifting"].as_u64()), (Some(2), Some(1)), "{mine}");
+
+        assert_eq!(request.get(&format!("{base}/readiness?min_proficiency=6")).await.status_code(), 422);
+        let readiness: Value = request.get(&format!("{base}/readiness")).await.json();
+        let roles = readiness["roles"].as_array().or_else(|| readiness["role_impacts"].as_array()).expect("roles in the readiness view");
+        let new_role = roles.iter().find(|r| r["impact"] == "created").expect("the created role");
+        assert!(new_role["reskill_plan_coverage"].is_null(), "{new_role}");
+    })
+    .await;
+}

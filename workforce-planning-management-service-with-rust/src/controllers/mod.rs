@@ -9,6 +9,7 @@ pub mod absence_categories;
 pub mod acquisition;
 pub mod adjustments;
 pub mod ai_register;
+pub mod allocations;
 pub mod announcements;
 pub mod appraisals;
 pub mod assessments;
@@ -138,7 +139,7 @@ pub fn unprocessable(message: &str) -> Error {
 /// A `422` naming the count and the ceiling.
 pub fn ensure_within_ceiling(count: u64) -> Result<()> {
     let ceiling = crate::rules::scale::parse_ceiling(
-        crate::compat::env_var("WPM_MAX_ORG_WORKERS").as_deref(),
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS").as_deref(),
     );
     crate::rules::scale::check(count, ceiling).map_err(|m| unprocessable(&m))
 }
@@ -247,7 +248,7 @@ pub(crate) fn row_json<T: serde::Serialize>(row: &T) -> Result<serde_json::Value
 /// Largest page any collection read will serve. A bigger `limit` is a `422`, not clamped.
 pub const MAX_LIMIT: u64 = 500;
 
-/// The key that signs every list's cursors (WPM-D189): `WPM_CURSOR_KEY`, or one made for this process.
+/// The key that signs every list's cursors (WPM-D189): `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY`, or one made for this process.
 static CURSOR_KEY: std::sync::OnceLock<CursorKey> = std::sync::OnceLock::new();
 
 /// A key of 32 random bytes, for a process given none. Two v4 ids are 244 random bits from the operating system's
@@ -259,7 +260,7 @@ fn random_cursor_key() -> CursorKey {
     CursorKey::new(&secret).expect("32 bytes is long enough")
 }
 
-/// The cursor key from `WPM_CURSOR_KEY`'s value: base64url of at least 32 bytes. `None` means one is made for this process.
+/// The cursor key from `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY`'s value: base64url of at least 32 bytes. `None` means one is made for this process.
 ///
 /// # Errors
 ///
@@ -273,10 +274,10 @@ pub fn cursor_key_from(value: Option<&str>) -> std::result::Result<Option<Cursor
     };
     let secret = URL_SAFE_NO_PAD
         .decode(value.trim_end_matches('='))
-        .map_err(|_| "WPM_CURSOR_KEY is not base64url".to_string())?;
+        .map_err(|_| "WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY is not base64url".to_string())?;
     CursorKey::new(&secret).map(Some).map_err(|short| {
         format!(
-            "WPM_CURSOR_KEY is {} bytes; it needs at least 32",
+            "WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY is {} bytes; it needs at least 32",
             short.len
         )
     })

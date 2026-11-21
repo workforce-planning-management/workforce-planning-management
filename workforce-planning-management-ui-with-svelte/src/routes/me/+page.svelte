@@ -25,6 +25,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
   import TeamEquipment from "#lib/components/TeamEquipment.svelte";
   import MyPayInformation from "#lib/components/MyPayInformation.svelte";
   import PayPosition from "#lib/components/PayPosition.svelte";
+  import MyAllocations from "#lib/components/MyAllocations.svelte";
   import JobLevel from "#lib/components/JobLevel.svelte";
   import DeclaredSkills from "#lib/components/DeclaredSkills.svelte";
   import EmergencyContacts from "#lib/components/EmergencyContacts.svelte";
@@ -97,6 +98,7 @@ import TeamQualifications from "#lib/components/TeamQualifications.svelte";
   <DeclaredSkills {workerPid} />
   <JobLevel {workerPid} />
   <PayPosition {workerPid} />
+  <MyAllocations {workerPid} />
   <MyPayInformation {workerPid} />
   <MyPolicies {workerPid} />
   <MyMandatoryLearning {workerPid} />

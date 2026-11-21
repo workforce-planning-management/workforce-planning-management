@@ -1210,4 +1210,46 @@ mod tests {
         assert_eq!(lines[0].spent_minor, 0);
         assert_eq!(lines[0].remaining_minor, Some(1_000));
     }
+
+    #[test]
+    fn rounding_is_half_away_from_zero_on_both_sides() {
+        assert_eq!(divide(5, 2), Some(3));
+        assert_eq!(divide(-5, 2), Some(-3));
+        assert_eq!(divide(-4, 2), Some(-2));
+    }
+
+    #[test]
+    fn an_unresolved_cost_has_no_figure_and_an_impossible_one_is_unresolved_pay() {
+        let missing = HoursCost::Unresolved {
+            missing: vec!["on_cost"],
+        };
+        assert_eq!(missing.resolved(), None);
+        let huge = hours_cost(u32::MAX, Some((i64::MAX, "GBP")), Some(1_000_000), Some(1));
+        assert_eq!(
+            huge,
+            HoursCost::Unresolved {
+                missing: vec!["pay"]
+            }
+        );
+    }
+
+    #[test]
+    fn a_present_value_beyond_the_range_is_unmeasured() {
+        let flows = [
+            Flow {
+                period: 0,
+                amount_minor: -1,
+            },
+            Flow {
+                period: 0,
+                amount_minor: i64::MAX,
+            },
+            Flow {
+                period: 0,
+                amount_minor: i64::MAX,
+            },
+        ];
+        let v = assess(&flows, 0);
+        assert_eq!((v.npv_minor, v.absent), (None, Some(Absent::OutOfRange)));
+    }
 }

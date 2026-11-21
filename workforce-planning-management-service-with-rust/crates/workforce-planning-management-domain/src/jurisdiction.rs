@@ -1028,16 +1028,16 @@ pub fn resolve_entry(
         Combine::MostSpecific => resolved(found[0].1.value.clone(), vec![found[0]]),
         Combine::StrictestMax | Combine::StrictestMin => {
             let mut best = found[0];
+            // A strictest entry's shape is a number or a flag, so every validated value has a rank; one without is
+            // never preferred.
             for pair in &found[1..] {
-                let (Some(now), Some(new)) = (best.1.value.rank(), pair.1.value.rank()) else {
-                    continue;
-                };
-                let stricter = if entry.combine == Combine::StrictestMax {
-                    new < now
-                } else {
-                    new > now
-                };
-                if stricter {
+                if let (Some(now), Some(new)) = (best.1.value.rank(), pair.1.value.rank())
+                    && (if entry.combine == Combine::StrictestMax {
+                        new < now
+                    } else {
+                        new > now
+                    })
+                {
                     best = *pair;
                 }
             }
@@ -1717,5 +1717,63 @@ mod tests {
             })
             .collect();
         assert_eq!(listed, code);
+    }
+
+    #[test]
+    fn layers_and_statuses_round_trip_their_stored_names() {
+        for layer in [Layer::Supranational, Layer::National, Layer::Subnational] {
+            assert_eq!(Layer::parse(layer.as_str()), Some(layer));
+        }
+        assert_eq!(Layer::parse("country"), None);
+        for status in [Status::Example, Status::Unverified, Status::Read] {
+            assert_eq!(Status::parse(status.as_str()), Some(status));
+        }
+        assert_eq!(Status::parse("checked"), None);
+    }
+
+    #[test]
+    fn each_accessor_answers_only_for_its_own_shape() {
+        let date = Value::Date(day(2026, 1, 1));
+        let number = Value::Integer(5);
+        let flag = Value::Flag(true);
+        let set = Value::Set(vec![json!(1), json!(7)]);
+        let range = Value::Range {
+            min: Some(1),
+            max: Some(9),
+        };
+        assert_eq!(date.as_date(), Some(day(2026, 1, 1)));
+        assert_eq!(number.as_date(), None);
+        assert_eq!(number.as_integer(), Some(5));
+        assert_eq!(flag.as_integer(), None);
+        assert_eq!(flag.as_flag(), Some(true));
+        assert_eq!(number.as_flag(), None);
+        assert_eq!(set.as_weekdays(), Some(vec![1, 7]));
+        assert_eq!(number.as_weekdays(), None);
+        assert_eq!(
+            Value::Set(vec![json!(300)]).as_weekdays(),
+            None,
+            "not a weekday number"
+        );
+        assert_eq!(flag.rank(), Some(1));
+        assert_eq!(Value::Flag(false).rank(), Some(0));
+        assert_eq!(number.rank(), Some(5));
+        assert_eq!(set.rank(), None);
+        assert_eq!((range_min(&range), range_max(&range)), (Some(1), Some(9)));
+        assert_eq!((range_min(&number), range_max(&number)), (None, None));
+    }
+
+    #[test]
+    fn a_names_list_must_be_a_list_of_at_most_64() {
+        let key = "flexible_working.refusal_reasons";
+        let not_a_list = validate(key, &json!("too_costly")).unwrap_err();
+        assert!(
+            not_a_list.contains("must be a list of names"),
+            "{not_a_list}"
+        );
+        let many: Vec<String> = (0..65).map(|i| format!("reason_{i}")).collect();
+        let too_many = validate(key, &json!(many)).unwrap_err();
+        assert!(too_many.contains("at most 64"), "{too_many}");
+        let sixty_four: Vec<String> = (0..64).map(|i| format!("reason_{i}")).collect();
+        assert!(validate(key, &json!(sixty_four)).is_ok());
     }
 }

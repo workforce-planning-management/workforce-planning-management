@@ -107,9 +107,15 @@ fn a_goal() -> Value {
 async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let (me, boss, peer) = (
         uuid::Uuid::new_v4(),
@@ -245,6 +251,20 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
             .json(&json!({ "to": "in_progress" }))
             .await
             .assert_status_ok();
+        // A check-in with a status that is not one, a move back to a status a goal cannot return to, and an outcome that is
+        // not one are refused.
+        let bad_check_in = request
+            .post(&format!("/api/me/goals/{goal}/check-ins"))
+            .add_header("authorization", as_me.clone())
+            .json(&json!({ "status": "fine" }))
+            .await;
+        assert_eq!(bad_check_in.status_code(), 422, "{}", bad_check_in.text());
+        let backwards = request
+            .post(&format!("/api/me/goals/{goal}/status"))
+            .add_header("authorization", as_me.clone())
+            .json(&json!({ "to": "proposed" }))
+            .await;
+        assert_eq!(backwards.status_code(), 422, "{}", backwards.text());
 
         // The review tie-in.
         let cycle: Value = request
@@ -268,6 +288,12 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
         assert_eq!(refused.status_code(), 403, "payroll");
 
         let outcome = format!("/api/me/reviews/{review}/goals/{goal}/outcome");
+        let unknown = request
+            .put(&outcome)
+            .add_header("authorization", as_boss.clone())
+            .json(&json!({ "outcome": "smashed_it" }))
+            .await;
+        assert_eq!(unknown.status_code(), 422, "{}", unknown.text());
         request
             .put(&outcome)
             .add_header("authorization", as_boss.clone())
@@ -355,9 +381,15 @@ async fn a_goal_is_agreed_followed_reviewed_and_frozen() {
 async fn the_rollup_counts_by_department_with_a_floor() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
     let hr = bearer(sign_as(&kid, "hr-rollup", &[("hr", &["true"])]));
@@ -420,9 +452,15 @@ async fn a_skill_goal_shows_the_declared_level_beside_its_target() {
     let as_me = bearer(sign_as(&kid, &me.to_string(), &[]));
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     {
         request::<App, _, _>(|request, _ctx| async move {

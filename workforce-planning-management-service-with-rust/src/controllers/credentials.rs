@@ -1,6 +1,6 @@
 //! Verifiable credentials out (WPM-R157, WPM-D109): a verified CPD entry issued as an Open Badges 3.0 credential, signed as a
 //! `vc+jwt` (`EdDSA`), with a `Bitstring Status List` a verifier can read. WPM keeps the **issuance record only**: the credential is
-//! returned once and not stored, and it names no person. The signing key is held outside the database (`WPM_CREDENTIAL_SIGNING_KEY`).
+//! returned once and not stored, and it names no person. The signing key is held outside the database (`WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY`).
 //! The issuer's public key and the status list are public by necessity (a verifier has no account here) and hold no personal data.
 //! Spec: `spec/skills-and-training.md`.
 
@@ -32,16 +32,26 @@ struct Issuer {
 fn issuer() -> Result<Issuer> {
     let off = || {
         unprocessable(
-            "credential issuing is not set up on this deployment (WPM_CREDENTIAL_ISSUER and WPM_CREDENTIAL_SIGNING_KEY)",
+            "credential issuing is not set up on this deployment (WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER and WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY)",
         )
     };
-    let id = crate::compat::env_var("WPM_CREDENTIAL_ISSUER").ok_or_else(off)?;
-    let id = check_url(&id).map_err(|e| unprocessable(&format!("WPM_CREDENTIAL_ISSUER: {e}")))?;
+    let id = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER")
+        .ok_or_else(off)?;
+    let id = check_url(&id).map_err(|e| {
+        unprocessable(&format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER: {e}"
+        ))
+    })?;
     let id = id.trim_end_matches('/').to_string();
-    let seed = crate::compat::env_var("WPM_CREDENTIAL_SIGNING_KEY").ok_or_else(off)?;
-    let seed = rules::parse_seed(&seed)
-        .map_err(|e| unprocessable(&format!("WPM_CREDENTIAL_SIGNING_KEY: {e}")))?;
-    let name = crate::compat::env_var("WPM_CREDENTIAL_ISSUER_NAME").unwrap_or_else(|| id.clone());
+    let seed = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY")
+        .ok_or_else(off)?;
+    let seed = rules::parse_seed(&seed).map_err(|e| {
+        unprocessable(&format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY: {e}"
+        ))
+    })?;
+    let name = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER_NAME")
+        .unwrap_or_else(|| id.clone());
     Ok(Issuer {
         kid: format!("{id}#key-1"),
         list_url: format!("{id}/api/credentials/status-list"),

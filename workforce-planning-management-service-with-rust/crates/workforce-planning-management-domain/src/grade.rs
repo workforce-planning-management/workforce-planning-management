@@ -120,4 +120,12 @@ mod tests {
         assert!(validate_effective_on(d(2020, 1, 1), d(2026, 10, 6)).is_ok());
         assert!(validate_effective_on(d(2026, 10, 7), d(2026, 10, 6)).is_err());
     }
+
+    #[test]
+    fn a_stored_ladder_resolves_its_levels_and_names_a_missing_one() {
+        let stored: levels::StoredFramework = levels::find("google-levels").unwrap().into();
+        assert_eq!(resolve_level_in(&stored, "L5"), Ok(5));
+        let err = resolve_level_in(&stored, " L99 ").unwrap_err();
+        assert!(err.contains("has no level \"L99\""), "{err}");
+    }
 }

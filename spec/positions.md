@@ -22,7 +22,7 @@ right ([strategic-workforce-planning.md](strategic-workforce-planning.md), [enga
   fills it, and to the post funding of the worker who holds it. Each link is one pid; nothing is copied.
 - **Views.** An **establishment view per cost centre**: budgeted, held, vacant, over, and by state. A position's holder is HR-only
   (a manager sees the count and the state, as with plan lines); the establishment totals have no holder in them.
-- **Not done.** No per-person time allocation across positions (WPM-D45, WPM-D59); no salary on a position; no automatic
+- **Not done.** No per-person time allocation across positions (WPM-D45, WPM-D59; a person's allocation to *work* is WPM-R275, which leaves the seat unchanged); no salary on a position; no automatic
   requisition on `open`.
 
 **Built, pure core only (WPM-T278).** `rules::position`: the six states and fifteen moves (`planned → approved → open → filled`, `frozen`
@@ -70,6 +70,9 @@ added, removed, larger, smaller or the same, and **moved** when the departments 
 in a role under the floor (10) is withheld, and so is the change that would give it back, though its direction is not. **Not built:**
 the cost and skills difference of the roles added and removed (it needs a unit cost per role the plan cost view takes from other
 data); a way to draw or edit the target on the screen (it is set through the API); a target per scenario within one plan.
+
+**Proposed 2026-11-20:** a grade per position, the establishment by band and pay point, and R153's cost and skills difference
+(WPM-R255, WPM-R263 in [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md)).
 
 ## Design decisions
 

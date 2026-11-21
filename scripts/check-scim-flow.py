@@ -7,10 +7,10 @@ ListResponse), `PUT /Users/{id}` (a replacement; 404 for an unknown id). It also
 core User and enterprise extension that WPM is meant to send, any contact detail (`emails`, `phoneNumbers`, `addresses`, `name`,
 `costCenter`), an enterprise attribute without its schema URN, or a `manager.value` that is not an id this server issued.
 
-    WPM_SCIM_TOKEN=some-token python3 scripts/check-scim-flow.py [http://localhost:1241] [--retry]
+    WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN=some-token python3 scripts/check-scim-flow.py [http://localhost:1241] [--retry]
 
-Start the service first with `WPM_REQUIRE_AUTH=0` against a database holding nothing real. This script runs `cargo run -q -- task
-scim_push` in the service folder with `WPM_SCIM_BASE_URL` pointed at its own server, `WPM_SCIM_TOKEN` and `WPM_SCIM_ORGANIZATION` set to
+Start the service first with `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0` against a database holding nothing real. This script runs `cargo run -q -- task
+scim_push` in the service folder with `WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL` pointed at its own server, `WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN` and `WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION` set to
 a fresh organization reference, so it needs the same DATABASE_URL in its environment and only sees its own workers. `--retry` also waits
 out the one-minute back-off after a 503 and checks the second try.
 """
@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 API = next((a for a in sys.argv[1:] if a.startswith("http")), "http://localhost:1241").rstrip("/") + "/api"
 RETRY = "--retry" in sys.argv
-TOKEN = os.environ.get("WPM_SCIM_TOKEN", "")
+TOKEN = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN", "")
 SERVICE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "workforce-planning-management-service-with-rust")
 PORT = 9100
 CORE = "urn:ietf:params:scim:schemas:core:2.0:User"
@@ -159,7 +159,7 @@ def hire(number, title="Carer", manager=None):
 
 def push():
     """Run the task; returns (summary dict, exit code, all text it printed)."""
-    env = {**os.environ, "WPM_SCIM_BASE_URL": f"http://127.0.0.1:{PORT}/scim/v2", "WPM_SCIM_TOKEN": TOKEN, "WPM_SCIM_ORGANIZATION": ORG}
+    env = {**os.environ, "WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL": f"http://127.0.0.1:{PORT}/scim/v2", "WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN": TOKEN, "WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION": ORG}
     out = subprocess.run(["cargo", "run", "-q", "--", "task", "scim_push"], cwd=SERVICE_DIR, env=env, capture_output=True, text=True, timeout=600)
     text = out.stdout + "\n" + out.stderr
     line = next((l for l in text.splitlines() if l.startswith("{")), "{}")
@@ -172,7 +172,7 @@ def by_external(pid):
 
 def main():
     if not TOKEN:
-        sys.exit("set WPM_SCIM_TOKEN")
+        sys.exit("set WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN")
     threading.Thread(target=HTTPServer(("127.0.0.1", PORT), Scim).serve_forever, daemon=True).start()
 
     print("The first push (a manager and two reports):")

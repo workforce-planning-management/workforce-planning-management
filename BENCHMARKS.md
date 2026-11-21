@@ -197,13 +197,13 @@ What it shows:
   batch of 2,000 workers, mostly decoding rows and four round trips; the next step is SQL aggregates, which has not been done.
 - **The plan views still read every worker of the planned departments**, and above 10,000 of them requests fail
   (`500 … Connection pool timed out`: each request holds the async runtime for about a second). That is why
-  `WPM_MAX_ORG_WORKERS` (default **10,000** when this was written; **200,000** since WPM-D95) still guards them and only them.
+  `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` (default **10,000** when this was written; **200,000** since WPM-D95) still guards them and only them.
 - The service does about 50,000 requests/s on a route that touches nothing (`/_ping` then, `/_health/live` since axa 0.11); the rest is database and work per request.
 
 What it does **not** show: any other route; mixed traffic or writes; more than 8 connections; a database on another
 host or a managed one; sign-in enforcement (a token check adds work to every request); a cold cache; a long run (10 seconds
 per route, once, no repeat to give a spread). One run on one laptop is a sketch of the shape, not a capacity plan: repeat it on your hardware before
-relying on any figure, and raise `WPM_MAX_ORG_WORKERS` only after doing so. It is **not** a CI job, because shared runners are too noisy to compare.
+relying on any figure, and raise `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` only after doing so. It is **not** a CI job, because shared runners are too noisy to compare.
 Other whole-table reads exist (about fifty queries load a `workers` or related table with `.all()`); of those, the directory, the capacity view and the
 plan forecast and cost views are bounded or paged, and the rest are not measured.
 
@@ -277,7 +277,7 @@ Two routes remain: working time, and the plan forecast and cost (still refused o
 The two views counted every employed worker of the planned departments in memory. They now read groups: employed people grouped by
 department, type, FTE and engagement end (a few hundred rows), the declared skill levels as counts, the few people named by an open plan to
 convert, and the salaries of one currency; the answers are the same (`plan_views_count_every_kind_of_person_once`, **mutation-checked**).
-The ceiling `WPM_MAX_ORG_WORKERS` defaults to 200,000. The load test's Postgres now gets 512 MB of shared memory: with the container's
+The ceiling `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS` defaults to 200,000. The load test's Postgres now gets 512 MB of shared memory: with the container's
 default 64 MB, parallel queries failed with "could not resize shared memory segment", which a deployer's database should also have room for.
 
 At 200,000 workers, 8 connections, 20 database connections:

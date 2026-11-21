@@ -3,7 +3,7 @@
 -- assessment, retention) resolves the chain from it; a reader about one worker uses that worker's `work_jurisdiction`.
 --
 -- There is no `organizations` table (an organization is a reference), so the setting has a table of its own, keyed by the
--- reference. Absent or `NULL` is unknown: the reader falls back to its `WPM_*` setting and then its default, never to a guess.
+-- reference. Absent or `NULL` is unknown: the reader falls back to its `WORKFORCE_PLANNING_MANAGEMENT_*` setting and then its default, never to a guess.
 
 CREATE TABLE IF NOT EXISTS organization_settings (
                      organization_ref VARCHAR(255) PRIMARY KEY,

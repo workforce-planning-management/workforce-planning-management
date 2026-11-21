@@ -530,4 +530,17 @@ The baseline for Inline variant at this level is 2 — prose, not the marker.
         assert!(is_management_track("Senior developer - management"));
         assert!(!is_management_track("Head of IT service management"));
     }
+
+    #[test]
+    fn every_redistribution_has_its_token() {
+        let tokens: Vec<&str> = [
+            Redistribution::Open,
+            Redistribution::InternalOnly,
+            Redistribution::Unknown,
+        ]
+        .iter()
+        .map(|r| r.token())
+        .collect();
+        assert_eq!(tokens, ["open", "internal_only", "unknown"]);
+    }
 }

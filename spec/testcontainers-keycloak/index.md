@@ -32,8 +32,8 @@ real Keycloak, in `workforce-planning-management-service-with-rust/tests/keycloa
   realm-role, group, and `organization_ref` mappers from `spec/auth.md`;
   users `hr-user` (`wpm-hr`, `wpm-payroll`, group `/org/engineering`) and
   `plain-user` (no roles).
-- Wiring: the test fetches real access tokens, sets `WPM_KEYCLOAK_ISSUER`,
-  `WPM_KEYCLOAK_AUDIENCE`, and `WPM_KEYCLOAK_JWKS_URL` from the container's
+- Wiring: the test fetches real access tokens, sets `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER`,
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE`, and `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` from the container's
   mapped port, boots the app, and calls secured routes. It is its own test
   binary because the auth `OnceLock`s are process-wide.
 - Run (Podman; rootless Podman cannot run the Ryuk reaper):

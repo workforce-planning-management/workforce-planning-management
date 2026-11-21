@@ -262,7 +262,7 @@ Not record types but the lifecycle over all of them: the
 fields scrubbed to a tombstone `person:` URN, authored free text
 scrubbed, row soft-deleted; payroll rows remain under statutory
 retention); the **retention sweep** hard-deletes soft-deleted rows
-past the floored horizon (`WPM_RETENTION_DAYS`, default 365, floor
+past the floored horizon (`WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS`, default 365, floor
 30) across the pinned 41-table list and scrubs expired-consent
 candidates.
 
@@ -400,6 +400,14 @@ section 4)
   cost centre, FTE percent, start, end, primary). A worker has one or more; exactly one current primary, written through to the
   worker row's department, title, location and FTE (WPM-R161, WPM-D112). **CategoryVocabulary** entries (code, label, the standard and
   its code) (WPM-R162). `positions.holder` becomes the holding assignment, and positions gain a `number`.
+- **Allocation** (WPM-R275, built WPM-T598; `allocations`: worker, assignment, organization, demand source URN, optional pool,
+  from month, to month (both first days, inclusive), `fte_centi` from 1 to 100 and at most the assignment's FTE, status
+  `tentative | confirmed | ended`, an optional note of at most 500 characters, who recorded it; soft-deleted). A person's planned
+  share of an assignment for a programme, product or service, never effort or performance (WPM-D211). Changes are in the audit
+  trail; no history table is kept. `capacity_settings` gains `allocation_tracked` (bool, default false): tracking is per
+  organization until organizational units exist (WPM-R257). Pure rules: `allocation` in the domain crate (WPM-T597).
+- **Deployment** (proposed, WPM-R277; `deployment`: one row, the deployment's name and when it was bound). It holds no personal
+  data. It is checked at every start, before migrations (WPM-D220).
 - **CostCentre** (`cost_centres`: code, name, parent, valid from and to), **CodingStructure** (ordered segments), **SubjectiveRule**
   (match fields and the code) (WPM-R163–R165, WPM-D116). **PriorServicePeriod** (person, dates, basis) (WPM-R166).
 - `workers.date_of_birth` (WPM-R169, WPM-D114). **LearningRequirement** (subject, basis `statutory | mandatory`, source, refresher

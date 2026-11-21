@@ -57,7 +57,8 @@
     "coverageEvidence": "Preuves de couverture",
     "qualifications": "Qualifications",
     "injuryRecords": "Registres des blessures",
-    "help": "Aide"
+    "help": "Aide",
+    "allocations": "Affectations"
   },
   "pr": {
     "retention": "Conservation",
@@ -1530,6 +1531,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Qui est prévu sur quoi, mois par mois, par ordre de nom. C'est un plan, pas une mesure du travail de quiconque : il ne classe personne et ne donne aucune note.",
+      "organization": "Organisation",
+      "notAllowed": "Cette vue est réservée aux RH et aux gestionnaires des ressources.",
+      "empty": "Personne à afficher.",
+      "person": "Personne",
+      "confirm": "Confirmer",
+      "end": "Terminer",
+      "remove": "Supprimer",
+      "add": "Ajouter une affectation",
+      "job": "Poste",
+      "from": "Du mois",
+      "to": "Au mois",
+      "sharePercent": "Part du poste (centièmes d'ETP)",
+      "confirmNow": "Confirmer maintenant (la personne est prévenue)"
     }
   },
   "titles": {
@@ -1876,6 +1893,7 @@
     "payroll_admin": "administrateur de paie",
     "viewer": "lecteur",
     "partner": "partenaire",
+    "resource_manager": "gestionnaire des ressources",
     "past_end_without_approved_plan": "Échu sans plan approuvé",
     "review_due": "Revue à faire",
     "not_started": "Pas commencé",
@@ -3457,5 +3475,29 @@
   },
   "footer": {
     "privacyNotice": "Avis de confidentialité"
+  },
+  "allocations": {
+    "title": "Affectations",
+    "hint": "Ce sur quoi vous êtes prévu de travailler, mois par mois. C'est un plan, pas une mesure de ce que vous avez fait, et il ne note personne.",
+    "untracked": "Votre organisation n'enregistre pas les affectations : aucun mois n'est affiché comme plein ou libre.",
+    "none": "Aucune affectation.",
+    "source": "Programme, produit ou service",
+    "months": "Mois",
+    "share": "Part (ETP)",
+    "status": "Statut",
+    "monthRange": "De {from} à {to}",
+    "runsPastEnd": "Dépasse la fin du poste ou du contrat le {date}",
+    "allocated": "{allocated} sur {available} ETP affectés",
+    "state": {
+      "tentative": "Provisoire",
+      "confirmed": "Confirmée",
+      "ended": "Terminée"
+    },
+    "signal": {
+      "overAllocated": "Suraffecté de {fte} ETP",
+      "leaveClash": "Les congés approuvés laissent un manque de {fte} ETP",
+      "available": "{fte} ETP libres",
+      "assignmentOver": "Un poste dépasse son propre ETP de {fte}"
+    }
   }
 }

@@ -20,9 +20,9 @@
 #   --port PORT     Use custom port for service (default: 1241)
 #
 # Environment variables:
-#   WPM_SERVICE_PORT   Service port (default: 1241)
-#   WPM_UI_PORT        UI port (default: 5173)
-#   WPM_NO_CLEANUP     Don't stop services after tests
+#   WORKFORCE_PLANNING_MANAGEMENT_SERVICE_PORT   Service port (default: 1241)
+#   WORKFORCE_PLANNING_MANAGEMENT_UI_PORT        UI port (default: 5173)
+#   WORKFORCE_PLANNING_MANAGEMENT_NO_CLEANUP     Don't stop services after tests
 #
 
 set -e
@@ -42,9 +42,9 @@ if [[ "$*" == *"--help"* ]] || [[ "$*" == *"-h"* ]]; then
     echo "  --help, -h        Show this help message"
     echo ""
     echo "Environment variables:"
-    echo "  WPM_SERVICE_PORT   Service port (default: 1241)"
-    echo "  WPM_UI_PORT        UI port (default: 5173)"
-    echo "  WPM_NO_CLEANUP     Don't stop services after tests"
+    echo "  WORKFORCE_PLANNING_MANAGEMENT_SERVICE_PORT   Service port (default: 1241)"
+    echo "  WORKFORCE_PLANNING_MANAGEMENT_UI_PORT        UI port (default: 5173)"
+    echo "  WORKFORCE_PLANNING_MANAGEMENT_NO_CLEANUP     Don't stop services after tests"
     echo ""
     echo "Examples:"
     echo "  make test-demo                    # Run full demo with tests"
@@ -56,8 +56,8 @@ fi
 # Default configuration
 SERVICE_DIR="workforce-planning-management-service-with-rust"
 UI_DIR="workforce-planning-management-ui-with-svelte"
-SERVICE_PORT=${WPM_SERVICE_PORT:-1241}
-UI_PORT=${WPM_UI_PORT:-5173}
+SERVICE_PORT=${WORKFORCE_PLANNING_MANAGEMENT_SERVICE_PORT:-1241}
+UI_PORT=${WORKFORCE_PLANNING_MANAGEMENT_UI_PORT:-5173}
 SERVICE_PID=""
 UI_PID=""
 
@@ -87,13 +87,13 @@ log_error() {
 
 # Cleanup function
 cleanup() {
-    if [ -n "$SERVICE_PID" ] && [ "$WPM_NO_CLEANUP" != "1" ] && [ "$NO_CLEANUP" != "1" ]; then
+    if [ -n "$SERVICE_PID" ] && [ "$WORKFORCE_PLANNING_MANAGEMENT_NO_CLEANUP" != "1" ] && [ "$NO_CLEANUP" != "1" ]; then
         log_info "Stopping service (PID: $SERVICE_PID)..."
         kill $SERVICE_PID 2>/dev/null || true
         wait $SERVICE_PID 2>/dev/null || true
     fi
     
-    if [ -n "$UI_PID" ] && [ "$WPM_NO_CLEANUP" != "1" ] && [ "$NO_CLEANUP" != "1" ]; then
+    if [ -n "$UI_PID" ] && [ "$WORKFORCE_PLANNING_MANAGEMENT_NO_CLEANUP" != "1" ] && [ "$NO_CLEANUP" != "1" ]; then
         log_info "Stopping UI (PID: $UI_PID)..."
         kill $UI_PID 2>/dev/null || true
         wait $UI_PID 2>/dev/null || true
@@ -207,7 +207,7 @@ if [ "$TEST_ONLY" = false ]; then
     cargo run --quiet -- task seed 2>&1 | grep -v "Compiling\|Finished" || true
     
     # Start the service in the background with auth disabled for demo
-    WPM_REQUIRE_AUTH=0 WPM_RATE_LIMIT_PER_MINUTE=6000 cargo run --quiet -- start > /tmp/wpm-service.log 2>&1 &
+    WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE=6000 cargo run --quiet -- start > /tmp/wpm-service.log 2>&1 &
     SERVICE_PID=$!
     
     log_info "Service started with PID: $SERVICE_PID"
@@ -232,7 +232,7 @@ if [ "$TEST_ONLY" = false ] && [ "$UI_ONLY" = false ]; then
     cd $UI_DIR
     
     # Start the UI in the background
-    WPM_DEMO_API_URL=http://localhost:$SERVICE_PORT pnpm dev > /tmp/wpm-ui.log 2>&1 &
+    WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL=http://localhost:$SERVICE_PORT pnpm dev > /tmp/wpm-ui.log 2>&1 &
     UI_PID=$!
     
     log_info "UI started with PID: $UI_PID"
@@ -267,7 +267,7 @@ if [ "$TEST_ONLY" = false ]; then
     
     # Run Playwright tests with live API
     log_info "Running Playwright end-to-end tests against live demo..."
-    WPM_LIVE_API=1 WPM_DEMO_API_URL=http://localhost:$SERVICE_PORT PW_PORT=$UI_PORT pnpm exec playwright test -c playwright.live.config.ts 2>&1 || {
+    WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1 WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL=http://localhost:$SERVICE_PORT PW_PORT=$UI_PORT pnpm exec playwright test -c playwright.live.config.ts 2>&1 || {
         log_warning "Playwright tests had failures"
     }
     

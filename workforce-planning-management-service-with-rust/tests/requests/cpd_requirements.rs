@@ -131,3 +131,48 @@ async fn a_requirement_is_corrected_and_withdrawn_and_entries_stay() {
     })
     .await;
 }
+
+/// A live requirement is listed with its figures; an entry's evidence must be a web link; a registration may not expire
+/// before it starts; progress lists the registrations with their standing.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn evidence_registrations_and_the_live_list_are_checked() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let worker = hire(&request).await;
+        let today = workforce_planning_management::dates::today();
+        let name = format!("Live {}", uuid::Uuid::new_v4().simple());
+        request
+            .post("/api/cpd-requirements")
+            .json(&json!({ "name": name, "unit": "hours", "required": 12.5,
+                            "period_start": (today - jiff::Span::new().days(5)).to_string(),
+                            "period_end": (today + jiff::Span::new().days(5)).to_string() }))
+            .await
+            .assert_status_ok();
+        let listed: Value = request.get("/api/cpd-requirements").await.json();
+        let row = listed.as_array().unwrap().iter().find(|r| r["name"] == name.as_str()).unwrap().clone();
+        assert_eq!((row["required"].as_f64(), row["required_hundredths"].as_i64()), (Some(12.5), Some(1250)), "{row}");
+
+        let entries = format!("/api/workers/{worker}/cpd-entries");
+        let entry = |url: &str| json!({ "entry_date": today.to_string(), "activity": "Reading", "category": "reading",
+                                        "unit": "hours", "amount": 1.0, "evidence_note": "Notes kept", "evidence_url": url });
+        let ftp = request.post(&entries).json(&entry("ftp://example.org/x")).await;
+        assert_eq!(ftp.status_code(), 422);
+        assert!(ftp.text().contains("evidence_url"), "{}", ftp.text());
+        let kept = request.post(&entries).json(&entry("https://example.org/notes")).await;
+        assert_eq!(kept.status_code(), 200, "{}", kept.text());
+
+        let registrations = format!("/api/workers/{worker}/registrations");
+        let reversed = json!({ "body": "Example Council", "reference": "R-1", "registered_on": "2026-05-01", "expires_on": "2026-04-01" });
+        assert_eq!(request.post(&registrations).json(&reversed).await.status_code(), 422);
+        let made = request
+            .post(&registrations)
+            .json(&json!({ "body": "Example Council", "reference": "R-1", "registered_on": "2026-01-01",
+                            "expires_on": (today + jiff::Span::new().days(400)).to_string() }))
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let progress: Value = request.get(&format!("/api/workers/{worker}/cpd-progress")).await.json();
+        assert!(progress.to_string().contains("Example Council"), "{progress}");
+    })
+    .await;
+}

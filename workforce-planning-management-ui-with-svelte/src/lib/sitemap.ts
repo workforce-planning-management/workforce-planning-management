@@ -1,6 +1,6 @@
 // The sitemap and robots.txt, generated from the locale list and the public
 // pages (`publicPages.ts`). Pure: the origin is a parameter, so it is unit
-// tested and the routes only supply `url.origin` (or `WPM_PUBLIC_URL` behind a
+// tested and the routes only supply `url.origin` (or `WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL` behind a
 // proxy).
 //
 // Each public page appears once per locale, with `xhtml:link rel="alternate"`

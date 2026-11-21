@@ -2,10 +2,10 @@
 // against a separate service instance that holds only fictitious data. Server-side only.
 //
 // A demo session is an opaque id with the `demo:` prefix. It is never exchanged at the authentication
-// service and never reaches the real service: the proxy sends it to `WPM_DEMO_API_URL` and nowhere else.
-// With no `WPM_DEMO_API_URL` the demo does not exist and the prefix opens nothing.
+// service and never reaches the real service: the proxy sends it to `WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL` and nowhere else.
+// With no `WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL` the demo does not exist and the prefix opens nothing.
 
-import { WPM_DEMO_API_URL } from "./config";
+import { WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL } from "./config";
 
 /** The address that signs in to the demo. */
 export const DEMO_EMAIL = "example@example.com";
@@ -13,7 +13,8 @@ export const DEMO_EMAIL = "example@example.com";
 const PREFIX = "demo:";
 
 /** Whether a demo is offered by this deployment. */
-export const demoAvailable = (): boolean => WPM_DEMO_API_URL !== "";
+export const demoAvailable = (): boolean =>
+  WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL !== "";
 
 /** Whether `email` is the demo address (case and surrounding spaces do not matter). */
 export const isDemoEmail = (email: string): boolean =>

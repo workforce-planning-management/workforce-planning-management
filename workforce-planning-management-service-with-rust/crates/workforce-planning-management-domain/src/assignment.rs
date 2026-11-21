@@ -495,4 +495,22 @@ mod tests {
         assert_eq!(category_or_unknown(Some("  ")), UNKNOWN);
         assert_eq!(category_or_unknown(Some(" ward ")), "ward");
     }
+
+    #[test]
+    fn a_standard_code_longer_than_the_limit_is_refused() {
+        let long = "C".repeat(CODE_MAX + 1);
+        let out = entry_problems(
+            "job_role",
+            "RN",
+            "Registered nurse",
+            Some("synthetic"),
+            Some(&long),
+            None,
+        );
+        assert!(
+            out.iter()
+                .any(|p| p.contains(&format!("1 to {CODE_MAX} characters"))),
+            "{out:?}"
+        );
+    }
 }

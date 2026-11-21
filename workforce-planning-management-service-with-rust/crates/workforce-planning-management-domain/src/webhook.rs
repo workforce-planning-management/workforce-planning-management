@@ -265,9 +265,9 @@ pub fn check_url(url: &str) -> Result<String, String> {
 ///
 /// # Errors
 ///
-/// A message when the name is not of the form `WPM_WEBHOOK_SECRET_<NAME>`.
+/// A message when the name is not of the form `WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_<NAME>`.
 pub fn check_secret_ref(name: &str) -> Result<(), String> {
-    const PREFIX: &str = "WPM_WEBHOOK_SECRET_";
+    const PREFIX: &str = "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_";
     let rest = name.strip_prefix(PREFIX).unwrap_or("");
     if !rest.is_empty()
         && rest.len() <= 60
@@ -567,13 +567,13 @@ mod tests {
 
     #[test]
     fn a_secret_reference_cannot_name_another_setting() {
-        assert!(check_secret_ref("WPM_WEBHOOK_SECRET_PAYROLL").is_ok());
+        assert!(check_secret_ref("WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_PAYROLL").is_ok());
         for bad in [
             "DATABASE_URL",
-            "WPM_SCIM_TOKEN",
-            "WPM_WEBHOOK_SECRET_",
+            "WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN",
+            "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_",
             "wpm_webhook_secret_x",
-            "WPM_WEBHOOK_SECRET_A-B",
+            "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_A-B",
             "",
             "PATH",
         ] {
@@ -595,5 +595,12 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn broadcast_and_link_local_literals_are_internal() {
+        assert!(internal_literal("255.255.255.255"));
+        assert!(internal_literal("fe80::1"));
+        assert!(!internal_literal("93.184.216.34"));
     }
 }

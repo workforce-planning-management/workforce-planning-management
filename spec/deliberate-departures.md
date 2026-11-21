@@ -74,7 +74,7 @@ accountable person to say yes (and it moves into a table above) or no.
 - **Pay Transparency, Art. 9(1)(g):** the per-category gap is the mean, with no median per category, and the Directive's text
   for the variable-pay basis was not read ([pay-transparency.md](pay-transparency.md), WPM-R144).
 - **Pay Transparency, Art. 5:** the pay range is required before a requisition opens (switched off by
-  `WPM_REQUIRE_PAY_RANGE`), because WPM publishes no advert itself ([pay-transparency.md](pay-transparency.md), WPM-R145).
+  `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE`), because WPM publishes no advert itself ([pay-transparency.md](pay-transparency.md), WPM-R145).
 - **SCIM operations:** no `PATCH` and no groups, and deactivation follows the termination date, which may be a day before the
   last day worked ([integrations.md](integrations.md)).
 - **Open Badges 3.0:** compact JWS only, not the Data Integrity proof form

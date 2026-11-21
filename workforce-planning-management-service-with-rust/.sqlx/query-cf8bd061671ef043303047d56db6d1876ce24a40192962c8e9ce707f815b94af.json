@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE allocations SET source_ref = $2, pool_pid = $3, from_month = $4, to_month = $5, fte_centi = $6, note = $7,\n                updated_at = CURRENT_TIMESTAMP\n          WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar",
+        "Uuid",
+        "Date",
+        "Date",
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf8bd061671ef043303047d56db6d1876ce24a40192962c8e9ce707f815b94af"
+}
