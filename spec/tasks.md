@@ -7220,9 +7220,9 @@ the entry records only the evidence it needs.
         (`src/lib/locales.ts`); `pnpm cms-config`; the Lily label pack glob in `src/lib/data-table-labels.ts`; the allow-list
         entries for words that are the same as English in that language (`tests/unit/untranslated.allow.json`); the locale count in
         `tests/unit/data-table.test.ts`.
-      - Done: `da-001` (Danish; Lily has a `da-001` label pack and the CMS ships `da`). **To do:** `it`, `ja`, `ko`, `nl`, `sv`,
-        `sw`, `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
+      - Done: `da-001` (Danish; Lily has a `da-001` label pack and the CMS ships `da`) and `it-001` (Italian; three plural forms,
+        `one`, `many`, `other`, as CLDR gives it). **To do:** `ja`, `ko`, `nl`, `sv`, `sw`, `vi`; then the docs (`AGENTS/localization.md`, the UI's README locale list), a Playwright run of the locale-switch spec,
         and `pnpm check`.
-      - Verified for `da-001`: 47 unit-test files, 382 tests pass (key parity, no English left over, label pack, review register,
+      - Verified for `da-001` and `it-001`: 47 unit-test files, 387 tests pass (key parity, no English left over, label pack, review register,
         CMS config). **Not verified:** the pages in a browser in Danish; any native-speaker review.
 

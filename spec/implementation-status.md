@@ -23,7 +23,7 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Front-end unit tests (`it(` / `test(`) | 311 |
 | Playwright tests (`test(`) | 343 |
 | Front-end pages (`+page.svelte`) | 70 |
-| Content locales | 18 |
+| Content locales | 19 |
 | Topic files in `spec/` (not counting this one) | 68 |
 | Assessment checklist answers: met | 16 |
 | Assessment checklist answers: partly met | 16 |

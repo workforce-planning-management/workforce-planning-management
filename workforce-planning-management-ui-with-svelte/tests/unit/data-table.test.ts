@@ -49,7 +49,7 @@ function sayFor(locale: string): Say {
 
 describe("the grid's labels, per locale", () => {
   const all = readdirSync(locales).filter((l) => l.endsWith("-001"));
-  it("finds the locales", () => expect(all.length).toBe(14));
+  it("finds the locales", () => expect(all.length).toBe(15));
 
   for (const locale of all) {
     it(`${locale} supplies every label a table with paging, search, columns and export needs`, () => {

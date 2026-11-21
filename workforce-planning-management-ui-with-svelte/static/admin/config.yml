@@ -11,7 +11,7 @@ public_folder: /assets
 
 i18n:
   structure: multiple_folders
-  locales: [REVIEW.md, ar-001, bn-001, cy-001, da-001, de-001, de-de, en-001, en-gb, en-us, es-001, es-es, fr-001, hi-001, id-001, pt-001, ru-001, ur-001, zh-001]
+  locales: [REVIEW.md, ar-001, bn-001, cy-001, da-001, de-001, de-de, en-001, en-gb, en-us, es-001, es-es, fr-001, hi-001, id-001, it-001, pt-001, ru-001, ur-001, zh-001]
   default_locale: en-001
 
 collections:
