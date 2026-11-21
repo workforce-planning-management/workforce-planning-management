@@ -58,7 +58,7 @@ pub async fn caller_memberships(
 /// every transitive descendant org
 /// ([`crate::rules::org_access::descendants_of`]) — a membership in a
 /// parent confederation reads as membership in the whole tree beneath
-/// it. Unconditional, not gated by `WPM_REQUIRE_AUTH` (unlike
+/// it. Unconditional, not gated by `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` (unlike
 /// [`scope_organization_refs`]), for the caller-facing "what can I
 /// see" surface (`GET /api/me/organizations/scope`) as well as
 /// internal use by that function. Empty when `claims` is `None` or the

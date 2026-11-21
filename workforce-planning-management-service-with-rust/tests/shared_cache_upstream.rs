@@ -18,6 +18,8 @@ use workforce_planning_management::shared_cache::{self as cache, Namespace};
 async fn organization_names_are_shared_and_person_names_are_not() {
     let hits = Arc::new(AtomicUsize::new(0));
     let counter = hits.clone();
+    let person_hits = Arc::new(AtomicUsize::new(0));
+    let person_counter = person_hits.clone();
     let app = Router::new()
         .route(
             "/api/organizations/{id}",
@@ -31,16 +33,28 @@ async fn organization_names_are_shared_and_person_names_are_not() {
         )
         .route(
             "/api/persons/{id}",
-            get(|Path(_): Path<String>| async { Json(json!({ "name": "Ada Lovelace" })) }),
+            get(move |Path(_): Path<String>| {
+                let counter = person_counter.clone();
+                async move {
+                    counter.fetch_add(1, Ordering::SeqCst);
+                    Json(json!({ "name": "Ada Lovelace", "birth_date": "1990-05-04" }))
+                }
+            }),
         );
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let base = format!("http://{}", listener.local_addr().unwrap());
     tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     unsafe {
-        std::env::set_var("WPM_UPSTREAM_MODE", "http");
-        std::env::set_var("WPM_ORGANIZATION_SERVICE_URL", &base);
-        std::env::set_var("WPM_PERSON_SERVICE_URL", &base);
-        std::env::set_var("WPM_COURSE_SERVICE_URL", "http://127.0.0.1:1");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE", "http");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ORGANIZATION_SERVICE_URL",
+            &base,
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_PERSON_SERVICE_URL", &base);
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_COURSE_SERVICE_URL",
+            "http://127.0.0.1:1",
+        );
     }
     let provider = cache::Cache::memory(1024 * 1024);
     cache::install(Arc::new(provider));
@@ -84,6 +98,27 @@ async fn organization_names_are_shared_and_person_names_are_not() {
             .await
             .as_deref(),
         Some("Ada Lovelace")
+    );
+    for namespace in Namespace::ALL {
+        assert_eq!(cache::get(namespace, &person).await, None, "{namespace:?}");
+    }
+
+    // The same person's birth date is read from the person service, then answered from this process's own cache; it
+    // never enters a shared namespace either.
+    let person_ref = EntityRef::from_str(&person).unwrap();
+    let born = jiff::civil::date(1990, 5, 4);
+    let before = person_hits.load(Ordering::SeqCst);
+    assert_eq!(clients::birth_date(&person_ref).await, Some(born));
+    assert_eq!(
+        person_hits.load(Ordering::SeqCst),
+        before + 1,
+        "fetched once"
+    );
+    assert_eq!(clients::birth_date(&person_ref).await, Some(born));
+    assert_eq!(
+        person_hits.load(Ordering::SeqCst),
+        before + 1,
+        "the second answer is from the process cache"
     );
     for namespace in Namespace::ALL {
         assert_eq!(cache::get(namespace, &person).await, None, "{namespace:?}");

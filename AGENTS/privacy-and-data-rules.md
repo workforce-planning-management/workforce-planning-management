@@ -40,7 +40,7 @@ bind every change. The sensitivity map is in [`spec/auth.md`](../spec/auth.md).
       column is missing from the export, or from both the erasure statements and the retention
       schedule, unless it is named there with the reason; it also keeps the generated
       [personal-data inventory](../spec/governance/personal-data-inventory.md) current
-      (`WPM_WRITE_INVENTORY=1 cargo test --test main`).
+      (`WORKFORCE_PLANNING_MANAGEMENT_WRITE_INVENTORY=1 cargo test --test main`).
 - [ ] **Audit trail kept?** If the rows are an accountability record (a
       handover), erasure scrubs notes and keeps the rows.
 - [ ] **Authorization:** record-level (`authorize_record`) or organization scope

@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO allocations (pid, worker_pid, assignment_pid, organization_ref, source_ref, pool_pid, from_month, to_month,\n                                  fte_centi, status, note, recorded_by)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Date",
+        "Date",
+        "Int4",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9d4ecb7073ba5c636ffe59f212ebcc04c76503f2b12a243062fc53a96ce69604"
+}

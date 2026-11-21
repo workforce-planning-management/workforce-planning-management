@@ -210,3 +210,57 @@ async fn backups_cover_in_rank_order_and_skip_the_unavailable() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A worker names at most three backups, and a backup must be employed today.
+async fn a_worker_names_three_backups_at_most_and_only_people_employed_today() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut people = Vec::new();
+        for n in 0..6 {
+            let w = seed_worker!(&request, &org, format!("BK-{tag}-{n}"), None).await;
+            activate!(&request, &w).await;
+            people.push(w);
+        }
+        let backups = format!("/api/workers/{}/backups", people[0]);
+        let gone = &people[5];
+        for to in ["offboarding", "terminated"] {
+            request
+                .post(&format!("/api/workers/{gone}/status"))
+                .json(&json!({ "to": to }))
+                .await
+                .assert_status_ok();
+        }
+        let left = request
+            .post(&backups)
+            .json(&json!({ "backup_pid": gone }))
+            .await;
+        assert_eq!(left.status_code(), 422, "{}", left.text());
+        assert!(
+            left.text().contains("not currently employed"),
+            "{}",
+            left.text()
+        );
+        for backup in &people[1..4] {
+            request
+                .post(&backups)
+                .json(&json!({ "backup_pid": backup }))
+                .await
+                .assert_status_ok();
+        }
+        let fourth = request
+            .post(&backups)
+            .json(&json!({ "backup_pid": people[4] }))
+            .await;
+        assert_eq!(fourth.status_code(), 422, "{}", fourth.text());
+        assert!(
+            fourth.text().contains("at most 3 backups"),
+            "{}",
+            fourth.text()
+        );
+    })
+    .await;
+}

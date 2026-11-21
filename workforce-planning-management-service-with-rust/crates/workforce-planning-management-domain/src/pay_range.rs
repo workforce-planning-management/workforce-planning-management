@@ -677,4 +677,27 @@ mod tests {
             assert!(!entry.contains(word), "Entry must not carry {word}");
         }
     }
+
+    #[test]
+    fn nobody_is_unknown_and_too_few_are_withheld() {
+        let none = analyse(&[], 5, 2_000);
+        assert_eq!(
+            none.overall,
+            Figure::Unknown {
+                reason: Reason::NoPay
+            }
+        );
+        let one = Entry {
+            salary_minor: Some(3_000_000),
+            band: "5".into(),
+            range: Some(Range {
+                min: 2_500_000,
+                max: 3_500_000,
+            }),
+            level: None,
+            department: "ward".into(),
+            location: None,
+        };
+        assert_eq!(analyse(&[one], 5, 2_000).overall, Figure::Withheld);
+    }
 }

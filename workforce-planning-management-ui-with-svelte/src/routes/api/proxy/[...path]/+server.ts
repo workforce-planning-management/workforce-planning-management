@@ -5,14 +5,17 @@
 // session cookie is present (WPM-T18 magic-link flow), the server
 // exchanges it for a short-lived PASETO and injects the bearer here.
 // The service enforces authentication by default (WPM-D52); only a service
-// started with `WPM_REQUIRE_AUTH=0` (a demo) accepts the unauthenticated
+// started with `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0` (a demo) accepts the unauthenticated
 // forward, and then the exchange is simply not needed.
 //
-// `WPM_API_URL` is the service ROOT (`http://localhost:1241`); the service
+// `WORKFORCE_PLANNING_MANAGEMENT_API_URL` is the service ROOT (`http://localhost:1241`); the service
 // serves its API under `/api/`, so `/api/proxy/workers` goes to `<root>/api/workers`.
 
 import type { RequestHandler } from "./$types";
-import { WPM_API_URL, WPM_DEMO_API_URL } from "#lib/server/config.js";
+import {
+  WORKFORCE_PLANNING_MANAGEMENT_API_URL,
+  WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL,
+} from "#lib/server/config.js";
 import { demoMemberships, isDemoSession } from "#lib/server/demo.js";
 import { exchangeToken } from "#lib/server/auth.js";
 import { tokens } from "#lib/server/token-cache.js";
@@ -36,7 +39,7 @@ const proxy: RequestHandler = async ({
   // A demo session goes to the demo service (fictitious data, no authentication) and nowhere else; with
   // no demo configured it opens nothing.
   const demo = isDemoSession(locals.sessionId);
-  if (demo && !WPM_DEMO_API_URL) {
+  if (demo && !WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL) {
     return new Response(JSON.stringify({ error: "no_demo" }), {
       status: 401,
       headers: { "content-type": "application/json" },
@@ -48,19 +51,24 @@ const proxy: RequestHandler = async ({
     request.method === "GET" &&
     url.pathname.endsWith("/me/organizations")
   ) {
-    return Response.json(await demoMemberships(fetch, WPM_DEMO_API_URL));
+    return Response.json(
+      await demoMemberships(fetch, WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL),
+    );
   }
   if (
     demo &&
     request.method === "GET" &&
     url.pathname.endsWith("/me/organizations/scope")
   ) {
-    const memberships = await demoMemberships(fetch, WPM_DEMO_API_URL);
+    const memberships = await demoMemberships(
+      fetch,
+      WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL,
+    );
     return Response.json([
       ...new Set(memberships.map((m) => m.organization_ref)),
     ]);
   }
-  const target = `${demo ? WPM_DEMO_API_URL : WPM_API_URL}/api/${params.path}${url.search}`;
+  const target = `${demo ? WORKFORCE_PLANNING_MANAGEMENT_DEMO_API_URL : WORKFORCE_PLANNING_MANAGEMENT_API_URL}/api/${params.path}${url.search}`;
 
   // Session → short-lived PASETO, server-side only (WPM-T18). Only the allow-listed headers go with it: never the
   // browser's cookie, its own authorization or its x-forwarded-for (WPM-T248); a plain idempotency key does (WPM-R132).

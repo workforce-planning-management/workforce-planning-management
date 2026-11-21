@@ -20,14 +20,14 @@ use crate::rules::ai_register::{self as rules, Entry};
 use crate::rules::jurisdiction::Value as ProfileValue;
 
 /// The date the Annex III duties apply, with where it came from (WPM-D153, WPM-T409): for an organization, its home jurisdiction's
-/// profile (`ai_act.applies_from`), then `WPM_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), then the default. With no organization there is no
+/// profile (`ai_act.applies_from`), then `WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), then the default. With no organization there is no
 /// profile to look at.
 pub(crate) fn applies_from_in(scope: Option<&Scope>, as_of: Date) -> InForce<Date> {
-    let setting = crate::compat::env_var("WPM_AI_ACT_APPLIES_FROM")
+    let setting = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM")
         .and_then(|v| Date::strptime("%Y-%m-%d", v.trim()).ok());
     pick(
         scope,
-        "WPM_AI_ACT_APPLIES_FROM",
+        "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",
         as_of,
         ProfileValue::as_date,
         setting,

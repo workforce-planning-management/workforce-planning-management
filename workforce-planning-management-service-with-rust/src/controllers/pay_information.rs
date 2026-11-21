@@ -31,14 +31,14 @@ use super::jurisdictions::Scope;
 use super::statutory_defaults::{self as statutory, InForce};
 
 /// Calendar months an answer may take: the worker's profile (`pay_transparency.information_months`),
-/// else `WPM_PAY_INFORMATION_MONTHS` (1 to 12), else 2 (the Directive's).
+/// else `WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS` (1 to 12), else 2 (the Directive's).
 pub(crate) fn answer_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
-    let configured = crate::compat::env_var("WPM_PAY_INFORMATION_MONTHS")
+    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS")
         .and_then(|v| v.trim().parse::<u32>().ok())
         .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n));
     statutory::integer(
         scope,
-        "WPM_PAY_INFORMATION_MONTHS",
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS",
         as_of,
         configured,
         rules::DEFAULT_ANSWER_MONTHS,
@@ -47,17 +47,17 @@ pub(crate) fn answer_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> 
 
 /// Whether a vacancy must state its pay range before it is opened: the organization's profile
 /// (`pay_transparency.pay_range_required`, over its home jurisdiction's chain), else on unless
-/// `WPM_REQUIRE_PAY_RANGE` is off. A deployment outside the Directive's reach may turn it off; the
+/// `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE` is off. A deployment outside the Directive's reach may turn it off; the
 /// default follows Article 5.
 #[must_use]
 pub fn pay_range_required(scope: Option<&Scope>, as_of: Date) -> InForce<bool> {
-    let configured = crate::compat::env_var("WPM_REQUIRE_PAY_RANGE")
+    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE")
         .map(|v| v.trim().to_lowercase())
         .filter(|v| !v.is_empty())
         .map(|v| !matches!(v.as_str(), "0" | "false" | "no" | "off"));
     statutory::pick(
         scope,
-        "WPM_REQUIRE_PAY_RANGE",
+        "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",
         as_of,
         crate::rules::jurisdiction::Value::as_flag,
         configured,

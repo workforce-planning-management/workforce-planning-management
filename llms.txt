@@ -11,7 +11,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 133 migrations, 96 controllers, 69 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 134 migrations, 97 controllers, 70 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
@@ -107,6 +107,8 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/disability-and-adjustments.md](spec/disability-and-adjustments.md): Proposed WPM-R190–R196, WPM-D125–D127: an adjustments passport the person owns, working with me, absence rules that adjust, candidate adjustments, disability measures from monitoring only
 - [spec/succession-deputies-and-acting-up.md](spec/succession-deputies-and-acting-up.md): Proposed WPM-R197–R205, WPM-D128–D133: succession on positions with evidence beside readiness, deputies with scoped authority, acting up with its pay, limits and fairness
 - [spec/positions.md](spec/positions.md): WPM-R152, WPM-R153 and WPM-D104: positions as budgeted seats, vacancy and over-establishment, and the current-versus-target organization diff
+- [spec/workforce-planning-and-scenarios.md](spec/workforce-planning-and-scenarios.md): Proposed WPM-R254–R266, WPM-R275, WPM-D207–D213, WPM-T553–T573 and WPM-T596–T600 (2026-11-20, customer feedback): configurable pay scales, a post's grade, combined analysis, organizational units, services and floors, allocation signals, per-person allocation (WPM-R275, WPM-D211, decided by the owner), planned versus actual, versioned scenarios and their impact, finance export and import, forecast accuracy
+- [spec/supplier-assurance.md](spec/supplier-assurance.md): Proposed WPM-R267–R274, WPM-R277, WPM-D214–D220, WPM-T574–T595 and WPM-T603 (2026-11-20): supplier assurance for a health buyer, NHS Wales as the worked example: buyer-approved support access, tenant pin, one deployment per database, MFA requirement, column encryption, audit anchoring, declared residency, organization export and destruction record, shared responsibility
 - [spec/worker-matching.md](spec/worker-matching.md): WPM-R134 and WPM-D85: matching worker records, unknown is never zero, a score proposes and never merges
 
 ## Code

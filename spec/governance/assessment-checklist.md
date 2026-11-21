@@ -16,7 +16,8 @@ does not certify anything.
 
 An answer without evidence is not "met" (WPM-D61). The software is **demo software** and
 the maintainers have not been independently assessed. Evidence paths are relative to the
-repository root; "T" numbers are in [tasks.md](../tasks.md).
+repository root; "T" numbers are in [tasks.md](../tasks.md). Supplier-side questions (support access, isolation, residency, exit)
+are assessed in [supplier-assurance.md](../supplier-assurance.md); some answers below are stale and are refreshed by WPM-T589.
 
 ## 1. Company information
 

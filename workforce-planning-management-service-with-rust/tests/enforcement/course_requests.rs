@@ -127,9 +127,15 @@ async fn a_free_course_starts_at_once_and_any_other_waits_for_a_manager() {
     let as_other = bearer(sign_as(&kid, &other.to_string(), &[]));
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     request::<App, _, _>(|request, ctx| async move {
         let org = format!("organization:{}", uuid::Uuid::new_v4());

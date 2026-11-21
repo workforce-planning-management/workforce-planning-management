@@ -20,7 +20,7 @@ use axum::{
 
 use crate::{auth, controllers, rules, tasks};
 
-/// Blanket auth-enforcement middleware: reads `WPM_REQUIRE_AUTH` per
+/// Blanket auth-enforcement middleware: reads `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` per
 /// request and delegates to the pure [`auth::enforce`] (public paths
 /// and the disabled flag pass through; otherwise a valid bearer token —
 /// PASETO or Keycloak JWT, per the `paseto`/`keycloak` Cargo feature —
@@ -85,7 +85,7 @@ async fn require_auth_mw(req: Request, next: Next) -> Response {
 /// The standing warning while sign-in is not enforced (WPM-D52).
 fn warn_auth_off() {
     tracing::warn!(
-        "WPM_REQUIRE_AUTH is off: sign-in is NOT enforced. Development only; production refuses to start this way"
+        "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH is off: sign-in is NOT enforced. Development only; production refuses to start this way"
     );
 }
 
@@ -209,6 +209,7 @@ pub fn route_groups() -> Vec<Routes> {
         controllers::equipment::routes(),
         controllers::absence_categories::routes(),
         controllers::assignments::routes(),
+        controllers::allocations::routes(),
         controllers::mandatory_learning::routes(),
         controllers::coverage_evidence::routes(),
         controllers::qualifications::routes(),
@@ -312,17 +313,19 @@ fn request_timeout_seconds(milliseconds: Option<&str>) -> Result<u64> {
     milliseconds
         .parse::<u64>()
         .map(|ms| ms.div_ceil(1000))
-        .map_err(|_| Error::string("WPM_REQUEST_TIMEOUT_MS must be a whole number of milliseconds"))
+        .map_err(|_| Error::string("WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS must be a whole number of milliseconds"))
 }
 
 /// The one browser origin that may call the API directly. Production requires it and never takes `*`, so a forgotten setting stops
 /// the service and does not open it to every origin.
 fn cors_origins(origin: Option<&str>, required: bool) -> Result<Vec<String>> {
     match origin.map(str::trim).filter(|o| !o.is_empty()) {
-        Some("*") => Err(Error::string("WPM_CORS_ORIGIN is one origin, never `*`")),
+        Some("*") => Err(Error::string(
+            "WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN is one origin, never `*`",
+        )),
         Some(origin) => Ok(vec![origin.to_string()]),
         None if required => Err(Error::string(
-            "environment variable `WPM_CORS_ORIGIN` not found",
+            "environment variable `WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN` not found",
         )),
         None => Ok(Vec::new()),
     }
@@ -335,11 +338,13 @@ fn config_from(
     let mut config = Config::from_lookup(environment, &defaults(), |name| setting(name, get))?;
     if *environment == Environment::Production {
         config.http.timeout_seconds = request_timeout_seconds(
-            crate::compat::env_var_from("WPM_REQUEST_TIMEOUT_MS", get).as_deref(),
+            crate::compat::env_var_from("WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS", get)
+                .as_deref(),
         )?;
         config.http.compression = true;
         config.http.cors_origins = cors_origins(
-            crate::compat::env_var_from("WPM_CORS_ORIGIN", get).as_deref(),
+            crate::compat::env_var_from("WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN", get)
+                .as_deref(),
             true,
         )?;
     } else {
@@ -533,8 +538,9 @@ impl App {
             );
         }
         if let Some(uri) = &redis {
-            let allow = crate::compat::env_var("WPM_ALLOW_PLAINTEXT_REDIS")
-                .is_some_and(|v| auth::parse_bool(&v));
+            let allow =
+                crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_REDIS")
+                    .is_some_and(|v| auth::parse_bool(&v));
             match crate::hardening::redis_check(production, uri, allow) {
                 Ok(Some(warning)) => tracing::warn!("{warning}"),
                 Ok(None) => {}
@@ -563,8 +569,9 @@ impl App {
             });
         }
         // Production refuses a plaintext connection to the database (WPM-R116).
-        let allow_plaintext = crate::compat::env_var("WPM_ALLOW_PLAINTEXT_DATABASE")
-            .is_some_and(|v| auth::parse_bool(&v));
+        let allow_plaintext =
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_ALLOW_PLAINTEXT_DATABASE")
+                .is_some_and(|v| auth::parse_bool(&v));
         match crate::hardening::database_check(
             production,
             &ctx.config.database.uri,
@@ -594,7 +601,8 @@ impl App {
         // Workplace health requirements hold health data and are off unless the deployer records a
         // lawful basis (WPM-R128, WPM-D75).
         if let Some(basis) = rules::health_requirements::gate(
-            crate::compat::env_var("WPM_HEALTH_REQUIREMENTS_BASIS").as_deref(),
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_REQUIREMENTS_BASIS")
+                .as_deref(),
         ) {
             tracing::warn!(
                 "workplace health requirements are ENABLED on the lawful basis recorded as: {basis}"
@@ -602,12 +610,13 @@ impl App {
         }
         // The key that signs list cursors (WPM-D189). A value that is set but unusable stops the start; none is a key for
         // this process, which is enough for one instance and refuses another instance's cursors with a `422`.
-        let cursor_key =
-            controllers::cursor_key_from(crate::compat::env_var("WPM_CURSOR_KEY").as_deref())
-                .map_err(|message| Error::string(&message))?;
+        let cursor_key = controllers::cursor_key_from(
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY").as_deref(),
+        )
+        .map_err(|message| Error::string(&message))?;
         if cursor_key.is_none() && ctx.environment.is_production_like() {
             tracing::warn!(
-                "WPM_CURSOR_KEY is not set, so each instance signs list cursors with its own key; set it when more than one runs"
+                "WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY is not set, so each instance signs list cursors with its own key; set it when more than one runs"
             );
         }
         controllers::install_cursor_key(cursor_key);
@@ -623,7 +632,7 @@ impl App {
         }
         // The variable no longer does anything (WPM-D187). Refusing to start would take a running service down over it.
         if let Some(warning) = crate::security::trust_forwarded_warning(
-            crate::compat::env_var("WPM_TRUST_FORWARDED").as_deref(),
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED").as_deref(),
         ) {
             tracing::warn!("{warning}");
         }
@@ -730,17 +739,17 @@ impl App {
 }
 
 impl TestApp for App {
-    /// Boot under `test`: a fresh schema unless `WPM_TEST_FRESH_SCHEMA=false`, then emptied unless `WPM_TEST_TRUNCATE=false`. With
+    /// Boot under `test`: a fresh schema unless `WORKFORCE_PLANNING_MANAGEMENT_TEST_FRESH_SCHEMA=false`, then emptied unless `WORKFORCE_PLANNING_MANAGEMENT_TEST_TRUNCATE=false`. With
     /// `false` nothing touches the schema, because the role drill runs as a role that may not (`scripts/verify-db-roles.sh`).
     async fn boot_test() -> Result<BootResult> {
         let flag = |name: &str| crate::compat::env_var(name).is_none_or(|v| v != "false");
         let environment = Environment::Test;
         let config = Self::config(&environment)?;
         let app_context = Self::context(environment, config).await?;
-        if flag("WPM_TEST_FRESH_SCHEMA") {
+        if flag("WORKFORCE_PLANNING_MANAGEMENT_TEST_FRESH_SCHEMA") {
             crate::migrations::fresh(crate::db::pool(&app_context)).await?;
         }
-        if flag("WPM_TEST_TRUNCATE") {
+        if flag("WORKFORCE_PLANNING_MANAGEMENT_TEST_TRUNCATE") {
             Self::truncate(&app_context).await?;
         }
         let router = Self::router(&app_context).await?;
@@ -845,8 +854,11 @@ mod tests {
         let production = config_from(&Environment::Production, |name| {
             [
                 ("DB_URL", "postgres://example/wpm?sslmode=require"),
-                ("WPM_CORS_ORIGIN", "https://hr.example"),
-                ("WPM_REQUEST_TIMEOUT_MS", "1500"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN",
+                    "https://hr.example",
+                ),
+                ("WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS", "1500"),
             ]
             .into_iter()
             .find(|(key, _)| *key == name)

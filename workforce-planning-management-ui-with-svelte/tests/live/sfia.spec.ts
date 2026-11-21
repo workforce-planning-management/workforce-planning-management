@@ -7,8 +7,8 @@
 import { expect, test } from "@playwright/test";
 
 test.skip(
-  !process.env.WPM_LIVE_API,
-  "needs a running service: set WPM_LIVE_API=1",
+  !process.env.WORKFORCE_PLANNING_MANAGEMENT_LIVE_API,
+  "needs a running service: set WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1",
 );
 
 const api = "http://localhost:1241/api";

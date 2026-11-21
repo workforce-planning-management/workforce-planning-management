@@ -2,7 +2,7 @@
 //! transport seam (`agents/share/event-bus.md`).
 //!
 //! Every mutation emits one envelope. The transport is selected by
-//! `WPM_EVENT_TRANSPORT` (default `memory`):
+//! `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` (default `memory`):
 //!
 //! - `memory` — an in-process ring buffer ([`InMemoryPublisher`]),
 //!   served by `GET /api/events/recent`. Lost on restart; Phase 1.
@@ -154,12 +154,15 @@ impl EventTransport {
 }
 
 /// The process-wide transport, read once from
-/// `WPM_EVENT_TRANSPORT` (default `memory`).
+/// `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` (default `memory`).
 #[must_use]
 pub fn transport() -> EventTransport {
     static TRANSPORT: OnceLock<EventTransport> = OnceLock::new();
     *TRANSPORT.get_or_init(|| {
-        EventTransport::parse(&crate::compat::env_var("WPM_EVENT_TRANSPORT").unwrap_or_default())
+        EventTransport::parse(
+            &crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT")
+                .unwrap_or_default(),
+        )
     })
 }
 

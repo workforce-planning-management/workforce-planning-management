@@ -68,6 +68,37 @@ async fn exact_minor_units_survive_create_read_edit_and_export() {
             }))
             .await;
         assert_eq!(refused.status_code(), 422);
+
+        // The same boundary on a query string and inside a list, and a body too large to read is refused, not passed on.
+        let in_query = request
+            .get(&format!("/api/expense-claims?amount_minor={}", MAX + 1))
+            .await;
+        assert_eq!(in_query.status_code(), 422, "{}", in_query.text());
+        assert!(
+            in_query.text().contains("amount_minor"),
+            "{}",
+            in_query.text()
+        );
+        let in_list = request
+            .post("/api/learning-budgets")
+            .json(&json!({ "lines": [{ "budget_minor": MAX + 1 }] }))
+            .await;
+        assert_eq!(in_list.status_code(), 422, "{}", in_list.text());
+        assert!(
+            in_list.text().contains("budget_minor"),
+            "{}",
+            in_list.text()
+        );
+        let huge = request
+            .post("/api/workers")
+            .json(&json!({ "display_name": "x".repeat(2 * 1024 * 1024 + 1) }))
+            .await;
+        assert_eq!(huge.status_code(), 413, "{}", huge.text());
+        assert_eq!(
+            huge.json::<Value>()["detail"],
+            "request body too large",
+            "refused at the money boundary, before any handler"
+        );
     })
     .await;
 }
@@ -137,7 +168,7 @@ async fn subject_rights_round_trip() {
                 .await
                 .unwrap();
             sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
-                    "WITH s AS (INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref) VALUES (gen_random_uuid(), 'x', 'https://hooks.example/x', ARRAY['worker_terminated'], 'WPM_WEBHOOK_SECRET_X') RETURNING pid)
+                    "WITH s AS (INSERT INTO webhook_subscriptions (pid, name, url, kinds, secret_ref) VALUES (gen_random_uuid(), 'x', 'https://hooks.example/x', ARRAY['worker_terminated'], 'WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_X') RETURNING pid)
                      INSERT INTO webhook_deliveries (pid, subscription_pid, event_id, kind, subject, occurred_at) SELECT gen_random_uuid(), pid, gen_random_uuid(), 'worker_terminated', 'worker:{worker}', now() FROM s"
                 ))).execute(workforce_planning_management::db::pool(&ctx))
                 .await

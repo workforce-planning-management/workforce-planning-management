@@ -62,7 +62,7 @@ Part 2 defines them: requirement, recommendation, permission.
 - A vulnerability in a dependency that this software does not make worse. Report
   it upstream. Please also tell us if this software uses the affected path.
 - `compose.yaml` and the demo setup with sign-in turned off
-  (`WPM_REQUIRE_AUTH=0`). These are open on purpose, and the documentation says
+  (`WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0`). These are open on purpose, and the documentation says
   they must never be exposed. A way to turn sign-in off by accident, or a
   production start with it off, is in scope.
 - Findings that need physical access to a deployer's machine, a compromised
@@ -100,7 +100,7 @@ Then:
   commit for a vulnerability that has not been disclosed (§6).
 - A report **should** include: the affected component (§2) and version or commit;
   what an attacker could do; steps to reproduce, or a proof of concept; and the
-  configuration used, for example whether `WPM_REQUIRE_AUTH` was on and which
+  configuration used, for example whether `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` was on and which
   ABAC policy was mounted.
 - A report **shall not** contain real personal data. This software holds only
   synthetic data, and a reproduction needs nothing else. If real data was
@@ -172,14 +172,14 @@ or any other party.
 
 ## 8. What deployers must know
 
-**Sign-in is enforced by default.** `WPM_REQUIRE_AUTH` gates authentication and
+**Sign-in is enforced by default.** `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` gates authentication and
 authorization in the service, and it defaults to **on**. Only an explicit
 `0`/`false`/`no`/`off` turns it off. While it is off, the service logs a warning
 and reports it at `GET /_posture`. The `production` environment refuses to start
 with it off, or with no token key source.
 
 A deployment exposed to untrusted callers **shall** configure
-`WPM_PASETO_KEYS[_URL]` (or `WPM_KEYCLOAK_JWKS_URL`) and mount a real ABAC policy
+`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS[_URL]` (or `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL`) and mount a real ABAC policy
 before it is reachable. The container demo in `compose.yaml` turns sign-in off on
 purpose and must never be exposed. See [spec/auth.md](spec/auth.md) for how to
 turn sign-in on, and [spec/operations/deployment.md](spec/operations/deployment.md)
@@ -202,7 +202,7 @@ complete its own threat model from [spec/governance/threat-model.md](spec/govern
 - A rate limit for each caller, with a stricter class for the erase, sweep,
   import, merge and token routes. The answer is `429` with `Retry-After`. The
   counters are in memory and keep no address or subject (WPM-R74, WPM-D54).
-- CORS is an allow-list in production (`WPM_CORS_ORIGIN`), never `*`. The metrics
+- CORS is an allow-list in production (`WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN`), never `*`. The metrics
   endpoint needs a bearer token.
 - No `unsafe` in the service crate (`#![forbid(unsafe_code)]`).
 - Salary, payslips, review content, 360 reports, assessment scores, the words of

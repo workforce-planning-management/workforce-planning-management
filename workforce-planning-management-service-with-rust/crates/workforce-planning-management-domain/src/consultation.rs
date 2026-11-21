@@ -415,6 +415,40 @@ mod tests {
         );
     }
 
+    #[test]
+    fn the_closest_unmet_test_uses_the_smallest_shortfall_and_keeps_a_tie() {
+        let test = |threshold, window_days| Test {
+            size_from: 0,
+            size_to: None,
+            threshold: Threshold::Count(threshold),
+            window_days,
+        };
+        let mut p = proposal(100, 0);
+        p.others = vec![(p.earliest_termination - crate::dates::days(20), 2)];
+
+        let smaller = assess(
+            &selection_profile(vec![test(3, 10), test(4, 30)]),
+            &p,
+            day(1, 1),
+        );
+        assert_eq!(smaller.evidence.window_days, Some(30));
+
+        let tied = assess(
+            &selection_profile(vec![test(3, 10), test(5, 30)]),
+            &p,
+            day(1, 1),
+        );
+        assert_eq!(tied.evidence.window_days, Some(10));
+
+        p.others.clear();
+        let zero_count = assess(
+            &selection_profile(vec![test(3, 10), test(1, 30)]),
+            &p,
+            day(1, 1),
+        );
+        assert_eq!(zero_count.evidence.window_days, Some(30));
+    }
+
     /// Great Britain: 19 is under, 20 is the threshold; 99 gets 30 days and 100 gets 45.
     #[test]
     fn gb_thresholds_and_periods_at_each_edge() {

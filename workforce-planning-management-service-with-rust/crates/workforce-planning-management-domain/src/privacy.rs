@@ -10,7 +10,7 @@ pub fn erasable(status: &str) -> bool {
     matches!(status, "terminated" | "retired")
 }
 
-/// Default retention horizon (days) when `WPM_RETENTION_DAYS` is unset.
+/// Default retention horizon (days) when `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` is unset.
 pub const RETENTION_DEFAULT_DAYS: i64 = 365;
 
 /// Horizon floor: a sweep that could run at 0 days would silently turn
@@ -79,7 +79,10 @@ impl RecordKind {
     /// The environment variable that overrides this kind's horizon.
     #[must_use]
     pub fn env_name(self) -> String {
-        format!("WPM_RETENTION_{}_DAYS", self.key().to_ascii_uppercase())
+        format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_{}_DAYS",
+            self.key().to_ascii_uppercase()
+        )
     }
 
     /// The default horizon in calendar days after a record is deleted. These
@@ -118,8 +121,8 @@ pub fn kind_of(table: &str) -> Option<RecordKind> {
         | "payroll_runs"
         | "payslip_queries"
         | "payslips" => Pay,
-        "leave_entitlements" | "leave_requests" | "rotas" | "shift_assignments" | "shifts"
-        | "time_entries" => TimeAndLeave,
+        "allocations" | "leave_entitlements" | "leave_requests" | "rotas" | "shift_assignments"
+        | "shifts" | "time_entries" => TimeAndLeave,
         "appraisals"
         | "development_plan_benefits"
         | "development_plans"
@@ -166,10 +169,10 @@ pub fn kind_of(table: &str) -> Option<RecordKind> {
 pub enum HorizonSource {
     /// The built-in default for the kind.
     Default,
-    /// The legacy single `WPM_RETENTION_DAYS`, applied to every kind with no
+    /// The legacy single `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS`, applied to every kind with no
     /// override of its own.
     Legacy,
-    /// The kind's own `WPM_RETENTION_<KIND>_DAYS`.
+    /// The kind's own `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS`.
     Override,
     /// A jurisdiction profile's `retention.<kind>.days` (WPM-T384): its floor, or its ceiling where it gives none.
     Profile,
@@ -181,7 +184,7 @@ impl HorizonSource {
     pub const fn label(self) -> &'static str {
         match self {
             Self::Default => "default",
-            Self::Legacy => "WPM_RETENTION_DAYS",
+            Self::Legacy => "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS",
             Self::Override => "override",
             Self::Profile => "profile",
         }
@@ -232,6 +235,7 @@ pub fn horizon_from_range(min: Option<i64>, max: Option<i64>) -> Option<Horizon>
 /// sweep test counts this list against the entity modules).
 pub const SOFT_DELETED_TABLES: &[&str] = &[
     "adjustment_requests",
+    "allocations",
     "announcements",
     "applications",
     "appraisals",
@@ -418,9 +422,12 @@ mod tests {
         }
         assert_eq!(
             RecordKind::TimeAndLeave.env_name(),
-            "WPM_RETENTION_TIME_AND_LEAVE_DAYS"
+            "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_TIME_AND_LEAVE_DAYS"
         );
-        assert_eq!(RecordKind::Pay.env_name(), "WPM_RETENTION_PAY_DAYS");
+        assert_eq!(
+            RecordKind::Pay.env_name(),
+            "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS"
+        );
         assert_eq!(RecordKind::Recruitment.default_days(), 180);
     }
 
@@ -432,9 +439,51 @@ mod tests {
         sorted.sort_unstable();
         sorted.dedup();
         assert_eq!(sorted, SOFT_DELETED_TABLES, "sorted and unique");
-        assert_eq!(SOFT_DELETED_TABLES.len(), 61);
+        assert_eq!(SOFT_DELETED_TABLES.len(), 62);
         for table in ["workers", "payslips", "candidates", "appraisals"] {
             assert!(SOFT_DELETED_TABLES.contains(&table));
         }
+    }
+
+    #[test]
+    fn every_kind_and_source_has_its_stated_name() {
+        let keys: Vec<&str> = RecordKind::ALL.iter().map(|k| k.key()).collect();
+        assert_eq!(
+            keys,
+            [
+                "recruitment",
+                "employment",
+                "pay",
+                "time_and_leave",
+                "performance",
+                "learning",
+                "wellbeing",
+                "planning"
+            ]
+        );
+        assert_eq!(
+            RecordKind::TimeAndLeave.env_name(),
+            "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_TIME_AND_LEAVE_DAYS"
+        );
+        let labels: Vec<&str> = [
+            HorizonSource::Default,
+            HorizonSource::Legacy,
+            HorizonSource::Override,
+            HorizonSource::Profile,
+        ]
+        .iter()
+        .map(|s| s.label())
+        .collect();
+        assert_eq!(
+            labels,
+            [
+                "default",
+                "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS",
+                "override",
+                "profile"
+            ]
+        );
+        assert_eq!(kind_of("allocations"), Some(RecordKind::TimeAndLeave));
+        assert_eq!(kind_of("not_a_table"), None);
     }
 }

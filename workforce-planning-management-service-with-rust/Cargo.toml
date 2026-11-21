@@ -17,7 +17,7 @@ categories = ["development-tools", "rust-patterns"]
 include = ["src/**/*", "migrations/**/*", "config/**/*", ".sqlx/**/*", ".cargo/**/*", "sqlx.toml", "README.md", "CHANGELOG.md"]
 
 [workspace.dependencies]
-axa = { version = "0.20.0", features = ["cursor-pagination", "problem", "ratelimit", "postgres-sqlx"] }
+axa = { version = "0.20.1", features = ["cursor-pagination", "problem", "ratelimit", "postgres-sqlx"] }
 
 [features]
 # Exactly one token-verification backend, chosen at build time —

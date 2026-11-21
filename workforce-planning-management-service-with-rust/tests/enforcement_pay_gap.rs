@@ -81,18 +81,30 @@ const CATEGORIES: &str = r#"{"sex":["female","male"]}"#;
 async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
         std::env::set_var(
-            "WPM_EQUALITY_MONITORING_BASIS",
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS",
             "Test deployment: impact assessment PG-2",
         );
-        std::env::set_var("WPM_EQUALITY_CATEGORIES", CATEGORIES);
-        std::env::set_var("WPM_EQUALITY_FLOOR", "5");
-        std::env::set_var("WPM_CREDENTIAL_ISSUER", "http://localhost:1241");
         std::env::set_var(
-            "WPM_CREDENTIAL_SIGNING_KEY",
+            "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES",
+            CATEGORIES,
+        );
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER",
+            "http://localhost:1241",
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY",
             "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
         );
     }
@@ -351,6 +363,10 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.post("/api/policies").add_header("authorization", worker.clone()).json(&policy_body).await.status_code(), 403, "a worker adds no policy");
         let policy = request.post("/api/policies").add_header("authorization", hr.clone()).json(&policy_body).await;
         assert_eq!(policy.status_code(), 200, "{}", policy.text());
+        for name in ["  ", &"x".repeat(121)] {
+            let bad = json!({ "organization_ref": org, "name": name });
+            assert_eq!(request.post("/api/policies").add_header("authorization", hr.clone()).json(&bad).await.status_code(), 422, "{name:?}");
+        }
         let policy = policy.json::<Value>()["pid"].as_str().unwrap().to_string();
         let rename = format!("/api/policies/{policy}");
         let new_name = json!({ "name": "Code of conduct" });
@@ -492,8 +508,8 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(request.get("/.well-known/oauth-protected-resource").await.status_code(), 404, "not configured: not described");
         // OAuth protected-resource metadata (RFC 9728, WPM-T304): public once configured, and the 401 on /mcp points at it.
         unsafe {
-            std::env::set_var("WPM_MCP_RESOURCE", "http://localhost:1241/mcp");
-            std::env::set_var("WPM_MCP_AUTHORIZATION_SERVERS", "https://login.example/realms/wpm, https://other.example");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE", "http://localhost:1241/mcp");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS", "https://login.example/realms/wpm, https://other.example");
         }
         for path in ["/.well-known/oauth-protected-resource/mcp", "/.well-known/oauth-protected-resource"] {
             let meta = if path.ends_with("/mcp") { request.get("/.well-known/oauth-protected-resource/mcp").await } else { request.get("/.well-known/oauth-protected-resource").await };
@@ -518,12 +534,12 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert_eq!(other.status_code(), 401);
         assert_eq!(other.header("www-authenticate").to_str().unwrap(), "Bearer", "an API route's 401 names the scheme without the MCP pointer");
         unsafe {
-            std::env::set_var("WPM_MCP_AUTHORIZATION_SERVERS", "http://not-https.example");
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS", "http://not-https.example");
         }
         assert_eq!(request.get("/.well-known/oauth-protected-resource").await.status_code(), 500, "unusable settings are an error, not a made-up document");
         unsafe {
-            std::env::remove_var("WPM_MCP_RESOURCE");
-            std::env::remove_var("WPM_MCP_AUTHORIZATION_SERVERS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS");
         }
         let as_worker: Value = request.post("/mcp").add_header("authorization", worker.clone()).json(&call).await.json();
         assert_eq!(as_worker["result"]["isError"], true, "a worker is refused the report by the API itself");
@@ -539,7 +555,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
 
         // ── Webhooks: administrators only, and the secret is a name, not a value ─────────────────────
         let subs = "/api/webhook-subscriptions";
-        let new = json!({ "name": "Payroll", "url": "https://hooks.example/wpm", "kinds": ["worker_terminated"], "secret_ref": "WPM_WEBHOOK_SECRET_PAYROLL" });
+        let new = json!({ "name": "Payroll", "url": "https://hooks.example/wpm", "kinds": ["worker_terminated"], "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_PAYROLL" });
         assert_eq!(request.get(subs).await.status_code(), 401);
         assert_eq!(get(subs.to_string(), worker.clone()).await.status_code(), 403, "a worker");
         assert_eq!(get(subs.to_string(), hr.clone()).await.status_code(), 403, "HR is not an administrator");

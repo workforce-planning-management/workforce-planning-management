@@ -467,4 +467,16 @@ mod tests {
         let many: Vec<Uuid> = (0..31).map(w).collect();
         assert!(validate_rota(7, &many).is_err());
     }
+
+    #[test]
+    fn nobody_is_on_call_from_a_rota_with_no_members() {
+        let empty = Rota {
+            period_days: 7,
+            starts_on: crate::dates::ymd(2026, 1, 5).unwrap(),
+            members: Vec::new(),
+        };
+        let on = crate::dates::ymd(2026, 2, 2).unwrap();
+        let a = assign(&empty, &[], &|_, _| false, on);
+        assert_eq!((a.worker, a.source), (None, None));
+    }
 }

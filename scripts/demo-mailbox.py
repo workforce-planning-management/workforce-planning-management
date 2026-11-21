@@ -7,7 +7,7 @@
 
 The demo server (`deploy/stalwart`, started by `podman compose up`) accepts mail for wpm.test on
 127.0.0.1:1025 with no login and delivers every message to inbox@wpm.test. It never sends anything outside.
-Override the defaults with WPM_MAIL_SMTP (host:port), WPM_MAIL_JMAP (base URL), WPM_MAIL_USER and WPM_MAIL_PASSWORD.
+Override the defaults with WORKFORCE_PLANNING_MANAGEMENT_MAIL_SMTP (host:port), WORKFORCE_PLANNING_MANAGEMENT_MAIL_JMAP (base URL), WORKFORCE_PLANNING_MANAGEMENT_MAIL_USER and WORKFORCE_PLANNING_MANAGEMENT_MAIL_PASSWORD.
 """
 import base64
 import json
@@ -17,10 +17,10 @@ import sys
 import urllib.request
 from email.message import EmailMessage
 
-SMTP = os.environ.get("WPM_MAIL_SMTP", "127.0.0.1:1025")
-JMAP = os.environ.get("WPM_MAIL_JMAP", "http://127.0.0.1:8025").rstrip("/")
-USER = os.environ.get("WPM_MAIL_USER", "inbox@wpm.test")
-PASSWORD = os.environ.get("WPM_MAIL_PASSWORD", "wpm-demo-mail")
+SMTP = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_MAIL_SMTP", "127.0.0.1:1025")
+JMAP = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_MAIL_JMAP", "http://127.0.0.1:8025").rstrip("/")
+USER = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_MAIL_USER", "inbox@wpm.test")
+PASSWORD = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_MAIL_PASSWORD", "wpm-demo-mail")
 AUTH = "Basic " + base64.b64encode(f"{USER}:{PASSWORD}".encode()).decode()
 MAIL = "urn:ietf:params:jmap:mail"
 

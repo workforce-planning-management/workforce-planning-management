@@ -64,7 +64,12 @@ async fn status(request: &axa_test::TestServer, pid: &str, to: &str) {
 #[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
 #[allow(clippy::too_many_lines)] // one scenario read top to bottom
 async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body() {
-    unsafe { std::env::set_var("WPM_WEBHOOK_SECRET_TEST", "whsec-test-1") };
+    unsafe {
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST",
+            "whsec-test-1",
+        )
+    };
     crate::requests::request_open(|request, ctx| async move {
         let stub: Arc<Stub> = Arc::default();
         *stub.answer.lock().unwrap() = 200;
@@ -72,7 +77,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
 
         // Faults are refused with the reason.
         let sub = |extra: Value| {
-            let mut b = json!({ "name": "Payroll", "url": url, "kinds": ["worker_terminated"], "secret_ref": "WPM_WEBHOOK_SECRET_TEST" });
+            let mut b = json!({ "name": "Payroll", "url": url, "kinds": ["worker_terminated"], "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST" });
             b.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
             b
         };
@@ -97,7 +102,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         assert!(!text.contains("whsec-test-1"), "{text}");
         assert_eq!(listed["subscriptions"][1]["name"], "Payroll");
         assert_eq!(listed["subscriptions"][1]["secret_set"], true);
-        assert_eq!(listed["subscriptions"][1]["secret_ref"], "WPM_WEBHOOK_SECRET_TEST");
+        assert_eq!(listed["subscriptions"][1]["secret_ref"], "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST");
 
         // An activation is not what this subscription asked for; a termination is.
         let w = worker(&request, "WH-SECRET-NUMBER").await;
@@ -209,7 +214,7 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         // A hire carries the handoff (who, where, from when) and nothing else; an activation carries no data at all.
         let hires: Value = request
             .post("/api/webhook-subscriptions")
-            .json(&json!({ "name": "Hires", "url": url, "kinds": ["worker_hired", "worker_activated"], "secret_ref": "WPM_WEBHOOK_SECRET_TEST" }))
+            .json(&json!({ "name": "Hires", "url": url, "kinds": ["worker_hired", "worker_activated"], "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST" }))
             .await
             .json();
         let person = a_person();
@@ -264,5 +269,59 @@ async fn a_subscriber_is_told_with_a_signed_reference_and_the_log_holds_no_body(
         assert_eq!(gone.try_get::<i64, _>("n").unwrap(), 0);
     })
     .await;
-    unsafe { std::env::remove_var("WPM_WEBHOOK_SECRET_TEST") };
+    unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST") };
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A delivery to a subscription whose secret is not set, to an address nothing answers, and to a subscription switched off
+// after the event: each records why it did not go, and the one switched off is given up at once.
+async fn a_delivery_that_cannot_go_records_why() {
+    unsafe {
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST",
+            "whsec-test-1",
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_UNSET");
+    };
+    crate::requests::request_open(|request, ctx| async move {
+        let subscribe = |name: &str, url: &str, secret_ref: &str| {
+            let (request, body) = (&request, json!({ "name": name, "url": url, "kinds": ["worker_terminated"], "secret_ref": secret_ref }));
+            async move {
+                let made = request.post("/api/webhook-subscriptions").json(&body).await;
+                assert_eq!(made.status_code(), 200, "{}", made.text());
+                made.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let no_secret = subscribe(&format!("No secret {tag}"), "http://127.0.0.1:1/hook", "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_UNSET").await;
+        let nobody = subscribe(&format!("Nobody {tag}"), "http://127.0.0.1:1/hook", "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST").await;
+        let switched = subscribe(&format!("Switched off {tag}"), "http://127.0.0.1:1/hook", "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST").await;
+
+        let w = worker(&request, &format!("WF-{tag}")).await;
+        for to in ["active", "offboarding", "terminated"] {
+            status(&request, &w, to).await;
+        }
+        request
+            .put(&format!("/api/webhook-subscriptions/{switched}"))
+            .json(&json!({ "name": format!("Switched off {tag}"), "url": "http://127.0.0.1:1/hook", "kinds": ["worker_terminated"],
+                           "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST", "active": false }))
+            .await
+            .assert_status_ok();
+        run(&ctx, Timestamp::now() + jiff::SignedDuration::from_secs(60)).await.unwrap();
+
+        let last = |pid: String| {
+            let request = &request;
+            async move {
+                let log: Value = request.get(&format!("/api/webhook-subscriptions/{pid}/deliveries")).await.json();
+                (log[0]["status"].as_str().unwrap().to_string(), log[0]["last_error"].as_str().map(str::to_string))
+            }
+        };
+        assert_eq!(last(no_secret).await.1.as_deref(), Some("secret not set"));
+        assert_eq!(last(nobody).await.1.as_deref(), Some("request failed"));
+        assert_eq!(last(switched).await, ("failed".to_string(), Some("subscription off".to_string())), "given up at once");
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_TEST") };
+    })
+    .await;
 }

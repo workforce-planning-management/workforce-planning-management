@@ -2,16 +2,16 @@
 # Prove the least-privilege database roles (WPM-R123, WPM-T199): migrate as wpm_migrator, then run the service's request
 # tests as wpm_app, which can read and write rows and cannot change the schema or the audit trail.
 #
-#   ADMIN_DATABASE_URL=postgres://loco:loco@localhost:5432/postgres scripts/verify-db-roles.sh
+#   ADMIN_DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres scripts/verify-db-roles.sh
 #
 # Needs a PostgreSQL superuser URL (to create roles and databases), psql and cargo. The service's request tests reset their
 # data by recreating the schema, which the runtime role must not be able to do, so each test here gets its own clone of a
 # migrated template database (fast) and runs against it as wpm_app with the schema left alone.
 set -euo pipefail
 
-ADMIN_URL="${ADMIN_DATABASE_URL:-postgres://loco:loco@localhost:5432/postgres}"
-MIGRATOR_PW="${WPM_MIGRATOR_PASSWORD:-verify_migrator_pw}"
-APP_PW="${WPM_APP_PASSWORD:-verify_app_pw}"
+ADMIN_URL="${ADMIN_DATABASE_URL:-postgres://postgres:postgres@localhost:5432/postgres}"
+MIGRATOR_PW="${WORKFORCE_PLANNING_MANAGEMENT_MIGRATOR_PASSWORD:-verify_migrator_pw}"
+APP_PW="${WORKFORCE_PLANNING_MANAGEMENT_APP_PASSWORD:-verify_app_pw}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 SERVICE="$HERE/workforce-planning-management-service-with-rust"
 TEMPLATE=wpm_roles_template
@@ -27,7 +27,7 @@ roles_sql() { in_db "$1" -v migrator_password="$MIGRATOR_PW" -v runtime_password
 echo "== template: roles, migrations as wpm_migrator, grants"
 admin -c "DROP DATABASE IF EXISTS $TEMPLATE WITH (FORCE)" -c "DROP DATABASE IF EXISTS $RUN_DB WITH (FORCE)" -c "CREATE DATABASE $TEMPLATE"
 roles_sql "$TEMPLATE"
-(cd "$SERVICE" && APP_ENV=test WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
+(cd "$SERVICE" && APP_ENV=test WORKFORCE_PLANNING_MANAGEMENT_TEST_FRESH_SCHEMA=false WORKFORCE_PLANNING_MANAGEMENT_TEST_TRUNCATE=false \
   DATABASE_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$TEMPLATE" cargo run -q -- db migrate >/dev/null 2>&1)
 roles_sql "$TEMPLATE"
 echo "   $(in_db "$TEMPLATE" -c 'select count(*) from _sqlx_migrations') migrations applied"
@@ -62,10 +62,10 @@ passed=0; refused_ok=0; bad=0
 for t in $TESTS; do
   admin -c "DROP DATABASE IF EXISTS $RUN_DB WITH (FORCE)" -c "CREATE DATABASE $RUN_DB TEMPLATE $TEMPLATE"
   # A few tests install a trigger that refuses audit rows (WPM-D107). That is DDL, which wpm_app must not run, so the test sends it through
-  # WPM_TEST_DDL_URL, the schema owner's connection to this same clone; the service under test still runs as wpm_app. WPM_TEST_REDIS_URL, if
+  # WORKFORCE_PLANNING_MANAGEMENT_TEST_DDL_URL, the schema owner's connection to this same clone; the service under test still runs as wpm_app. WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL, if
   # you set it, passes through on its own; it is not set to an empty string here, which the Redis test would take as a (broken) URL.
-  out="$(APP_ENV=test DB_CONNECT_TIMEOUT=10000 WPM_TEST_FRESH_SCHEMA=false WPM_TEST_TRUNCATE=false \
-    WPM_TEST_DDL_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$RUN_DB" \
+  out="$(APP_ENV=test DB_CONNECT_TIMEOUT=10000 WORKFORCE_PLANNING_MANAGEMENT_TEST_FRESH_SCHEMA=false WORKFORCE_PLANNING_MANAGEMENT_TEST_TRUNCATE=false \
+    WORKFORCE_PLANNING_MANAGEMENT_TEST_DDL_URL="postgres://wpm_migrator:$MIGRATOR_PW@$HOSTPORT/$RUN_DB" \
     DATABASE_URL="postgres://wpm_app:$APP_PW@$HOSTPORT/$RUN_DB" \
     cargo test --test main -q -- --ignored --exact "$t" --test-threads=1 2>&1)" && rc=0 || rc=$?
   if [[ " $TAMPER " == *" $t "* ]]; then

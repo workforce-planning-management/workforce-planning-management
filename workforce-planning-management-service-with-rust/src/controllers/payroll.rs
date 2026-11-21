@@ -107,7 +107,7 @@ fn parsed<T: std::str::FromStr>(lookup: Lookup<'_>, name: &str) -> Option<T> {
     value
 }
 
-/// The full-time contracted day in minutes: `WPM_CONTRACTED_DAY_MINUTES`, 1 to 1,440, else the
+/// The full-time contracted day in minutes: `WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES`, 1 to 1,440, else the
 /// example's 450 (7.5 hours). Overtime is the recorded time beyond it (FTE-scaled).
 #[must_use]
 pub fn contracted_day() -> i32 {
@@ -116,20 +116,20 @@ pub fn contracted_day() -> i32 {
 
 /// [`contracted_day`] read through `lookup`.
 fn contracted_day_from(lookup: Lookup<'_>) -> i32 {
-    parsed::<i32>(lookup, "WPM_CONTRACTED_DAY_MINUTES")
+    parsed::<i32>(lookup, "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES")
         .filter(|&m| {
             let ok = workforce::validate_contracted_day(m).is_ok();
             if !ok {
-                tracing::warn!("WPM_CONTRACTED_DAY_MINUTES is not 1 to 1440; using the example");
+                tracing::warn!("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES is not 1 to 1440; using the example");
             }
             ok
         })
         .unwrap_or(workforce::CONTRACTED_DAY_MINUTES)
 }
 
-/// The payroll stub in force and whether the deployer configured it. `WPM_PAYROLL_STUB_CURRENCY`,
-/// `WPM_PAYROLL_STUB_ALLOWANCE_MINOR` (minor units of that currency, a month) and
-/// `WPM_PAYROLL_STUB_RATE_PERCENT` replace the example; `WPM_PAYROLL_MONTH_MINUTES` the working
+/// The payroll stub in force and whether the deployer configured it. `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY`,
+/// `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR` (minor units of that currency, a month) and
+/// `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT` replace the example; `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES` the working
 /// minutes in a month. A currency other than the example's is taken only with its own allowance and
 /// rate, so the example's pounds are never read as another currency's units; a setting that does not
 /// check is ignored with a warning.
@@ -141,10 +141,23 @@ pub fn tax_stub() -> (rules::TaxStub, bool) {
 /// [`tax_stub`] read through `lookup`.
 fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
     let example = rules::TaxStub::example();
-    let currency = setting(lookup, "WPM_PAYROLL_STUB_CURRENCY").map(|c| c.trim().to_string());
-    let allowance = parsed::<i64>(lookup, "WPM_PAYROLL_STUB_ALLOWANCE_MINOR");
-    let rate = parsed::<i64>(lookup, "WPM_PAYROLL_STUB_RATE_PERCENT");
-    let month = parsed::<i64>(lookup, "WPM_PAYROLL_MONTH_MINUTES");
+    let currency = setting(
+        lookup,
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
+    )
+    .map(|c| c.trim().to_string());
+    let allowance = parsed::<i64>(
+        lookup,
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+    );
+    let rate = parsed::<i64>(
+        lookup,
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+    );
+    let month = parsed::<i64>(
+        lookup,
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+    );
     // Configured means a deployer's value is in force, not merely present: a currency refused for want
     // of its own allowance and rate leaves the example in force and is not "configured" (WPM-T401).
     let mut configured = false;
@@ -156,8 +169,8 @@ fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
     match currency {
         Some(code) if code != example.currency && (allowance.is_none() || rate.is_none()) => {
             tracing::warn!(
-                "WPM_PAYROLL_STUB_CURRENCY needs WPM_PAYROLL_STUB_ALLOWANCE_MINOR and \
-                 WPM_PAYROLL_STUB_RATE_PERCENT for that currency; using the example"
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY needs WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR and \
+                 WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT for that currency; using the example"
             );
         }
         other => {
@@ -1542,8 +1555,11 @@ mod tests {
         // Blank counts as unset.
         assert_eq!(
             stub(&[
-                ("WPM_PAYROLL_STUB_CURRENCY", "  "),
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "")
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "  "),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    ""
+                )
             ]),
             (rules::TaxStub::example(), false)
         );
@@ -1552,10 +1568,22 @@ mod tests {
     #[test]
     fn a_whole_stub_in_another_currency_is_taken() {
         let (yen, configured) = stub(&[
-            ("WPM_PAYROLL_STUB_CURRENCY", " JPY "),
-            ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "100000"),
-            ("WPM_PAYROLL_STUB_RATE_PERCENT", "10"),
-            ("WPM_PAYROLL_MONTH_MINUTES", "9600"),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
+                " JPY ",
+            ),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                "100000",
+            ),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                "10",
+            ),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+                "9600",
+            ),
         ]);
         assert!(configured);
         assert_eq!(
@@ -1574,27 +1602,42 @@ mod tests {
         // The example's pounds are never read as yen: with either missing, the example stays in force
         // and is not reported as configured.
         for pairs in [
-            &[("WPM_PAYROLL_STUB_CURRENCY", "JPY")][..],
+            &[("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY")][..],
             &[
-                ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
-                ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "100000"),
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                    "100000",
+                ),
             ][..],
             &[
-                ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "10"),
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    "10",
+                ),
             ][..],
             &[
-                ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
-                ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "lots"),
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "10"),
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                    "lots",
+                ),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    "10",
+                ),
             ][..],
         ] {
             assert_eq!(stub(pairs), (rules::TaxStub::example(), false), "{pairs:?}");
         }
         // The month minutes are their own setting and still apply.
         let (s, configured) = stub(&[
-            ("WPM_PAYROLL_STUB_CURRENCY", "JPY"),
-            ("WPM_PAYROLL_MONTH_MINUTES", "9600"),
+            ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+                "9600",
+            ),
         ]);
         assert!(configured);
         assert_eq!(s.currency, "GBP");
@@ -1603,7 +1646,10 @@ mod tests {
 
     #[test]
     fn the_examples_own_currency_may_change_one_figure() {
-        let (s, configured) = stub(&[("WPM_PAYROLL_STUB_RATE_PERCENT", "25")]);
+        let (s, configured) = stub(&[(
+            "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+            "25",
+        )]);
         assert!(configured);
         assert_eq!(
             s,
@@ -1613,8 +1659,11 @@ mod tests {
             }
         );
         let (s, configured) = stub(&[
-            ("WPM_PAYROLL_STUB_CURRENCY", "GBP"),
-            ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "0"),
+            ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "GBP"),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                "0",
+            ),
         ]);
         assert!(configured);
         assert_eq!(s.allowance_minor, 0);
@@ -1625,29 +1674,56 @@ mod tests {
         for pairs in [
             // Not ISO 4217, or not upper case.
             &[
-                ("WPM_PAYROLL_STUB_CURRENCY", "XYZ"),
-                ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "1"),
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "1"),
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "XYZ"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                    "1",
+                ),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    "1",
+                ),
             ][..],
             &[
-                ("WPM_PAYROLL_STUB_CURRENCY", "jpy"),
-                ("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "1"),
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "1"),
+                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "jpy"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                    "1",
+                ),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    "1",
+                ),
             ][..],
             // Out of range: the whole stub falls back, the month minutes with it.
             &[
-                ("WPM_PAYROLL_STUB_RATE_PERCENT", "101"),
-                ("WPM_PAYROLL_MONTH_MINUTES", "9600"),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                    "101",
+                ),
+                (
+                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+                    "9600",
+                ),
             ][..],
-            &[("WPM_PAYROLL_STUB_ALLOWANCE_MINOR", "-1")][..],
-            &[("WPM_PAYROLL_MONTH_MINUTES", "0")][..],
-            &[("WPM_PAYROLL_MONTH_MINUTES", "99999999")][..],
+            &[(
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                "-1",
+            )][..],
+            &[("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES", "0")][..],
+            &[(
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+                "99999999",
+            )][..],
         ] {
             assert_eq!(stub(pairs), (rules::TaxStub::example(), false), "{pairs:?}");
         }
         // Not a whole number: ignored, as if unset.
         assert_eq!(
-            stub(&[("WPM_PAYROLL_STUB_RATE_PERCENT", "12.5")]),
+            stub(&[(
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
+                "12.5"
+            )]),
             (rules::TaxStub::example(), false)
         );
     }
@@ -1655,12 +1731,27 @@ mod tests {
     #[test]
     fn the_contracted_day_is_one_to_a_full_day() {
         assert_eq!(day(&[]), workforce::CONTRACTED_DAY_MINUTES);
-        assert_eq!(day(&[("WPM_CONTRACTED_DAY_MINUTES", " 480 ")]), 480);
-        assert_eq!(day(&[("WPM_CONTRACTED_DAY_MINUTES", "1")]), 1);
-        assert_eq!(day(&[("WPM_CONTRACTED_DAY_MINUTES", "1440")]), 1_440);
+        assert_eq!(
+            day(&[(
+                "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
+                " 480 "
+            )]),
+            480
+        );
+        assert_eq!(
+            day(&[("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES", "1")]),
+            1
+        );
+        assert_eq!(
+            day(&[(
+                "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
+                "1440"
+            )]),
+            1_440
+        );
         for junk in ["0", "1441", "-5", "7.5h", "", "eight hours"] {
             assert_eq!(
-                day(&[("WPM_CONTRACTED_DAY_MINUTES", junk)]),
+                day(&[("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES", junk)]),
                 workforce::CONTRACTED_DAY_MINUTES,
                 "{junk}"
             );

@@ -110,11 +110,11 @@ handover** · OpenAPI + Swagger · `/metrics.prom`.
 Tasks: `seed`, `snapshot_headcount`, `rota_reminders` and
 `pay_progression_reminders` (**schedule these daily — they do nothing by themselves**), `import_framework`, `import_esco`, `import_sfia`, `import_sfiaplus`.
 
-Sign-in enforcement is **on by default** (`WPM_REQUIRE_AUTH`; only an explicit
+Sign-in enforcement is **on by default** (`WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH`; only an explicit
 `0`/`false`/`no`/`off` turns it off, and the `production` environment refuses to
 start that way); upstream lookups default to **stub mode**; events default to
 the in-memory transport. For local development without an identity service,
-run with `WPM_REQUIRE_AUTH=0` (the service warns while it is off).
+run with `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0` (the service warns while it is off).
 
 ## Upgrading across the 2026-07-23 rename
 
@@ -124,7 +124,7 @@ handled for you; one needs an operator action.
 
 | Change | What happens |
 |---|---|
-| Env prefix `HCM_*` → `WPM_*` | **Automatic.** The old names still work and log a one-off deprecation warning naming the replacement (`src/compat.rs`). Rename them at your leisure; the fallback will be removed. |
+| Env prefix `HCM_*` and `WPM_*` → `WORKFORCE_PLANNING_MANAGEMENT_*` | **Automatic.** The old names still work and log a one-off deprecation warning naming the replacement (`src/compat.rs`). Rename them at your leisure; the fallback will be removed. |
 | ABAC entity `"hcm"` → `"wpm"` | **Automatic.** A mounted policy whose rules key on `entity: "hcm"` is rewritten at load and warn-logged. This one matters: a stale entity condition would _silently stop matching_ and fall through to the default decision. |
 | Front-end theme / locale | **Automatic.** A returning user's `mxi.hcm.*` localStorage values are adopted under `mxi.wpm.*` on their next visit, so nobody's language or theme resets. |
 | **Database name** | **Manual — see below.** |

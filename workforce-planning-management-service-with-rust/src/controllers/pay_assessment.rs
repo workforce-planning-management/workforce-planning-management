@@ -36,20 +36,22 @@ pub(crate) struct Configured {
 /// `pay_transparency.joint_assessment_months`), else the environment, else the Directive's. A pair
 /// that does not check together falls back to the defaults with a warning.
 pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
-    let threshold_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
-        .and_then(|v| v.trim().parse::<i64>().ok());
-    let months_setting = crate::compat::env_var("WPM_JOINT_ASSESSMENT_MONTHS")
-        .and_then(|v| v.trim().parse::<u32>().ok());
+    let threshold_setting =
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
+            .and_then(|v| v.trim().parse::<i64>().ok());
+    let months_setting =
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS")
+            .and_then(|v| v.trim().parse::<u32>().ok());
     let percent = statutory::integer(
         scope,
-        "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
         as_of,
         threshold_setting,
         rules::DEFAULT_THRESHOLD_BP / 100,
     );
     let months = statutory::integer(
         scope,
-        "WPM_JOINT_ASSESSMENT_MONTHS",
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS",
         as_of,
         months_setting,
         rules::DEFAULT_REMEDY_MONTHS,
@@ -68,8 +70,10 @@ pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
             };
             Configured {
                 config: Config::default(),
-                threshold_from: default("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT"),
-                months_from: default("WPM_JOINT_ASSESSMENT_MONTHS"),
+                threshold_from: default(
+                    "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+                ),
+                months_from: default("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS"),
             }
         }
     }
@@ -178,8 +182,8 @@ pub(crate) async fn signals(
         "threshold_bp": config.threshold_bp,
         "remedy_months": config.remedy_months,
         // Whose threshold and period these are (WPM-T384).
-        "threshold_basis": statutory::basis("WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT", &configured.threshold_from),
-        "remedy_basis": statutory::basis("WPM_JOINT_ASSESSMENT_MONTHS", &configured.months_from),
+        "threshold_basis": statutory::basis("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT", &configured.threshold_from),
+        "remedy_basis": statutory::basis("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS", &configured.months_from),
         "categories": out,
         "derivation": "A joint pay assessment is due when a category's average pay gap in basic pay is at or over the threshold, \
                        either way, the employer has not recorded a justification on objective, gender-neutral criteria, and has \

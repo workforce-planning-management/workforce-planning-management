@@ -225,4 +225,12 @@ mod tests {
         map.insert(u(2), u(1)); // pre-existing corruption
         assert!(!would_create_cycle(u(9), u(1), &map));
     }
+
+    #[test]
+    fn every_report_kind_has_its_token() {
+        assert_eq!(
+            (ReportKind::Direct.as_str(), ReportKind::Indirect.as_str()),
+            ("direct", "indirect")
+        );
+    }
 }

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — settings are named `WORKFORCE_PLANNING_MANAGEMENT_*` (WPM-R278, WPM-T604, 2026-11-20)
+
+- `WORKFORCE_PLANNING_MANAGEMENT_API_URL`, `_PUBLIC_URL` and `_DEMO_API_URL`, with `withLegacy` reading the old names
+  with a warning.
+
+### Added — the allocations grid (WPM-T599, part, 2026-11-20)
+
+- `/allocations` for HR and resource managers: people by month with signals; add, confirm, end and remove.
+
+### Added — a person's allocations on /me (WPM-T599, part, 2026-11-20)
+
+- `MyAllocations` on `/me` and the worker page; `getWorkerAllocations`; strings in the 13 base locales.
+
+### Changed — the API types include the allocation routes (WPM-T598, 2026-11-20)
+
+- `src/lib/api/openapi.json` and `schema.d.ts` regenerated; no screen uses them yet (WPM-T599).
+
+### Added — the resource manager role's label (WPM-T601, 2026-11-20)
+
+- `values.resource_manager` in the 13 base locales (AI-written outside English, unreviewed); CMS config regenerated.
+
 ### Fixed — exact minor units at the JSON boundary (WPM-T552)
 
 Money input, display and edit fields preserve every decimal digit through the

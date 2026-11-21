@@ -126,6 +126,10 @@ and see when I become eligible for the next step; I am told when that is near.*
 
 ## Not done
 
+- **Proposed 2026-11-20:** scales as configuration that an authorized person maintains and a second person publishes, and a
+  grade (band and pay point) on each post: WPM-R254, WPM-R255 and WPM-D207 (amending WPM-D38) in
+  [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md).
+
 - Telling HR or a manager that someone becomes eligible; a team view of who is due
   (a count of one names someone); pay-position history.
 - Comparing a position with the recorded salary (see WPM-D41); flagging a salary that is

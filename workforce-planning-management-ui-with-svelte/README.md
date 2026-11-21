@@ -32,9 +32,9 @@ See `.env.example`.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `WPM_API_URL` | `http://localhost:1241` | workforce-planning-management root URL (no `/api`); the proxy forwards `/api/proxy/x` to `<root>/api/x` |
+| `WORKFORCE_PLANNING_MANAGEMENT_API_URL` | `http://localhost:1241` | workforce-planning-management root URL (no `/api`); the proxy forwards `/api/proxy/x` to `<root>/api/x` |
 | `AUTH_API_URL` | `http://localhost:1241` | authentication-service base URL — magic-link login + session→PASETO exchange |
-| `WPM_PUBLIC_URL` | _(blank)_ | public address of this site for `/sitemap.xml` and `/robots.txt`; blank = the request origin (set it behind a proxy) |
+| `WORKFORCE_PLANNING_MANAGEMENT_PUBLIC_URL` | _(blank)_ | public address of this site for `/sitemap.xml` and `/robots.txt`; blank = the request origin (set it behind a proxy) |
 
 Both default to the same port because every family service defaults
 to `:1241`; point them at distinct ports/hosts when running the

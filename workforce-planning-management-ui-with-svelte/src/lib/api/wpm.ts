@@ -20,6 +20,7 @@ type Answer<
   : null;
 import type {
   Application,
+  WorkerAllocations,
   JobLevelFramework,
   RoleGrade,
   WorkerJobLevel,
@@ -6686,7 +6687,7 @@ export type ProfileOrigin = {
 
 /**
  * Where a value in force came from (WPM-D153): the jurisdiction profile (with the rows behind it), the deployer's
- * `WPM_*` setting, or the default. `profile` says why a profile that was looked at gave nothing usable.
+ * `WORKFORCE_PLANNING_MANAGEMENT_*` setting, or the default. `profile` says why a profile that was looked at gave nothing usable.
  */
 export type CameFrom = {
   kind: "profile" | "setting" | "default";
@@ -6977,4 +6978,89 @@ export function listPayslipQueries(
 /** Close a payslip query. Changes no amount. */
 export function closePayslipQuery(pid: string): Promise<PayslipQuery> {
   return api(`/payslip-queries/${pid}/close`, { method: "POST" });
+}
+
+function allocationWindow(from?: string, months?: number): string {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (months !== undefined) params.set("months", String(months));
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+/** A person's allocations with each month's standing (WPM-R275). The person, their line managers, HR and resource managers. */
+export function getWorkerAllocations(
+  workerPid: string,
+  from?: string,
+  months?: number,
+  init?: FetchLike,
+): Promise<WorkerAllocations> {
+  return api(
+    `/workers/${workerPid}/allocations${allocationWindow(from, months)}`,
+    init,
+  );
+}
+
+/** The people of an organization with their allocations and month standings, by name (HR and resource managers). One page. */
+export function listAllocations(
+  organization: string,
+  from?: string,
+  months?: number,
+  source?: string,
+): Promise<Page<WorkerAllocations>> {
+  const params = new URLSearchParams({ organization });
+  if (from) params.set("from", from);
+  if (months !== undefined) params.set("months", String(months));
+  if (source) params.set("source", source);
+  return apiPage(`/allocations?${params.toString()}`);
+}
+
+/** Move an allocation: tentative and confirmed either way, either to ended. HR and resource managers. */
+export function setAllocationStatus(
+  pid: string,
+  to: "tentative" | "confirmed" | "ended",
+): Promise<{ pid: string; status: string }> {
+  return api(`/allocations/${pid}/status`, { method: "POST", body: { to } });
+}
+
+/** Remove an allocation made in error. HR and resource managers. */
+export function deleteAllocation(
+  pid: string,
+): Promise<{ pid: string; deleted: boolean }> {
+  return api(`/allocations/${pid}`, { method: "DELETE" });
+}
+
+/** One assignment as the allocation form needs it: what it is and whether it is in force. */
+export interface AssignmentSummary {
+  pid: string;
+  job_title: string;
+  department: string;
+  fte_percent: number;
+  current: boolean;
+}
+
+/** The jobs a worker holds and has held (the worker and HR). */
+export function getWorkerAssignments(workerPid: string): Promise<{
+  worker_pid: string;
+  fte_total: number;
+  assignments: AssignmentSummary[];
+}> {
+  return api(`/workers/${workerPid}/assignments`);
+}
+
+/** Allocate a share of one of a worker's assignments (HR and resource managers, not for themselves). */
+export function createAllocation(
+  workerPid: string,
+  body: {
+    assignment_pid: string;
+    source_ref: string;
+    from_month: string;
+    to_month: string;
+    fte_centi: number;
+    status?: "tentative" | "confirmed";
+    pool_pid?: string;
+    note?: string;
+  },
+): Promise<{ pid: string }> {
+  return api(`/workers/${workerPid}/allocations`, { method: "POST", body });
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fill a DEMO service with fictitious data so every page of the UI has something to show.
 
-Run it once, after `cargo run -- task seed`, against a service started with WPM_REQUIRE_AUTH=0 that holds
+Run it once, after `cargo run -- task seed`, against a service started with WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 that holds
 nothing real (it is for the guided tour: sign in as example@example.com, see `ui AGENTS.md`):
 
     python3 scripts/demo-data.py [http://localhost:1241]

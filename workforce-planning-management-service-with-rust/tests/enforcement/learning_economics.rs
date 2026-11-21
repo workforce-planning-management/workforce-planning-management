@@ -60,9 +60,15 @@ fn sign_as(kid: &str, sub: &str, attrs: &[(&str, &[&str])]) -> String {
 fn enforce() -> String {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     kid
 }
@@ -514,6 +520,23 @@ async fn spend_is_recorded_fees_against_a_budget_per_currency() {
                            "amount_minor": 120_000, "currency": "GBP" }))
             .await
             .assert_status_ok();
+        // Each refusal of a budget: a blank department, a year out of range, a negative amount, a bad currency.
+        for (department, year, amount, currency) in [
+            (" ", 2026, 1, "GBP"),
+            ("engineering", 1999, 1, "GBP"),
+            ("engineering", 2026, -1, "GBP"),
+            ("engineering", 2026, 1, "pounds"),
+        ] {
+            let refused = request
+                .put("/api/learning-budgets")
+                .add_header("authorization", hr.clone())
+                .json(&json!({ "organization_ref": org, "department": department, "year": year,
+                               "amount_minor": amount, "currency": currency }))
+                .await;
+            assert_eq!(refused.status_code(), 422, "{department} {year} {amount} {currency}");
+        }
+        let far = format!("/api/learning-budgets?organization={}&year=99999", org.replace(':', "%3A"));
+        assert_eq!(request.get(&far).add_header("authorization", hr.clone()).await.status_code(), 422);
         let url = format!("/api/learning-budgets?organization={}&year=2026", org.replace(':', "%3A"));
         let view: Value = request.get(&url).add_header("authorization", hr.clone()).await.json();
         let department = &view["departments"][0];
@@ -525,6 +548,71 @@ async fn spend_is_recorded_fees_against_a_budget_per_currency() {
         );
         let refused = request.get(&url).add_header("authorization", plain.clone()).await;
         assert_eq!(refused.status_code(), 403);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement -- --ignored`"]
+// A course nobody lists has an unknown fee and estimated hours; a step that is not a course has no fee; a candidate with no
+// pay is answered unknown and says so; a candidate from another organization is not found; the budget defaults to this year.
+async fn an_unlisted_course_an_unpaid_candidate_and_this_years_budget() {
+    let kid = enforce();
+    let person = uuid::Uuid::new_v4();
+    let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
+    let hr = bearer(sign_as(&kid, "hr-gaps", &[("hr", &["true"])]));
+    let payroll = bearer(sign_as(&kid, "pay-gaps", &[("payroll", &["true"])]));
+
+    request::<App, _, _>(|request, ctx| async move {
+        let org = format!("organization:{}", uuid::Uuid::new_v4());
+        let elsewhere = format!("organization:{}", uuid::Uuid::new_v4());
+        seat(&ctx, "hr-gaps", &org).await;
+        seat(&ctx, "pay-gaps", &org).await;
+        let unpaid = worker(&request, &svc, &org, &person.to_string(), "GP-1", None).await;
+        let stranger = worker(&request, &svc, &elsewhere, &uuid::Uuid::new_v4().to_string(), "GP-2", Some(3_000_000)).await;
+        let skill = a_skill(&request, &svc).await;
+        let other_skill = a_skill(&request, &svc).await;
+
+        let plan: Value = request
+            .post(&format!("/api/workers/{unpaid}/development-plans"))
+            .add_header("authorization", svc.clone())
+            .json(&json!({ "kind": "upskill", "items": [
+                { "skill_pid": skill, "current_level": 1, "target_level": 3, "method": "course", "course_ref": "NOT-LISTED" },
+                { "skill_pid": other_skill, "current_level": 2, "target_level": 3, "method": "mentorship" },
+            ]}))
+            .await
+            .json();
+        let plan = plan["pid"].as_str().expect("plan pid").to_string();
+        let cost = request.get(&format!("/api/development-plans/{plan}/cost")).add_header("authorization", hr.clone()).await;
+        assert_eq!(cost.status_code(), 200, "{}", cost.text());
+        let cost: Value = cost.json();
+        assert_eq!(cost["cost"]["courses_without_fee"], 1, "the unlisted course: {cost}");
+        assert_eq!(cost["cost"]["estimated_hours"], cost["cost"]["hours"], "neither step has stated hours: {cost}");
+
+        let position: Value = request
+            .post("/api/positions")
+            .add_header("authorization", hr.clone())
+            .json(&json!({ "organization_ref": org, "cost_centre": "engineering", "title": format!("Seat {}", uuid::Uuid::new_v4()),
+                           "budget_fte_percent": 100, "funding_kind": "core" }))
+            .await
+            .json();
+        let position = position["pid"].as_str().expect("position pid").to_string();
+        let ask = |candidate: &str| {
+            let (request, payroll) = (&request, payroll.clone());
+            let url = format!("/api/positions/{position}/train-or-hire?candidate={candidate}");
+            async move { request.get(&url).add_header("authorization", payroll).await }
+        };
+        let no_pay: Value = ask(&unpaid).await.json();
+        assert_eq!(no_pay["answer"], "unknown");
+        assert_eq!(no_pay["missing"], json!(["candidate_pay"]));
+        assert_eq!(ask(&stranger).await.status_code(), 404, "another organization's worker");
+
+        let this_year = request
+            .get(&format!("/api/learning-budgets?organization={}", org.replace(':', "%3A")))
+            .add_header("authorization", hr.clone())
+            .await;
+        assert_eq!(this_year.status_code(), 200, "{}", this_year.text());
     })
     .await;
 }

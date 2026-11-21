@@ -36,11 +36,6 @@ const BUILT_FROM_A_VARIABLE: &[(&str, &str, &str)] = &[
     ),
     (
         "POST",
-        "/api/early-warnings/sweep",
-        "enforcement_oversight_pack.rs: a (path, body) table",
-    ),
-    (
-        "POST",
         "/api/me/leave-requests",
         "enforcement_me.rs: the `mine` helper",
     ),
@@ -58,11 +53,6 @@ const BUILT_FROM_A_VARIABLE: &[(&str, &str, &str)] = &[
         "POST",
         "/api/movements/{pid}/handover/all",
         "requests/movements.rs: `{handover}/all`",
-    ),
-    (
-        "POST",
-        "/api/workers/{pid}/framework-roles/{framework}/past",
-        "requests/learning.rs: `{role_url}/past`",
     ),
 ];
 

@@ -27,6 +27,7 @@ because the demo has none. A deployer must replace "not yet measurable" with the
 | S8 | Workforce insight flags (turnover, span of control, time to fill) | thresholds | rules | leadership attention | leaders, as aggregates | `rules::insights` |
 | S9 | **Risk of loss** (flight risk) | not built | | | | |
 | S10 | Stated skill level counted on WPM's 1–5 (SFIA's seven levels, a PCF level) | mapping | rules (`linear`, pinned) | gap, plan and requirement views | the worker, their line managers and HR | `rules::sfia::to_wpm`, `rules::framework::map_level` |
+| S11 | Allocation signals (`over_allocated`, `available`, `leave_clash`), proposed (WPM-R275) | screening: **not a score** | rules (pinned) | resource planning only; never reviews, appraisals, pay or selection (WPM-D211) | the person, their line managers, HR, the source's owner | `rules::allocation::person_month` |
 
 **The statutory pay checks score no one** (WPM-T424). The minimum-wage check (WPM-R218), the overtime check (WPM-R219) and
 the exempt salary check compare pay with a figure the law or an agreement sets and say, for each payslip, whether the pay meets it

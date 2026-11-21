@@ -9,6 +9,57 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Decided — OpenID Connect only, no SAML until a customer needs it (WPM-D222, 2026-11-21)
+
+Sign-in stays OpenID Connect only. SAML is added when a customer needs it, as its own requirement; a provider that speaks only
+SAML can meanwhile be brokered through Keycloak (not tested with WPM).
+
+### Changed — `axa` 0.20.1 (WPM-T606, 2026-11-20)
+
+`axa` 0.20.0 to 0.20.1, at the owner's request inside the minimum publish age. Only the unused `mail` feature changed; no code
+changes.
+
+### Changed — test and demo databases use `postgres`/`postgres` (WPM-T605, 2026-11-20)
+
+The last trace of Loco.rs: the `loco`/`loco` superuser in CI, compose and scripts is now `postgres`/`postgres`.
+
+### Changed — settings are named `WORKFORCE_PLANNING_MANAGEMENT_*` (WPM-R278, WPM-T604, 2026-11-20)
+
+Every `WPM_*` setting is now `WORKFORCE_PLANNING_MANAGEMENT_*`, in the service, the UI, scripts, CI, compose and deploy
+files. The old `WPM_*` and `HCM_*` names are still read, with a warning, for one release (WPM-D221).
+
+### Added — one deployment, one database proposed (WPM-R277, 2026-11-20)
+
+A deployment name bound into its database at the first start and checked at every start, before migrations, so a service
+never starts against another buyer's database. Follows CRM-R105 in the sibling CRM. Proposed; WPM-T603.
+
+### Added — supplier assurance proposed for a health buyer (2026-11-20)
+
+`spec/supplier-assurance.md` and plan section Y: what a supplier hosting WPM for NHS Wales must evidence, what the software
+already answers, and proposed support access grants, a tenant pin, MFA, column encryption, audit anchoring, residency, and
+exit export and destruction (WPM-R267–R274, WPM-D214–D219, WPM-T574–T595). Nothing built.
+
+### Added — per-person allocation in the service (WPM-T598, 2026-11-20)
+
+Allocations can be recorded, confirmed, read with their month standings, and summarized against programme claims; named reads
+are limited and audited. No screen yet.
+
+### Added — the resource manager role (WPM-R276, WPM-T601, 2026-11-20)
+
+A `resource_manager` organization role and the `wpm-resource-manager` identity-provider role, for the people who plan
+allocations; it reads and writes allocations only.
+
+### Changed — WPM tracks per-person allocation (WPM-D211, 2026-11-20)
+
+The owner decided that WPM records a person's planned allocation per programme, product and service by month (WPM-R275,
+WPM-T596–T600), amending WPM-D45 and WPM-D59; timesheets stay out.
+
+### Added — planning depth proposed from customer feedback (2026-11-20)
+
+Assessment and proposals in `spec/workforce-planning-and-scenarios.md` and plan section X: configurable pay scales and a
+grade per post (Agenda for Change as the worked example), combined analysis, organizational units and services, allocation
+signals, versioned scenarios with impact, and finance export (WPM-R254–R266, WPM-D207–D213, WPM-T553–T573). Nothing built.
+
 ### Changed — the documentation site is current (WPM-T542, 2026-11-19)
 
 The accumulated site and documentation changes are published at

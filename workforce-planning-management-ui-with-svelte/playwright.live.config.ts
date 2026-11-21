@@ -1,11 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // The same UI against a REAL service, no stubs (WPM-T143). Opt in: start the API on :1241 with
-// `WPM_REQUIRE_AUTH=0` and a database holding the demo data from `tests/live/README.md`, then
+// `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0` and a database holding the demo data from `tests/live/README.md`, then
 //
-//   WPM_LIVE_API=1 PW_PORT=4510 pnpm exec playwright test -c playwright.live.config.ts
+//   WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1 PW_PORT=4510 pnpm exec playwright test -c playwright.live.config.ts
 //
-// Without `WPM_LIVE_API=1` every spec here is skipped, so the stubbed suite never needs a service.
+// Without `WORKFORCE_PLANNING_MANAGEMENT_LIVE_API=1` every spec here is skipped, so the stubbed suite never needs a service.
 const PORT = process.env.PW_PORT ?? "4510";
 
 export default defineConfig({

@@ -90,10 +90,16 @@ fn policy_with_deciders() -> String {
 async fn a_conversion_is_proposed_by_a_manager_approved_by_someone_else_and_read_by_hr() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
-        std::env::set_var("WPM_ABAC_POLICY", policy_with_deciders());
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
     }
     let p: Vec<uuid::Uuid> = (0..5).map(|_| uuid::Uuid::new_v4()).collect();
     let [worker_p, mgr_p, other_mgr_p, neighbour_p, hr_p] = [0, 1, 2, 3, 4].map(|i| p[i]);

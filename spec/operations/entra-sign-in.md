@@ -35,6 +35,7 @@ Two ways to let people sign in with an Entra ID (formerly Azure AD) account. Pic
 | --- | --- | --- |
 | `wpm-hr` | HR | Writes, and reads masked |
 | `wpm-payroll` | Payroll | Reads salary and payslips unmasked |
+| `wpm-resource-manager` | Resource manager | Plans people's allocations (WPM-R276); no salary or other HR record |
 | `wpm-svc` | Service | Machine callers: does everything. **Only for service principals** |
 | `wpm-admin` | Administrator | `access = admin`: erase, sweep, import, merge |
 | *(no role)* | Employee | Authenticated reader; writes limited to the person's own |
@@ -42,11 +43,11 @@ Two ways to let people sign in with an Entra ID (formerly Azure AD) account. Pic
 ## Direct: configure the API
 
 ```sh
-WPM_KEYCLOAK_JWKS_URL=https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys
-WPM_KEYCLOAK_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0
-WPM_KEYCLOAK_AUDIENCE=<application (client) id>
-WPM_OIDC_SUBJECT_CLAIM=oid
-WPM_ABAC_POLICY_FILE=/etc/wpm/abac-policy.json   # start from config/abac-policy.reference.json
+WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL=https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys
+WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0
+WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE=<application (client) id>
+WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM=oid
+WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE=/etc/wpm/abac-policy.json   # start from config/abac-policy.reference.json
 APP_ENV=production
 ```
 
@@ -57,10 +58,10 @@ You can read the first two from the tenant's discovery document:
 **Why `oid`.** In Entra, a token's `sub` is different for every application, so a person has
 a different `sub` in every app and `resource.person = $sub` self-rules, the audit actor and
 the link to a person record would not line up. The object id (`oid`) is the same across the
-tenant. With `WPM_OIDC_SUBJECT_CLAIM=oid` the subject is the `oid`, and **a token with no
+tenant. With `WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM=oid` the subject is the `oid`, and **a token with no
 `oid` is refused** rather than silently falling back to `sub`.
 
-The key set is fetched at boot and refreshed every hour (`WPM_KEYCLOAK_JWKS_REFRESH_SECS`,
+The key set is fetched at boot and refreshed every hour (`WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS`,
 `0` disables); Entra rotates its keys, so keep the refresh on. Only RS256 and ES256 are
 accepted, whatever the token's header claims.
 

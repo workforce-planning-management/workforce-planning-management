@@ -57,7 +57,8 @@
     "coverageEvidence": "Prueba de cobertura",
     "qualifications": "Cualificaciones",
     "injuryRecords": "Registros de lesiones",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "allocations": "Asignaciones"
   },
   "pr": {
     "retention": "Retención",
@@ -1530,6 +1531,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Quién está previsto que trabaje en qué, mes a mes, por orden de nombre. Es un plan, no una medida del trabajo de nadie: nunca clasifica a las personas ni da puntuaciones.",
+      "organization": "Organización",
+      "notAllowed": "Esta vista es para RR. HH. y gestores de recursos.",
+      "empty": "No hay nadie que mostrar.",
+      "person": "Persona",
+      "confirm": "Confirmar",
+      "end": "Terminar",
+      "remove": "Eliminar",
+      "add": "Añadir una asignación",
+      "job": "Puesto",
+      "from": "Desde el mes",
+      "to": "Hasta el mes",
+      "sharePercent": "Parte del puesto (centésimas de ETC)",
+      "confirmNow": "Confirmar ahora (se avisa a la persona)"
     }
   },
   "titles": {
@@ -1876,6 +1893,7 @@
     "payroll_admin": "administrador de nóminas",
     "viewer": "lector",
     "partner": "socio",
+    "resource_manager": "gestor de recursos",
     "past_end_without_approved_plan": "Vencido sin plan aprobado",
     "review_due": "Revisión pendiente",
     "not_started": "No iniciado",
@@ -3457,5 +3475,29 @@
   },
   "footer": {
     "privacyNotice": "Aviso de privacidad"
+  },
+  "allocations": {
+    "title": "Asignaciones",
+    "hint": "En qué está previsto que trabaje, mes a mes. Es un plan, no una medida de lo que hizo, y nunca puntúa a nadie.",
+    "untracked": "Su organización no registra asignaciones, así que ningún mes aparece como completo o libre.",
+    "none": "Sin asignaciones.",
+    "source": "Programa, producto o servicio",
+    "months": "Meses",
+    "share": "Parte (ETC)",
+    "status": "Estado",
+    "monthRange": "De {from} a {to}",
+    "runsPastEnd": "Se extiende más allá del fin del puesto o del contrato el {date}",
+    "allocated": "{allocated} de {available} ETC asignados",
+    "state": {
+      "tentative": "Provisional",
+      "confirmed": "Confirmada",
+      "ended": "Terminada"
+    },
+    "signal": {
+      "overAllocated": "Sobreasignado en {fte} ETC",
+      "leaveClash": "Las ausencias aprobadas dejan {fte} ETC sin cubrir",
+      "available": "{fte} ETC libres",
+      "assignmentOver": "Un puesto supera su propia ETC en {fte}"
+    }
   }
 }

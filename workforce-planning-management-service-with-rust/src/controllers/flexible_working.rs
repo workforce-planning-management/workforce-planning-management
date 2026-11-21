@@ -54,11 +54,11 @@ fn number(name: &str, max: u32) -> Option<u32> {
 }
 
 /// Calendar months a decision may take: the worker's profile
-/// (`flexible_working.decision_months`), else `WPM_FLEXIBLE_DECISION_MONTHS` (at most 12, at least
+/// (`flexible_working.decision_months`), else `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS` (at most 12, at least
 /// 1), else 2.
 #[must_use]
 pub fn decision_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
-    let name = "WPM_FLEXIBLE_DECISION_MONTHS";
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS";
     statutory::integer(
         scope,
         name,
@@ -69,11 +69,11 @@ pub fn decision_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
 }
 
 /// Requests a worker may make in 12 calendar months: the profile's
-/// (`flexible_working.requests_per_year`), else `WPM_FLEXIBLE_REQUESTS_PER_YEAR`, else 2; `0` for no
+/// (`flexible_working.requests_per_year`), else `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR`, else 2; `0` for no
 /// limit.
 #[must_use]
 pub fn requests_per_year(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
-    let name = "WPM_FLEXIBLE_REQUESTS_PER_YEAR";
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR";
     statutory::integer(
         scope,
         name,
@@ -84,10 +84,10 @@ pub fn requests_per_year(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
 }
 
 /// Calendar days to appeal a refusal: the profile's (`flexible_working.appeal_calendar_days`), else
-/// `WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS`, else 14.
+/// `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS`, else 14.
 #[must_use]
 pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
-    let name = "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS";
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS";
     statutory::integer(
         scope,
         name,
@@ -98,10 +98,10 @@ pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: Date) -> InForce<u32> 
 }
 
 /// The allowed refusal reasons: the profile's (`flexible_working.refusal_reasons`), else
-/// `WPM_FLEXIBLE_REFUSAL_REASONS` (comma-separated lowercase tokens), else the defaults.
+/// `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS` (comma-separated lowercase tokens), else the defaults.
 #[must_use]
 pub fn refusal_reasons(scope: Option<&Scope>, as_of: Date) -> InForce<Vec<String>> {
-    let name = "WPM_FLEXIBLE_REFUSAL_REASONS";
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS";
     let configured = setting(name).and_then(|text| match rules::parse_reasons(&text) {
         Ok(list) => Some(list),
         Err(error) => {

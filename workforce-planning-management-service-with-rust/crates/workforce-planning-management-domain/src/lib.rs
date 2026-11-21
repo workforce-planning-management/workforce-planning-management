@@ -15,6 +15,7 @@ pub mod access;
 pub mod adjustments;
 pub mod agreement;
 pub mod ai_register;
+pub mod allocation;
 pub mod announcements;
 pub mod appraisal;
 pub mod assessment;

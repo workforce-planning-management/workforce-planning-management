@@ -38,9 +38,12 @@ impl<'a> MakeWriter<'a> for Captured {
 async fn a_request_leaves_an_id_and_a_route_and_nothing_personal() {
     // `set_var` is `unsafe` in edition 2024; set before the app boots and reads it.
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "0");
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "0");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+            "0",
+        );
     }
     let captured = Captured::default();
     tracing::subscriber::set_global_default(

@@ -183,3 +183,62 @@ async fn expiring_training_lists_certificates_that_lapse_inside_the_horizon() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn cycles_training_and_the_succession_bench_refuse_what_cannot_be() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let worker = seed_worker!(&request, &org, format!("DV-{tag}-W"), None).await;
+        activate!(&request, &worker).await;
+
+        // A cycle that ends before it starts is refused; a closed cycle takes no new review.
+        let reversed = request
+            .post("/api/review-cycles")
+            .json(&json!({ "name": format!("Back {tag}"), "period_start": "2026-12-31", "period_end": "2026-01-01" }))
+            .await;
+        assert_eq!(reversed.status_code(), 422);
+        let cycle: Value = request
+            .post("/api/review-cycles")
+            .json(&json!({ "name": format!("Closed {tag}"), "period_start": "2026-01-01", "period_end": "2026-12-31" }))
+            .await
+            .json();
+        let cycle = cycle["pid"].as_str().unwrap().to_string();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE review_cycles SET status = 'closed' WHERE pid = '{cycle}'")))
+            .execute(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
+        let late = request.post(&format!("/api/review-cycles/{cycle}/reviews")).json(&json!({ "worker_pid": worker })).await;
+        assert_eq!(late.status_code(), 422, "{}", late.text());
+
+        // Training: a course reference that is not a course is refused; an enrolment moves to in progress.
+        let training = format!("/api/workers/{worker}/training-enrollments");
+        assert_eq!(request.post(&training).json(&json!({ "course_ref": format!("person:{}", uuid::Uuid::new_v4()) })).await.status_code(), 422);
+        let enrolled: Value = request.post(&training).json(&json!({ "course_ref": format!("course:{}", uuid::Uuid::new_v4()) })).await.json();
+        let moved = request
+            .put(&format!("/api/training-enrollments/{}", enrolled["pid"].as_str().unwrap()))
+            .json(&json!({ "status": "in_progress" }))
+            .await;
+        assert_eq!(moved.status_code(), 200, "{}", moved.text());
+
+        // Succession: criticality outside 1 to 5, and a rank below 1 on adding or restating a candidate, are refused.
+        let bad = json!({ "role_title": format!("Lead {tag}"), "department": "engineering", "criticality": 6 });
+        assert_eq!(request.post("/api/succession-plans").json(&bad).await.status_code(), 422);
+        let plan: Value = request
+            .post("/api/succession-plans")
+            .json(&json!({ "role_title": format!("Lead {tag}"), "department": "engineering", "criticality": 3 }))
+            .await
+            .json();
+        let candidates = format!("/api/succession-plans/{}/candidates", plan["pid"].as_str().unwrap());
+        assert_eq!(request.post(&candidates).json(&json!({ "worker_pid": worker, "readiness": "ready_1y", "rank": 0 })).await.status_code(), 422);
+        let added: Value = request.post(&candidates).json(&json!({ "worker_pid": worker, "readiness": "ready_1y", "rank": 1 })).await.json();
+        let candidate = added["pid"].as_str().unwrap().to_string();
+        assert_eq!(request.put(&format!("/api/succession-candidates/{candidate}")).json(&json!({ "rank": 0 })).await.status_code(), 422);
+        let listed = request.get("/api/succession-plans").await;
+        assert_eq!(listed.status_code(), 200);
+        assert!(listed.text().contains("\"candidates\""), "plans come with their bench");
+    })
+    .await;
+}

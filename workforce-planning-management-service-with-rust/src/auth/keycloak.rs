@@ -21,18 +21,18 @@
 //! The process-wide [`verifier`] is seeded once at boot ([`init`] is
 //! called from `App::after_routes`) and built from the environment:
 //!
-//! - `WPM_KEYCLOAK_JWKS_URL` — the realm's JWKS endpoint (Keycloak:
+//! - `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` — the realm's JWKS endpoint (Keycloak:
 //!   `<issuer>/protocol/openid-connect/certs`). Set (non-blank) ⇒
 //!   fetched over HTTP **once at boot**; on failure, or with the URL
 //!   unset/blank, the verifier keeps an empty JWKS — every token is
 //!   rejected, but the service still boots, matching the `paseto`
-//!   backend's fail-safe posture for an unset `WPM_PASETO_KEYS`. The
+//!   backend's fail-safe posture for an unset `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS`. The
 //!   JWKS is then **re-fetched periodically** ([`spawn_key_refresh`])
 //!   so a key rotation is picked up without a restart (interval
-//!   `WPM_KEYCLOAK_JWKS_REFRESH_SECS`, default 1 h; `0` disables).
-//! - `WPM_KEYCLOAK_ISSUER` — expected `iss` (the realm issuer URL,
+//!   `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS`, default 1 h; `0` disables).
+//! - `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER` — expected `iss` (the realm issuer URL,
 //!   e.g. `https://keycloak.example/realms/wpm`).
-//! - `WPM_KEYCLOAK_AUDIENCE` — expected `aud` (the confidential client
+//! - `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE` — expected `aud` (the confidential client
 //!   id registered for this deployment). Keycloak may emit `aud` as a
 //!   bare string or an array; both are accepted.
 //!
@@ -53,6 +53,7 @@
 //! |---|---|
 //! | `hr` | realm role `wpm-hr` present ⇒ `["true"]` |
 //! | `payroll` | realm role `wpm-payroll` present ⇒ `["true"]` |
+//! | `resource_manager` | realm role `wpm-resource-manager` present ⇒ `["true"]` (WPM-R276) |
 //! | `svc` | realm role `wpm-svc` present ⇒ `["true"]` (service-account callers only) |
 //! | `access` | realm role `wpm-admin` present ⇒ `["admin"]`, else `["write"]` for any authenticated caller |
 //! | `department` | `groups` claim (group-membership mapper): each path's leaf segment |
@@ -68,15 +69,15 @@
 //!
 //! | Setting | Entra value |
 //! |---|---|
-//! | `WPM_KEYCLOAK_JWKS_URL` | `https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys` |
-//! | `WPM_KEYCLOAK_ISSUER` | `https://login.microsoftonline.com/<tenant>/v2.0` |
-//! | `WPM_KEYCLOAK_AUDIENCE` | the application (client) id |
-//! | `WPM_OIDC_SUBJECT_CLAIM` | `oid` (see below) |
+//! | `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` | `https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys` |
+//! | `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER` | `https://login.microsoftonline.com/<tenant>/v2.0` |
+//! | `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE` | the application (client) id |
+//! | `WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM` | `oid` (see below) |
 //!
 //! Differences from Keycloak, all handled here: app roles arrive in a
 //! **top-level `roles`** claim (read as well as `realm_access.roles`, so the
 //! personas `wpm-hr`, `wpm-payroll`, `wpm-svc` and `wpm-admin` work the same);
-//! `sub` is **different for every application**, so `WPM_OIDC_SUBJECT_CLAIM=oid`
+//! `sub` is **different for every application**, so `WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM=oid`
 //! takes the subject from the tenant-wide object id instead (a token with no
 //! `oid` is then refused); and `groups` holds group **object ids**, not names,
 //! so the `department` attribute is a GUID there (use app roles for personas).
@@ -176,6 +177,9 @@ fn attrs_from_keycloak_claims(claims: &KeycloakClaims) -> BTreeMap<String, Vec<S
     if has_role("wpm-payroll") {
         attrs.insert("payroll".to_string(), vec!["true".to_string()]);
     }
+    if has_role("wpm-resource-manager") {
+        attrs.insert("resource_manager".to_string(), vec!["true".to_string()]);
+    }
     if has_role("wpm-svc") {
         attrs.insert("svc".to_string(), vec!["true".to_string()]);
     }
@@ -268,9 +272,9 @@ fn empty_jwks() -> JwkSet {
 fn build_from_env() -> KeyMaterial {
     KeyMaterial {
         jwks: std::sync::Arc::new(empty_jwks()),
-        issuer: env_or("WPM_KEYCLOAK_ISSUER", ""),
-        audience: env_or("WPM_KEYCLOAK_AUDIENCE", ""),
-        subject_claim: env_or("WPM_OIDC_SUBJECT_CLAIM", "sub"),
+        issuer: env_or("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER", ""),
+        audience: env_or("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE", ""),
+        subject_claim: env_or("WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM", "sub"),
     }
 }
 
@@ -328,11 +332,11 @@ async fn fetch_jwks(url: &str) -> Option<JwkSet> {
 
 /// Seed the process-wide [`verifier`] before the app serves traffic
 /// (called from `App::after_routes`). A no-op when
-/// `WPM_KEYCLOAK_JWKS_URL` is unset/blank; on a failed fetch the
+/// `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` is unset/blank; on a failed fetch the
 /// env-built (empty) JWKS stands, so the service always boots.
 pub async fn init() {
-    let Some(url) =
-        crate::compat::env_var("WPM_KEYCLOAK_JWKS_URL").filter(|s| !s.trim().is_empty())
+    let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL")
+        .filter(|s| !s.trim().is_empty())
     else {
         return;
     };
@@ -346,27 +350,27 @@ pub async fn init() {
 }
 
 /// Default JWKS refresh interval (seconds) when
-/// `WPM_KEYCLOAK_JWKS_REFRESH_SECS` is unset — mirrors the `paseto`
+/// `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS` is unset — mirrors the `paseto`
 /// backend's own default.
 const KEY_REFRESH_DEFAULT_SECS: u64 = 3600;
 
 /// Spawn a background task that periodically re-fetches the realm's
-/// JWKS from `WPM_KEYCLOAK_JWKS_URL` and swaps it into the live
+/// JWKS from `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` and swaps it into the live
 /// [`verifier`], so a **key rotation** at Keycloak is picked up
 /// **without restarting** this service. On a failed fetch it keeps the
-/// current JWKS. Interval from `WPM_KEYCLOAK_JWKS_REFRESH_SECS`
+/// current JWKS. Interval from `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS`
 /// (default [`KEY_REFRESH_DEFAULT_SECS`]); **`0` disables** the loop.
 ///
-/// A no-op when `WPM_KEYCLOAK_JWKS_URL` is unset. Call once at boot
+/// A no-op when `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` is unset. Call once at boot
 /// (`app.rs::after_routes`).
 pub fn spawn_key_refresh() {
-    let Some(url) = crate::compat::env_var("WPM_KEYCLOAK_JWKS_URL")
+    let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL")
         .map(|u| u.trim().to_string())
         .filter(|u| !u.is_empty())
     else {
         return;
     };
-    let secs = crate::compat::env_var("WPM_KEYCLOAK_JWKS_REFRESH_SECS")
+    let secs = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS")
         .and_then(|v| v.trim().parse::<u64>().ok())
         .unwrap_or(KEY_REFRESH_DEFAULT_SECS);
     if secs == 0 {
@@ -389,7 +393,10 @@ pub fn spawn_key_refresh() {
             }
         }
     });
-    tracing::info!(secs, "polling WPM_KEYCLOAK_JWKS_URL for key rotation");
+    tracing::info!(
+        secs,
+        "polling WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL for key rotation"
+    );
 }
 
 /// Extract and verify the bearer token from request headers, mapping
@@ -585,6 +592,15 @@ mod tests {
 
         let attrs = attrs_from_keycloak_claims(&claims(&["wpm-svc"], &[], &[]));
         assert_eq!(attrs["svc"], vec!["true".to_string()]);
+
+        let attrs = attrs_from_keycloak_claims(&claims(&["wpm-resource-manager"], &[], &[]));
+        assert_eq!(attrs["resource_manager"], vec!["true".to_string()]);
+        assert_eq!(
+            attrs["access"],
+            vec!["write".to_string()],
+            "not an administrator"
+        );
+        assert!(!attrs.contains_key("hr") && !attrs.contains_key("payroll"));
 
         let attrs = attrs_from_keycloak_claims(&claims(&["wpm-admin"], &[], &[]));
         assert_eq!(attrs["access"], vec!["admin".to_string()]);

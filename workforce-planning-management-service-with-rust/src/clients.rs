@@ -6,12 +6,12 @@
 //! writes**: an unreachable upstream degrades a view to showing the
 //! URN.
 //!
-//! Selection is per-process via `WPM_UPSTREAM_MODE`:
+//! Selection is per-process via `WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE`:
 //! - `stub` (default) — no network; returns `None` so callers fall
 //!   back to the caller-supplied or URN-derived label.
 //! - `http` — `GET {base}/api/<plural>/{pid}` against
-//!   `WPM_PERSON_SERVICE_URL` / `WPM_WORKER_SERVICE_URL` /
-//!   `WPM_ORGANIZATION_SERVICE_URL` / `WPM_COURSE_SERVICE_URL`,
+//!   `WORKFORCE_PLANNING_MANAGEMENT_PERSON_SERVICE_URL` / `WORKFORCE_PLANNING_MANAGEMENT_WORKER_SERVICE_URL` /
+//!   `WORKFORCE_PLANNING_MANAGEMENT_ORGANIZATION_SERVICE_URL` / `WORKFORCE_PLANNING_MANAGEMENT_COURSE_SERVICE_URL`,
 //!   reading a best-effort `name`-ish field. (Thin by design; the
 //!   family front-ends do the rich rendering.)
 
@@ -30,12 +30,12 @@ pub enum Mode {
     Http,
 }
 
-/// The process-wide mode, from `WPM_UPSTREAM_MODE`.
+/// The process-wide mode, from `WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE`.
 #[must_use]
 pub fn mode() -> Mode {
     static MODE: OnceLock<Mode> = OnceLock::new();
     *MODE.get_or_init(|| {
-        match crate::compat::env_var("WPM_UPSTREAM_MODE")
+        match crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE")
             .unwrap_or_default()
             .trim()
             .to_ascii_lowercase()
@@ -165,7 +165,7 @@ pub fn prime_birth_date(urn: &str, date: Date) {
 /// The env var naming the base URL for an entity type's service.
 fn base_url_var(entity_ref: &EntityRef) -> String {
     format!(
-        "WPM_{}_SERVICE_URL",
+        "WORKFORCE_PLANNING_MANAGEMENT_{}_SERVICE_URL",
         entity_ref.entity_type.as_str().to_ascii_uppercase()
     )
 }

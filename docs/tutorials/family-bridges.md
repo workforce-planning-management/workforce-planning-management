@@ -40,8 +40,8 @@ Use an empty database that holds nothing real, because sign-in is off:
 cd workforce-planning-management-service-with-rust
 export DATABASE_URL=postgres://localhost:5432/wpm_tutorial   # an empty database
 cargo run -- db migrate
-export WPM_REQUIRE_AUTH=0                   # never on a service that holds real data
-export WPM_WEBHOOK_SECRET_CRM=tutorial-only-secret
+export WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0                   # never on a service that holds real data
+export WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_CRM=tutorial-only-secret
 cargo run -- start &                        # the API on :1241
 ```
 
@@ -154,7 +154,7 @@ service's environment; the subscription holds only its variable's name:
 SUB=$(curl -s $API/webhook-subscriptions -H 'content-type: application/json' -d '{
   "name": "crm-handoff", "url": "http://localhost:9999/wpm-events",
   "kinds": ["worker_hired", "worker_terminated", "worker_retired"],
-  "secret_ref": "WPM_WEBHOOK_SECRET_CRM" }' | jq -r .pid)
+  "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_CRM" }' | jq -r .pid)
 NEW=$(hire T-4)
 cargo run -- task webhook_deliver           # the scheduler runs this every minute
 curl -s $API/webhook-subscriptions/$SUB/deliveries | jq -c '.[0] | {kind, status, attempts, last_error}'

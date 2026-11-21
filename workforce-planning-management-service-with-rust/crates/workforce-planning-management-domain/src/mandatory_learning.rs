@@ -614,4 +614,29 @@ mod tests {
         assert_eq!(requirement_problems("optional", None, None).len(), 1);
         assert_eq!(requirement_problems("mandatory", None, Some(0)).len(), 1);
     }
+
+    #[test]
+    fn a_refresher_past_the_calendar_is_unknown_not_compliant() {
+        let on = crate::dates::ymd(9999, 6, 1).unwrap();
+        let done = [Completion {
+            on,
+            transferred: false,
+        }];
+        assert_eq!(
+            status(Applies::Yes, &done, false, Some(12), on, 30),
+            Status::Unknown
+        );
+    }
+
+    #[test]
+    fn groups_with_no_key_come_last_whatever_the_input_order() {
+        let items = [
+            (None, Status::Compliant),
+            (Some(2), Status::Compliant),
+            (None, Status::Expired),
+            (Some(1), Status::Expired),
+        ];
+        let keys: Vec<Option<i32>> = rollup_by(&items, 1).into_iter().map(|(k, _)| k).collect();
+        assert_eq!(keys, [Some(1), Some(2), None]);
+    }
 }

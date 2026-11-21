@@ -398,6 +398,18 @@ mod tests {
             gunzip_stored(&[0; 17]),
             Err("not a gzip member".to_string())
         );
+        let mut short_with_magic = vec![0; 17];
+        short_with_magic[..4].copy_from_slice(&[0x1f, 0x8b, 8, 0]);
+        assert_eq!(
+            gunzip_stored(&short_with_magic),
+            Err("not a gzip member".to_string())
+        );
+        let mut minimum_with_magic = vec![0; 18];
+        minimum_with_magic[..4].copy_from_slice(&[0x1f, 0x8b, 8, 0]);
+        assert_eq!(
+            gunzip_stored(&minimum_with_magic),
+            Err("stored block length check does not match".to_string())
+        );
         let mut wrong_magic = gzip_stored(b"abc");
         wrong_magic[0] = 0;
         assert_eq!(

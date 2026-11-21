@@ -83,9 +83,15 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 async fn reads_are_need_to_know() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let people: Vec<uuid::Uuid> = (0..8).map(|_| uuid::Uuid::new_v4()).collect();
     let [
@@ -229,6 +235,34 @@ async fn reads_are_need_to_know() {
             .add_header("authorization", as_person(stranger_p))
             .await;
         assert_eq!(missing.status_code(), 404, "the controller's answer, same as for any caller");
+
+        // A review the guard cannot find, or a path that names no review, is the controller's to answer, not a refusal.
+        for path in [format!("/api/reviews/{}", uuid::Uuid::new_v4()), "/api/reviews/not-an-id".to_string()] {
+            let status = request.get(&path).add_header("authorization", as_person(stranger_p)).await.status_code();
+            assert_ne!(status.as_u16(), 403, "{path}: {status}");
+        }
+
+        // HR of a parent organization reads a worker of the child once the confederation is declared.
+        let pool = workforce_planning_management::db::pool(&ctx);
+        let leave = format!("/api/workers/{w}/leave-requests");
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO organization_confederations (pid, parent_organization_ref, child_organization_ref, starts_on) \
+             VALUES ('{}', '{org_b}', '{org_a}', '2026-01-01')",
+            uuid::Uuid::new_v4()
+        )))
+        .execute(pool)
+        .await
+        .unwrap();
+        let parent = request.get(&leave).add_header("authorization", as_person(hr_other_p)).await;
+        assert_eq!(parent.status_code(), 200, "HR of the parent: {}", parent.text());
+
+        // A management chain that ends at a removed record is no relation: a colleague stays refused.
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("UPDATE workers SET deleted_at = now() WHERE pid = '{w_boss}'")))
+            .execute(pool)
+            .await
+            .unwrap();
+        let colleague = request.get(&leave).add_header("authorization", as_person(colleague_p)).await;
+        assert_eq!(colleague.status_code(), 403);
     })
     .await;
 }

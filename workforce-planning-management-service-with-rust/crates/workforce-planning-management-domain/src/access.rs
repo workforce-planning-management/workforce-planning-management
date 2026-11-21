@@ -47,6 +47,8 @@ use WorkerLevel::{InScope, SelfOnly, WithManagers};
 /// path segment. Keep it sorted by route so a review is a diff.
 pub const READS: &[(&str, Audience)] = &[
     ("ai-register", Open),
+    ("allocations", ControllerDecides),
+    ("allocations/summary", ControllerDecides),
     ("announcements", ControllerDecides),
     ("announcements/{}", ControllerDecides),
     ("applications/{}/interviews", Privileged),
@@ -228,6 +230,7 @@ pub const READS: &[(&str, Audience)] = &[
     ("workers/{}/team-policy-counts", ControllerDecides),
     ("policy-versions/{}/acknowledgements", Privileged),
     ("workers/{}/equipment", ControllerDecides),
+    ("workers/{}/allocations", ControllerDecides),
     ("workers/{}/assignments", ControllerDecides),
     ("workers/{}/mandatory-learning", ControllerDecides),
     ("workers/{}/team-mandatory-learning", ControllerDecides),

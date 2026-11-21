@@ -261,9 +261,8 @@ pub fn compute_payslip_with_premium(
         .iter()
         .try_fold(0_i64, |acc, d| acc.checked_add(d.amount_minor))
         .ok_or_else(|| "deductions overflow".to_string())?;
-    let net = gross
-        .checked_sub(total)
-        .ok_or_else(|| "net overflows".to_string())?;
+    // Gross and every deduction are non-negative here, so the difference cannot overflow; `reconcile` still checks it.
+    let net = gross - total;
     let slip = Payslip {
         gross_minor: gross,
         deductions,
@@ -504,5 +503,42 @@ mod tests {
             net_minor: 0,
         };
         assert!(reconcile(&slip).unwrap_err().contains("overflow"));
+    }
+
+    /// Each overflow names where it happened.
+    #[test]
+    fn each_overflow_is_named() {
+        let stub = TaxStub {
+            currency: "GBP".into(),
+            allowance_minor: 0,
+            rate_percent: 100,
+            month_minutes: 9_000,
+        };
+        assert_eq!(
+            stub_tax_minor(&stub, i64::MAX),
+            Err("tax arithmetic overflows".to_string())
+        );
+        let gross = compute_payslip_with_premium(
+            &TaxStub::example(),
+            "GBP",
+            1_200_000,
+            100,
+            0,
+            i64::MAX,
+            &[],
+        );
+        assert_eq!(gross, Err("gross overflows".to_string()));
+        let costs = [("plan".to_string(), i64::MAX)];
+        let deductions = compute_payslip(&TaxStub::example(), "GBP", 1_200_000_000, 100, 0, &costs);
+        assert_eq!(deductions, Err("deductions overflow".to_string()));
+        let lie = Payslip {
+            gross_minor: i64::MIN,
+            deductions: vec![Deduction {
+                label: "tax".into(),
+                amount_minor: 1,
+            }],
+            net_minor: 0,
+        };
+        assert_eq!(reconcile(&lie), Err("net overflows".to_string()));
     }
 }

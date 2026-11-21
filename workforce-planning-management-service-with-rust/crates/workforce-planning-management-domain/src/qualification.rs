@@ -408,4 +408,27 @@ mod tests {
         assert!(validate_reminder_window(0).is_err());
         assert!(validate_reminder_window(367).is_err());
     }
+
+    #[test]
+    fn another_title_never_matches_and_each_reminder_has_its_word() {
+        let held = Held {
+            title: "First aid at work".into(),
+            kind: "certificate".into(),
+            framework: None,
+            level: None,
+            expires_on: None,
+            verified: true,
+        };
+        let req = Requirement {
+            title: "Fire marshal".into(),
+            kind: None,
+            framework: None,
+            min_level: None,
+        };
+        assert!(!matches(&held, &req));
+        assert_eq!(
+            (Reminder::Expiring.as_str(), Reminder::Expired.as_str()),
+            ("expiring", "expired")
+        );
+    }
 }

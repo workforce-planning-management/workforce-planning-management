@@ -4,14 +4,14 @@ The family stack unchanged
 (authentication-sessions,
 authorization-attributes):
 cookie sessions + BFF for humans, offline PASETO v4.public for
-services, blanket guard `WPM_REQUIRE_AUTH` (default **on** since WPM-D52:
+services, blanket guard `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` (default **on** since WPM-D52:
 only an explicit `0`/`false`/`no`/`off` disables it, which is logged and
 refused in the `production` environment, as is starting with no token key
 source), shared ABAC engine.
 
 ## Personas as policy (not code)
 
-One API; four typical policy personas expressed over `attrs`:
+One API; five typical policy personas expressed over `attrs`:
 
 | Persona | Typical rules |
 |---|---|
@@ -19,6 +19,7 @@ One API; four typical policy personas expressed over `attrs`:
 | **manager** | read team records (salary masked), approve team leave, run team reviews — scoped by `resource.manager` / department |
 | **hr** | full employee lifecycle in their remit (`resource.department`), reviews, succession |
 | **payroll** | payroll runs + payslips + salary fields |
+| **resource manager** | read and write people's allocations in the organization, not their own (WPM-R276); no salary, leave kind or other HR record; not privileged for need-to-know |
 
 ## Record-level attributes
 
@@ -83,6 +84,7 @@ applied to HR.
 | the count of in-place adjustments in a change's impact (WPM-R192) | HR only, from the floor, no name, no words (WPM-D127) |
 | succession plans and evidence (WPM-R197–R199) | high — HR, as now; the successor reads their own entry (role, readiness, emergency cover, dates, linked development) through `/api/me/succession` and their export, and is notified of it, never the rank, other candidates or the incumbent's risk (WPM-D129); slate equality aggregate with the floor |
 | deputyships (WPM-R201) | low — anyone who can see the position's holder; a deputy's decisions are scoped (WPM-R202) and never reach confidences or pay (WPM-D130); deciding flexible working is the ABAC operation `flexible_working:decide`, permitted to a deputy only when `resource.deputy_may_decide_flexible_working` is `true`, which the holder sets, or HR on the holder's behalf while the holder is unavailable, lapsing on their return (default `null`, denied; WPM-D133) |
+| per-person allocations (WPM-R275, WPM-D211; built WPM-T598) | high — named to the person (their own, through `/api/workers/{pid}/allocations`), their line managers, HR and resource managers (WPM-R276); a source's owner is never established, because WPM records no owner of a programme. Written by HR and by a resource manager holding the **token role** `wpm-resource-manager` (a membership role alone reads, and the policy refuses its writes), never by a resource manager for themselves. Payroll is not a reader. Everyone else sees counts with the floor (10) in the summary. Every read of another person's allocations is audited. No utilization rate exists to read |
 | acting assignments (WPM-R203–R205) | medium — as assignments; the pay treatment is salary-tier; fairness counts with the floor |
 
 Every read of a highest/high-tier record is **audited** (see
@@ -137,7 +139,7 @@ WPM verifies a bearer token **statelessly**: the signature, the issuer, the audi
 It keeps no list of revoked tokens and does not call the identity provider on a request. So **a stolen token works until it
 expires**, and the only controls are how long tokens live and the keys that sign them.
 
-**What WPM checks.** `exp - iat` must not exceed `WPM_MAX_TOKEN_LIFETIME_SECONDS` (default `86400`, 24 hours; `0` or `off` removes the
+**What WPM checks.** `exp - iat` must not exceed `WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS` (default `86400`, 24 hours; `0` or `off` removes the
 limit). A longer token, or one with no `iat`, is `401` with a reason that names neither the limit nor the token. Both token backends do
 this, after the signature and expiry checks. The default admits what the usual providers issue (Keycloak minutes, Entra about an hour)
 and refuses one meant to live for days. **Set it to what your provider actually issues**, plus a margin.
@@ -149,10 +151,10 @@ and refuses one meant to live for days. **Set it to what your provider actually 
 - **Put `iat` and `exp` in every token.** A token without `iat` is refused.
 - **Revoke at the source**: disabling a user or ending a session at the provider stops renewal, so the longest an ended session works
   here is one token lifetime. If that is too long for your risk, shorten the lifetime; do not expect WPM to be told.
-- **Rotate signing keys** and publish the old key's removal. WPM reloads the key set while running (`WPM_PASETO_KEYS_URL`,
-  `WPM_KEYCLOAK_JWKS_URL`); taking a key out of the set refuses every token it signed, which is the emergency revocation for a leaked
+- **Rotate signing keys** and publish the old key's removal. WPM reloads the key set while running (`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL`,
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL`); taking a key out of the set refuses every token it signed, which is the emergency revocation for a leaked
   signing key or a mass compromise.
-- **Keep audience and issuer exact** (`WPM_TOKEN_AUDIENCE`, `WPM_TOKEN_ISSUER`), so a token for another application is refused.
+- **Keep audience and issuer exact** (`WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE`, `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER`), so a token for another application is refused.
 
 **The UI keeps the token it exchanged (WPM-T264).** The proxy exchanges a session for a token once and reuses it for every call
 until 30 seconds before its `exp`, in server memory only, with at most 1,000 sessions remembered. Sign-out forgets it at once, and
@@ -189,13 +191,13 @@ what it enforces *with*, not flipping a flag:
    `hr=true` writes and reads **masked** (salary stays payroll+self),
    `resource.person = $sub` reads the own record unmasked, and every
    other authenticated caller gets the masked-read fallback. Point
-   `WPM_ABAC_POLICY_FILE` at your copy (it hot-reloads on change) or
-   inline it via `WPM_ABAC_POLICY`.
-2. **Point at the keys.** `WPM_PASETO_KEYS_URL` (boot-fetched +
-   refreshed) or `WPM_PASETO_KEYS`; set `WPM_TOKEN_ISSUER` /
-   `WPM_TOKEN_AUDIENCE` if they differ from the defaults.
+   `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` at your copy (it hot-reloads on change) or
+   inline it via `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY`.
+2. **Point at the keys.** `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` (boot-fetched +
+   refreshed) or `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS`; set `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER` /
+   `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` if they differ from the defaults.
 3. **Leave the flag alone.** Enforcement is on by default; the flag
-   `WPM_REQUIRE_AUTH` is read once at boot (restart to change). Do not set it
+   `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` is read once at boot (restart to change). Do not set it
    to `0` outside local development: the service logs a warning every ten
    minutes while it is off, `GET /_posture` reports `auth_enforced: false`, and
    `APP_ENV=production` refuses to start.
@@ -219,7 +221,7 @@ attribute equality has no template.
 ## Keycloak as the identity provider (WPM-G2)
 
 By default WPM never talks to an identity provider itself — it
-verifies PASETO tokens (`WPM_PASETO_KEYS_URL`/`WPM_PASETO_KEYS` above,
+verifies PASETO tokens (`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL`/`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS` above,
 the `paseto` Cargo feature, on by default) minted by the sibling
 **authentication service**
 (authentication-sessions),
@@ -236,7 +238,7 @@ entirely and verify a Keycloak-issued JWT itself: the `keycloak` Cargo
 feature (mutually exclusive with `paseto` — see
 `workforce-planning-management-service-with-rust/Cargo.toml`'s
 `[features]` table and `src/auth/keycloak.rs`'s module docs for its
-own `WPM_KEYCLOAK_*` environment). It uses the *same* claim-mapping
+own `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_*` environment). It uses the *same* claim-mapping
 table below, so a deployment can switch which component talks to
 Keycloak without re-deriving the realm-mapper configuration.
 
@@ -267,6 +269,7 @@ Keycloak without re-deriving the realm-mapper configuration.
    |---|---|---|
    | `hr` | realm role `wpm-hr` | role present ⇒ `attrs.hr = ["true"]` |
    | `payroll` | realm role `wpm-payroll` | role present ⇒ `attrs.payroll = ["true"]` |
+   | `resource_manager` | realm role `wpm-resource-manager` | role present ⇒ `attrs.resource_manager = ["true"]` (WPM-R276); not an administrator: `access` stays `write` |
    | `svc` | realm role `wpm-svc` | role present ⇒ `attrs.svc = ["true"]` (granted only to a service-account client, never a human realm user) |
    | `access` | realm role `wpm-admin` | role present ⇒ `attrs.access = ["admin"]`; otherwise a plain authenticated human gets `attrs.access = ["write"]` (the self-service-write allow the engine limits above call for) |
    | `department` | group path, e.g. `/org/engineering` | group membership ⇒ the path's leaf segment, `attrs.department = ["engineering"]` (one row per department group the user is in) |
@@ -289,3 +292,26 @@ redirect route + the button, both trivial per-app copies of this
 app's `src/routes/signin/+page.svelte` and
 `src/routes/signin/sso/+server.ts`) — tracked as a follow-up, not
 attempted here since those repos aren't part of this change.
+
+## WPM-D222 — OpenID Connect only; no SAML until a customer needs it (decided by the owner, 2026-11-21)
+
+**Decision.** WPM signs people in through OpenID Connect only. It does not speak SAML, and no SAML work is planned. SAML is
+added only when a customer needs it, and then as its own requirement, decision and task.
+
+**Why.**
+
+- Every identity provider WPM is set up and tested with serves OpenID Connect: Keycloak (above) and Microsoft Entra ID
+  ([entra-sign-in](operations/entra-sign-in.md)). The supplier-assurance checklist accepts single sign-on through Entra,
+  OpenID Connect or SAML, so OpenID Connect meets it ([supplier-assurance](supplier-assurance.md)).
+- A second protocol is a second set of signature, clock and replay checks to get right and keep right, on the path that
+  decides who is let in. Building it for no customer adds attack surface and maintenance and gains nothing.
+- A customer whose own provider speaks only SAML can still be served without WPM code: Keycloak can broker a SAML identity
+  provider and hand WPM an OpenID Connect sign-in. **This is Keycloak's documented feature and has not been tested with WPM.**
+
+**What would reopen it.** A customer whose identity provider cannot issue OpenID Connect, and for whom brokering through
+Keycloak is not acceptable. Then the work starts from a requirement that names that customer's need. This decision is not
+amended quietly.
+
+**What it does not change.** Multi-factor sign-in stays the identity provider's to enforce; WPM-R269 proposes that WPM can
+require proof of it in the token. The tokens WPM accepts stay as they are (PASETO from the authentication service).
+

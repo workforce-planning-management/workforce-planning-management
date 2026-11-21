@@ -1,7 +1,7 @@
 //! Auth-activation persona matrix over the live routes (WPM-R15).
 //!
 //! Its own test binary (not part of `tests/main.rs`) because
-//! `WPM_REQUIRE_AUTH` and the key set are cached in process-wide
+//! `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` and the key set are cached in process-wide
 //! `OnceLock`s — the flag must be set **before** the app boots, once
 //! per process. A throwaway Ed25519 key mints PASETO tokens + the
 //! matching key set in-process (no auth service needed).
@@ -90,9 +90,15 @@ async fn enforcement_personas_gate_and_mask() {
     // The auth OnceLocks read these on first use — set before boot.
     // `set_var` is `unsafe` in edition 2024; single-threaded setup step.
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let my_person = uuid::Uuid::new_v4();
     let me = sign_as(&kid, &my_person.to_string(), &[]);
@@ -414,8 +420,8 @@ async fn enforcement_personas_gate_and_mask() {
         // A macro, not a closure: a bare `let f = |builder, token| ...;`
         // needs `builder`'s type known at the closure expression itself
         // (Rust does not infer a closure parameter's type from a later
-        // call site in the same block), and that type is loco's
-        // internally-pinned `axum_test::TestRequest` (17.x) — not this
+        // call site in the same block), and that type is the test harness's
+        // internally-pinned `axum_test::TestRequest` — not this
         // crate's own, newer `axum-test` dev-dependency (see
         // tests/requests/mod.rs for the same rationale on seed helpers).
         // Expanding inline sidesteps naming the type at all.

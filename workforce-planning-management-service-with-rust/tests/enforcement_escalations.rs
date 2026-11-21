@@ -83,10 +83,16 @@ fn policy_with_deciders() -> String {
 async fn anyone_who_writes_may_raise_but_only_an_administrator_decides() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
-        std::env::set_var("WPM_ABAC_POLICY", policy_with_deciders());
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
     }
     let ids: Vec<uuid::Uuid> = (0..3).map(|_| uuid::Uuid::new_v4()).collect();
     let [member_p, admin_p, outsider_p] = [0, 1, 2].map(|i| ids[i]);

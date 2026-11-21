@@ -402,3 +402,67 @@ async fn a_position_audience_matches_the_number_of_the_seat_held_and_otherwise_s
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// Each refusal of a requirement and a completion, a completion for another organization's worker, and a completed enrolment
+// on a listed course counting towards the requirement.
+async fn a_requirement_refuses_what_cannot_be_and_a_completed_course_counts() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let nurse = seed_worker!(&request, &org, format!("MC-A-{tag}"), None).await;
+        activate!(&request, &nurse).await;
+        make_nurse(&request, &nurse).await;
+        let outsider = seed_worker!(&request, &an_org(), format!("MC-B-{tag}"), None).await;
+
+        let course = format!("course:{}", uuid::Uuid::new_v4());
+        let base = json!({ "organization": org, "subject": "Infection control", "basis": "mandatory",
+                           "refresher_months": 12, "staff_groups": ["nurse"], "courses": [course] });
+        let with = |key: &str, value: Value| {
+            let mut body = base.clone();
+            body[key] = value;
+            body
+        };
+        let many: Vec<String> = (0..51).map(|i| format!("course:{i}")).collect();
+        for (body, why) in [
+            (with("subject", json!("x".repeat(121))), "subject too long"),
+            (with("source", json!("x".repeat(201))), "source too long"),
+            (with("refresher_months", json!(601)), "refresher too long"),
+            (with("courses", json!(many)), "over 50 courses"),
+            (with("courses", json!(["x".repeat(2000)])), "a course reference too long"),
+        ] {
+            let refused = request.post("/api/learning-requirements").json(&body).await;
+            assert_eq!(refused.status_code(), 422, "{why}");
+            assert!(!refused.text().contains("basis"), "{why}: refused for its own reason, not the basis: {}", refused.text());
+        }
+        let made = request.post("/api/learning-requirements").json(&base).await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let req = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+
+        let completions = format!("/api/learning-requirements/{req}/completions");
+        let long_source = json!({ "worker_pid": nurse, "completed_on": "2026-01-10", "source": "x".repeat(121) });
+        assert_eq!(request.post(&completions).json(&long_source).await.status_code(), 422);
+        let elsewhere = json!({ "worker_pid": outsider, "completed_on": "2026-01-10" });
+        assert_eq!(request.post(&completions).json(&elsewhere).await.status_code(), 404, "another organization's worker");
+
+        // A completed enrolment on the listed course counts: the nurse is no longer never-completed.
+        let enrolled: Value = request
+            .post(&format!("/api/workers/{nurse}/training-enrollments"))
+            .json(&json!({ "course_ref": course }))
+            .await
+            .json();
+        let today = workforce_planning_management::dates::today();
+        request
+            .put(&format!("/api/training-enrollments/{}", enrolled["pid"].as_str().unwrap()))
+            .json(&json!({ "status": "completed", "completed_on": today.to_string() }))
+            .await
+            .assert_status_ok();
+        let status: Value = request.get(&format!("/api/workers/{nurse}/mandatory-learning")).await.json();
+        let mine = status["requirements"].as_array().unwrap().iter().find(|r| r["requirement_pid"] == req.as_str()).unwrap();
+        assert_ne!(mine["status"], "never_completed", "{mine}");
+        assert_ne!(mine["status"], "unknown", "{mine}");
+    })
+    .await;
+}

@@ -631,4 +631,38 @@ mod tests {
         assert_eq!(t.dates_below_floor, 1);
         assert_eq!(t.points.len(), 3);
     }
+
+    #[test]
+    fn every_alignment_has_its_token_and_no_snapshot_is_insufficient() {
+        let tokens: Vec<&str> = [
+            Alignment::Matched,
+            Alignment::ContractOutlastsFunding,
+            Alignment::FundingOutlastsContract,
+            Alignment::FundingOpenEnded,
+            Alignment::Unknown,
+        ]
+        .iter()
+        .map(|a| a.as_str())
+        .collect();
+        assert_eq!(
+            tokens,
+            [
+                "matched",
+                "contract_outlasts_funding",
+                "funding_outlasts_contract",
+                "funding_open_ended",
+                "unknown"
+            ]
+        );
+        let none = contingent_trend(&[], 10);
+        assert_eq!(none.status, "insufficient_history");
+        assert_eq!(
+            (
+                none.points.len(),
+                none.dates_without_split,
+                none.dates_below_floor
+            ),
+            (0, 0, 0)
+        );
+    }
 }

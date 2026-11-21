@@ -57,7 +57,8 @@
     "coverageEvidence": "کوریج کا ثبوت",
     "qualifications": "اہلیتیں",
     "injuryRecords": "چوٹ کے ریکارڈ",
-    "help": "مدد"
+    "help": "مدد",
+    "allocations": "مختص کاری"
   },
   "pr": {
     "retention": "ڈیٹا برقراری",
@@ -1523,6 +1524,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "ہر مہینے کس کو کس پر کام کرنا ہے، نام کی ترتیب سے۔ یہ منصوبہ ہے، کسی کے کام کا پیمانہ نہیں: یہ کبھی لوگوں کی درجہ بندی نہیں کرتا اور نہ اسکور دیتا ہے۔",
+      "organization": "تنظیم",
+      "notAllowed": "یہ منظر ایچ آر اور ریسورس مینیجرز کے لیے ہے۔",
+      "empty": "دکھانے کو کوئی نہیں۔",
+      "person": "فرد",
+      "confirm": "تصدیق کریں",
+      "end": "ختم کریں",
+      "remove": "ہٹائیں",
+      "add": "مختص کاری شامل کریں",
+      "job": "ملازمت",
+      "from": "مہینے سے",
+      "to": "مہینے تک",
+      "sharePercent": "ملازمت کا حصہ (FTE کے سوویں حصے)",
+      "confirmNow": "ابھی تصدیق کریں (فرد کو بتایا جاتا ہے)"
     }
   },
   "titles": {
@@ -1869,6 +1886,7 @@
     "payroll_admin": "پے رول منتظم",
     "viewer": "ناظر",
     "partner": "شراکت دار",
+    "resource_manager": "ریسورس مینیجر",
     "past_end_without_approved_plan": "منظور شدہ منصوبے کے بغیر ختم",
     "review_due": "جائزہ واجب الادا",
     "not_started": "شروع نہیں ہوا",
@@ -3448,5 +3466,29 @@
   },
   "footer": {
     "privacyNotice": "رازداری کا نوٹس"
+  },
+  "allocations": {
+    "title": "مختص کاری",
+    "hint": "ہر مہینے آپ کو کس پر کام کرنا ہے، اس کا منصوبہ۔ یہ ایک منصوبہ ہے، آپ کے کیے گئے کام کا پیمانہ نہیں، اور یہ کبھی کسی کو اسکور نہیں دیتا۔",
+    "untracked": "آپ کی تنظیم مختص کاری درج نہیں کرتی، اس لیے کوئی مہینہ بھرا یا خالی نہیں دکھایا جاتا۔",
+    "none": "کوئی مختص کاری نہیں۔",
+    "source": "پروگرام، پروڈکٹ یا سروس",
+    "months": "مہینے",
+    "share": "حصہ (FTE)",
+    "status": "حیثیت",
+    "monthRange": "{from} سے {to} تک",
+    "runsPastEnd": "{date} کو ملازمت یا معاہدے کے اختتام سے آگے جاتا ہے",
+    "allocated": "{available} میں سے {allocated} FTE مختص",
+    "state": {
+      "tentative": "عارضی",
+      "confirmed": "تصدیق شدہ",
+      "ended": "ختم"
+    },
+    "signal": {
+      "overAllocated": "{fte} FTE زیادہ مختص",
+      "leaveClash": "منظور شدہ چھٹی سے {fte} FTE کی کمی رہ جاتی ہے",
+      "available": "{fte} FTE خالی",
+      "assignmentOver": "ایک ملازمت اپنے FTE سے {fte} زیادہ ہے"
+    }
   }
 }

@@ -9,7 +9,7 @@
 -- after any migration (it is idempotent: it also grants on what the migration just created):
 --
 --   psql "$ADMIN_DATABASE_URL" -v ON_ERROR_STOP=1 \
---        -v migrator_password="$WPM_MIGRATOR_PASSWORD" -v runtime_password="$WPM_APP_PASSWORD" \
+--        -v migrator_password="$WORKFORCE_PLANNING_MANAGEMENT_MIGRATOR_PASSWORD" -v runtime_password="$WORKFORCE_PLANNING_MANAGEMENT_APP_PASSWORD" \
 --        -f postgres-roles/roles.sql
 --
 -- then run migrations with DATABASE_URL set to wpm_migrator, and start the service with DATABASE_URL set to wpm_app and

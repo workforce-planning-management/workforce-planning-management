@@ -57,7 +57,8 @@
     "coverageEvidence": "कवरेज का प्रमाण",
     "qualifications": "योग्यताएँ",
     "injuryRecords": "चोट के रिकॉर्ड",
-    "help": "सहायता"
+    "help": "सहायता",
+    "allocations": "आवंटन"
   },
   "pr": {
     "retention": "प्रतिधारण",
@@ -1523,6 +1524,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "महीने-दर-महीने किसे किस पर काम करना है, नाम के क्रम में। यह योजना है, किसी के काम का माप नहीं: यह कभी लोगों को रैंक नहीं करती और अंक नहीं देती।",
+      "organization": "संगठन",
+      "notAllowed": "यह दृश्य एचआर और संसाधन प्रबंधकों के लिए है।",
+      "empty": "दिखाने के लिए कोई नहीं।",
+      "person": "व्यक्ति",
+      "confirm": "पुष्टि करें",
+      "end": "समाप्त करें",
+      "remove": "हटाएँ",
+      "add": "आवंटन जोड़ें",
+      "job": "पद",
+      "from": "महीने से",
+      "to": "महीने तक",
+      "sharePercent": "पद का हिस्सा (FTE के सौवें भाग)",
+      "confirmNow": "अभी पुष्टि करें (व्यक्ति को बताया जाता है)"
     }
   },
   "titles": {
@@ -1869,6 +1886,7 @@
     "payroll_admin": "वेतन प्रशासक",
     "viewer": "दर्शक",
     "partner": "साझेदार",
+    "resource_manager": "संसाधन प्रबंधक",
     "past_end_without_approved_plan": "स्वीकृत योजना के बिना समाप्त",
     "review_due": "समीक्षा देय",
     "not_started": "शुरू नहीं हुआ",
@@ -3448,5 +3466,29 @@
   },
   "footer": {
     "privacyNotice": "निजता सूचना"
+  },
+  "allocations": {
+    "title": "आवंटन",
+    "hint": "महीने-दर-महीने आपको किस पर काम करना है, इसकी योजना। यह योजना है, आपके किए काम का माप नहीं, और यह कभी किसी को अंक नहीं देती।",
+    "untracked": "आपका संगठन आवंटन दर्ज नहीं करता, इसलिए कोई महीना भरा या खाली नहीं दिखाया जाता।",
+    "none": "कोई आवंटन नहीं।",
+    "source": "कार्यक्रम, उत्पाद या सेवा",
+    "months": "महीने",
+    "share": "हिस्सा (FTE)",
+    "status": "स्थिति",
+    "monthRange": "{from} से {to} तक",
+    "runsPastEnd": "{date} को पद या अनुबंध की समाप्ति से आगे जाता है",
+    "allocated": "{available} में से {allocated} FTE आवंटित",
+    "state": {
+      "tentative": "अस्थायी",
+      "confirmed": "पुष्ट",
+      "ended": "समाप्त"
+    },
+    "signal": {
+      "overAllocated": "{fte} FTE अधिक आवंटित",
+      "leaveClash": "स्वीकृत छुट्टी से {fte} FTE की कमी रहती है",
+      "available": "{fte} FTE खाली",
+      "assignmentOver": "एक पद अपने FTE से {fte} अधिक है"
+    }
   }
 }

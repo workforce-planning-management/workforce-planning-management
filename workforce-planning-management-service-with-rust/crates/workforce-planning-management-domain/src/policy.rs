@@ -362,4 +362,15 @@ mod tests {
         let json = serde_json::to_string(&team_count(12, 5, 10)).unwrap();
         assert!(!json.contains("pid") && !json.contains("name"), "{json}");
     }
+
+    #[test]
+    fn an_audience_value_over_the_limit_is_refused() {
+        let long = "x".repeat(TITLE_MAX + 1);
+        let out = version_problems("Code of conduct", "doc:1", "department", Some(&long), 30);
+        assert!(
+            out.iter()
+                .any(|p| p.starts_with("the audience value must be at most")),
+            "{out:?}"
+        );
+    }
 }

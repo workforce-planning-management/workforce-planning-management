@@ -267,4 +267,15 @@ mod tests {
         assert_eq!(budget_in(Some(9), None, "GBP"), None);
         assert_eq!(budget_in(None, Some("GBP"), "GBP"), None);
     }
+
+    #[test]
+    fn every_cost_source_has_its_token() {
+        assert_eq!(
+            (
+                CostSource::Benchmark.as_str(),
+                CostSource::DepartmentAverage.as_str()
+            ),
+            ("benchmark", "department_average")
+        );
+    }
 }

@@ -1,0 +1,88 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.worker_pid, a.pool_pid, a.source_ref, a.from_month, a.to_month, a.fte_centi\n           FROM allocations a JOIN workers w ON w.pid = a.worker_pid AND w.deleted_at IS NULL\n          WHERE a.organization_ref = $1 AND a.deleted_at IS NULL AND a.status = 'confirmed'",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "pool_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "pool_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "source_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "source_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "from_month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "from_month"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "to_month",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "to_month"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "fte_centi",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "allocations",
+            "name": "fte_centi"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f4730c6bb922775476462bb44f780d472da429f4d4fd35b3d02778c22f669fba"
+}

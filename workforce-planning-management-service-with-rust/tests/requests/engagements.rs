@@ -1107,3 +1107,100 @@ async fn a_contractors_supplier_has_a_contact_that_is_a_person_ref_and_nothing_m
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A contractor whose engagement ends in 20 days is on the "ending within 30" list, by worker number and with what the list
+// needs (no name), and on no later band.
+async fn a_contractor_ending_soon_is_listed_by_number() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = workforce_planning_management::dates::today();
+        let number = format!("CL-{tag}");
+        let created = request
+            .post("/api/workers")
+            .json(&json!({
+                "person_ref": a_person(), "organization_ref": an_org(), "worker_number": number,
+                "display_name": "Named Contractor", "employment_type": "contractor", "department": "engineering",
+                "job_title": "Engineer", "hired_on": "2026-01-05",
+                "engagement_ends_on": (today + workforce_planning_management::dates::days(20)).to_string(),
+            }))
+            .await;
+        assert_eq!(created.status_code(), 200, "{}", created.text());
+        let pid = created.json::<Value>()["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/workers/{pid}/status")).json(&json!({ "to": "active" })).await.assert_status_ok();
+
+        let soon: Value = request.get("/api/engagements/contingent-list?list=ending_within_30").await.json();
+        let me = soon["people"].as_array().unwrap().iter().find(|p| p["worker_number"] == number.as_str()).expect("listed");
+        assert_eq!(me["employment_type"], "contractor");
+        assert_eq!(me["extensions"], 0);
+        assert_eq!(me["decision_recorded"], false);
+        assert!(!soon.to_string().contains("Named Contractor"), "worker numbers, not names");
+        let later: Value = request.get("/api/engagements/contingent-list?list=ending_61_to_90").await.json();
+        assert!(!later.to_string().contains(&number), "not on a later band");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// Once a contractor's employment has ended, no plan is proposed for them and an approved conversion is not carried out.
+async fn a_conversion_is_refused_once_employment_has_ended() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
+        let contractor = |number: String| {
+            let (request, org, ends) = (&request, org.clone(), day(30));
+            async move {
+                let r = request
+                    .post("/api/workers")
+                    .json(&json!({ "person_ref": a_person(), "organization_ref": org, "worker_number": number,
+                                   "display_name": "Contractor", "employment_type": "contractor", "department": "engineering",
+                                   "job_title": "Engineer", "hired_on": "2026-01-05", "engagement_ends_on": ends }))
+                    .await;
+                assert_eq!(r.status_code(), 200, "{}", r.text());
+                let pid = r.json::<Value>()["pid"].as_str().unwrap().to_string();
+                request.post(&format!("/api/workers/{pid}/status")).json(&json!({ "to": "active" })).await.assert_status_ok();
+                pid
+            }
+        };
+        let leave = |pid: String| {
+            let request = &request;
+            async move {
+                for to in ["offboarding", "terminated"] {
+                    let r = request.post(&format!("/api/workers/{pid}/status")).json(&json!({ "to": to })).await;
+                    assert_eq!(r.status_code(), 200, "{to}: {}", r.text());
+                }
+            }
+        };
+
+        // Approved, then the person leaves before it is carried out.
+        let converting = contractor(format!("CE-{tag}-A")).await;
+        let plan: Value = request
+            .post(&format!("/api/workers/{converting}/conversion-plans"))
+            .json(&json!({ "intent": "convert", "target_on": day(10), "post_funding_kind": "core" }))
+            .await
+            .json();
+        let plan = plan["pid"].as_str().expect("plan pid").to_string();
+        request.post(&format!("/api/conversion-plans/{plan}/approve")).await.assert_status_ok();
+        leave(converting.clone()).await;
+        let done = request.post(&format!("/api/conversion-plans/{plan}/done")).await;
+        assert_eq!(done.status_code(), 422, "{}", done.text());
+        assert!(done.text().contains("employment has ended"), "{}", done.text());
+
+        // Already left: no plan is proposed.
+        let gone = contractor(format!("CE-{tag}-B")).await;
+        leave(gone.clone()).await;
+        let late = request
+            .post(&format!("/api/workers/{gone}/conversion-plans"))
+            .json(&json!({ "intent": "extend", "target_on": day(10) }))
+            .await;
+        assert_eq!(late.status_code(), 422, "{}", late.text());
+        assert!(late.text().contains("employment has ended"), "{}", late.text());
+    })
+    .await;
+}

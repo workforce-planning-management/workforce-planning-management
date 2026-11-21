@@ -15,7 +15,7 @@ use super::statutory_defaults::{self as statutory, InForce};
 use super::{forbidden, record_rejection, unprocessable};
 use crate::auth::{self, MaybeAuthUser};
 use crate::models::_entities::{
-    adjustment_requests, announcement_reads, applications, appraisal_nominations,
+    adjustment_requests, allocations, announcement_reads, applications, appraisal_nominations,
     appraisal_responses, appraisals, assessment_results, assessments, asset_issues, assignments,
     benefit_enrollments, candidates, conversion_plans, course_requests, cpd_entries,
     credential_issuances, development_plan_benefits, development_plans, dotted_line_reports,
@@ -209,6 +209,7 @@ async fn subject_access(
         "separation_records": rows_for!(db, separation_records, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM separation_records t WHERE worker_pid = $1"#, epid),
         "course_requests": rows_for!(db, course_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM course_requests t WHERE worker_pid = $1"#, epid),
         "injury_records": rows_for!(db, injury_records, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM injury_records t WHERE worker_pid = $1"#, epid),
+        "allocations": rows_for!(db, allocations, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM allocations t WHERE worker_pid = $1"#, epid),
         "handover_actions_from": rows_for!(db, handover_actions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM handover_actions t WHERE from_worker = $1"#, epid),
         "handover_actions_to": rows_for!(db, handover_actions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM handover_actions t WHERE to_worker = $1"#, epid),
         "on_call_swap_requests_made": rows_for!(db, rota_swap_requests, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM rota_swap_requests t WHERE requester_pid = $1"#, epid),
@@ -464,6 +465,8 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         format!("DELETE FROM course_requests WHERE worker_pid = '{epid}'"),
         // The row proves a duty was met and names no one without this column (WPM-D179).
         format!("UPDATE injury_records SET worker_pid = NULL WHERE worker_pid = '{epid}'"),
+        // Allocations plan the person's time; once they are erased nothing about them is planned (WPM-R275).
+        format!("DELETE FROM allocations WHERE worker_pid = '{epid}'"),
     ]
 }
 
@@ -652,13 +655,13 @@ async fn erase(
 
 /// The horizon for every record kind and where it came from: the organization's profile over its
 /// home jurisdiction's chain (`retention.<kind>.days`, WPM-D153) when `scope` is given, else a kind's
-/// own `WPM_RETENTION_<KIND>_DAYS`, else the legacy `WPM_RETENTION_DAYS`, else the kind's default;
+/// own `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS`, else the legacy `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS`, else the kind's default;
 /// floored at 30 calendar days (WPM-R91, WPM-D22, WPM-D60).
 pub(crate) fn horizons(
     scope: Option<&super::jurisdictions::Scope>,
     as_of: Date,
 ) -> Vec<(rules::RecordKind, InForce<rules::Horizon>)> {
-    let legacy = crate::compat::env_var("WPM_RETENTION_DAYS");
+    let legacy = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS");
     rules::RecordKind::ALL
         .iter()
         .map(|&kind| {
@@ -679,7 +682,8 @@ pub(crate) fn horizons(
                 configured,
             );
             if found.value.source == rules::HorizonSource::Legacy {
-                found.came_from["setting"] = serde_json::json!("WPM_RETENTION_DAYS");
+                found.came_from["setting"] =
+                    serde_json::json!("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS");
             }
             (kind, found)
         })
@@ -795,7 +799,7 @@ async fn retention_schedule(
         "derivation": "calendar days after a record is soft-deleted before the sweep \
                        hard-deletes it; with an organization, its profile's retention.<kind>.days \
                        over its home jurisdiction (the floor, else the ceiling) wins; then a kind's own \
-                       WPM_RETENTION_<KIND>_DAYS, then the legacy WPM_RETENTION_DAYS, then the default; \
+                       WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS, then the legacy WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS, then the default; \
                        every value is floored (WPM-D22, WPM-D60). The sweep takes, for each kind, the \
                        longest of the deployment's horizon and every organization's profile, so a \
                        profile never makes it delete sooner. The defaults are starting points a \

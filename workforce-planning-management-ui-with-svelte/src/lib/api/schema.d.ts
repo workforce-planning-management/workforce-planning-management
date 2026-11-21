@@ -93,7 +93,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. With ?organization= (in scope), applies_from is the date for that organization: its home jurisdiction's profile (ai_act.applies_from), then WPM_AI_ACT_APPLIES_FROM, then the default; applies_from_came_from says which. Any signed-in caller */
+        /** Every feature that scores or ranks people (S1 to S8) with what the deployer recorded under Article 26 of the AI Act: Annex III category, oversight role, when representatives and workers were informed, log retention. A field with nothing recorded is unknown. Records what is said; does not classify, certify or evidence compliance. With ?organization= (in scope), applies_from is the date for that organization: its home jurisdiction's profile (ai_act.applies_from), then WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM, then the default; applies_from_came_from says which. Any signed-in caller */
         get: {
             parameters: {
                 query?: never;
@@ -156,6 +156,183 @@ export interface paths {
             };
         };
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The people of an organization (?organization=, optional ?source=, ?from=&months=) with their allocations and month standings, by name, in name order, never ranked. HR and resource managers; audited with the count on the page. Paged */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description People with allocations */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/allocations/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per pool, source and month: the confirmed FTE and the number of people allocated, the active claim, and staffed, understaffed, overstaffed, not_claimed or unknown. Names no one; a caller who may not read named allocations sees cells under the floor withheld (?organization=&from=&months=) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The cells */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/allocations/{pid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change an allocation's source, pool, months, share or note; an ended one is not changed. A confirmed one tells the person. HR and resource managers */
+        put: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        /** Remove an allocation made in error (soft delete); a confirmed one tells the person. HR and resource managers */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/allocations/{pid}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move an allocation: tentative and confirmed either way, either to ended; ended is final. Confirming tells the person. HR and resource managers */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The new status */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2214,7 +2391,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The organization's limit on active programmes drawing on the constraint pool (?organization=) */
+        /** The organization's limit on active programmes drawing on the constraint pool, and whether it tracks per-person allocation (?organization=) */
         get: {
             parameters: {
                 query?: never;
@@ -2234,7 +2411,7 @@ export interface paths {
                 default: components["responses"]["Error"];
             };
         };
-        /** Set or clear the work-in-progress limit */
+        /** Set or clear the work-in-progress limit, and optionally switch per-person allocation tracking on or off (allocation_tracked; absent keeps it) */
         put: {
             parameters: {
                 query?: never;
@@ -6537,7 +6714,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set or clear (null or blank) the organization's home jurisdiction: the legal entity's registered jurisdiction, whose chain the organization-level readers (the pay gap report, the joint assessment, retention) resolve over; unset, they fall back to the WPM_* setting and then the default. HR of the organization, audited with the code (WPM-D153) */
+        /** Set or clear (null or blank) the organization's home jurisdiction: the legal entity's registered jurisdiction, whose chain the organization-level readers (the pay gap report, the joint assessment, retention) resolve over; unset, they fall back to the WORKFORCE_PLANNING_MANAGEMENT_* setting and then the default. HR of the organization, audited with the code (WPM-D153) */
         put: {
             parameters: {
                 query?: never;
@@ -9366,7 +9543,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Log an intent to resign: a proposed last day that allows the notice (calendar days, default 28, WPM_RESIGNATION_NOTICE_CALENDAR_DAYS) and an optional reason from a closed list; the manager is told that it was logged, not why; nothing ends here */
+        /** Log an intent to resign: a proposed last day that allows the notice (calendar days, default 28, WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS) and an optional reason from a closed list; the manager is told that it was logged, not why; nothing ends here */
         post: {
             parameters: {
                 query?: never;
@@ -14042,7 +14219,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WPM_RETENTION_DAYS, WPM_RETENTION_<KIND>_DAYS, or with ?organization= that organization's profile retention.<kind>.days over its home jurisdiction, WPM-D153) */
+        /** Retention schedule: each record kind, its tables, its horizon in calendar days and where it came from (default, WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS, WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS, or with ?organization= that organization's profile retention.<kind>.days over its home jurisdiction, WPM-D153) */
         get: {
             parameters: {
                 query?: never;
@@ -16548,7 +16725,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Whose each default is: every WPM_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, the jurisdiction code and source of its default, its profile registry key and reader, and came_from (profile, setting or default). ?organization= resolves an organization-level setting over the organization's home jurisdiction and lists a worker-level one by_place for each code the organization keeps (WPM-T384, WPM-D153) */
+        /** Whose each default is: every WORKFORCE_PLANNING_MANAGEMENT_* setting whose default is one regime's value (or a starting point), its value in force, whether it was set, the jurisdiction code and source of its default, its profile registry key and reader, and came_from (profile, setting or default). ?organization= resolves an organization-level setting over the organization's home jurisdiction and lists a worker-level one by_place for each code the organization keeps (WPM-T384, WPM-D153) */
         get: {
             parameters: {
                 query?: never;
@@ -17099,7 +17276,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WPM_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction */
+        /** Administrators only. Subscribe an https endpoint (or http to this machine; no credentials, query or internal address) to event kinds, signing with the secret named by secret_ref (WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_<NAME>); the secret itself is never stored or returned. Audited in the same transaction */
         post: {
             parameters: {
                 query?: never;
@@ -17650,6 +17827,66 @@ export interface paths {
                     };
                     content?: never;
                 };
+                default: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workers/{pid}/allocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A person's allocations (?from=&months=, at most 36) with each month's standing: contracted, available after approved leave (dates only), allocated and tentative FTE in hundredths, and the signals over_allocated, leave_clash, available and assignment_over_allocated; unknown where the organization does not track allocation. Each allocation says if it runs past the end of its assignment or engagement. The person, their line managers, HR and resource managers; another person's read is audited. No score (WPM-R275) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The allocations and standings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        /** Allocate a share (fte_centi, 1 to the assignment's FTE) of one of the person's assignments to a programme, product or service URN for a run of months (first days, at most 36), optionally from a pool; tentative unless status is confirmed, which tells the person. HR and resource managers, not for themselves (WPM-R276) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid of the allocation */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
                 default: components["responses"]["Error"];
             };
         };
@@ -22652,7 +22889,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WPM_MCP_ALLOWED_ORIGINS */
+        /** A read-only Model Context Protocol server (Streamable HTTP, revision 2025-11-25, JSON replies, no session): initialize, ping, tools/list and tools/call over ten existing reads. Each tool is one GET route called in process under the caller's own token, so the API's policy decides and a caller without access is refused as on the route. No write tool, no service account. Every tool call is audited with the tool name first; if the audit cannot be written the call is refused. A browser Origin must be listed in WORKFORCE_PLANNING_MANAGEMENT_MCP_ALLOWED_ORIGINS */
         post: {
             parameters: {
                 query?: never;

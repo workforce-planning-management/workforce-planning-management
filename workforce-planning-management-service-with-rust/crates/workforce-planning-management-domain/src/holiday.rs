@@ -851,4 +851,63 @@ mod tests {
             "some year holds an Eid twice"
         );
     }
+
+    #[test]
+    fn iso_weekday_numbers_map_both_ways_and_refuse_out_of_range() {
+        use jiff::civil::Weekday::{
+            Friday, Monday, Saturday, Sunday, Thursday, Tuesday, Wednesday,
+        };
+        let all = weekend_from_iso(&[1, 2, 3, 4, 5, 6, 7]).unwrap();
+        assert_eq!(
+            all,
+            vec![
+                Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
+            ]
+        );
+        assert_eq!(weekend_to_iso(&all), vec![1, 2, 3, 4, 5, 6, 7]);
+        assert_eq!(weekend_from_iso(&[0]), None);
+        assert_eq!(weekend_from_iso(&[8, 6]), None);
+    }
+
+    #[test]
+    fn a_week_with_no_working_day_moves_nothing() {
+        let every_day = weekend_from_iso(&[1, 2, 3, 4, 5, 6, 7]).unwrap();
+        let rule = fixed("Founding Day", 3, 4, Weekend::NextWeekday);
+        assert_eq!(
+            generate(&[rule], 2026, &every_day),
+            Vec::new(),
+            "a substitute has nowhere to go"
+        );
+    }
+
+    /// The table constructors are run when a pack is built at compile time; this runs each at run time.
+    #[test]
+    fn each_rule_constructor_makes_the_rule_it_names() {
+        use jiff::civil::Weekday::Monday;
+        assert_eq!(
+            fixed("F", 1, 2, Weekend::Nearest).when,
+            When::Fixed { month: 1, day: 2 }
+        );
+        assert_eq!(
+            nth("N", 5, Monday, 1).when,
+            When::Nth {
+                month: 5,
+                weekday: Monday,
+                n: 1
+            }
+        );
+        assert_eq!(
+            last("L", 5, Monday).when,
+            When::Last {
+                month: 5,
+                weekday: Monday
+            }
+        );
+        assert_eq!(hijri("H", 10, 1).when, When::Hijri { month: 10, day: 1 });
+        let e = easter_day("E", -2);
+        assert_eq!(
+            (e.name, e.when, e.weekend),
+            ("E", When::Easter { offset: -2 }, Weekend::Stays)
+        );
+    }
 }

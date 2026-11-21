@@ -201,6 +201,14 @@ mod tests {
             problems("xa", "self_insured", None, None, None, None, None, None).len(),
             1
         );
+        assert!(
+            problems("A1", "self_insured", None, None, None, None, None, None).is_empty(),
+            "digits are valid jurisdiction code characters"
+        );
+        assert!(
+            problems("A-", "self_insured", None, None, None, None, None, None).is_empty(),
+            "a non-leading hyphen is valid"
+        );
         assert_eq!(
             problems(
                 "XA",

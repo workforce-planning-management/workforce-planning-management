@@ -456,4 +456,10 @@ mod tests {
         assert!(parse_reasons("has space").is_err());
         assert!(validate_refusal_reason("x", &["x"]).is_ok());
     }
+
+    #[test]
+    fn at_the_start_of_the_calendar_nothing_is_counted() {
+        let first = jiff::civil::Date::MIN;
+        assert!(within_limit(&[(first, Status::Requested)], first, 1));
+    }
 }

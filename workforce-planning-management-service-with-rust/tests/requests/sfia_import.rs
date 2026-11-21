@@ -535,3 +535,43 @@ async fn sfiaplus_resources_are_pointers_at_the_level_a_need_counts_as_and_nothi
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// Starting a role from SFIA: a catalogue skill made after the import, the one skill of that name, is linked rather than
+// duplicated; a name two catalogue skills answer to is not guessed at, and the new skill is marked "(SFIA)".
+async fn starting_from_sfia_links_one_same_named_skill_and_marks_a_new_one() {
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string()[..6].to_uppercase();
+        let (c, d) = (format!("C{tag}"), format!("D{tag}"));
+        let (name_c, name_d) = (format!("Invented weaving {tag}"), format!("Invented knotting {tag}"));
+        let file = format!("{HEAD}{c},{name_c},Cat,Sub,Invented C,3,w3,\n{d},{name_d},Cat,Sub,Invented D,3,w3,\n");
+        import_sfia(workforce_planning_management::db::pool(&ctx), &file, &licence("9", "2026-10-27")).await.expect("import");
+
+        let skill = |name: String| {
+            let request = &request;
+            async move {
+                let made = request.post("/api/skills").json(&json!({ "name": name, "category": "technical" })).await;
+                assert_eq!(made.status_code(), 200, "{}", made.text());
+                made.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let only_c = skill(name_c.clone()).await;
+        skill(name_d.clone()).await;
+        skill(name_d.to_uppercase()).await; // the same name to the catalogue's eye, so neither is chosen
+
+        let made: Value = request
+            .post("/api/role-profiles/from-sfia")
+            .json(&json!({ "job_title": format!("Weaver {tag}"), "skills": [{ "code": c, "level": 3 }, { "code": d, "level": 3 }] }))
+            .await
+            .json();
+        assert_eq!((made["skills_linked"].as_u64(), made["skills_created"].as_u64()), (Some(1), Some(1)), "{made}");
+        let catalogue: Value = request.get("/api/skills").await.json();
+        let names: Vec<&str> = catalogue.as_array().unwrap().iter().map(|s| s["name"].as_str().unwrap()).collect();
+        assert!(names.contains(&format!("{name_d} (SFIA)").as_str()), "the new skill is marked: {names:?}");
+        let linked = catalogue.as_array().unwrap().iter().find(|s| s["pid"] == only_c.as_str()).unwrap();
+        assert!(linked.to_string().contains(&c), "the reused skill now carries the SFIA code: {linked}");
+    })
+    .await;
+}

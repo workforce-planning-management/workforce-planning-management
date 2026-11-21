@@ -549,4 +549,14 @@ mod tests {
         let keys: Vec<&String> = json.as_object().expect("object").keys().collect();
         assert_eq!(keys, ["name", "worker_number"]);
     }
+
+    #[test]
+    fn letters_with_no_decomposition_fold_to_their_latin_spelling() {
+        assert_eq!(
+            name_tokens("Æsa Œuvre Øster Đorđe Ðan Łukasz Þór Iıl"),
+            [
+                "aesa", "oeuvre", "oster", "dorde", "dan", "lukasz", "thor", "iil"
+            ]
+        );
+    }
 }

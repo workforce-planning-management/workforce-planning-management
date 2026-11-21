@@ -475,4 +475,30 @@ mod tests {
             Some("Our occupational health policy".to_string())
         );
     }
+
+    #[test]
+    fn every_standing_has_its_token() {
+        let tokens: Vec<&str> = [
+            Standing::NotRecorded,
+            Standing::UpToDate,
+            Standing::DueSoon,
+            Standing::Overdue,
+            Standing::ExemptRecorded,
+            Standing::Declined,
+        ]
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+        assert_eq!(
+            tokens,
+            [
+                "not_recorded",
+                "up_to_date",
+                "due_soon",
+                "overdue",
+                "exempt_recorded",
+                "declined"
+            ]
+        );
+    }
 }

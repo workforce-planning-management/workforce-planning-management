@@ -36,7 +36,7 @@ The two siblings that overlap WPM most, contact-relationship-management and proj
 
 ## Events
 
-Family envelope via the `WPM_EVENT_TRANSPORT` seam (default
+Family envelope via the `WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` seam (default
 `memory`; Postgres outbox rows share the mutation's transaction under
 `outbox`). Event kinds are listed in [audit.md](audit.md).
 
@@ -62,7 +62,7 @@ carries a personal field outward (WPM-D101, WPM-D102, WPM-D106). Delivery: WPM-T
 **Built (WPM-T275).** `POST /mcp`, Streamable HTTP of the pinned revision **2025-11-25** (the tools and transports pages were read
 on 2026-10-24): JSON replies, no session, no server-sent events (`GET` and `DELETE` answer 405), a notification answers 202, an
 `MCP-Protocol-Version` other than the pinned one answers 400, and an `Origin` header is refused (403) unless listed in
-`WPM_MCP_ALLOWED_ORIGINS` (an agent sends none). Methods: `initialize`, `ping`, `tools/list`, `tools/call`; the only capability is
+`WORKFORCE_PLANNING_MANAGEMENT_MCP_ALLOWED_ORIGINS` (an agent sends none). Methods: `initialize`, `ping`, `tools/list`, `tools/call`; the only capability is
 `tools`. Ten tools in `rules::mcp::TOOLS`, each one `GET` route (my contact details, my time off, plans and a plan's forecast, the
 workforce overview, metrics, headcount history, the human capital report, the AI register). A call goes **in process through the
 API's own router** with the caller's `Authorization` header and the same sign-in and need-to-know layers, so the API's refusal is the
@@ -72,11 +72,11 @@ that cannot be written the call is not made (WPM-D107). Tests: every tool is a d
 classified in the need-to-know table; no tool name reads like a write; an enforcement test with real tokens (anonymous 401, a worker
 refused the report by the API itself, HR given it, a worker given the AI register, a path-traversal argument refused).
 **OAuth protected-resource metadata is built** (WPM-T304, RFC 9728): `GET /.well-known/oauth-protected-resource` and `.../mcp`, public, from
-`WPM_MCP_RESOURCE` and `WPM_MCP_AUTHORIZATION_SERVERS` (404 until both are set, 500 if they are unusable); every `401` carries
+`WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` and `WORKFORCE_PLANNING_MANAGEMENT_MCP_AUTHORIZATION_SERVERS` (404 until both are set, 500 if they are unusable); every `401` carries
 `WWW-Authenticate: Bearer`, and on `/mcp` `resource_metadata="<the metadata URL>"`. **Run against an independent client** (`scripts/check-mcp-flow.mjs`).
-**Audience binding is built** (WPM-R159, WPM-D110, WPM-T307): with `WPM_MCP_RESOURCE` set, `/mcp` refuses a token whose `aud` is not that URL (`401`, "not
+**Audience binding is built** (WPM-R159, WPM-D110, WPM-T307): with `WORKFORCE_PLANNING_MANAGEMENT_MCP_RESOURCE` set, `/mcp` refuses a token whose `aud` is not that URL (`401`, "not
 issued for this MCP resource"), compared as written after trimming spaces and one trailing `/`. The service has one audience, so the deployer sets
-`WPM_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL. **Not built:** a separate audience for `/mcp` and the API; WPM is not an
+`WORKFORCE_PLANNING_MANAGEMENT_TOKEN_AUDIENCE` (or the Keycloak audience) to the same URL. **Not built:** a separate audience for `/mcp` and the API; WPM is not an
 authorization server and issues no token; resources, prompts, sampling and pagination; `outputSchema` for the tools; a rate limit of its own
 beyond the service's (a tool call is one request to the endpoint, not counted again inside).
 
@@ -96,14 +96,14 @@ beyond the service's (a tool call is one request to the endpoint, not counted ag
 rather than replays the outbox**: for each worker it works out the `User` that should exist today, compares a SHA-256 fingerprint with
 what was last sent (`scim_pushes`: the provider's id, the fingerprint, the retry state, no body), and creates (`POST /Users`) or
 replaces (`PUT /Users/{id}`) only when it differs. That is idempotent, mends itself after an outage and does not depend on
-`WPM_EVENT_TRANSPORT` (the outbox exists under one transport only). A `409` is resolved by finding the provider's user by
+`WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT` (the outbox exists under one transport only). A `409` is resolved by finding the provider's user by
 `externalId` and replacing it. A failure is recorded as `HTTP <status>` (never the provider's body) and retried with a back-off of
 one minute doubling to a day. Managers are sent first so the Enterprise `manager` carries the provider's own id. Mapping: `userName`
 and `employeeNumber` are the employee number (WPM holds no login), `externalId` is `worker:<pid>`, plus display name, title,
 `department` and `active`. **No `costCenter`** (WPM holds no cost centre) and **no `name` parts, emails, phone numbers or addresses**.
 `active` follows the headcount definition: not before the first day, and not on or after the termination date. A deleted
-record is deactivated if it was ever sent. Settings: `WPM_SCIM_BASE_URL` (https, or http to this machine), `WPM_SCIM_TOKEN`,
-`WPM_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `src/scheduler.rs` (every 15 minutes, tag `scim`, WPM-T300). **Run against an independent SCIM server** (`scripts/check-scim-flow.py`, WPM-T302): managers first, an unchanged worker skipped, one `PUT` for a change, a `409` resolved by `externalId`, a `503` and a rejected token recorded and not leaked, and the first retry one minute after the first failure. **Not built:** a deprovision on the handover's last day (WPM uses
+record is deactivated if it was ever sent. Settings: `WORKFORCE_PLANNING_MANAGEMENT_SCIM_BASE_URL` (https, or http to this machine), `WORKFORCE_PLANNING_MANAGEMENT_SCIM_TOKEN`,
+`WORKFORCE_PLANNING_MANAGEMENT_SCIM_ORGANIZATION`. Erasure deletes the `scim_pushes` row and the subject export lists it. **A schedule** is in `src/scheduler.rs` (every 15 minutes, tag `scim`, WPM-T300). **Run against an independent SCIM server** (`scripts/check-scim-flow.py`, WPM-T302): managers first, an unchanged worker skipped, one `PUT` for a change, a `409` resolved by `externalId`, a `503` and a rejected token recorded and not leaked, and the first retry one minute after the first failure. **Not built:** a deprovision on the handover's last day (WPM uses
 the termination date, by the headcount definition, so a leaver is deactivated from that date, which may be a day before the last
 day worked); `PATCH`; groups; the token held by reference (it is read from the environment); a test against Keycloak (it has no SCIM
 endpoint in its core as far as this round found) or any real identity provider: **only a stub server was used**.
@@ -121,7 +121,7 @@ endpoint in its core as far as this round found) or any real identity provider: 
 **Built (WPM-T277).** Administrators (`access=admin`; HR is refused) manage `POST/GET /api/webhook-subscriptions`,
 `PUT/DELETE /api/webhook-subscriptions/{pid}` and read `GET .../{pid}/deliveries`. A subscription has an endpoint, kinds from the
 offered list (`worker_hired`, `worker_activated`, `worker_terminated`, `worker_retired`, `leave_approved`), a **secret reference**
-(the name of an environment variable, `WPM_WEBHOOK_SECRET_<NAME>`, so it cannot point at any other setting) and an on/off flag.
+(the name of an environment variable, `WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_<NAME>`, so it cannot point at any other setting) and an on/off flag.
 The endpoint is `https` to a host that is not an internal address literal, or `http` to this machine, with no credentials, query or
 fragment. **Deliveries are queued in the transaction of the change** (`streaming::emit_on` writes one row per matching active
 subscription), so a change that rolls back tells nobody. The task `webhook_deliver` sends them: the payload is `{id, kind, subject,

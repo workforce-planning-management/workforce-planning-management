@@ -67,7 +67,13 @@ query** raised or closed; a **certificate** recorded; a **return-to-work convers
 or changed; a **passport share** given or withdrawn (who and with whom, never the words); a **candidate adjustment** read. As
 elsewhere, no entry holds a pay figure, a tax code, a reason, a condition or anyone's words. Section S adds: a succession plan linked, reviewed or a readiness changed (each also notifies the successor); a **deputyship** named, accepted or
 ended; a **flexible-working grant** to a deputy given (by the holder, or by HR on their behalf), confirmed, lapsed or withdrawn; a **decision taken as deputy for** someone (the decision's own action, with the holder named); an **acting assignment**
-started, extended or ended; an acting opportunity's choice recorded.
+started, extended or ended; an acting opportunity's choice recorded. **Per-person allocation (WPM-R275, built WPM-T598)** adds: an
+allocation `allocation_created`, `allocation_changed`, `allocation_status_changed` (tentative, confirmed, ended) and
+`allocation_deleted`, naming the allocation and the worker's pid, never the share or the source's words; and
+`allocations_read` when someone reads another person's allocations (with a count, as `injury_records_read`). A person's
+reads of their own allocations are not audited. **One deployment, one database (WPM-R277, proposed)** adds `deployment_bound`
+(first start) and `deployment_renamed` (the rename task), naming the deployment, never the connection string. A refused start
+writes nothing to the database it refused; it is logged.
 
 ## Event kinds
 

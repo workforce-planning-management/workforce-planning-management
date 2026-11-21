@@ -32,12 +32,12 @@ const tokenKid = b64u(createHash("sha256").update(Buffer.from(rawPublic(privateO
 
 if (process.argv.includes("--print-env")) {
   const jwks = { keys: [{ kty: "OKP", crv: "Ed25519", use: "sig", kid: tokenKid, x: rawPublic(privateOf(TOKEN_SEED)) }] };
-  console.log(`export WPM_REQUIRE_AUTH=1`);
-  console.log(`export WPM_PASETO_KEYS='${JSON.stringify(jwks)}'`);
-  console.log(`export WPM_ABAC_POLICY_FILE='${path.join(HERE, "../workforce-planning-management-service-with-rust/config/abac-policy.reference.json")}'`);
-  console.log(`export WPM_CREDENTIAL_ISSUER='${API}'`);
-  console.log(`export WPM_CREDENTIAL_SIGNING_KEY='${b64u(CREDENTIAL_SEED)}'`);
-  console.log(`export WPM_CREDENTIAL_ISSUER_NAME='Credential flow check'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=1`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS='${JSON.stringify(jwks)}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE='${path.join(HERE, "../workforce-planning-management-service-with-rust/config/abac-policy.reference.json")}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER='${API}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_SIGNING_KEY='${b64u(CREDENTIAL_SEED)}'`);
+  console.log(`export WORKFORCE_PLANNING_MANAGEMENT_CREDENTIAL_ISSUER_NAME='Credential flow check'`);
   process.exit(0);
 }
 

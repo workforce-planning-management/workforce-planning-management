@@ -72,7 +72,7 @@ duplicating them. See [spec/scope.md](spec/scope.md) and
 # Back-end
 cd workforce-planning-management-service-with-rust
 cargo run -- db migrate && cargo run -- task seed
-WPM_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default; this opts out for local use only
+WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0 cargo run -- start   # sign-in is enforced by default; this opts out for local use only
 
 # Front-end (in another shell)
 cd workforce-planning-management-ui-with-svelte

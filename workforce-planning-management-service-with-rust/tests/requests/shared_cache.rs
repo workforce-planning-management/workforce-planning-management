@@ -1,5 +1,5 @@
 //! The shared cache (WPM-D78): non-personal lookups only, fail open, invalidated when the data behind
-//! them changes. The Redis provider is checked against a real server when `WPM_TEST_REDIS_URL` is set.
+//! them changes. The Redis provider is checked against a real server when `WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL` is set.
 
 use serde_json::Value;
 use serial_test::serial;
@@ -95,7 +95,7 @@ async fn namespaces_are_separate_and_invalidated_one_at_a_time() {
 }
 
 fn redis_url() -> Option<String> {
-    std::env::var("WPM_TEST_REDIS_URL").ok()
+    std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL").ok()
 }
 
 async fn redis_cache(uri: &str) -> cache::Cache {
@@ -105,12 +105,12 @@ async fn redis_cache(uri: &str) -> cache::Cache {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires Redis: set WPM_TEST_REDIS_URL, run with `cargo test --test main shared_cache -- --ignored`"]
+#[ignore = "requires Redis: set WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL, run with `cargo test --test main shared_cache -- --ignored`"]
 // Against a real Redis: a value is shared between two handles (two instances), invalidation reaches
 // both, and a Redis that is not there is a miss inside the time bound, never an error or a hang.
 async fn redis_is_shared_between_instances_and_fails_open() {
     let Some(uri) = redis_url() else {
-        eprintln!("WPM_TEST_REDIS_URL is not set; skipping");
+        eprintln!("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_URL is not set; skipping");
         return;
     };
     let (a, b) = (redis_cache(&uri).await, redis_cache(&uri).await);
@@ -162,14 +162,14 @@ async fn round_trip(uri: &str) {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires a Redis with a password: set WPM_TEST_REDIS_AUTH_URL (with the password) and WPM_TEST_REDIS_WRONG_PASSWORD_URL"]
+#[ignore = "requires a Redis with a password: set WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_AUTH_URL (with the password) and WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_WRONG_PASSWORD_URL"]
 // A Redis that needs a password works with it, and with the wrong one or none is a miss, never an
 // error, and the password is not in anything the cache layer logs.
 async fn redis_with_a_password_works_and_a_wrong_one_fails_open() {
     let (Ok(good), Ok(wrong), Ok(none)) = (
-        std::env::var("WPM_TEST_REDIS_AUTH_URL"),
-        std::env::var("WPM_TEST_REDIS_WRONG_PASSWORD_URL"),
-        std::env::var("WPM_TEST_REDIS_NO_PASSWORD_URL"),
+        std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_AUTH_URL"),
+        std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_WRONG_PASSWORD_URL"),
+        std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_NO_PASSWORD_URL"),
     ) else {
         eprintln!("the password URLs are not set; skipping");
         return;
@@ -196,12 +196,12 @@ async fn redis_with_a_password_works_and_a_wrong_one_fails_open() {
 
 #[tokio::test]
 #[serial]
-#[ignore = "requires a TLS Redis: set WPM_TEST_REDIS_TLS_URL (rediss://) and SSL_CERT_FILE to its CA"]
+#[ignore = "requires a TLS Redis: set WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_TLS_URL (rediss://) and SSL_CERT_FILE to its CA"]
 // A `rediss://` URL connects over TLS and verifies the server's certificate against the trusted
 // roots: the same server is refused (a miss) when its CA is not trusted.
 async fn rediss_connects_over_tls_and_checks_the_certificate() {
-    let Ok(uri) = std::env::var("WPM_TEST_REDIS_TLS_URL") else {
-        eprintln!("WPM_TEST_REDIS_TLS_URL is not set; skipping");
+    let Ok(uri) = std::env::var("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_TLS_URL") else {
+        eprintln!("WORKFORCE_PLANNING_MANAGEMENT_TEST_REDIS_TLS_URL is not set; skipping");
         return;
     };
     assert!(uri.starts_with("rediss://"));

@@ -1081,4 +1081,12 @@ mod tests {
         assert!(!suggested_levers(-1, &with).contains(&"convert_contingent"));
         assert_eq!(suggested_levers(0, &with), [] as [&str; 0]);
     }
+
+    #[test]
+    fn an_unknown_requisition_basis_is_refused() {
+        assert_eq!(
+            validate_requisition_basis("gig", None),
+            Err("basis must be permanent, fixed_term, contractor or intern".to_string())
+        );
+    }
 }

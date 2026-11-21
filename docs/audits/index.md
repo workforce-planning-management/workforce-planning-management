@@ -122,7 +122,7 @@ The project successfully implements all requested changes and demonstrates:
 **Changes Made:**
 - Removed "Suitable for production use" and similar text throughout
 - Changed URL references from 5150 to 1241
-- Changed WPM_ → WORKFORCE_ environment variable prefix (in progress)
+- Changed WORKFORCE_PLANNING_MANAGEMENT_ → WORKFORCE_ environment variable prefix (in progress)
 - Reworked "Rust with Axum (axa, SeaORM)" → "Rust + Axum + Axa"
 - Removed all SeaORM references
 - Changed "axa" to "Axa" (titlecase)
@@ -145,7 +145,7 @@ The project successfully implements all requested changes and demonstrates:
 - Terminology standardized
 
 **Recommendation:**
-- Complete WPM_ → WORKFORCE_ migration in remaining files
+- Complete WORKFORCE_PLANNING_MANAGEMENT_ → WORKFORCE_ migration in remaining files
 - Consider adding a style guide for future consistency
 
 ---
@@ -311,7 +311,7 @@ Based on `spec/readiness-assessment.md`, the following gates remain open:
 
 **Areas for Improvement:**
 - ⚠️ Some spec files need updating (SeaORM references)
-- ⚠️ WPM_ → WORKFORCE_ migration incomplete
+- ⚠️ WORKFORCE_PLANNING_MANAGEMENT_ → WORKFORCE_ migration incomplete
 
 **Recommendation:** Complete content standardization
 
@@ -363,7 +363,7 @@ Based on `spec/readiness-assessment.md`, the following gates remain open:
    - [ ] Replace footer with Lily `<Footer>` tag
 
 2. **Complete Content Migration**
-   - [ ] Migrate remaining WPM_ → WORKFORCE_ environment variables
+   - [ ] Migrate remaining WORKFORCE_PLANNING_MANAGEMENT_ → WORKFORCE_ environment variables
    - [ ] Remove any remaining SeaORM references
 
 3. **Run Load Tests**

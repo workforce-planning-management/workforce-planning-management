@@ -5,11 +5,11 @@
 #   open http://localhost:1241/swagger-ui/
 #
 # DEMO ONLY. The demo has no identity service, so it turns sign-in enforcement
-# OFF with an explicit `WPM_REQUIRE_AUTH=0`: anyone who can reach the port can
+# OFF with an explicit `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0`: anyone who can reach the port can
 # read and write everything, with synthetic data only. The service logs a
 # warning every ten minutes while this is so, and the `production` environment
-# refuses to start this way. For anything else, set WPM_PASETO_KEYS_URL (or
-# WPM_KEYCLOAK_JWKS_URL), remove the override and use APP_ENV=production
+# refuses to start this way. For anything else, set WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL (or
+# WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL), remove the override and use APP_ENV=production
 # (see spec/auth.md).
 #
 # This file runs the API only; the SvelteKit UI is not containerized yet
@@ -23,11 +23,11 @@ services:
   postgres:
     image: docker.io/library/postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     environment:
-      POSTGRES_USER: loco
-      POSTGRES_PASSWORD: loco
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: workforce_planning_management_demo
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U loco -d workforce_planning_management_demo"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d workforce_planning_management_demo"]
       interval: 3s
       timeout: 3s
       retries: 30
@@ -73,9 +73,9 @@ services:
     environment:
       APP_ENV: demo
       REDIS_URL: redis://redis:6379
-      DATABASE_URL: postgres://loco:loco@postgres:5432/workforce_planning_management_demo
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/workforce_planning_management_demo
       DB_ALLOW_INSECURE: "true"   # explicit, demo only: the database is on this compose network, and `demo` boots like production
-      WPM_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
-      WPM_CORS_ORIGIN: http://localhost:5173
+      WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH: "0"   # explicit, demo only: see the header of this file
+      WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN: http://localhost:5173
     ports:
       - "127.0.0.1:1241:1241"

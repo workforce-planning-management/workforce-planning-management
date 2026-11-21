@@ -77,9 +77,15 @@ const REFERENCE_POLICY_FILE: &str = concat!(
 async fn the_checks_read_pay_so_only_payroll_in_the_organization_may_run_them() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
     let bearer = |t: String| format!("Bearer {t}");
     let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));

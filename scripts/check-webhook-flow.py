@@ -6,9 +6,9 @@ of "<t>.<body>">`) and the payload (`{id, kind, subject, occurred_at}`, plus `da
 no code with the service. It subscribes to `worker_activated`, which has no `data`, and checks that a delivery is signed and fresh, that
 the body holds nothing but those four fields, that a 5xx is retried with a back-off and a 4xx is not repeated.
 
-    WPM_WEBHOOK_SECRET_E2E=some-secret python3 scripts/check-webhook-flow.py [http://localhost:1241] [--retry]
+    WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_E2E=some-secret python3 scripts/check-webhook-flow.py [http://localhost:1241] [--retry]
 
-Start the service first with the SAME variable and `WPM_REQUIRE_AUTH=0` (a demo posture, a database holding nothing real); this script
+Start the service first with the SAME variable and `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0` (a demo posture, a database holding nothing real); this script
 creates one subscription and a few workers there. It runs `cargo run -q -- task webhook_deliver` in the service folder to send what is
 queued, so it needs the same DATABASE_URL in its environment. `--retry` also waits out the one-minute back-off and checks the second try.
 """
@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 API = next((a for a in sys.argv[1:] if a.startswith("http")), "http://localhost:1241").rstrip("/") + "/api"
 RETRY = "--retry" in sys.argv
-SECRET = os.environ.get("WPM_WEBHOOK_SECRET_E2E", "")
+SECRET = os.environ.get("WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_E2E", "")
 SERVICE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "workforce-planning-management-service-with-rust")
 PORT = 9099
 MODE = {"answer": 200}
@@ -77,12 +77,12 @@ def log(sub):
 
 def main():
     if not SECRET:
-        sys.exit("set WPM_WEBHOOK_SECRET_E2E (the service must have the same value)")
+        sys.exit("set WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_E2E (the service must have the same value)")
     server = HTTPServer(("127.0.0.1", PORT), Receiver)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     run = uuid.uuid4().hex[:8]
     sub = call("POST", "/webhook-subscriptions", {"name": f"flow check {run}", "url": f"http://127.0.0.1:{PORT}/hook",
-                                                   "kinds": ["worker_activated"], "secret_ref": "WPM_WEBHOOK_SECRET_E2E", "active": True})["pid"]
+                                                   "kinds": ["worker_activated"], "secret_ref": "WORKFORCE_PLANNING_MANAGEMENT_WEBHOOK_SECRET_E2E", "active": True})["pid"]
 
     print("A delivery that is answered 200:")
     pid = new_event(f"WF-{run}-A")

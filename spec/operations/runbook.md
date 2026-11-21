@@ -10,9 +10,9 @@ adds contacts and escalation paths for their own organization.
 
 | Message | Meaning | Action |
 | --- | --- | --- |
-| `WPM_REQUIRE_AUTH is off in the production environment…` | Someone set it to `0` | Remove the override. Production does not run with sign-in off |
-| `no token key source is configured in the production environment…` | No keys | Set `WPM_PASETO_KEYS_URL`/`WPM_PASETO_KEYS` or `WPM_KEYCLOAK_JWKS_URL` |
-| `environment variable `WPM_CORS_ORIGIN` not found` | CORS allow-list not set | Set it to the UI's origin |
+| `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH is off in the production environment…` | Someone set it to `0` | Remove the override. Production does not run with sign-in off |
+| `no token key source is configured in the production environment…` | No keys | Set `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL`/`WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS` or `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` |
+| `environment variable `WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN` not found` | CORS allow-list not set | Set it to the UI's origin |
 | Database connection errors | Wrong `DATABASE_URL`, or the database is down | Check the database first; the service does not start without it |
 
 ## Everyone gets `401`
@@ -29,7 +29,7 @@ rotate keys faster than the refresh (restart to force a fetch).
 The rate limiter named them by address. Behind a proxy that is not in `TRUSTED_PROXIES`,
 all callers share the proxy's one bucket: list the proxy by the address the service sees
 it connect from, and check with `check` that the list was read. A `WARN` line at boot
-naming `WPM_TRUST_FORWARDED` means that variable is left over from before WPM-D187: it
+naming `WORKFORCE_PLANNING_MANAGEMENT_TRUST_FORWARDED` means that variable is left over from before WPM-D187: it
 does nothing, so remove it and set the list. A burst of `429` on erase, sweep or import
 routes is the stricter class working as designed.
 

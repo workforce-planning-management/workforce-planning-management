@@ -8,7 +8,7 @@
 //! The default ceiling is the supported size, 200,000 workers (WPM-R142), the largest organization the load
 //! test ran with no failed request at eight concurrent callers (`BENCHMARKS.md`): nothing is accepted that
 //! was not measured. A deployer who measures a larger organization on their own hardware raises it with
-//! `WPM_MAX_ORG_WORKERS`.
+//! `WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS`.
 
 /// The largest worker count a whole-organization view accepts by default.
 pub const DEFAULT_MAX_ORG_WORKERS: u64 = 200_000;
@@ -32,7 +32,7 @@ pub fn check(count: u64, ceiling: u64) -> Result<(), String> {
         return Ok(());
     }
     Err(format!(
-        "this view reads {count} workers at once, over the limit of {ceiling}; narrow it to one organization or raise WPM_MAX_ORG_WORKERS after measuring"
+        "this view reads {count} workers at once, over the limit of {ceiling}; narrow it to one organization or raise WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS after measuring"
     ))
 }
 

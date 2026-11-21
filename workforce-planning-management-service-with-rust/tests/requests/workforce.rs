@@ -518,3 +518,58 @@ async fn an_unassigned_shift_seat_and_an_ended_benefit_enrolment_leave_their_lis
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// The refusals of an entitlement and a shift, a rejected request, and the rota for one day with its assignments.
+async fn entitlements_shifts_and_a_rejection_are_checked() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let worker = seed_worker!(&request, &org, format!("WF-{}", uuid::Uuid::new_v4().simple()), None).await;
+        activate!(&request, &worker).await;
+        let entitlements = format!("/api/workers/{worker}/leave-entitlements");
+        for (year, days, why) in [(1800, 5, "year"), (2026, 400, "days")] {
+            let r = request.post(&entitlements).json(&json!({ "kind": "annual", "year": year, "entitled_days": days })).await;
+            assert_eq!(r.status_code(), 422, "{why}");
+        }
+        let good = json!({ "kind": "annual", "year": 2026, "entitled_days": 10 });
+        request.post(&entitlements).json(&good).await.assert_status_ok();
+        assert_eq!(request.post(&entitlements).json(&good).await.status_code(), 422, "already exists");
+
+        // A pending request is rejected.
+        let asked: Value = request
+            .post(&format!("/api/workers/{worker}/leave-requests"))
+            .json(&json!({ "kind": "annual", "start_on": "2026-10-05", "end_on": "2026-10-06" }))
+            .await
+            .json();
+        let rejected = request.post(&format!("/api/leave-requests/{}/reject", asked["pid"].as_str().unwrap())).await;
+        assert_eq!(rejected.status_code(), 200, "{}", rejected.text());
+
+        // Shifts: ending before starting, and no headcount, are refused; the day's rota lists a shift and who is on it.
+        for (body, why) in [
+            (json!({ "department": "engineering", "starts_at": "2026-07-07T16:00:00Z", "ends_at": "2026-07-07T08:00:00Z" }), "ends first"),
+            (json!({ "department": "engineering", "starts_at": "2026-07-07T08:00:00Z", "ends_at": "2026-07-07T16:00:00Z", "required_headcount": 0 }), "no headcount"),
+        ] {
+            assert_eq!(request.post("/api/shifts").json(&body).await.status_code(), 422, "{why}");
+        }
+        let department = format!("wf-{}", uuid::Uuid::new_v4().simple());
+        let shift: Value = request
+            .post("/api/shifts")
+            .json(&json!({ "department": department, "starts_at": "2026-07-08T08:00:00Z", "ends_at": "2026-07-08T16:00:00Z" }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/shifts/{}/assignments", shift["pid"].as_str().unwrap()))
+            .json(&json!({ "worker_pid": worker }))
+            .await
+            .assert_status_ok();
+        let rota: Value = request.get(&format!("/api/shifts?department={department}&date=2026-07-08")).await.json();
+        let rota = rota.as_array().unwrap();
+        assert_eq!(rota.len(), 1, "{rota:?}");
+        assert_eq!(rota[0]["assignments"].as_array().map(Vec::len), Some(1), "{rota:?}");
+        let other_day: Value = request.get(&format!("/api/shifts?department={department}&date=2026-07-09")).await.json();
+        assert_eq!(other_day.as_array().map(Vec::len), Some(0));
+    })
+    .await;
+}

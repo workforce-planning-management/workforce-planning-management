@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `axa` 0.20.1 (WPM-T606, 2026-11-20)
+
+`axa` 0.20.0 to 0.20.1, at the owner's request inside the minimum publish age. Only the unused `mail` feature changed; no code
+changes.
+
+### Changed — settings are named `WORKFORCE_PLANNING_MANAGEMENT_*` (WPM-R278, WPM-T604, 2026-11-20)
+
+- `compat` reads the new name, then `WPM_`, then `HCM_`, warning once per variable; the new name wins where both are set,
+  and a name stored before the rename (a webhook `secret_ref`) still finds its variable. Two direct reads now go through it.
+
+### Added — per-person allocation records and API (WPM-T598, 2026-11-20)
+
+- Migration `20261120000134_allocations`: table `allocations` and `capacity_settings.allocation_tracked`.
+- `GET`/`POST /api/workers/{pid}/allocations`, `PUT`/`DELETE /api/allocations/{pid}`, `POST /api/allocations/{pid}/status`,
+  `GET /api/allocations` (named, HR and resource managers) and `GET /api/allocations/summary` (counts with the floor);
+  `allocation_tracked` on `/api/capacity/settings`.
+- Audit actions `allocation_created`, `allocation_changed`, `allocation_status_changed`, `allocation_deleted` and
+  `allocations_read`; notification kinds `allocation_confirmed` and `allocation_changed`; subject-access export, erasure, and
+  the `time_and_leave` retention kind. Resource managers' writes pass the policy on the token role (`ATTRIBUTE_WRITES`).
+- Tests: `tests/requests/allocations.rs` and the persona binary `tests/enforcement_allocations.rs`.
+
+### Added — the resource manager role (WPM-T601, 2026-11-20)
+
+- `resource_manager` in the organization roles; Keycloak realm role `wpm-resource-manager` maps to
+  `attrs.resource_manager`; the allocation access rules `read_access`, `named_read_is_audited` and `may_write` (WPM-R276).
+  Not privileged for need-to-know.
+
+### Added — per-person allocation rules (WPM-T597, 2026-11-20)
+
+- `allocation` in the domain crate (WPM-R275, WPM-D211): allocation statuses and moves, validation against the assignment,
+  day-weighted contracted and available FTE, the over-allocated, leave-clash, available and assignment-over signals,
+  `runs_past_end`, `sum_confirmed` and `reconcile` against pool demand; 28 unit tests. Not yet wired to a table or route.
+
 ### Changed — mutation tests retain incremental builds (WPM-T541)
 
 The unused non-incremental `mutants` Cargo profile is removed after controlled

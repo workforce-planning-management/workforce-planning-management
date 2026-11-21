@@ -15,11 +15,11 @@
 //!   `v4.public` (Ed25519) verification against the sibling
 //!   [authentication-service](../../../authentication/authentication-service-with-loco)'s
 //!   published key set. See that submodule's docs for
-//!   `WPM_PASETO_KEYS*` / `WPM_TOKEN_*`.
+//!   `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS*` / `WORKFORCE_PLANNING_MANAGEMENT_TOKEN_*`.
 //! - **`keycloak`** ([`keycloak`] submodule) — this service verifies a
 //!   Keycloak-issued JWT directly against the realm's JWKS; no PASETO,
 //!   no sibling authentication service in this request path. See that
-//!   submodule's docs for `WPM_KEYCLOAK_*` and the realm-claim → ABAC
+//!   submodule's docs for `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_*` and the realm-claim → ABAC
 //!   `attrs` mapping (also documented in `spec/auth.md`'s "Keycloak as
 //!   the identity provider" runbook, which additionally covers the
 //!   *other*, independent way Keycloak enters this family: as the
@@ -36,7 +36,7 @@
 //!
 //! ## Blanket enforcement
 //!
-//! Enforcement is **on by default** (WPM-D52). Unless `WPM_REQUIRE_AUTH`
+//! Enforcement is **on by default** (WPM-D52). Unless `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH`
 //! is explicitly falsy (`0`/`false`/`no`/`off`, case-insensitive), the
 //! active backend's `enforce` decision — wired as an Axum middleware
 //! layer in `src/app.rs` — requires a valid bearer token on every route
@@ -55,8 +55,8 @@
 //! `authentication-verifier` crate evaluates the policy over the
 //! token's `attrs` claim — populated identically regardless of which
 //! backend produced it. The policy is read once per process
-//! ([`policy`], built by [`policy_from_env`]) from `WPM_ABAC_POLICY`
-//! (inline JSON) or `WPM_ABAC_POLICY_FILE` (path); unset or unparsable
+//! ([`policy`], built by [`policy_from_env`]) from `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY`
+//! (inline JSON) or `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` (path); unset or unparsable
 //! ⇒ the built-in default policy (`svc=true` ⇒ everything;
 //! `access=admin` ⇒ destructive+write; `access=write` ⇒ write;
 //! otherwise read-only) — the service always boots. **401** =
@@ -117,17 +117,20 @@ pub const DESTRUCTIVE_POST_SUFFIXES: [&str; 5] =
     ["/merge", "/deduplicate", "/import", "/erase", "/sweep"];
 
 /// Whether blanket `/api/*` enforcement is on, read once from
-/// `WPM_REQUIRE_AUTH` and cached. **On by default** — see the module docs
+/// `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` and cached. **On by default** — see the module docs
 /// and [`parse_require_auth`]. Mirrors [`verifier`]: a process-wide
 /// `OnceLock` built from the environment.
 #[must_use]
 pub fn require_auth() -> bool {
     static REQUIRE_AUTH: OnceLock<bool> = OnceLock::new();
-    *REQUIRE_AUTH
-        .get_or_init(|| parse_require_auth(crate::compat::env_var("WPM_REQUIRE_AUTH").as_deref()))
+    *REQUIRE_AUTH.get_or_init(|| {
+        parse_require_auth(
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH").as_deref(),
+        )
+    })
 }
 
-/// The longest token lifetime (`exp` minus `iat`) accepted when `WPM_MAX_TOKEN_LIFETIME_SECONDS` is unset: 24 hours.
+/// The longest token lifetime (`exp` minus `iat`) accepted when `WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS` is unset: 24 hours.
 /// It admits what the usual identity providers issue (Keycloak minutes, Entra about an hour) and refuses a token
 /// meant to live for weeks, which could not be called back once stolen. WPM verifies tokens statelessly and keeps no
 /// revocation list (WPM-R72, WPM-T200), so the lifetime is the bound on how long a stolen token works.
@@ -147,13 +150,14 @@ pub fn parse_max_token_lifetime(value: Option<&str>) -> Option<i64> {
     }
 }
 
-/// `WPM_MAX_TOKEN_LIFETIME_SECONDS`, read once.
+/// `WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS`, read once.
 #[must_use]
 pub fn max_token_lifetime() -> Option<i64> {
     static MAX: OnceLock<Option<i64>> = OnceLock::new();
     *MAX.get_or_init(|| {
         parse_max_token_lifetime(
-            crate::compat::env_var("WPM_MAX_TOKEN_LIFETIME_SECONDS").as_deref(),
+            crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS")
+                .as_deref(),
         )
     })
 }
@@ -203,9 +207,9 @@ pub fn parse_require_auth(value: Option<&str>) -> bool {
 #[must_use]
 pub fn key_source_configured() -> bool {
     [
-        "WPM_PASETO_KEYS",
-        "WPM_PASETO_KEYS_URL",
-        "WPM_KEYCLOAK_JWKS_URL",
+        "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+        "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL",
+        "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL",
     ]
     .iter()
     .any(|name| crate::compat::env_var(name).is_some_and(|value| !value.trim().is_empty()))
@@ -220,7 +224,7 @@ pub fn key_source_configured() -> bool {
 pub fn startup_check(require_auth: bool, production: bool, key_source: bool) -> Result<(), String> {
     if production && !require_auth {
         return Err(
-            "WPM_REQUIRE_AUTH is off in the production environment; sign-in enforcement may \
+            "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH is off in the production environment; sign-in enforcement may \
              not be disabled in production"
                 .to_string(),
         );
@@ -228,7 +232,7 @@ pub fn startup_check(require_auth: bool, production: bool, key_source: bool) -> 
     if production && !key_source {
         return Err(
             "no token key source is configured in the production environment; set \
-             WPM_PASETO_KEYS, WPM_PASETO_KEYS_URL or WPM_KEYCLOAK_JWKS_URL"
+             WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS, WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL or WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL"
                 .to_string(),
         );
     }
@@ -291,8 +295,8 @@ pub fn derive_action(method: &Method, path: &str) -> Action {
     }
 }
 
-/// Load the ABAC policy: `WPM_ABAC_POLICY` (inline JSON) wins, then
-/// `WPM_ABAC_POLICY_FILE` (path to a JSON file), else the built-in
+/// Load the ABAC policy: `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY` (inline JSON) wins, then
+/// `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` (path to a JSON file), else the built-in
 /// default policy. A present-but-unparsable policy (bad JSON, unknown
 /// effect/action names, unreadable file) `tracing::warn!`s and falls
 /// back to the default — the service always boots, matching the
@@ -300,10 +304,10 @@ pub fn derive_action(method: &Method, path: &str) -> Action {
 /// change.
 #[must_use]
 pub fn policy_from_env() -> Policy {
-    let source = crate::compat::env_var("WPM_ABAC_POLICY")
+    let source = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY")
         .filter(|v| !v.trim().is_empty())
         .or_else(|| {
-            let path = crate::compat::env_var("WPM_ABAC_POLICY_FILE")
+            let path = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE")
                 .filter(|v| !v.trim().is_empty())?;
             match std::fs::read_to_string(path.trim()) {
                 Ok(contents) => Some(contents),
@@ -353,7 +357,7 @@ fn parse_policy(json: &str) -> Option<Policy> {
 }
 
 /// The process-wide **hot-reloadable** ABAC policy, initialised from
-/// `WPM_ABAC_POLICY` / `WPM_ABAC_POLICY_FILE` (else the built-in
+/// `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY` / `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` (else the built-in
 /// default). Read the active snapshot with `policy().current()` per
 /// request; swap it at runtime with [`reload_policy`] (e.g. from the
 /// policy-file watcher in `app.rs`) — **no restart needed**.
@@ -363,8 +367,8 @@ pub fn policy() -> &'static ReloadablePolicy {
     POLICY.get_or_init(|| ReloadablePolicy::new(policy_from_env()))
 }
 
-/// Re-read the ABAC policy from the environment (`WPM_ABAC_POLICY` /
-/// `WPM_ABAC_POLICY_FILE`, same rules and default-fallback as
+/// Re-read the ABAC policy from the environment (`WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY` /
+/// `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE`, same rules and default-fallback as
 /// [`policy_from_env`]) and swap it into the live [`policy`] holder.
 /// Called by the policy-file watcher (`app.rs`) when the file changes;
 /// a malformed policy falls back to the built-in default (never leaves
@@ -379,17 +383,17 @@ pub fn reload_policy() {
 const POLICY_WATCH_SECS: u64 = 15;
 
 /// Spawn a background task that hot-reloads the ABAC policy when the
-/// `WPM_ABAC_POLICY_FILE` changes on disk — so operators can edit the
+/// `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` changes on disk — so operators can edit the
 /// policy file and have it take effect without a restart. It polls the
 /// file's mtime every [`POLICY_WATCH_SECS`] and calls [`reload_policy`]
 /// on a change (mtime-poll, not an OS notify, to stay dependency-light).
 ///
-/// A no-op when `WPM_ABAC_POLICY_FILE` is unset — an inline
-/// `WPM_ABAC_POLICY` (or the built-in default) has nothing to watch,
+/// A no-op when `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE` is unset — an inline
+/// `WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY` (or the built-in default) has nothing to watch,
 /// and env vars do not change at runtime. Call once at boot
 /// (`app.rs::after_routes`).
 pub fn spawn_policy_watcher() {
-    let Some(path) = crate::compat::env_var("WPM_ABAC_POLICY_FILE")
+    let Some(path) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE")
         .map(|p| p.trim().to_string())
         .filter(|p| !p.is_empty())
     else {
@@ -412,7 +416,7 @@ pub fn spawn_policy_watcher() {
     });
     tracing::info!(
         secs = POLICY_WATCH_SECS,
-        "watching WPM_ABAC_POLICY_FILE for changes"
+        "watching WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE for changes"
     );
 }
 
@@ -561,7 +565,7 @@ fn env_attrs_at(hour: u32) -> BTreeMap<String, Vec<String>> {
 /// decision with attributes of the *specific* record and the request
 /// context.
 ///
-/// Gated on the same `WPM_REQUIRE_AUTH` flag as the blanket guard:
+/// Gated on the same `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` flag as the blanket guard:
 /// when enforcement is **off** this is a no-op (behaviour-neutral, no
 /// authn/authz); when **on**, the blanket guard guarantees a token, so
 /// absent claims here are a `401` fail-safe.

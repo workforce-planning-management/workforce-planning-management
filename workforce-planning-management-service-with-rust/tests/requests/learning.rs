@@ -1738,6 +1738,7 @@ async fn esco_import_search_and_seeding() {
         assert_eq!(found[0]["optional_skills"], 1);
         assert_eq!(found[0]["isco_code"], "2512");
         assert_eq!(request.get("/api/esco/occupations?q=a").await.status_code(), 422);
+        assert_eq!(request.get("/api/esco/skills?q=a").await.status_code(), 422, "a skill search needs two characters too");
         let none: Value = request.get("/api/esco/occupations?q=%25%25").await.json();
         assert!(none.as_array().unwrap().is_empty(), "a % is matched literally, not as a wildcard");
         let skills: Value = request.get("/api/esco/skills?q=work%20in").await.json();
@@ -1957,6 +1958,11 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
             put_skills("uk-gdad-pcf", json!({ "selections": [{ "ref": not_pcf["pid"], "proficiency": 3 }] })).await.status_code(),
             422
         );
+        assert_eq!(
+            put_skills("uk-gdad-pcf", json!({ "selections": [{ "ref": "not-a-skill-id", "proficiency": 3 }] })).await.status_code(),
+            422,
+            "a PCF ref is a skill id"
+        );
         let done: Value = put_skills("uk-gdad-pcf", json!({ "selections": [
             { "ref": a_ref, "proficiency": 3 }, { "ref": b_ref, "proficiency": 2 },
         ] })).await.json();
@@ -1973,6 +1979,7 @@ async fn a_person_selects_their_pcf_and_esco_roles_and_skills() {
 
         // ── ESCO: a different framework, a separate selection.
         let occupation = "http://data.europa.eu/esco/occupation/q1";
+        assert_eq!(request.put(&format!("{base}/esco")).json(&json!({})).await.status_code(), 422, "ESCO needs an occupation");
         assert_eq!(
             request.put(&format!("{base}/esco")).json(&json!({ "occupation_uri": "http://nope" })).await.status_code(),
             422
@@ -2558,6 +2565,495 @@ async fn a_group_is_renamed_recast_and_redescribed() {
         assert_eq!(again.as_array().unwrap().iter().find(|g| g["pid"] == group).unwrap()["name"], "READING circle", "its own name, recased");
         let untouched = again.as_array().unwrap().iter().find(|g| g["pid"] == other).unwrap().clone();
         assert_eq!((&untouched["name"], &untouched["kind"], &untouched["description"]), (&json!("Film club"), &json!("interest"), &json!("old")));
+    })
+    .await;
+}
+
+/// Each refusal of a past role, a past skill and an aspiration, and a role aspiration's progress against a PCF level's skills.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn past_roles_past_skills_and_aspirations_refuse_what_they_cannot_name() {
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_esco::import_esco;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
+
+    crate::requests::request_open(|request, ctx| async move {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        import_pcf(workforce_planning_management::db::pool(&ctx), &root.join("pcf-mini"), LevelMapping::Identity, false).await.expect("pcf");
+        import_esco(workforce_planning_management::db::pool(&ctx), &root.join("esco-mini"), "en", "v-test").await.expect("esco");
+        let org = an_org();
+        let me = seed_worker!(&request, &org, format!("CR-{}", uuid::Uuid::new_v4().simple()), None).await;
+        activate!(&request, &me).await;
+        let profiles: Value = request.get("/api/role-profiles?framework=uk-gdad-pcf").await.json();
+        let tester = profiles.as_array().unwrap().iter().find(|p| p["job_title"] == "Tester").unwrap()["pid"].clone();
+        let own: Value = request.post("/api/role-profiles").json(&json!({ "job_title": format!("Own {}", uuid::Uuid::new_v4()) })).await.json();
+        let dates = json!({ "started_on": "2015-01-01", "ended_on": "2015-12-31" });
+        let with = |extra: Value| {
+            let mut body = dates.clone();
+            for (k, v) in extra.as_object().unwrap() {
+                body[k] = v.clone();
+            }
+            body
+        };
+
+        // A past role: an unknown framework, a PCF role missing or not from the PCF, an ESCO occupation missing or unknown.
+        let past = |framework: &str, body: Value| request.post(&format!("/api/workers/{me}/framework-roles/{framework}/past")).json(&body);
+        for (framework, body, why) in [
+            ("sfia", with(json!({})), "unknown framework"),
+            ("uk-gdad-pcf", with(json!({})), "no profile"),
+            ("uk-gdad-pcf", with(json!({ "role_profile_pid": own["pid"] })), "not a PCF level"),
+            ("esco", with(json!({})), "no occupation"),
+            ("esco", with(json!({ "occupation_uri": "http://data.europa.eu/esco/occupation/nope" })), "not in the pinned copy"),
+        ] {
+            assert_eq!(past(framework, body).await.status_code(), 422, "{why}");
+        }
+        let esco = past("esco", with(json!({ "occupation_uri": "http://data.europa.eu/esco/occupation/q1" }))).await;
+        assert_eq!(esco.status_code(), 200, "{}", esco.text());
+
+        // A past skill: an unknown skill is a 404, and dates that end before they start a 422.
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": format!("Past {}", uuid::Uuid::new_v4()), "category": "technical" })).await.json();
+        let past_skill = |body: Value| request.post(&format!("/api/workers/{me}/skill-history/past")).json(&body);
+        assert_eq!(past_skill(json!({ "skill_pid": uuid::Uuid::new_v4(), "proficiency": 2, "started_on": "2015-01-01", "ended_on": "2015-12-31" })).await.status_code(), 404);
+        assert_eq!(past_skill(json!({ "skill_pid": skill["pid"], "proficiency": 2, "started_on": "2016-01-01", "ended_on": "2015-01-01" })).await.status_code(), 422);
+
+        // Aspirations: each missing or unknown target is refused.
+        let aspire = |body: Value| request.post(&format!("/api/workers/{me}/aspirations")).json(&body);
+        let h = "within_1y";
+        for (body, code, why) in [
+            (json!({ "kind": "role", "horizon": h }), 422, "a role needs a framework"),
+            (json!({ "kind": "role", "framework_slug": "uk-gdad-pcf", "horizon": h }), 422, "the PCF needs a profile"),
+            (json!({ "kind": "role", "framework_slug": "uk-gdad-pcf", "role_profile_pid": own["pid"], "horizon": h }), 422, "not a PCF level"),
+            (json!({ "kind": "role", "framework_slug": "esco", "horizon": h }), 422, "ESCO needs an occupation"),
+            (json!({ "kind": "role", "framework_slug": "esco", "occupation_uri": "http://data.europa.eu/esco/occupation/nope", "horizon": h }), 422, "not in the pinned copy"),
+            (json!({ "kind": "skill", "target_level": 3, "horizon": h }), 422, "a skill needs a skill"),
+            (json!({ "kind": "skill", "skill_pid": uuid::Uuid::new_v4(), "target_level": 3, "horizon": h }), 404, "an unknown skill"),
+        ] {
+            assert_eq!(aspire(body).await.status_code(), code, "{why}");
+        }
+
+        // A PCF role aspiration counts the level's required skills against those held.
+        let made = aspire(json!({ "kind": "role", "framework_slug": "uk-gdad-pcf", "role_profile_pid": tester, "horizon": h })).await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let listed: Value = request.get(&format!("/api/workers/{me}/aspirations")).await.json();
+        let role = listed["aspirations"].as_array().unwrap().iter().find(|a| a["kind"] == "role").unwrap().clone();
+        assert!(role["progress"]["requirements"].is_number() && role["progress"]["met"].is_number(), "{role}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A merge folds the source's initiative shifts, plan items and external references into the target: each moves over unless
+// the target already has one for the same initiative, plan or framework, when the target's stands and the source's goes.
+async fn a_merge_folds_shifts_plan_items_and_references_into_the_target() {
+    crate::requests::request_open(|request, ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let skill = |name: String| {
+            let request = &request;
+            async move {
+                let made: Value = request.post("/api/skills").json(&json!({ "name": name, "category": "technical" })).await.json();
+                made["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let (source, target) = (skill(format!("Fold source {tag}")).await, skill(format!("Fold target {tag}")).await);
+        let (shared_initiative, own_initiative) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+        let (shared_plan, own_plan) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+        let mut sql = String::new();
+        for (initiative, skill) in [(shared_initiative, &source), (shared_initiative, &target), (own_initiative, &source)] {
+            sql.push_str(&format!(
+                "INSERT INTO initiative_skill_shifts (pid, initiative_pid, skill_pid, direction) VALUES ('{}', '{initiative}', '{skill}', 'grow');",
+                uuid::Uuid::new_v4()
+            ));
+        }
+        for (plan, skill) in [(shared_plan, &source), (shared_plan, &target), (own_plan, &source)] {
+            sql.push_str(&format!(
+                "INSERT INTO development_plan_items (pid, plan_pid, skill_pid, current_level, target_level, method) \
+                 VALUES ('{}', '{plan}', '{skill}', 1, 3, 'course');",
+                uuid::Uuid::new_v4()
+            ));
+        }
+        for (skill, framework) in [(&source, "esco"), (&target, "esco"), (&source, "sfia")] {
+            sql.push_str(&format!(
+                "INSERT INTO skill_external_refs (pid, skill_pid, framework_slug, \"ref\") VALUES ('{}', '{skill}', '{framework}', '{framework}-{}');",
+                uuid::Uuid::new_v4(),
+                uuid::Uuid::new_v4().simple()
+            ));
+        }
+        let pool = workforce_planning_management::db::pool(&ctx);
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql)).execute(pool).await.unwrap();
+
+        let result = request.post(&format!("/api/skills/{source}/merge")).json(&json!({ "into_pid": target })).await;
+        assert_eq!(result.status_code(), 200, "{}", result.text());
+        let result: Value = result.json();
+        assert_eq!(result["records_merged"], 2, "the shared initiative's shift and the shared plan's item: {result}");
+        assert_eq!(result["records_moved"], 2, "the other initiative's shift and the other plan's item: {result}");
+
+        let count = |table: &str, skill: &str| {
+            let sql = format!("SELECT count(*) FROM {table} WHERE skill_pid = '{skill}'");
+            async move { sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(sql)).fetch_one(pool).await.unwrap() }
+        };
+        for table in ["initiative_skill_shifts", "development_plan_items", "skill_external_refs"] {
+            assert_eq!(count(table, &source).await, 0, "{table}: nothing is left on the source");
+            assert_eq!(count(table, &target).await, 2, "{table}: the target's own and the one moved over");
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// The import refuses a directory that is not the framework's clone, skips a role whose title another profile holds, and
+// brings back a framework skill that was retired.
+async fn the_framework_import_skips_a_taken_title_and_revives_a_retired_skill() {
+    use workforce_planning_management::rules::framework::LevelMapping;
+    use workforce_planning_management::tasks::import_framework::import_pcf;
+
+    crate::requests::request_open(|_request, ctx| async move {
+        let pool = workforce_planning_management::db::pool(&ctx);
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pcf-mini");
+        let not_a_clone = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+        let refused = import_pcf(pool, &not_a_clone, LevelMapping::Identity, false).await;
+        assert!(refused.is_err_and(|e| e.to_string().contains("not found")));
+
+        import_pcf(pool, &fixture, LevelMapping::Identity, false).await.expect("import");
+        let (moved_id, original_ref): (i32, String) = sqlx::query_as(
+            "SELECT id, external_ref FROM role_profiles WHERE id = (SELECT min(id) FROM role_profiles WHERE framework_slug = 'uk-gdad-pcf')",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        // One profile no longer carries its framework reference, so its title is held by a profile the import does not own;
+        // and one framework skill is retired.
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            "UPDATE role_profiles SET external_ref = 'moved-away' \
+              WHERE id = (SELECT min(id) FROM role_profiles WHERE framework_slug = 'uk-gdad-pcf'); \
+             UPDATE skills SET deleted_at = now() \
+              WHERE pid = (SELECT skill_pid FROM skill_external_refs WHERE framework_slug = 'uk-gdad-pcf' ORDER BY id LIMIT 1)",
+        ))
+        .execute(pool)
+        .await
+        .unwrap();
+
+        let again = import_pcf(pool, &fixture, LevelMapping::Identity, false).await.expect("re-import");
+        assert_eq!(again.title_taken_skipped, 1, "{again:?}");
+        assert_eq!(again.profiles_created, 0, "{again:?}");
+        let retired: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM skills s JOIN skill_external_refs r ON r.skill_pid = s.pid \
+              WHERE r.framework_slug = 'uk-gdad-pcf' AND s.deleted_at IS NOT NULL",
+        )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+        assert_eq!(retired, 0, "the retired framework skill is back");
+        // Put the reference back, so a later import in the same database finds its own profile again.
+        sqlx::query("UPDATE role_profiles SET external_ref = $2 WHERE id = $1")
+            .bind(moved_id)
+            .bind(&original_ref)
+            .execute(pool)
+            .await
+            .unwrap();
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// Interest in a requisition: a draft one is refused, an open one is taken and counted by requisition with its title, and a
+// note over 500 characters is refused.
+async fn interest_in_an_open_requisition_is_counted_and_a_draft_is_refused() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let worker = seed_worker!(&request, &org, format!("MB-{tag}"), None).await;
+        activate!(&request, &worker).await;
+        let title = format!("Data Lead {tag}");
+        let requisition = |title: &str| {
+            let (request, body) = (
+                &request,
+                json!({ "organization_ref": org, "department": "engineering", "job_title": title,
+                                                      "headcount": 1, "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" }),
+            );
+            async move {
+                request
+                    .post("/api/requisitions")
+                    .json(&body)
+                    .await
+                    .json::<Value>()["pid"]
+                    .as_str()
+                    .unwrap()
+                    .to_string()
+            }
+        };
+        let (draft, open) = (
+            requisition(&format!("Draft {tag}")).await,
+            requisition(&title).await,
+        );
+        request
+            .post(&format!("/api/requisitions/{open}/status"))
+            .json(&json!({ "to": "open" }))
+            .await
+            .assert_status_ok();
+        let interests = format!("/api/workers/{worker}/mobility-interests");
+        let refused = request
+            .post(&interests)
+            .json(&json!({ "requisition_pid": draft }))
+            .await;
+        assert_eq!(refused.status_code(), 422, "{}", refused.text());
+        let long = request
+            .post(&interests)
+            .json(&json!({ "requisition_pid": open, "note": "x".repeat(501) }))
+            .await;
+        assert_eq!(long.status_code(), 422);
+        request
+            .post(&interests)
+            .json(&json!({ "requisition_pid": open, "note": "keen" }))
+            .await
+            .assert_status_ok();
+
+        let summary: Value = request.get("/api/mobility/interest-summary").await.json();
+        let row = summary["targets"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["target_pid"] == open.as_str())
+            .expect("counted");
+        assert_eq!(row["kind"], "requisition");
+        assert_eq!(row["interested"], 1);
+        assert_eq!(row["title"], title.as_str());
+        assert!(!summary.to_string().contains(&worker), "no one is named");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A group's skills are ordered by how many declare them, then by name; a skill only one member declares is withheld and
+// counted as such.
+async fn a_groups_skills_are_ordered_and_a_lone_one_is_withheld() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let group: Value = request
+            .post("/api/groups")
+            .json(&json!({ "organization_ref": org, "name": format!("Guild {tag}"), "kind": "practice" }))
+            .await
+            .json();
+        let group = group["pid"].as_str().unwrap().to_string();
+        let mut members = Vec::new();
+        for n in 0..4 {
+            let w = seed_worker!(&request, &org, format!("GS-{tag}-{n}"), None).await;
+            activate!(&request, &w).await;
+            request.post(&format!("/api/groups/{group}/members")).json(&json!({ "worker_pid": w, "role": "member" })).await.assert_status_ok();
+            members.push(w);
+        }
+        let skill = |name: String| {
+            let request = &request;
+            async move {
+                let s: Value = request.post("/api/skills").json(&json!({ "name": name, "category": "technical" })).await.json();
+                s["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let (gamma, alpha, beta, delta) = (
+            skill(format!("Gamma {tag}")).await,
+            skill(format!("alpha {tag}")).await,
+            skill(format!("Beta {tag}")).await,
+            skill(format!("Delta {tag}")).await,
+        );
+        for (skill, declared_by) in [(&gamma, 4), (&alpha, 3), (&beta, 3), (&delta, 1)] {
+            for who in &members[..declared_by] {
+                request
+                    .put(&format!("/api/workers/{who}/skills"))
+                    .json(&json!({ "skill_pid": skill, "proficiency": 3 }))
+                    .await
+                    .assert_status_ok();
+            }
+        }
+        let roll: Value = request.get(&format!("/api/groups/{group}/skills")).await.json();
+        let order: Vec<&str> = roll["skills"].as_array().unwrap().iter().map(|s| s["skill_pid"].as_str().unwrap()).collect();
+        assert_eq!(order, [gamma.as_str(), alpha.as_str(), beta.as_str()], "most declared first, then by name ignoring case");
+        assert_eq!(roll["withheld_below_floor"], 1, "{roll}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A critical role at high risk of loss with nobody on its bench, in a department the plan has demand in, is counted as a
+// critical role without a bench in the plan's departments.
+async fn the_alignment_counts_a_critical_role_without_a_bench_in_the_plans_departments() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let department = format!("al-{}", uuid::Uuid::new_v4().simple());
+        let plan: Value = request
+            .post("/api/workforce-plans")
+            .json(&json!({ "name": format!("Plan {department}"), "organization_ref": org,
+                           "horizon_start": "2026-01-01", "horizon_end": "2027-12-31", "attrition_bp": 1000 }))
+            .await
+            .json();
+        let plan = plan["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workforce-plans/{plan}/demand-lines"))
+            .json(&json!({ "department": department, "target_on": "2027-06-30", "target_headcount": 4 }))
+            .await
+            .assert_status_ok();
+        request
+            .post("/api/succession-plans")
+            .json(&json!({ "role_title": format!("Head of {department}"), "department": department, "criticality": 5,
+                           "risk_of_loss": "high" }))
+            .await
+            .assert_status_ok();
+        let view: Value = request.get(&format!("/api/workforce-plans/{plan}/alignment")).await.json();
+        let bench = &view["critical_roles_without_bench"];
+        assert_eq!(bench["succession_plans_in_plan_departments"], 1, "{view}");
+        assert_eq!(bench["in_plan_departments"], 1, "{view}");
+        assert!(bench["all_departments"].as_u64().unwrap() >= 1, "{view}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// With no attrition assumption, the forecast uses the organization's own snapshots: departments on the same day are added
+// together, and the rate is observed, not assumed.
+async fn a_forecast_with_no_assumption_uses_the_observed_snapshots() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let mut sql = String::new();
+        // Three days, 181 days apart end to end; 60 + 40 people each day; 3 + 2 leavers after the first.
+        for (as_of, leavers) in [("2026-01-01", None), ("2026-04-01", Some((3, 2))), ("2026-07-01", Some((3, 2)))] {
+            for (department, headcount, left) in [("engineering", 60, leavers.map(|l: (i32, i32)| l.0)), ("sales", 40, leavers.map(|l| l.1))] {
+                let left = left.map_or_else(|| "NULL".to_string(), |n| n.to_string());
+                sql.push_str(&format!(
+                    "INSERT INTO headcount_snapshots (pid, organization_ref, department, as_of, headcount, fte_percent_total, leavers) \
+                     VALUES ('{}', '{org}', '{department}', '{as_of}', {headcount}, {}, {left});",
+                    uuid::Uuid::new_v4(),
+                    headcount * 100
+                ));
+            }
+        }
+        sqlx::raw_sql(sqlx::AssertSqlSafe(sql)).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+
+        let plan: Value = request
+            .post("/api/workforce-plans")
+            .json(&json!({ "name": "Observed", "organization_ref": org, "horizon_start": "2026-01-01", "horizon_end": "2027-12-31" }))
+            .await
+            .json();
+        let plan = plan["pid"].as_str().unwrap().to_string();
+        request
+            .put(&format!("/api/workforce-plans/{plan}/demand-lines"))
+            .json(&json!({ "department": "engineering", "target_on": "2027-06-30", "target_headcount": 3 }))
+            .await
+            .assert_status_ok();
+        let forecast: Value = request.get(&format!("/api/workforce-plans/{plan}/forecast")).await.json();
+        assert_eq!(forecast["assumptions"]["attrition_source"], "observed_snapshots", "{forecast}");
+        // 10 leavers over 181 days, a mean of 100 people: about 20% a year.
+        let bp = forecast["assumptions"]["attrition_bp"].as_i64().expect("an observed rate");
+        assert!((2_000..=2_030).contains(&bp), "{bp}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A worker moved to another organization while their manager stays behind is flagged, so the reporting line is looked at.
+async fn a_transfer_flags_a_manager_left_in_the_old_organization() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let (from, to) = (an_org(), an_org());
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let boss = seed_worker!(&request, &from, format!("TR-{tag}-B"), None).await;
+        let worker = seed_worker!(&request, &from, format!("TR-{tag}-W"), None).await;
+        request
+            .put(&format!("/api/workers/{worker}"))
+            .json(&json!({ "manager_pid": boss }))
+            .await
+            .assert_status_ok();
+        let moved = request
+            .post(&format!("/api/workers/{worker}/transfer"))
+            .json(&json!({ "organization_ref": to }))
+            .await;
+        assert_eq!(moved.status_code(), 200, "{}", moved.text());
+        let moved: Value = moved.json();
+        assert_eq!(moved["manager_in_other_organization"], true, "{moved}");
+        assert_eq!(
+            (moved["from"].as_str(), moved["to"].as_str()),
+            (Some(from.as_str()), Some(to.as_str()))
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A role profile's description and a requirement's note are length-checked, a requirement needs a level, and a profile not
+// from a framework has no next level to progress to.
+async fn a_role_profile_checks_its_text_and_a_plain_one_has_no_progression() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let long = "x".repeat(1025);
+        let too_long = json!({ "job_title": format!("Long {tag}"), "description": long });
+        assert_eq!(request.post("/api/role-profiles").json(&too_long).await.status_code(), 422);
+        let profile: Value = request.post("/api/role-profiles").json(&json!({ "job_title": format!("Plain {tag}") })).await.json();
+        let pid = profile["pid"].as_str().unwrap().to_string();
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": format!("Plain skill {tag}"), "category": "technical" })).await.json();
+        let requirements = format!("/api/role-profiles/{pid}/requirements");
+        for (body, why) in [
+            (json!({ "skill_pid": skill["pid"], "importance": "critical", "min_proficiency": 3, "note": long }), "a note too long"),
+            (json!({ "skill_pid": skill["pid"], "importance": "critical" }), "no level at all"),
+        ] {
+            assert_eq!(request.put(&requirements).json(&body).await.status_code(), 422, "{why}");
+        }
+        let progression: Value = request.get(&format!("/api/role-profiles/{pid}/progression")).await.json();
+        assert_eq!(progression["next"], json!([]), "{progression}");
+        assert_eq!(progression["profile"], format!("Plain {tag}").as_str());
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A pairing made active that has never met is listed as stale, with both names and no last session.
+async fn a_pairing_that_has_never_met_is_stale() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mentor = seed_worker!(&request, &org, format!("MS-{tag}-M"), None).await;
+        let mentee = seed_worker!(&request, &org, format!("MS-{tag}-E"), None).await;
+        activate!(&request, &mentor).await;
+        activate!(&request, &mentee).await;
+        let made: Value = request
+            .post("/api/mentorships")
+            .json(&json!({ "mentor_pid": mentor, "mentee_pid": mentee, "focus": "growth" }))
+            .await
+            .json();
+        let pid = made["pid"].as_str().expect("mentorship pid").to_string();
+        request
+            .post(&format!("/api/mentorships/{pid}/status"))
+            .json(&json!({ "to": "active" }))
+            .await
+            .assert_status_ok();
+        let overview: Value = request
+            .get("/api/learning/mentorship-overview?days=30")
+            .await
+            .json();
+        let stale = overview["stale_mentorships"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["pid"] == pid.as_str());
+        let stale = stale.expect("never met, so stale");
+        assert!(stale["last_session"].is_null(), "{stale}");
+        assert_eq!(stale["mentor"], format!("Test Worker MS-{tag}-M").as_str());
+        assert_eq!(stale["mentee"], format!("Test Worker MS-{tag}-E").as_str());
     })
     .await;
 }

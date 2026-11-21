@@ -24,7 +24,7 @@
 //! (the token carries no per-organization claims — see
 //! [`crate::models::memberships`]'s own doc comment). [`may_manage_membership`]
 //! and [`may_manage_confederation`] are both a no-op (`true`) while
-//! `WPM_REQUIRE_AUTH` is off, matching every other authorization pass
+//! `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH` is off, matching every other authorization pass
 //! in this crate.
 
 use crate::sql_time::{SqlDate, SqlTimestamp};

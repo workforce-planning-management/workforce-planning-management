@@ -2,6 +2,7 @@
 
 pub mod adjustment_requests;
 pub mod ai_register_entries;
+pub mod allocations;
 pub mod announcement_reads;
 pub mod announcements;
 pub mod applications;

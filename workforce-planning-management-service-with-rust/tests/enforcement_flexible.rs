@@ -90,11 +90,20 @@ fn policy_with_deciders() -> String {
 async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
-        std::env::set_var("WPM_ABAC_POLICY", policy_with_deciders());
-        std::env::set_var("WPM_FLEXIBLE_REFUSAL_REASONS", "too_costly,cannot_cover");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS",
+            "too_costly,cannot_cover",
+        );
     }
     let p: Vec<uuid::Uuid> = (0..6).map(|_| uuid::Uuid::new_v4()).collect();
     let [worker_p, mgr_p, other_mgr_p, neighbour_p, hr_p, _spare] =
@@ -274,6 +283,135 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
         assert!(!audits.contains("Fridays") && !audits.contains("Swap the Friday") && !audits.contains("Cover is not affordable"), "no text in the audit");
         let export = get(format!("/api/workers/{w}/subject-access"), me.clone()).await.json::<Value>();
         assert_eq!(export["flexible_working_requests"].as_array().unwrap().len(), 3);
+    })
+    .await;
+}
+
+/// The moves the first scenario does not make: an approval (with a trial that must not end before the start), a declined
+/// counter-proposal, a late appeal, an appeal dismissed with a note, and the refusals of a bad outcome, a long note and an
+/// unknown status.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test --test enforcement_flexible -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn an_approval_a_declined_counter_and_a_dismissed_appeal_are_recorded() {
+    let (keys, kid) = keys_and_kid();
+    unsafe {
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS",
+            "too_costly,cannot_cover",
+        );
+    }
+    let (a_p, b_p, mgr_p, hr_p) = (
+        uuid::Uuid::new_v4(),
+        uuid::Uuid::new_v4(),
+        uuid::Uuid::new_v4(),
+        uuid::Uuid::new_v4(),
+    );
+    let bearer = |t: String| format!("Bearer {t}");
+    let a = bearer(sign_as(&kid, &a_p.to_string(), &[]));
+    let b = bearer(sign_as(&kid, &b_p.to_string(), &[]));
+    let manager = bearer(sign_as(&kid, &mgr_p.to_string(), &[("decider", &["true"])]));
+    let hr = bearer(sign_as(&kid, &hr_p.to_string(), &[("hr", &["true"])]));
+    let svc = bearer(sign_as(&kid, "svc-user", &[("svc", &["true"])]));
+
+    request::<App, _, _>(|request, ctx| async move {
+        let org = format!("organization:{}", uuid::Uuid::new_v4());
+        let make = |person: uuid::Uuid, number: String, manager_pid: Option<String>| {
+            let request = &request;
+            let (t, org) = (svc.clone(), org.clone());
+            async move {
+                let mut body = json!({
+                    "person_ref": format!("person:{person}"), "organization_ref": org,
+                    "worker_number": number, "display_name": format!("Test Worker {number}"),
+                    "employment_type": "permanent", "department": "engineering",
+                    "job_title": "Engineer", "hired_on": "2023-01-05",
+                });
+                if let Some(m) = manager_pid { body["manager_pid"] = json!(m); }
+                let r = request.post("/api/workers").add_header("authorization", t.clone()).json(&body).await;
+                assert_eq!(r.status_code(), 200);
+                let pid = r.json::<Value>()["pid"].as_str().unwrap().to_string();
+                request.post(&format!("/api/workers/{pid}/status")).add_header("authorization", t)
+                    .json(&json!({ "to": "active" })).await.assert_status_ok();
+                pid
+            }
+        };
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w_mgr = make(mgr_p, format!("FA-M-{tag}"), None).await;
+        let w_a = make(a_p, format!("FA-A-{tag}"), Some(w_mgr.clone())).await;
+        let w_b = make(b_p, format!("FA-B-{tag}"), Some(w_mgr.clone())).await;
+        let w_hr = make(hr_p, format!("FA-H-{tag}"), None).await;
+        for (person, wp, role) in [(a_p, &w_a, "member"), (b_p, &w_b, "member"), (mgr_p, &w_mgr, "member"), (hr_p, &w_hr, "hr_admin")] {
+            sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+                "INSERT INTO organization_memberships (pid, person_ref, organization_ref, worker_pid, role, starts_on) \
+                 VALUES ('{}', 'person:{person}', '{org}', '{wp}', '{role}', '2023-01-05')", uuid::Uuid::new_v4()))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        }
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
+        let post = |path: String, token: String, body: Value| {
+            let request = &request;
+            async move { request.post(&path).add_header("authorization", token).json(&body).await }
+        };
+        let ask = |token: String, start: i64| {
+            let post = &post;
+            async move {
+                let r = post("/api/me/flexible-working".into(), token, json!({ "kind": "hours", "proposed_start": day(start), "proposed_fte_percent": 80 })).await;
+                assert_eq!(r.status_code(), 200, "{}", r.text());
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let decide = |pid: &str| format!("/api/flexible-working/{pid}/decide");
+
+        // An approval: a trial may not end before the arrangement starts.
+        let r1 = ask(a.clone(), 30).await;
+        let early = post(decide(&r1), manager.clone(), json!({ "outcome": "approve", "trial_until": day(10) })).await;
+        assert_eq!(early.status_code(), 422, "{}", early.text());
+        let approved = post(decide(&r1), manager.clone(), json!({ "outcome": "approve", "trial_until": day(120) })).await;
+        assert_eq!(approved.status_code(), 200, "{}", approved.text());
+        assert_eq!(approved.json::<Value>()["status"], "approved");
+
+        // A counter-proposal the person declines.
+        let r2 = ask(a.clone(), 60).await;
+        assert_eq!(post(decide(&r2), manager.clone(), json!({ "outcome": "counter", "counter_note": "Four days" })).await.status_code(), 200);
+        let declined = post(format!("/api/me/flexible-working/{r2}/respond"), a.clone(), json!({ "response": "decline" })).await;
+        assert_eq!(declined.status_code(), 200, "{}", declined.text());
+        assert_eq!(declined.json::<Value>()["status"], "declined");
+
+        // A refusal: a late appeal is refused; one in time is dismissed by someone else, with a note.
+        let r3 = ask(b.clone(), 30).await;
+        assert_eq!(post(decide(&r3), manager.clone(), json!({ "outcome": "refuse", "reason": "cannot_cover" })).await.status_code(), 200);
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE flexible_working_requests SET decided_on = CURRENT_DATE - 400 WHERE pid = '{r3}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        let late = post(format!("/api/me/flexible-working/{r3}/appeal"), b.clone(), json!({})).await;
+        assert_eq!(late.status_code(), 422, "{}", late.text());
+        assert!(late.text().contains("calendar days of the refusal"));
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE flexible_working_requests SET decided_on = CURRENT_DATE WHERE pid = '{r3}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        assert_eq!(post(format!("/api/me/flexible-working/{r3}/appeal"), b.clone(), json!({ "note": "Please look again" })).await.status_code(), 200);
+        let appeal = format!("/api/flexible-working/{r3}/appeal-decision");
+        assert_eq!(post(appeal.clone(), hr.clone(), json!({ "outcome": "reconsider" })).await.status_code(), 422);
+        assert_eq!(post(appeal.clone(), hr.clone(), json!({ "outcome": "dismiss", "note": "x".repeat(5_000) })).await.status_code(), 422);
+        let dismissed = post(appeal, hr.clone(), json!({ "outcome": "dismiss", "note": "The cover gap stands" })).await;
+        assert_eq!(dismissed.status_code(), 200, "{}", dismissed.text());
+        assert_eq!(dismissed.json::<Value>()["status"], "refused_on_appeal");
+
+        // An unknown status is refused; the audit trail names each move and no text.
+        let unknown = request.get("/api/flexible-working?status=pending").add_header("authorization", hr.clone()).await;
+        assert_eq!(unknown.status_code(), 422);
+        let trail = request.get(&format!("/api/audits/{w_a}")).add_header("authorization", svc.clone()).await.text();
+        assert!(trail.contains("flexible_working_approved") && trail.contains("flexible_working_declined"), "{trail}");
+        let trail_b = request.get(&format!("/api/audits/{w_b}")).add_header("authorization", svc.clone()).await.text();
+        assert!(trail_b.contains("flexible_working_appeal_dismissed") && !trail_b.contains("cover gap"), "{trail_b}");
     })
     .await;
 }

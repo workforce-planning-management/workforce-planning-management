@@ -81,7 +81,7 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   Directive's own rule on that basis (for example gross hourly pay) was not read in the spec round and is an open item for
   WPM-T269.*
 - **Reporting tier.** From the organization's headcount WPM says which tier of Article 9 applies and when the next report is due,
-  using the configured dates. The tiers are `WPM_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`, comma-separated, or
+  using the configured dates. The tiers are `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`, comma-separated, or
   `none` for no reporting duty), else the Directive's three; the report's `reporting_basis` says which (WPM-T384). It reminds; it does not file.
 - **Read** (WPM-T270): `GET /api/pay-transparency/gap-report?organization=&as_of=&currency=&variable=` and the same as CSV at
   `/gap-report/csv`. Both are audited (`pay_gap_report_read`, `pay_gap_report_exported`: the day and how many categories, no
@@ -91,7 +91,7 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 - **Where the data comes from.** Pay is the **annual full-time-equivalent basic salary** on the worker record (not scaled down for
   part-time, standard hours taken as equal), in one currency (the `currency` asked for, else the most common among workers with a
   salary); pay in another currency counts as "no pay recorded". Sex is the answer to the equality category named by
-  `WPM_PAY_GAP_SEX_CATEGORY` (default `sex`; values `female` and `male`, anything else is left out), so **the report does not exist
+  `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY` (default `sex`; values `female` and `male`, anything else is left out), so **the report does not exist
   (`422`) where equality monitoring is off**. **WPM holds no bonus, allowance or payment in kind**, so every variable component is
   unknown and (a) and (c) (total pay), (b), (d) and (e) are `unknown` until a source exists; (g) in basic pay is the one gap that
   can be shown today. The report says so in its `basis`. A category the employer set up that has nobody eligible is listed as
@@ -105,7 +105,7 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 - **A worker may ask** for their own pay level and for the average pay level, broken down by sex, of the category of workers
   that does the same work or work of equal value (Article 7). `POST /api/me/pay-information-requests` (no body) records the
   request and a **computed due date**: the Directive's period for the answer is "a reasonable period and in any event within
-  **two months**" of the request, kept as a configured number of calendar months (`WPM_PAY_INFORMATION_MONTHS`, default 2, 1 to 12)
+  **two months**" of the request, kept as a configured number of calendar months (`WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS`, default 2, 1 to 12)
   so a national law can change it. The due date is derived, a request past it shows as `overdue` and is never quietly closed, and a
   worker has **one request waiting at a time**. `GET /api/me/pay-information-requests` lists a worker's own, newest first. The request
   holds dates only (`pay_information_requests`); the figures are not stored.
@@ -124,7 +124,7 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
   based on objective gender-neutral criteria, in the vacancy notice or before the interview, and forbids the employer to ask
   about their pay history. In WPM: **a requisition cannot move to `open` without a pay range** (a minimum above zero and a maximum
   not below it; one stated figure is a minimum equal to the maximum), refused with `422` saying what to state; it is on by default
-  and `WPM_REQUIRE_PAY_RANGE` turns it off for a deployment the Directive does not reach. Only opening is gated: a draft can still be
+  and `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE` turns it off for a deployment the Directive does not reach. Only opening is gated: a draft can still be
   edited or cancelled. The candidate record has **no pay-history column**, and a test (`no_candidate_table_has_a_pay_history_column`)
   reads the database's own column list for every candidate table, applications and interviews and fails on a column whose name says
   salary, pay, wage, remuneration, compensation, earnings, bonus or CTC. WPM publishes no advert itself, so the range is what an
@@ -135,8 +135,8 @@ The seven items of Article 9(1), as the Directive words them (point letters as i
 - **When.** Article 10(1): where the report shows an average pay gap of **at least 5%** between female and male workers in a
   category of workers, **and** the employer has not justified the gap on objective, gender-neutral criteria, **and** has not
   remedied it **within six months** of the date of reporting, the employer carries out a joint pay assessment with the workers'
-  representatives. Both the 5% (`WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, a whole number) and the six calendar months
-  (`WPM_JOINT_ASSESSMENT_MONTHS`) are configuration with these defaults, checked (1 to 50 percent, 1 to 24 months); the Commission is
+  representatives. Both the 5% (`WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, a whole number) and the six calendar months
+  (`WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS`) are configuration with these defaults, checked (1 to 50 percent, 1 to 24 months); the Commission is
   to review the 5% trigger by 7 June 2033, as the Directive's review clause is summarised on EUR-Lex.
 - **What WPM does** (WPM-T272, `rules::joint_assessment`). For each category it takes the category's gap in **basic pay** (the one
   gap WPM can show, see R144) and reports a signal: `unknown` (the gap is withheld under the floor, or cannot be worked out: never
@@ -182,15 +182,15 @@ paragraph numbers inside Articles 5 and 7; the Directive's rule on how pay is pu
 national transposition (none was read); and how a country defines "category of workers" in its own law. WPM-T269 and WPM-T270
 start by reading those from the Official Journal.
 
-So the defaults that rest on the Directive (`WPM_PAY_INFORMATION_MONTHS`, `WPM_REQUIRE_PAY_RANGE`,
-`WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WPM_JOINT_ASSESSMENT_MONTHS`, `WPM_PAY_GAP_TIERS`) say `unverified`, not `read`, in
+So the defaults that rest on the Directive (`WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS`, `WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE`,
+`WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT`, `WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS`, `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS`) say `unverified`, not `read`, in
 `GET /api/statutory-defaults`, the gap report's `reporting_basis`, the joint assessment's `threshold_basis` and `remedy_basis`, and the
 `/statutory-defaults` page; their references keep the Article and say they came from search excerpts (WPM-T404, 2026-10-31; they
 said `read` from WPM-T384 until then).
 
 Since WPM-T384's second step (WPM-D153, 2026-10-31) each of these is read from a jurisdiction profile first: the pay information
 period over the asking worker's `work_jurisdiction`, and the pay range gate, the joint assessment's threshold and period and the
-reporting tiers over the organization's home jurisdiction; the `WPM_*` setting and then the default follow. Each `*_basis` adds
+reporting tiers over the organization's home jurisdiction; the `WORKFORCE_PLANNING_MANAGEMENT_*` setting and then the default follow. Each `*_basis` adds
 `came_from` (`profile` with the rows behind it, `setting` or `default`).
 
 ## Sources

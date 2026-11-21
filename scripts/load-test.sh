@@ -21,7 +21,7 @@
 #
 # Needs: curl, podman (a Postgres container), oha, and a release build of the service
 # (cargo build --release in workforce-planning-management-service-with-rust). Synthetic data only.
-# Auth enforcement is off (WPM_REQUIRE_AUTH=0): this measures the service and the database, not the token check.
+# Auth enforcement is off (WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0): this measures the service and the database, not the token check.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -47,16 +47,16 @@ trap cleanup EXIT
 
 ! curl -fs "127.0.0.1:$port_api/_health/live" >/dev/null 2>&1 || { echo "something already answers on port $port_api; stop it first"; exit 1; }
 podman rm -f "$pg" >/dev/null 2>&1 || true
-podman run -d --shm-size=512m --name "$pg" -e POSTGRES_USER=loco -e POSTGRES_PASSWORD=loco -e POSTGRES_DB=load \
+podman run -d --shm-size=512m --name "$pg" -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=load \
   -p "$port:5432" docker.io/library/postgres:18@sha256:979bccfde35445db618c65107d27d08c6c21339d8dc3ad4c830c6633947be0e4 >/dev/null
-for _ in $(seq 60); do podman exec "$pg" pg_isready -U loco -d load >/dev/null 2>&1 && break; sleep 1; done
+for _ in $(seq 60); do podman exec "$pg" pg_isready -U postgres -d load >/dev/null 2>&1 && break; sleep 1; done
 sleep 2
 
-psql() { podman exec -i "$pg" psql -v ON_ERROR_STOP=1 -q -U loco -d load "$@"; }
-export DATABASE_URL="postgres://loco:loco@localhost:$port/load" WPM_REQUIRE_AUTH=0
+psql() { podman exec -i "$pg" psql -v ON_ERROR_STOP=1 -q -U postgres -d load "$@"; }
+export DATABASE_URL="postgres://postgres:postgres@localhost:$port/load" WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH=0
 # Rate limits are per network address and would answer a single-address load with 429; they are measured
 # separately (tests/security.rs). Demo profile: it reads PORT, and the production profile demands a CORS origin and JWT secret.
-export PORT=$port_api APP_ENV=demo WPM_RATE_LIMIT_PER_MINUTE=0 WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE=0
+export PORT=$port_api APP_ENV=demo WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE=0 WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE=0
 # The demo profile holds ONE database connection with a 500 ms wait; a production deployment holds 20 (config/production.yaml).
 # Measured with one, every query over half a second made the others fail with a pool timeout.
 export DB_MAX_CONNECTIONS=${LOAD_DB_CONNECTIONS:-20} DB_CONNECT_TIMEOUT=${LOAD_DB_TIMEOUT_MS:-5000}

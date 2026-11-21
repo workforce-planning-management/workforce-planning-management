@@ -302,4 +302,12 @@ http://data.europa.eu/esco/occupation/o1,mystery,skill/competence,http://data.eu
             "never fuzzy"
         );
     }
+
+    #[test]
+    fn every_relation_has_its_token() {
+        assert_eq!(
+            (Relation::Essential.as_str(), Relation::Optional.as_str()),
+            ("essential", "optional")
+        );
+    }
 }

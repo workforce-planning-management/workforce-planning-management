@@ -408,3 +408,270 @@ async fn a_checklist_takes_extra_items_reassignment_and_reopening_until_it_is_ca
     })
     .await;
 }
+
+/// The kinds the first scenario does not reach: leading a group, a rota seat the successor already holds, an on-call swap
+/// still ahead, and the refusals for a successor who is unknown or not employed, and for a manager below their own report.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one scenario read top to bottom
+async fn a_group_lead_a_shared_rota_seat_and_a_swap_are_handed_over_or_closed() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut people = Vec::new();
+        for n in ["L", "S", "R1", "R2", "T"] {
+            let pid = seed_worker!(&request, &org, format!("HO-{tag}-{n}"), None).await;
+            activate!(&request, &pid).await;
+            people.push(pid);
+        }
+        let (l, s, r1, r2, gone) = (&people[0], &people[1], &people[2], &people[3], &people[4]);
+        for (who, boss) in [(r1, l), (r2, r1)] {
+            request.put(&format!("/api/workers/{who}")).json(&json!({ "manager_pid": boss })).await.assert_status_ok();
+        }
+        for to in ["offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{gone}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        let today = workforce_planning_management::dates::today();
+        let day = |n: i64| (today + workforce_planning_management::dates::days(n)).to_string();
+
+        // L leads two groups (S is a member of one), shares a rota with S, and is on call by swap after the last day.
+        let group = |name: String| {
+            let (request, org) = (&request, org.clone());
+            async move {
+                let g: Value = request
+                    .post("/api/groups")
+                    .json(&json!({ "organization_ref": org, "name": name, "kind": "practice" }))
+                    .await
+                    .json();
+                g["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let g1 = group(format!("Guild {tag}")).await;
+        let g2 = group(format!("Club {tag}")).await;
+        for (g, who, role) in [(&g1, l, "lead"), (&g1, s, "member"), (&g2, l, "lead")] {
+            request.post(&format!("/api/groups/{g}/members")).json(&json!({ "worker_pid": who, "role": role })).await.assert_status_ok();
+        }
+        let rota: Value = request
+            .post("/api/rotas")
+            .json(&json!({ "organization_ref": org, "name": format!("HO rota {tag}"), "period_days": 7,
+                           "starts_on": today.to_string(), "members": [l, s] }))
+            .await
+            .json();
+        let rota = rota["pid"].as_str().unwrap().to_string();
+        request
+            .post(&format!("/api/rotas/{rota}/overrides"))
+            .json(&json!({ "worker_pid": l, "starts_on": day(20), "ends_on": day(21) }))
+            .await
+            .assert_status_ok();
+        request
+            .post(&format!("/api/rotas/{rota}/overrides"))
+            .json(&json!({ "worker_pid": l, "starts_on": day(22), "ends_on": day(23) }))
+            .await
+            .assert_status_ok();
+
+        let mv: Value = request
+            .post(&format!("/api/workers/{l}/movements"))
+            .json(&json!({ "kind": "leaver", "effective_on": day(14), "reason": "resignation" }))
+            .await
+            .json();
+        let mv = mv["pid"].as_str().unwrap().to_string();
+        let handover = format!("/api/movements/{mv}/handover");
+        let held: Value = request.get(&handover).await.json();
+        let items = held["items"].as_array().unwrap().clone();
+        let subject = |kind: &str, n: usize| {
+            items.iter().filter(|i| i["kind"] == kind).nth(n).unwrap()["subject_pid"].as_str().unwrap().to_string()
+        };
+        assert_eq!(held["counts"]["group_lead"], 2, "{held}");
+        assert_eq!(held["counts"]["rota_swap"], 2, "{held}");
+        assert_eq!(held["counts"]["rota_membership"], 1, "{held}");
+
+        // Refusals: an unknown successor, one no longer employed, and a manager below their own report.
+        let report = subject("direct_report", 0);
+        for (to, why) in [(uuid::Uuid::new_v4().to_string(), "unknown"), (gone.to_string(), "not employed"), (r2.to_string(), "a loop")] {
+            let r = request
+                .post(&handover)
+                .json(&json!({ "kind": "direct_report", "subject_pid": report, "to_worker_pid": to }))
+                .await;
+            assert_eq!(r.status_code(), 422, "{why}: {}", r.text());
+        }
+
+        // A group lead passes only to a member; a group with nobody to take it closes.
+        let lead_one = |n: usize| subject("group_lead", n);
+        let (first, second) = (lead_one(0), lead_one(1));
+        let not_member = request.post(&handover).json(&json!({ "kind": "group_lead", "subject_pid": second, "to_worker_pid": s })).await;
+        assert_eq!(not_member.status_code(), 422, "{}", not_member.text());
+        let moved: Value = request.post(&handover).json(&json!({ "kind": "group_lead", "subject_pid": first, "to_worker_pid": s })).await.json();
+        assert_eq!(moved["action"], "reassigned", "{moved}");
+        let closed: Value = request.post(&handover).json(&json!({ "kind": "group_lead", "subject_pid": second })).await.json();
+        assert_eq!(closed["action"], "closed", "{closed}");
+
+        // The rota seat: S already has one, so L's seat is closed rather than doubled.
+        let seat: Value = request
+            .post(&handover)
+            .json(&json!({ "kind": "rota_membership", "subject_pid": subject("rota_membership", 0), "to_worker_pid": s }))
+            .await
+            .json();
+        assert_eq!(seat["action"], "closed", "{seat}");
+
+        // The swaps: one passes to S, the other is removed.
+        let swap: Value = request
+            .post(&handover)
+            .json(&json!({ "kind": "rota_swap", "subject_pid": subject("rota_swap", 0), "to_worker_pid": s }))
+            .await
+            .json();
+        assert_eq!(swap["action"], "reassigned", "{swap}");
+        let dropped: Value = request.post(&handover).json(&json!({ "kind": "rota_swap", "subject_pid": subject("rota_swap", 1) })).await.json();
+        assert_eq!(dropped["action"], "closed", "{dropped}");
+        let swaps = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(format!(
+            "SELECT count(*) FROM rota_overrides WHERE rota_pid = '{rota}' AND worker_pid = '{s}'")))
+            .fetch_one(workforce_planning_management::db::pool(&ctx))
+            .await
+            .unwrap();
+        assert_eq!(swaps, 1, "one swap now names S");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one leaver, read top to bottom
+// Handed to nobody, a dotted line, a backup role, a mentorship, a shift and a task are each closed; a dotted line handed to
+// someone who already has one to that report ends rather than doubling; a cancelled record takes no hand-over.
+async fn what_is_handed_to_nobody_is_closed_and_a_duplicate_line_ends() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let mut people = Vec::new();
+        for n in ["L", "X", "Y", "S"] {
+            let pid = seed_worker!(&request, &org, format!("HC-{tag}-{n}"), None).await;
+            activate!(&request, &pid).await;
+            people.push(pid);
+        }
+        let (l, x, y, s) = (&people[0], &people[1], &people[2], &people[3]);
+        let last_day = workforce_planning_management::dates::today() + workforce_planning_management::dates::days(14);
+        let dotted = |report: &str, manager: &str| {
+            let (request, url, body) = (&request, format!("/api/workers/{report}/dotted-line-managers"), json!({ "manager_pid": manager }));
+            async move { request.post(&url).json(&body).await.assert_status_ok(); }
+        };
+        dotted(x, l).await;
+        dotted(y, l).await;
+        dotted(y, s).await;
+        request.post(&format!("/api/workers/{x}/backups")).json(&json!({ "backup_pid": l })).await.assert_status_ok();
+        request
+            .post("/api/mentorships")
+            .json(&json!({ "mentor_pid": l, "mentee_pid": x, "focus": "growth" }))
+            .await
+            .assert_status_ok();
+        let day = workforce_planning_management::dates::start_of_day(last_day + workforce_planning_management::dates::days(2));
+        let shift: Value = request
+            .post("/api/shifts")
+            .json(&json!({ "department": "engineering", "starts_at": (day + jiff::SignedDuration::from_hours(9)).to_string(),
+                           "ends_at": (day + jiff::SignedDuration::from_hours(17)).to_string(), "required_headcount": 1 }))
+            .await
+            .json();
+        request
+            .post(&format!("/api/shifts/{}/assignments", shift["pid"].as_str().unwrap()))
+            .json(&json!({ "worker_pid": l }))
+            .await
+            .assert_status_ok();
+        let leaver: Value = request
+            .post(&format!("/api/workers/{l}/movements"))
+            .json(&json!({ "kind": "leaver", "effective_on": last_day.to_string(), "reason": "resignation" }))
+            .await
+            .json();
+        let mv = leaver["pid"].as_str().unwrap().to_string();
+        let handover = format!("/api/movements/{mv}/handover");
+        let held: Value = request.get(&handover).await.json();
+        let items = held["items"].as_array().unwrap().clone();
+
+        // Y's line goes to S, who already has one to Y: it ends, and S's own line stays.
+        let y_line = items
+            .iter()
+            .find(|i| i["kind"] == "dotted_line" && i["label"].as_str().is_some_and(|l| l.contains("-Y")))
+            .or_else(|| items.iter().filter(|i| i["kind"] == "dotted_line").nth(1))
+            .unwrap();
+        let moved: Value = request
+            .post(&handover)
+            .json(&json!({ "kind": "dotted_line", "subject_pid": y_line["subject_pid"], "to_worker_pid": s }))
+            .await
+            .json();
+        assert_eq!(moved["action"], "reassigned", "{moved}");
+        let live: Vec<String> = sqlx::query_scalar(
+            "SELECT manager_pid::text FROM dotted_line_reports WHERE report_pid = $1::uuid AND ended_at IS NULL",
+        )
+        .bind(y)
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert_eq!(live, std::slice::from_ref(s), "one line to Y is left, S's own, not two");
+
+        // Everything else that can close, handed to nobody, is closed.
+        let held: Value = request.get(&handover).await.json();
+        for item in held["items"].as_array().unwrap() {
+            let kind = item["kind"].as_str().unwrap();
+            if !["dotted_line", "backup", "mentorship", "shift", "task"].contains(&kind) {
+                continue;
+            }
+            let closed = request.post(&handover).json(&json!({ "kind": kind, "subject_pid": item["subject_pid"] })).await;
+            assert_eq!(closed.status_code(), 200, "{kind}: {}", closed.text());
+            assert_eq!(closed.json::<Value>()["action"], "closed", "{kind}");
+        }
+
+        // A cancelled record takes no hand-over of everything.
+        request.post(&format!("/api/movements/{mv}/cancel")).json(&json!({})).await.assert_status_ok();
+        let late = request.post(&format!("{handover}/all")).json(&json!({ "to_worker_pid": s })).await;
+        assert_eq!(late.status_code(), 422, "{}", late.text());
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A joiner's record keeps a trimmed note and is completed, audited as a joiner, once its checklist is done; a leaver record
+// for someone who has already left is refused.
+async fn a_joiner_is_completed_and_a_leaver_who_has_left_is_refused() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let joiner = seed_worker!(&request, &org, format!("JC-{tag}-J"), None).await;
+        activate!(&request, &joiner).await;
+        let opened: Value = request
+            .post(&format!("/api/workers/{joiner}/movements"))
+            .json(&json!({ "kind": "joiner", "notes": "  starts on the help desk  " }))
+            .await
+            .json();
+        let mv = opened["pid"].as_str().unwrap().to_string();
+        let view: Value = request.get(&format!("/api/movements/{mv}")).await.json();
+        assert_eq!(view["notes"], "starts on the help desk", "{view}");
+        for item in view["items"].as_array().unwrap() {
+            request.post(&format!("/api/movement-items/{}/done", item["pid"].as_str().unwrap())).await.assert_status_ok();
+        }
+        let done = request.post(&format!("/api/movements/{mv}/complete")).await;
+        assert_eq!(done.status_code(), 200, "{}", done.text());
+        let actions: Vec<String> = sqlx::query_scalar(
+            "SELECT action FROM audit_logs WHERE entity_pid = $1::uuid AND action LIKE 'joiner_%' ORDER BY id",
+        )
+        .bind(&joiner)
+        .fetch_all(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
+        assert!(actions.iter().any(|a| a == "joiner_completed"), "{actions:?}");
+
+        let gone = seed_worker!(&request, &org, format!("JC-{tag}-L"), None).await;
+        activate!(&request, &gone).await;
+        for to in ["offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{gone}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        let last_day = workforce_planning_management::dates::today() + workforce_planning_management::dates::days(7);
+        let late = request
+            .post(&format!("/api/workers/{gone}/movements"))
+            .json(&json!({ "kind": "leaver", "effective_on": last_day.to_string(), "reason": "resignation" }))
+            .await;
+        assert_eq!(late.status_code(), 422, "{}", late.text());
+        assert!(late.text().contains("already left"), "{}", late.text());
+    })
+    .await;
+}

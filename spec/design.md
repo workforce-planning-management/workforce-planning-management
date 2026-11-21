@@ -424,7 +424,7 @@ can be derived (never guessed); a country picker storing the ISO 3166-1 code, wi
 ## WPM-D153 — Whose chain a reader resolves
 
 A reader about the organization as a whole resolves the chain of the organization's home jurisdiction, which HR sets; a reader about
-one worker, that worker's `work_jurisdiction`. Unset, or with no row, either falls back to its `WPM_*` setting and then its default,
+one worker, that worker's `work_jurisdiction`. Unset, or with no row, either falls back to its `WORKFORCE_PLANNING_MANAGEMENT_*` setting and then its default,
 and says which it used. Confirmed by the product owner, 2026-10-31 ([worldwide.md](worldwide.md), D153).
 
 ## WPM-D52, WPM-D54 — Secure by default; rate limits keep no history
@@ -472,3 +472,23 @@ Money remains a JSON number within the inclusive exact-integer range shared
 by Rust, PostgreSQL and supported browsers. Decimal entry and display retain
 every digit, and either side refuses an amount outside the range. See the
 [worldwide specification](worldwide.md).
+
+## WPM-D207–D213 — Planning depth from customer feedback (proposed 2026-11-20)
+
+Pay scales become dated, sourced data published by two people (WPM-D207, amending WPM-D38); a post's grade is a reference, not
+pay (WPM-D208); combined analysis suppresses by complement (WPM-D209); internal first is evidence, not a block (WPM-D210);
+WPM tracks per-person allocation but not per-person effort, amending WPM-D45 and WPM-D59 (WPM-D211, decided by the owner); a compared scenario is an immutable version (WPM-D212); customer-led
+delivery is served by stable team capacity (WPM-D213). See
+[workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md).
+
+## WPM-D214–D219 — Supplier assurance (proposed 2026-11-20)
+
+The repository holds templates and the supplier holds its pack (WPM-D214); a health buyer gets its own deployment
+(WPM-D215); residency is declared, not detected (WPM-D216); encrypt what is never computed on (WPM-D217); the audit trail
+holds no IP address (WPM-D218); a backup is erased when it expires (WPM-D219); a database knows whose it is (WPM-D220). See [supplier-assurance.md](supplier-assurance.md).
+
+## WPM-D222 — OpenID Connect only; no SAML until a customer needs it (decided 2026-11-21)
+
+WPM signs people in through OpenID Connect only; SAML is added when a customer needs it, as its own requirement, decision
+and task. A provider that speaks only SAML can be brokered through Keycloak (not tested with WPM). See [auth.md](auth.md).
+

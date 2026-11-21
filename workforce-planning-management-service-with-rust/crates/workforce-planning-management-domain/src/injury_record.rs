@@ -377,4 +377,56 @@ mod tests {
         assert_eq!(plain.total, Some(22));
         assert_eq!(rollup(&[], 10).total, Some(0));
     }
+
+    #[test]
+    fn a_bad_place_and_a_future_learned_time_are_each_named() {
+        let now = Timestamp::from_second(1_800_000_000).unwrap();
+        let earlier = Timestamp::from_second(1_799_000_000).unwrap();
+        let later = Timestamp::from_second(1_800_000_100).unwrap();
+        let out = problems(
+            "not a code",
+            "injury",
+            "minor",
+            earlier,
+            Some(later),
+            None,
+            1,
+            now,
+        );
+        assert!(
+            out.iter().any(|p| p.starts_with("jurisdiction must be")),
+            "{out:?}"
+        );
+        assert!(
+            out.iter()
+                .any(|p| p == "learned_at cannot be in the future"),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn every_standing_has_its_word() {
+        let words: Vec<&str> = [
+            Standing::SentByDue,
+            Standing::SentAfterDue,
+            Standing::SentNoDue,
+            Standing::Waiting,
+            Standing::PastDue,
+            Standing::NoDue,
+        ]
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+        assert_eq!(
+            words,
+            [
+                "sent_by_due",
+                "sent_after_due",
+                "sent_no_due",
+                "waiting",
+                "past_due",
+                "no_due"
+            ]
+        );
+    }
 }

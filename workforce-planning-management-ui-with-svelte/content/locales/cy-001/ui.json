@@ -57,7 +57,8 @@
     "coverageEvidence": "Tystiolaeth yswiriant",
     "qualifications": "Cymwysterau",
     "injuryRecords": "Cofnodion anafiadau",
-    "help": "Cymorth"
+    "help": "Cymorth",
+    "allocations": "Dyraniadau"
   },
   "pr": {
     "retention": "Cadw data",
@@ -1551,6 +1552,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Pwy y bwriedir iddynt weithio ar beth, fis wrth fis, yn nhrefn enwau. Cynllun, nid mesur o waith neb: nid yw byth yn rhestru pobl yn ôl safle nac yn rhoi sgôr.",
+      "organization": "Sefydliad",
+      "notAllowed": "Mae'r olwg hon ar gyfer AD a rheolwyr adnoddau.",
+      "empty": "Neb i'w ddangos.",
+      "person": "Person",
+      "confirm": "Cadarnhau",
+      "end": "Gorffen",
+      "remove": "Dileu",
+      "add": "Ychwanegu dyraniad",
+      "job": "Swydd",
+      "from": "O fis",
+      "to": "I fis",
+      "sharePercent": "Cyfran o'r swydd (canfedau CALl)",
+      "confirmNow": "Cadarnhau nawr (dywedir wrth yr unigolyn)"
     }
   },
   "titles": {
@@ -1897,6 +1914,7 @@
     "payroll_admin": "gweinyddwr cyflogres",
     "viewer": "gwyliwr",
     "partner": "partner",
+    "resource_manager": "rheolwr adnoddau",
     "past_end_without_approved_plan": "Wedi dod i ben heb gynllun cymeradwy",
     "review_due": "Adolygiad yn ddyledus",
     "not_started": "Heb ddechrau",
@@ -3484,5 +3502,29 @@
   },
   "footer": {
     "privacyNotice": "Hysbysiad preifatrwydd"
+  },
+  "allocations": {
+    "title": "Dyraniadau",
+    "hint": "Yr hyn y bwriedir i chi weithio arno, fis wrth fis. Cynllun ydyw, nid mesur o'r hyn a wnaethoch, ac nid yw byth yn sgorio neb.",
+    "untracked": "Nid yw eich sefydliad yn cofnodi dyraniadau, felly ni ddangosir unrhyw fis yn llawn neu'n rhydd.",
+    "none": "Dim dyraniadau.",
+    "source": "Rhaglen, cynnyrch neu wasanaeth",
+    "months": "Misoedd",
+    "share": "Cyfran (CALl)",
+    "status": "Statws",
+    "monthRange": "{from} i {to}",
+    "runsPastEnd": "Yn rhedeg heibio diwedd y swydd neu'r contract ar {date}",
+    "allocated": "{allocated} o {available} CALl wedi'u dyrannu",
+    "state": {
+      "tentative": "Dros dro",
+      "confirmed": "Wedi'i gadarnhau",
+      "ended": "Wedi dod i ben"
+    },
+    "signal": {
+      "overAllocated": "Wedi'i or-ddyrannu o {fte} CALl",
+      "leaveClash": "Mae absenoldeb cymeradwy yn ei adael {fte} CALl yn brin",
+      "available": "{fte} CALl yn rhydd",
+      "assignmentOver": "Mae un swydd dros ei CALl ei hun o {fte}"
+    }
   }
 }

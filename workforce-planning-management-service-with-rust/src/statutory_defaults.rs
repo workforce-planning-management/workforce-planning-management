@@ -1,6 +1,6 @@
 //! **Whose each default is** (WPM-T384; WPM-R214, WPM-D143).
 //!
-//! The rules take their limits as parameters, and the controllers read each from a `WPM_*` setting
+//! The rules take their limits as parameters, and the controllers read each from a `WORKFORCE_PLANNING_MANAGEMENT_*` setting
 //! with a default when the setting is absent. Several defaults are one regime's value. This table
 //! names, for every such setting, whose value its default is: a jurisdiction code in the shape of
 //! WPM-D144 (`EU`, `GB`), what it rests on, and whether that source was read here. A default that is
@@ -88,7 +88,7 @@ const AI_ACT: Origin = Origin {
 };
 const SEX_CATEGORY: Origin = Origin {
     regime: None,
-    reference: "the name of an equality category the deployment monitors (WPM_EQUALITY_CATEGORIES), no regime's; the \
+    reference: "the name of an equality category the deployment monitors (WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES), no regime's; the \
                 report compares its female and male answers, which is the shape of the EU Directive's Article 9 \
                 indicators, not a category any regime names",
     status: "starting_point",
@@ -100,11 +100,11 @@ const PAYROLL_STUB: Origin = Origin {
     status: "example",
 };
 
-/// Every `WPM_*` setting whose default is, or might be read as, one regime's value. Sorted by
+/// Every `WORKFORCE_PLANNING_MANAGEMENT_*` setting whose default is, or might be read as, one regime's value. Sorted by
 /// area, then setting.
 pub const DEFAULTS: &[Default] = &[
     Default {
-        setting: "WPM_AI_ACT_APPLIES_FROM",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",
         area: "ai_register",
         default: "2027-12-02",
         key: Some("ai_act.applies_from"),
@@ -112,7 +112,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: AI_ACT,
     },
     Default {
-        setting: "WPM_FLEXIBLE_APPEAL_CALENDAR_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS",
         area: "flexible_working",
         default: "14",
         key: Some("flexible_working.appeal_calendar_days"),
@@ -120,7 +120,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: STARTING_POINT,
     },
     Default {
-        setting: "WPM_FLEXIBLE_DECISION_MONTHS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
         area: "flexible_working",
         default: "2",
         key: Some("flexible_working.decision_months"),
@@ -128,7 +128,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: FLEXIBLE_GB,
     },
     Default {
-        setting: "WPM_FLEXIBLE_REFUSAL_REASONS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS",
         area: "flexible_working",
         default: "the eight business reasons of that Part, and other_recorded",
         key: Some("flexible_working.refusal_reasons"),
@@ -136,7 +136,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: FLEXIBLE_GB,
     },
     Default {
-        setting: "WPM_FLEXIBLE_REQUESTS_PER_YEAR",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR",
         area: "flexible_working",
         default: "2",
         key: Some("flexible_working.requests_per_year"),
@@ -144,7 +144,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: FLEXIBLE_GB,
     },
     Default {
-        setting: "WPM_JOINT_ASSESSMENT_MONTHS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS",
         area: "pay_transparency",
         default: "6",
         key: Some("pay_transparency.joint_assessment_months"),
@@ -152,7 +152,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: directive!("Article 10(1)"),
     },
     Default {
-        setting: "WPM_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
         area: "pay_transparency",
         default: "5",
         key: Some("pay_transparency.joint_assessment_percent"),
@@ -160,7 +160,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: directive!("Article 10(1)"),
     },
     Default {
-        setting: "WPM_PAY_GAP_SEX_CATEGORY",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY",
         area: "pay_transparency",
         default: "sex",
         key: None,
@@ -168,7 +168,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: SEX_CATEGORY,
     },
     Default {
-        setting: "WPM_PAY_GAP_TIERS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",
         area: "pay_transparency",
         default: "250:1:2027-06-07,150:3:2027-06-07,100:3:2031-06-07",
         key: Some("pay_transparency.reporting_tiers"),
@@ -176,7 +176,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: directive!("Article 9"),
     },
     Default {
-        setting: "WPM_PAY_INFORMATION_MONTHS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS",
         area: "pay_transparency",
         default: "2",
         key: Some("pay_transparency.information_months"),
@@ -184,7 +184,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: directive!("Article 7"),
     },
     Default {
-        setting: "WPM_REQUIRE_PAY_RANGE",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",
         area: "pay_transparency",
         default: "on",
         key: Some("pay_transparency.pay_range_required"),
@@ -192,7 +192,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: directive!("Article 5"),
     },
     Default {
-        setting: "WPM_CONTRACTED_DAY_MINUTES",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
         area: "payroll",
         default: "450",
         key: None,
@@ -200,7 +200,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: STARTING_POINT,
     },
     Default {
-        setting: "WPM_PAYROLL_MONTH_MINUTES",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
         area: "payroll",
         default: "9750",
         key: None,
@@ -208,7 +208,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: STARTING_POINT,
     },
     Default {
-        setting: "WPM_PAYROLL_STUB_ALLOWANCE_MINOR",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
         area: "payroll",
         default: "104750",
         key: None,
@@ -216,7 +216,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: PAYROLL_STUB,
     },
     Default {
-        setting: "WPM_PAYROLL_STUB_CURRENCY",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY",
         area: "payroll",
         default: "GBP",
         key: None,
@@ -224,7 +224,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: PAYROLL_STUB,
     },
     Default {
-        setting: "WPM_PAYROLL_STUB_RATE_PERCENT",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
         area: "payroll",
         default: "20",
         key: None,
@@ -232,7 +232,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: PAYROLL_STUB,
     },
     Default {
-        setting: "WPM_RESIGNATION_NOTICE_CALENDAR_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS",
         area: "resignation",
         default: "28",
         key: Some("resignation.notice_calendar_days"),
@@ -240,7 +240,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: STARTING_POINT,
     },
     Default {
-        setting: "WPM_RETENTION_EMPLOYMENT_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_EMPLOYMENT_DAYS",
         area: "retention",
         default: "2190",
         key: Some("retention.employment.days"),
@@ -248,7 +248,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_LEARNING_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_LEARNING_DAYS",
         area: "retention",
         default: "1095",
         key: Some("retention.learning.days"),
@@ -256,7 +256,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_PAY_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS",
         area: "retention",
         default: "2190",
         key: Some("retention.pay.days"),
@@ -264,7 +264,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_PERFORMANCE_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PERFORMANCE_DAYS",
         area: "retention",
         default: "730",
         key: Some("retention.performance.days"),
@@ -272,7 +272,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_PLANNING_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PLANNING_DAYS",
         area: "retention",
         default: "365",
         key: Some("retention.planning.days"),
@@ -280,7 +280,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_RECRUITMENT_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_RECRUITMENT_DAYS",
         area: "retention",
         default: "180",
         key: Some("retention.recruitment.days"),
@@ -288,7 +288,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_TIME_AND_LEAVE_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_TIME_AND_LEAVE_DAYS",
         area: "retention",
         default: "730",
         key: Some("retention.time_and_leave.days"),
@@ -296,7 +296,7 @@ pub const DEFAULTS: &[Default] = &[
         origin: RETENTION,
     },
     Default {
-        setting: "WPM_RETENTION_WELLBEING_DAYS",
+        setting: "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_WELLBEING_DAYS",
         area: "retention",
         default: "365",
         key: Some("retention.wellbeing.days"),

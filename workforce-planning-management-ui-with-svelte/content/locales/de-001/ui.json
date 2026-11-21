@@ -57,7 +57,8 @@
     "coverageEvidence": "Versicherungsnachweise",
     "qualifications": "Qualifikationen",
     "injuryRecords": "Verletzungsmeldungen",
-    "help": "Hilfe"
+    "help": "Hilfe",
+    "allocations": "Zuordnungen"
   },
   "pr": {
     "retention": "Aufbewahrung",
@@ -1523,6 +1524,22 @@
     },
     "statutoryDefaults": {
       "page_title": "{statutoryDefaults} — WPM"
+    },
+    "allocations": {
+      "hint": "Wer Monat für Monat woran arbeiten soll, nach Namen sortiert. Ein Plan, kein Maß für die Arbeit von jemandem: Es reiht niemanden und vergibt keine Punkte.",
+      "organization": "Organisation",
+      "notAllowed": "Diese Ansicht ist für die Personalabteilung und Ressourcenmanager.",
+      "empty": "Niemand anzuzeigen.",
+      "person": "Person",
+      "confirm": "Bestätigen",
+      "end": "Beenden",
+      "remove": "Entfernen",
+      "add": "Zuordnung hinzufügen",
+      "job": "Stelle",
+      "from": "Ab Monat",
+      "to": "Bis Monat",
+      "sharePercent": "Anteil der Stelle (Hundertstel VZÄ)",
+      "confirmNow": "Jetzt bestätigen (die Person wird benachrichtigt)"
     }
   },
   "titles": {
@@ -1869,6 +1886,7 @@
     "payroll_admin": "Lohnbuchhaltungs-Administrator",
     "viewer": "Lesende Person",
     "partner": "Partner",
+    "resource_manager": "Ressourcenmanager",
     "past_end_without_approved_plan": "Abgelaufen ohne genehmigten Plan",
     "review_due": "Überprüfung fällig",
     "not_started": "Nicht begonnen",
@@ -3448,5 +3466,29 @@
   },
   "footer": {
     "privacyNotice": "Datenschutzhinweis"
+  },
+  "allocations": {
+    "title": "Zuordnungen",
+    "hint": "Woran Sie Monat für Monat arbeiten sollen. Es ist ein Plan, kein Maß dafür, was Sie getan haben, und bewertet niemanden.",
+    "untracked": "Ihre Organisation erfasst keine Zuordnungen, daher wird kein Monat als voll oder frei angezeigt.",
+    "none": "Keine Zuordnungen.",
+    "source": "Programm, Produkt oder Dienst",
+    "months": "Monate",
+    "share": "Anteil (VZÄ)",
+    "status": "Status",
+    "monthRange": "{from} bis {to}",
+    "runsPastEnd": "Läuft über das Ende der Stelle oder des Vertrags am {date} hinaus",
+    "allocated": "{allocated} von {available} VZÄ zugeordnet",
+    "state": {
+      "tentative": "Vorläufig",
+      "confirmed": "Bestätigt",
+      "ended": "Beendet"
+    },
+    "signal": {
+      "overAllocated": "Um {fte} VZÄ überbucht",
+      "leaveClash": "Genehmigter Urlaub lässt {fte} VZÄ fehlen",
+      "available": "{fte} VZÄ frei",
+      "assignmentOver": "Eine Stelle liegt um {fte} über ihrem eigenen VZÄ"
+    }
   }
 }

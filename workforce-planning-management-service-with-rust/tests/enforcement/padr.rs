@@ -92,9 +92,15 @@ async fn worker(
 
 fn set_env(keys: &Value) {
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
 }
 
@@ -450,6 +456,50 @@ async fn a_padr_is_opened_written_signed_and_corrected() {
             .json();
         assert_eq!(rollup["departments"][0]["by_status"]["current"], 1);
         assert_eq!(rollup["departments"][0]["by_status"]["unknown"], 7);
+
+        // When the person signs first, the reviewer is the one asked to sign.
+        let theirs: Value = request
+            .post(&format!("/api/me/reports/{other}/padrs"))
+            .add_header("authorization", as_boss.clone())
+            .json(&period)
+            .await
+            .json();
+        let theirs = theirs["pid"].as_str().expect("padr pid").to_string();
+        request
+            .put(&format!("/api/me/padrs/{theirs}"))
+            .add_header("authorization", as_boss.clone())
+            .json(&content)
+            .await
+            .assert_status_ok();
+        let before = count(&ctx, format!("SELECT count(*) FROM notifications WHERE worker_pid = '{boss_pid}' AND kind = 'padr_to_sign'")).await;
+        let first: Value = request
+            .post(&format!("/api/me/padrs/{theirs}/sign"))
+            .add_header("authorization", as_peer.clone())
+            .await
+            .json();
+        assert_eq!(first["complete"], false, "{first}");
+        assert_eq!(
+            count(&ctx, format!("SELECT count(*) FROM notifications WHERE worker_pid = '{boss_pid}' AND kind = 'padr_to_sign'")).await,
+            before + 1,
+            "the reviewer is asked to sign"
+        );
+
+        // No review is opened for someone who has left.
+        for to in ["offboarding", "terminated"] {
+            request
+                .post(&format!("/api/workers/{other}/status"))
+                .add_header("authorization", svc.clone())
+                .json(&json!({ "to": to }))
+                .await
+                .assert_status_ok();
+        }
+        let left = request
+            .post(&format!("/api/me/reports/{other}/padrs"))
+            .add_header("authorization", as_boss.clone())
+            .json(&period)
+            .await;
+        assert_eq!(left.status_code(), 422, "{}", left.text());
+        assert!(left.text().contains("has left"), "{}", left.text());
     })
     .await;
 }

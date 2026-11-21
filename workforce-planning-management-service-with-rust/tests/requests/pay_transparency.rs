@@ -15,11 +15,14 @@ impl MonitoringOn {
     fn new() -> Self {
         unsafe {
             std::env::set_var(
-                "WPM_EQUALITY_MONITORING_BASIS",
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS",
                 "Test deployment: impact assessment PG-1",
             );
-            std::env::set_var("WPM_EQUALITY_CATEGORIES", r#"{"sex":["female","male"]}"#);
-            std::env::set_var("WPM_EQUALITY_FLOOR", "5");
+            std::env::set_var(
+                "WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES",
+                r#"{"sex":["female","male"]}"#,
+            );
+            std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR", "5");
         }
         Self
     }
@@ -28,9 +31,9 @@ impl MonitoringOn {
 impl Drop for MonitoringOn {
     fn drop(&mut self) {
         unsafe {
-            std::env::remove_var("WPM_EQUALITY_MONITORING_BASIS");
-            std::env::remove_var("WPM_EQUALITY_CATEGORIES");
-            std::env::remove_var("WPM_EQUALITY_FLOOR");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_MONITORING_BASIS");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_CATEGORIES");
+            std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_EQUALITY_FLOOR");
         }
     }
 }
@@ -290,6 +293,12 @@ async fn the_report_is_an_aggregate_that_names_no_one_and_withholds_a_small_cell
         // The default currency is the most common one.
         let default: Value = request.get(&format!("/api/pay-transparency/gap-report?organization={org}")).await.json();
         assert_eq!(default["currency"], "GBP");
+        // Variable pay counted over its recipients only is named as the basis.
+        let recipients: Value = request
+            .get(&format!("/api/pay-transparency/gap-report?organization={org}&variable=recipients_only"))
+            .await
+            .json();
+        assert!(recipients.to_string().contains("recipients_only"), "{recipients}");
 
         // The CSV carries the workings, as text, and names no one.
         let csv = request.get(&format!("/api/pay-transparency/gap-report/csv?organization={org}&currency=GBP")).await;
@@ -339,12 +348,12 @@ async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
             async move {
                 unsafe {
                     match tiers {
-                        Some(v) => std::env::set_var("WPM_PAY_GAP_TIERS", v),
-                        None => std::env::remove_var("WPM_PAY_GAP_TIERS"),
+                        Some(v) => std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS", v),
+                        None => std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS"),
                     }
                 }
                 let response = request.get(&url).await;
-                unsafe { std::env::remove_var("WPM_PAY_GAP_TIERS") };
+                unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS") };
                 assert_eq!(response.status_code(), 200, "{}", response.text());
                 response.json::<Value>()
             }
@@ -353,7 +362,7 @@ async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
         // The Directive's tiers by default: twelve workers are below every one, and the basis says whose they are.
         let default = read(None).await;
         assert!(default["reporting"].is_null());
-        assert_eq!(default["reporting_basis"]["setting"], "WPM_PAY_GAP_TIERS");
+        assert_eq!(default["reporting_basis"]["setting"], "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS");
         assert_eq!(default["reporting_basis"]["set"], false);
         assert_eq!(default["reporting_basis"]["default_from"]["regime"], "EU");
         assert_eq!(default["reporting_basis"]["default_from"]["status"], "unverified");
@@ -381,13 +390,13 @@ async fn the_report_uses_the_deployers_tiers_and_says_whose_they_are() {
         assert_eq!(junk["reporting_basis"]["set"], true);
 
         // The sex category is the deployer's too: one the deployment does not monitor is refused, and spaces are trimmed.
-        unsafe { std::env::set_var("WPM_PAY_GAP_SEX_CATEGORY", "gender") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY", "gender") };
         let refused = request.get(&url).await;
-        unsafe { std::env::set_var("WPM_PAY_GAP_SEX_CATEGORY", " sex ") };
+        unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY", " sex ") };
         let trimmed = request.get(&url).await;
-        unsafe { std::env::remove_var("WPM_PAY_GAP_SEX_CATEGORY") };
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY") };
         assert_eq!(refused.status_code(), 422);
-        assert!(refused.text().contains("WPM_PAY_GAP_SEX_CATEGORY"), "{}", refused.text());
+        assert!(refused.text().contains("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_SEX_CATEGORY"), "{}", refused.text());
         assert_eq!(trimmed.status_code(), 200, "{}", trimmed.text());
     })
     .await;

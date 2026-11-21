@@ -99,14 +99,17 @@ async fn keycloak_tokens_gate_and_authorise() {
     // The auth OnceLocks read these on first use — set before boot.
     // `set_var` is `unsafe` in edition 2024; single-threaded setup step.
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_KEYCLOAK_ISSUER", &issuer);
-        std::env::set_var("WPM_KEYCLOAK_AUDIENCE", CLIENT_ID);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER", &issuer);
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE", CLIENT_ID);
         std::env::set_var(
-            "WPM_KEYCLOAK_JWKS_URL",
+            "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL",
             format!("{issuer}/protocol/openid-connect/certs"),
         );
-        std::env::set_var("WPM_ABAC_POLICY_FILE", REFERENCE_POLICY_FILE);
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE",
+            REFERENCE_POLICY_FILE,
+        );
     }
 
     request::<App, _, _>(|request, _ctx| async move {

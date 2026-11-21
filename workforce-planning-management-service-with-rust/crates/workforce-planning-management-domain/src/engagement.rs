@@ -754,4 +754,30 @@ mod tests {
             assert_eq!(count, Some(listed), "{list}");
         }
     }
+
+    #[test]
+    fn every_standing_has_its_token() {
+        let tokens: Vec<&str> = [
+            Standing::OpenEnded,
+            Standing::MissingEndDate,
+            Standing::Running,
+            Standing::EndingSoon,
+            Standing::PastEndUndecided,
+            Standing::PastEndDecided,
+        ]
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+        assert_eq!(
+            tokens,
+            [
+                "open_ended",
+                "missing_end_date",
+                "running",
+                "ending_soon",
+                "past_end_undecided",
+                "past_end_decided"
+            ]
+        );
+    }
 }

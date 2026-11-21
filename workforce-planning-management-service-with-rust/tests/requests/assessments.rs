@@ -262,3 +262,95 @@ async fn assessment_round_trip() {
     })
     .await;
 }
+
+/// A candidate's sitting tied to an application: the subject must be that application's candidate; the application's sittings
+/// and the candidate's profile read; and the catalogue's and the results' remaining refusals.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one candidate, read top to bottom
+async fn a_candidate_sitting_belongs_to_its_own_application() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let worker = seed_worker!(&request, &org, format!("AC-{tag}"), None).await;
+        activate!(&request, &worker).await;
+
+        // The catalogue: a duration or validity that is not positive, and an unknown category to filter by.
+        for (key, why) in [("duration_minutes", "duration"), ("validity_months", "validity")] {
+            let r = request
+                .post("/api/assessment-instruments")
+                .json(&json!({ "name": format!("Bad {key}"), "category": "aptitude", "scales": ["numerical_reasoning"], key: 0 }))
+                .await;
+            assert_eq!(r.status_code(), 422, "{why}");
+        }
+        assert_eq!(request.get("/api/assessment-instruments?category=astrology").await.status_code(), 422);
+        let instrument: Value = request
+            .post("/api/assessment-instruments")
+            .json(&json!({ "name": format!("Numbers {tag}"), "category": "aptitude", "scales": ["numerical_reasoning"] }))
+            .await
+            .json();
+        let instrument = instrument["pid"].as_str().unwrap().to_string();
+
+        // A requisition, two candidates, and an application for the first.
+        let requisition: Value = request
+            .post("/api/requisitions")
+            .json(&json!({ "organization_ref": org, "department": "engineering", "job_title": format!("Role {tag}"), "headcount": 1,
+                            "salary_min_minor": 3_000_000, "salary_max_minor": 4_000_000, "salary_currency": "GBP" }))
+            .await
+            .json();
+        let requisition = requisition["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/requisitions/{requisition}/status")).json(&json!({ "to": "open" })).await.assert_status_ok();
+        let candidate = |n: u8| {
+            let (request, tag) = (&request, tag.clone());
+            async move {
+                let c: Value = request
+                    .post("/api/candidates")
+                    .json(&json!({ "display_name": format!("Candidate {n} {tag}"), "email": format!("{n}{tag}@example.com"),
+                                    "source": "web", "person_ref": crate::requests::a_person() }))
+                    .await
+                    .json();
+                c["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let (first, second) = (candidate(1).await, candidate(2).await);
+        let application: Value = request
+            .post(&format!("/api/requisitions/{requisition}/applications"))
+            .json(&json!({ "candidate_pid": first }))
+            .await
+            .json();
+        let application = application["pid"].as_str().unwrap().to_string();
+
+        // The subject must be a candidate, and this application's candidate.
+        let sit = |kind: &str, subject: &str| {
+            json!({ "instrument_pid": instrument, "subject_kind": kind, "subject_pid": subject, "application_pid": application })
+        };
+        assert_eq!(request.post("/api/assessments").json(&sit("worker", &worker)).await.status_code(), 422, "a worker's sitting");
+        assert_eq!(request.post("/api/assessments").json(&sit("candidate", &second)).await.status_code(), 422, "another candidate");
+        let made = request.post("/api/assessments").json(&sit("candidate", &first)).await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let sitting = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+
+        // A raw score needs its maximum; a result is recorded; a cancelled sitting takes none.
+        let results = format!("/api/assessments/{sitting}/results");
+        assert_eq!(request.post(&results).json(&json!({ "scale": "numerical_reasoning", "raw_score": 12 })).await.status_code(), 422);
+        request.post(&results).json(&json!({ "scale": "numerical_reasoning", "percentile": 62 })).await.assert_status_ok();
+        request.post(&format!("/api/assessments/{sitting}/status")).json(&json!({ "to": "completed" })).await.assert_status_ok();
+        let other: Value = request.post("/api/assessments").json(&sit("candidate", &first)).await.json();
+        let other = other["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/assessments/{other}/status")).json(&json!({ "to": "cancelled" })).await.assert_status_ok();
+        let late = request
+            .post(&format!("/api/assessments/{other}/results"))
+            .json(&json!({ "scale": "numerical_reasoning", "percentile": 70 }))
+            .await;
+        assert_eq!(late.status_code(), 422, "a cancelled sitting takes no results: {}", late.text());
+
+        // The application's sittings and the candidate's profile.
+        let listed: Value = request.get(&format!("/api/applications/{application}/assessments")).await.json();
+        let text = listed.to_string();
+        assert!(text.contains(&sitting) && text.contains(&format!("Numbers {tag}")), "{listed}");
+        let profile = request.get(&format!("/api/candidates/{first}/assessment-profile")).await;
+        assert_eq!(profile.status_code(), 200, "{}", profile.text());
+    })
+    .await;
+}

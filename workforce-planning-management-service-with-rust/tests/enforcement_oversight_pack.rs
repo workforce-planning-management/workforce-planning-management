@@ -83,10 +83,16 @@ fn policy_with_deciders() -> String {
 async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
     let (keys, kid) = keys_and_kid();
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "1");
-        std::env::set_var("WPM_PASETO_KEYS", keys.to_string());
-        std::env::remove_var("WPM_ABAC_POLICY_FILE");
-        std::env::set_var("WPM_ABAC_POLICY", policy_with_deciders());
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "1");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS",
+            keys.to_string(),
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY_FILE");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_ABAC_POLICY",
+            policy_with_deciders(),
+        );
     }
     let (partner_p, member_p, both_p, elsewhere_p, admin_p) = (
         uuid::Uuid::new_v4(),
@@ -141,6 +147,22 @@ async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
             "display_name": "Synthetic Named Worker", "employment_type": "permanent", "department": "engineering",
             "job_title": "Engineer", "hired_on": "2023-01-05" })).await;
         assert_eq!(w.status_code(), 200);
+        // One critical skill held by that worker alone: a single point of failure the pack counts but does not name.
+        let worker_pid = w.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let (skill_pid, role_pid) = (uuid::Uuid::new_v4(), uuid::Uuid::new_v4());
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "INSERT INTO skills (pid, name, category) VALUES ('{skill_pid}', 'Synthetic critical skill {skill_pid}', 'technical'); \
+             INSERT INTO role_profiles (pid, job_title) VALUES ('{role_pid}', 'Synthetic role {role_pid}'); \
+             INSERT INTO role_skill_requirements (pid, role_profile_pid, skill_pid, min_proficiency, importance) \
+               VALUES ('{}', '{role_pid}', '{skill_pid}', 3, 'critical'); \
+             INSERT INTO worker_skills (pid, worker_pid, skill_pid, proficiency, assessed_on) \
+               VALUES ('{}', '{worker_pid}', '{skill_pid}', 4, '2026-01-01')",
+            uuid::Uuid::new_v4(),
+            uuid::Uuid::new_v4()
+        )))
+        .execute(workforce_planning_management::db::pool(&ctx))
+        .await
+        .unwrap();
         post("/api/skill-pools".into(), svc.clone(), json!({ "organization_ref": org, "name": "Synthetic pool", "operations_reservation_bp": 0 })).await.assert_status_ok();
 
         let level = post("/api/oversight/levels".into(), svc.clone(), json!({ "organization_ref": org, "ordinal": 1, "name": "Synthetic level" })).await.json::<Value>();
@@ -179,7 +201,11 @@ async fn a_partner_reads_the_same_pack_as_the_board_and_nothing_else() {
         assert!(text.contains("Synthetic published reason"), "the published reason stays");
 
         // The pack carries the key-person and governance figures, as counts and totals only.
-        assert!(p_json["pack"]["key_person"]["single_points_of_failure"].is_number());
+        assert!(p_json["pack"]["key_person"]["single_points_of_failure"].as_u64().unwrap() >= 1, "{}", p_json["pack"]["key_person"]);
+        let critical = p_json["pack"]["key_person"]["skills"].as_array().unwrap().iter()
+            .find(|s| s["skill"] == format!("Synthetic critical skill {skill_pid}").as_str())
+            .expect("the critical skill is in the pack, by name");
+        assert_eq!(critical["holders"], 1, "{critical}");
         assert!(p_json["pack"]["governance"]["all_hours_per_month"].is_number());
         assert!(p_json["pack"]["governance"].get("roles").is_none());
         // A partner can find the organizations in their scope, to know which packs to ask for.

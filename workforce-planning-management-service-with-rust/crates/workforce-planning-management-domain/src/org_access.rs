@@ -70,6 +70,28 @@ mod tests {
     use super::*;
 
     #[test]
+    fn only_an_org_admin_grants_resource_manager() {
+        assert!(can_manage_membership("org_admin", "resource_manager"));
+        for acting in [
+            "hr_admin",
+            "payroll_admin",
+            "resource_manager",
+            "member",
+            "viewer",
+            "partner",
+        ] {
+            assert!(
+                !can_manage_membership(acting, "resource_manager"),
+                "{acting}"
+            );
+        }
+        assert!(
+            !can_manage_membership("resource_manager", "member"),
+            "the role hands out nothing"
+        );
+    }
+
+    #[test]
     fn org_admin_manages_every_role() {
         for role in ["member", "hr_admin", "payroll_admin", "org_admin", "viewer"] {
             assert!(can_manage_membership("org_admin", role), "{role}");

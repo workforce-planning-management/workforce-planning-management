@@ -35,19 +35,19 @@ credentials are environment): keep them in the deployer's own secret store.
 ( umask 077; openssl rand -base64 48 > backup.key )
 
 # Nightly (cron or a timer). Encrypted as it is written; output off the database host.
-WPM_BACKUP_KEY_FILE=/path/to/backup.key DATABASE_URL=postgres://… scripts/backup.sh /path/to/backups
+WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE=/path/to/backup.key DATABASE_URL=postgres://… scripts/backup.sh /path/to/backups
 
 # Every few minutes: copy the erasure ledger out of the database.
 DATABASE_URL=postgres://… scripts/export-erasure-ledger.sh /path/off-host/erasure-ledger.csv
 
 # After a loss: restore into an EMPTY database, replay erasures, then start.
-WPM_BACKUP_KEY_FILE=/path/to/backup.key WPM_BIN=/path/to/workforce-planning-management \
+WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE=/path/to/backup.key WORKFORCE_PLANNING_MANAGEMENT_BIN=/path/to/workforce-planning-management \
   scripts/restore.sh /path/to/backups/wpm-…dump.enc postgres://…/new_database \
   /path/off-host/erasure-ledger.csv
 ```
 
-- `backup.sh`: **encrypted by default** (WPM-R117). It refuses to run without `WPM_BACKUP_KEY_FILE` unless
-  `WPM_BACKUP_ALLOW_PLAINTEXT=1` accepts an unencrypted backup (and then warns). The dump is piped straight into
+- `backup.sh`: **encrypted by default** (WPM-R117). It refuses to run without `WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE` unless
+  `WORKFORCE_PLANNING_MANAGEMENT_BACKUP_ALLOW_PLAINTEXT=1` accepts an unencrypted backup (and then warns). The dump is piped straight into
   AES-256-CBC with a PBKDF2 key from the key file's first line (at least 32 characters), so **the plaintext
   never touches the disk**. Beside the `.dump.enc` it writes a `.sha256` and a `.hmac` (HMAC-SHA256 over the
   ciphertext, with a separate key derived from the same passphrase). A backup without its key is unreadable, and
@@ -58,10 +58,10 @@ WPM_BACKUP_KEY_FILE=/path/to/backup.key WPM_BIN=/path/to/workforce-planning-mana
   role), owner-only permissions, a `.sha256` file, and **backups older than
   `BACKUP_RETENTION_DAYS` (default 35 calendar days) are deleted**, so that a person's
   erased data does not live on in old backups indefinitely.
-- `restore.sh`: for a `.enc` file needs `WPM_BACKUP_KEY_FILE`, **checks the `.hmac` tag before decrypting** (a wrong
+- `restore.sh`: for a `.enc` file needs `WORKFORCE_PLANNING_MANAGEMENT_BACKUP_KEY_FILE`, **checks the `.hmac` tag before decrypting** (a wrong
   key, a damaged file or an altered one is refused with exit code 4 and named), decrypts into a private temporary
   directory removed on exit, and then verifies the checksum, refuses a target that already has tables,
-  restores, then **replays erasures** (it requires `WPM_BIN` for that, or an explicit
+  restores, then **replays erasures** (it requires `WORKFORCE_PLANNING_MANAGEMENT_BIN` for that, or an explicit
   `--skip-replay`, which prints a loud warning).
 - `restore-drill.sh`: the whole loop on scratch databases; see below.
 

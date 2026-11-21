@@ -33,13 +33,19 @@ async fn count(ctx: &axa::AppContext, table: &str) -> i64 {
 async fn each_kind_is_swept_at_its_own_horizon() {
     // `set_var` is `unsafe` in edition 2024; single-threaded setup before boot.
     unsafe {
-        std::env::set_var("WPM_REQUIRE_AUTH", "0");
-        std::env::set_var("WPM_RATE_LIMIT_PER_MINUTE", "0");
-        std::env::set_var("WPM_RATE_LIMIT_SENSITIVE_PER_MINUTE", "0");
-        std::env::remove_var("WPM_RETENTION_DAYS");
-        std::env::set_var("WPM_RETENTION_PLANNING_DAYS", "100");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_AUTH", "0");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "0");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
+            "0",
+        );
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS");
+        std::env::set_var(
+            "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PLANNING_DAYS",
+            "100",
+        );
         // A junk value is ignored, not trusted.
-        std::env::set_var("WPM_RETENTION_PAY_DAYS", "junk");
+        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS", "junk");
     }
     request::<App, _, _>(|request, ctx| async move {
         // ── The schedule states each kind, its tables and where its horizon came from.
@@ -59,7 +65,7 @@ async fn each_kind_is_swept_at_its_own_horizon() {
             .iter()
             .map(|k| k["tables"].as_array().unwrap().len())
             .sum();
-        assert_eq!(tables, 61, "every swept table is in exactly one kind");
+        assert_eq!(tables, 62, "every swept table is in exactly one kind");
 
         // ── Two candidates (recruitment, 180) and two announcements (planning,
         // 100), each pair deleted 150 and 200 calendar days ago.

@@ -475,3 +475,85 @@ async fn pipeline_list_health_is_per_pipeline_and_members_are_named() {
     })
     .await;
 }
+
+/// Each refusal of a programme, a placement and its hours, an unknown kind to list by, and a placement withdrawn.
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+#[allow(clippy::too_many_lines)] // one programme, read top to bottom
+async fn early_career_programmes_refuse_what_cannot_be_and_a_placement_can_be_withdrawn() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let learner = seed_worker!(&request, &org, format!("EC-{tag}-L"), None).await;
+        let mentor = seed_worker!(&request, &org, format!("EC-{tag}-M"), None).await;
+        for w in [&learner, &mentor] {
+            activate!(&request, w).await;
+        }
+        for (body, why) in [
+            (json!({ "name": "Zero", "kind": "graduate", "duration_months": 0 }), "duration"),
+            (json!({ "name": "No hours", "kind": "apprenticeship", "duration_months": 12, "min_off_the_job_hours": 0 }), "hours"),
+            (json!({ "name": "Level", "kind": "apprenticeship", "duration_months": 12, "min_off_the_job_hours": 10, "level": 0 }), "level"),
+            (json!({ "name": "Provider", "kind": "graduate", "duration_months": 12, "provider_ref": "nope" }), "provider"),
+        ] {
+            assert_eq!(request.post("/api/early-career-programs").json(&body).await.status_code(), 422, "{why}");
+        }
+        assert_eq!(request.get("/api/early-career-programs?kind=sabbatical").await.status_code(), 422);
+        let program: Value = request
+            .post("/api/early-career-programs")
+            .json(&json!({ "name": format!("Graduate {tag}"), "kind": "graduate", "duration_months": 24 }))
+            .await
+            .json();
+        let placements = format!("/api/early-career-programs/{}/placements", program["pid"].as_str().unwrap());
+        for (body, why) in [
+            (json!({ "worker_pid": learner, "started_on": "2026-03-01", "ends_on": "2026-02-01" }), "ends before it starts"),
+            (json!({ "worker_pid": learner, "supervisor_pid": learner, "started_on": "2026-03-01" }), "supervises themself"),
+        ] {
+            assert_eq!(request.post(&placements).json(&body).await.status_code(), 422, "{why}");
+        }
+        let placement: Value = request
+            .post(&placements)
+            .json(&json!({ "worker_pid": learner, "supervisor_pid": mentor, "started_on": "2026-03-01" }))
+            .await
+            .json();
+        let pid = placement["pid"].as_str().unwrap().to_string();
+        request.post(&format!("/api/program-placements/{pid}/status")).json(&json!({ "to": "active" })).await.assert_status_ok();
+        let hours = format!("/api/program-placements/{pid}/hours");
+        assert_eq!(request.post(&hours).json(&json!({ "hours": 0 })).await.status_code(), 422, "hours must be positive");
+        request.post(&hours).json(&json!({ "hours": i32::MAX })).await.assert_status_ok();
+        let over = request.post(&hours).json(&json!({ "hours": 1 })).await;
+        assert_eq!(over.status_code(), 422, "the total would overflow: {}", over.text());
+        let withdrawn = request.post(&format!("/api/program-placements/{pid}/status")).json(&json!({ "to": "withdrawn" })).await;
+        assert_eq!(withdrawn.status_code(), 200, "{}", withdrawn.text());
+        let mine: Value = request.get(&format!("/api/workers/{learner}/placements")).await.json();
+        assert_eq!(mine["placements"][0]["outcome"], "withdrawn", "{mine}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+// A plan that names one skill twice is refused, and a plan with an open item cannot be completed.
+async fn a_plan_names_a_skill_once_and_completes_only_when_every_item_is_resolved() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let worker = seed_worker!(&request, &org, format!("TP-{tag}"), None).await;
+        activate!(&request, &worker).await;
+        let skill: Value = request.post("/api/skills").json(&json!({ "name": format!("Terraform {tag}"), "category": "technical" })).await.json();
+        let item = json!({ "skill_pid": skill["pid"], "current_level": 1, "target_level": 3, "method": "course" });
+        let plans = format!("/api/workers/{worker}/development-plans");
+        let twice = request.post(&plans).json(&json!({ "kind": "upskill", "items": [item, item] })).await;
+        assert_eq!(twice.status_code(), 422, "{}", twice.text());
+        assert!(twice.text().contains("more than once"), "{}", twice.text());
+
+        let plan: Value = request.post(&plans).json(&json!({ "kind": "upskill", "items": [item] })).await.json();
+        let status = format!("/api/development-plans/{}/status", plan["pid"].as_str().unwrap());
+        request.post(&status).json(&json!({ "to": "active" })).await.assert_status_ok();
+        let early = request.post(&status).json(&json!({ "to": "completed" })).await;
+        assert_eq!(early.status_code(), 422, "{}", early.text());
+        assert!(early.text().contains("still open"), "{}", early.text());
+    })
+    .await;
+}

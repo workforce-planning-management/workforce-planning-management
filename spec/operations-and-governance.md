@@ -59,7 +59,7 @@ record is kept after it is deleted.*
   employment, pay, time and leave, performance, learning, wellbeing, planning and
   reference). Each kind has a default horizon in calendar days and a floor of 30
   calendar days (WPM-D22). A kind is overridden with
-  `WPM_RETENTION_<KIND>_DAYS`; the older single `WPM_RETENTION_DAYS` still applies
+  `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_<KIND>_DAYS`; the older single `WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS` still applies
   to every kind with no override of its own.
 - `GET /api/retention/schedule` lists each kind, its tables, its horizon, and
   whether the horizon is the default or an override. The retention report and the
@@ -101,11 +101,11 @@ can complete their own assessment from it:
 - **Direct**: the API's `keycloak` (OIDC) backend verifies an Entra v2 access token
   against the tenant's published keys. It now accepts Entra's top-level `roles`
   claim (app roles) as well as Keycloak's `realm_access.roles`, and can take the
-  subject from `oid` (`WPM_OIDC_SUBJECT_CLAIM=oid`) because Entra's `sub` is
+  subject from `oid` (`WORKFORCE_PLANNING_MANAGEMENT_OIDC_SUBJECT_CLAIM=oid`) because Entra's `sub` is
   different for every application. Settings:
-  `WPM_KEYCLOAK_JWKS_URL=https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys`,
-  `WPM_KEYCLOAK_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0`,
-  `WPM_KEYCLOAK_AUDIENCE=<application (client) id>`.
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL=https://login.microsoftonline.com/<tenant>/discovery/v2.0/keys`,
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_ISSUER=https://login.microsoftonline.com/<tenant>/v2.0`,
+  `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_AUDIENCE=<application (client) id>`.
 - **Brokered**: Keycloak federates to Entra as an identity provider and issues the
   tokens; the existing Keycloak path is unchanged.
 - [operations/entra-sign-in.md](operations/entra-sign-in.md) documents both: the

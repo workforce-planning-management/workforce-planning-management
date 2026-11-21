@@ -6,7 +6,7 @@ version = 2
 yanked = "warn"
 # Advisories accepted WITH a note. An entry is added only for a transitive advisory that cannot be fixed at this level without an
 # upstream bump, and is removed once `cargo deny check` says it was "not encountered" (it then warns). On 2026-10-25 eleven earlier
-# entries (proc-macro-error, instant, paste, protobuf, quick-xml and six more from the loco tree) no longer matched anything in the
+# entries (proc-macro-error, instant, paste, protobuf, quick-xml and six more from the former framework's tree) no longer matched anything in the
 # lockfile and were removed, so each of those advisories now fails the build again if a dependency brings it back. Real, actionable
 # advisories NOT on this list fail the build.
 ignore = [
