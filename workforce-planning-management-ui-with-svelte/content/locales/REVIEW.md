@@ -18,6 +18,7 @@ to offer a service in that language.
 | `hi-001` | Hindi | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `id-001` | Indonesian | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `it-001` | Italian | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
+| `nl-001` | Dutch | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `pt-001` | Portuguese | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `ru-001` | Russian | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `ur-001` | Urdu | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
