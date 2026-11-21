@@ -17,7 +17,7 @@ import sys
 ROOT = subprocess.run(
     ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
 ).stdout.strip()
-SKIP = (".sota", "spec/calendar-days-or-business-days")
+SKIP = (".sota", "LICENSES/", "spec/calendar-days-or-business-days")
 EXTRA = ["workforce-planning-management-ui-with-svelte/content/locales/en-001/ui.json"]
 # A number (or N, a range, ±n) directly followed by "days", an "n-day"
 # adjective, or "whole days".
