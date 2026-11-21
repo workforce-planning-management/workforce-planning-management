@@ -1,0 +1,77 @@
+{
+  "locale": "zh-tw",
+  "brand": "勞動力規劃管理",
+  "skip": "跳到正文",
+  "siteNav": "網站",
+  "nav": {
+    "home": "首頁",
+    "readme": "README",
+    "install": "安裝",
+    "familyBridges": "家族橋接",
+    "spec": "規範",
+    "worldwide": "全球",
+    "briefs": "角色文件",
+    "start": "教程",
+    "production": "走向生產使用之路",
+    "docs": "文件",
+    "compare": "比較",
+    "privacy": "隱私"
+  },
+  "pickers": {
+    "pages": "頁面",
+    "search": "搜尋本站",
+    "searchInput": "要查詢的詞",
+    "searchSubmit": "搜尋",
+    "theme": "主題",
+    "language": "語言",
+    "textSize": "文字大小",
+    "share": "分享"
+  },
+  "textSizes": {
+    "largest": "最大",
+    "larger": "較大",
+    "large": "大",
+    "normal": "標準",
+    "small": "小",
+    "smaller": "較小",
+    "smallest": "最小"
+  },
+  "share": {
+    "copy": "複製連結",
+    "copied": "連結已複製",
+    "copyFailed": "無法複製連結",
+    "email": "透過電子郵件傳送連結",
+    "linkedin": "分享到 LinkedIn",
+    "reddit": "分享到 Reddit",
+    "bluesky": "分享到 Bluesky",
+    "mastodon": "分享到 Mastodon"
+  },
+  "footer": {
+    "builtFrom": "根據以下位置的文件構建：",
+    "repository": "勞動力規劃管理程式碼倉庫",
+    "counts": "{documents} 份文件和 {briefs} 份角色文件，共 {locales} 個語言區域",
+    "countsEnd": "。",
+    "notice": "演示軟體，只使用合成資料；譯文由人工智慧助手撰寫，未經母語人士審校。",
+    "export": "本站是該倉庫的 {directory} 目錄，透過 {tool} 匯出。"
+  },
+  "translations": "譯文：",
+  "source": "來源：",
+  "readiness": {
+    "note": "每個滑塊都從作者的估計開始。移動滑塊即可嘗試您自己的估計；不會儲存或傳送任何內容。",
+    "label": "就緒程度估計：{name}",
+    "author": "作者的估計：{value}"
+  },
+  "search": {
+    "title": "搜尋",
+    "label": "要查詢的詞",
+    "submit": "搜尋",
+    "noscript": "搜尋本站需要 JavaScript。",
+    "failed": "無法載入搜尋索引，因此本次搜尋未執行。",
+    "count": "包含“{query}”全部詞語的頁面：{count}"
+  },
+  "notFound": {
+    "title": "未找到頁面",
+    "body": "本站不存在此地址。",
+    "home": "前往首頁"
+  }
+}

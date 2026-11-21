@@ -57,7 +57,7 @@ export const BRIEF_LOCALES = [
   "ur-001",
   "zh-001",
   "zh-cn",
-  "zh-th",
+  "zh-tw",
 ] as const;
 export type BriefLocale = (typeof BRIEF_LOCALES)[number];
 
@@ -82,7 +82,7 @@ export const HOME_LOCALES = [
   "hi-np",
   "zh-001",
   "zh-cn",
-  "zh-th",
+  "zh-tw",
 ] as const satisfies readonly BriefLocale[];
 
 /** The home the site's own root (`/`) shows: the world English landing page. */
@@ -126,13 +126,13 @@ export const LOCALE_LABELS: Record<BriefLocale, string> = {
   "bn-in": "বাংলা - ভারত",
   "cy-001": "Cymraeg",
   "cy-ar": "Cymraeg - Ariannin",
-  "cy-gb": "Cymraeg - Y Deyrnas Unedig",
+  "cy-gb": "Cymraeg - Prydain Fawr",
   "de-001": "Deutsch",
   "de-at": "Deutsch - Österreich",
   "de-de": "Deutsch - Deutschland",
   "en-001": "English",
   "en-gb": "English - Great Britain",
-  "en-gb-oxendict": "English - Great Britain - Oxford spelling",
+  "en-gb-oxendict": "English - Great Britain - Oxford",
   "en-us": "English - United States",
   "es-001": "Español",
   "es-es": "Español - España",
@@ -155,7 +155,7 @@ export const LOCALE_LABELS: Record<BriefLocale, string> = {
   "ur-001": "اردو",
   "zh-001": "中文",
   "zh-cn": "中文 - 中国",
-  "zh-th": "中文 - 泰国",
+  "zh-tw": "中文 - 台灣",
 };
 
 /**

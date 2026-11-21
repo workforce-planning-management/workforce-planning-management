@@ -6,14 +6,16 @@ import en from "../content/locales/en-001.json" with { type: "json" };
 import cy from "../content/locales/cy-001.json" with { type: "json" };
 import hi from "../content/locales/hi-001.json" with { type: "json" };
 import zh from "../content/locales/zh-001.json" with { type: "json" };
+import zhTw from "../content/locales/zh-tw.json" with { type: "json" };
 
 export type Ui = typeof en;
 
-const CATALOGUES: Record<string, Ui> = { ar, cy, en, hi, zh };
+const CATALOGUES: Record<string, Ui> = { ar, cy, en, hi, zh, "zh-tw": zhTw };
 
-/** The catalogue for a page's locale: by language, so `cy-gb` reads `cy-001`, and English where there is none yet. */
+/** The catalogue for a page's locale: its own where it has one (`zh-tw`), else by language, so `cy-gb` reads `cy-001`, and English where there is none yet. */
 export function ui(locale: string | null | undefined): Ui {
-  return CATALOGUES[locale?.split("-")[0] ?? "en"] ?? en;
+  const key = locale?.toLowerCase() ?? "en";
+  return CATALOGUES[key] ?? CATALOGUES[key.split("-")[0] ?? "en"] ?? en;
 }
 
 /** Every catalogue, for the parity test. */

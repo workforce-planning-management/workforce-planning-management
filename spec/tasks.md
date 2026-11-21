@@ -6987,3 +6987,16 @@ the entry records only the evidence it needs.
       bounds how long one test binary may go without answering, and the instrumented `main` binary, larger by this
       session's tests, now runs past it (locally it needs 1,200, as recorded under WPM-T602). `ci.yml` now passes
       `--timeout 1200`; the job's own limit is 45 minutes.
+
+- [x] WPM-T608 (2026-11-21) **Locale group `zh`: `zh-th` becomes `zh-tw`, and the missing role pages are added.** The owner's
+      localisation run found `locales/zh-th/` (an untranslated copy of `zh-cn`, a typo for Taiwan) and no `zh-tw`.
+      - `zh-th` renamed `zh-tw` and converted to Traditional characters with Taiwan wording (OpenCC `s2twp`, then
+        平台, 回饋, 複製 by hand); directory slugs converted to match; the site's label is `中文 - 台灣`, its catalogue
+        `src/content/locales/zh-tw.json` (`ui()` now prefers a locale's own catalogue over its language's).
+      - Added `evaluate`, `for/chief-finance-officer` and `for/workforce-planning-manager` in `zh-cn`, `zh-001`, `zh-tw`
+        (they existed only in `en-001`); `.locale-peer-id` added to all three in `en-001` too.
+      - A language line (`語言：…`, the 11 endonyms of the owner's example) after each `zh` home's introduction, and a
+        `sitemap.xml` in each `zh` locale folder (copied from the built site).
+      - Picker labels: `Cymraeg - Prydain Fawr`, `English - Great Britain - Oxford`.
+      - **Not done:** the other 18 locales have none of the three role pages or a `sitemap.xml`; `ja`, `ko`, `sw`, `sv`,
+        `nl`, `vi`, `da`, `it` are not created. Translations are AI-written, not native-reviewed.

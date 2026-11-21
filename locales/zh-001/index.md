@@ -4,6 +4,8 @@
 
 劳动力规划管理（Workforce Planning Management，WPM）将招聘、考勤与休假、员工发展、劳动力规划和薪资整合在一个应用中。它是演示软件，用于评估和作为参考设计。
 
+语言：العربية, বাংলা, Cymraeg, English, Español, हिन्दी, 日本語, 한국어, Русский, اردو, 中文
+
 > **演示软件，尚未准备好用于生产。** [走向生产使用之路](path-to-production/index.md)说明生产使用需要什么，以及每一部分的就绪程度。它只使用合成数据，其法定计算仅作示例。请勿录入真实的个人数据。参见[监管立场](../../spec/regulatory.md)（英文）。
 
 [运行演示](start/index.md) [角色文档](for/index.md) [GitHub 上的源代码](https://github.com/workforce-planning-management/workforce-planning-management)
