@@ -31,6 +31,7 @@ export const LOCALES = [
   "pt-001",
   "ru-001",
   "sv-001",
+  "sw-001",
   "ur-001",
   "zh-001",
 ] as const;
@@ -71,6 +72,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   "pt-001": "Português",
   "ru-001": "Русский",
   "sv-001": "Svenska",
+  "sw-001": "Kiswahili",
   "ur-001": "اردو",
   "zh-001": "中文",
 };
@@ -220,6 +222,7 @@ export const CMS_UI_LOCALE: Record<Locale, (typeof CMS_UI_LANGUAGES)[number]> =
     "pt-001": "pt-BR",
     "ru-001": "ru",
     "sv-001": "sv",
+    "sw-001": "en-US",
     "ur-001": "en-US",
     "zh-001": "zh-CN",
   };

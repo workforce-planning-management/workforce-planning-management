@@ -412,6 +412,9 @@
       "{minutes} min ({hours} h)",
       "{title}, version {version}",
       "· budget {currency} ·"
+    ],
+    "sw-001": [
+      "· FTE {fte_percent}%"
     ]
   }
 }
