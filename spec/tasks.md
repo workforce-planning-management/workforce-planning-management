@@ -7042,3 +7042,12 @@ the entry records only the evidence it needs.
       - **Not done:** translations are AI-written, not native-reviewed; `fr-fr` and `fr-ca` have no further regional
         edits; the language line uses `Langue:` (no space before the colon) as the locale rule's pattern says, not
         French typography.
+- [x] WPM-T614 (2026-11-21) **Locale group `ru`: the website in Russian, role pages, language line and sitemaps.**
+      - `ru-001`, `ru-ru` and `ru-by` had briefs, path-to-production and privacy but no home. Added a translated home
+        (`index.md`, with the language line `Язык: …`), `start/`, `оценка/` (evaluate),
+        `for/финансовый-директор` and `for/директор-по-планированию-персонала`, with the shared
+        `.locale-peer-id` values and `README.md` symlinks; rows added to each `for/index.md`; a `sitemap.xml` in each
+        folder (from the built site). `ru-ru` and `ru-by` copy `ru-001`.
+      - Site: catalogue `ru-001.json` (also used by `ru-ru`, `ru-by`), `ru` in `i18n.ts`, the three locales in
+        `HOME_LOCALES`, and the home headline in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; `ru-ru` and `ru-by` have no regional edits.

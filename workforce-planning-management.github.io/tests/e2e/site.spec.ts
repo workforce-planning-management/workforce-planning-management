@@ -418,6 +418,9 @@ for (const [locale, headline] of [
   ["fr-001", "Gestion de la planification des effectifs"],
   ["fr-ca", "Gestion de la planification des effectifs"],
   ["fr-fr", "Gestion de la planification des effectifs"],
+  ["ru-001", "Управление планированием персонала"],
+  ["ru-by", "Управление планированием персонала"],
+  ["ru-ru", "Управление планированием персонала"],
 ] as const)
   test(`/${locale}/ is the locale's home: hero, wordmark, chrome and Translations line in its language`, async ({ page }) => {
     const s = ui(locale);
