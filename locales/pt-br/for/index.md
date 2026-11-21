@@ -5,6 +5,7 @@ Uma página para cada função de liderança, que diz o que o Workforce Planning
 | Função | Página |
 | --- | --- |
 | Direção executiva (CEO) | [direção-executiva](direção-executiva/index.md) |
+| Direção financeira (CFO) | [direção-financeira](direção-financeira/index.md) |
 | Direção de operações (COO) | [direção-de-operações](direção-de-operações/index.md) |
 | Direção de tecnologia (CTO) | [direção-de-tecnologia](direção-de-tecnologia/index.md) |
 | Direção de informação (CIO) | [direção-de-informação](direção-de-informação/index.md) |
@@ -15,7 +16,8 @@ Uma página para cada função de liderança, que diz o que o Workforce Planning
 | Direção de segurança | [direção-de-segurança](direção-de-segurança/index.md) |
 | Governança, riscos e conformidade | [governança-riscos-conformidade](governança-riscos-conformidade/index.md) |
 | Teste de segurança independente (um enquadramento para o encomendar) | [teste-de-segurança-independente](teste-de-segurança-independente/index.md) |
+| Gestão de planejamento de pessoal | [gestão-de-planejamento-de-pessoal](gestão-de-planejamento-de-pessoal/index.md) |
 
 Comece pela [avaliação de prontidão](../../../spec/readiness-assessment.md): o veredicto é que este é um software de demonstração e não está pronto para uso em produção numa organização de alta garantia.
 
-> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-gb-oxendict/for/`), prevalece a versão em inglês.
+> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-001/for/`), prevalece a versão em inglês.

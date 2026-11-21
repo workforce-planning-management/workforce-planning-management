@@ -7134,3 +7134,14 @@ the entry records only the evidence it needs.
       - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
         re-translated; `de-de` and `de-at` have no regional edits; the axe tests and the picker hover in a browser were
         not run for `de`.
+- [x] WPM-T624 (2026-11-21) **Locale group `pt`: the website and every page in Portuguese, language line and sitemaps.**
+      - `pt-001`, `pt-br` and `pt-pt` had role pages, `path-to-production/` and `privacy/` but no home, `start/`,
+        evaluate page, CFO page or Workforce Planning Manager page. Added them to `pt-001` (home with the language line
+        `Idioma: …`, `start/`, `avaliação/`, `for/direção-financeira/`, `for/gestão-de-planeamento-de-pessoal/`),
+        updated the `for/` index, pointed the AI-translation notes at `locales/en-001/`, and added the shared
+        `.locale-peer-id` values, `README.md` symlinks and a `sitemap.xml` (from the built site). `pt-pt` copies
+        `pt-001`; `pt-br` copies it with Brazilian spelling edits (planejamento, usuário, e-mail).
+      - Site: catalogue `pt-001.json` (shared by all three), `pt` in `i18n.ts`, the three locales in `HOME_LOCALES`,
+        and the home headlines in the e2e table.
+      - **Not done:** translations are AI-written, not native-reviewed; the older role pages were kept, not
+        re-translated; the axe tests and the picker hover in a browser were not run for `pt`.

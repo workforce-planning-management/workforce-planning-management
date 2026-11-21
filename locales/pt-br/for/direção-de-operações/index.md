@@ -18,13 +18,13 @@
 
 ## Como ler a vista de capacidade
 
-A capacidade é planeada por conjunto de competências, não por pessoa. Cada mês de um conjunto dá um de quatro resultados, e uma competência não declarada é *desconhecida*, não um défice. A verificação de arranque é uma sugestão, e uma pessoa regista a decisão de começar. O planeamento por cadeia crítica e caminho crítico não está aqui: pertence ao project-portfolio-management.
+A capacidade é planejada por conjunto de competências, não por pessoa. Cada mês de um conjunto dá um de quatro resultados, e uma competência não declarada é *desconhecida*, não um défice. A verificação de arranque é uma sugestão, e uma pessoa regista a decisão de começar. O planejamento por cadeia crítica e caminho crítico não está aqui: pertence ao project-portfolio-management.
 
 ## Limites
 
 - A parte contingente ainda não tem tendência: precisa de instantâneos de efetivos separados por base (WPM-T139, não construído).
 - Um conjunto, na vista contingente, é o departamento até os planos definirem conjuntos.
-- O planeamento de turnos e os cálculos do imposto sobre salários não substituem os seus sistemas de escalas ou de salários.
+- O planejamento de turnos e os cálculos do imposto sobre salários não substituem os seus sistemas de escalas ou de salários.
 - Várias vistas carregam em memória os registos de uma organização; não foi medido nenhum valor de carga ([readiness-assessment.md](../../../../spec/readiness-assessment.md), lacuna 8).
 
 Veja também a [direção de pessoas](../direção-de-pessoas/index.md) e a [direção executiva](../direção-executiva/index.md).
@@ -33,4 +33,4 @@ Veja também a [direção de pessoas](../direção-de-pessoas/index.md) e a [dir
 
 Escrito em 2026-10-11 a partir da especificação, e não executando o software para esta página. Os números que mudam (testes, migrações, tarefas concluídas) não são copiados aqui; leia-os em [implementation-status.md](../../../../spec/implementation-status.md), gerado por um script. O WPM é software de demonstração com dados sintéticos: esta página diz o que ele faz e o que não faz, e não afirma que seja adequado à sua organização. Nada aqui é aconselhamento jurídico.
 
-> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-gb-oxendict/for/`), prevalece a versão em inglês.
+> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-001/for/`), prevalece a versão em inglês.

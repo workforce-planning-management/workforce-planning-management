@@ -27,7 +27,7 @@
 - A revogação de tokens e a sua idade máxima são do seu fornecedor de identidade.
 - O caminho do gestor de conteúdos carrega um script de uma CDN pública sem versão fixada nem resumo de integridade.
 - Os registos não foram verificados quanto a dados pessoais, e o registo de auditoria não é exportado para um sistema de monitorização.
-- O Redis gerido (cluster, sentinela, utilizadores de controlo de acesso) não foi experimentado.
+- O Redis gerido (cluster, sentinela, usuários de controlo de acesso) não foi experimentado.
 
 ## O que só as pessoas podem fazer
 
@@ -39,4 +39,4 @@ Veja também as páginas da [direção de riscos](../direção-de-riscos/index.m
 
 Escrito em 2026-10-11 a partir da especificação, e não executando o software para esta página. Os números que mudam (testes, migrações, tarefas concluídas) não são copiados aqui; leia-os em [implementation-status.md](../../../../spec/implementation-status.md), gerado por um script. O WPM é software de demonstração com dados sintéticos: esta página diz o que ele faz e o que não faz, e não afirma que seja adequado à sua organização. Nada aqui é aconselhamento jurídico.
 
-> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-gb-oxendict/for/`), prevalece a versão em inglês.
+> Esta tradução foi escrita por uma IA e não foi revista por um falante nativo. Se diferir da versão em inglês (`locales/en-001/for/`), prevalece a versão em inglês.
