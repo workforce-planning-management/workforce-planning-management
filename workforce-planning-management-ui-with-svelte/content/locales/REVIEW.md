@@ -21,6 +21,7 @@ to offer a service in that language.
 | `nl-001` | Dutch | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `pt-001` | Portuguese | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `ru-001` | Russian | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
+| `sv-001` | Swedish | AI assistant, 2026-11-21 | none | not reviewed | not reviewed | not reviewed |
 | `ur-001` | Urdu | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 | `zh-001` | Chinese | AI assistant, 2026-10-10 | none | not reviewed | not reviewed | not reviewed |
 

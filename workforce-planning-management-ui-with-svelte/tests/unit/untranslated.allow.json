@@ -382,6 +382,36 @@
       "{statutoryDefaults} — WPM",
       "· FTE {fte_percent}%",
       "· budget {currency} ·"
+    ],
+    "sv-001": [
+      "Agenda",
+      "Budget",
+      "Definition",
+      "Demo",
+      "Mentor",
+      "Online",
+      "Period",
+      "Person",
+      "Plan",
+      "Policy",
+      "Relation",
+      "Risk",
+      "Rotation",
+      "Senior",
+      "Signal",
+      "Status",
+      "Version",
+      "Version {version}",
+      "budget {minutes} min",
+      "import",
+      "max",
+      "median",
+      "min",
+      "partner",
+      "pension",
+      "{minutes} min ({hours} h)",
+      "{title}, version {version}",
+      "· budget {currency} ·"
     ]
   }
 }
