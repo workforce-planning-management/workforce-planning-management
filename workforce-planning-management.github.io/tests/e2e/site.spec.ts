@@ -758,7 +758,8 @@ test("every locale's privacy notice has the English notice's shape, names and li
 test("the language picker opens the same privacy notice in another locale", async ({ page }) => {
   await open(page, "/en-001/privacy/", "light");
   await page.getByRole("button", { name: "Language", exact: true }).click();
-  await page.locator(".locale-picker-option", { hasText: LOCALE_LABELS["cy-001"] }).click();
+  // Exactly: a regional sibling such as "Cymraeg - Ariannin" shares the language's name.
+  await page.getByRole("option", { name: LOCALE_LABELS["cy-001"], exact: true }).click();
   await expect(page).toHaveURL(/\/cy-001\/privacy\/$/);
   await expect(page.locator("main")).toContainText("mxi.wpm.theme");
 });

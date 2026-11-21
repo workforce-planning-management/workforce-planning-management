@@ -6979,4 +6979,7 @@ the entry records only the evidence it needs.
       and enforcement tests; `cargo mutants -F named_read_is_audited`, 10 caught; UI lint, check, unit (377), and Playwright
       (537 passed, 19 skipped); the site check and `sync-content --check`. The local `cargo mutants` run wrote `mutants.out/`
       into the service directory, which was not ignored and was nearly committed; it is now in the service's `.gitignore`.
-      **Not verified:** CI on the fix, until it is pushed.
+      **CI on the fix (`063f5b2f`):** every job green but the site's Playwright run, where one test picked the Welsh option
+      by `hasText` and now met two, "Cymraeg" and the new regional draft "Cymraeg - Ariannin" (from `6d2686cc`). It now
+      picks the option by its exact accessible name, as the file's other picker tests already did; the site's 647 tests pass
+      locally.
