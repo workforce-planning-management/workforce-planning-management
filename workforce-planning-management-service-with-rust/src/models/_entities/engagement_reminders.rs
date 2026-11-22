@@ -1,6 +1,9 @@
 //! Row type — `engagement_reminders`. That the manager and HR were told about one end date, once (WPM-R81).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

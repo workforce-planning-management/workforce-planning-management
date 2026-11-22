@@ -70,7 +70,7 @@ pub fn validate_target(nodes: &[Node]) -> Result<(), Vec<String>> {
                 n.key
             ));
         }
-        if !(1..=10_000).contains(&n.headcount) {
+        if !(1_i32..=10_000_i32).contains(&n.headcount) {
             out.push(format!("{}: headcount is 1 to 10000", n.key));
         }
     }
@@ -281,7 +281,7 @@ fn target_side(nodes: &[Node]) -> Option<Side> {
         .unwrap_or(0);
     let (mut managers, mut reports, mut max) = (0_i64, 0_i64, 0_i64);
     for (key, r) in &children {
-        let h = i64::from(by_key.get(key).map_or(1, |n| n.headcount));
+        let h = i64::from(by_key.get(key).map_or(1_i32, |n| n.headcount));
         managers = managers.checked_add(h)?;
         reports = reports.checked_add(*r)?;
         // A node with no people has no managers to share its reports among: it adds no figure.
@@ -339,7 +339,7 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Option<Diff> {
             .or_insert(0);
         *slot = slot.checked_add(i64::from(n.headcount))?;
     }
-    let floor = i64::try_from(floor).unwrap_or(i64::MAX);
+    let floor = i64::try_from(floor).ok()?;
     let roles = roles
         .into_values()
         .map(|a| {

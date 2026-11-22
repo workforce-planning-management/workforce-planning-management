@@ -206,7 +206,7 @@ async fn create_requisition(
     );
     problems.require_text("department", &payload.department);
     problems.require_text("job_title", &payload.job_title);
-    if payload.headcount < 1 {
+    if payload.headcount < 1_i32 {
         problems.push("headcount must be at least 1".to_string());
     }
     if let (Some(min), Some(max)) = (payload.salary_min_minor, payload.salary_max_minor)
@@ -317,7 +317,10 @@ struct RequisitionStatusPayload {
     to: String,
 }
 
-#[allow(clippy::too_many_lines)] // the audit is written out once per kind of move
+#[expect(
+    clippy::too_many_lines,
+    reason = "the audit is written out once per kind of move"
+)]
 #[debug_handler]
 async fn requisition_status(
     State(ctx): State<AppContext>,
@@ -617,7 +620,10 @@ async fn list_applications(
 /// `POST /api/applications/{pid}/stage` — one stage transition.
 /// `hired` creates the Worker (onboarding status) **in the same
 /// transaction** (WPM-R2, WPM-D9) and emits `worker_hired`.
-#[allow(clippy::too_many_lines)] // one linear stage walk incl. the in-tx hire
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear stage walk incl. the in-tx hire"
+)]
 #[debug_handler]
 async fn application_stage(
     State(ctx): State<AppContext>,
@@ -719,7 +725,7 @@ async fn application_stage(
             worker_number,
             candidate.display_name,
             employment_type,
-            payload.fte_percent.unwrap_or(100),
+            payload.fte_percent.unwrap_or(100_i32),
             requisition.department,
             requisition.job_title,
             payload.salary_minor,

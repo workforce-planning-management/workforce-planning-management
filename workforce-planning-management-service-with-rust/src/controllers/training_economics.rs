@@ -131,24 +131,6 @@ fn fee_of(course: &skill_courses::Model) -> Fee {
 /// The refusal when a plan's hours or fees do not fit their types.
 const PLAN_TOTAL_UNKNOWN: &str = "the plan's hours or fees are too large to total";
 
-/// A median of day counts, rounded half away from zero to a whole number of days, or `None` when it is not finite or does not
-/// fit an `i64` (RCA-CONV-3).
-fn rounded_to_i64(x: f64) -> Option<i64> {
-    // 2^63 is exactly representable as f64; `i64::MAX as f64` would round up to it.
-    const TWO_POW_63: f64 = 9_223_372_036_854_775_808.0;
-    let rounded = x.round();
-    if !(rounded.is_finite() && (-TWO_POW_63..TWO_POW_63).contains(&rounded)) {
-        return None;
-    }
-    #[expect(
-        clippy::as_conversions,
-        clippy::cast_possible_truncation,
-        reason = "RCA-CONV-3: finite, integral and within i64, checked above"
-    )]
-    let days = rounded as i64;
-    Some(days)
-}
-
 /// The steps of a plan, leaving out what was abandoned. A course step reads the catalogue; a step with no catalogue row counts
 /// as a course with no fee, at the skill's per-level figure. A step that is not a course has no fee to know.
 async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result<Vec<Step>> {
@@ -705,7 +687,7 @@ async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i6
         .collect();
     Ok(match metrics::fill_time_summary(&days) {
         // A median that cannot be rounded to a whole number of days is unknown, not a capped figure (RCA-CONV-3).
-        Some(fill) => (rounded_to_i64(fill.median), fill.count),
+        Some(fill) => (crate::rules::metrics::rounded_i64(fill.median), fill.count),
         None => (None, 0),
     })
 }
@@ -715,7 +697,10 @@ async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i6
 /// candidate's place of work, because a seat records none. A masked reader gets the inputs that do not rest on the candidate's
 /// pay and no totals.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // the two sides, each input named once, in order
+#[expect(
+    clippy::too_many_lines,
+    reason = "the two sides, each input named once, in order"
+)]
 async fn train_or_hire(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -1014,7 +999,7 @@ async fn set_budget(
             "department is required (up to 200 characters)",
         ));
     }
-    if !(2000..=2200).contains(&payload.year) {
+    if !(2_000_i32..=2_200_i32).contains(&payload.year) {
         return Err(unprocessable("year must be between 2000 and 2200"));
     }
     if payload.amount_minor < 0 {
@@ -1076,13 +1061,16 @@ pub fn routes() -> Routes {
 mod tests {
     #[test]
     fn a_median_rounds_to_whole_days_or_is_unknown() {
-        assert_eq!(super::rounded_to_i64(12.5), Some(13));
-        assert_eq!(super::rounded_to_i64(-0.4), Some(0));
-        assert_eq!(super::rounded_to_i64(f64::NAN), None);
-        assert_eq!(super::rounded_to_i64(f64::INFINITY), None);
-        assert_eq!(super::rounded_to_i64(9_223_372_036_854_775_808.0), None);
+        assert_eq!(crate::rules::metrics::rounded_i64(12.5), Some(13));
+        assert_eq!(crate::rules::metrics::rounded_i64(-0.4), Some(0));
+        assert_eq!(crate::rules::metrics::rounded_i64(f64::NAN), None);
+        assert_eq!(crate::rules::metrics::rounded_i64(f64::INFINITY), None);
         assert_eq!(
-            super::rounded_to_i64(-9_223_372_036_854_775_808.0),
+            crate::rules::metrics::rounded_i64(9_223_372_036_854_775_808.0),
+            None
+        );
+        assert_eq!(
+            crate::rules::metrics::rounded_i64(-9_223_372_036_854_775_808.0),
             Some(i64::MIN)
         );
     }

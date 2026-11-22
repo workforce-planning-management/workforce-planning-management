@@ -1,6 +1,9 @@
 //! Row type — `esco_occupation_skills`. A pinned ESCO occupation-to-skill relation.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

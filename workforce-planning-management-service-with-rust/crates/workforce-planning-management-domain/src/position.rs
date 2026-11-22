@@ -92,7 +92,7 @@ pub fn validate(
     if !(1..=80).contains(&cost_centre.trim().chars().count()) {
         out.push("cost_centre is 1 to 80 characters".to_string());
     }
-    if !(1..=100).contains(&budget_fte_percent) {
+    if !(1_i32..=100_i32).contains(&budget_fte_percent) {
         out.push("budget_fte_percent is 1 to 100: a position is one seat, so at most one full-time equivalent".to_string());
     }
     if let Err(e) = crate::funding::validate_kind(funding_kind) {

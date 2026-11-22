@@ -35,7 +35,7 @@ fn refuse(status: StatusCode, message: &str) -> Response {
 
 /// Delete what is older than the keep period.
 async fn purge(ctx: &AppContext) -> Result<(), sqlx::Error> {
-    let days = i32::try_from(rules::KEEP_CALENDAR_DAYS).unwrap_or(1);
+    let days = i32::try_from(rules::KEEP_CALENDAR_DAYS).unwrap_or(1_i32);
     sqlx::query!(
         "DELETE FROM idempotency_keys WHERE created_at < now() - make_interval(days => $1)",
         days,
@@ -183,7 +183,7 @@ async fn claim_or_answer(
 ) -> Result<(), Box<Response>> {
     purge(ctx).await.map_err(|e| Box::new(unavailable(&e)))?;
     // At most one take-over of an abandoned claim.
-    for attempt in 0..2 {
+    for attempt in 0_i32..2_i32 {
         if claim(ctx, actor, key, fingerprint)
             .await
             .map_err(|e| Box::new(unavailable(&e)))?
@@ -205,7 +205,7 @@ async fn claim_or_answer(
                     "this Idempotency-Key was used for a different request",
                 )));
             }
-            Decision::TakeOver if attempt == 0 => {
+            Decision::TakeOver if attempt == 0_i32 => {
                 release(ctx, actor, key)
                     .await
                     .map_err(|e| Box::new(unavailable(&e)))?;

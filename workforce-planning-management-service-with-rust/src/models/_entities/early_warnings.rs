@@ -1,6 +1,9 @@
 //! Row type — `early_warnings`. A condition that became true (a pool over-committed, a measure in breach): when it was first seen, when it stopped, when a person acknowledged it (WPM-R68). Names a pool or a measure, never a person.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

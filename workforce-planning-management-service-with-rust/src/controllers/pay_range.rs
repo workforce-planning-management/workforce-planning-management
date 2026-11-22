@@ -73,7 +73,10 @@ fn cutoff_from_points(points: i64) -> Result<i64> {
 
 /// `GET /api/reports/pay-range` — the analysis. Payroll or HR with an unmasked salary read; audited.
 #[debug_handler]
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear function: splitting it would only move the lines"
+)]
 async fn pay_range(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

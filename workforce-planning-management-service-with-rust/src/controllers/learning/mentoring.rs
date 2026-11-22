@@ -1,8 +1,11 @@
 //! Mentorships: lifecycle and session log.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, Error, MaybeAuthUser, PidRef, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_valid, format, mentorship_sessions, mentorships, records, row_json,
+    rules, unprocessable,
+};
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use jiff::civil::Date;

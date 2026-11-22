@@ -154,7 +154,10 @@ fn value_of(setting: &str, scope: Option<&Scope>, as_of: Date) -> (Value, Value)
         }
         "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT" => {
             let c = pay_assessment::configured(scope, as_of);
-            (json!(c.config.threshold_bp / 100), c.threshold_from)
+            (
+                json!(c.config.threshold_bp.div_euclid(100)),
+                c.threshold_from,
+            )
         }
         "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS" => {
             shown(pay_transparency::reporting_tiers(scope, as_of))

@@ -1,7 +1,10 @@
 //! Row type — `coverage_evidence`. An organization's workers' compensation or employer's liability cover in one jurisdiction
 //! (WPM-R220, WPM-D154): a record of the fact and its dates, with a reference to the certificate, never a copy.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

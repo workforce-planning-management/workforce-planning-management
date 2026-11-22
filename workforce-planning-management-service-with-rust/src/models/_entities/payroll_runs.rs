@@ -1,6 +1,9 @@
 //! Row type — `payroll_runs`. One payroll run per organization and period (WPM-R13, WPM-D5).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

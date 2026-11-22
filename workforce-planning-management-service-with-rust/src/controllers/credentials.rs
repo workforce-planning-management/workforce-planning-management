@@ -85,7 +85,10 @@ pub(crate) struct IssuePayload {
 /// `POST /api/me/credentials` — issue a credential for one of the caller's own CPD entries. Only on the worker's request, only for an
 /// entry that exists, is theirs and is verified, and once while it is live. The signed credential is returned here and nowhere else.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one transaction read top to bottom: check, claim a place, build, sign, record, audit
+#[expect(
+    clippy::too_many_lines,
+    reason = "one transaction read top to bottom: check, claim a place, build, sign, record, audit"
+)]
 pub(crate) async fn issue(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -135,6 +138,7 @@ pub(crate) async fn issue(
     )
     .fetch_one(&mut *tx)
     .await?;
+    // An index that does not fit a `usize` is past the list, so the list is full (declared: spec/figure-declarations.md, `status_index`).
     let index = status_index(id).unwrap_or(usize::MAX);
     if index >= rules::STATUS_BITS {
         return Err(unprocessable(
@@ -157,9 +161,9 @@ pub(crate) async fn issue(
     refs.sort_by_key(|r| {
         (
             match r.framework_slug.as_str() {
-                "esco" => 0,
-                "sfia" => 1,
-                _ => 2,
+                "esco" => 0_i32,
+                "sfia" => 1_i32,
+                _ => 2_i32,
             },
             r.framework_slug.clone(),
             r.reference.clone(),

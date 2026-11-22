@@ -38,13 +38,38 @@
     clippy::unimplemented,
     clippy::indexing_slicing,
     clippy::string_slice,
-    clippy::arithmetic_side_effects
+    clippy::arithmetic_side_effects,
+    // Each exception is `#[expect]`ed, with a reason (RCA-EXC-6).
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
+    // Every literal names its type, so no figure silently becomes an `i32` or `f64` (RCA-INT).
+    clippy::default_numeric_fallback
+)]
+#![cfg_attr(
+    not(test),
+    deny(
+        // RCA-ENF-1: division and remainder are checked, conversions are `From` or `TryFrom`, floats are finite.
+        clippy::integer_division,
+        clippy::modulo_arithmetic,
+        clippy::as_conversions,
+        clippy::cast_lossless,
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::checked_conversions,
+        clippy::float_cmp,
+        clippy::lossy_float_literal,
+        // The service does no float arithmetic: a ratio is the domain's, checked for finiteness (RCA-FLT-2).
+        clippy::float_arithmetic
+    )
 )]
 #![cfg_attr(
     test,
     expect(
         clippy::string_slice,
         clippy::arithmetic_side_effects,
+        clippy::default_numeric_fallback,
         reason = "RCA-EXC-5: test code may use plain operators and slice strings"
     )
 )]

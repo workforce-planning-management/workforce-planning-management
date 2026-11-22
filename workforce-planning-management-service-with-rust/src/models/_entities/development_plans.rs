@@ -1,6 +1,9 @@
 //! Row type — `development_plans`. One worker's upskilling or reskilling plan (WPM-R21).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

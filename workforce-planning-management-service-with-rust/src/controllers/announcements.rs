@@ -219,11 +219,13 @@ async fn feed(
             (b.pinned, b.publish_on.get(), b.id),
         )
     });
+    // A limit past `usize` takes every row (declared: spec/figure-declarations.md, `page_limit`).
     let limit = usize::try_from(window.limit()).unwrap_or(usize::MAX);
     // One more than the limit, to know whether another page follows; past usize the limit already takes every row.
     let take = limit.checked_add(1).unwrap_or(limit);
     let (page_rows, more) = window.split(
         kept.iter()
+            // An offset past `usize` is past every row (declared: spec/figure-declarations.md, `page_offset`).
             .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
             .take(take)
             .collect::<Vec<&announcements::Model>>(),

@@ -87,7 +87,8 @@ pub async fn request_log_mw(mut request: Request, next: Next) -> Response {
     span.in_scope(|| {
         tracing::info!(
             status = response.status().as_u16(),
-            latency_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+            // A latency past `u64` milliseconds is not logged, never logged as a cap (RCA-INT-4).
+            latency_ms = u64::try_from(started.elapsed().as_millis()).ok(),
             "request finished"
         );
     });

@@ -980,7 +980,7 @@ pub fn resolve(
 
 /// [`resolve`] for a given entry.
 #[must_use]
-#[allow(clippy::too_many_lines)] // one arm per combination rule
+#[expect(clippy::too_many_lines, reason = "one arm per combination rule")]
 pub fn resolve_entry(
     entry: &Parameter,
     chain: Option<&[Step]>,
@@ -1134,7 +1134,10 @@ mod tests {
         }
     }
 
-    #[allow(clippy::needless_pass_by_value)] // the tests pass `json!` literals
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "the tests pass `json!` literals"
+    )]
     fn row(code: &str, key: &str, value: serde_json::Value, from: Date, seq: i64) -> Row {
         Row {
             code: code.into(),

@@ -99,7 +99,8 @@ pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
             row.organization_ref,
             row.department,
             SqlDate(as_of),
-            i32::try_from(row.headcount).unwrap_or(i32::MAX),
+            i32::try_from(row.headcount)
+                .map_err(|_| Error::string("a department headcount is out of range"))?,
             row.fte_percent_total,
             i32::try_from(row.contractor_headcount).ok(),
             Some(row.contractor_fte_percent_total),

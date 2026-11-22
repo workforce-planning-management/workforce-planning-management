@@ -1,6 +1,9 @@
 //! Row type — `wellbeing_entitlements`. One configurable health-entitlement rule (WPM-R25): non-clinical predicates only (age band, departments, job titles) per WPM-D17.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

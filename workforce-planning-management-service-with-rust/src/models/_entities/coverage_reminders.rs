@@ -1,6 +1,9 @@
 //! Row type — `coverage_reminders`. A coverage-expiry reminder already sent (WPM-R220, WPM-T420), keyed by record, end date and kind.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

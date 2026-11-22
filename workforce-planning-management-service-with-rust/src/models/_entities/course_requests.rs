@@ -1,6 +1,9 @@
 //! Row type — `course_requests`. A person's request to take a course whose recorded fee is not zero (WPM-R236).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

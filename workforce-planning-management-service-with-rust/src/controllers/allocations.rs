@@ -455,7 +455,8 @@ async fn list(
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    // A count past `u64` is over any ceiling (WPM-R120), so it is refused like one.
+    // A count past `u64` is over any ceiling (WPM-R120), so it is refused like one (declared: spec/figure-declarations.md,
+    // `people_count`).
     ensure_within_ceiling(u64::try_from(people.len()).unwrap_or(u64::MAX))?;
     // Employed at some point in the window: started by its last day and not left before its first.
     let window_end = last.last_of_month();
@@ -486,6 +487,7 @@ async fn list(
         .collect();
     let (page_rows, more) = window.split(
         kept.into_iter()
+            // An offset past `usize` is past every row (declared: spec/figure-declarations.md, `page_offset`).
             .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
             .take(super::rows_to_read(window.limit()))
             .collect::<Vec<_>>(),

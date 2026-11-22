@@ -147,7 +147,7 @@ impl PlanCost {
 
 /// `numerator / denominator`, half away from zero. The denominator must be positive.
 fn divide(numerator: i128, denominator: i128) -> Option<i64> {
-    let half = denominator / 2;
+    let half = denominator.checked_div(2)?;
     let rounded = if numerator >= 0 {
         numerator.checked_add(half)?.checked_div(denominator)?
     } else {
@@ -460,7 +460,7 @@ fn present_value(amount: i64, period: u32, rate_bp: u32) -> Option<i128> {
     let divisor = BP.checked_add(i128::from(rate_bp))?;
     for _ in 0..period {
         let scaled = value.checked_mul(BP)?;
-        let half = divisor / 2;
+        let half = divisor.checked_div(2)?;
         value = if scaled >= 0 {
             scaled.checked_add(half)?.checked_div(divisor)?
         } else {
@@ -505,11 +505,13 @@ pub fn assess(flows: &[Flow], rate_bp: u32) -> Viability {
             .try_fold(0_i128, |total, f| {
                 total.checked_add(i128::from(f.amount_minor).abs())
             })
-            // At most 2^64 flows of at most 2^63 each fit an i128, so this cannot fail; the echoed figure is capped by `to_i64` below.
+            // At most 2^63 flows of at most 2^63 each fit an i128, so this is always `Some`; the fallback is the declared echo cap (below).
             .unwrap_or(i128::MAX)
     };
     let investment = sum(|a| a < 0);
     let benefit = sum(|a| a > 0);
+    // The echoed totals are `i64`, the fields' type. A total that does not fit makes the verdict `Unmeasured` (`out_of_range`), and the
+    // figure echoed is `i64::MAX`, the largest the field holds. Declared in spec/figure-declarations.md (`investment_minor`).
     let to_i64 = |n: i128| i64::try_from(n).unwrap_or(i64::MAX);
     let unmeasured = |absent: Absent| Viability {
         rate_bp,
@@ -521,7 +523,10 @@ pub fn assess(flows: &[Flow], rate_bp: u32) -> Viability {
         verdict: Verdict::Unmeasured,
         absent: Some(absent),
     };
-    if flows.iter().any(|f| f.period > MAX_PERIODS) {
+    if flows.iter().any(|f| f.period > MAX_PERIODS)
+        || i64::try_from(investment).is_err()
+        || i64::try_from(benefit).is_err()
+    {
         return unmeasured(Absent::OutOfRange);
     }
     if investment == 0 {
@@ -804,7 +809,7 @@ mod tests {
         }
     }
 
-    #[allow(clippy::unnecessary_wraps)] // what `hours_cost` takes
+    #[expect(clippy::unnecessary_wraps, reason = "what `hours_cost` takes")]
     fn pay(minor: i64) -> Option<(i64, &'static str)> {
         Some((minor, "GBP"))
     }

@@ -7294,3 +7294,22 @@ the entry records only the evidence it needs.
       **Still open:** the ABAC policy file (its default is deny, a safe fallback the owner may want to keep); a profile pair of joint-assessment
       values that does not check (stored data) still falls back to the defaults; the stored `refresher_months` and job-level
       attributes; the RCA-ENF-1 lint list in `Cargo.toml`; and the figure declarations.
+- [x] WPM-T637 (2026-11-22) **Adopt the RCA-ENF-1 lint list and declare the remaining fallbacks.** *(follow-up to WPM-T636; RCA-ENF-1,
+      RCA-EXC-6, RCA-DECL-1, RCA-DECL-4, RCA-CONV-1)* The crate roots now deny `allow_attributes`, `allow_attributes_without_reason`,
+      `default_numeric_fallback` (all targets, tests exempt), and, outside tests, `integer_division`, `modulo_arithmetic`,
+      `as_conversions`, the `cast_*` family, `checked_conversions`, `float_cmp`, `lossy_float_literal` and (service only)
+      `float_arithmetic`. The domain crate keeps floats for declared statistics, checked for finiteness (RCA-FLT-2), as the spec's
+      lint comment allows. **Done:** 235 literals got their type; every `#[allow]` is an `#[expect]` with a reason (49 stale ones were
+      removed) and the 40 glob imports of the controller sections are explicit; divisions and remainders are `checked_div`,
+      `checked_rem`, `div_euclid` or `rem_euclid` (Easter, the Hijri calendar, the credential bit list, medians and tax); `as char`
+      is `char::from`; the two sqlx nullable-array casts carry a reasoned `expect`; the service's own copy of the float-to-integer
+      rounding is the domain's `metrics::rounded_i64`. **Fallbacks:** 18 `unwrap_or(T::MAX)` sites became errors or unknowns (a
+      stored count out of range is a server error, `len_u32`, `len_i32`, `count_usize`; a pay step that is not a position leaves the
+      standing and pay unknown, not step zero; an oversight run is counted, not converted; `pay_range` no longer clamps; a
+      human-capital count that does not fit is `out_of_range`; a request's latency past `u64` is not logged). The ones that are the
+      correct answer are declared in [spec/figure-declarations.md](figure-declarations.md) and cite it: `page_limit`,
+      `page_offset`, `people_count`, `status_index`, `cache_entry_bytes`, `cost_deviation_bp`, `investment_minor` and
+      `benefit_minor` (an echo, with the verdict `Unmeasured`), `lowest_bar`. **Behaviour changes:** the PX lifetime of a cache entry
+      past `u64` milliseconds is no expiry; a stored pay step below zero gives `null` progression and annual pay; a department
+      headcount that does not fit `i32` stops the snapshot task. **Not verified:** line coverage after the changes. **Still open:**
+      `float_arithmetic` in the domain crate (a per-crate decision), and the other `unwrap_or(0)` on conversions.

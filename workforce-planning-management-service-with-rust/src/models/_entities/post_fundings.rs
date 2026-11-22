@@ -1,6 +1,9 @@
 //! Row type — `post_fundings`. Where a worker's post is funded from and when that ends: a kind and a date, never an amount (WPM-R62, WPM-R98).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

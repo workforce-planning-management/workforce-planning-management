@@ -53,7 +53,7 @@ pub fn version_problems(
     } else {
         out.push(format!("audience must be one of: {}", AUDIENCES.join(", ")));
     }
-    if !(1..=365).contains(&days) {
+    if !(1_i32..=365_i32).contains(&days) {
         out.push("acknowledge_within_days must be between 1 and 365".to_string());
     }
     out
@@ -129,7 +129,7 @@ pub fn standing(
     if let Some(on) = acknowledged_on {
         return Some(Standing::Done { on });
     }
-    if days < 0 {
+    if days < 0_i32 {
         return None;
     }
     let due_on = effective_on

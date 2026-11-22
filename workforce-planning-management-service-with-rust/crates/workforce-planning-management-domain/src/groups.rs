@@ -154,7 +154,8 @@ impl SkillRollup {
 #[must_use]
 pub fn rollup(members: usize, levels: &[i32]) -> Option<SkillRollup> {
     // One count per level 1 to 5, each taken from the list itself; a level outside that is not counted.
-    let counts: [usize; 5] = [1, 2, 3, 4, 5].map(|at| levels.iter().filter(|l| **l == at).count());
+    let counts: [usize; 5] =
+        [1_i32, 2_i32, 3_i32, 4_i32, 5_i32].map(|at| levels.iter().filter(|l| **l == at).count());
     let declared = counts
         .iter()
         .try_fold(0_usize, |total, count| total.checked_add(*count))?;

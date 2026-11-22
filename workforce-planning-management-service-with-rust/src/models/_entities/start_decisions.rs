@@ -1,6 +1,9 @@
 //! Row type — `start_decisions`. A recorded decision to start or defer a programme, with its reason (WPM-R60, WPM-D50).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,9 @@
 //! Row type — `skill_pools`. A plannable pool of role profiles and skills with an operations reservation (WPM-R56).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

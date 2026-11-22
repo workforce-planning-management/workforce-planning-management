@@ -1,6 +1,9 @@
 //! Row type — `oversight_measures`. A measure behind a criterion: threshold, direction and sustain rule (WPM-R66).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

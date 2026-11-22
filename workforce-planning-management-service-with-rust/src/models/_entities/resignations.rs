@@ -1,6 +1,9 @@
 //! Row type — `resignations`. A worker's logged intent to resign and its outcome (WPM-R127).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

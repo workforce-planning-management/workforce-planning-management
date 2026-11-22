@@ -1,6 +1,9 @@
 //! Row type — `appraisal_nominations`. One invited rater on one 360° appraisal (WPM-R29): who, and in which group (`self | manager | peer | report`).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

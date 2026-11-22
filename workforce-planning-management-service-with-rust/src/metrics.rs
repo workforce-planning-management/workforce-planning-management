@@ -34,10 +34,17 @@ pub struct Metrics {
     pub leave_pending: IntGauge,
 }
 
+/// A collector as the registry takes it.
+fn boxed(
+    collector: impl prometheus::core::Collector + 'static,
+) -> Box<dyn prometheus::core::Collector> {
+    Box::new(collector)
+}
+
 impl Metrics {
     /// Construct the metric set into a fresh registry. The `.expect`s
     /// are infallible: static opts, empty registry.
-    #[allow(
+    #[expect(
         clippy::expect_used,
         reason = "static names and options on an empty registry; built once at start-up, before any request, and a unit test builds it"
     )]
@@ -60,14 +67,14 @@ impl Metrics {
         let requisitions_open = gauge("requisitions_open", "Requisitions currently open.");
         let leave_pending = gauge("leave_pending", "Leave requests awaiting decision.");
         for collector in [
-            Box::new(worker_hired_total.clone()) as Box<dyn prometheus::core::Collector>,
-            Box::new(worker_activated_total.clone()),
-            Box::new(worker_terminated_total.clone()),
-            Box::new(leave_decided_total.clone()),
-            Box::new(payroll_calculated_total.clone()),
-            Box::new(workers_active.clone()),
-            Box::new(requisitions_open.clone()),
-            Box::new(leave_pending.clone()),
+            boxed(worker_hired_total.clone()),
+            boxed(worker_activated_total.clone()),
+            boxed(worker_terminated_total.clone()),
+            boxed(leave_decided_total.clone()),
+            boxed(payroll_calculated_total.clone()),
+            boxed(workers_active.clone()),
+            boxed(requisitions_open.clone()),
+            boxed(leave_pending.clone()),
         ] {
             registry
                 .register(collector)

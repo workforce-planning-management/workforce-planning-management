@@ -8,7 +8,6 @@ use super::{
 use crate::db::{self, pool};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::org_shape::{self as shape, Node, Person};
-#[allow(clippy::wildcard_imports)] // the planning sections share their parent's imports
 use crate::sql_time::SqlDate;
 
 use axa::extract::{Json, Path};

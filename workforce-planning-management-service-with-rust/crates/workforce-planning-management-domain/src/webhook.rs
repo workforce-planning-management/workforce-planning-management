@@ -142,7 +142,7 @@ pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
 fn hex(bytes: &[u8]) -> String {
     bytes
         .iter()
-        .flat_map(|b| [b >> 4, b & 15])
+        .flat_map(|b| [b >> 4_i32, b & 15])
         .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }

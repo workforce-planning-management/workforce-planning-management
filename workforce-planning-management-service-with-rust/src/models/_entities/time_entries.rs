@@ -1,6 +1,9 @@
 //! Row type — `time_entries`. One day's recorded time in whole minutes (WPM-R4).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

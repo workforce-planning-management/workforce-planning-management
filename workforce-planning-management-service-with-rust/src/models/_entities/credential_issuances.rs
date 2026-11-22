@@ -1,6 +1,9 @@
 //! Row type — `credential_issuances`. That a credential was issued from a verified CPD entry (WPM-R157): not the credential.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

@@ -136,7 +136,8 @@ impl Memory {
     }
 }
 
-/// A size no capacity can hold: what a byte count too large for `usize` is, so such an entry is never held.
+/// A size no capacity can hold: what a byte count too large for `usize` is, so such an entry is never held (declared:
+/// spec/figure-declarations.md, `cache_entry_bytes`).
 const OVER_CAPACITY: usize = usize::MAX;
 
 /// The bytes one entry takes: its key and its value.
@@ -260,10 +261,9 @@ impl Cache {
                 let mut live = Self::connection(client, connection).await?;
                 let mut command = redis::cmd("SET");
                 command.arg(key).arg(text);
-                if let Some(ttl) = ttl {
-                    command
-                        .arg("PX")
-                        .arg(u64::try_from(ttl.as_millis()).unwrap_or(u64::MAX));
+                // A lifetime past `u64` milliseconds (some 584 million years) is no expiry: the entry is set without one.
+                if let Some(millis) = ttl.and_then(|ttl| u64::try_from(ttl.as_millis()).ok()) {
+                    command.arg("PX").arg(millis);
                 }
                 let answer: Result<(), _> = command.query_async(&mut live).await;
                 if answer.is_err() {

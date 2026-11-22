@@ -79,7 +79,7 @@ pub fn utc(
 #[must_use]
 pub fn days_between(earlier: Date, later: Date) -> i64 {
     // A civil duration is a whole number of days, so the hours divide exactly by 24.
-    later.duration_since(earlier).as_hours() / 24
+    later.duration_since(earlier).as_hours().div_euclid(24)
 }
 
 /// A duration of whole 24-hour days, for adding to a [`Timestamp`] (as `chrono`'s `Duration::days`).
@@ -87,7 +87,7 @@ pub fn days_between(earlier: Date, later: Date) -> i64 {
 pub fn days(n: i64) -> SignedDuration {
     // `SignedDuration` holds seconds in an `i64`, so more days than that is no duration at all. No date is that far from any
     // other (a `Date` spans some 3.7 million days), so the bound changes no sum with a date, which fails either way.
-    const MOST_SECS: i64 = i64::MAX / 86_400 * 86_400;
+    const MOST_SECS: i64 = i64::MAX.div_euclid(86_400) * 86_400;
     const LEAST_SECS: i64 = -MOST_SECS;
     let secs = n
         .checked_mul(86_400)

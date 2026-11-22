@@ -171,7 +171,10 @@ struct PlanItemPayload {
 /// name. Every step must raise the level on the 1–5 scale, and no skill
 /// may appear twice.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // validation + the plan and its items in one transaction
+#[expect(
+    clippy::too_many_lines,
+    reason = "validation + the plan and its items in one transaction"
+)]
 async fn create_plan(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -837,10 +840,10 @@ async fn create_program(
     let mut problems = Problems::new();
     problems.require_text("name", &payload.name);
     problems.require_token("kind", rules::PROGRAM_KINDS, &payload.kind);
-    if payload.duration_months <= 0 {
+    if payload.duration_months <= 0_i32 {
         problems.push("duration_months must be positive");
     }
-    if payload.min_off_the_job_hours.is_some_and(|h| h <= 0) {
+    if payload.min_off_the_job_hours.is_some_and(|h| h <= 0_i32) {
         problems.push("min_off_the_job_hours must be positive when given");
     }
     if payload.kind == "apprenticeship" && payload.min_off_the_job_hours.is_none() {
@@ -849,7 +852,7 @@ async fn create_program(
              requirement)",
         );
     }
-    if payload.level.is_some_and(|l| l <= 0) {
+    if payload.level.is_some_and(|l| l <= 0_i32) {
         problems.push("level must be positive when given");
     }
     if let Some(provider) = payload.provider_ref.as_deref() {
@@ -1099,7 +1102,7 @@ async fn log_hours(
     Json(payload): Json<HoursPayload>,
 ) -> Result<Response> {
     let placement = find_program_placement(&ctx, records::parse_pid(&pid)?).await?;
-    if payload.hours <= 0 {
+    if payload.hours <= 0_i32 {
         return Err(unprocessable("hours must be positive"));
     }
     if placement.status != "active" {

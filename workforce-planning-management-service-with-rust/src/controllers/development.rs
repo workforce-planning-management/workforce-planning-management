@@ -431,7 +431,7 @@ async fn update_review(
     }
     let mut problems = Problems::new();
     if let Some(rating) = payload.rating
-        && !(1..=5).contains(&rating)
+        && !(1_i32..=5_i32).contains(&rating)
     {
         problems.push(format!("rating {rating} out of range 1-5"));
     }
@@ -553,7 +553,7 @@ async fn create_goal(
     let review = find_review(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_text("title", &payload.title);
-    if !(1..=100).contains(&payload.weight_percent) {
+    if !(1_i32..=100_i32).contains(&payload.weight_percent) {
         problems.push(format!(
             "weight_percent {} out of range 1-100",
             payload.weight_percent
@@ -895,7 +895,7 @@ async fn create_succession(
     let mut problems = Problems::new();
     problems.require_text("role_title", &payload.role_title);
     problems.require_text("department", &payload.department);
-    if !(1..=5).contains(&payload.criticality) {
+    if !(1_i32..=5_i32).contains(&payload.criticality) {
         problems.push(format!(
             "criticality {} out of range 1-5",
             payload.criticality
@@ -1001,7 +1001,7 @@ async fn add_succession_candidate(
     let worker = records::worker_by_pid(&ctx, payload.worker_pid).await?;
     let mut problems = Problems::new();
     problems.require_token("readiness", tokens::READINESS, &payload.readiness);
-    if payload.rank < 1 {
+    if payload.rank < 1_i32 {
         problems.push("rank must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
@@ -1066,7 +1066,7 @@ async fn update_succession(
     let plan = find_succession_plan(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     if let Some(criticality) = payload.criticality
-        && !(1..=5).contains(&criticality)
+        && !(1_i32..=5_i32).contains(&criticality)
     {
         problems.push(format!("criticality {criticality} out of range 1-5"));
     }
@@ -1130,7 +1130,7 @@ async fn update_succession_candidate(
 ) -> Result<Response> {
     let mut problems = Problems::new();
     problems.token_opt("readiness", tokens::READINESS, payload.readiness.as_deref());
-    if payload.rank.is_some_and(|r| r < 1) {
+    if payload.rank.is_some_and(|r| r < 1_i32) {
         problems.push("rank must be 1 or greater");
     }
     ensure_valid(&problems.into_vec())?;

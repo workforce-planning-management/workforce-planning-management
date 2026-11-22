@@ -1,7 +1,10 @@
 //! Row type — `skill_external_refs`. How a catalogue skill is known in
 //! an external framework (PCF name, ESCO concept URI).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

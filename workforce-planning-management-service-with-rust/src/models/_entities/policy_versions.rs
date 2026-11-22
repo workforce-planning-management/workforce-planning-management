@@ -1,7 +1,10 @@
 //! Row type — `policy_versions`. One version of a policy: title, a reference to the document (no text), effective date,
 //! audience and days to acknowledge (WPM-R156).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

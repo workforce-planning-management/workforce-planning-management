@@ -1,7 +1,10 @@
 //! Row type — `pay_categories`. A category of workers for pay reporting: roles the employer treats as work of
 //! equal value, with the basis stated (WPM-R144). Holds no personal data.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

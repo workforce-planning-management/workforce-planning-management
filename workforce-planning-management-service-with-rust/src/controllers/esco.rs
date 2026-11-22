@@ -280,7 +280,10 @@ struct FromEscoPayload {
 /// exact label, else created (draft category from ESCO's skill type and
 /// reuse level) and linked. A draft for a human to edit.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // resolve occupation → profile → each skill, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "resolve occupation → profile → each skill, linearly"
+)]
 async fn from_esco(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

@@ -179,9 +179,12 @@ pub struct MeasureVerdict {
 pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> MeasureVerdict {
     let by_period: BTreeMap<i64, &Reading> = readings.iter().map(|r| (r.period, r)).collect();
     let mut counted: Vec<i64> = Vec::new();
+    // The run so far. The loop stops at `spec.sustain`, a `u32`, so it cannot pass it.
+    let mut run = 0_u32;
+    let mut reported = 0_u32;
     let mut period = latest;
     let reason = loop {
-        if u32::try_from(counted.len()).unwrap_or(u32::MAX) >= spec.sustain {
+        if run >= spec.sustain {
             break Reason::Sustained;
         }
         match by_period.get(&period) {
@@ -190,6 +193,20 @@ pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> Measu
             Some(Reading { value: Some(v), .. }) => {
                 if !meets(*v, spec) {
                     break Reason::Breach(period);
+                }
+                let Some(next) = run.checked_add(1) else {
+                    break Reason::Sustained;
+                };
+                run = next;
+                if by_period
+                    .get(&period)
+                    .is_some_and(|r| r.origin == Origin::Reported)
+                {
+                    // At most `run`, so it fits wherever `run` does.
+                    let Some(more) = reported.checked_add(1) else {
+                        break Reason::Sustained;
+                    };
+                    reported = more;
                 }
                 counted.push(period);
             }
@@ -200,14 +217,6 @@ pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> Measu
         };
         period = earlier;
     };
-    let reported = counted
-        .iter()
-        .filter(|p| {
-            by_period
-                .get(p)
-                .is_some_and(|r| r.origin == Origin::Reported)
-        })
-        .count();
     counted.reverse();
     let status = match reason {
         Reason::Sustained => Status::Met,
@@ -216,11 +225,11 @@ pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> Measu
     };
     MeasureVerdict {
         status,
-        run: u32::try_from(counted.len()).unwrap_or(u32::MAX),
+        run,
         required: spec.sustain,
         reason,
         periods: counted,
-        reported_periods: u32::try_from(reported).unwrap_or(u32::MAX),
+        reported_periods: reported,
     }
 }
 

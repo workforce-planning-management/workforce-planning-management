@@ -29,7 +29,10 @@ impl Task for Seed {
         true
     }
 
-    #[allow(clippy::too_many_lines)] // one linear walk building the demo org
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one linear walk building the demo org"
+    )]
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
         let mut tx = crate::db::pool(ctx).begin().await?;
         let org = format!("organization:{}", Uuid::new_v4());
@@ -41,7 +44,7 @@ impl Task for Seed {
             ("Analyst", 3_000_000),
             ("Coordinator", 2_800_000),
         ];
-        let mut n = 0;
+        let mut n = 0_i32;
         for department in departments {
             // One department head (no manager), then nine reports.
             let head = Uuid::new_v4();
@@ -57,7 +60,7 @@ impl Task for Seed {
                 format!("Test Head {n:03}"),
                 "active".to_string(),
                 "permanent".to_string(),
-                100,
+                100_i32,
                 department.to_string(),
                 "Head of Department".to_string(),
                 Some(6_500_000),
@@ -68,7 +71,7 @@ impl Task for Seed {
             )
             .execute(&mut *tx)
             .await?;
-            for i in 0..9 {
+            for i in 0_i32..9_i32 {
                 crate::controllers::tally::bump(&mut n);
                 let (title, salary) = *usize::try_from(n)
                     .unwrap_or(0)
@@ -84,14 +87,14 @@ impl Task for Seed {
                     Some("GB".to_string()),
                     format!("E-{n:04}"),
                     format!("Test Worker {n:03}"),
-                    if i == 8 { "onboarding" } else { "active" }.to_string(),
-                    if i % 4 == 3 {
+                    if i == 8_i32 { "onboarding" } else { "active" }.to_string(),
+                    if i.rem_euclid(4_i32) == 3_i32 {
                             "fixed_term"
                         } else {
                             "permanent"
                         }
                         .to_string(),
-                    if i % 5 == 4 { 60 } else { 100 },
+                    if i.rem_euclid(5_i32) == 4_i32 { 60_i32 } else { 100_i32 },
                     department.to_string(),
                     title.to_string(),
                     Some(head),
@@ -101,22 +104,22 @@ impl Task for Seed {
                             Error::string("seed data: invalid worker hired_on date")
                         })?,
                     // A fixed-term engagement needs an end date (WPM-R79).
-                    (i % 4 == 3)
+                    (i.rem_euclid(4_i32) == 3_i32)
                             .then(|| crate::dates::ymd(2028, 3, 1).map(SqlDate))
                             .flatten(),
                 )
                 .execute(&mut *tx)
                 .await?;
                 // Annual + sick entitlements for the current year.
-                for (kind, days) in [("annual", 25), ("sick", 10)] {
+                for (kind, days) in [("annual", 25_i32), ("sick", 10_i32)] {
                     sqlx::query!(
                         "INSERT INTO leave_entitlements (pid, worker_pid, kind, year, entitled_days, used_days) VALUES ($1, $2, $3, $4, $5, $6)",
                         Uuid::new_v4(),
                         pid,
                         kind.to_string(),
-                        2026,
+                        2_026_i32,
                         days,
-                        0,
+                        0_i32,
                     )
                     .execute(&mut *tx)
                     .await?;
@@ -136,7 +139,7 @@ impl Task for Seed {
                 org.clone(),
                 department.to_string(),
                 title.to_string(),
-                1,
+                1_i32,
                 Some(2_800_000),
                 Some(5_000_000),
                 Some("GBP".to_string()),
@@ -211,7 +214,7 @@ impl Task for Seed {
                 format!("Test Worker {n:03}"),
                 "active".to_string(),
                 "permanent".to_string(),
-                100,
+                100_i32,
                 "engineering".to_string(),
                 title.to_string(),
                 Some(salary),
@@ -229,7 +232,7 @@ impl Task for Seed {
             yen_org.clone(),
             "engineering".to_string(),
             "Platform Engineer".to_string(),
-            1,
+            1_i32,
             Some(5_500_000),
             Some(8_000_000),
             Some("JPY".to_string()),
@@ -283,9 +286,9 @@ impl Task for Seed {
         // labelled synthetic in its names and its flag, and exists only to make the views demonstrable.
         let level_pids = [Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
         for (pid, (ordinal, name)) in level_pids.into_iter().zip([
-            (1, "Synthetic level 1 (routine)"),
-            (2, "Synthetic level 2 (enhanced)"),
-            (3, "Synthetic level 3 (intervention)"),
+            (1_i32, "Synthetic level 1 (routine)"),
+            (2_i32, "Synthetic level 2 (enhanced)"),
+            (3_i32, "Synthetic level 3 (intervention)"),
         ]) {
             sqlx::query!(
                 "INSERT INTO oversight_levels (pid, organization_ref, ordinal, name, synthetic) VALUES ($1, $2, $3, $4, $5)",
@@ -329,7 +332,7 @@ impl Task for Seed {
             "basis points".to_string(),
             800,
             "at_most".to_string(),
-            3,
+            3_i32,
         )
         .execute(&mut *tx)
         .await?;
@@ -358,7 +361,7 @@ impl Task for Seed {
                 format!("Test Worker {n:03}"),
                 "active".to_string(),
                 "permanent".to_string(),
-                100,
+                100_i32,
                 "engineering".to_string(),
                 title.to_string(),
                 Some(salary),
@@ -417,7 +420,7 @@ pub struct ExampleProfile {
 /// business reasons and `other_recorded`), the `WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_*` defaults (WPM-T384). **Example, unverified**: neither was read against
 /// the text in this work.
 #[must_use]
-#[allow(clippy::too_many_lines)] // a table of example rows
+#[expect(clippy::too_many_lines, reason = "a table of example rows")]
 pub const fn example_profile_gb() -> ExampleProfile {
     const SOURCE: &str = "Example in the shape of the Working Time Regulations 1998 (SI 1998/1833), regs 4 and 10; not read against \
                           the text (WPM-T380)";
@@ -746,7 +749,10 @@ mod tests {
     /// The example profiles hold exactly the defaults they stand for (WPM-T384), so loading them does not change what the demo
     /// does: each row read through its setting's reader gives the setting's default.
     #[test]
-    #[allow(clippy::too_many_lines)] // one arm per setting with an example row
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one arm per setting with an example row"
+    )]
     fn the_example_profiles_hold_the_defaults() {
         use crate::controllers::jurisdictions::{Profile, Reader, Scope};
         use crate::controllers::{

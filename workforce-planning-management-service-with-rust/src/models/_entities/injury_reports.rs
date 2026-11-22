@@ -1,6 +1,9 @@
 //! Row type — `injury_reports`. One report of an incident to one recipient: an owed report until it says when and how it went (WPM-R221, WPM-D179).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

@@ -371,7 +371,10 @@ struct FromSfiaPayload {
 /// SFIA defines for it. The level is kept on SFIA's scale and the 1–5 figure comes from the stated mapping. A draft for a
 /// human to edit; catalogue skills are matched by their SFIA code, then by exact name, else created and linked.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // validate → profile → each skill, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "validate → profile → each skill, linearly"
+)]
 async fn from_sfia(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

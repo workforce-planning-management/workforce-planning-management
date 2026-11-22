@@ -1,6 +1,9 @@
 //! Row type — `entitlement_acknowledgements`. One worker's response to a wellbeing prompt (WPM-R25): an HR workflow fact (`booked | done | declined | dismissed`), never a vaccination status (WPM-D17).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

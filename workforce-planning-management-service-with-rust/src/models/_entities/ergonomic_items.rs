@@ -1,6 +1,9 @@
 //! Row type — `ergonomic_items`. One DSE checklist item (WPM-R32): `ok`/`issue` + an **equipment** note (WPM-D24 — no symptom field exists).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

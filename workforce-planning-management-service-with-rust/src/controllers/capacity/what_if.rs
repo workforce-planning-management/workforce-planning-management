@@ -1,8 +1,11 @@
 //! The what-if answer (part of [`super`]): what a proposed change to a programme's demand does to the plan (WPM-R97, WPM-R209).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, CHECK_MONTHS, Deserialize, MaybeAuthUser, OrgCapacity, Problems,
+    Response, Result, State, Uuid, debug_handler, ensure_org_in_scope, ensure_valid, format,
+    held_by, json, load_org_capacity, rules, today,
+};
 use crate::controllers::tally;
 use crate::sql_time::SqlDate;
 use axa::extract::Json;
@@ -56,7 +59,6 @@ pub(super) struct WhatIfPayload {
 /// nothing**. It names no one: a pool is a skill, and no worker, member, partner or other programme appears. Where the model has no pools,
 /// or a partner has not answered, the answer is `unknown`, never "no impact" (WPM-R97).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one handler: parse, load, apply, answer
 pub(super) async fn what_if(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

@@ -362,7 +362,10 @@ async fn request_by_pid(
 }
 
 /// The audit of one move, by its event: one literal action per arm.
-#[allow(clippy::too_many_lines)] // one arm per kind, so each action is a literal the audit guard can read
+#[expect(
+    clippy::too_many_lines,
+    reason = "one arm per kind, so each action is a literal the audit guard can read"
+)]
 async fn audit_move(
     tx: &mut sqlx::PgConnection,
     worker_pid: Uuid,
@@ -778,7 +781,7 @@ async fn decide(
             }
             if payload
                 .counter_fte_percent
-                .is_some_and(|p| !(1..=100).contains(&p))
+                .is_some_and(|p| !(1_i32..=100_i32).contains(&p))
             {
                 return Err(unprocessable(
                     "counter_fte_percent must be between 1 and 100",

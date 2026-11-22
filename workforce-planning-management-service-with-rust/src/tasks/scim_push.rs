@@ -224,7 +224,10 @@ async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<
 /// # Errors
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
-#[allow(clippy::too_many_lines)] // load → classify → push each change → record the outcomes, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "load → classify → push each change → record the outcomes, linearly"
+)]
 pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) -> Result<Summary> {
     let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
@@ -306,12 +309,12 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
                 } else {
                     crate::controllers::tally::bump(&mut summary.replaced);
                 }
-                (Some(id), Some(wanted), Some(stamp), 0, None, None)
+                (Some(id), Some(wanted), Some(stamp), 0_i32, None, None)
             }
             Outcome::Failed(why) => {
                 crate::controllers::tally::bump(&mut summary.failed);
                 let (attempts, retry_at) =
-                    after_failure(held.as_ref().map_or(0, |h| h.attempts), now)?;
+                    after_failure(held.as_ref().map_or(0_i32, |h| h.attempts), now)?;
                 (
                     known,
                     held.as_ref().and_then(|h| h.body_hash.clone()),

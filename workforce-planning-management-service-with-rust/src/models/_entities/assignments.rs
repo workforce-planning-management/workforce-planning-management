@@ -1,7 +1,10 @@
 //! Row type — `assignments`. A contract a worker holds (WPM-R161): job title, department, location, optional categories
 //! (`None` is unknown), the FTE the contract says, and the days it runs. One primary is open at a time.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

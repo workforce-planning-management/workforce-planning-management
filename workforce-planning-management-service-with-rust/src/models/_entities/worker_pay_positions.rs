@@ -1,6 +1,9 @@
 //! Row type — `worker_pay_positions`. A worker's band and step on a reference pay scale (WPM-R54).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

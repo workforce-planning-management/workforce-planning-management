@@ -45,7 +45,10 @@ fn refused(algorithm: Algorithm) -> jsonwebtoken::errors::Error {
     new_error(ErrorKind::InvalidAlgorithm)
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)] // the signature `CryptoProvider::signer_factory` requires
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "the signature `CryptoProvider::signer_factory` requires"
+)]
 fn new_signer(algorithm: &Algorithm, key: &EncodingKey) -> Result<Box<dyn JwtSigner>> {
     Ok(match *algorithm {
         a @ (Algorithm::RS256
@@ -64,7 +67,10 @@ fn new_signer(algorithm: &Algorithm, key: &EncodingKey) -> Result<Box<dyn JwtSig
     })
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)] // the signature `CryptoProvider::verifier_factory` requires
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "the signature `CryptoProvider::verifier_factory` requires"
+)]
 fn new_verifier(algorithm: &Algorithm, key: &DecodingKey) -> Result<Box<dyn JwtVerifier>> {
     let family = match *algorithm {
         Algorithm::RS256
@@ -347,7 +353,10 @@ fn ed_component_from_private_key(der: &[u8], curve: &EllipticCurve) -> Result<Ve
     }
 }
 
-#[allow(clippy::needless_pass_by_value)] // the signature `KeyUtils::compute_digest` requires
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the signature `KeyUtils::compute_digest` requires"
+)]
 fn compute_digest(data: &[u8], hash: ThumbprintHash) -> Result<Vec<u8>> {
     let algorithm = match hash {
         ThumbprintHash::SHA256 => &ring::digest::SHA256,

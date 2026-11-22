@@ -1,6 +1,9 @@
 //! Row type — `skill_pool_members`. How a worker counts toward a pool: a role profile or a skill at a minimum proficiency (WPM-R56).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

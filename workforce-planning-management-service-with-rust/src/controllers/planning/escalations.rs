@@ -15,7 +15,6 @@ use crate::db;
 use crate::models::_entities::plan_escalations;
 use crate::rules::escalation as esc;
 use crate::rules::tolerance as tol;
-#[allow(clippy::wildcard_imports)]
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use jiff::civil::Date;

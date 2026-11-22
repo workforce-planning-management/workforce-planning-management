@@ -1,6 +1,9 @@
 //! Row type — `assessments`. One administration of one instrument to one candidate or worker (WPM-R20).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

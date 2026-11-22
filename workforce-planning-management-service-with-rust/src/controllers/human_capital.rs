@@ -34,7 +34,7 @@ fn n(v: i64) -> usize {
 /// Read what the report is made of, for one organization.
 async fn read(ctx: &AppContext, organization: &str, as_of: Date) -> Result<Inputs> {
     let from = as_of
-        .checked_sub(jiff::Span::new().months(12))
+        .checked_sub(jiff::Span::new().months(12_i32))
         .ok()
         .and_then(|d| d.tomorrow().ok())
         .unwrap_or(as_of);
@@ -220,15 +220,17 @@ async fn wage_runs(
     let mut out = Vec::with_capacity(runs.len());
     for run in &runs {
         let check = check_minimum_wage(ctx, run, &mut known_births).await?;
+        // An outcome with no count is none of them; a count that does not fit is corrupt data (RCA-IN-6).
         let of = |outcome: &str| {
-            usize::try_from(check.counts.get(outcome).copied().unwrap_or(0)).unwrap_or(usize::MAX)
+            usize::try_from(check.counts.get(outcome).copied().unwrap_or(0))
+                .map_err(|_| Error::string("a stored count is out of range"))
         };
         out.push(WageRun {
-            below: of("below"),
-            near: of("near"),
-            ok: of("ok"),
-            none_by_law: of("none_by_law"),
-            unknown: of("unknown"),
+            below: of("below")?,
+            near: of("near")?,
+            ok: of("ok")?,
+            none_by_law: of("none_by_law")?,
+            unknown: of("unknown")?,
         });
     }
     Ok(out)

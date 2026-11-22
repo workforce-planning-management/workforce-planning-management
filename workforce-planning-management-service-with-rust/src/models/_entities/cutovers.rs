@@ -1,6 +1,9 @@
 //! Row type — `cutovers`. A programme's go-live at a site over a window of dates (WPM-R70).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

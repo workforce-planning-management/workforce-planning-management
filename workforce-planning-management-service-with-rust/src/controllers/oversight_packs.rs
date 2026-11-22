@@ -103,7 +103,7 @@ async fn pack_payload(
 ) -> Result<(Date, serde_json::Value)> {
     let this_month = today.first_of_month();
     let month = this_month
-        .checked_sub(jiff::Span::new().months(1))
+        .checked_sub(jiff::Span::new().months(1_i32))
         .ok()
         .unwrap_or(this_month);
     let mut status = oversight::status_json(ctx, org, today).await?;

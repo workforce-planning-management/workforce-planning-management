@@ -1,7 +1,10 @@
 //! Row type — `allocations`. A share of one of a worker's assignments planned for a programme, product or service over a run of
 //! months (WPM-R275): what a person is planned to do, never effort or performance (WPM-D211).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

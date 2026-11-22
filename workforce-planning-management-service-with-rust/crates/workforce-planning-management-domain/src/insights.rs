@@ -99,7 +99,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
         out.push(Insight {
             code: "turnover_high",
             severity: Severity::Attention,
-            observation: format!("Turnover was {:.0}% over the period.", rate * 100.0),
+            observation: format!("Turnover was {:.0}% over the period.", rate * 100.0_f64),
             params: serde_json::json!({ "pct": (rate * 100.0).round() }),
             suggestion: "Break leavers down by department and tenure, and compare with \
                          pulse-survey and exit feedback.",
@@ -113,7 +113,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
     {
         let change = (closing - opening) / opening;
         if change.abs() >= threshold("headcount_change") {
-            let (code, word, suggestion) = if change < 0.0 {
+            let (code, word, suggestion) = if change < 0.0_f64 {
                 (
                     "headcount_shrinking",
                     "fell",
@@ -129,14 +129,14 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
             };
             out.push(Insight {
                 code,
-                severity: if change < 0.0 {
+                severity: if change < 0.0_f64 {
                     Severity::Attention
                 } else {
                     Severity::Info
                 },
                 observation: format!(
                     "Headcount {word} {:.0}% ({} to {}).",
-                    change.abs() * 100.0,
+                    change.abs() * 100.0_f64,
                     inputs.opening,
                     inputs.closing
                 ),
@@ -156,7 +156,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
                 code: "span_wide",
                 severity: Severity::Attention,
                 observation: format!("Managers average {mean:.1} direct reports."),
-                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0 }),
+                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0_f64 }),
                 suggestion: "Look for managers with the widest spans and consider adding a \
                              layer or a team lead.",
             });
@@ -165,7 +165,7 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
                 code: "span_narrow",
                 severity: Severity::Info,
                 observation: format!("Managers average {mean:.1} direct reports."),
-                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0 }),
+                params: serde_json::json!({ "mean": (mean * 10.0).round() / 10.0_f64 }),
                 suggestion: "Look for layers that could be merged.",
             });
         }

@@ -7,7 +7,6 @@ use super::{
     plan_lines, role_titles, rules, scoped_plan, skill_levels_by_department, workforce_plans,
 };
 use axa::extract::Path;
-#[allow(clippy::wildcard_imports)]
 use jiff::civil::Date;
 
 /// The departments a plan's demand lines name.
@@ -97,7 +96,10 @@ pub(super) async fn forecast(
     format::json(forecast_value(&ctx, &caller, &pid).await?)
 }
 
-#[allow(clippy::too_many_lines)] // headcount gap + competency gap in one pass
+#[expect(
+    clippy::too_many_lines,
+    reason = "headcount gap + competency gap in one pass"
+)]
 pub(super) async fn forecast_value(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -278,7 +280,7 @@ pub(super) async fn forecast_value(
         "assumptions": {
             "attrition_bp": attrition,
             "attrition_source": source,
-            "hires_assumed": 0,
+            "hires_assumed": 0_i32,
         },
         "departments": departments,
         "programmes": programmes,

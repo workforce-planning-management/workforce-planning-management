@@ -1,6 +1,9 @@
 //! Row type — `cutover_roles`. A role that must be staffed with trained people for a cutover (WPM-R70).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

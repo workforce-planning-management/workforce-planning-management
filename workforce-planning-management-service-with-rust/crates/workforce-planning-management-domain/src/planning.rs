@@ -56,7 +56,7 @@ pub fn validate_plan(
     if horizon_end < horizon_start {
         return Err("horizon_end must not be before horizon_start".to_string());
     }
-    if attrition_bp.is_some_and(|bp| !(0..=10_000).contains(&bp)) {
+    if attrition_bp.is_some_and(|bp| !(0_i32..=10_000_i32).contains(&bp)) {
         return Err("attrition_bp must be between 0 and 10000".to_string());
     }
     Ok(())
@@ -80,7 +80,7 @@ pub fn validate_line(
     if target_on < horizon_start || target_on > horizon_end {
         return Err("target_on must fall within the plan's horizon".to_string());
     }
-    if !(0..=MAX_LINE_HEADCOUNT).contains(&target_headcount) {
+    if !(0_i32..=MAX_LINE_HEADCOUNT).contains(&target_headcount) {
         return Err(format!(
             "target_headcount must be between 0 and {MAX_LINE_HEADCOUNT}"
         ));
@@ -123,8 +123,8 @@ pub fn validate_line_basis(
     // The most FTE the line can state is 100 for each person. A product that does not fit an `i32` is beyond every `i32` FTE (and,
     // for a negative headcount, below every one): the comparison is made without inventing a bound.
     let within = |fte: i32| match target_headcount.checked_mul(100) {
-        Some(most) => (0..=most).contains(&fte),
-        None => target_headcount > 0 && fte >= 0,
+        Some(most) => (0_i32..=most).contains(&fte),
+        None => target_headcount > 0_i32 && fte >= 0_i32,
     };
     if let Some(fte) = target_fte_percent
         && !within(fte)
@@ -159,7 +159,7 @@ pub fn validate_requisition_basis(basis: &str, duration_months: Option<i32>) -> 
         }
         _ => {}
     }
-    if duration_months.is_some_and(|m| !(1..=MAX_DURATION_MONTHS).contains(&m)) {
+    if duration_months.is_some_and(|m| !(1_i32..=MAX_DURATION_MONTHS).contains(&m)) {
         return Err(format!(
             "expected_duration_months must be between 1 and {MAX_DURATION_MONTHS}"
         ));
@@ -305,7 +305,7 @@ pub fn observed_attrition_bp(snaps: &[Snap]) -> Option<i32> {
         .checked_mul(10_000)?;
     let denominator = i128::from(days).checked_mul(i128::from(mean_headcount_x))?;
     let bp = numerator
-        .checked_add(denominator / 2)?
+        .checked_add(denominator.checked_div(2)?)?
         .checked_div(denominator)?;
     i32::try_from(bp).ok()
 }
@@ -370,13 +370,13 @@ pub struct Projection {
 /// rounded to the nearest whole unit and never negative. `None` when it does not fit.
 fn attrit(opening: i64, attrition_bp: i32, days: i64) -> Option<i64> {
     let days = i128::from(days.max(0));
-    let bp = i128::from(attrition_bp.max(0));
+    let bp = i128::from(attrition_bp.max(0_i32));
     let opening = i128::from(opening);
     let denominator: i128 = 3_650_000;
     let leavers = opening
         .checked_mul(bp)?
         .checked_mul(days)?
-        .checked_add(denominator / 2)?
+        .checked_add(denominator.checked_div(2)?)?
         .checked_div(denominator)?;
     i64::try_from(opening.checked_sub(leavers)?.max(0)).ok()
 }
@@ -409,8 +409,16 @@ pub fn project_by_basis(
     let days = crate::dates::days_between(as_of, target).max(0);
     let supply_of = |basis: Basis| -> BasisSupply {
         let group: Vec<&Person> = people.iter().filter(|p| p.basis == basis).collect();
-        let opening = i64::try_from(group.len()).unwrap_or(i64::MAX);
-        let opening_fte = checked_sum(group.iter().map(|p| i64::from(p.fte_percent.max(0))));
+        // A count that does not fit an `i64` leaves the supply unknown.
+        let Ok(opening) = i64::try_from(group.len()) else {
+            return BasisSupply {
+                headcount: None,
+                fte_centi: None,
+                no_end_date: 0,
+                leaving_before: 0,
+            };
+        };
+        let opening_fte = checked_sum(group.iter().map(|p| i64::from(p.fte_percent.max(0_i32))));
         if basis == Basis::Permanent {
             return match (opening, permanent_attrition_bp) {
                 (0, _) => BasisSupply {
@@ -441,7 +449,7 @@ pub fn project_by_basis(
         };
         BasisSupply {
             headcount: i64::try_from(engaged().count()).ok(),
-            fte_centi: checked_sum(engaged().map(|p| i64::from(p.fte_percent.max(0)))),
+            fte_centi: checked_sum(engaged().map(|p| i64::from(p.fte_percent.max(0_i32)))),
             no_end_date: group.iter().filter(|p| p.ends_on.is_none()).count(),
             leaving_before: group
                 .iter()

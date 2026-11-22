@@ -86,7 +86,7 @@ async fn weekly_time(ctx: &AppContext, worker: Uuid) -> Result<serde_json::Value
 /// WPM-D20) and other raters' 360° content about the subject
 /// (third-party data; the shared report aggregate stands in).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one gather over every table
+#[expect(clippy::too_many_lines, reason = "one gather over every table")]
 async fn subject_access(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -382,7 +382,10 @@ const ERASURE_COUNT_KEYS: [&str; 35] = [
 /// that are about them only (WPM-D22). One list, used by the live erasure and by
 /// the replay after a restore (WPM-D63), so the two cannot drift. The order is
 /// pinned: the audit snapshot indexes the row counts by position.
-#[allow(clippy::too_many_lines)] // one ordered list; splitting it would risk the pinned order
+#[expect(
+    clippy::too_many_lines,
+    reason = "one ordered list; splitting it would risk the pinned order"
+)]
 fn erasure_statements(epid: Uuid) -> Vec<String> {
     vec![
         format!("UPDATE time_entries SET notes = NULL WHERE worker_pid = '{epid}'"),
@@ -600,7 +603,6 @@ pub async fn replay_erasures(pool: &sqlx::PgPool, since: Option<Date>) -> Result
 /// a pid that no longer identifies anyone. Refused while employment is
 /// open. Destructive-classified; audited with counts.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one scrub statement per worker-owned table
 async fn erase(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

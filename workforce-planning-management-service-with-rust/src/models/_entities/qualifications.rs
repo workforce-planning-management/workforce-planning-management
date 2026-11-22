@@ -1,6 +1,9 @@
 //! Row type — `qualifications`. A qualification a person holds: declared, or verified by HR with an evidence reference (WPM-R171).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

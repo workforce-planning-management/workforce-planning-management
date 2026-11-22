@@ -1,6 +1,9 @@
 //! Row type — `engagement_decisions`. A person's decision about an engagement that is ending: extend, convert or end (WPM-R81, WPM-D66).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

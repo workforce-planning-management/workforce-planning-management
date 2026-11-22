@@ -296,7 +296,7 @@ pub fn exempt_below_floor(
     floor_weekly_minor: Option<i64>,
 ) -> Option<bool> {
     let floor = floor_weekly_minor?;
-    if !(0..=100).contains(&fte_percent) {
+    if !(0_i32..=100_i32).contains(&fte_percent) {
         return None;
     }
     let weekly = i128::from(annual_salary_minor)

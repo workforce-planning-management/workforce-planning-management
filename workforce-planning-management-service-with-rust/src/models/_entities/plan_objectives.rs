@@ -1,6 +1,9 @@
 //! Row type — `plan_objectives`. A strategic objective a plan serves.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

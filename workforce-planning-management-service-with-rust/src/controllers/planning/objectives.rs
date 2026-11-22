@@ -1,8 +1,11 @@
 //! Objectives (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeSet, Deserialize, Error, MaybeAuthUser, PidRef, Problems, Response, Result,
+    State, Uuid, debug_handler, ensure_editable, ensure_valid, format, records, scoped_plan,
+    unprocessable,
+};
 use axa::extract::{Json, Path};
 
 /// `POST /api/workforce-plans/{pid}/objectives` body.

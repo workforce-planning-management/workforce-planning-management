@@ -87,7 +87,14 @@ fn read(dir: &Path, name: &str) -> Result<String> {
 ///
 /// # Errors
 /// A filesystem, parse, or database error.
-#[allow(clippy::too_many_lines)] // read → parse → replace → link, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "read → parse → replace → link, linearly"
+)]
+#[expect(
+    clippy::as_conversions,
+    reason = "sqlx declares a nullable array parameter by this cast to `&[Option<T>]`; it converts no figure"
+)]
 pub async fn import_esco(
     pool: &sqlx::PgPool,
     dir: &Path,

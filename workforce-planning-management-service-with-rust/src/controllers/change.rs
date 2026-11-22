@@ -502,7 +502,10 @@ struct ReadinessQuery {
 /// how many of the workers in displaced or reshaped roles already meet,
 /// fall below, or have not declared it. No individual is named.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // roles, workers, plans, and skills in one aggregate pass
+#[expect(
+    clippy::too_many_lines,
+    reason = "roles, workers, plans, and skills in one aggregate pass"
+)]
 async fn readiness(
     State(ctx): State<AppContext>,
     Path(pid): Path<String>,

@@ -1,7 +1,10 @@
 //! Row type — `consultations`. The consultation register (WPM-R105): a proposal as counts and dates, the body consulted, topics, a
 //! document reference, dates and outcome. No attendee, representative or minute (WPM-D68).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

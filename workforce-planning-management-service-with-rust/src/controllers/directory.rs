@@ -157,7 +157,10 @@ async fn away_among(ctx: &AppContext, pids: &[Uuid], today: Date) -> Result<Hash
 /// The search, the order and the page are done by the database, so the work is the size of the page
 /// and not of the organization (WPM-D90); the leave, backups and managers are read for the page only.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // the page's query, then the page's leave, backups and managers
+#[expect(
+    clippy::too_many_lines,
+    reason = "the page's query, then the page's leave, backups and managers"
+)]
 async fn directory(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

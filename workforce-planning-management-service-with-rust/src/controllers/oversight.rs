@@ -131,7 +131,7 @@ async fn create_level(
     let mut problems = Problems::new();
     problems.require_text("name", &p.name);
     ensure_valid(&problems.into_vec())?;
-    if !(1..=20).contains(&p.ordinal) {
+    if !(1_i32..=20_i32).contains(&p.ordinal) {
         return Err(unprocessable("ordinal must be 1 to 20"));
     }
     ensure_org_in_scope(&ctx, &caller, &p.organization_ref).await?;
@@ -413,7 +413,7 @@ async fn create_measure(
         p.unit,
         p.threshold,
         p.direction,
-        i32::try_from(p.sustain).unwrap_or(1),
+        i32::try_from(p.sustain).unwrap_or(1_i32),
     )
     .fetch_one(&mut *tx)
     .await?;

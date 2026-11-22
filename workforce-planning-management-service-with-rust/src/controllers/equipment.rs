@@ -30,7 +30,7 @@ pub(crate) async fn out_count(ctx: &AppContext, worker: Uuid) -> Result<usize> {
     )
     .fetch_one(pool(ctx))
     .await?;
-    Ok(usize::try_from(n).unwrap_or(usize::MAX))
+    super::count_usize(n)
 }
 
 #[derive(Debug, Deserialize)]

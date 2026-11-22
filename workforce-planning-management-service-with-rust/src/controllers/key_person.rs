@@ -51,10 +51,16 @@ struct Loaded {
     successors_of: BTreeMap<Uuid, BTreeSet<Uuid>>,
 }
 
+/// A bar no proficiency reaches: with no bar declared there is no holder (declared, spec/figure-declarations.md, `lowest_bar`).
+const NO_HOLDER_BAR: i32 = i32::MAX;
+
 /// Read the facts for the caller's scope. Only the people who hold a critical skill at its bar are
 /// loaded (they are the only ones the register counts), so a workforce with no critical skills reads
 /// no workers at all.
-#[allow(clippy::too_many_lines)] // skills → holders → their backups and successors, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "skills → holders → their backups and successors, linearly"
+)]
 async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     let today = crate::dates::today();
     let mut minimums: BTreeMap<Uuid, Vec<i32>> = BTreeMap::new();
@@ -87,7 +93,9 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
         .values()
         .filter_map(|mins| rules::bar(mins))
         .min()
-        .unwrap_or(i32::MAX);
+        // Declared (spec/figure-declarations.md, `lowest_bar`): with no bar at all, nobody holds a skill, so the bar is
+        // one no proficiency reaches.
+        .unwrap_or(NO_HOLDER_BAR);
     let mut level: BTreeMap<(Uuid, Uuid), i32> = BTreeMap::new();
     for s in sqlx::query!(
         "SELECT skill_pid, worker_pid, proficiency
@@ -110,7 +118,7 @@ async fn load(ctx: &AppContext, scope: Option<&[String]>) -> Result<Loaded> {
     .fetch_all(pool(ctx))
     .await?
     {
-        let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0);
+        let e = level.entry((s.skill_pid, s.worker_pid)).or_insert(0_i32);
         *e = (*e).max(s.proficiency);
     }
     let staff_pids: Vec<Uuid> = level

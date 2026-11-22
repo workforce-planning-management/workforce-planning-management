@@ -1,6 +1,9 @@
 //! Row type — `role_skill_requirements`. A catalogue skill a role requires.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

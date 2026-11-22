@@ -160,7 +160,7 @@ pub fn validate(e: &Entry, today: Date) -> Vec<String> {
         }
     }
     match e.log_retention_months {
-        Some(m) if !(1..=240).contains(&m) => out.push("log_retention_months is 1 to 240".to_string()),
+        Some(m) if !(1_i32..=240_i32).contains(&m) => out.push("log_retention_months is 1 to 240".to_string()),
         Some(m) if m < MINIMUM_LOG_MONTHS && e.retention_note.as_deref().is_none_or(|n| n.trim().is_empty()) => out.push(format!(
             "a retention under {MINIMUM_LOG_MONTHS} months needs retention_note saying what other law requires it"
         )),

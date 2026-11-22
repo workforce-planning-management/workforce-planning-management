@@ -102,7 +102,7 @@ pub fn parse_skills(text: &str) -> Result<Vec<Skill>, String> {
         let level: i32 = cell(5)
             .parse()
             .ok()
-            .filter(|l| (1..=SFIA_SCALE_MAX).contains(l))
+            .filter(|l| (1_i32..=SFIA_SCALE_MAX).contains(l))
             .ok_or_else(|| {
                 format!("row {n}: column level must be a whole number from 1 to {SFIA_SCALE_MAX}")
             })?;
@@ -218,7 +218,7 @@ pub fn parse_levels(text: &str) -> Result<Vec<ResponsibilityLevel>, String> {
             .trim()
             .parse()
             .ok()
-            .filter(|l| (1..=SFIA_SCALE_MAX).contains(l))
+            .filter(|l| (1_i32..=SFIA_SCALE_MAX).contains(l))
             .ok_or_else(|| {
                 format!("row {n}: column level must be a whole number from 1 to {SFIA_SCALE_MAX}")
             })?;
@@ -237,7 +237,7 @@ pub fn parse_levels(text: &str) -> Result<Vec<ResponsibilityLevel>, String> {
                 .collect(),
         });
     }
-    for want in 1..=SFIA_SCALE_MAX {
+    for want in 1_i32..=SFIA_SCALE_MAX {
         if !out.iter().any(|l| l.level == want) {
             return Err(format!(
                 "level {want} is missing: all {SFIA_SCALE_MAX} levels are required"
@@ -312,7 +312,7 @@ pub fn parse_resources(text: &str) -> Result<Vec<Resource>, String> {
         let level: i32 = cell(1)
             .parse()
             .ok()
-            .filter(|l| (1..=SFIA_SCALE_MAX).contains(l))
+            .filter(|l| (1_i32..=SFIA_SCALE_MAX).contains(l))
             .ok_or_else(|| {
                 format!("row {n}: column level must be a whole number from 1 to {SFIA_SCALE_MAX}")
             })?;

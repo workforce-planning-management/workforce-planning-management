@@ -105,6 +105,7 @@ async fn export(
                   snapshot, chain_seq, prev_hash, entry_hash
              FROM audit_logs WHERE chain_seq > $1 ORDER BY chain_seq LIMIT $2"#,
         after,
+        // A limit past `i64` takes every row (declared: spec/figure-declarations.md, `page_limit`).
         i64::try_from(limit).unwrap_or(i64::MAX),
     )
     .fetch_all(db::pool(&ctx))
@@ -151,7 +152,7 @@ struct DepartmentParams {
 }
 
 /// The cap on the department-scoped query.
-const DEPARTMENT_LIMIT: usize = 200;
+const DEPARTMENT_LIMIT: i64 = 200;
 
 #[debug_handler]
 async fn department(
@@ -169,7 +170,7 @@ async fn department(
              ORDER BY id DESC LIMIT $3"#,
         SqlTimestamp(params.since),
         params.department,
-        i64::try_from(DEPARTMENT_LIMIT).unwrap_or(i64::MAX),
+        DEPARTMENT_LIMIT,
     )
     .fetch_all(db::pool(&ctx))
     .await?;

@@ -147,9 +147,9 @@ fn higher_priority_first(a: &Gap, b: &Gap) -> std::cmp::Ordering {
 /// unknowns by importance, then met. Ties by skill id so it is stable.
 pub fn rank(gaps: &mut [Gap]) {
     let tier = |g: &Gap| match g.status {
-        Status::Below => 0,
-        Status::Undeclared => 1,
-        Status::Met => 2,
+        Status::Below => 0_i32,
+        Status::Undeclared => 1_i32,
+        Status::Met => 2_i32,
     };
     gaps.sort_by(|a, b| {
         tier(a)
@@ -234,7 +234,7 @@ pub fn rollup_counted(rows: &[(Row, usize)]) -> Option<Vec<SkillRollup>> {
                 let times = i32::try_from(n).ok()?;
                 let times_u32 = u32::try_from(n).ok()?;
                 e.below = e.below.checked_add(n)?;
-                let s = r.shortfall.unwrap_or(0);
+                let s = r.shortfall.unwrap_or(0_i32);
                 e.total_shortfall = e.total_shortfall.checked_add(s.checked_mul(times)?)?;
                 let added = weight(&r.importance)
                     .checked_mul(u32::try_from(s).unwrap_or(0))?

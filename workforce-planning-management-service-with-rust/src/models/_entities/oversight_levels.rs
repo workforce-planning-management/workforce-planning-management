@@ -1,6 +1,9 @@
 //! Row type — `oversight_levels`. An organization's own oversight level (WPM-R65). Nothing is pre-loaded; `synthetic` marks the demo scale.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

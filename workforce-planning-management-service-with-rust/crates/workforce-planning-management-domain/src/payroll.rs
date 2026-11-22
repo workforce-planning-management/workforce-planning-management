@@ -143,7 +143,7 @@ pub fn monthly_base_minor(annual_salary_minor: i64, fte_percent: i32) -> Result<
     if annual_salary_minor < 0 {
         return Err("salary must be non-negative".to_string());
     }
-    if !(1..=100).contains(&fte_percent) {
+    if !(1_i32..=100_i32).contains(&fte_percent) {
         return Err(format!("fte_percent {fte_percent} out of range 1-100"));
     }
     annual_salary_minor
@@ -192,7 +192,7 @@ pub fn stub_tax_minor(stub: &TaxStub, gross_minor: i64) -> Result<i64, String> {
     };
     taxable
         .checked_mul(stub.rate_percent)
-        .map(|v| v / 100)
+        .and_then(|v| v.checked_div(100))
         .ok_or_else(|| "tax arithmetic overflows".to_string())
 }
 

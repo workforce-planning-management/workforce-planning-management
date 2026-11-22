@@ -1,6 +1,9 @@
 //! Row type — `ergonomic_assessments`. One DSE workstation assessment (WPM-R32): the workstation, never the body (WPM-D24).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

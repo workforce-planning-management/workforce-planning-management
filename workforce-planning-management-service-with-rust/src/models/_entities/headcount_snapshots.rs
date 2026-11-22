@@ -1,7 +1,10 @@
 //! Row type — `headcount_snapshots`. Append-only aggregate
 //! history of employed headcount per organization × department × date.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

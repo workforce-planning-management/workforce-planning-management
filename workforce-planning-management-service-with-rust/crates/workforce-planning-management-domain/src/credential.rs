@@ -43,11 +43,11 @@ pub fn crc32(data: &[u8]) -> u32 {
     let mut crc = 0xFFFF_FFFF_u32;
     for byte in data {
         crc ^= u32::from(*byte);
-        for _ in 0..8 {
+        for _ in 0_i32..8_i32 {
             crc = if crc & 1 == 1 {
-                (crc >> 1) ^ 0xEDB8_8320
+                (crc >> 1_i32) ^ 0xEDB8_8320
             } else {
-                crc >> 1
+                crc >> 1_i32
             };
         }
     }
@@ -64,14 +64,17 @@ pub fn gzip_stored(data: &[u8]) -> Vec<u8> {
     }
     while let Some(chunk) = chunks.next() {
         out.push(u8::from(chunks.peek().is_none()));
-        let len = u16::try_from(chunk.len()).unwrap_or(u16::MAX);
+        // `chunks(65_535)` makes every chunk fit a `u16`, so this is always `Some`.
+        let Ok(len) = u16::try_from(chunk.len()) else {
+            continue;
+        };
         out.extend_from_slice(&len.to_le_bytes());
         out.extend_from_slice(&(!len).to_le_bytes());
         out.extend_from_slice(chunk);
     }
     out.extend_from_slice(&crc32(data).to_le_bytes());
     out.extend_from_slice(
-        &u32::try_from(data.len() % (1 << 32))
+        &u32::try_from(data.len() % (1 << 32_i32))
             .unwrap_or(0)
             .to_le_bytes(),
     );
@@ -102,7 +105,10 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
         }
         let len = usize::from(u16::from_le_bytes([byte(at, 1)?, byte(at, 2)?]));
         let complement = u16::from_le_bytes([byte(at, 3)?, byte(at, 4)?]);
-        if complement != !u16::try_from(len).unwrap_or(u16::MAX) {
+        // `len` came from a `u16` above, so it converts back.
+        let checked = u16::try_from(len)
+            .map_err(|_| "stored block length check does not match".to_string())?;
+        if complement != !checked {
             return Err("stored block length check does not match".to_string());
         }
         let start = at.checked_add(5).ok_or("truncated")?;
@@ -125,7 +131,9 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
         return Err("the checksum does not match".to_string());
     }
     let size = u32::from_le_bytes([s0, s1, s2, s3]);
-    if u64::from(size) != u64::try_from(out.len()).unwrap_or(u64::MAX) % (1_u64 << 32) {
+    let length = u64::try_from(out.len())
+        .map_err(|_| "the uncompressed length does not match".to_string())?;
+    if u64::from(size) != length.rem_euclid(1_u64 << 32_i32) {
         return Err("the uncompressed length does not match".to_string());
     }
     Ok(out)
@@ -136,9 +144,9 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
 /// # Errors
 /// When a position is outside the list.
 pub fn encoded_list(revoked: &[usize]) -> Result<String, String> {
-    let mut bits = vec![0_u8; STATUS_BITS / 8];
+    let mut bits = vec![0_u8; STATUS_BITS.div_euclid(8)];
     for &i in revoked {
-        let Some(byte) = bits.get_mut(i / 8) else {
+        let Some(byte) = bits.get_mut(i.div_euclid(8)) else {
             return Err(format!("position {i} is outside the list of {STATUS_BITS}"));
         };
         *byte |= 0x80 >> (i % 8);
@@ -155,7 +163,9 @@ pub fn is_revoked(encoded: &str, index: usize) -> Result<bool, String> {
         .strip_prefix('u')
         .ok_or("a multibase base64url list starts with u")?;
     let bits = gunzip_stored(&unb64(body)?)?;
-    let byte = bits.get(index / 8).ok_or("the index is outside the list")?;
+    let byte = bits
+        .get(index.div_euclid(8))
+        .ok_or("the index is outside the list")?;
     Ok(byte & (0x80 >> (index % 8)) != 0)
 }
 
@@ -164,7 +174,7 @@ pub fn is_revoked(encoded: &str, index: usize) -> Result<bool, String> {
 pub fn sha256_hex(text: &str) -> String {
     sha2::Sha256::digest(text.as_bytes())
         .iter()
-        .flat_map(|b| [b >> 4, b & 15])
+        .flat_map(|b| [b >> 4_i32, b & 15])
         .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }

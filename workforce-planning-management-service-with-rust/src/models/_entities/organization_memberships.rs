@@ -3,7 +3,10 @@
 //! membership (`worker_pid` set) and staff/admin-only privilege grants
 //! (`worker_pid` null) in one table.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,9 @@
 //! Row type — `conversion_plans`. A recorded intent for a fixed-term or contractor engagement: convert, extend, end or undecided (WPM-R98, WPM-D66). No pay figure.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

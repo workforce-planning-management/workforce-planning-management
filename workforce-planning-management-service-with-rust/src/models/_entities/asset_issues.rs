@@ -1,6 +1,9 @@
 //! Row type — `asset_issues`. Who holds an asset, from when to when (WPM-R155). Closed by a return or a write-off.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

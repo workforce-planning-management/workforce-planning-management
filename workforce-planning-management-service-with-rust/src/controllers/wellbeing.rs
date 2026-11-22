@@ -578,7 +578,6 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
                 }
                 acknowledgers.insert(ack.worker_pid);
             }
-            #[allow(clippy::cast_precision_loss)] // display ratio
             let conversion = entitlement.benefit_plan_pid.map(|plan| {
                 let enrolled = acknowledgers
                     .iter()

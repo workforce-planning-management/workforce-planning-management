@@ -8,7 +8,6 @@ use super::{
     unprocessable,
 };
 use axa::extract::Path;
-#[allow(clippy::wildcard_imports)]
 use jiff::civil::Date;
 
 /// Query for the cost view.
@@ -40,7 +39,10 @@ pub(super) async fn cost(
     format::json(cost_value(&ctx, &caller, &pid, query).await?)
 }
 
-#[allow(clippy::too_many_lines)] // groups → hires → unit cost → totals, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "groups → hires → unit cost → totals, linearly"
+)]
 pub(super) async fn cost_value(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -62,7 +64,7 @@ pub(super) async fn cost_value(
     if !cost_rules::valid_currency(&currency) {
         return Err(unprocessable("currency must be an ISO-4217 code, e.g. GBP"));
     }
-    let on_cost_bp = plan.on_cost_bp.unwrap_or(0);
+    let on_cost_bp = plan.on_cost_bp.unwrap_or(0_i32);
     let today = crate::dates::today();
     let (attrition, source) = resolve_attrition(ctx, &plan).await?;
     let lines = plan_lines(ctx, plan.pid).await?;

@@ -106,7 +106,7 @@ pub fn facility_problems(
         ("minutes", Some(minutes)),
         ("budget_minutes", budget_minutes),
     ] {
-        if value.is_some_and(|v| !(0..=MINUTES_MAX).contains(&v)) {
+        if value.is_some_and(|v| !(0_i32..=MINUTES_MAX).contains(&v)) {
             out.push(format!("{name} must be 0 to {MINUTES_MAX}"));
         }
     }

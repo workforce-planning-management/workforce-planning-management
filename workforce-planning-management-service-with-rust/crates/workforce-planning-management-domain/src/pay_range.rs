@@ -209,10 +209,6 @@ fn div_round(num: i128, den: i128) -> Option<i128> {
         .checked_div_euclid(den.checked_mul(2)?)
 }
 
-fn clamp_i64(v: i128) -> i64 {
-    i64::try_from(v).unwrap_or(if v < 0 { i64::MIN } else { i64::MAX })
-}
-
 /// Compa-ratio in basis points: pay over the midpoint. `None` when the midpoint is not above zero.
 #[must_use]
 pub fn compa_bp(salary: i64, r: Range) -> Option<i64> {
@@ -220,10 +216,11 @@ pub fn compa_bp(salary: i64, r: Range) -> Option<i64> {
     if twice_mid <= 0 {
         return None;
     }
-    Some(clamp_i64(div_round(
+    i64::try_from(div_round(
         i128::from(salary).checked_mul(20_000)?,
         twice_mid,
-    )?))
+    )?)
+    .ok()
 }
 
 /// Range penetration in basis points; `None` when the band has one rate (or none).
@@ -236,7 +233,7 @@ pub fn penetration_bp(salary: i64, r: Range) -> Option<i64> {
     let through = i128::from(salary)
         .checked_sub(i128::from(r.min))?
         .checked_mul(10_000)?;
-    Some(clamp_i64(div_round(through, width)?))
+    i64::try_from(div_round(through, width)?).ok()
 }
 
 #[derive(Clone, Copy)]
@@ -252,7 +249,7 @@ fn mean(mut values: impl Iterator<Item = i64>) -> Option<i64> {
     if n == 0 {
         return None;
     }
-    Some(clamp_i64(div_round(sum, n)?))
+    i64::try_from(div_round(sum, n)?).ok()
 }
 
 fn stat(points: &[Point], floor: usize) -> Figure<Stat> {

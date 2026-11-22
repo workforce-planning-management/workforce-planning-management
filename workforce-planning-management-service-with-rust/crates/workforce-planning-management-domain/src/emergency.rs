@@ -73,7 +73,7 @@ pub fn validate_contact(
     if email.is_some_and(|e| !e.trim().is_empty() && !email_ok(e)) {
         return Err("email is not a valid address".to_string());
     }
-    if priority < 1 {
+    if priority < 1_i32 {
         return Err("priority must be 1 or more (1 is the first person to call)".to_string());
     }
     Ok(())

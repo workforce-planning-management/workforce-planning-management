@@ -174,10 +174,10 @@ async fn create_instrument(
             ));
         }
     }
-    if payload.duration_minutes.is_some_and(|m| m <= 0) {
+    if payload.duration_minutes.is_some_and(|m| m <= 0_i32) {
         problems.push("duration_minutes must be positive");
     }
-    if payload.validity_months.is_some_and(|m| m <= 0) {
+    if payload.validity_months.is_some_and(|m| m <= 0_i32) {
         problems.push("validity_months must be positive");
     }
     ensure_valid(&problems.into_vec())?;

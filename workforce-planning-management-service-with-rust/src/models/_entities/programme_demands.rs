@@ -1,6 +1,9 @@
 //! Row type — `programme_demands`. A programme's claim on a pool for one month, in hundredths of an FTE (WPM-R57).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

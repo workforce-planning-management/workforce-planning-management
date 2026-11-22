@@ -40,16 +40,19 @@ async fn current(ctx: &AppContext, worker: Uuid) -> Result<Option<worker_pay_pos
 /// The position as the API shows it, with progression worked out for `today`.
 fn view(row: &worker_pay_positions::Model, today: Date) -> serde_json::Value {
     let scale = scale_rules::find(&row.scale_id);
-    let step = usize::try_from(row.step).unwrap_or(0);
+    // A stored step that is not a position is corrupt data: the standing and the pay are unknown, never step zero (RCA-IN-6).
+    let step = usize::try_from(row.step).ok();
     let band = scale.as_ref().and_then(|s| s.band(&row.band));
-    let standing = band.and_then(|b| rules::standing(b, step, row.step_since.get(), today));
+    let standing = band.and_then(|b| rules::standing(b, step?, row.step_since.get(), today));
     json!({
         "scale": row.scale_id,
         "scale_name": scale.as_ref().map(|s| s.name),
         "band": row.band,
         "step": row.step,
         "currency": scale.as_ref().map(|s| s.currency),
-        "annual_minor": scale.as_ref().and_then(|s| rules::annual_minor(s, &row.band, step)),
+        "annual_minor": scale
+            .as_ref()
+            .and_then(|s| rules::annual_minor(s, &row.band, step?)),
         "step_since": row.step_since,
         "on_behalf": row.on_behalf,
         "progression": standing,
@@ -97,7 +100,7 @@ async fn set_position(
     let today = crate::dates::today();
     let step_since = payload.step_since.unwrap_or(today);
     rules::validate_step_since(step_since, today).map_err(|e| unprocessable(&e))?;
-    let step = i32::try_from(step).unwrap_or(i32::MAX);
+    let step = i32::try_from(step).map_err(|_| unprocessable("step is out of range"))?;
     let on_behalf = auth::acting_for_other(&caller, &worker.person_ref);
     let existing = current(&ctx, worker.pid).await?;
     let mut tx = pool(&ctx).begin().await?;

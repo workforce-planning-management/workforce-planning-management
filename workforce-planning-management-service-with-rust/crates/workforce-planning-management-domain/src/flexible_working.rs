@@ -194,7 +194,7 @@ pub fn within_limit(previous: &[(Date, Status)], today: Date, limit: u32) -> boo
     if limit == 0 {
         return true;
     }
-    let Some(since) = today.checked_sub(jiff::Span::new().months(12)).ok() else {
+    let Some(since) = today.checked_sub(jiff::Span::new().months(12_i32)).ok() else {
         return true;
     };
     let made = previous
@@ -231,7 +231,7 @@ pub fn validate_request(
     if proposed_start < today {
         return Err("the proposed start cannot be in the past".to_string());
     }
-    if proposed_fte_percent.is_some_and(|p| !(1..=100).contains(&p)) {
+    if proposed_fte_percent.is_some_and(|p| !(1_i32..=100_i32).contains(&p)) {
         return Err("proposed_fte_percent must be between 1 and 100".to_string());
     }
     Ok(())

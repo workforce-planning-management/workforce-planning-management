@@ -1,8 +1,7 @@
 //! Derived views: the skills matrix, training analytics and the mentorship overview.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{AppContext, Deserialize, Response, Result, State, Uuid, debug_handler, format};
 use crate::db::pool;
 use crate::sql_time::SqlDate;
 use jiff::{Timestamp, civil::Date};
@@ -12,7 +11,6 @@ use jiff::{Timestamp, civil::Date};
 /// proficiency and the average, plus per-skill gap counts
 /// (proficiency below a declared target).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one pass over the declared skills
 pub(super) async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Response> {
     let skill_rows = sqlx::query!("SELECT pid, name FROM skills WHERE deleted_at IS NULL")
         .fetch_all(pool(&ctx))
@@ -185,7 +183,6 @@ pub(super) async fn training_analytics(
 /// active mentorship as mentor or mentee), and stale actives (no
 /// session in the window).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
 pub(super) async fn mentorship_overview(
     axa::extract::Query(query): axa::extract::Query<MentorshipOverviewQuery>,
     State(ctx): State<AppContext>,

@@ -53,7 +53,7 @@ fn months_setting() -> Result<Option<u32>, String> {
 ///
 /// The first one that is supplied but invalid, naming it; or a pair that does not check together.
 pub fn check_settings() -> Result<(), String> {
-    let percent = threshold_setting()?.unwrap_or(rules::DEFAULT_THRESHOLD_BP / 100); // absent: the Directive's (RCA-IN-3)
+    let percent = threshold_setting()?.unwrap_or(rules::DEFAULT_THRESHOLD_BP.div_euclid(100)); // absent: the Directive's (RCA-IN-3)
     let months = months_setting()?.unwrap_or(rules::DEFAULT_REMEDY_MONTHS); // absent: the Directive's (RCA-IN-3)
     config_of(percent, months)
         .map(|_| ())
@@ -72,7 +72,7 @@ pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
         "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
         as_of,
         threshold_setting,
-        rules::DEFAULT_THRESHOLD_BP / 100,
+        rules::DEFAULT_THRESHOLD_BP.div_euclid(100),
     );
     let months = statutory::integer(
         scope,

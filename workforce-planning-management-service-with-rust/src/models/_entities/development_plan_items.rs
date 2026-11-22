@@ -1,6 +1,9 @@
 //! Row type — `development_plan_items`. One skill step of a development plan (WPM-R21).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

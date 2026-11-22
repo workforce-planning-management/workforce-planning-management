@@ -1,6 +1,9 @@
 //! Row type — `worker_contact_details`. A worker's own address, telephone numbers and personal e-mail (WPM-R124).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

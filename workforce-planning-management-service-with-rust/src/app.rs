@@ -392,7 +392,7 @@ impl App {
     /// # Panics
     /// Never in practice: the development defaults need no settings.
     #[must_use]
-    #[allow(
+    #[expect(
         clippy::expect_used,
         reason = "the development defaults need no settings; this runs once at start-up"
     )]
@@ -521,7 +521,7 @@ impl App {
         }
     }
 
-    #[allow(clippy::too_many_lines)] // boot checks first, then the layers
+    #[expect(clippy::too_many_lines, reason = "boot checks first, then the layers")]
     /// The boot checks, then WPM's layers around the router.
     ///
     /// # Errors

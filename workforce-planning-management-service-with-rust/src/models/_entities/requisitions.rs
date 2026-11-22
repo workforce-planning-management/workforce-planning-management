@@ -1,6 +1,9 @@
 //! Row type — `requisitions`. One funded job opening with its hiring pipeline (WPM-R1).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

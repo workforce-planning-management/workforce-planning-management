@@ -1,6 +1,9 @@
 //! Row type — `worker_aspirations`. A future role or skill target: an aspiration, learning goal, or growth idea.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

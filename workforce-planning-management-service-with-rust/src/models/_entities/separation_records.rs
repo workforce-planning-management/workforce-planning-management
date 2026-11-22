@@ -1,6 +1,9 @@
 //! Row type — `separation_records`. What a leaver's separation record adds to the leaver record: the final pay date and a reference to the pay summary (WPM-R222).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

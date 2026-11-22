@@ -2,7 +2,10 @@
 //! went (WPM-R151). No payload body. For a hire or an ending only, `data` keeps the handoff the event carried (a `person:` and an
 //! `organization:` reference, a date, and the status change), so the payload can say who (proposed WPM-D145).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

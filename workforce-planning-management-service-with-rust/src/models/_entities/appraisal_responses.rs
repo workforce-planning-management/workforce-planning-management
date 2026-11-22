@@ -1,6 +1,9 @@
 //! Row type — `appraisal_responses`. One rater's 360° response (WPM-R29): per-competency scores + optional comment. Links to its nomination by design (WPM-D21 — procedural anonymity: the link enforces once-per-rater; the API never serves rater-level content).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

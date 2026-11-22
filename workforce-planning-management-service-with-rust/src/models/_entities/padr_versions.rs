@@ -1,6 +1,9 @@
 //! Row type — `padr_versions`. One version of a personal development review: its content, its two signatures and, once signed, the objectives as they stood (WPM-R172, WPM-D165).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

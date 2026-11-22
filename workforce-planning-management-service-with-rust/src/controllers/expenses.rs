@@ -483,7 +483,10 @@ async fn notify_move(
 }
 
 /// One status move, serialized on the locked claim row.
-#[allow(clippy::too_many_lines)] // the audit is written out once per move
+#[expect(
+    clippy::too_many_lines,
+    reason = "the audit is written out once per move"
+)]
 async fn transition(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -537,8 +540,7 @@ async fn transition(
         )
         .fetch_one(&mut *tx)
         .await?;
-        rules::can_submit(usize::try_from(count).unwrap_or(usize::MAX))
-            .map_err(|e| unprocessable(&e))?;
+        rules::can_submit(super::count_usize(count)?).map_err(|e| unprocessable(&e))?;
     }
     let now: Timestamp = Timestamp::now();
     let decided = matches!(to, "approved" | "rejected");

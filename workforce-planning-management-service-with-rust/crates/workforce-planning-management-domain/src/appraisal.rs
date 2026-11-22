@@ -65,7 +65,7 @@ pub fn check_scores(declared: &[String], scores: &BTreeMap<String, i32>) -> Resu
     for competency in declared {
         match scores.get(competency) {
             None => return Err(format!("missing score for `{competency}`")),
-            Some(score) if !(1..=5).contains(score) => {
+            Some(score) if !(1_i32..=5_i32).contains(score) => {
                 return Err(format!("score for `{competency}` must be 1-5, got {score}"));
             }
             Some(_) => {}

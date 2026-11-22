@@ -1,6 +1,9 @@
 //! Row type — `development_plan_benefits`. A stated yearly benefit of a development plan with its named source: an estimate, never derived from a skill level or a score (WPM-R230, WPM-D173).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,9 @@
 //! Row type — `health_requirements`. A requirement an area sets, such as a required immunization (WPM-R128). Not personal data.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

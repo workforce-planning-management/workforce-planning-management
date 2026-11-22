@@ -43,7 +43,10 @@ pub(super) struct Held {
 
 /// Everything `leaver` still holds, as of the movement's last day. A name comes from the live record it points at, or is
 /// empty when that record is gone.
-#[allow(clippy::too_many_lines)] // one block per kind of thing a leaver can hold
+#[expect(
+    clippy::too_many_lines,
+    reason = "one block per kind of thing a leaver can hold"
+)]
 pub(super) async fn inventory(
     ctx: &AppContext,
     movement: &movements::Model,
@@ -735,8 +738,10 @@ async fn manager_map(ctx: &AppContext) -> Result<HashMap<Uuid, Uuid>> {
 
 /// Do `held` → `to` in one transaction: change, audit-trail row, audit entry,
 /// and a notification to the new holder.
-#[allow(clippy::too_many_arguments)] // the movement, the leaver, the item, the target and the audit inputs
-#[allow(clippy::too_many_lines)] // the audit is written out once per verb
+#[expect(
+    clippy::too_many_arguments,
+    reason = "the movement, the leaver, the item, the target and the audit inputs"
+)]
 async fn perform(
     ctx: &AppContext,
     caller: &MaybeAuthUser,

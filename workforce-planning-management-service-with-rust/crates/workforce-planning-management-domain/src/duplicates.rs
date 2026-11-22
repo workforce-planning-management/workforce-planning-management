@@ -209,7 +209,7 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
         .try_fold(0_usize, |sum, s| sum.checked_add(letters(s)))?;
     let mut used_a = std::collections::HashSet::new();
     let mut used_b = std::collections::HashSet::new();
-    let mut weighted = 0.0;
+    let mut weighted = 0.0_f64;
     for (similarity, i, j, x, y) in pairs {
         if used_a.contains(&i) || used_b.contains(&j) {
             continue;
@@ -256,7 +256,7 @@ pub fn possible_duplicates(query: &Query, known: &[Known]) -> Vec<Possible> {
             };
             let (decision, basis, score) =
                 if numbers.basis == Basis::WorkerNumber && numbers.decision == Decision::Match {
-                    (Decision::Match, Basis::WorkerNumber, Some(1.0))
+                    (Decision::Match, Basis::WorkerNumber, Some(1.0_f64))
                 } else {
                     // a name alone is not evidence of identity
                     match name {

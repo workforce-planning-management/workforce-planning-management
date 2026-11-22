@@ -201,7 +201,7 @@ async fn add_role(
             "that course is not in the learning records (no catalogue entry and no enrollment); check the reference",
         ));
     }
-    if p.required_headcount < 1 {
+    if p.required_headcount < 1_i32 {
         return Err(unprocessable("required_headcount must be at least 1"));
     }
     let profile = sqlx::query_scalar!(
@@ -371,7 +371,10 @@ struct Staff {
 
 /// The trained-staff check: for each required role, the people of the role at the site who completed
 /// the course and hold it through the window, and the people of the role with no site on file.
-#[allow(clippy::too_many_lines)] // roles → the people at the site → who is trained through the window, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "roles → the people at the site → who is trained through the window, linearly"
+)]
 async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::Check> {
     let roles = sqlx::query!(
         "SELECT role_profile_pid, course_ref, required_headcount FROM cutover_roles WHERE cutover_pid = $1 ORDER BY id",
@@ -456,21 +459,21 @@ async fn trained_check(ctx: &AppContext, c: &cutovers::Model) -> Result<rules::C
         let at = |w: &&Staff| rules::at_site(w.location.as_deref(), &names);
         let unplaced = |w: &&Staff| rules::unplaced(w.location.as_deref());
         let count = |f: &dyn Fn(&&Staff) -> bool| {
-            u32::try_from(
+            super::len_u32(
                 of_role
                     .iter()
                     .filter(|w| done.contains(&w.pid))
                     .filter(|w| f(w))
                     .count(),
             )
-            .unwrap_or(u32::MAX)
         };
         out.push((
             job_title.clone(),
             rules::RoleCount {
-                required: u32::try_from(role.required_headcount).unwrap_or(u32::MAX),
-                trained: count(&at),
-                unplaced: count(&unplaced),
+                required: u32::try_from(role.required_headcount)
+                    .map_err(|_| Error::string("a required headcount is out of range"))?,
+                trained: count(&at)?,
+                unplaced: count(&unplaced)?,
                 course_known: course_known(ctx, &role.course_ref).await?,
             },
         ));

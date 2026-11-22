@@ -5,8 +5,11 @@
 //! definition of each figure. Nothing here decides or escalates: it measures and says what it rests on.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, CostQuery, Deserialize, Error, MaybeAuthUser, Response, Result, State,
+    Uuid, alignment_value, cost_value, debug_handler, escalation_json, forecast_value, format,
+    scoped_plan, unprocessable, workforce_plans,
+};
 use crate::models::_entities::plan_escalations;
 use crate::rules::tolerance as tol;
 

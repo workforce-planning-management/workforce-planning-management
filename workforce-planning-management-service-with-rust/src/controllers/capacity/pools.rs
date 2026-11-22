@@ -1,8 +1,11 @@
 //! Pools (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, Error, MaybeAuthUser, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_org_in_scope, ensure_valid, format, json, live_pool, members_in, pid_ref,
+    pools_of, records, rules, scope, skill_pool_members, skill_pools, unprocessable,
+};
 use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use jiff::Timestamp;
@@ -78,7 +81,7 @@ pub(super) async fn create_pool(
         org,
         payload.name.trim(),
         payload.description,
-        payload.operations_reservation_bp.unwrap_or(0),
+        payload.operations_reservation_bp.unwrap_or(0_i32),
     )
     .execute(&mut *tx)
     .await?;
@@ -106,7 +109,7 @@ pub(super) async fn update_pool(
         pool.id,
         payload.name.trim(),
         payload.description,
-        payload.operations_reservation_bp.unwrap_or(0),
+        payload.operations_reservation_bp.unwrap_or(0_i32),
     )
     .execute(&mut *tx)
     .await?;

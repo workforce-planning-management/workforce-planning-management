@@ -1,6 +1,9 @@
 //! Row type — `review_cycles`. One performance review cycle (WPM-R10).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

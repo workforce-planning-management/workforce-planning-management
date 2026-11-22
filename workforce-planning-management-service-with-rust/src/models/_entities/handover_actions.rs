@@ -1,6 +1,9 @@
 //! Row type — `handover_actions`. The audit trail of a leaver handover: what was held and where it went.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

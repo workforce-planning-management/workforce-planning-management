@@ -1,8 +1,12 @@
 //! The view (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, DEFAULT_MONTHS, Deserialize, MaybeAuthUser, Response, Result, State,
+    Uuid, commitments_to, debug_handler, demands_on, ensure_org_in_scope, format, json, members_in,
+    partner_commitments, pools_of, programme_demands, rules, skill_pools, today, unprocessable,
+    wip_limit_of,
+};
 use crate::sql_time::SqlDate;
 use jiff::civil::Date;
 

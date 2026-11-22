@@ -139,7 +139,10 @@ async fn title_in_use(tx: &mut sqlx::PgConnection, title: &str) -> Result<bool> 
 ///
 /// # Errors
 /// A filesystem or database error.
-#[allow(clippy::too_many_lines)] // read → plan titles → upsert framework → upsert levels
+#[expect(
+    clippy::too_many_lines,
+    reason = "read → plan titles → upsert framework → upsert levels"
+)]
 pub async fn import_pcf(
     pool: &sqlx::PgPool,
     dir: &Path,

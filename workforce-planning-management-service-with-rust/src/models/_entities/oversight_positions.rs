@@ -1,6 +1,9 @@
 //! Row type — `oversight_positions`. A recorded position: the level, when it took effect, the deciding body (free text) and the published reason (WPM-R65).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

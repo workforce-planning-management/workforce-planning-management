@@ -425,7 +425,10 @@ async fn apply_declaration(
 /// ESCO refs are ESCO skill URIs, resolved to (or created and linked as)
 /// catalogue skills.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // validate → resolve → declare, per framework
+#[expect(
+    clippy::too_many_lines,
+    reason = "validate → resolve → declare, per framework"
+)]
 async fn set_skills(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

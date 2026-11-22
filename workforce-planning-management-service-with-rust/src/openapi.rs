@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 
 /// The full `OpenAPI` document, served at `/api-docs/openapi.json`.
 #[must_use]
-#[allow(clippy::too_many_lines)] // one literal document
+#[expect(clippy::too_many_lines, reason = "one literal document")]
 pub fn spec() -> Value {
     let ok = |desc: &str| json!({ "200": { "description": desc } });
     let created = json!({
@@ -488,7 +488,10 @@ pub fn spec() -> Value {
 
 /// The governance-load paths (WPM-R64), added here because the literal above is at the macro's
 /// recursion limit.
-#[allow(clippy::too_many_lines)] // one literal of paths; splitting it would only move the lines
+#[expect(
+    clippy::too_many_lines,
+    reason = "one literal of paths; splitting it would only move the lines"
+)]
 fn add_governance_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
@@ -697,7 +700,10 @@ fn add_governance_paths(document: &mut Value) {
 }
 
 /// The webhook, MCP, AI register and report paths (WPM-R147 to WPM-R151), in their own function for the same reason.
-#[allow(clippy::too_many_lines)] // one literal of paths; splitting it would only move the lines
+#[expect(
+    clippy::too_many_lines,
+    reason = "one literal of paths; splitting it would only move the lines"
+)]
 fn add_integration_paths(document: &mut Value) {
     let ok = |what: &str| json!({ "200": { "description": what } });
     let paths = json!({
@@ -1360,7 +1366,7 @@ fn answer_schemas() -> Value {
 
 /// The answers that are a stored row, a record built by a helper, or a view: shapes read off the handlers (WPM-T263).
 /// A row from `row_json` is the table's row type (`models::_entities`) without `id` and `deleted_at`, so it keeps both timestamps.
-#[allow(clippy::too_many_lines)] // one literal
+#[expect(clippy::too_many_lines, reason = "one literal")]
 fn record_schemas() -> Value {
     let uuid = json!({ "type": "string", "format": "uuid" });
     let uuid_or_null = json!({ "type": "string", "format": "uuid", "nullable": true });
@@ -1634,7 +1640,7 @@ fn decorate(document: &mut Value) {
 
 /// Reusable parts: the key, the replay header, the two answers a key can earn, and the shapes of
 /// the funding and contingent-workforce answers.
-#[allow(clippy::too_many_lines)] // one literal
+#[expect(clippy::too_many_lines, reason = "one literal")]
 fn components() -> Value {
     json!({
         "parameters": {

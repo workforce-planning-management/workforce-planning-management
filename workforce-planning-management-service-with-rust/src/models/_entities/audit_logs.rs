@@ -3,7 +3,10 @@
 
 // A row type: the field-level shape is documented by the
 // migration and the `audit_logs` table, not by per-field rustdoc.
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

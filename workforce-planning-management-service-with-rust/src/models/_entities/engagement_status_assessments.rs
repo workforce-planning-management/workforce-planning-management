@@ -1,6 +1,9 @@
 //! Row type — `engagement_status_assessments`. An employment-status assessment for a contractor: outcome, date, reviewer (WPM-R80).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

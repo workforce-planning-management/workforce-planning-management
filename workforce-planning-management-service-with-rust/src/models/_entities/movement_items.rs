@@ -1,6 +1,9 @@
 //! Row type — `movement_items`. One dated item of a joiner or leaver checklist.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

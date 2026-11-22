@@ -103,9 +103,13 @@ pub fn weekend_to_iso(weekend: &[Weekday]) -> Vec<u32> {
 /// The Julian day number of a tabular Islamic date (civil epoch: 1 Muharram 1 is 16 July 622 Julian, day 1,948,440).
 /// `None` when a figure does not fit.
 fn hijri_jdn(year: i64, month: i64, day: i64) -> Option<i64> {
-    let months = month.checked_sub(1)?.checked_mul(59)?.checked_add(1)? / 2;
+    let months = month
+        .checked_sub(1)?
+        .checked_mul(59)?
+        .checked_add(1)?
+        .checked_div(2)?;
     let years = year.checked_sub(1)?.checked_mul(354)?;
-    let leaps = year.checked_mul(11)?.checked_add(3)? / 30;
+    let leaps = year.checked_mul(11)?.checked_add(3)?.checked_div(30)?;
     day.checked_add(months)?
         .checked_add(years)?
         .checked_add(leaps)?
@@ -141,12 +145,13 @@ fn hijri_dates_checked(month: i64, day: i64, year: i32) -> Option<Vec<Date>> {
         (first.checked_sub(1)?..=first.checked_add(2)?)
             .filter(|hijri_year| *hijri_year >= 1)
             .filter(|hijri_year| {
-                let length =
-                    if month % 2 == 1 || (month == 12 && hijri_leap(*hijri_year) == Some(true)) {
-                        30
-                    } else {
-                        29
-                    };
+                let length = if month.rem_euclid(2) == 1
+                    || (month == 12 && hijri_leap(*hijri_year) == Some(true))
+                {
+                    30
+                } else {
+                    29
+                };
                 day <= length
             })
             .filter_map(|hijri_year| {
@@ -188,40 +193,44 @@ pub struct Holiday {
 
 /// Easter Sunday in the Gregorian calendar (the anonymous Gregorian algorithm). `None` outside the years jiff can hold.
 #[must_use]
-#[allow(clippy::many_single_char_names)] // the published algorithm's own names
+#[expect(
+    clippy::many_single_char_names,
+    reason = "the published algorithm's own names"
+)]
 pub fn easter(year: i32) -> Option<Date> {
-    let a = year % 19;
-    let b = year / 100;
-    let c = year % 100;
-    let d = b / 4;
-    let e = b % 4;
-    let f = b.checked_add(8)? / 25;
-    let g = b.checked_sub(f)?.checked_add(1)? / 3;
+    // The published algorithm, written with checked operations; every divisor is a non-zero constant.
+    let a = year.checked_rem(19_i32)?;
+    let b = year.checked_div(100_i32)?;
+    let c = year.checked_rem(100_i32)?;
+    let d = b.checked_div(4_i32)?;
+    let e = b.checked_rem(4_i32)?;
+    let f = b.checked_add(8)?.checked_div(25_i32)?;
+    let g = b.checked_sub(f)?.checked_add(1)?.checked_div(3_i32)?;
     let h = a
         .checked_mul(19)?
         .checked_add(b)?
         .checked_sub(d)?
         .checked_sub(g)?
         .checked_add(15)?
-        % 30;
-    let i = c / 4;
-    let k = c % 4;
+        .checked_rem(30_i32)?;
+    let i = c.checked_div(4_i32)?;
+    let k = c.checked_rem(4_i32)?;
     let l = 32_i32
         .checked_add(e.checked_mul(2)?)?
         .checked_add(i.checked_mul(2)?)?
         .checked_sub(h)?
         .checked_sub(k)?
-        % 7;
+        .checked_rem(7_i32)?;
     let m = a
         .checked_add(h.checked_mul(11)?)?
         .checked_add(l.checked_mul(22)?)?
-        / 451;
+        .checked_div(451_i32)?;
     let n = h
         .checked_add(l)?
         .checked_sub(m.checked_mul(7)?)?
         .checked_add(114)?;
-    let month = n / 31;
-    let day = (n % 31).checked_add(1)?;
+    let month = n.checked_div(31_i32)?;
+    let day = n.checked_rem(31_i32)?.checked_add(1)?;
     crate::dates::ymd(year, u32::try_from(month).ok()?, u32::try_from(day).ok()?)
 }
 
@@ -237,9 +246,9 @@ fn last_weekday(year: i32, month: u32, weekday: Weekday) -> Option<Date> {
     } else {
         crate::dates::ymd(year, month.checked_add(1)?, 1)?
     };
-    let mut d = first_next.checked_sub(jiff::Span::new().days(1)).ok()?;
+    let mut d = first_next.checked_sub(jiff::Span::new().days(1_i32)).ok()?;
     while d.weekday() != weekday {
-        d = d.checked_sub(jiff::Span::new().days(1)).ok()?;
+        d = d.checked_sub(jiff::Span::new().days(1_i32)).ok()?;
     }
     Some(d)
 }

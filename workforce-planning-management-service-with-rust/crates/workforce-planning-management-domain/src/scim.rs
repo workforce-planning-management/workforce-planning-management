@@ -83,7 +83,7 @@ pub fn lookup_query(external_id: &str) -> String {
         .bytes()
         .map(|b| match b {
             b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                (b as char).to_string()
+                char::from(b).to_string()
             }
             _ => format!("%{b:02X}"),
         })
@@ -97,7 +97,7 @@ pub fn fingerprint(body: &Value) -> String {
     let bytes = serde_json::to_vec(body).unwrap_or_default();
     Sha256::digest(bytes)
         .iter()
-        .flat_map(|b| [b >> 4, b & 15])
+        .flat_map(|b| [b >> 4_i32, b & 15])
         .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }

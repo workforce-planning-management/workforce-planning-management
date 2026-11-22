@@ -1,6 +1,9 @@
 //! Row type — `succession_plans`. One critical role's succession plan (WPM-R12).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,9 @@
 //! Row type — `notifications`. One in-app notification (WPM-R31): reference-only (WPM-D23 — a kind, a neutral body, pids/names; never scores, comments, or masked-tier values), owned by one worker.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

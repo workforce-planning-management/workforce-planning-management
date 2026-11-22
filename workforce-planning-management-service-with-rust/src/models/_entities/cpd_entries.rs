@@ -1,6 +1,9 @@
 //! Row type — `cpd_entries`. One CPD activity a worker recorded.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

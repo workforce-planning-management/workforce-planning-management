@@ -1,7 +1,10 @@
 //! Row type — `pay_information_requests`. A worker's request for their own pay level and their category's
 //! average pay by sex (WPM-R145). Dates only; the figures are not stored.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -35,7 +35,7 @@ pub fn validate_contracted_day(minutes: i32) -> Result<(), String> {
 ///
 /// A human-readable refusal (`422` material).
 pub fn check_day_minutes(existing_minutes: i32, new_minutes: i32) -> Result<(), String> {
-    if new_minutes <= 0 {
+    if new_minutes <= 0_i32 {
         return Err("minutes must be positive".to_string());
     }
     if new_minutes > DAY_MINUTES {
@@ -61,7 +61,9 @@ pub fn check_day_minutes(existing_minutes: i32, new_minutes: i32) -> Result<(), 
 /// trusted and not clamped (RCA-INT-6).
 #[must_use]
 pub fn contracted_day_minutes(fte_percent: i32, full_day_minutes: i32) -> Option<i32> {
-    if !(0..=100).contains(&fte_percent) || !(0..=DAY_MINUTES).contains(&full_day_minutes) {
+    if !(0_i32..=100_i32).contains(&fte_percent)
+        || !(0_i32..=DAY_MINUTES).contains(&full_day_minutes)
+    {
         return None;
     }
     full_day_minutes.checked_mul(fte_percent)?.checked_div(100)

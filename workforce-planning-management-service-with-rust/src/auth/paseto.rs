@@ -212,7 +212,7 @@ fn build(raw_keys: Option<&str>, issuer: &str, audience: &str) -> Verifier {
 
 /// A verifier with no keys: rejects every token until a real key set is
 /// configured. Infallible — an empty `keys` array always parses.
-#[allow(
+#[expect(
     clippy::expect_used,
     reason = "an empty key set always builds; used once at start-up as the fallback"
 )]

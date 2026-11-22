@@ -1,7 +1,10 @@
 //! Row type — `capability_frameworks`. A framework role profiles were
 //! imported from, with its attribution and proficiency scale.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

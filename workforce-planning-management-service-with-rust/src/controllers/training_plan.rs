@@ -126,7 +126,7 @@ async fn add_course(
     Json(payload): Json<CoursePayload>,
 ) -> Result<Response> {
     let skill = find_skill(&ctx, &pid).await?;
-    let levels = payload.levels.unwrap_or(1);
+    let levels = payload.levels.unwrap_or(1_i32);
     if payload.course_ref.trim().is_empty() || payload.course_ref.len() > 200 {
         return Err(unprocessable(
             "course_ref is required (up to 200 characters)",
@@ -135,10 +135,10 @@ async fn add_course(
     if payload.title.trim().is_empty() || payload.title.chars().count() > 200 {
         return Err(unprocessable("title is required (up to 200 characters)"));
     }
-    if !(1..=1000).contains(&payload.hours) {
+    if !(1_i32..=1_000_i32).contains(&payload.hours) {
         return Err(unprocessable("hours must be between 1 and 1000"));
     }
-    if !(1..=4).contains(&levels) {
+    if !(1_i32..=4_i32).contains(&levels) {
         return Err(unprocessable("levels must be between 1 and 4"));
     }
     valid_fee(payload.fee_minor, payload.fee_currency.as_deref()).map_err(|e| unprocessable(&e))?;
@@ -281,7 +281,7 @@ async fn set_hours(
     let skill = find_skill(&ctx, &pid).await?;
     if payload
         .hours_per_level
-        .is_some_and(|h| !(1..=500).contains(&h))
+        .is_some_and(|h| !(1_i32..=500_i32).contains(&h))
     {
         return Err(unprocessable("hours_per_level must be between 1 and 500"));
     }
@@ -590,8 +590,8 @@ async fn training_demand(
     depts_out.sort_by(|a, b| b.1.1.cmp(&a.1.1).then(a.0.cmp(&b.0)));
     // No one with a gap, or a count an `f64` does not hold exactly, is no average (RCA-CONV-4).
     let average = crate::rules::exact_float::from_usize(people_with_gaps)
-        .filter(|people| *people > 0.0)
-        .map(|people| f64::from(total_hours) / people);
+        .filter(|people| *people > 0.0_f64)
+        .and_then(|people| crate::rules::exact_float::quotient(f64::from(total_hours), people));
     format::json(serde_json::json!({
         "derivation": "Hours to close each person's BELOW skill gaps (declared, under the need), \
                        from catalogue courses they have not completed and the per-level planning \

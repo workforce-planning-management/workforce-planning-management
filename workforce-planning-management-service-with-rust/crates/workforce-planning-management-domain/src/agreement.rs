@@ -50,9 +50,9 @@ pub fn agreement_problems(
         out.push("pay_scale_id is not a pay scale this service knows".to_string());
     }
     for (name, value, low, high) in [
-        ("max_weekly_hours", terms.max_weekly_hours, 1, 168),
-        ("notice_weeks", terms.notice_weeks, 0, 104),
-        ("consultation_days", terms.consultation_days, 1, 365),
+        ("max_weekly_hours", terms.max_weekly_hours, 1_i32, 168_i32),
+        ("notice_weeks", terms.notice_weeks, 0_i32, 104_i32),
+        ("consultation_days", terms.consultation_days, 1_i32, 365_i32),
     ] {
         if value.is_some_and(|v| v < low || v > high) {
             out.push(format!("{name} must be {low} to {high}"));

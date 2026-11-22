@@ -665,7 +665,10 @@ pub struct AuthUser(pub Claims);
 impl<S: Send + Sync> FromRequestParts<S> for AuthUser {
     type Rejection = (StatusCode, String);
 
-    #[allow(clippy::unused_async_trait_impl)] // async per the trait; no await needed
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "async per the trait; no await needed"
+    )]
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         // Snapshot the current (hot-reloadable) verifier for this request.
         let verifier = verifier().current();
@@ -700,7 +703,10 @@ impl MaybeAuthUser {
 impl<S: Send + Sync> FromRequestParts<S> for MaybeAuthUser {
     type Rejection = std::convert::Infallible;
 
-    #[allow(clippy::unused_async_trait_impl)] // async per the trait; no await needed
+    #[expect(
+        clippy::unused_async_trait_impl,
+        reason = "async per the trait; no await needed"
+    )]
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let verifier = verifier().current();
         Ok(Self(bearer_claims(&parts.headers, &verifier).ok()))

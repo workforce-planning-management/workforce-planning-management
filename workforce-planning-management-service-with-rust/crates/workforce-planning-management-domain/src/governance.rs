@@ -68,10 +68,10 @@ pub fn validate(kind: &str, frequency: &str, minutes: i32, holders: i32) -> Resu
     if occurrences_per_year(frequency).is_none() {
         return Err(format!("frequency must be one of {FREQUENCIES:?}"));
     }
-    if !(1..=MAX_MINUTES).contains(&minutes) {
+    if !(1_i32..=MAX_MINUTES).contains(&minutes) {
         return Err(format!("minutes must be 1 to {MAX_MINUTES}"));
     }
-    if !(1..=MAX_HOLDERS).contains(&holders) {
+    if !(1_i32..=MAX_HOLDERS).contains(&holders) {
         return Err(format!("holders must be 1 to {MAX_HOLDERS}"));
     }
     Ok(())

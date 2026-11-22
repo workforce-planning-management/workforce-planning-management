@@ -262,7 +262,7 @@ async fn add_version(
     let latest = versions_of(&ctx, pid)
         .await?
         .last()
-        .map_or(0, |v| v.version);
+        .map_or(0_i32, |v| v.version);
     let next_version = latest
         .checked_add(1)
         .ok_or_else(|| super::internal("the policy version overflowed"))?;

@@ -5,7 +5,6 @@
 
 // A row type: the field-level shape is documented by the
 // migration and the `event_outbox` table.
-#![allow(missing_docs)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

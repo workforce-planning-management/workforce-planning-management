@@ -53,7 +53,7 @@ pub fn fte_total(assignments: &[Assignment], on: Date) -> Option<i32> {
 #[must_use]
 pub fn assignment_problems(a: &Assignment) -> Vec<String> {
     let mut out = Vec::new();
-    if !(1..=FTE_MAX).contains(&a.fte_percent) {
+    if !(1_i32..=FTE_MAX).contains(&a.fte_percent) {
         out.push(format!("fte_percent must be 1 to {FTE_MAX}"));
     }
     if a.ends_on.is_some_and(|e| e < a.starts_on) {

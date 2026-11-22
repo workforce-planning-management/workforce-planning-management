@@ -1,7 +1,10 @@
 //! Row type — `webhook_subscriptions`. An endpoint, the event kinds it wants and the name of the environment variable
 //! holding its signing secret (WPM-R151). The secret itself is never stored.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

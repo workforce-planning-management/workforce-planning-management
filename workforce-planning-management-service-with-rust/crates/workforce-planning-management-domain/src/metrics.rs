@@ -109,22 +109,23 @@ pub(crate) fn exact_f64(n: i64) -> Option<f64> {
         return None;
     }
     // Two 32-bit halves: each converts with `f64::from`, and `high * 2^32 + low` is exact below 2^53.
-    let high = f64::from(u32::try_from(magnitude >> 32).ok()?);
+    let high = f64::from(u32::try_from(magnitude >> 32_i32).ok()?);
     let low = f64::from(u32::try_from(magnitude & u64::from(u32::MAX)).ok()?);
-    let value = high * 4_294_967_296.0 + low;
+    let value = high * 4_294_967_296.0_f64 + low;
     Some(if n < 0 { -value } else { value })
 }
 
 /// `x` rounded to the nearest whole number as an `i64`, or `None` when it is not finite or outside the `i64` range (RCA-CONV-3).
 #[must_use]
-pub(crate) fn rounded_i64(x: f64) -> Option<i64> {
+pub fn rounded_i64(x: f64) -> Option<i64> {
     // 2^63 is exactly representable as an `f64`; `i64::MAX` is not.
-    const TWO_POW_63: f64 = 9_223_372_036_854_775_808.0;
+    const TWO_POW_63: f64 = 4_294_967_296.0_f64 * 2_147_483_648.0_f64;
     let whole = x.round();
     if !(whole.is_finite() && (-TWO_POW_63..TWO_POW_63).contains(&whole)) {
         return None;
     }
     #[expect(
+        clippy::as_conversions,
         clippy::cast_possible_truncation,
         reason = "RCA-CONV-3: whole, finite and within the i64 range, checked above"
     )]
@@ -283,11 +284,11 @@ pub fn fill_time_summary(days: &[i64]) -> Option<FillTime> {
         .try_fold(0_i64, |acc, d| acc.checked_add(*d))?;
     let mean = exact_f64(total)? / count_f64(n)?;
     let median = if n % 2 == 1 {
-        exact_f64(*sorted.get(n / 2)?)?
+        exact_f64(*sorted.get(n.div_euclid(2))?)?
     } else {
-        // The middle two: the one `n / 2` from the end, and the one `n / 2` from the start.
-        let lo = sorted.iter().rev().nth(n / 2)?;
-        f64::midpoint(exact_f64(*lo)?, exact_f64(*sorted.get(n / 2)?)?)
+        // The middle two: the one `n.div_euclid(2)` from the end, and the one `n.div_euclid(2)` from the start.
+        let lo = sorted.iter().rev().nth(n.div_euclid(2))?;
+        f64::midpoint(exact_f64(*lo)?, exact_f64(*sorted.get(n.div_euclid(2))?)?)
     };
     Some(FillTime {
         count: n,

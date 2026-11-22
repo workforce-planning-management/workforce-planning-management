@@ -155,7 +155,7 @@ fn validate_worker(p: &WorkerPayload) -> Vec<String> {
     if let Err(message) = org::normalize_location(p.location.as_deref()) {
         problems.push(message);
     }
-    if !(1..=100).contains(&p.fte_percent) {
+    if !(1_i32..=100_i32).contains(&p.fte_percent) {
         problems.push(format!("fte_percent {} out of range 1-100", p.fte_percent));
     }
     if p.salary_minor.is_some_and(|s| s < 0) {
@@ -419,7 +419,10 @@ fn end_date_problem(worker: &workers::Model, end: Option<Date>) -> Option<String
 /// `PUT /api/workers/{pid}` — update mutable employment facts.
 /// A manager change runs the org-chart cycle check (WPM-R7).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one optional field after another, validated then applied
+#[expect(
+    clippy::too_many_lines,
+    reason = "one optional field after another, validated then applied"
+)]
 async fn update_worker(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -441,7 +444,7 @@ async fn update_worker(
         problems.require_text("department", dept);
     }
     if let Some(fte) = payload.fte_percent
-        && !(1..=100).contains(&fte)
+        && !(1_i32..=100_i32).contains(&fte)
     {
         problems.push(format!("fte_percent {fte} out of range 1-100"));
     }
@@ -571,7 +574,10 @@ async fn update_worker(
 /// `onboarding → active` requires every mandatory onboarding item
 /// complete or waived (WPM-R3).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // the audit is written per kind, each with its literal action
+#[expect(
+    clippy::too_many_lines,
+    reason = "the audit is written per kind, each with its literal action"
+)]
 async fn change_status(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -831,12 +837,13 @@ async fn org_chart(
           ORDER BY id LIMIT $3",
         params.organization,
         scope.as_deref(),
+        // A limit past `i64` takes every row (declared: spec/figure-declarations.md, `page_limit`).
         i64::try_from(limit).unwrap_or(i64::MAX),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
     let mut frontier: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
-    for _ in 0..33 {
+    for _ in 0_i32..33_i32 {
         // The room left under the limit; none left ends the walk.
         let Some(room) = limit.checked_sub(rows.len()).filter(|room| *room > 0) else {
             break;

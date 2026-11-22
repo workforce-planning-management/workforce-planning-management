@@ -1,8 +1,11 @@
 //! Demand and commitments (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, Error, MaybeAuthUser, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_valid, format, json, live_pool, pid_ref, records, rules, scope,
+    skill_pools, unprocessable,
+};
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use jiff::{Timestamp, civil::Date};

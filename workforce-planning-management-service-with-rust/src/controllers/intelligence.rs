@@ -162,7 +162,10 @@ async fn overview(
 /// ability. A skill nobody has declared is reported as undeclared, not
 /// as absent.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one pass over skills, plans, and sittings
+#[expect(
+    clippy::too_many_lines,
+    reason = "one pass over skills, plans, and sittings"
+)]
 async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     let today = crate::dates::today();
     let headcount = employed_count(&ctx, today).await?;
@@ -308,7 +311,6 @@ struct CapabilityAnalysisQuery {
 /// declarations as `/capability`. The thresholds are the caller's to
 /// set, and are echoed back so a figure is never read without them.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one pass over skills and declarations
 async fn capability_analysis(
     axa::extract::Query(query): axa::extract::Query<CapabilityAnalysisQuery>,
     State(ctx): State<AppContext>,
@@ -432,7 +434,7 @@ struct PeriodMetrics {
 async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodMetrics> {
     let to = query.to.unwrap_or_else(crate::dates::today);
     let from = query.from.unwrap_or_else(|| {
-        to.checked_sub(jiff::Span::new().months(12))
+        to.checked_sub(jiff::Span::new().months(12_i32))
             .ok()
             .unwrap_or(to)
     });

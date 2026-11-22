@@ -312,7 +312,10 @@ async fn get_run(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Resu
 /// overtime in the period, and benefit worker-costs; stub tax
 /// (WPM-R13, WPM-D5). Re-calculation replaces the run's payslips
 /// (drafts only — the lifecycle gate enforces it).
-#[allow(clippy::too_many_lines)] // one linear derivation walk per worker
+#[expect(
+    clippy::too_many_lines,
+    reason = "one linear derivation walk per worker"
+)]
 #[debug_handler]
 async fn calculate_run(
     State(ctx): State<AppContext>,
@@ -456,7 +459,7 @@ async fn calculate_run(
         for entry in entries.iter().filter(|entry| entry.kind != "on_call") {
             crate::controllers::tally::add(
                 worked.entry(entry.worked_on.get()).or_default(),
-                u32::try_from(entry.minutes.max(0)).unwrap_or(0),
+                u32::try_from(entry.minutes.max(0_i32)).unwrap_or(0),
             )?;
         }
         let found = statutory_outcome(
@@ -908,7 +911,10 @@ pub(crate) struct WageCheck {
 /// Compare each payslip of a run with the minimum wage for the worker's age band, as of the period's last day. `known_births` holds the
 /// birth dates already read in this request, so a report over several runs asks the person service once for each person; it is dropped
 /// with the request and nothing is stored. Authorizing and auditing are the caller's.
-#[allow(clippy::too_many_lines)] // payslips → workers → hours → floors → outcome, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "payslips → workers → hours → floors → outcome, linearly"
+)]
 pub(crate) async fn check_minimum_wage(
     ctx: &AppContext,
     run: &payroll_runs::Model,
@@ -1192,7 +1198,10 @@ struct OutcomeContext<'a> {
 
 /// Derives [`StatutoryOutcome`] for one worker. `seats` is the overtime status recorded on each seat the worker holds, `on_days` the
 /// approved minutes worked by day (on-call excluded), `as_of` the date the jurisdiction parameters are resolved at.
-#[allow(clippy::too_many_lines)] // worker → place → seats → status → bands → period, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "worker → place → seats → status → bands → period, linearly"
+)]
 fn statutory_outcome(
     worker: Option<&workers::Model>,
     seats: &[String],
@@ -1393,7 +1402,10 @@ fn statutory_outcome(
 /// configured weekly floor, or `null` where none is configured), and a post nobody recorded answers `unknown`, never "no overtime".
 /// The audit entry holds counts, never names.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // payslips → workers → posts → time → rules → outcome, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "payslips → workers → posts → time → rules → outcome, linearly"
+)]
 async fn overtime_check(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -1442,7 +1454,7 @@ async fn overtime_check(
     let mut year_days: BTreeMap<Uuid, BTreeMap<Date, u32>> = BTreeMap::new();
     for entry in entries {
         let (worker, on) = (entry.worker_pid, entry.worked_on);
-        let minutes = u32::try_from(entry.minutes.max(0)).unwrap_or(0);
+        let minutes = u32::try_from(entry.minutes.max(0_i32)).unwrap_or(0);
         crate::controllers::tally::add(
             year_days
                 .entry(worker)

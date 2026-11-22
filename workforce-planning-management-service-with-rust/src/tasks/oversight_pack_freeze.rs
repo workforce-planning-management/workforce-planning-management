@@ -47,7 +47,7 @@ impl Task for OversightPackFreeze {
 pub async fn freeze_all(ctx: &AppContext, as_of: Date) -> Result<usize> {
     let this_month = as_of.first_of_month();
     let month = this_month
-        .checked_sub(jiff::Span::new().months(1))
+        .checked_sub(jiff::Span::new().months(1_i32))
         .ok()
         .unwrap_or(this_month);
     let orgs: BTreeSet<String> =

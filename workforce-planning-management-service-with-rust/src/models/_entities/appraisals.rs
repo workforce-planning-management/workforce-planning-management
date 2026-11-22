@@ -1,6 +1,9 @@
 //! Row type — `appraisals`. One 360° appraisal (WPM-R29): a subject worker, the declared competencies, the lifecycle.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

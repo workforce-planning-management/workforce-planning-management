@@ -1,6 +1,9 @@
 //! Row type — `oversight_packs`. A monthly snapshot of the oversight position, criteria, measures and capacity view, frozen as of a date and never changed (WPM-R69). Aggregates only; no person appears.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

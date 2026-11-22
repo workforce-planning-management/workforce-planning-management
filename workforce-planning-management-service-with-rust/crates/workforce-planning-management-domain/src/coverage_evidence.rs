@@ -77,7 +77,10 @@ pub fn standing(
 /// What a record must hold, as a list of problems (empty when it is acceptable). A private policy names its insurer and reference; a
 /// kind that is not a policy holds neither; a minimum cover has a currency; the dates run forwards.
 #[must_use]
-#[allow(clippy::too_many_arguments)] // one record's fields, checked together
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one record's fields, checked together"
+)]
 pub fn problems(
     jurisdiction: &str,
     kind: &str,

@@ -81,7 +81,10 @@ pub fn valid_jurisdiction(value: &str) -> bool {
 
 /// What is wrong with an incident's facts. A dangerous occurrence may have hurt nobody, and nothing else may be `no_injury`.
 #[must_use]
-#[allow(clippy::too_many_arguments)] // one incident's facts, checked together
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one incident's facts, checked together"
+)]
 pub fn problems(
     jurisdiction: &str,
     kind: &str,
@@ -114,10 +117,10 @@ pub fn problems(
     if learned_at.is_some_and(|at| at > now) {
         out.push("learned_at cannot be in the future".to_string());
     }
-    if absence_days.is_some_and(|d| !(0..=MAX_DAYS).contains(&d)) {
+    if absence_days.is_some_and(|d| !(0_i32..=MAX_DAYS).contains(&d)) {
         out.push(format!("absence_days must be 0 to {MAX_DAYS}"));
     }
-    if !(0..=MAX_PEOPLE).contains(&people_affected) {
+    if !(0_i32..=MAX_PEOPLE).contains(&people_affected) {
         out.push(format!("people_affected must be 0 to {MAX_PEOPLE}"));
     }
     out

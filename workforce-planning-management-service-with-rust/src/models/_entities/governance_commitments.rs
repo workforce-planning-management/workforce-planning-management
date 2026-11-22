@@ -1,6 +1,9 @@
 //! Row type — `governance_commitments`. A recurring oversight commitment of a role: how often, how long, how many people; never a person (WPM-R64).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

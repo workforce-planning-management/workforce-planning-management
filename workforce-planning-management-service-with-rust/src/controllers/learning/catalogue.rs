@@ -1,8 +1,11 @@
 //! Skills: the catalogue, declared worker proficiency, merging, and external references.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, Error, MaybeAuthUser, PidRef, Problems, Response, Result, State, Uuid,
+    auth, db, debug_handler, ensure_valid, format, merge_rules, records, row_json, rules,
+    unprocessable, worker_skills,
+};
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 
@@ -261,7 +264,6 @@ pub(super) async fn apply_suggestions(
 
 /// Count where a skill is used.
 async fn skill_usage(ctx: &AppContext, skill_pid: Uuid) -> Result<merge_rules::Usage> {
-    let count = |n: i64| usize::try_from(n).unwrap_or(usize::MAX);
     let row = sqlx::query!(
         r#"SELECT
              (SELECT COUNT(*) FROM worker_skills WHERE skill_pid = $1 AND deleted_at IS NULL) AS "declared_by!",
@@ -273,10 +275,10 @@ async fn skill_usage(ctx: &AppContext, skill_pid: Uuid) -> Result<merge_rules::U
     .fetch_one(db::pool(ctx))
     .await?;
     Ok(merge_rules::Usage {
-        declared_by: count(row.declared_by),
-        required_by_profiles: count(row.required_by_profiles),
-        in_development_plans: count(row.in_development_plans),
-        in_initiatives: count(row.in_initiatives),
+        declared_by: crate::controllers::count_usize(row.declared_by)?,
+        required_by_profiles: crate::controllers::count_usize(row.required_by_profiles)?,
+        in_development_plans: crate::controllers::count_usize(row.in_development_plans)?,
+        in_initiatives: crate::controllers::count_usize(row.in_initiatives)?,
     })
 }
 
@@ -350,7 +352,10 @@ pub(super) struct MergePayload {
 /// already appear (a worker who declared both, a profile requiring both, a
 /// plan listing both) the stronger statement is kept. One transaction.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one repointing pass per referencing table
+#[expect(
+    clippy::too_many_lines,
+    reason = "one repointing pass per referencing table"
+)]
 pub(super) async fn merge_skill(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -723,7 +728,10 @@ pub(super) struct WorkerSkillPayload {
 /// `PUT /api/workers/{pid}/skills` — declare or update the
 /// proficiency (one row per worker+skill).
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // validate, map the framework level, upsert, history and audit, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "validate, map the framework level, upsert, history and audit, linearly"
+)]
 pub(super) async fn declare_skill(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

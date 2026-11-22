@@ -1,7 +1,10 @@
 //! Row type — `plan_org_nodes`. A role in a plan's target organization (WPM-R153): a department, a title, a headcount and a
 //! parent role. Roles, never people.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

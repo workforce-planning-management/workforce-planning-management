@@ -138,7 +138,7 @@ pub fn history(requests: &[Request], today: Date) -> Option<Vec<(i32, Vec<Absenc
             .entry(i32::from(r.start_on.year()))
             .or_default()
             .entry(r.kind.clone())
-            .or_insert((0, 0));
+            .or_insert((0_i32, 0_i32));
         entry.0 = entry.0.checked_add(1)?;
         entry.1 = entry.1.checked_add(r.days)?;
     }

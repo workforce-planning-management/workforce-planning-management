@@ -1,7 +1,10 @@
 //! Row type — `worker_framework_roles`. The role a person says they
 //! hold now in an external framework (a PCF role level or an ESCO occupation).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

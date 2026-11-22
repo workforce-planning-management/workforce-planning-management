@@ -1,6 +1,9 @@
 //! Row type — `injury_records`. An incident: the proof that reports were owed and a pointer to the statutory record, with no description and no medical detail (WPM-R221, WPM-D179).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

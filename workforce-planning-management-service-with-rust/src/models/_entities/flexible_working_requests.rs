@@ -1,6 +1,9 @@
 //! Row type — `flexible_working_requests`. A worker's request for a different working arrangement and its decision (WPM-R126).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

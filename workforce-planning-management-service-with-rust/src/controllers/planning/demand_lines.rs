@@ -6,7 +6,6 @@ use super::{
     debug_handler, ensure_editable, ensure_valid, format, records, rules, scoped_plan,
     unprocessable,
 };
-#[allow(clippy::wildcard_imports)]
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use jiff::civil::Date;

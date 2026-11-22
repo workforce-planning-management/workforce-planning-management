@@ -1,6 +1,9 @@
 //! Row type — `oversight_pack_withdrawals`. A mark that a frozen pack was withdrawn, with the date and the reason; the pack itself is never changed (WPM-R69).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -141,9 +141,12 @@ fn reminder_days(p: &RequirementPayload) -> i32 {
 }
 
 /// The re-check days as stored.
-fn recheck_days(p: &RequirementPayload) -> Option<i32> {
+fn recheck_days(p: &RequirementPayload) -> Result<Option<i32>> {
     p.recheck_calendar_days
-        .map(|d| i32::try_from(d).unwrap_or(i32::MAX))
+        .map(|d| {
+            i32::try_from(d).map_err(|_| unprocessable("recheck_calendar_days is out of range"))
+        })
+        .transpose()
 }
 
 /// `GET /api/health-requirements` — what is required, and of whom. Not personal data.
@@ -218,7 +221,7 @@ async fn create_requirement(
         payload.name.trim(),
         payload.description.clone().filter(|d| !d.trim().is_empty()),
         json!(payload.departments),
-        recheck_days(&payload),
+        recheck_days(&payload)?,
         reminder_days(&payload),
     )
     .fetch_one(&mut *tx)
@@ -279,7 +282,7 @@ async fn update_requirement(
         payload.name.trim(),
         payload.description.clone().filter(|d| !d.trim().is_empty()),
         json!(payload.departments),
-        recheck_days(&payload),
+        recheck_days(&payload)?,
         reminder_days(&payload),
     )
     .fetch_one(&mut *tx)

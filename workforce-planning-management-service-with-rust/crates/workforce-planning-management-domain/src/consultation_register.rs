@@ -75,10 +75,10 @@ pub fn open_problems(
             "establishment must be 1 to {ESTABLISHMENT_MAX} characters"
         ));
     }
-    if establishment_size < 0 {
+    if establishment_size < 0_i32 {
         out.push("establishment_size must not be negative".to_string());
     }
-    if dismissals < 1 {
+    if dismissals < 1_i32 {
         out.push("dismissals must be at least 1".to_string());
     }
     out.extend(document_ref.and_then(reference_problem));

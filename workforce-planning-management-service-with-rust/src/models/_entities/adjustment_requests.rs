@@ -1,6 +1,9 @@
 //! Row type — `adjustment_requests`. One reasonable-adjustment request (WPM-R33): barrier, impact, change — **no diagnosis column exists** (WPM-D25).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

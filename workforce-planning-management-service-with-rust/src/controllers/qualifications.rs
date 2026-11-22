@@ -151,7 +151,7 @@ async fn add(
     if framework.is_some() != p.level.is_some() {
         problems.push("framework and level go together".to_string());
     }
-    if p.level.is_some_and(|l| !(0..=20).contains(&l)) {
+    if p.level.is_some_and(|l| !(0_i32..=20_i32).contains(&l)) {
         problems.push("level must be 0 to 20".to_string());
     }
     if let (Some(a), Some(e)) = (p.awarded_on, p.expires_on)
@@ -476,7 +476,7 @@ async fn add_requirement(
     if framework.as_ref().is_some_and(|f| f.chars().count() > 40) {
         problems.push("framework must be at most 40 characters".to_string());
     }
-    if p.min_level.is_some_and(|l| !(0..=20).contains(&l)) {
+    if p.min_level.is_some_and(|l| !(0_i32..=20_i32).contains(&l)) {
         problems.push("min_level must be 0 to 20".to_string());
     }
     ensure_valid(&problems)?;

@@ -13,7 +13,12 @@
     clippy::unimplemented,
     clippy::indexing_slicing,
     clippy::string_slice,
-    clippy::arithmetic_side_effects
+    clippy::arithmetic_side_effects,
+    // Each exception is `#[expect]`ed, with a reason (RCA-EXC-6).
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
+    // Every literal names its type, so no figure silently becomes an `i32` or `f64` (RCA-INT).
+    clippy::default_numeric_fallback
 )]
 
 #[cfg(target_env = "musl")]

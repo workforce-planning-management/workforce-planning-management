@@ -1,6 +1,9 @@
 //! Row type — `assets`. A piece of equipment (WPM-R155): kind, tag and owner role. No location, cost or value.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

@@ -1,8 +1,10 @@
 //! Settings (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, MaybeAuthUser, OrgQuery, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_org_in_scope, ensure_valid, format, json, unprocessable,
+};
 use axa::extract::Json;
 
 /// `PUT /api/capacity/settings` body.
@@ -31,7 +33,7 @@ pub(super) async fn set_settings(
         &payload.organization_ref,
     );
     ensure_valid(&problems.into_vec())?;
-    if payload.wip_limit.is_some_and(|n| n < 0) {
+    if payload.wip_limit.is_some_and(|n| n < 0_i32) {
         return Err(unprocessable("wip_limit must not be negative"));
     }
     ensure_org_in_scope(&ctx, &caller, &payload.organization_ref).await?;

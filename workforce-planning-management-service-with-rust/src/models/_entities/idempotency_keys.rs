@@ -1,6 +1,9 @@
 //! Row type — `idempotency_keys`. A caller's key, the fingerprint of the request that claimed it and the response to replay; kept for one calendar day (WPM-R132).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

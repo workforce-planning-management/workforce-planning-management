@@ -22,8 +22,8 @@ pub const MAX_COMMENT_CHARS: usize = 500;
 /// 1 January). `None` for anything that is not a date in every year, which includes 29 February.
 #[must_use]
 pub fn tax_year_start(mmdd: i64) -> Option<(u32, u32)> {
-    let month = u32::try_from(mmdd / 100).ok()?;
-    let day = u32::try_from(mmdd % 100).ok()?;
+    let month = u32::try_from(mmdd.checked_div(100)?).ok()?;
+    let day = u32::try_from(mmdd.checked_rem(100)?).ok()?;
     // 2027 is not a leap year, so 29 February is refused.
     crate::dates::ymd(2027, month, day).map(|_| (month, day))
 }

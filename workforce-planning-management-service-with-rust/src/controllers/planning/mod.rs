@@ -40,26 +40,25 @@ mod plans;
 mod staff;
 mod tolerances;
 // The sections share this module's imports and each other's handlers.
-#[allow(clippy::wildcard_imports)]
-use self::alignment::*;
-#[allow(clippy::wildcard_imports)]
-use self::cost::*;
-#[allow(clippy::wildcard_imports)]
-use self::demand_lines::*;
-#[allow(clippy::wildcard_imports)]
-use self::escalations::*;
-#[allow(clippy::wildcard_imports)]
-use self::forecast::*;
-#[allow(clippy::wildcard_imports)]
-use self::objectives::*;
-#[allow(clippy::wildcard_imports)]
-use self::org_shape::*;
-#[allow(clippy::wildcard_imports)]
-use self::plans::*;
-#[allow(clippy::wildcard_imports)]
-use self::staff::*;
-#[allow(clippy::wildcard_imports)]
-use self::tolerances::*;
+use self::alignment::{alignment, alignment_value};
+use self::cost::{CostQuery, cost, cost_value};
+use self::demand_lines::{remove_line, set_line};
+use self::escalations::{
+    decide_escalation, escalation_json, list_open_escalations, list_plan_escalations,
+    raise_escalation, raise_level,
+};
+use self::forecast::{departments_of, forecast, forecast_value, resolve_attrition};
+use self::objectives::{create_objective, set_line_objectives};
+use self::org_shape::{get_target, organization_diff, set_target};
+use self::plans::{
+    create_plan, ensure_editable, get_plan, list_plans, plan_lines, role_titles, scoped_plan,
+    set_status,
+};
+use self::staff::{
+    converting_by_department, people_by_department, salaries_by_department,
+    skill_levels_by_department,
+};
+use self::tolerances::{delete_tolerance, dimension_states, list_tolerances, set_tolerance};
 
 /// The workforce-planning routes.
 pub fn routes() -> Routes {

@@ -1,6 +1,9 @@
 //! Row type — `review_goal_outcomes`. A goal in a review: the outcome the reviewer and the reviewee each record, and the snapshot frozen when the review is shared (WPM-R225, WPM-D165).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

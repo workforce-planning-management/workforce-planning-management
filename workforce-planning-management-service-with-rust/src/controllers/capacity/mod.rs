@@ -160,23 +160,20 @@ mod start_check;
 mod view;
 mod what_if;
 // The sections share this module's imports and each other's handlers.
-#[allow(clippy::wildcard_imports)]
-use self::demand::*;
-#[allow(clippy::wildcard_imports)]
-use self::peer::*;
-#[allow(clippy::wildcard_imports)]
-use self::people_impact::*;
-#[allow(clippy::wildcard_imports)]
-use self::pools::*;
-#[allow(clippy::wildcard_imports)]
-use self::settings::*;
-#[allow(clippy::wildcard_imports)]
-use self::start_check::*;
-#[allow(clippy::wildcard_imports)]
-use self::view::*;
+use self::demand::{
+    delete_commitment, delete_demand, list_commitments, list_demand, set_commitment, set_demand,
+};
+use self::peer::{peer_supply_view, receive_peer_demand, set_peer_link};
+use self::people_impact::people_impact;
+use self::pools::{
+    OrgQuery, add_member, create_pool, delete_pool, get_pool, list_pools, remove_member,
+    update_pool,
+};
+use self::settings::{get_settings, set_settings, wip_limit_of};
+use self::start_check::{list_start_decisions, record_start_decision, start_check};
+use self::view::{OrgCapacity, capacity_view, constraint_of, counts_here, held_by};
 pub(crate) use self::view::{load_org_capacity, pack_view};
-#[allow(clippy::wildcard_imports)]
-use self::what_if::*;
+use self::what_if::what_if;
 
 /// The routes.
 pub fn routes() -> Routes {

@@ -1,7 +1,10 @@
 //! Row type — `pay_assessment_records`. What a person recorded for a category of workers and a pay report: a
 //! justification, a remedy, a joint assessment and its outcome (WPM-R146). No personal data.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

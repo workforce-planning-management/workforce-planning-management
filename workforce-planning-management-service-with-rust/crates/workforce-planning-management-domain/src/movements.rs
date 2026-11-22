@@ -83,7 +83,7 @@ pub fn plan(kind: &str, effective: Date) -> Option<Vec<Planned>> {
         .enumerate()
         .map(|(i, (offset, title, category))| {
             Some(Planned {
-                position: i32::try_from(i).unwrap_or(i32::MAX),
+                position: i32::try_from(i).ok()?,
                 title: (*title).to_string(),
                 category: (*category).to_string(),
                 due_on: effective.checked_add(crate::dates::days(*offset)).ok()?,

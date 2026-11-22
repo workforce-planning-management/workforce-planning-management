@@ -1,6 +1,9 @@
 //! Row type — `qualification_reminders`. That the person and their manager were told about one expiry date of one qualification, once (WPM-T435).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

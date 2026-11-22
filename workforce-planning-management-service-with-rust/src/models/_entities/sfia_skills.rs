@@ -1,6 +1,9 @@
 //! Row type — `sfia_skills`. A skill from the deployer's licensed SFIA download.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

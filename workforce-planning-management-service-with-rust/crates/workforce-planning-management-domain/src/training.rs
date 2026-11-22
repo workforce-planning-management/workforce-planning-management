@@ -147,10 +147,10 @@ pub fn weekly_hours(requested: Option<i64>, fte_percent: i32) -> Result<u32, Str
             .filter(|h| (1..=MAX_WEEKLY_HOURS).contains(h))
             .ok_or_else(|| format!("weekly_hours must be between 1 and {MAX_WEEKLY_HOURS}"));
     }
-    if !(1..=100).contains(&fte_percent) {
+    if !(1_i32..=100_i32).contains(&fte_percent) {
         return Err("the worker's FTE must be between 1 and 100 percent".to_string());
     }
-    let fte = f64::from(fte_percent) / 100.0;
+    let fte = f64::from(fte_percent) / 100.0_f64;
     let scaled = crate::metrics::rounded_i64(DEFAULT_WEEKLY_HOURS * fte)
         .and_then(|n| u32::try_from(n).ok())
         .ok_or_else(|| "the weekly hours do not fit a count".to_string())?;

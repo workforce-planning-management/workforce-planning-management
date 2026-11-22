@@ -132,6 +132,33 @@ pub fn unprocessable(message: &str) -> Error {
     )
 }
 
+/// A stored count as a `usize`. A count that does not fit is corrupt data, so it is an error, never the largest number (RCA-IN-6).
+///
+/// # Errors
+///
+/// A server error naming the problem.
+pub(crate) fn count_usize(n: i64) -> Result<usize> {
+    usize::try_from(n).map_err(|_| Error::string("a stored count is out of range"))
+}
+
+/// A length as a `u32`, or an error when it does not fit (RCA-INT-4: never the largest number).
+///
+/// # Errors
+///
+/// A server error naming the problem.
+pub(crate) fn len_u32(n: usize) -> Result<u32> {
+    u32::try_from(n).map_err(|_| Error::string("a count is out of range"))
+}
+
+/// A length as an `i32`, or an error when it does not fit (RCA-INT-4: never the largest number).
+///
+/// # Errors
+///
+/// A server error naming the problem.
+pub(crate) fn len_i32(n: usize) -> Result<i32> {
+    i32::try_from(n).map_err(|_| Error::string("a count is out of range"))
+}
+
 /// Refuse `count` workers over the measured ceiling (WPM-R120, WPM-D90). The count is of exactly the workers the view is about
 /// to load, made with one indexed `COUNT`.
 ///
@@ -390,6 +417,7 @@ pub(crate) fn window(page: &Page) -> Result<Window> {
 pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: &Window) -> Response {
     let page: Vec<T> = items
         .into_iter()
+        // An offset past `usize` is past every row (declared: spec/figure-declarations.md, `page_offset`).
         .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
         .take(rows_to_read(window.limit()))
         .collect();

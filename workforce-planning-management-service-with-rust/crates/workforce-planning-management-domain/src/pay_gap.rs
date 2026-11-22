@@ -391,7 +391,7 @@ impl Rational {
             Statistic::Median => {
                 let mut sorted = values.to_vec();
                 sorted.sort_unstable();
-                let middle = sorted.len() / 2;
+                let middle = sorted.len().div_euclid(2);
                 let at = |i: usize| sorted.get(i).map(|v| i128::from(*v));
                 if sorted.len() % 2 == 1 {
                     Some(Self {

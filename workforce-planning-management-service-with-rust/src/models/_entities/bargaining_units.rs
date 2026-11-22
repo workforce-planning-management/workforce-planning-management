@@ -1,7 +1,10 @@
 //! Row type — `bargaining_units`. The part of the workforce a recognised body covers, as rules over facts WPM holds (WPM-R102).
 //! Who is covered is computed and counted with a floor; it is never stored (WPM-D68).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

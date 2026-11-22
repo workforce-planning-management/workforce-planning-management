@@ -87,7 +87,7 @@ pub fn validate(limit: i64, amber_percent: i32) -> Result<(), String> {
             "limit must be a whole number from 0 to {MAX_LIMIT}"
         ));
     }
-    if !(1..=99).contains(&amber_percent) {
+    if !(1_i32..=99_i32).contains(&amber_percent) {
         return Err("amber_percent must be from 1 to 99".to_string());
     }
     Ok(())
@@ -187,6 +187,8 @@ pub fn cost_deviation(total: Option<i64>, budget: Option<i64>, complete: bool) -
     let over = i128::from(total.checked_sub(budget)?.max(0))
         .checked_mul(10_000)?
         .checked_div(i128::from(budget))?;
+    // Declared fallback (spec/figure-declarations.md, `cost_deviation_bp`): an overspend too large for an `i64` is larger than any
+    // threshold, so it is `i64::MAX`, which stays red. The figure is only ever compared with the thresholds.
     Some(i64::try_from(over).unwrap_or(i64::MAX))
 }
 
@@ -194,7 +196,11 @@ pub fn cost_deviation(total: Option<i64>, budget: Option<i64>, complete: bool) -
 /// have looked at in the plan's departments; otherwise `None` (no plans is not the same as no risk).
 #[must_use]
 pub fn risk_deviation(plans_in_departments: usize, without_bench: usize) -> Option<i64> {
-    (plans_in_departments > 0).then(|| i64::try_from(without_bench).unwrap_or(i64::MAX))
+    if plans_in_departments > 0 {
+        i64::try_from(without_bench).ok()
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

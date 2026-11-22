@@ -1,7 +1,10 @@
 //! Row type — `recognised_bodies`. A union, works council or staff forum the organization recognises (WPM-R102): a name, a kind, a
 //! basis, a date and a contact role. No member, representative or contact person is held (WPM-D68).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

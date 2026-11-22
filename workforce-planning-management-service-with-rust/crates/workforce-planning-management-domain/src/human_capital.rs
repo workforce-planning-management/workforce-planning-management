@@ -308,10 +308,13 @@ fn count(n: usize, floor: usize) -> Value {
     if n > 0 && n < floor {
         Value::Withheld
     } else {
-        Value::Shown {
-            value: i64::try_from(n).unwrap_or(i64::MAX),
-            unit: Unit::Workers,
-        }
+        i64::try_from(n).map_or_else(
+            |_| unknown(Reason::OutOfRange),
+            |value| Value::Shown {
+                value,
+                unit: Unit::Workers,
+            },
+        )
     }
 }
 
@@ -345,7 +348,7 @@ fn median(days: &[i64]) -> Option<i64> {
     let mut sorted = days.to_vec();
     sorted.sort_unstable();
     let n = sorted.len();
-    let mid = n / 2;
+    let mid = n.div_euclid(2);
     match n {
         0 => None,
         _ if n % 2 == 1 => sorted.get(mid).copied(),
@@ -367,7 +370,10 @@ fn mean(days: &[i64]) -> Option<i64> {
         .checked_div(n.checked_mul(2)?)
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "one argument per column of the figure it assembles"
+)]
 fn figure(
     key: &str,
     name: &str,
@@ -505,7 +511,7 @@ fn practice_figures(i: &Inputs, floor: usize, on: Period, over: Period) -> Vec<F
         }
     };
     let skipped = vec!["A requisition missing its opened or filled date.".to_string()];
-    let critical: Vec<&Plan> = i.plans.iter().filter(|p| p.criticality >= 4).collect();
+    let critical: Vec<&Plan> = i.plans.iter().filter(|p| p.criticality >= 4_i32).collect();
     let succession = match critical.len() {
         0 => unknown(Reason::NothingToDivide),
         n if n < floor => Value::Withheld,
@@ -620,9 +626,14 @@ fn safety_figures(i: &Inputs, floor: usize, over: Period) -> Vec<Figure> {
         if i.injuries_ever == 0 {
             return unknown(Reason::NoRecord);
         }
-        n.map_or(Value::Withheld, |n| Value::Shown {
-            value: i64::try_from(n).unwrap_or(i64::MAX),
-            unit: Unit::Incidents,
+        n.map_or(Value::Withheld, |n| {
+            i64::try_from(n).map_or_else(
+                |_| unknown(Reason::OutOfRange),
+                |value| Value::Shown {
+                    value,
+                    unit: Unit::Incidents,
+                },
+            )
         })
     };
     let left_out = || {

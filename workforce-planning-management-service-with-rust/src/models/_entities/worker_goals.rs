@@ -1,6 +1,9 @@
 //! Row type — `worker_goals`. One person's goal for a period: a record of intent and evidence, never a score (WPM-R224, WPM-D163).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

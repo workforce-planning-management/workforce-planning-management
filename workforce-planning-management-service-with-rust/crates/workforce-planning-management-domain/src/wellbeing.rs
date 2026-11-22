@@ -36,7 +36,7 @@ pub fn valid_doses(doses: i32) -> bool {
 /// and, when both are present, `min <= max`.
 #[must_use]
 pub fn valid_age_band(min_age: Option<i32>, max_age: Option<i32>) -> bool {
-    let in_bounds = |age: i32| (0..=MAX_AGE).contains(&age);
+    let in_bounds = |age: i32| (0_i32..=MAX_AGE).contains(&age);
     if min_age.is_some_and(|a| !in_bounds(a)) || max_age.is_some_and(|a| !in_bounds(a)) {
         return false;
     }

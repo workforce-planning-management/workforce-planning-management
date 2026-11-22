@@ -34,7 +34,7 @@ pub const MAX_UNITS_PER_ENTRY: i64 = 1000;
 /// `None` for non-finite, non-positive, or implausibly large values.
 #[must_use]
 pub fn to_hundredths(amount: f64) -> Option<i64> {
-    if !amount.is_finite() || amount <= 0.0 {
+    if !amount.is_finite() || amount <= 0.0_f64 {
         return None;
     }
     let hundredths = crate::metrics::rounded_i64(amount * 100.0)?;

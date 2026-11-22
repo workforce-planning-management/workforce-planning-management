@@ -1,6 +1,9 @@
 //! Row type — `goal_measures`. A measure of a goal: a number with its start, target and current value, or a yes-or-no milestone. Every value is optional (WPM-R224).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

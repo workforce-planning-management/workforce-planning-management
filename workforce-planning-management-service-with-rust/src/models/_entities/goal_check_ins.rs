@@ -1,6 +1,9 @@
 //! Row type — `goal_check_ins`. A dated entry on a goal: how it stands and a short note (WPM-R224).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

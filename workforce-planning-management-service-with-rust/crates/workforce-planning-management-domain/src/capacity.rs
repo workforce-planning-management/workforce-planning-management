@@ -295,8 +295,9 @@ pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Da
         .iter()
         .filter(|w| counts_toward(members, w))
         .try_fold(0_i64, |total, w| {
-            total
-                .checked_add(i64::from(w.fte_percent.max(0)).checked_mul(available_days(w, month))?)
+            total.checked_add(
+                i64::from(w.fte_percent.max(0_i32)).checked_mul(available_days(w, month))?,
+            )
         })
 }
 
@@ -307,7 +308,7 @@ pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Da
 #[must_use]
 pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: Date) -> Option<i64> {
     // A reservation outside 0..=FULL_BP is refused on input (`validate_reservation_bp`); met here, it is unknown, not clamped.
-    if !(0..=FULL_BP).contains(&reservation_bp) {
+    if !(0_i32..=FULL_BP).contains(&reservation_bp) {
         return None;
     }
     let kept = i64::from(FULL_BP.checked_sub(reservation_bp)?);
@@ -573,17 +574,17 @@ pub fn build_pool(
         match status {
             CellStatus::Over => {
                 over_total = over_total.checked_add(remaining)?;
-                #[allow(
+                #[expect(
                     clippy::arithmetic_side_effects,
-                    reason = "a count of months: bounded by the slice length"
+                    reason = "RCA-EXC-2: a count of months: bounded by the slice length"
                 )]
                 {
                     over_months += 1;
                 }
             }
-            #[allow(
+            #[expect(
                 clippy::arithmetic_side_effects,
-                reason = "a count of months: bounded by the slice length"
+                reason = "RCA-EXC-2: a count of months: bounded by the slice length"
             )]
             CellStatus::Unknown => {
                 unknown_months += 1;
@@ -818,9 +819,9 @@ pub fn start_check(
             let draws = candidate.lines.iter().any(|(p, _, _)| p == pool);
             let active = active_on_constraint.len();
             let adds = usize::from(draws && !active_on_constraint.contains(&candidate.programme));
-            #[allow(
+            #[expect(
                 clippy::arithmetic_side_effects,
-                reason = "a count of programmes plus one: bounded by the set's size"
+                reason = "RCA-EXC-2: a count of programmes plus one: bounded by the set's size"
             )]
             let would_be = active + adds;
             Some(Wip {
@@ -974,17 +975,17 @@ fn moved(view: &PoolView, moves: &BTreeMap<Date, i64>) -> Option<PoolView> {
         match status {
             CellStatus::Over => {
                 over_total = over_total.checked_add(remaining)?;
-                #[allow(
+                #[expect(
                     clippy::arithmetic_side_effects,
-                    reason = "a count of months: bounded by the slice length"
+                    reason = "RCA-EXC-2: a count of months: bounded by the slice length"
                 )]
                 {
                     over_months += 1;
                 }
             }
-            #[allow(
+            #[expect(
                 clippy::arithmetic_side_effects,
-                reason = "a count of months: bounded by the slice length"
+                reason = "RCA-EXC-2: a count of months: bounded by the slice length"
             )]
             CellStatus::Unknown => {
                 unknown_months += 1;
@@ -1119,9 +1120,9 @@ pub fn what_if(
         else {
             continue;
         };
-        #[allow(
+        #[expect(
             clippy::arithmetic_side_effects,
-            reason = "counts of touched cells: bounded by the number of changes"
+            reason = "RCA-EXC-2: counts of touched cells: bounded by the number of changes"
         )]
         {
             if a.status == CellStatus::Over && b.status != CellStatus::Over {
@@ -2332,7 +2333,10 @@ mod tests {
     }
 
     // Every caller wants the optional form the rule takes, so the wrap is the point.
-    #[allow(clippy::unnecessary_wraps)]
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the signature is fixed by its caller"
+    )]
     fn at(hour: u32) -> Option<Timestamp> {
         Some(crate::dates::utc(2026, 10, 30, hour, 0, 0).unwrap())
     }

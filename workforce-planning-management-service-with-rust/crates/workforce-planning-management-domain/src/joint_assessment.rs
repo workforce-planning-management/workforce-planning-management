@@ -250,7 +250,10 @@ mod tests {
     }
 
     const REPORT: (i32, u32, u32) = (2027, 6, 7);
-    #[allow(clippy::unnecessary_wraps)] // the argument it stands for is an `Option`
+    #[expect(
+        clippy::unnecessary_wraps,
+        reason = "the argument it stands for is an `Option`"
+    )]
     fn reported() -> Option<Date> {
         Some(day(REPORT.0, REPORT.1, REPORT.2))
     }

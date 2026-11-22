@@ -1,6 +1,9 @@
 //! Row type — `engagement_extensions`. One dated extension of an engagement: the previous end, the new end and why (WPM-R79).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

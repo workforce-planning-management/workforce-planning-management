@@ -1,7 +1,10 @@
 //! Row type — `holidays`. A public holiday for an organization and region (WPM-R5): the date a rule gives, the day it is
 //! taken, and whether it was generated or added by hand.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

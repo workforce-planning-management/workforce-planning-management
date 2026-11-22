@@ -621,7 +621,7 @@ async fn progress_toward(
 ) -> Result<serde_json::Value> {
     if a.kind == "skill" {
         let have = a.skill_pid.and_then(|s| declared.get(&s)).copied();
-        let target = a.target_level.unwrap_or(0);
+        let target = a.target_level.unwrap_or(0_i32);
         return Ok(serde_json::json!({
             "current_level": have,
             "target_level": a.target_level,

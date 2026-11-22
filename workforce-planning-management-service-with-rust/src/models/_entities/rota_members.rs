@@ -1,6 +1,9 @@
 //! Row type — `rota_members`. One member of a rota, in rotation order.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

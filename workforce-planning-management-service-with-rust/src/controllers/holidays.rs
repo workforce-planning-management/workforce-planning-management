@@ -20,7 +20,7 @@ use crate::rules::holiday as rules;
 use crate::sql_time::SqlDate;
 
 /// The years a calendar can hold.
-const YEARS: std::ops::RangeInclusive<i32> = 1970..=2100;
+const YEARS: std::ops::RangeInclusive<i32> = 1_970_i32..=2_100_i32;
 
 /// `GET /api/holiday-regions` — the regions that have a rule pack, each marked unverified until someone checks it.
 #[debug_handler]
@@ -105,7 +105,10 @@ struct GeneratePayload {
 /// `POST /api/holidays/generate` — generate a region's holidays for a year. Safe to repeat: a row it made is brought up to date, a row
 /// someone added by hand is never changed. HR.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // one handler: validate, resolve, generate, answer
+#[expect(
+    clippy::too_many_lines,
+    reason = "one handler: validate, resolve, generate, answer"
+)]
 async fn generate(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -146,7 +149,7 @@ async fn generate(
             json!({ "state": "pack_example", "region": pack.region, "verified": pack.verified }),
         ),
     };
-    let (mut created, mut updated, mut unchanged, mut kept_manual) = (0, 0, 0, 0);
+    let (mut created, mut updated, mut unchanged, mut kept_manual) = (0_i32, 0_i32, 0_i32, 0_i32);
     let mut tx = pool(&ctx).begin().await?;
     for h in rules::generate(pack.rules, p.year, &weekend) {
         let existing = sqlx::query!(

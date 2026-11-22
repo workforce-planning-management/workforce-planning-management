@@ -31,7 +31,7 @@ pub fn cohort_average_minor(salaries: &[i64]) -> Option<i64> {
 /// does not fit an `i64`: an overflow is an unknown, never a maximum.
 #[must_use]
 pub fn with_on_cost(annual_minor: i64, on_cost_bp: i32) -> Option<i64> {
-    let factor = i128::from(on_cost_bp.max(0)).checked_add(10_000)?;
+    let factor = i128::from(on_cost_bp.max(0_i32)).checked_add(10_000)?;
     let scaled = i128::from(annual_minor)
         .checked_mul(factor)?
         .checked_add(5_000)?

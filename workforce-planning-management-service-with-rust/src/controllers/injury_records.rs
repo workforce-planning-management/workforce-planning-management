@@ -176,7 +176,7 @@ async fn create(
     Json(p): Json<CreatePayload>,
 ) -> Result<Response> {
     ensure_hr(&ctx, &caller, &p.organization).await?;
-    let people = p.people_affected.unwrap_or(1);
+    let people = p.people_affected.unwrap_or(1_i32);
     ensure_valid(&rules::problems(
         &p.jurisdiction,
         &p.kind,

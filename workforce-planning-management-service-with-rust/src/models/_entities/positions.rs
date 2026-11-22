@@ -1,7 +1,10 @@
 //! Row type — `positions`. A budgeted seat (WPM-R152, WPM-D104): cost centre, budget in FTE percent, funding kind and
 //! state, with the holder, the requisition and the plan demand line as links. No pay.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

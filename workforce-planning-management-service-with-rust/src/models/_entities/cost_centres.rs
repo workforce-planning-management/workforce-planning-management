@@ -1,7 +1,10 @@
 //! Row type — `cost_centres`. An organization's register of cost centres (WPM-R163): a code, a name, an optional parent and the
 //! days it is valid. Closed, never deleted.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

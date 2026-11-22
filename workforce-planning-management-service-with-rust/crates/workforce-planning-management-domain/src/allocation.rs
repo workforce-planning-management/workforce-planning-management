@@ -207,7 +207,7 @@ pub fn allocation_problems(allocation: &Allocation, assignment: &Assignment) -> 
             "an allocation covers at most {MAX_HORIZON_MONTHS} months, not {span}"
         ));
     }
-    let most = i64::from(assignment.fte_percent.max(0));
+    let most = i64::from(assignment.fte_percent.max(0_i32));
     if !(1..=most).contains(&allocation.fte_centi) {
         out.push(format!(
             "fte_centi must be 1 to the assignment's FTE ({most}), not {}",
@@ -288,7 +288,7 @@ fn weighted(fte_percent: i32, days: i64, month: Date) -> Option<i64> {
     if !(0..=denominator).contains(&days) {
         return None;
     }
-    let numerator = i64::from(fte_percent.max(0)).checked_mul(days)?;
+    let numerator = i64::from(fte_percent.max(0_i32)).checked_mul(days)?;
     numerator
         .checked_mul(2)?
         .checked_add(denominator)?
@@ -423,7 +423,7 @@ fn standing(person: &Person, month: Date, available_below_bp: i32) -> Option<Per
     }
     let mut signals = Vec::new();
     // The threshold is validated by the caller (`validate_threshold_bp`); one outside 0 to 10 000 is no standing, not a clamped one.
-    if !(0..=FULL_BP).contains(&available_below_bp) {
+    if !(0_i32..=FULL_BP).contains(&available_below_bp) {
         return None;
     }
     let threshold = i64::from(available_below_bp);
@@ -522,7 +522,10 @@ pub fn reconcile(tracking: Tracking, claim_centi: Option<i64>, allocated_centi: 
 /// How a caller stands to the person whose allocations are asked for, as the service establishes it from the verified token
 /// and memberships. Each flag is a fact, never a request parameter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "one flag per declared check; they are independent"
+)]
 pub struct Reader {
     /// The caller is the person.
     pub is_self: bool,

@@ -1,6 +1,9 @@
 //! Row type — `interviews`. One scheduled interview on an application (WPM-R2).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

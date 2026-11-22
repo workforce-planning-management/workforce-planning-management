@@ -409,7 +409,7 @@ async fn add_agreement(
         payload.effective_from,
         newest.as_ref().map(|n| n.effective_from.get()),
     ))?;
-    let version = newest.map_or(Ok(1), |n| {
+    let version = newest.map_or(Ok(1_i32), |n| {
         n.version
             .checked_add(1)
             .ok_or_else(|| super::internal("the agreement version overflowed"))
@@ -571,7 +571,6 @@ async fn of_worker(
 /// none can be worked out; a unit under the floor gives nothing. No name, no salary, no one's band. **Reading it is the disclosure, and it
 /// is logged** (who asked, which unit, when) in the same transaction. HR.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // facts → who is covered → bands → vacancies → the pack, linearly
 async fn information_pack(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

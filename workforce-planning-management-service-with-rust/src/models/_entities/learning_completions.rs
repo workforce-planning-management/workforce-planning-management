@@ -1,6 +1,9 @@
 //! Row type — `learning_completions`. A completion HR recorded for a requirement: a date and where it was done, no certificate (WPM-R170).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

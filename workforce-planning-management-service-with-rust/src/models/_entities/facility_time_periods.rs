@@ -1,7 +1,10 @@
 //! Row type — `facility_time_periods`. Minutes released for representative duties, per recognised body per period (WPM-R107). There is no
 //! person here and no kind of time entry for it: a budget can be agreed without a list of representatives (WPM-D68).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

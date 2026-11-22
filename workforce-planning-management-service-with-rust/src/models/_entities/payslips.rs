@@ -1,6 +1,9 @@
 //! Row type — `payslips`. One worker's payslip in one run: gross, deduction lines (JSONB), net (WPM-R13).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

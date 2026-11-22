@@ -1,6 +1,9 @@
 //! Row type — `rota_swap_requests`. A request that a colleague take the requester's on-call days in a window.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

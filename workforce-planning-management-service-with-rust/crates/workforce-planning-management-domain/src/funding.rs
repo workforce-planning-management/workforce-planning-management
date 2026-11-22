@@ -187,7 +187,7 @@ pub fn contingent_share_counted(
         }
     }
     let shown = by.values().all(|s| s.people >= floor);
-    let fte = crate::exact_float::from_i64(all.fte)? / 100.0;
+    let fte = crate::exact_float::from_i64(all.fte)? / 100.0_f64;
     Some(ContingentShare {
         headcount: all.people,
         fte,
@@ -279,7 +279,7 @@ pub fn funding_horizon(
                 )
             };
             let shown = people == 0 || people >= floor;
-            let fte_units = crate::exact_float::from_i64(fte)? / 100.0;
+            let fte_units = crate::exact_float::from_i64(fte)? / 100.0_f64;
             Some(FundingMonth {
                 month,
                 people: shown.then_some(people),

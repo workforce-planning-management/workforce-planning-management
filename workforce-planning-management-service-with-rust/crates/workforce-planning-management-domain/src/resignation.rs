@@ -155,7 +155,7 @@ pub fn validate_proposal(
 /// A day outside that range.
 pub fn validate_agreed(logged_on: Date, agreed: Date) -> Result<(), String> {
     let latest = logged_on
-        .checked_add(jiff::Span::new().days(366))
+        .checked_add(jiff::Span::new().days(366_i32))
         .ok()
         .ok_or_else(|| "outside the supported calendar".to_string())?;
     if agreed < logged_on {

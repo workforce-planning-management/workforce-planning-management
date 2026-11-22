@@ -1,7 +1,10 @@
 //! Row type — `category_vocabulary`. One entry of an organization's assignment category vocabulary (WPM-R162): a code, a label,
 //! the national standard it comes from where it does, and, for a job role, the staff group it belongs to.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

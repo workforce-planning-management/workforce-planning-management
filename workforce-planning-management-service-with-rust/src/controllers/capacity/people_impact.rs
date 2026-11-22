@@ -2,8 +2,11 @@
 //! (WPM-D135). The counting is in [`crate::rules::people_impact`].
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeMap, DEFAULT_MONTHS, Deserialize, MaybeAuthUser, Problems, Response, Result,
+    State, Uuid, counts_here, debug_handler, demands_of_programme, ensure_valid, format, held_by,
+    json, load_org_capacity, programme_demands, rules, scope, today, unprocessable,
+};
 use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 

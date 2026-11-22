@@ -1,8 +1,10 @@
 //! Learning paths: ordered course steps, enrolment, and honest progress.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, Deserialize, MaybeAuthUser, PidRef, Problems, Response, Result, State, Uuid,
+    debug_handler, ensure_valid, find_path, format, records, rules, unprocessable,
+};
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use jiff::Timestamp;

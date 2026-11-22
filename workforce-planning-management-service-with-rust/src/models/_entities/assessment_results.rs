@@ -1,6 +1,9 @@
 //! Row type — `assessment_results`. One scale's outcome within an assessment; scores are integers (WPM-R20).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

@@ -1,6 +1,9 @@
 //! Row type — `worker_contractor_details`. A contractor's supplier, route and rate (WPM-R80). The rate is masked like salary.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

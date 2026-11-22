@@ -1,8 +1,12 @@
 //! Start check and decision (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, CHECK_MONTHS, Deserialize, HashMap, MaybeAuthUser, OrgCapacity, Problems, Response,
+    Result, State, Uuid, constraint_of, counts_here, debug_handler, demands_of_programme,
+    ensure_org_in_scope, ensure_valid, format, json, load_org_capacity, pools_of,
+    programme_demands, rules, scope, today, unprocessable, wip_limit_of,
+};
 use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Json;
 use jiff::civil::Date;

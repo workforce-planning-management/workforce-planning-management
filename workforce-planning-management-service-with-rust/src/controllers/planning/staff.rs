@@ -7,7 +7,6 @@
 
 // A section of one controller: it shares the parent module's imports.
 use super::{AppContext, BTreeMap, BTreeSet, Result, Uuid, rules};
-#[allow(clippy::wildcard_imports)]
 use crate::sql_time::SqlDate;
 use jiff::civil::Date;
 

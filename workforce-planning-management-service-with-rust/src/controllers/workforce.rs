@@ -255,10 +255,10 @@ async fn create_entitlement(
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
     let mut problems = Problems::new();
     problems.require_token("kind", tokens::LEAVE_KINDS, &payload.kind);
-    if !(2000..=2100).contains(&payload.year) {
+    if !(2_000_i32..=2_100_i32).contains(&payload.year) {
         problems.push(format!("year {} out of range", payload.year));
     }
-    if payload.entitled_days < 0 || payload.entitled_days > 366 {
+    if payload.entitled_days < 0_i32 || payload.entitled_days > 366_i32 {
         problems.push(format!(
             "entitled_days {} out of range 0-366",
             payload.entitled_days
@@ -425,7 +425,7 @@ async fn balance_check(
     )
     .fetch_optional(db::pool(ctx))
     .await?;
-    let (entitled, used) = entitlement.map_or((0, 0), |e| (e.entitled_days, e.used_days));
+    let (entitled, used) = entitlement.map_or((0_i32, 0_i32), |e| (e.entitled_days, e.used_days));
     leave::check_balance(kind, entitled, used, days).map_err(|e| unprocessable(&e))
 }
 
@@ -452,7 +452,10 @@ async fn list_leave_requests(
 /// One leave decision (`approved` / `rejected` / `cancelled`),
 /// serialized on the locked request row; approval decrements the
 /// balance in the same transaction (WPM-R5, WPM-D9).
-#[allow(clippy::too_many_lines)] // the audit is written per decision, each with its literal action
+#[expect(
+    clippy::too_many_lines,
+    reason = "the audit is written per decision, each with its literal action"
+)]
 pub(crate) async fn decide_leave(
     ctx: &AppContext,
     caller: &MaybeAuthUser,
@@ -491,7 +494,7 @@ pub(crate) async fn decide_leave(
     // Balance mutation: approve uses days; cancelling an approved
     // request restores them.
     let delta = leave_delta(to, &was, days)?;
-    if delta != 0 {
+    if delta != 0_i32 {
         let entitlement = sqlx::query_scalar!(
             "SELECT id FROM leave_entitlements
               WHERE worker_pid = $1 AND kind = $2 AND year = $3 AND deleted_at IS NULL LIMIT 1 FOR UPDATE",
@@ -613,7 +616,7 @@ async fn create_shift(
     if payload.ends_at <= payload.starts_at {
         problems.push("ends_at must be after starts_at".to_string());
     }
-    if payload.required_headcount < 1 {
+    if payload.required_headcount < 1_i32 {
         problems.push("required_headcount must be at least 1".to_string());
     }
     ensure_valid(&problems.into_vec())?;
@@ -906,7 +909,10 @@ impl WorkerLimits {
 /// Flags only — nothing is refused (WPM-D19). Visibility equals the rota's:
 /// flagged workers are named.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // limits → minutes → shifts → rest breaches → flagged, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "limits → minutes → shifts → rest breaches → flagged, linearly"
+)]
 async fn working_time(
     axa::extract::Query(query): axa::extract::Query<WorkingTimeQuery>,
     State(ctx): State<AppContext>,

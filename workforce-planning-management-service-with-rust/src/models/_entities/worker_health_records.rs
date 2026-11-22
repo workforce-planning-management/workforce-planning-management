@@ -1,6 +1,9 @@
 //! Row type — `worker_health_records`. A worker's status against one requirement: a status token and two dates, never a reason (WPM-R128, WPM-D75). Health data.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

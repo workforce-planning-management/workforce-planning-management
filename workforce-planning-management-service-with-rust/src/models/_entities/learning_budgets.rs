@@ -1,6 +1,9 @@
 //! Row type — `learning_budgets`. A learning budget for one department, year and currency (WPM-R227, WPM-T451). Names nobody.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

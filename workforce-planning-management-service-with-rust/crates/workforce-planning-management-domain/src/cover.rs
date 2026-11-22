@@ -28,7 +28,7 @@ pub fn validate_backup(
     if worker == backup {
         return Err("a person cannot be their own backup".to_string());
     }
-    if priority < 1 {
+    if priority < 1_i32 {
         return Err("priority must be 1 or more (1 is the first backup to ask)".to_string());
     }
     if let (Some(start), Some(end)) = (starts_on, ends_on)

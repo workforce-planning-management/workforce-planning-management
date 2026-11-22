@@ -1,8 +1,10 @@
 //! Alignment (part of [`super`]).
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, BTreeSet, MaybeAuthUser, Response, Result, State, Uuid, debug_handler, format,
+    plan_lines, ratio_json, scoped_plan, talent_rules,
+};
 use axa::extract::Path;
 
 /// `GET /api/workforce-plans/{pid}/alignment` — does the planned headcount

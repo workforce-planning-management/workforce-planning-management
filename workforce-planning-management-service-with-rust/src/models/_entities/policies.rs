@@ -1,6 +1,9 @@
 //! Row type — `policies`. A named policy of an organization (WPM-R156); its versions hold the substance.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

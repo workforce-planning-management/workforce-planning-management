@@ -1,6 +1,9 @@
 //! Row type — `program_placements`. One person's placement on an early-career programme (WPM-R23).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

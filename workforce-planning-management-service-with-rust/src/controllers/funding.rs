@@ -398,7 +398,10 @@ async fn snapshot_trend(
 /// fixed-term (each apart), and the funding horizon: who is left when each month's money runs out
 /// (WPM-R62). Aggregate only, names no one, small groups withheld. HR only.
 #[debug_handler]
-#[allow(clippy::too_many_lines)] // loads, groups, then one JSON body, linearly
+#[expect(
+    clippy::too_many_lines,
+    reason = "loads, groups, then one JSON body, linearly"
+)]
 async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Response> {
     let today = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;

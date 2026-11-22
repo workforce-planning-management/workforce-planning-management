@@ -1,7 +1,10 @@
 //! Row type — `mobility_interests`. An employee's expressed interest
 //! in a role profile or an open requisition.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

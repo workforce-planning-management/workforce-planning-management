@@ -213,6 +213,10 @@ async fn open_movement(
 /// Open a movement inside the caller's transaction: validate, insert the record and its dated
 /// checklist, audit. Shared by the HR route and the acceptance of a resignation (WPM-R127), which
 /// opens the leaver process in the same transaction as the decision.
+#[expect(
+    clippy::as_conversions,
+    reason = "sqlx declares a nullable array parameter by this cast to `&[Option<T>]`; it converts no figure"
+)]
 pub(crate) async fn open_in(
     connection: &mut sqlx::PgConnection,
     caller: &MaybeAuthUser,
@@ -507,7 +511,7 @@ async fn add_item(
     if payload.title.trim().is_empty() || payload.title.chars().count() > 200 {
         return Err(unprocessable("title is required (up to 200 characters)"));
     }
-    let next = i32::try_from(items_of(&ctx, movement.pid).await?.len()).unwrap_or(i32::MAX);
+    let next = super::len_i32(items_of(&ctx, movement.pid).await?.len())?;
     let category = payload
         .category
         .filter(|c| !c.trim().is_empty())

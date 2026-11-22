@@ -1,7 +1,10 @@
 //! Row type — `scim_pushes`. What was last sent to the identity provider for a worker (WPM-R150): the provider's id,
 //! a fingerprint and the retry state. No name, no contact detail, no body.
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::SqlTimestamp;
 use serde::{Deserialize, Serialize};

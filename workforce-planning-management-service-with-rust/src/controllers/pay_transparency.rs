@@ -668,7 +668,7 @@ fn composition_rows(r: &Report) -> String {
             String::new(),
         ),
     });
-    for (number, band) in (1..).zip(r.quartiles.iter()) {
+    for (number, band) in (1_i32..).zip(r.quartiles.iter()) {
         let name = format!("(f) quartile {number} composition");
         out.push_str(&match band {
             Figure::Shown(c) => composition_row(

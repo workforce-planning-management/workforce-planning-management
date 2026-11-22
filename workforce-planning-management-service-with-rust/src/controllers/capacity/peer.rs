@@ -1,8 +1,11 @@
 //! The link to a peer's pool and demand received from the peer (part of [`super`]): WPM-R213, WPM-D138 to D141.
 
 // A section of one controller: it shares the parent module's imports.
-#[allow(clippy::wildcard_imports)]
-use super::*;
+use super::{
+    AppContext, DEFAULT_MONTHS, Deserialize, Error, MaybeAuthUser, Problems, Response, Result,
+    State, Uuid, debug_handler, ensure_valid, format, json, live_pool, load_org_capacity,
+    programme_demands, rules, skill_pools, today, unprocessable,
+};
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use jiff::{Timestamp, civil::Date};

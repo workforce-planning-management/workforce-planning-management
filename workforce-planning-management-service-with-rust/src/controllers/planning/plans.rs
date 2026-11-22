@@ -6,7 +6,6 @@ use super::{
     State, Uuid, cost_rules, debug_handler, ensure_org_in_scope, ensure_valid, format, memberships,
     plan_demand_lines, records, rules, unprocessable, workforce_plans,
 };
-#[allow(clippy::wildcard_imports)]
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use jiff::civil::Date;
@@ -52,7 +51,7 @@ pub(super) fn validate_finance(payload: &PlanPayload) -> std::result::Result<(),
     }
     if payload
         .on_cost_bp
-        .is_some_and(|bp| !(0..=10_000).contains(&bp))
+        .is_some_and(|bp| !(0_i32..=10_000_i32).contains(&bp))
     {
         return Err("on_cost_bp must be between 0 and 10000".to_string());
     }

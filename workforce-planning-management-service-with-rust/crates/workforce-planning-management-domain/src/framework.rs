@@ -265,7 +265,7 @@ pub fn map_level(
     source_max: i32,
     target_max: i32,
 ) -> Option<i32> {
-    if source_max < 2 || target_max < 2 || !(1..=source_max).contains(&source) {
+    if source_max < 2_i32 || target_max < 2_i32 || !(1_i32..=source_max).contains(&source) {
         return None;
     }
     match mapping {

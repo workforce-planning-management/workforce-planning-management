@@ -1,7 +1,10 @@
 //! Row type — `collective_agreements`. A dated, sourced, versioned agreement tied to one bargaining unit, with the terms WPM can
 //! use (WPM-R103). Who it applies to is derived from the unit's rules and never stored (WPM-D68).
 
-#![allow(missing_docs)]
+#![expect(
+    missing_docs,
+    reason = "a generated row type: the module header names the table"
+)]
 
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use serde::{Deserialize, Serialize};

@@ -47,7 +47,7 @@ fn days(span: Span) -> Option<i64> {
 /// Whole years completed by service that began on `start` and has run for `total_days` inclusive days. `None` when the count does not fit.
 fn whole_years(start: Date, total_days: i64) -> Option<i32> {
     // The calendar ends long before the bound, so the walk stops at its first year that does not fit.
-    let years = (1_i32..=i32::MAX / 12)
+    let years = (1_i32..=i32::MAX.div_euclid(12_i32))
         .take_while(|n| {
             n.checked_mul(12)
                 .and_then(|months| jiff::Span::new().try_months(months).ok())
@@ -132,11 +132,11 @@ fn figures(union: &[Span], chains: &[Span], as_of: Date) -> Option<(i64, i32, i6
         .try_fold(0_i64, |sum, span| sum.checked_add(days(*span)?))?;
     let total_years = match union.first() {
         Some(f) => whole_years(f.0, total)?,
-        None => 0,
+        None => 0_i32,
     };
     let (continuous_days, continuous_years) = match chains.last() {
         Some(c) if c.1 >= as_of => (days(*c)?, whole_years(c.0, days(*c)?)?),
-        _ => (0, 0),
+        _ => (0, 0_i32),
     };
     Some((total, total_years, continuous_days, continuous_years))
 }
@@ -163,7 +163,7 @@ pub fn anniversary(start: Date, years: u32) -> Option<Date> {
     start
         .checked_add(jiff::Span::new().try_months(years.checked_mul(12)?).ok()?)
         .ok()
-        .and_then(|d| d.checked_sub(jiff::Span::new().days(1)).ok())
+        .and_then(|d| d.checked_sub(jiff::Span::new().days(1_i32)).ok())
 }
 
 #[cfg(test)]
