@@ -292,7 +292,7 @@ over-allocated, who is available, and where an allocation clashes with leave.* (
   roles with no bench, and the active plan's gap. Each tile names its as-of time and links to the view behind it.
 - "Real time" means **derived on read** from current records, not a stream; snapshots are dated.
 
-## Design decisions (proposed)
+## Design decisions (decided by the owner, 2026-11-22; WPM-D211 on 2026-11-20)
 
 - **WPM-D207 A pay scale is dated, sourced data, published by two people.** Replaces the "in code" part of WPM-D38 and keeps the
   rest: values transcribed from a named source, never derived; a published version immutable; a correction a new version. Two

@@ -473,7 +473,7 @@ by Rust, PostgreSQL and supported browsers. Decimal entry and display retain
 every digit, and either side refuses an amount outside the range. See the
 [worldwide specification](worldwide.md).
 
-## WPM-D207–D213 — Planning depth from customer feedback (proposed 2026-11-20)
+## WPM-D207–D213 — Planning depth from customer feedback (decided by the owner 2026-11-22)
 
 Pay scales become dated, sourced data published by two people (WPM-D207, amending WPM-D38); a post's grade is a reference, not
 pay (WPM-D208); combined analysis suppresses by complement (WPM-D209); internal first is evidence, not a block (WPM-D210);
@@ -481,7 +481,7 @@ WPM tracks per-person allocation but not per-person effort, amending WPM-D45 and
 delivery is served by stable team capacity (WPM-D213). See
 [workforce-planning-and-scenarios.md](workforce-planning-and-scenarios.md).
 
-## WPM-D214–D219 — Supplier assurance (proposed 2026-11-20)
+## WPM-D214–D219 — Supplier assurance (decided by the owner 2026-11-22)
 
 The repository holds templates and the supplier holds its pack (WPM-D214); a health buyer gets its own deployment
 (WPM-D215); residency is declared, not detected (WPM-D216); encrypt what is never computed on (WPM-D217); the audit trail

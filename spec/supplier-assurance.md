@@ -191,7 +191,7 @@ special-category fields.*
   expires, because a backup that cannot be edited is destroyed only when it expires (WPM-D53, WPM-D219). The supplier signs the
   record; the software does not certify.
 
-## Design decisions (proposed)
+## Design decisions (decided by the owner, 2026-11-22)
 
 - **WPM-D214 The repository holds templates; the supplier holds its pack.** Certificates, the cloud account, vetting records,
   and the buyer's configuration are private. Committing them to a public repository would itself be a disclosure.
