@@ -239,23 +239,22 @@ impl<T: Clone> Reloadable<T> {
     }
 
     /// A cheap clone of the current value.
-    ///
-    /// # Panics
-    ///
-    /// If the lock was poisoned by a panic while storing.
     #[must_use]
     pub fn current(&self) -> T {
-        (**self.0.lock().expect("reloadable lock poisoned")).clone()
+        (**self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner))
+        .clone()
     }
 
     /// Swap in a new value; a caller already holding a snapshot from
     /// [`Reloadable::current`] keeps using theirs.
-    ///
-    /// # Panics
-    ///
-    /// If the lock was poisoned by a panic while reading.
     pub fn store(&self, value: T) {
-        *self.0.lock().expect("reloadable lock poisoned") = std::sync::Arc::new(value);
+        *self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = std::sync::Arc::new(value);
     }
 }
 
@@ -264,7 +263,7 @@ impl<T: Clone> Reloadable<T> {
 /// `jsonwebtoken::jwk::Jwk`/`JwkSet` are meant to be built from wire
 /// JSON, not constructed directly.
 fn empty_jwks() -> JwkSet {
-    serde_json::from_str(r#"{"keys":[]}"#).expect("empty JWKS always parses")
+    JwkSet { keys: Vec::new() }
 }
 
 /// Build the process-wide [`KeyMaterial`] from the environment: issuer,

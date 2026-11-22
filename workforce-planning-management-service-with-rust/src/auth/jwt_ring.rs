@@ -320,7 +320,7 @@ fn ec_components_from_private_key(
     der: &[u8],
     algorithm: Algorithm,
 ) -> Result<(EllipticCurve, Vec<u8>, Vec<u8>)> {
-    let (curve, half) = match algorithm {
+    let (curve, half): (_, usize) = match algorithm {
         Algorithm::ES256 => (EllipticCurve::P256, 32),
         Algorithm::ES384 => (EllipticCurve::P384, 48),
         _ => return Err(new_error(ErrorKind::InvalidEcdsaKey)),
@@ -330,7 +330,7 @@ fn ec_components_from_private_key(
     let public = sig::KeyPair::public_key(&key).as_ref();
     // An uncompressed point: 0x04, then x and y.
     match public.split_first() {
-        Some((4, xy)) if xy.len() == 2 * half => {
+        Some((4, xy)) if half.checked_mul(2) == Some(xy.len()) => {
             let (x, y) = xy.split_at(half);
             Ok((curve, x.to_vec(), y.to_vec()))
         }
