@@ -432,6 +432,11 @@
         "description": "WPM-T412: what an employer must report when someone is hurt and hand over when someone leaves, in the eleven jurisdictions, with sources; the fields of the injury record"
       },
       {
+        "title": "spec/figure-declarations.md",
+        "path": "spec/figure-declarations.md",
+        "description": "WPM-T637: the figure declarations for the fallbacks the code names (RCA-DECL-1, RCA-DECL-4): a page limit and offset, a count against a ceiling, a cache entry's size, a cost deviation, a viability echo and a skill bar, each with its why"
+      },
+      {
         "title": "spec/learning-economics.md",
         "path": "spec/learning-economics.md",
         "description": "WPM-R227–R230, WPM-D172–D174 and WPM-T446–T453: what learning costs and returns: a course fee, the cost of the hours, train or hire, a stated benefit with payback and net present value; unknown is never zero"
