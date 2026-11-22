@@ -79,6 +79,10 @@ In specification-driven development, the specification declares each figure befo
 
 - **RCA-DECL-5.** A failure that signals invalid, corrupt or inconsistent data is not recoverable. Its declaration
   MUST NOT name a fallback for it. Such a failure MUST become an error or an "unknown".
+- **RCA-DECL-6.** A declaration MUST NOT name a fallback, default or bound for an input value that is out of range or
+  malformed. An input outside its valid range is invalid data, so it is an error (RCA-DECL-5). A declaration that does
+  so is a defect, and the implementer MUST raise it (RCA-DECL-3) rather than implement it. A fallback is for a
+  computed result that has a correct answer (RCA-DECL-4), never for repairing an input.
 
 ## Integer operations
 
@@ -718,7 +722,8 @@ A reviewer or agent verifying a change against this file confirms each item:
 2. No plain operator or panicking method on an external figure outside a recorded exception (RCA-INT-2, RCA-EXC),
    and no wrapping, saturating, overflowing or clamping anywhere, including `max(lo).min(hi)` (RCA-INT-4 to
    RCA-INT-6). Every `min` or `max` that bounds an external figure cites its declaration (RCA-INT-6).
-3. No checked result is unwrapped, defaulted or replaced by an undeclared value. Every `unwrap_or` fallback is
+3. No out-of-range or malformed input is replaced by a fallback, default or bound, even a declared one (RCA-DECL-6).
+   No checked result is unwrapped, defaulted or replaced by an undeclared value. Every `unwrap_or` fallback is
    declared, in range, and cites its declaration (RCA-NONE-1, RCA-NONE-3).
 4. Every `None` is handled close to its source: it is replaced by its declared fallback, becomes a named error,
    propagates, or becomes a user-visible unknown (RCA-NONE-2 to RCA-NONE-5).
