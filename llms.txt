@@ -80,6 +80,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/serial-comma/index.md](spec/serial-comma/index.md): convention: prose uses the serial comma
 - [spec/oxford-spelling/index.md](spec/oxford-spelling/index.md): convention: prose uses Oxford spelling
 - [spec/calendar-days-or-business-days/index.md](spec/calendar-days-or-business-days/index.md): convention: every duration in days says calendar days or business days
+- [spec/arithmetic/index.md](spec/arithmetic/index.md): convention: arithmetic never panics or wraps; use checked_* and return None
 - [spec/special-files-for-public-repos/index.md](spec/special-files-for-public-repos/index.md): convention: the special top-level files a public repository carries
 - [spec/lily-design-system-svelte-with-picker-bar/index.md](spec/lily-design-system-svelte-with-picker-bar/index.md): convention: the Lily Design System with the picker bar in each Svelte app
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte

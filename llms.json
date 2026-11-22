@@ -352,6 +352,11 @@
         "description": "convention: every duration in days says calendar days or business days"
       },
       {
+        "title": "spec/arithmetic/index.md",
+        "path": "spec/arithmetic/index.md",
+        "description": "convention: arithmetic never panics or wraps; use checked_* and return None"
+      },
+      {
         "title": "spec/special-files-for-public-repos/index.md",
         "path": "spec/special-files-for-public-repos/index.md",
         "description": "convention: the special top-level files a public repository carries"
