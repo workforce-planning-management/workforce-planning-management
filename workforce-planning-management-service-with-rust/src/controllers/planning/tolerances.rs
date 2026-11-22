@@ -107,8 +107,15 @@ pub(super) async fn dimension_states(
     let cost = cost_value(ctx, caller, pid, CostQuery::default()).await?;
     let alignment = alignment_value(ctx, caller, pid).await?;
     let lines = lines_of(&forecast);
-    let bench = &alignment["critical_roles_without_bench"];
-    let usize_of = |v: &serde_json::Value| usize::try_from(v.as_u64().unwrap_or(0)).unwrap_or(0);
+    let usize_of = |path: &str| {
+        usize::try_from(
+            alignment
+                .pointer(path)
+                .and_then(serde_json::Value::as_u64)
+                .unwrap_or(0),
+        )
+        .unwrap_or(0)
+    };
     Ok(tol::Dimension::ALL
         .into_iter()
         .map(|dimension| {
@@ -116,13 +123,17 @@ pub(super) async fn dimension_states(
                 tol::Dimension::Time => tol::time_deviation(&lines, today),
                 tol::Dimension::Resources => tol::resources_deviation(&lines),
                 tol::Dimension::Cost => tol::cost_deviation(
-                    cost["total_annual_cost_minor"].as_i64(),
-                    cost["affordability"]["budget_minor"].as_i64(),
-                    cost["uncosted_groups"].as_u64() == Some(0),
+                    cost.pointer("/total_annual_cost_minor")
+                        .and_then(serde_json::Value::as_i64),
+                    cost.pointer("/affordability/budget_minor")
+                        .and_then(serde_json::Value::as_i64),
+                    cost.pointer("/uncosted_groups")
+                        .and_then(serde_json::Value::as_u64)
+                        == Some(0),
                 ),
                 tol::Dimension::Risk => tol::risk_deviation(
-                    usize_of(&bench["succession_plans_in_plan_departments"]),
-                    usize_of(&bench["in_plan_departments"]),
+                    usize_of("/critical_roles_without_bench/succession_plans_in_plan_departments"),
+                    usize_of("/critical_roles_without_bench/in_plan_departments"),
                 ),
             };
             let tolerance = set.remove(dimension.as_str());

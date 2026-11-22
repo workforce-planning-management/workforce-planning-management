@@ -160,9 +160,11 @@ async fn weighted_days(
         .fetch_all(crate::db::pool(ctx))
         .await?;
         for row in rows {
-            if let Some(i) = months.iter().position(|m| *m == row.first) {
-                sums[i] = row.total;
-                counts[i] = usize::try_from(row.workers).unwrap_or(0);
+            if let Some(i) = months.iter().position(|m| *m == row.first)
+                && let (Some(sum), Some(count)) = (sums.get_mut(i), counts.get_mut(i))
+            {
+                *sum = row.total;
+                *count = usize::try_from(row.workers).unwrap_or(0);
             }
         }
     }

@@ -123,7 +123,7 @@ async fn create(http: &reqwest::Client, cfg: &Config, body: &Value, external_id:
                     .json::<Value>()
                     .await
                     .ok()
-                    .and_then(|v| scim_id_of(&v["Resources"][0])),
+                    .and_then(|v| v.pointer("/Resources/0").and_then(scim_id_of)),
                 _ => None,
             };
             match id {

@@ -186,7 +186,7 @@ async fn feed(
             let ok = can_edit(&ctx, &caller, &row.organization_ref).await?;
             allowed.insert(row.organization_ref.clone(), ok);
         }
-        let editor = allowed[&row.organization_ref];
+        let editor = allowed.get(&row.organization_ref).copied().unwrap_or(false);
         // A department post is for that department (and editors): from the
         // caller's own worker records when auth is on, else only by the
         // explicit `?department=` filter.
@@ -245,8 +245,13 @@ async fn feed(
         .iter()
         .map(|a| {
             let mut json = row_json(a, today);
-            if allowed.get(&a.organization_ref).copied().unwrap_or(false) {
-                json["read_count"] = serde_json::json!(counts.get(&a.pid).copied().unwrap_or(0));
+            if allowed.get(&a.organization_ref).copied().unwrap_or(false)
+                && let Some(object) = json.as_object_mut()
+            {
+                object.insert(
+                    "read_count".into(),
+                    serde_json::json!(counts.get(&a.pid).copied().unwrap_or(0)),
+                );
             }
             json
         })

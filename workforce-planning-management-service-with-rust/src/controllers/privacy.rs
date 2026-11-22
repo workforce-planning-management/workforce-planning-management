@@ -339,6 +339,45 @@ async fn candidate_subject_access(
     format::json(export)
 }
 
+/// The audit-detail name of each of the first counts `erasure_statements` yields, in the same order.
+const ERASURE_COUNT_KEYS: [&str; 35] = [
+    "notes_scrubbed",
+    "appraisal_comments_scrubbed",
+    "session_notes_scrubbed",
+    "appraisals_closed",
+    "acknowledgements_deleted",
+    "notifications_deleted",
+    "ergonomic_items_scrubbed",
+    "ergonomic_assessments_closed",
+    "adjustment_requests_scrubbed",
+    "cpd_entries_scrubbed",
+    "registrations_scrubbed",
+    "mobility_interests_withdrawn",
+    "framework_roles_deleted",
+    "skill_history_deleted",
+    "aspirations_deleted",
+    "group_memberships_deleted",
+    "dotted_lines_deleted",
+    "emergency_contacts_deleted",
+    "backups_deleted",
+    "rota_memberships_deleted",
+    "rota_swaps_deleted",
+    "rota_swap_requests_deleted",
+    "announcement_reads_deleted",
+    "movement_notes_scrubbed",
+    "movement_tasks_unassigned",
+    "handover_notes_scrubbed",
+    "job_levels_deleted",
+    "pay_positions_deleted",
+    "expense_claims_closed",
+    "expense_claim_texts_scrubbed",
+    "expense_item_texts_scrubbed",
+    "weekly_time_deleted",
+    "memberships_deleted",
+    "onboarding_reasons_scrubbed",
+    "succession_entries_deleted",
+];
+
 /// The statements that scrub everything a worker authored or owns, and the rows
 /// that are about them only (WPM-D22). One list, used by the live erasure and by
 /// the replay after a restore (WPM-D63), so the two cannot drift. The order is
@@ -605,43 +644,13 @@ async fn erase(
         epid,
         "erased",
         caller.actor(),
-        Some(serde_json::json!({
-            "notes_scrubbed": affected[0],
-            "appraisal_comments_scrubbed": affected[1],
-            "session_notes_scrubbed": affected[2],
-            "appraisals_closed": affected[3],
-            "acknowledgements_deleted": affected[4],
-            "notifications_deleted": affected[5],
-            "ergonomic_items_scrubbed": affected[6],
-            "ergonomic_assessments_closed": affected[7],
-            "adjustment_requests_scrubbed": affected[8],
-            "cpd_entries_scrubbed": affected[9],
-            "registrations_scrubbed": affected[10],
-            "mobility_interests_withdrawn": affected[11],
-            "framework_roles_deleted": affected[12],
-            "skill_history_deleted": affected[13],
-            "aspirations_deleted": affected[14],
-            "group_memberships_deleted": affected[15],
-            "dotted_lines_deleted": affected[16],
-            "emergency_contacts_deleted": affected[17],
-            "backups_deleted": affected[18],
-            "rota_memberships_deleted": affected[19],
-            "rota_swaps_deleted": affected[20],
-            "rota_swap_requests_deleted": affected[21],
-            "announcement_reads_deleted": affected[22],
-            "movement_notes_scrubbed": affected[23],
-            "movement_tasks_unassigned": affected[24],
-            "handover_notes_scrubbed": affected[25],
-            "job_levels_deleted": affected[26],
-            "pay_positions_deleted": affected[27],
-            "expense_claims_closed": affected[28],
-            "expense_claim_texts_scrubbed": affected[29],
-            "expense_item_texts_scrubbed": affected[30],
-            "weekly_time_deleted": affected[31],
-            "memberships_deleted": affected[32],
-            "onboarding_reasons_scrubbed": affected[33],
-            "succession_entries_deleted": affected[34],
-        })),
+        Some(serde_json::Value::Object(
+            ERASURE_COUNT_KEYS
+                .iter()
+                .zip(affected)
+                .map(|(key, count)| ((*key).to_string(), serde_json::json!(count)))
+                .collect(),
+        )),
     )
     .await?;
     tx.commit().await?;
@@ -682,8 +691,10 @@ pub(crate) fn horizons(
                 configured,
             );
             if found.value.source == rules::HorizonSource::Legacy {
-                found.came_from["setting"] =
-                    serde_json::json!("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS");
+                found.came_from = super::reporting::with_fields(
+                    std::mem::take(&mut found.came_from),
+                    serde_json::json!({"setting": "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS"}),
+                );
             }
             (kind, found)
         })
@@ -712,8 +723,10 @@ async fn sweep_horizons(
             if let Some((_, held)) = all.iter_mut().find(|(k, _)| *k == kind)
                 && found.value.days > held.value.days
             {
-                let mut came_from = found.came_from;
-                came_from["organization_ref"] = serde_json::json!(organization);
+                let came_from = super::reporting::with_fields(
+                    found.came_from,
+                    serde_json::json!({ "organization_ref": organization }),
+                );
                 *held = InForce {
                     value: found.value,
                     came_from,
@@ -935,4 +948,14 @@ pub fn routes() -> Routes {
         .add("/retention", get(retention_report))
         .add("/retention/schedule", get(retention_schedule))
         .add("/retention/sweep", post(retention_sweep))
+}
+
+#[cfg(test)]
+mod erasure_count_tests {
+    use super::*;
+
+    #[test]
+    fn every_named_count_has_a_statement() {
+        assert!(erasure_statements(Uuid::nil()).len() >= ERASURE_COUNT_KEYS.len());
+    }
 }

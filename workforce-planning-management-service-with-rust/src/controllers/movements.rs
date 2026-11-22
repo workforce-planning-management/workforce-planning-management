@@ -410,11 +410,17 @@ async fn get_movement(
     let names = names_for(&ctx, items.iter().filter_map(|i| i.assignee_pid).collect()).await?;
     let states: Vec<ItemState> = items.iter().map(|i| state_of(i, today)).collect();
     let mut json = movement_json(&movement, &Shown::of(&worker), rules::progress(&states));
-    json["items"] =
-        serde_json::Value::Array(items.iter().map(|i| item_json(i, today, &names)).collect());
+    if let Some(object) = json.as_object_mut() {
+        object.insert(
+            "items".into(),
+            serde_json::Value::Array(items.iter().map(|i| item_json(i, today, &names)).collect()),
+        );
+    }
     if may_read_why(&caller, &worker) {
-        json["reason"] = serde_json::json!(movement.reason);
-        json["notes"] = serde_json::json!(movement.notes);
+        if let Some(object) = json.as_object_mut() {
+            object.insert("reason".into(), serde_json::json!(movement.reason));
+            object.insert("notes".into(), serde_json::json!(movement.notes));
+        }
         if movement.reason.is_some() || movement.notes.is_some() {
             let mut connection = db::pool(&ctx).acquire().await?;
             db::audit(

@@ -113,8 +113,10 @@ async fn get_worker_level(
     let view = match current(&ctx, &worker).await? {
         Some(row) => {
             let mut v = level_view(&ctx, &row.framework, row.level_number).await?;
-            v["effective_on"] = json!(row.effective_on);
-            v["on_behalf"] = json!(row.on_behalf);
+            if let Some(object) = v.as_object_mut() {
+                object.insert("effective_on".into(), json!(row.effective_on));
+                object.insert("on_behalf".into(), json!(row.on_behalf));
+            }
             Some(v)
         }
         None => None,
@@ -175,8 +177,10 @@ async fn set_worker_level(
     .await?;
     tx.commit().await?;
     let mut view = level_view(&ctx, &framework, i32::from(number)).await?;
-    view["effective_on"] = json!(effective_on);
-    view["on_behalf"] = json!(on_behalf);
+    if let Some(object) = view.as_object_mut() {
+        object.insert("effective_on".into(), json!(effective_on));
+        object.insert("on_behalf".into(), json!(on_behalf));
+    }
     format::json(json!({ "job_level": view }))
 }
 

@@ -11,6 +11,11 @@ use std::collections::BTreeMap;
 
 use super::csv::parse_csv;
 
+/// The documented name of column `c`; an index past the header (never reached, the row width is checked first) is blank.
+fn column_name(names: &[&'static str], c: usize) -> &'static str {
+    names.get(c).copied().unwrap_or_default()
+}
+
 /// SFIA's own scale: seven levels of responsibility.
 pub const SFIA_SCALE_MAX: i32 = 7;
 
@@ -80,11 +85,14 @@ pub fn parse_skills(text: &str) -> Result<Vec<Skill>, String> {
                 row.len()
             ));
         }
-        let cell = |c: usize| row[c].trim();
+        let cell = |c: usize| row.get(c).map_or("", |v| v.trim());
         let need = |c: usize| {
             let v = cell(c);
             if v.is_empty() {
-                Err(format!("row {n}: column {} is blank", COLUMNS[c]))
+                Err(format!(
+                    "row {n}: column {} is blank",
+                    column_name(&COLUMNS, c)
+                ))
             } else {
                 Ok(v.to_string())
             }
@@ -117,7 +125,7 @@ pub fn parse_skills(text: &str) -> Result<Vec<Skill>, String> {
             if !same {
                 return Err(format!(
                     "row {n}: column {} differs from the skill's earlier rows ({code})",
-                    COLUMNS[c]
+                    column_name(&COLUMNS, c)
                 ));
             }
         }
@@ -193,19 +201,20 @@ pub fn parse_levels(text: &str) -> Result<Vec<ResponsibilityLevel>, String> {
     let mut out: Vec<ResponsibilityLevel> = Vec::new();
     for (i, row) in body.iter().enumerate() {
         let n = i + 2;
-        if row.len() != LEVEL_COLUMNS.len() {
+        let Ok(cells) = <&[String; LEVEL_COLUMNS.len()]>::try_from(row.as_slice()) else {
             return Err(format!(
                 "row {n}: expected {} columns, found {}",
                 LEVEL_COLUMNS.len(),
                 row.len()
             ));
-        }
-        for (c, cell) in row.iter().enumerate() {
+        };
+        for (name, cell) in LEVEL_COLUMNS.iter().zip(cells) {
             if cell.trim().is_empty() {
-                return Err(format!("row {n}: column {} is blank", LEVEL_COLUMNS[c]));
+                return Err(format!("row {n}: column {name} is blank"));
             }
         }
-        let level: i32 = row[0]
+        let [level_cell, title, essence, attributes @ ..] = cells;
+        let level: i32 = level_cell
             .trim()
             .parse()
             .ok()
@@ -218,10 +227,13 @@ pub fn parse_levels(text: &str) -> Result<Vec<ResponsibilityLevel>, String> {
         }
         out.push(ResponsibilityLevel {
             level,
-            title: row[1].trim().to_string(),
-            essence: row[2].trim().to_string(),
-            attributes: (3..LEVEL_COLUMNS.len())
-                .map(|c| (LEVEL_COLUMNS[c].to_string(), row[c].trim().to_string()))
+            title: title.trim().to_string(),
+            essence: essence.trim().to_string(),
+            attributes: LEVEL_COLUMNS
+                .iter()
+                .skip(3)
+                .zip(attributes)
+                .map(|(name, cell)| ((*name).to_string(), cell.trim().to_string()))
                 .collect(),
         });
     }
@@ -285,10 +297,13 @@ pub fn parse_resources(text: &str) -> Result<Vec<Resource>, String> {
                 row.len()
             ));
         }
-        let cell = |c: usize| row[c].trim();
+        let cell = |c: usize| row.get(c).map_or("", |v| v.trim());
         let need = |c: usize| {
             if cell(c).is_empty() {
-                Err(format!("row {n}: column {} is blank", RESOURCE_COLUMNS[c]))
+                Err(format!(
+                    "row {n}: column {} is blank",
+                    column_name(&RESOURCE_COLUMNS, c)
+                ))
             } else {
                 Ok(cell(c).to_string())
             }

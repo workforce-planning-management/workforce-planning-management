@@ -85,8 +85,10 @@ pub fn pick<T>(
             json!({ "kind": "default", "setting": setting, "default_from": entry.map(|d| d.origin) }),
         ),
     };
-    if !looked.is_null() {
-        came_from["profile"] = looked;
+    if !looked.is_null()
+        && let Some(object) = came_from.as_object_mut()
+    {
+        object.insert("profile".into(), looked);
     }
     InForce { value, came_from }
 }
@@ -255,7 +257,7 @@ async fn list(
                 "came_from": came_from,
             });
             if let (Some(Reader::Worker), Some(org)) = (d.reader, organization.as_ref()) {
-                row["by_place"] = places
+                let by_place = places
                     .iter()
                     .map(|code| {
                         let place = Scope {
@@ -267,6 +269,9 @@ async fn list(
                         json!({ "code": code, "value": value, "came_from": came_from })
                     })
                     .collect();
+                if let Some(object) = row.as_object_mut() {
+                    object.insert("by_place".into(), by_place);
+                }
             }
             row
         })

@@ -102,7 +102,7 @@ fn turn_index(rota: &Rota, date: Date) -> Option<usize> {
 /// and availability).
 #[must_use]
 pub fn scheduled(rota: &Rota, date: Date) -> Option<Uuid> {
-    turn_index(rota, date).map(|i| rota.members[i])
+    turn_index(rota, date).and_then(|i| rota.members.get(i).copied())
 }
 
 /// Who is on call on `date`: an override if one covers it (the last one
@@ -142,8 +142,7 @@ pub fn assign(
         };
     };
     let n = rota.members.len();
-    for step in 0..n {
-        let member = rota.members[(start + step) % n];
+    for (step, &member) in rota.members.iter().cycle().skip(start).take(n).enumerate() {
         if !unavailable(member, date) {
             let source = if step == 0 {
                 Source::Rotation

@@ -118,8 +118,12 @@ async fn graded(
     .fetch_one(crate::db::pool(ctx))
     .await?;
     let mut out = Vec::with_capacity(found.skills.len());
-    for (i, skill) in found.skills.into_iter().enumerate() {
-        let status = match found.statuses[i].as_str() {
+    let each = found.skills.into_iter().zip(&found.statuses);
+    let each = each.zip(&found.departments).zip(&found.shortfalls);
+    for (((((skill, status), department), shortfall), weight), people) in
+        each.zip(&found.weights).zip(&found.people)
+    {
+        let status = match status.as_str() {
             "met" => Status::Met,
             "below" => Status::Below,
             _ => Status::Undeclared,
@@ -127,12 +131,12 @@ async fn graded(
         out.push((
             Row {
                 skill,
-                department: found.departments[i].clone(),
+                department: department.clone(),
                 status,
-                shortfall: (status == Status::Below).then_some(found.shortfalls[i]),
-                importance: importance_of(found.weights[i]).to_string(),
+                shortfall: (status == Status::Below).then_some(*shortfall),
+                importance: importance_of(*weight).to_string(),
             },
-            count(found.people[i]),
+            count(*people),
         ));
     }
     Ok(Graded {

@@ -6,7 +6,7 @@
 
 use jiff::civil::Date;
 use serde::Serialize;
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 
 /// The SCIM schema URNs used.
@@ -58,9 +58,11 @@ pub fn external_id(pid: &str) -> String {
 /// manager has been provisioned; until then the manager is left out and a later run adds it.
 #[must_use]
 pub fn user(e: &Employment, today: Date, manager_scim_id: Option<&str>) -> Value {
-    let mut enterprise = json!({ "employeeNumber": e.worker_number, "department": e.department });
+    let mut enterprise = Map::new();
+    enterprise.insert("employeeNumber".to_string(), json!(e.worker_number));
+    enterprise.insert("department".to_string(), json!(e.department));
     if let Some(id) = manager_scim_id {
-        enterprise["manager"] = json!({ "value": id });
+        enterprise.insert("manager".to_string(), json!({ "value": id }));
     }
     json!({
         "schemas": [USER_SCHEMA, ENTERPRISE_SCHEMA],
@@ -92,12 +94,11 @@ pub fn lookup_query(external_id: &str) -> String {
 /// A short fingerprint of a body, so an unchanged user is not sent again.
 #[must_use]
 pub fn fingerprint(body: &Value) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
     let bytes = serde_json::to_vec(body).unwrap_or_default();
     Sha256::digest(bytes)
         .iter()
-        .flat_map(|b| [HEX[usize::from(b >> 4)], HEX[usize::from(b & 15)]])
-        .map(char::from)
+        .flat_map(|b| [b >> 4, b & 15])
+        .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }
 

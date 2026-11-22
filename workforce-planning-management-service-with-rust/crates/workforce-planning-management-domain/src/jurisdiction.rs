@@ -1003,11 +1003,11 @@ pub fn resolve_entry(
                 .is_some()
         })
         .collect();
-    if found.is_empty() {
+    let Some((&first, rest)) = found.split_first() else {
         return Resolution::Unknown {
             reason: "not_configured",
         };
-    }
+    };
     let resolved = |value: Value, picked: Vec<(&Step, &Row)>| {
         let status = picked
             .iter()
@@ -1025,12 +1025,12 @@ pub fn resolve_entry(
     };
     // `found` is the most specific first, so `min_by_key`/`max_by_key` ties keep the more specific on a strict pick.
     match entry.combine {
-        Combine::MostSpecific => resolved(found[0].1.value.clone(), vec![found[0]]),
+        Combine::MostSpecific => resolved(first.1.value.clone(), vec![first]),
         Combine::StrictestMax | Combine::StrictestMin => {
-            let mut best = found[0];
+            let mut best = first;
             // A strictest entry's shape is a number or a flag, so every validated value has a rank; one without is
             // never preferred.
-            for pair in &found[1..] {
+            for pair in rest {
                 if let (Some(now), Some(new)) = (best.1.value.rank(), pair.1.value.rank())
                     && (if entry.combine == Combine::StrictestMax {
                         new < now

@@ -64,10 +64,11 @@ pub fn rest_breaches(intervals: &[(Timestamp, Timestamp)], min_rest: i64) -> Vec
         .collect();
     sorted.sort_by_key(|(start, _)| *start);
     sorted
-        .windows(2)
-        .filter_map(|pair| {
-            let (_, prev_end) = *pair[0];
-            let (next_start, _) = *pair[1];
+        .iter()
+        .zip(sorted.iter().skip(1))
+        .filter_map(|(prev, next)| {
+            let (_, prev_end) = **prev;
+            let (next_start, _) = **next;
             let gap_minutes = next_start.duration_since(prev_end).as_mins().max(0);
             (gap_minutes < min_rest).then_some(RestBreach {
                 prev_end,

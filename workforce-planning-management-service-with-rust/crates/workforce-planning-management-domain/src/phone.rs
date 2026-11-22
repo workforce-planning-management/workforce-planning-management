@@ -96,7 +96,7 @@ pub fn e164(value: &str, country: Option<&str>) -> Option<String> {
         let first_ok = |d: &str| d.chars().next().is_some_and(|c| ('2'..='9').contains(&c));
         return match digits.len() {
             10 if first_ok(&digits) => Some(format!("+1{digits}")),
-            11 if digits.starts_with('1') && first_ok(&digits[1..]) => Some(format!("+{digits}")),
+            11 if digits.strip_prefix('1').is_some_and(first_ok) => Some(format!("+{digits}")),
             _ => None,
         };
     }

@@ -540,11 +540,14 @@ async fn unverified(
     let queue: Vec<Value> = waiting
         .iter()
         .map(|w| {
-            let mut v = row(w, today);
-            v["worker_pid"] = json!(w.worker_pid);
-            v["display_name"] = json!(name_of.get(&w.worker_pid));
-            v["declared_on"] = json!(crate::dates::date_of(w.created_at));
-            v
+            super::reporting::with_fields(
+                row(w, today),
+                json!({
+                    "worker_pid": w.worker_pid,
+                    "display_name": name_of.get(&w.worker_pid),
+                    "declared_on": crate::dates::date_of(w.created_at),
+                }),
+            )
         })
         .collect();
     format::json(json!({ "organization": q.organization, "as_of": today, "queue": queue }))
@@ -619,25 +622,24 @@ async fn rollup(
                 "role_profile_pid": profile.pid, "job_title": profile.job_title,
                 "title": r.title, "kind": r.kind, "framework": r.framework, "min_level": r.min_level,
             });
-            let mut cell = head;
-            match rules::rollup(&standings, floor) {
-                rules::Rollup::Hidden => cell["hidden"] = json!(true),
+            let rolled = match rules::rollup(&standings, floor) {
+                rules::Rollup::Hidden => json!({ "hidden": true }),
                 rules::Rollup::Shown {
                     met,
                     declared_only,
                     expired,
                     missing,
                     rate,
-                } => {
-                    cell["hidden"] = json!(false);
-                    cell["met"] = json!(met);
-                    cell["declared_only"] = json!(declared_only);
-                    cell["expired"] = json!(expired);
-                    cell["missing"] = json!(missing);
-                    cell["rate"] = json!(rate);
-                }
-            }
-            cells.push(cell);
+                } => json!({
+                    "hidden": false,
+                    "met": met,
+                    "declared_only": declared_only,
+                    "expired": expired,
+                    "missing": missing,
+                    "rate": rate,
+                }),
+            };
+            cells.push(super::reporting::with_fields(head, rolled));
         }
     }
     format::json(

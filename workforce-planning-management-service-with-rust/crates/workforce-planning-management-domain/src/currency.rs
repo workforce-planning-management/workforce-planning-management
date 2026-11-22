@@ -189,7 +189,8 @@ pub fn exponent(code: &str) -> Option<u32> {
     MINOR_UNITS
         .binary_search_by(|(c, _)| (*c).cmp(code))
         .ok()
-        .map(|i| MINOR_UNITS[i].1)
+        .and_then(|i| MINOR_UNITS.get(i))
+        .map(|unit| unit.1)
 }
 
 /// Whether `code` is three capital letters and a code the table holds.

@@ -151,10 +151,13 @@ async fn upline(
         let Some(boss) = staff_among(&ctx, &caller, &[pid]).await?.remove(&pid) else {
             break;
         };
-        let mut json = person_json(&boss);
-        json["level"] = serde_json::json!(chain.len() + 1);
-        json["direct_manager"] = serde_json::json!(chain.is_empty());
-        chain.push(json);
+        chain.push(with_fields(
+            person_json(&boss),
+            serde_json::json!({
+                "level": chain.len() + 1,
+                "direct_manager": chain.is_empty(),
+            }),
+        ));
         manager = boss.manager_pid;
     }
     format::json(serde_json::json!({
@@ -201,10 +204,29 @@ fn below(manager: Uuid, staff: &BTreeMap<Uuid, Person>) -> Vec<(&Person, usize)>
 }
 
 fn report_json(w: &Person, depth: usize) -> serde_json::Value {
-    let mut json = person_json(w);
-    json["depth"] = serde_json::json!(depth);
-    json["report_kind"] = serde_json::json!(org::report_kind(depth).map(ReportKind::as_str));
-    json
+    with_fields(
+        person_json(w),
+        serde_json::json!({
+            "depth": depth,
+            "report_kind": org::report_kind(depth).map(ReportKind::as_str),
+        }),
+    )
+}
+
+/// `base` (an object, or null for an empty one) with the members of the object `extra` added over it.
+/// A base that is neither is returned unchanged.
+pub(crate) fn with_fields(
+    mut base: serde_json::Value,
+    extra: serde_json::Value,
+) -> serde_json::Value {
+    if base.is_null() {
+        base = serde_json::json!({});
+    }
+    if let (serde_json::Value::Object(target), serde_json::Value::Object(more)) = (&mut base, extra)
+    {
+        target.extend(more);
+    }
+    base
 }
 
 /// `GET /api/workers/{pid}/downline` — everyone below a manager: their
@@ -268,13 +290,16 @@ async fn reports(
 }
 
 fn dotted_json(d: &dotted_line_reports::Model, person: Option<&Person>) -> serde_json::Value {
-    let mut json = person.map_or_else(|| serde_json::json!({}), person_json);
-    json["note"] = serde_json::json!(d.note);
-    json["started_at"] = serde_json::json!(d.started_at);
-    json["ended_at"] = serde_json::json!(d.ended_at);
-    json["current"] = serde_json::json!(d.ended_at.is_none());
-    json["on_behalf"] = serde_json::json!(d.on_behalf);
-    json
+    with_fields(
+        person.map_or_else(|| serde_json::json!({}), person_json),
+        serde_json::json!({
+            "note": d.note,
+            "started_at": d.started_at,
+            "ended_at": d.ended_at,
+            "current": d.ended_at.is_none(),
+            "on_behalf": d.on_behalf,
+        }),
+    )
 }
 
 /// `GET /api/workers/{pid}/dotted-line?include_past=` — a worker's

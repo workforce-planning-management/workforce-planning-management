@@ -79,6 +79,13 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
   `assert!(x.is_empty())` in tests (compare against an empty `Vec`).
 - Soft-deleted rows: filter `DeletedAt.is_null()` on every read.
 
+## No panic in production
+
+The service and domain crates deny `unwrap`, `expect`, `panic!`, `unreachable!`, `todo!`, `unimplemented!`, indexing and string
+slicing (`#![deny(clippy::...)]` in each crate root; `clippy.toml` lets tests use them). Use `get`, `split_first`, slice patterns,
+`zip`, `str::get` and `?`; a failure is an error value. The only `#[allow(clippy::expect_used)]` sites run once at start-up on
+constants (the metrics registry, the empty key set, the logging defaults), each with its reason.
+
 ## Money and time
 
 Money is minor units (`i64`) + ISO-4217; no floats. "Employed on a date" is

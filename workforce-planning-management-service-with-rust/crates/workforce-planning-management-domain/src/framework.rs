@@ -132,7 +132,11 @@ pub fn parse_role_summary(text: &str) -> Result<ParsedLevel, String> {
                     out.level_description = Some(bullet);
                 }
                 Section::Accountabilities => out.accountabilities.push(bullet),
-                Section::Skill(index) => out.skills[index].statements.push(bullet),
+                Section::Skill(index) => {
+                    if let Some(skill) = out.skills.get_mut(index) {
+                        skill.statements.push(bullet);
+                    }
+                }
                 _ => {}
             }
         }
@@ -166,7 +170,8 @@ pub fn parse_baselines(text: &str) -> BTreeMap<String, i32> {
         }
         // Every `Baseline:` on the line, in order; the first followed by an integer wins.
         let level = line.match_indices("Baseline:").find_map(|(at, marker)| {
-            let digits: String = line[at + marker.len()..]
+            let digits: String = line
+                .get(at + marker.len()..)?
                 .trim_start()
                 .chars()
                 .take_while(char::is_ascii_digit)

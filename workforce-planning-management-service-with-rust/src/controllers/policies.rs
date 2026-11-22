@@ -335,10 +335,9 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
                 effective_on: v.effective_on.get(),
             })
             .collect();
-        let Some(i) = rules::current(&facts, today) else {
+        let Some(v) = rules::current(&facts, today).and_then(|i| versions.get(i)) else {
             continue;
         };
-        let v = &versions[i];
         if !rules::in_audience(
             &v.audience_kind,
             v.audience_value.as_deref(),
@@ -393,7 +392,9 @@ async fn applicable(
             effective_on: x.effective_on.get(),
         })
         .collect();
-    let newest = rules::current(&facts, today).map(|i| versions[i].pid);
+    let newest = rules::current(&facts, today)
+        .and_then(|i| versions.get(i))
+        .map(|x| x.pid);
     if newest != Some(v.pid) {
         return Err(unprocessable(
             "only the newest version in force can be acknowledged",

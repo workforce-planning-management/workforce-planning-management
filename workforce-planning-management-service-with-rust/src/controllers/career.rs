@@ -209,11 +209,11 @@ async fn add_past_role(
             end: r.ended_at.map(SqlTimestamp::get),
         })
         .collect();
-    if let Some(i) = rules::first_overlap(&interval, &spans) {
+    if let Some(clash) = rules::first_overlap(&interval, &spans).and_then(|i| existing.get(i)) {
         return Err(unprocessable(&format!(
             "that overlaps the role '{}' held from {}",
-            existing[i].role_label,
-            crate::dates::date_of(existing[i].started_at)
+            clash.role_label,
+            crate::dates::date_of(clash.started_at)
         )));
     }
     let mut tx = db::pool(&ctx).begin().await?;

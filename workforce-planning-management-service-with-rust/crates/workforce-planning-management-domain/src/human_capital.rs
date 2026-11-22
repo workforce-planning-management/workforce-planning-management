@@ -336,8 +336,11 @@ fn median(days: &[i64]) -> Option<i64> {
     let n = sorted.len();
     match n {
         0 => None,
-        _ if n % 2 == 1 => Some(sorted[n / 2]),
-        _ => Some((sorted[n / 2 - 1] + sorted[n / 2] + 1) / 2),
+        _ if n % 2 == 1 => sorted.get(n / 2).copied(),
+        _ => sorted
+            .get(n / 2 - 1..=n / 2)
+            .and_then(|pair| <&[i64; 2]>::try_from(pair).ok())
+            .map(|[low, high]| (low + high + 1) / 2),
     }
 }
 

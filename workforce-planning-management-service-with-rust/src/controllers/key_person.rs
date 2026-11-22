@@ -243,7 +243,10 @@ pub(super) async fn rows(
                 bar,
                 department,
                 assessment: rules::assess(&facts),
-                sole_holder: (members.len() == 1).then(|| members[0].pid),
+                sole_holder: match members.as_slice() {
+                    [only] => Some(only.pid),
+                    _ => None,
+                },
                 unplaced_holders,
             });
         }

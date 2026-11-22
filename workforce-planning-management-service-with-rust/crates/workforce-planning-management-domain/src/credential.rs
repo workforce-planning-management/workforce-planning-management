@@ -14,7 +14,7 @@
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use sha2::Digest;
 use uuid::Uuid;
 
@@ -83,7 +83,7 @@ pub fn gzip_stored(data: &[u8]) -> Vec<u8> {
 /// # Errors
 /// When the bytes are not such a member.
 pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
-    if bytes.len() < 18 || bytes[..4] != [0x1f, 0x8b, 8, 0] {
+    if bytes.len() < 18 || !bytes.starts_with(&[0x1f, 0x8b, 8, 0]) {
         return Err("not a gzip member".to_string());
     }
     let mut at = 10;
@@ -111,12 +111,16 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
             break;
         }
     }
-    let tail = bytes.get(at..at + 8).ok_or("truncated")?;
-    let crc = u32::from_le_bytes([tail[0], tail[1], tail[2], tail[3]]);
+    let tail: [u8; 8] = bytes
+        .get(at..at + 8)
+        .and_then(|t| t.try_into().ok())
+        .ok_or("truncated")?;
+    let [c0, c1, c2, c3, s0, s1, s2, s3] = tail;
+    let crc = u32::from_le_bytes([c0, c1, c2, c3]);
     if crc != crc32(&out) {
         return Err("the checksum does not match".to_string());
     }
-    let size = u32::from_le_bytes([tail[4], tail[5], tail[6], tail[7]]);
+    let size = u32::from_le_bytes([s0, s1, s2, s3]);
     if u64::from(size) != u64::try_from(out.len()).unwrap_or(u64::MAX) % (1_u64 << 32) {
         return Err("the uncompressed length does not match".to_string());
     }
@@ -130,10 +134,10 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
 pub fn encoded_list(revoked: &[usize]) -> Result<String, String> {
     let mut bits = vec![0_u8; STATUS_BITS / 8];
     for &i in revoked {
-        if i >= STATUS_BITS {
+        let Some(byte) = bits.get_mut(i / 8) else {
             return Err(format!("position {i} is outside the list of {STATUS_BITS}"));
-        }
-        bits[i / 8] |= 0x80 >> (i % 8);
+        };
+        *byte |= 0x80 >> (i % 8);
     }
     Ok(format!("u{}", b64(&gzip_stored(&bits))))
 }
@@ -154,11 +158,10 @@ pub fn is_revoked(encoded: &str, index: usize) -> Result<bool, String> {
 /// SHA-256 of a text, lower-case hex: what an issuance record keeps to show which credential it was, without the credential.
 #[must_use]
 pub fn sha256_hex(text: &str) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
     sha2::Sha256::digest(text.as_bytes())
         .iter()
-        .flat_map(|b| [HEX[usize::from(b >> 4)], HEX[usize::from(b & 15)]])
-        .map(char::from)
+        .flat_map(|b| [b >> 4, b & 15])
+        .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }
 
@@ -204,7 +207,7 @@ pub fn verify(public: &[u8; 32], token: &str) -> Result<Value, String> {
         return Err("a compact JWS has three parts".to_string());
     };
     let header: Value = serde_json::from_slice(&unb64(h)?).map_err(|_| "bad header")?;
-    if header["alg"] != "EdDSA" {
+    if header.get("alg") != Some(&json!("EdDSA")) {
         return Err("only EdDSA is accepted".to_string());
     }
     let key = VerifyingKey::from_bytes(public).map_err(|_| "bad public key")?;
@@ -263,29 +266,33 @@ pub fn framework_name(slug: &str) -> String {
 /// The Open Badges 3.0 credential. It carries no name, number, email or id of the worker.
 #[must_use]
 pub fn badge(b: &Badge<'_>) -> Value {
-    let mut achievement = json!({
-        "id": format!("urn:uuid:{}", b.issuance),
-        "type": ["Achievement"],
-        "achievementType": "Course",
-        "name": b.name,
-        "description": b.description,
-        "criteria": { "narrative": b.criteria },
-    });
+    let mut achievement = Map::new();
+    achievement.insert("id".to_string(), json!(format!("urn:uuid:{}", b.issuance)));
+    achievement.insert("type".to_string(), json!(["Achievement"]));
+    achievement.insert("achievementType".to_string(), json!("Course"));
+    achievement.insert("name".to_string(), json!(b.name));
+    achievement.insert("description".to_string(), json!(b.description));
+    achievement.insert("criteria".to_string(), json!({ "narrative": b.criteria }));
     if !b.alignments.is_empty() {
-        achievement["alignment"] = Value::Array(
-            b.alignments
-                .iter()
-                .map(|a| {
-                    let mut one = json!({
-                        "type": ["Alignment"], "targetName": a.label, "targetFramework": a.framework, "targetCode": a.code,
-                    });
-                    // An ESCO reference is a URI; Open Badges has a place for a target that is a link.
-                    if a.code.starts_with("http://") || a.code.starts_with("https://") {
-                        one["targetUrl"] = json!(a.code);
-                    }
-                    one
-                })
-                .collect(),
+        achievement.insert(
+            "alignment".to_string(),
+            Value::Array(
+                b.alignments
+                    .iter()
+                    .map(|a| {
+                        let mut one = Map::new();
+                        one.insert("type".to_string(), json!(["Alignment"]));
+                        one.insert("targetName".to_string(), json!(a.label));
+                        one.insert("targetFramework".to_string(), json!(a.framework));
+                        one.insert("targetCode".to_string(), json!(a.code));
+                        // An ESCO reference is a URI; Open Badges has a place for a target that is a link.
+                        if a.code.starts_with("http://") || a.code.starts_with("https://") {
+                            one.insert("targetUrl".to_string(), json!(a.code));
+                        }
+                        Value::Object(one)
+                    })
+                    .collect(),
+            ),
         );
     }
     json!({
@@ -295,7 +302,7 @@ pub fn badge(b: &Badge<'_>) -> Value {
         "name": b.name,
         "issuer": { "id": b.issuer_id, "type": ["Profile"], "name": b.issuer_name },
         "validFrom": b.valid_from,
-        "credentialSubject": { "type": ["AchievementSubject"], "achievement": achievement },
+        "credentialSubject": { "type": ["AchievementSubject"], "achievement": Value::Object(achievement) },
         "credentialStatus": {
             "id": format!("{}#{}", b.status_list_url, b.status_index),
             "type": "BitstringStatusListEntry",

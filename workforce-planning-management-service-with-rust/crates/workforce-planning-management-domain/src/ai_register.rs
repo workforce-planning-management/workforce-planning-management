@@ -100,12 +100,9 @@ pub const MINIMUM_LOG_MONTHS: i32 = 6;
 
 /// When the Annex III duties apply, unless configured otherwise (as the amended Article 113 shows it).
 ///
-/// # Panics
-///
-/// Never: the date is a constant.
 #[must_use]
-pub fn default_applies_from() -> Date {
-    crate::dates::ymd(2027, 12, 2).expect("a valid date")
+pub const fn default_applies_from() -> Date {
+    Date::constant(2027, 12, 2)
 }
 
 /// The feature with this id.

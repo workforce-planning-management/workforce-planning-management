@@ -229,9 +229,11 @@ pub fn fill_time_summary(days: &[i64]) -> Option<FillTime> {
     let (mean, median) = (
         sorted.iter().sum::<i64>() as f64 / n as f64,
         if n % 2 == 1 {
-            sorted[n / 2] as f64
+            sorted.get(n / 2).map_or(0.0, |m| *m as f64)
         } else {
-            (sorted[n / 2 - 1] + sorted[n / 2]) as f64 / 2.0
+            sorted
+                .get(n / 2 - 1..=n / 2)
+                .map_or(0.0, |pair| pair.iter().sum::<i64>() as f64 / 2.0)
         },
     );
     Some(FillTime {

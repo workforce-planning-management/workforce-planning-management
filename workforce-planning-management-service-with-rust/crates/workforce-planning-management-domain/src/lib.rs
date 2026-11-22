@@ -7,6 +7,18 @@
 //! re-implement them.
 
 #![warn(clippy::pedantic)]
+// No panic in production code: a failure is an error value. Tests may (clippy.toml).
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::unreachable,
+    clippy::todo,
+    clippy::unimplemented,
+    clippy::indexing_slicing,
+    clippy::string_slice
+)]
+#![cfg_attr(test, allow(clippy::string_slice))]
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 

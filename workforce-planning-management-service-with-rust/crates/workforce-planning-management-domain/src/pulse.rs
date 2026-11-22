@@ -56,8 +56,9 @@ pub fn aggregate_cell(scores: &[i32]) -> Cell {
         // pure function does not trust its caller: clamp, don't panic.
         let idx = score.clamp(SCORE_MIN, SCORE_MAX) - 1;
         #[allow(clippy::cast_sign_loss)] // clamped to 0..=4
-        {
-            distribution[idx as usize] += 1;
+        let slot = distribution.get_mut(idx as usize);
+        if let Some(count) = slot {
+            *count += 1;
         }
         total += i64::from(score.clamp(SCORE_MIN, SCORE_MAX));
     }

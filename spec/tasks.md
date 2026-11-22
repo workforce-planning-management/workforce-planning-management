@@ -7225,4 +7225,12 @@ the entry records only the evidence it needs.
         `AGENTS/localization.md`, the UI's `README.md`, the root `README.md` and `llms.json`; the brand names match the docs site's catalogues.
       - Verified for `da-001`, `it-001`, `nl-001`, all eight: 47 unit-test files, 417 tests pass; `pnpm check` has 0 errors; the Playwright `locale-and-chrome` spec passes (5 tests) (key parity, no English left over, label pack, review register,
         CMS config). **Not verified:** the pages read in a browser in the eight new languages; any native-speaker review (the eight are "unreviewed" in `content/locales/REVIEW.md`); the older prose that says "17 locales" in the translated `locales/*` documents.
-
+- [x] WPM-T633 (2026-11-22) **No panic in production code.** *(AGENTS/backend-rust.md)* Clippy's `unwrap_used`, `expect_used`, `panic`,
+      `unreachable`, `todo`, `unimplemented`, `indexing_slicing` and `string_slice` are now `deny` in the service and domain crate
+      roots, with `clippy.toml` allowing them in tests. About 200 indexing and slicing sites and the `expect` calls in `dates`,
+      `ai_register`, the cursor key and the metrics page were rewritten without a panic path. Three `expect` calls stay, each with an
+      `#[allow]` and a reason, because they run once at start-up on constants (metrics registry, empty key set, logging defaults).
+      Verified: `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, the unit tests pass
+      (183 service, 1,230 domain) and the database-backed suite passes (277). **Not verified:** the Keycloak build
+      (`--features keycloak`), tarpaulin coverage after the change, and arithmetic overflow, which the arithmetic lint flagged but this
+      task did not touch. `gap_sql` now zips six parallel vectors, so a length mismatch would truncate where it used to panic.

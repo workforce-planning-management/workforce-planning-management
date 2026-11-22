@@ -132,8 +132,12 @@ async fn list_assessments(
             .iter()
             .map(|item| {
                 let mut value = serde_json::to_value(item)?;
-                value["item_key"] =
-                    serde_json::json!(rules::display_key(item.item_key.as_deref(), &item.name));
+                if let Some(object) = value.as_object_mut() {
+                    object.insert(
+                        "item_key".into(),
+                        serde_json::json!(rules::display_key(item.item_key.as_deref(), &item.name)),
+                    );
+                }
                 Ok(value)
             })
             .collect::<std::result::Result<_, serde_json::Error>>()

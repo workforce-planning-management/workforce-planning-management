@@ -124,13 +124,20 @@ pub(super) async fn what_if(
     .await?;
     tx.commit().await?;
     let mut body = answer_json(&result, &names, from);
-    body["programme_new_end"] = json!(payload.programme_new_end);
-    body["contingent_ending"] = json!(contingent.map(|counts| {
-        counts
-        .into_iter()
-        .map(|(pool, count)| json!({ "pool_pid": pool, "pool": names.get(&pool), "count": count }))
-        .collect::<Vec<_>>()
-    }));
+    if let Some(object) = body.as_object_mut() {
+        object.insert("programme_new_end".into(), json!(payload.programme_new_end));
+        object.insert(
+            "contingent_ending".into(),
+            json!(contingent.map(|counts| {
+                counts
+                    .into_iter()
+                    .map(|(pool, count)| {
+                        json!({ "pool_pid": pool, "pool": names.get(&pool), "count": count })
+                    })
+                    .collect::<Vec<_>>()
+            })),
+        );
+    }
     format::json(body)
 }
 

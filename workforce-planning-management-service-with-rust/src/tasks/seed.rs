@@ -70,7 +70,9 @@ impl Task for Seed {
             .await?;
             for i in 0..9 {
                 n += 1;
-                let (title, salary) = titles[usize::try_from(n).unwrap_or(0) % titles.len()];
+                let (title, salary) = *titles
+                    .get(usize::try_from(n).unwrap_or(0) % titles.len())
+                    .ok_or_else(|| Error::string("seed data: no job titles"))?;
                 let pid = Uuid::new_v4();
                 sqlx::query!(
                     "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, manager_pid, salary_minor, salary_currency, hired_on, engagement_ends_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
@@ -277,14 +279,12 @@ impl Task for Seed {
         .await?;
         // A synthetic oversight scale (WPM-D48): the product ships no real framework, so this one is
         // labelled synthetic in its names and its flag, and exists only to make the views demonstrable.
-        let mut level_pids = Vec::new();
-        for (ordinal, name) in [
+        let level_pids = [Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
+        for (pid, (ordinal, name)) in level_pids.into_iter().zip([
             (1, "Synthetic level 1 (routine)"),
             (2, "Synthetic level 2 (enhanced)"),
             (3, "Synthetic level 3 (intervention)"),
-        ] {
-            let pid = Uuid::new_v4();
-            level_pids.push(pid);
+        ]) {
             sqlx::query!(
                 "INSERT INTO oversight_levels (pid, organization_ref, ordinal, name, synthetic) VALUES ($1, $2, $3, $4, $5)",
                 pid,

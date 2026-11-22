@@ -35,12 +35,17 @@ pub fn with_total<K: Clone>(cells: &[(K, usize)], floor: usize) -> Suppressed<K>
         // Hide the smallest other cell that is not zero; with none, the total itself would give the hidden cell away.
         let next = cells
             .iter()
+            .zip(&shown)
             .enumerate()
-            .filter(|(i, (_, n))| shown[*i] && *n > 0)
-            .min_by_key(|(_, (_, n))| *n)
+            .filter(|(_, ((_, n), is_shown))| **is_shown && *n > 0)
+            .min_by_key(|(_, ((_, n), _))| *n)
             .map(|(i, _)| i);
         match next {
-            Some(i) => shown[i] = false,
+            Some(i) => {
+                if let Some(is_shown) = shown.get_mut(i) {
+                    *is_shown = false;
+                }
+            }
             None => show_total = false,
         }
     }

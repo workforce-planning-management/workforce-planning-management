@@ -35,14 +35,19 @@ pub fn ymd(year: i32, month: u32, day: u32) -> Option<Date> {
 
 /// The instant midnight UTC begins `date`.
 ///
-/// # Panics
-///
-/// Never in practice: every date `jiff` can hold has a midnight in UTC.
+/// Every date `jiff` can hold has a midnight in UTC, so the fallback (the nearer end of the range) is never taken.
 #[must_use]
 pub fn start_of_day(date: Date) -> Timestamp {
-    date.to_zoned(TimeZone::UTC)
-        .expect("every date in jiff's range has a UTC midnight")
-        .timestamp()
+    date.to_zoned(TimeZone::UTC).map_or_else(
+        |_| {
+            if date.year() < 0 {
+                Timestamp::MIN
+            } else {
+                Timestamp::MAX
+            }
+        },
+        |zoned| zoned.timestamp(),
+    )
 }
 
 /// The instant `year-month-day hour:minute:second` UTC, or `None` when it does not exist.

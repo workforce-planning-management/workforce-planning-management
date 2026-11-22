@@ -280,16 +280,21 @@ async fn get_claim(
         })
         .collect();
     let mut view = claim_row(&claim, total(&items)?, items.len());
-    view["items"] = json!(rows);
-    view["worker_name"] = json!(worker.display_name);
-    view["can"] = json!({
-        "edit": gate.edit() && claim.status == "draft",
-        "submit": gate.edit() && claim.status == "draft" && !items.is_empty(),
-        "withdraw": gate.edit() && claim.status == "submitted",
-        "cancel": gate.edit() && matches!(claim.status.as_str(), "draft" | "submitted"),
-        "decide": gate.decide() && claim.status == "submitted",
-        "reimburse": gate.decide() && claim.status == "approved",
-    });
+    if let Some(object) = view.as_object_mut() {
+        object.insert("items".into(), json!(rows));
+        object.insert("worker_name".into(), json!(worker.display_name));
+        object.insert(
+            "can".into(),
+            json!({
+                "edit": gate.edit() && claim.status == "draft",
+                "submit": gate.edit() && claim.status == "draft" && !items.is_empty(),
+                "withdraw": gate.edit() && claim.status == "submitted",
+                "cancel": gate.edit() && matches!(claim.status.as_str(), "draft" | "submitted"),
+                "decide": gate.decide() && claim.status == "submitted",
+                "reimburse": gate.decide() && claim.status == "approved",
+            }),
+        );
+    }
     format::json(view)
 }
 
@@ -768,7 +773,9 @@ async fn queue(
     for c in &claims {
         let items = items_of(&ctx, c.pid).await?;
         let mut row = claim_row(c, total(&items)?, items.len());
-        row["worker_name"] = json!(names.get(&c.worker_pid));
+        if let Some(object) = row.as_object_mut() {
+            object.insert("worker_name".into(), json!(names.get(&c.worker_pid)));
+        }
         out.push(row);
     }
     Ok(super::paged_vec(out, &window))

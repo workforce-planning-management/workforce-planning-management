@@ -99,7 +99,7 @@ pub struct Rules {
 /// A name that is not `period:minutes:bp` with a known period, whole numbers, a threshold of at most a month and a multiplier above
 /// the regular rate (and at most 1000 percent).
 pub fn parse_premiums(names: &[String]) -> Result<Vec<Band>, String> {
-    if names.len() == 1 && names[0] == "none" {
+    if matches!(names, [only] if only == "none") {
         return Ok(Vec::new());
     }
     names

@@ -466,7 +466,12 @@ async fn calculate_run(
             },
         );
         let premium = if found.name == "derived" {
-            found.extra["premium_minor"].as_i64().unwrap_or(0).max(0)
+            found
+                .extra
+                .get("premium_minor")
+                .and_then(serde_json::Value::as_i64)
+                .unwrap_or(0)
+                .max(0)
         } else {
             0
         };

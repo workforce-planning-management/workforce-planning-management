@@ -37,6 +37,10 @@ pub struct Metrics {
 impl Metrics {
     /// Construct the metric set into a fresh registry. The `.expect`s
     /// are infallible: static opts, empty registry.
+    #[allow(
+        clippy::expect_used,
+        reason = "static names and options on an empty registry; built once at start-up, before any request, and a unit test builds it"
+    )]
     fn new() -> Self {
         let registry = Registry::new();
         let counter = |name: &str, help: &str| {
@@ -91,18 +95,16 @@ impl Metrics {
 
     /// Render the registry in Prometheus text-exposition format.
     ///
-    /// # Panics
-    ///
-    /// Not in practice: the text encoder writes into a `Vec` and
-    /// produces valid UTF-8.
+    /// The text encoder writes into a `Vec` and produces UTF-8, so neither fallback is taken in practice; a failure
+    /// gives an empty or lossy page rather than a panic.
     #[must_use]
     pub fn render(&self) -> String {
         let encoder = TextEncoder::new();
         let mut buf = Vec::new();
-        encoder
-            .encode(&self.registry.gather(), &mut buf)
-            .expect("text encoder writes to a Vec which never fails");
-        String::from_utf8(buf).expect("Prometheus text encoder produces UTF-8")
+        if encoder.encode(&self.registry.gather(), &mut buf).is_err() {
+            buf.clear();
+        }
+        String::from_utf8_lossy(&buf).into_owned()
     }
 }
 

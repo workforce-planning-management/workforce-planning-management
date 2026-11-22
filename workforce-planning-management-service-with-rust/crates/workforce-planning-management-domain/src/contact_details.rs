@@ -97,7 +97,7 @@ pub fn clean_block(value: Option<&str>) -> Option<String> {
     let lines: Vec<&str> = value.split('\n').map(str::trim_end).collect();
     let first = lines.iter().position(|l| !l.trim().is_empty())?;
     let last = lines.iter().rposition(|l| !l.trim().is_empty())?;
-    Some(lines[first..=last].join("\n"))
+    Some(lines.get(first..=last)?.join("\n"))
 }
 
 /// A free-text address block: up to [`MAX_ADDRESS_TEXT`] characters on up to [`MAX_ADDRESS_LINES`]

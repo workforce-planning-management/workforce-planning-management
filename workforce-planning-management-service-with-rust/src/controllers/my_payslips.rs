@@ -301,14 +301,17 @@ async fn list_queries(
         let run = slips
             .get(&row.payslip_pid)
             .and_then(|run_pid| runs.get(run_pid));
-        let mut view = query_view(row);
-        view["worker_pid"] = json!(person.pid);
-        view["display_name"] = json!(person.display_name);
-        view["payslip_pid"] = json!(row.payslip_pid);
-        view["run_pid"] = json!(run.map(|r| r.pid));
-        view["period_start"] = json!(run.map(|r| r.period_start));
-        view["period_end"] = json!(run.map(|r| r.period_end));
-        out.push(view);
+        out.push(super::reporting::with_fields(
+            query_view(row),
+            json!({
+                "worker_pid": person.pid,
+                "display_name": person.display_name,
+                "payslip_pid": row.payslip_pid,
+                "run_pid": run.map(|r| r.pid),
+                "period_start": run.map(|r| r.period_start),
+                "period_end": run.map(|r| r.period_end),
+            }),
+        ));
     }
     let shown = out.len();
     db::audit(

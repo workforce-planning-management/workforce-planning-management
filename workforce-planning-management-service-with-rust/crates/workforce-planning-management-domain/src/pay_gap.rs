@@ -383,14 +383,15 @@ impl Rational {
                 let mut sorted = values.to_vec();
                 sorted.sort_unstable();
                 let middle = sorted.len() / 2;
+                let at = |i: usize| sorted.get(i).map(|v| i128::from(*v));
                 if sorted.len() % 2 == 1 {
                     Some(Self {
-                        numerator: i128::from(sorted[middle]),
+                        numerator: at(middle)?,
                         denominator: 1,
                     })
                 } else {
                     Some(Self {
-                        numerator: i128::from(sorted[middle - 1]) + i128::from(sorted[middle]),
+                        numerator: at(middle - 1)? + at(middle)?,
                         denominator: 2,
                     })
                 }
@@ -494,19 +495,21 @@ fn quartile_figures(total: &[(&Eligible, i64)], floor: usize) -> Vec<Figure<Comp
         .collect();
     ranked.sort_unstable();
     let n = ranked.len();
-    let mut female = [0_usize; 4];
-    let mut male = [0_usize; 4];
+    // (female, male) counts per quarter of the ranking
+    let mut quarters = [(0_usize, 0_usize); 4];
     for (rank, (_, _, is_female)) in ranked.iter().enumerate() {
         let band = rank * 4 / n.max(1);
-        if *is_female {
-            female[band] += 1;
-        } else {
-            male[band] += 1;
+        if let Some(quarter) = quarters.get_mut(band) {
+            if *is_female {
+                quarter.0 += 1;
+            } else {
+                quarter.1 += 1;
+            }
         }
     }
-    (0..4)
-        .map(|band| {
-            let (f, m) = (female[band], male[band]);
+    quarters
+        .iter()
+        .map(|&(f, m)| {
             if f + m == 0 {
                 return Figure::Unknown(Reason::NoWorkers);
             }

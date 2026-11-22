@@ -1547,16 +1547,20 @@ fn typed_answers(document: &mut Value) {
                 if *table_path != blank {
                     continue;
                 }
-                let Some(operation) = item.get_mut(*method) else {
+                let Some(operation) = item.get_mut(*method).and_then(Value::as_object_mut) else {
                     continue;
                 };
-                operation["responses"]["200"] = match answer {
+                let responses = operation.entry("responses").or_insert_with(|| json!({}));
+                let ok = match answer {
                     Answer::NoBody => json!({ "description": "Done. The answer has no body." }),
                     Answer::Schema(name) => json!({
                         "description": "Done",
                         "content": { "application/json": { "schema": { "$ref": format!("#/components/schemas/{name}") } } }
                     }),
                 };
+                if let Some(map) = responses.as_object_mut() {
+                    map.insert("200".into(), ok);
+                }
             }
         }
     }
@@ -1566,19 +1570,20 @@ fn typed_answers(document: &mut Value) {
 /// parameter and the two answers a key can earn. Done in one place, by code, so that no operation
 /// can be missed and a new one gets it without being edited.
 fn decorate(document: &mut Value) {
-    document["components"] = components();
+    let mut components = components();
     if let (Some(into), Some(from)) = (
-        document["components"]["schemas"].as_object_mut(),
+        components.get_mut("schemas").and_then(Value::as_object_mut),
         answer_schemas().as_object(),
     ) {
         into.extend(from.iter().map(|(k, v)| (k.clone(), v.clone())));
     }
     if let (Some(into), Some(from)) = (
-        document["components"]["schemas"].as_object_mut(),
+        components.get_mut("schemas").and_then(Value::as_object_mut),
         record_schemas().as_object(),
     ) {
         into.extend(from.iter().map(|(k, v)| (k.clone(), v.clone())));
     }
+    document["components"] = components;
     let Some(paths) = document["paths"].as_object_mut() else {
         return;
     };

@@ -246,8 +246,11 @@ pub fn funding_horizon(
             }
             usize::try_from(offset).unwrap_or(0) + 1
         };
-        buckets[slot].0 += 1;
-        buckets[slot].1 += i64::from(*fte);
+        let Some(bucket) = buckets.get_mut(slot) else {
+            continue;
+        };
+        bucket.0 += 1;
+        bucket.1 += i64::from(*fte);
     }
     buckets
         .into_iter()

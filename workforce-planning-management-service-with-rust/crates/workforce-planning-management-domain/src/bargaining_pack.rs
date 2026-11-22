@@ -64,12 +64,13 @@ pub fn suppress(groups: Vec<(String, usize, i64)>, floor: usize) -> Vec<Group> {
     if hidden.iter().filter(|h| **h).count() == 1 {
         let smallest = groups
             .iter()
+            .zip(&hidden)
             .enumerate()
-            .filter(|(i, _)| !hidden[*i])
-            .min_by_key(|(_, (name, n, _))| (*n, name.clone()))
+            .filter(|(_, (_, is_hidden))| !**is_hidden)
+            .min_by_key(|(_, ((name, n, _), _))| (*n, name.clone()))
             .map(|(i, _)| i);
-        if let Some(i) = smallest {
-            hidden[i] = true;
+        if let Some(slot) = smallest.and_then(|i| hidden.get_mut(i)) {
+            *slot = true;
         }
     }
     groups

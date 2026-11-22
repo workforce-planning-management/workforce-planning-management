@@ -938,12 +938,14 @@ async fn list(
             },
         );
         let mut item = view(&row, today, appeal_days);
-        if query.overdue == Some(true) && item["overdue"] != json!(true) {
+        if query.overdue == Some(true) && item.get("overdue") != Some(&json!(true)) {
             continue;
         }
-        item["worker_pid"] = json!(worker.pid);
-        item["worker_number"] = json!(worker.worker_number);
-        item["department"] = json!(worker.department);
+        if let Some(object) = item.as_object_mut() {
+            object.insert("worker_pid".into(), json!(worker.pid));
+            object.insert("worker_number".into(), json!(worker.worker_number));
+            object.insert("department".into(), json!(worker.department));
+        }
         out.push(item);
     }
     Ok(super::paged_vec(out, &window))

@@ -250,13 +250,18 @@ pub(super) async fn get_plan(
         .iter()
         .map(|l| {
             let mut json = line_json(l, &titles);
-            json["objective_pids"] = serde_json::json!(
-                link_rows
-                    .iter()
-                    .filter(|k| k.line_pid == l.pid)
-                    .map(|k| k.objective_pid)
-                    .collect::<Vec<_>>()
-            );
+            if let Some(object) = json.as_object_mut() {
+                object.insert(
+                    "objective_pids".into(),
+                    serde_json::json!(
+                        link_rows
+                            .iter()
+                            .filter(|k| k.line_pid == l.pid)
+                            .map(|k| k.objective_pid)
+                            .collect::<Vec<_>>()
+                    ),
+                );
+            }
             json
         })
         .collect();

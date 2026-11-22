@@ -36,8 +36,12 @@ fn administrators_only(caller: &MaybeAuthUser) -> Result<()> {
 fn shown(row: &webhook_subscriptions::Model) -> Result<serde_json::Value> {
     let mut out = row_json(row)?;
     // Whether the secret is there to sign with, never what it is.
-    out["secret_set"] =
-        json!(crate::compat::env_var(&row.secret_ref).is_some_and(|v| !v.is_empty()));
+    if let Some(object) = out.as_object_mut() {
+        object.insert(
+            "secret_set".into(),
+            json!(crate::compat::env_var(&row.secret_ref).is_some_and(|v| !v.is_empty())),
+        );
+    }
     Ok(out)
 }
 
@@ -65,7 +69,9 @@ async fn list(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Result<Re
                 .count()
         };
         let mut item = shown(row)?;
-        item["deliveries"] = json!({ "pending": count("pending"), "delivered": count("delivered"), "failed": count("failed") });
+        if let Some(object) = item.as_object_mut() {
+            object.insert("deliveries".into(), json!({ "pending": count("pending"), "delivered": count("delivered"), "failed": count("failed") }));
+        }
         out.push(item);
     }
     format::json(json!({ "kinds": rules::kind_names(), "subscriptions": out }))

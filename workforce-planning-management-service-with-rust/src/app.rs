@@ -392,6 +392,10 @@ impl App {
     /// # Panics
     /// Never in practice: the development defaults need no settings.
     #[must_use]
+    #[allow(
+        clippy::expect_used,
+        reason = "the development defaults need no settings; this runs once at start-up"
+    )]
     pub fn logging() -> Logger {
         let environment = Environment::from_env();
         Self::config(&environment).map_or_else(

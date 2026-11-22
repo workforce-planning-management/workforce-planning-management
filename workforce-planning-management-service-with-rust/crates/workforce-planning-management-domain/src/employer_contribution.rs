@@ -41,7 +41,7 @@ pub fn is_token(text: &str) -> bool {
 /// A name that does not read, a rate above [`MAX_RATE_BP`], a negative wage base, or the same name and class twice. A line that does
 /// not read is an error naming it, never skipped (a skipped line would understate cost).
 pub fn parse_lines(names: &[String]) -> Result<Vec<Line>, String> {
-    if names.len() == 1 && names[0] == "none" {
+    if matches!(names, [only] if only == "none") {
         return Ok(Vec::new());
     }
     let mut out: Vec<Line> = Vec::new();

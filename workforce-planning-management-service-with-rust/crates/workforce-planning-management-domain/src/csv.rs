@@ -49,7 +49,7 @@ pub fn parse_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
 }
 
 fn push_row(rows: &mut Vec<Vec<String>>, row: Vec<String>) {
-    if !(row.len() == 1 && row[0].is_empty()) {
+    if !matches!(row.as_slice(), [only] if only.is_empty()) {
         rows.push(row);
     }
 }

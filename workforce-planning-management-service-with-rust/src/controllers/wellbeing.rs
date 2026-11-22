@@ -590,7 +590,8 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
                     "numerator": enrolled, "denominator": acknowledgers.len(), "value": value,
                 })
             });
-            let uptaken = by_response["booked"] + by_response["done"];
+            let uptaken = by_response.get("booked").copied().unwrap_or(0)
+                + by_response.get("done").copied().unwrap_or(0);
             let responded: usize = by_response.values().sum();
             let value = crate::rules::display::ratio(uptaken, responded)
                 .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
@@ -816,7 +817,9 @@ async fn survey_results(
         .iter()
         .map(|(department, scores)| {
             let mut cell = cell_json(&pulse::aggregate_cell(scores));
-            cell["department"] = serde_json::json!(department);
+            if let Some(object) = cell.as_object_mut() {
+                object.insert("department".into(), serde_json::json!(department));
+            }
             cell
         })
         .collect();

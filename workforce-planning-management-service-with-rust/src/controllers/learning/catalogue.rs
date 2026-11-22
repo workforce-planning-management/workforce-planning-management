@@ -865,11 +865,21 @@ pub(super) async fn list_worker_skills(
         .iter()
         .map(|r| {
             let mut v = serde_json::to_value(r).unwrap_or_default();
-            if r.source_level.is_some() {
-                v["mapping"] = serde_json::json!(crate::rules::sfia::MAPPING_NAME);
-                v["native_description"] = serde_json::json!(described.get(&r.skill_pid));
-                v["source_framework_name"] =
-                    serde_json::json!(r.source_framework.as_ref().and_then(|f| names.get(f)));
+            if r.source_level.is_some()
+                && let Some(object) = v.as_object_mut()
+            {
+                object.insert(
+                    "mapping".into(),
+                    serde_json::json!(crate::rules::sfia::MAPPING_NAME),
+                );
+                object.insert(
+                    "native_description".into(),
+                    serde_json::json!(described.get(&r.skill_pid)),
+                );
+                object.insert(
+                    "source_framework_name".into(),
+                    serde_json::json!(r.source_framework.as_ref().and_then(|f| names.get(f))),
+                );
             }
             v
         })

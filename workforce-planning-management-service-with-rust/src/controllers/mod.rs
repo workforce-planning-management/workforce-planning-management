@@ -254,10 +254,16 @@ static CURSOR_KEY: std::sync::OnceLock<CursorKey> = std::sync::OnceLock::new();
 /// A key of 32 random bytes, for a process given none. Two v4 ids are 244 random bits from the operating system's
 /// generator, which is ample for a key that only signs positions.
 fn random_cursor_key() -> CursorKey {
-    let mut secret = [0u8; 32];
-    secret[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
-    secret[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
-    CursorKey::new(&secret).expect("32 bytes is long enough")
+    let mut secret: Vec<u8> = Vec::with_capacity(32);
+    loop {
+        // Two ids make 32 bytes; if a key were ever refused, add 16 more and try again until it is long enough.
+        secret.extend_from_slice(uuid::Uuid::new_v4().as_bytes());
+        if secret.len() >= 32
+            && let Ok(key) = CursorKey::new(&secret)
+        {
+            return key;
+        }
+    }
 }
 
 /// The cursor key from `WORKFORCE_PLANNING_MANAGEMENT_CURSOR_KEY`'s value: base64url of at least 32 bytes. `None` means one is made for this process.

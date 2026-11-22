@@ -119,11 +119,16 @@ const BLOCK: usize = 64;
 /// HMAC-SHA256 (RFC 2104).
 #[must_use]
 pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
-    let mut k = [0_u8; BLOCK];
-    if key.len() > BLOCK {
-        k[..32].copy_from_slice(&Sha256::digest(key));
+    let hashed;
+    let key = if key.len() > BLOCK {
+        hashed = Sha256::digest(key);
+        hashed.as_slice()
     } else {
-        k[..key.len()].copy_from_slice(key);
+        key
+    };
+    let mut k = [0_u8; BLOCK];
+    for (slot, byte) in k.iter_mut().zip(key) {
+        *slot = *byte;
     }
     let mut inner = Sha256::new();
     inner.update(k.map(|b| b ^ 0x36));
@@ -135,11 +140,10 @@ pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
 }
 
 fn hex(bytes: &[u8]) -> String {
-    const DIGITS: &[u8; 16] = b"0123456789abcdef";
     bytes
         .iter()
-        .flat_map(|b| [DIGITS[usize::from(b >> 4)], DIGITS[usize::from(b & 15)]])
-        .map(char::from)
+        .flat_map(|b| [b >> 4, b & 15])
+        .filter_map(|nibble| char::from_digit(u32::from(nibble), 16))
         .collect()
 }
 

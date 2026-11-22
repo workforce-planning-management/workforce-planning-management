@@ -240,7 +240,11 @@ impl Window {
     fn bounds(&self) -> Result<(Vec<Date>, Date, Date)> {
         let span = self.months()?;
         // `capacity::months` gives at least one month, or an error above.
-        let (first, last) = (span[0], span[span.len() - 1]);
+        let (first, last) = span
+            .first()
+            .zip(span.last())
+            .map(|(first, last)| (*first, *last))
+            .ok_or_else(|| unprocessable("the window has no months"))?;
         Ok((span, first, last))
     }
 }
@@ -399,8 +403,13 @@ async fn of_worker(
         .await?;
     }
     let mut body = body;
-    body["tracked"] = json!(tracking == rules::Tracking::Tracked);
-    body["derivation"] = json!(rules::DERIVATION);
+    if let Some(object) = body.as_object_mut() {
+        object.insert(
+            "tracked".into(),
+            json!(tracking == rules::Tracking::Tracked),
+        );
+        object.insert("derivation".into(), json!(rules::DERIVATION));
+    }
     format::json(body)
 }
 

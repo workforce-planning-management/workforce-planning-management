@@ -183,21 +183,27 @@ pub fn tool(name: &str) -> Option<&'static Tool> {
 pub fn table_route(t: &Tool) -> String {
     let mut out = String::new();
     let mut rest = t.route.trim_start_matches("/api/");
-    while let Some(i) = rest.find('{') {
-        out.push_str(&rest[..i]);
+    while let Some((before, from_brace)) = rest.split_once('{') {
+        out.push_str(before);
         out.push_str("{}");
-        rest = rest[i..].split_once('}').map_or("", |(_, after)| after);
+        rest = from_brace.split_once('}').map_or("", |(_, after)| after);
     }
     out.push_str(rest);
     out
 }
 
-fn schema_type(k: Kind) -> Value {
+fn schema_type(k: Kind, description: &str) -> Value {
     match k {
-        Kind::Date => json!({ "type": "string", "format": "date" }),
-        Kind::Pid => json!({ "type": "string", "format": "uuid" }),
-        Kind::Urn => json!({ "type": "string" }),
-        Kind::Number => json!({ "type": "integer", "minimum": 1, "maximum": 9999 }),
+        Kind::Date => {
+            json!({ "type": "string", "format": "date", "description": description })
+        }
+        Kind::Pid => {
+            json!({ "type": "string", "format": "uuid", "description": description })
+        }
+        Kind::Urn => json!({ "type": "string", "description": description }),
+        Kind::Number => json!({
+            "type": "integer", "minimum": 1, "maximum": 9999, "description": description
+        }),
     }
 }
 
@@ -206,8 +212,7 @@ fn schema_type(k: Kind) -> Value {
 pub fn describe(t: &Tool) -> Value {
     let mut properties = Map::new();
     for a in t.args {
-        let mut schema = schema_type(a.kind);
-        schema["description"] = json!(a.description);
+        let schema = schema_type(a.kind, a.description);
         properties.insert(a.name.to_string(), schema);
     }
     let required: Vec<&str> = t
@@ -437,11 +442,16 @@ pub fn tool_error(message: &str) -> Value {
 #[must_use]
 pub fn answer(id: &Value, status: u16, body: &str) -> Value {
     if (200..300).contains(&status) {
-        let mut out = json!({ "content": [{ "type": "text", "text": body }], "isError": false });
+        let mut out = Map::new();
+        out.insert(
+            "content".to_string(),
+            json!([{ "type": "text", "text": body }]),
+        );
+        out.insert("isError".to_string(), json!(false));
         if let Ok(parsed @ Value::Object(_)) = serde_json::from_str::<Value>(body) {
-            out["structuredContent"] = parsed;
+            out.insert("structuredContent".to_string(), parsed);
         }
-        return result(id, &out);
+        return result(id, &Value::Object(out));
     }
     result(
         id,
@@ -474,7 +484,8 @@ pub fn metadata_path(resource: &str) -> Result<String, String> {
         .ok_or("the resource needs a scheme")?;
     let path = rest
         .find('/')
-        .map_or("", |i| &rest[i..])
+        .and_then(|i| rest.get(i..))
+        .unwrap_or_default()
         .trim_end_matches('/');
     Ok(format!("/.well-known/oauth-protected-resource{path}"))
 }

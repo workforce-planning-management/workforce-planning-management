@@ -91,10 +91,9 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, days_ahead: i64) -> R
                 effective_on: v.effective_on.get(),
             })
             .collect();
-        let Some(i) = rules::current(&facts, as_of) else {
+        let Some(version) = rules::current(&facts, as_of).and_then(|i| versions.get(i)) else {
             continue;
         };
-        let version = &versions[i];
         let acknowledged: BTreeSet<Uuid> = sqlx::query_scalar!(
             "SELECT worker_pid FROM policy_acknowledgements WHERE version_pid = $1",
             version.pid,
