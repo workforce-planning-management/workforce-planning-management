@@ -18,6 +18,9 @@ number, because an unknown is never a zero ([privacy-and-data-rules](../../AGENT
   assert_eq!(7_u32.checked_div(0), None);    // not a panic
   ```
 
+- **Never unwrap the result of a `checked_*` call.** `checked_add(..).unwrap()`, `.expect(..)`, `.unwrap_or_default()` and
+  `.unwrap_or(<number>)` turn the `None` back into a panic or an invented number, which is the failure the rule exists to
+  prevent. Handle the `None`: return it, or turn it into an error with `ok_or` / `ok_or_else`, or match on it.
 - Chain with `?` in a function that returns `Option`, or with `ok_or(...)` / `ok_or_else(...)` in one that returns `Result`, so
   the error says which figure overflowed.
 - Converting between integer types uses `try_from` / `try_into`, never `as`, which truncates without a sound.
