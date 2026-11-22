@@ -107,8 +107,20 @@ def main():
             full = os.path.join(licenses_dir, entry)
             if entry not in allowed or not os.path.isdir(full):
                 problems.append(f"LICENSES/{entry} is not a known license directory")
-            elif sorted(os.listdir(full)) != ["index.md"]:
-                problems.append(f"LICENSES/{entry} must hold only index.md")
+            else:
+                # `index.md`, and optionally a `README.md` that is only a symlink to it (so GitHub shows the text), never a second copy.
+                held = sorted(os.listdir(full))
+                readme = os.path.join(full, "README.md")
+                readme_ok = (
+                    "README.md" in held
+                    and os.path.islink(readme)
+                    and os.readlink(readme) == "index.md"
+                )
+                expected = ["README.md", "index.md"] if readme_ok else ["index.md"]
+                if held != expected:
+                    problems.append(
+                        f"LICENSES/{entry} must hold only index.md (and optionally a README.md symlink to it)"
+                    )
     else:
         problems.append("LICENSES/ is missing")
     for rel in stray_texts():
