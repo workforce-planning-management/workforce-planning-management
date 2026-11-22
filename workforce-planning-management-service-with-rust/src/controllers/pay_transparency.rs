@@ -482,23 +482,28 @@ pub(crate) fn sex_category() -> String {
     )
 }
 
+/// The deployer's reporting tiers, if set.
+///
+/// # Errors
+///
+/// A setting that is supplied but does not parse (RCA-IN-2, RCA-IN-4).
+pub fn tiers_setting() -> Result<Option<Vec<pay_gap::Obligation>>, String> {
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS";
+    crate::compat::env_var(name)
+        .filter(|v| !v.trim().is_empty())
+        .map(|text| pay_gap::parse_tiers(&text).map_err(|why| format!("{name}: {why}")))
+        .transpose()
+}
+
 /// The reporting tiers: the organization's profile over its home jurisdiction's chain
 /// (`pay_transparency.reporting_tiers`), else `WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS` (`from_workers:every_years:first_report_on`,
-/// comma-separated, or `none`), else the Directive's own (Article 9). A value that does not parse is
-/// ignored with a warning, never half-applied (WPM-T384).
+/// comma-separated, or `none`), else the Directive's own (Article 9). A value that does not parse stops the start, never
+/// half-applied (WPM-T384, RCA-IN-4).
 pub(crate) fn reporting_tiers(
     scope: Option<&super::jurisdictions::Scope>,
     as_of: Date,
 ) -> super::statutory_defaults::InForce<Vec<pay_gap::Obligation>> {
-    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS")
-        .filter(|v| !v.trim().is_empty())
-        .and_then(|text| {
-            pay_gap::parse_tiers(&text)
-                .inspect_err(|why| {
-                    tracing::warn!("WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS ignored: {why}");
-                })
-                .ok()
-        });
+    let configured = crate::settings::met_again(tiers_setting());
     super::statutory_defaults::pick(
         scope,
         "WORKFORCE_PLANNING_MANAGEMENT_PAY_GAP_TIERS",

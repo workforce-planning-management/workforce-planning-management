@@ -48,18 +48,21 @@ fn on() -> Result<String> {
 
 /// The small-group floor for aggregates: `WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR`, default 10, at least 5.
 fn floor() -> usize {
-    match crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR") {
-        None => DEFAULT_FLOOR,
-        Some(text) => match text.trim().parse::<usize>() {
-            Ok(n) if validate_floor(n).is_ok() => n,
-            _ => {
-                tracing::warn!(
-                    "WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR is not a number of at least 5; using the default"
-                );
-                DEFAULT_FLOOR
-            }
-        },
-    }
+    // Absent is the declared default (RCA-IN-3); a supplied but invalid floor stops the start (`floor_setting`).
+    crate::settings::met_again(floor_setting()).unwrap_or(DEFAULT_FLOOR)
+}
+
+/// The deployer's floor, if set.
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number of at least 5 (RCA-IN-2, RCA-IN-4).
+pub fn floor_setting() -> Result<Option<usize>, String> {
+    crate::settings::whole(
+        "WORKFORCE_PLANNING_MANAGEMENT_HEALTH_FLOOR",
+        "a whole number of at least 5",
+        |n: &usize| validate_floor(*n).is_ok(),
+    )
 }
 
 /// Whether the token carries the occupational-health attribute.

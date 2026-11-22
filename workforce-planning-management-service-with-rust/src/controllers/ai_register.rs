@@ -19,12 +19,26 @@ use crate::db::{self, pool};
 use crate::rules::ai_register::{self as rules, Entry};
 use crate::rules::jurisdiction::Value as ProfileValue;
 
+/// The deployer's date, if set.
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a `YYYY-MM-DD` date (RCA-IN-2, RCA-IN-4).
+pub fn applies_from_setting() -> Result<Option<Date>, String> {
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM";
+    crate::compat::env_var(name)
+        .map(|text| {
+            Date::strptime("%Y-%m-%d", text.trim())
+                .map_err(|_| format!("{name} must be a date as YYYY-MM-DD, not {text:?}"))
+        })
+        .transpose()
+}
+
 /// The date the Annex III duties apply, with where it came from (WPM-D153, WPM-T409): for an organization, its home jurisdiction's
 /// profile (`ai_act.applies_from`), then `WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM` (YYYY-MM-DD), then the default. With no organization there is no
 /// profile to look at.
 pub(crate) fn applies_from_in(scope: Option<&Scope>, as_of: Date) -> InForce<Date> {
-    let setting = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM")
-        .and_then(|v| Date::strptime("%Y-%m-%d", v.trim()).ok());
+    let setting = crate::settings::met_again(applies_from_setting());
     pick(
         scope,
         "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM",

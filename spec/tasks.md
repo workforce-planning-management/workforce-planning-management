@@ -7286,7 +7286,7 @@ the entry records only the evidence it needs.
       months and `REQUIRE_PAY_RANGE` (a word that is neither on nor off was read as on), the resignation notice, the PADR lead time
       and `MAX_TOKEN_LIFETIME_SECONDS` (a typo was read as the 24-hour default) are refused at start too, through
       `settings::whole` and `settings::flag`; `0` for a decision window is refused rather than raised to 1. A running service that
-      meets one anyway reads it as absent and logs an error (the token limit stays on). **Still open:** the readers of health
-      requirements, the AI Act date, pay-gap tiers and sex category and the ABAC policy file; a profile pair of joint-assessment
+      meets one anyway reads it as absent and logs an error (the token limit stays on). The health-requirements floor, the AI Act date and
+      the pay-gap tiers follow. **Still open:** the ABAC policy file (its default is deny, a safe fallback the owner may want to keep); a profile pair of joint-assessment
       values that does not check (stored data) still falls back to the defaults; the stored `refresher_months` and job-level
       attributes; the RCA-ENF-1 lint list in `Cargo.toml`; and the figure declarations.

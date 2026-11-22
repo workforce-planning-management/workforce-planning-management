@@ -102,6 +102,9 @@ pub fn validate() -> Result<(), String> {
     crate::controllers::pay_assessment::check_settings()?;
     crate::controllers::pay_information::check_settings()?;
     crate::controllers::resignations::notice_setting()?;
+    crate::controllers::pay_transparency::tiers_setting()?;
+    crate::controllers::ai_register::applies_from_setting()?;
+    crate::controllers::health_requirements::floor_setting()?;
     crate::controllers::padr::first_after_setting()?;
     crate::auth::max_token_lifetime_setting()?;
     refresh_secs("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS", 0)?;
