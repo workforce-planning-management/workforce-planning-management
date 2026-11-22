@@ -116,27 +116,33 @@ pub enum Standing {
 }
 
 /// Where a worker stands. The day due is the effective day plus the calendar days allowed.
+///
+/// `None` (unknown) when the allowed days are negative or the day due does not exist: a stored figure out of range is corrupt data
+/// (RCA-IN-6), never read as zero days.
 #[must_use]
 pub fn standing(
     effective_on: Date,
     days: i32,
     acknowledged_on: Option<Date>,
     today: Date,
-) -> Standing {
+) -> Option<Standing> {
     if let Some(on) = acknowledged_on {
-        return Standing::Done { on };
+        return Some(Standing::Done { on });
+    }
+    if days < 0 {
+        return None;
     }
     let due_on = effective_on
-        .checked_add(jiff::Span::new().try_days(days.max(0)).unwrap_or_default())
-        .unwrap_or(effective_on);
-    if today > due_on {
+        .checked_add(jiff::Span::new().try_days(days).ok()?)
+        .ok()?;
+    Some(if today > due_on {
         Standing::Overdue {
             due_on,
             calendar_days_late: crate::dates::days_between(due_on, today),
         }
     } else {
         Standing::Waiting { due_on }
-    }
+    })
 }
 
 /// How many calendar days before the day due a worker is reminded, when none is given.
@@ -304,29 +310,36 @@ mod tests {
         let eff = d("2026-10-01");
         assert_eq!(
             standing(eff, 30, Some(d("2026-10-05")), d("2026-12-31")),
-            Standing::Done {
+            Some(Standing::Done {
                 on: d("2026-10-05")
-            },
+            }),
             "late and done is done"
         );
         assert_eq!(
             standing(eff, 30, None, d("2026-10-31")),
-            Standing::Waiting {
+            Some(Standing::Waiting {
                 due_on: d("2026-10-31")
-            }
+            })
         );
         assert_eq!(
             standing(eff, 30, None, d("2026-11-01")),
-            Standing::Overdue {
+            Some(Standing::Overdue {
                 due_on: d("2026-10-31"),
                 calendar_days_late: 1
-            }
+            })
         );
         assert_eq!(
             standing(eff, 30, None, d("2026-09-01")),
-            Standing::Waiting {
+            Some(Standing::Waiting {
                 due_on: d("2026-10-31")
-            }
+            })
+        );
+        // A stored figure out of range is unknown, never zero days (RCA-IN-6).
+        assert_eq!(standing(eff, -1, None, d("2026-10-31")), None);
+        assert_eq!(standing(eff, i32::MAX, None, d("2026-10-31")), None);
+        assert_eq!(
+            standing(eff, 0, None, d("2026-10-01")),
+            Some(Standing::Waiting { due_on: eff })
         );
     }
 

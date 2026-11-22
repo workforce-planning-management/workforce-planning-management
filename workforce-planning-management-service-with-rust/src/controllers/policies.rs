@@ -355,7 +355,8 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
             acked.get(&v.pid).copied(),
             today,
         );
-        if !matches!(standing, rules::Standing::Done { .. }) {
+        // An unknown standing (days out of range, stored) is `null`, and is not done.
+        if !matches!(standing, Some(rules::Standing::Done { .. })) {
             crate::controllers::tally::bump(&mut waiting);
         }
         out.push(json!({ "policy": p.name, "version": version_json(v), "standing": standing }));

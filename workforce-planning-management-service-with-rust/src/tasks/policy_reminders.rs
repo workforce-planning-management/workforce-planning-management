@@ -123,12 +123,15 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, days_ahead: i64) -> R
             {
                 continue;
             }
-            let standing = rules::standing(
+            // Days that are out of range leave the day due unknown: no reminder is invented (RCA-IN-6).
+            let Some(standing) = rules::standing(
                 version.effective_on.get(),
                 version.acknowledge_within_days,
                 acknowledged.contains(&worker.pid).then_some(as_of),
                 as_of,
-            );
+            ) else {
+                continue;
+            };
             if !rules::remind_now(standing, days_ahead, as_of) {
                 continue;
             }

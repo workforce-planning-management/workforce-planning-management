@@ -7287,6 +7287,10 @@ the entry records only the evidence it needs.
       and `MAX_TOKEN_LIFETIME_SECONDS` (a typo was read as the 24-hour default) are refused at start too, through
       `settings::whole` and `settings::flag`; `0` for a decision window is refused rather than raised to 1. A running service that
       meets one anyway reads it as absent and logs an error (the token limit stays on). The health-requirements floor, the AI Act date and
-      the pay-gap tiers follow. **Still open:** the ABAC policy file (its default is deny, a safe fallback the owner may want to keep); a profile pair of joint-assessment
+      the pay-gap tiers follow. `scripts/check-checked-arithmetic.py` runs the RCA-ENF-5 and
+      RCA-ENF-7 searches on production code in CI (a hit fails; `// RCA-IN-3: absent only` marks a declared default). It found one
+      more: a policy's `acknowledge_within_days` was clamped at 0 and a failed date sum became 0 days, so a corrupt figure made a
+      reminder due on the effective day; `policy::standing` is now `None` (unknown, `null` in the API, no reminder) for it.
+      **Still open:** the ABAC policy file (its default is deny, a safe fallback the owner may want to keep); a profile pair of joint-assessment
       values that does not check (stored data) still falls back to the defaults; the stored `refresher_months` and job-level
       attributes; the RCA-ENF-1 lint list in `Cargo.toml`; and the figure declarations.
