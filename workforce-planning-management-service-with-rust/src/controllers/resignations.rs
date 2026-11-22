@@ -30,25 +30,30 @@ use super::jurisdictions::Scope;
 use super::statutory_defaults::{self as statutory, InForce};
 
 /// The notice period in calendar days: the worker's profile (`resignation.notice_calendar_days`),
-/// else `WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting is ignored with a warning,
-/// never silently shortened.
+/// else `WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS`, else 28. An invalid setting stops the start, never
+/// silently shortened or replaced.
 #[must_use]
 pub fn notice_days(scope: Option<&Scope>, as_of: Date) -> InForce<i64> {
     let name = "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS";
-    let configured =
-        crate::compat::env_var(name).and_then(|text| match text.trim().parse::<i64>() {
-            Ok(n) if rules::validate_notice(n).is_ok() => Some(n),
-            _ => {
-                tracing::warn!("{name} is not 0 to 366; ignored");
-                None
-            }
-        });
     statutory::integer(
         scope,
         name,
         as_of,
-        configured,
+        crate::settings::met_again(notice_setting()),
         rules::DEFAULT_NOTICE_CALENDAR_DAYS,
+    )
+}
+
+/// The deployer's notice period, if set.
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number of days from 0 to 366 (RCA-IN-2, RCA-IN-4).
+pub fn notice_setting() -> Result<Option<i64>, String> {
+    crate::settings::whole(
+        "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS",
+        "a whole number of days from 0 to 366",
+        |n: &i64| rules::validate_notice(*n).is_ok(),
     )
 }
 

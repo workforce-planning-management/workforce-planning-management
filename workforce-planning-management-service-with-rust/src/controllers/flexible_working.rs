@@ -40,17 +40,45 @@ fn setting(name: &str) -> Option<String> {
     crate::compat::env_var(name).filter(|v| !v.trim().is_empty())
 }
 
-/// The deployer's whole-number setting, if set and `0..=max`; a value that does not check is
-/// ignored with a warning.
-fn number(name: &str, max: u32) -> Option<u32> {
-    let text = setting(name)?;
-    match text.trim().parse::<u32>() {
-        Ok(n) if n <= max => Some(n),
-        _ => {
-            tracing::warn!("{name} is not 0 to {max}; ignored");
-            None
-        }
-    }
+/// The deployer's whole-number setting `name`, if set and `min..=max`; one that does not check is refused (RCA-IN-2).
+fn number(name: &str, min: u32, max: u32) -> Result<Option<u32>, String> {
+    crate::settings::whole(
+        name,
+        &format!("a whole number from {min} to {max}"),
+        |n: &u32| (min..=max).contains(n),
+    )
+}
+
+/// The deployer's settings, each checked once at start (RCA-IN-4).
+///
+/// # Errors
+///
+/// The first one that is supplied but invalid, naming it.
+pub fn check_settings() -> Result<(), String> {
+    number(
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_DECISION_MONTHS",
+        1,
+        12,
+    )?;
+    number(
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REQUESTS_PER_YEAR",
+        0,
+        100,
+    )?;
+    number(
+        "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_APPEAL_CALENDAR_DAYS",
+        0,
+        366,
+    )?;
+    reasons_setting()?;
+    Ok(())
+}
+
+fn reasons_setting() -> Result<Option<Vec<String>>, String> {
+    let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS";
+    setting(name)
+        .map(|text| rules::parse_reasons(&text).map_err(|error| format!("{name}: {error}")))
+        .transpose()
 }
 
 /// Calendar months a decision may take: the worker's profile
@@ -63,7 +91,7 @@ pub fn decision_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
         scope,
         name,
         as_of,
-        number(name, 12).map(|n| n.max(1)),
+        crate::settings::met_again(number(name, 1, 12)),
         rules::DEFAULT_DECISION_MONTHS,
     )
 }
@@ -78,7 +106,7 @@ pub fn requests_per_year(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
         scope,
         name,
         as_of,
-        number(name, 100),
+        crate::settings::met_again(number(name, 0, 100)),
         rules::DEFAULT_REQUESTS_PER_YEAR,
     )
 }
@@ -92,7 +120,7 @@ pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: Date) -> InForce<u32> 
         scope,
         name,
         as_of,
-        number(name, 366),
+        crate::settings::met_again(number(name, 0, 366)),
         rules::DEFAULT_APPEAL_CALENDAR_DAYS,
     )
 }
@@ -102,13 +130,7 @@ pub fn appeal_calendar_days(scope: Option<&Scope>, as_of: Date) -> InForce<u32> 
 #[must_use]
 pub fn refusal_reasons(scope: Option<&Scope>, as_of: Date) -> InForce<Vec<String>> {
     let name = "WORKFORCE_PLANNING_MANAGEMENT_FLEXIBLE_REFUSAL_REASONS";
-    let configured = setting(name).and_then(|text| match rules::parse_reasons(&text) {
-        Ok(list) => Some(list),
-        Err(error) => {
-            tracing::warn!(%error, "{name} ignored");
-            None
-        }
-    });
+    let configured = crate::settings::met_again(reasons_setting());
     statutory::pick(
         scope,
         name,

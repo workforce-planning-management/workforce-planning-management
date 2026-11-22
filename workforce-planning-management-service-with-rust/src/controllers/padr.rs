@@ -242,14 +242,23 @@ async fn primary_starts(
         .collect())
 }
 
+/// The configured months before a first PADR; none when the setting is absent.
+///
+/// # Errors
+///
+/// A setting that is supplied but invalid (RCA-IN-2, RCA-IN-4).
+pub fn first_after_setting() -> Result<Option<u32>, String> {
+    rules::first_after_months(
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PADR_FIRST_AFTER_MONTHS").as_deref(),
+    )
+}
+
 /// Where each of these people stands against the cycle today.
 async fn standings(ctx: &AppContext, people: &[Uuid]) -> Result<HashMap<Uuid, Standing>> {
     let today = crate::dates::today();
     let last = last_completed(ctx, people).await?;
     let starts = primary_starts(ctx, people, today).await?;
-    let months = rules::first_after_months(
-        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PADR_FIRST_AFTER_MONTHS").as_deref(),
-    );
+    let months = first_after_setting().map_err(|message| Error::string(&message))?;
     Ok(people
         .iter()
         .map(|pid| {

@@ -31,17 +31,42 @@ pub(crate) struct Configured {
     pub months_from: serde_json::Value,
 }
 
+fn threshold_setting() -> Result<Option<i64>, String> {
+    crate::settings::whole(
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",
+        "a whole number of percent",
+        |_: &i64| true,
+    )
+}
+
+fn months_setting() -> Result<Option<u32>, String> {
+    crate::settings::whole(
+        "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS",
+        "a whole number of months",
+        |_: &u32| true,
+    )
+}
+
+/// The deployer's settings, each checked once at start, and the pair checked together (RCA-IN-4).
+///
+/// # Errors
+///
+/// The first one that is supplied but invalid, naming it; or a pair that does not check together.
+pub fn check_settings() -> Result<(), String> {
+    let percent = threshold_setting()?.unwrap_or(rules::DEFAULT_THRESHOLD_BP / 100); // absent: the Directive's (RCA-IN-3)
+    let months = months_setting()?.unwrap_or(rules::DEFAULT_REMEDY_MONTHS); // absent: the Directive's (RCA-IN-3)
+    config_of(percent, months)
+        .map(|_| ())
+        .map_err(|why| format!("the joint assessment settings do not check: {why}"))
+}
+
 /// The threshold (percent, a whole number) and the period (calendar months): the organization's
 /// profile over its home jurisdiction's chain (`pay_transparency.joint_assessment_percent`,
 /// `pay_transparency.joint_assessment_months`), else the environment, else the Directive's. A pair
-/// that does not check together falls back to the defaults with a warning.
+/// that does not check together stops the start (RCA-IN-4).
 pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
-    let threshold_setting =
-        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT")
-            .and_then(|v| v.trim().parse::<i64>().ok());
-    let months_setting =
-        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_MONTHS")
-            .and_then(|v| v.trim().parse::<u32>().ok());
+    let threshold_setting = crate::settings::met_again(threshold_setting());
+    let months_setting = crate::settings::met_again(months_setting());
     let percent = statutory::integer(
         scope,
         "WORKFORCE_PLANNING_MANAGEMENT_JOINT_ASSESSMENT_THRESHOLD_PERCENT",

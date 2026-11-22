@@ -7281,7 +7281,12 @@ the entry records only the evidence it needs.
       `Option::unwrap_or_default` and the rest fail the build; sums in tests are `try_fold` with `checked_add`. `[profile.release]`
       sets `overflow-checks = true` (RCA-ENF-4). An absent group or optional text is empty, not unknown, and is spelled
       `.or_empty()` (`src/absent.rs`), never for a figure. **Behaviour changes:** a bad setting now stops the start (it used to be
-      ignored); `retention_schedule` refuses a junk `RETENTION_PAY_DAYS` (the test now asserts the refusal). **Still open:** other
-      readers of settings that replace an invalid value with a default (flexible working, joint assessment, pay information,
-      resignation notice, PADR, health requirements, AI Act date, pay gap tiers, token lifetime, ABAC policy file, the stored
-      `refresher_months` and job-level attributes), the RCA-ENF-1 lint list in `Cargo.toml`, and the figure declarations.
+      ignored); `retention_schedule` refuses a junk `RETENTION_PAY_DAYS` (the test now asserts the refusal). **Second batch (same day):** the flexible-working
+      settings (decision months, requests per year, appeal days, refusal reasons), the joint-assessment pair, the pay-information
+      months and `REQUIRE_PAY_RANGE` (a word that is neither on nor off was read as on), the resignation notice, the PADR lead time
+      and `MAX_TOKEN_LIFETIME_SECONDS` (a typo was read as the 24-hour default) are refused at start too, through
+      `settings::whole` and `settings::flag`; `0` for a decision window is refused rather than raised to 1. A running service that
+      meets one anyway reads it as absent and logs an error (the token limit stays on). **Still open:** the readers of health
+      requirements, the AI Act date, pay-gap tiers and sex category and the ABAC policy file; a profile pair of joint-assessment
+      values that does not check (stored data) still falls back to the defaults; the stored `refresher_months` and job-level
+      attributes; the RCA-ENF-1 lint list in `Cargo.toml`; and the figure declarations.

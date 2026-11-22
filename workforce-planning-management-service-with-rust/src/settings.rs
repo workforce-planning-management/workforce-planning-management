@@ -33,6 +33,51 @@ pub fn per_minute(name: &str, default: u32) -> Result<u32, String> {
     }
 }
 
+/// A whole-number setting `name` that must satisfy `valid` (described by `range`): `None` when it is absent (RCA-IN-3).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number in range (RCA-IN-2, RCA-IN-4): it is never replaced by a default or a bound.
+pub fn whole<T: std::str::FromStr>(
+    name: &str,
+    range: &str,
+    valid: impl Fn(&T) -> bool,
+) -> Result<Option<T>, String> {
+    let Some(text) = crate::compat::env_var(name).filter(|v| !v.trim().is_empty()) else {
+        return Ok(None);
+    };
+    match text.trim().parse::<T>() {
+        Ok(n) if valid(&n) => Ok(Some(n)),
+        _ => Err(format!("{name} must be {range}, not {text:?}")),
+    }
+}
+
+/// An on/off setting `name`: `None` when it is absent.
+///
+/// # Errors
+///
+/// A setting that is supplied but is neither an on word (`1`, `true`, `yes`, `on`) nor an off word (`0`, `false`, `no`, `off`).
+pub fn flag(name: &str) -> Result<Option<bool>, String> {
+    let Some(text) = crate::compat::env_var(name).filter(|v| !v.trim().is_empty()) else {
+        return Ok(None);
+    };
+    match text.trim().to_lowercase().as_str() {
+        "1" | "true" | "yes" | "on" => Ok(Some(true)),
+        "0" | "false" | "no" | "off" => Ok(Some(false)),
+        _ => Err(format!("{name} must be on or off, not {text:?}")),
+    }
+}
+
+/// A setting that was refused at start but is met again while serving. `validate` stops the start first, so this is not reached in a
+/// running service; it says so loudly and reads the setting as absent rather than guessing a value.
+#[must_use]
+pub fn met_again<T>(refusal: Result<Option<T>, String>) -> Option<T> {
+    refusal.unwrap_or_else(|why| {
+        tracing::error!("{why}");
+        None
+    })
+}
+
 /// Every setting that has a range, checked once at start.
 ///
 /// # Errors
@@ -53,6 +98,12 @@ pub fn validate() -> Result<(), String> {
         "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
         0,
     )?;
+    crate::controllers::flexible_working::check_settings()?;
+    crate::controllers::pay_assessment::check_settings()?;
+    crate::controllers::pay_information::check_settings()?;
+    crate::controllers::resignations::notice_setting()?;
+    crate::controllers::padr::first_after_setting()?;
+    crate::auth::max_token_lifetime_setting()?;
     refresh_secs("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS", 0)?;
     refresh_secs(
         "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS",

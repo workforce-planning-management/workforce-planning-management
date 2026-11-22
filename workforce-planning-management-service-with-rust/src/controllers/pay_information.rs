@@ -30,17 +30,36 @@ use crate::rules::pay_information as rules;
 use super::jurisdictions::Scope;
 use super::statutory_defaults::{self as statutory, InForce};
 
+fn months_setting() -> Result<Option<u32>, String> {
+    crate::settings::whole(
+        "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS",
+        &format!(
+            "a whole number of months from 1 to {}",
+            rules::MAX_ANSWER_MONTHS
+        ),
+        |n: &u32| (1..=rules::MAX_ANSWER_MONTHS).contains(n),
+    )
+}
+
+/// The deployer's settings, each checked once at start (RCA-IN-4).
+///
+/// # Errors
+///
+/// The first one that is supplied but invalid, naming it.
+pub fn check_settings() -> Result<(), String> {
+    months_setting()?;
+    crate::settings::flag("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE")?;
+    Ok(())
+}
+
 /// Calendar months an answer may take: the worker's profile (`pay_transparency.information_months`),
 /// else `WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS` (1 to 12), else 2 (the Directive's).
 pub(crate) fn answer_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> {
-    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS")
-        .and_then(|v| v.trim().parse::<u32>().ok())
-        .filter(|n| (1..=rules::MAX_ANSWER_MONTHS).contains(n));
     statutory::integer(
         scope,
         "WORKFORCE_PLANNING_MANAGEMENT_PAY_INFORMATION_MONTHS",
         as_of,
-        configured,
+        crate::settings::met_again(months_setting()),
         rules::DEFAULT_ANSWER_MONTHS,
     )
 }
@@ -51,10 +70,9 @@ pub(crate) fn answer_months(scope: Option<&Scope>, as_of: Date) -> InForce<u32> 
 /// default follows Article 5.
 #[must_use]
 pub fn pay_range_required(scope: Option<&Scope>, as_of: Date) -> InForce<bool> {
-    let configured = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE")
-        .map(|v| v.trim().to_lowercase())
-        .filter(|v| !v.is_empty())
-        .map(|v| !matches!(v.as_str(), "0" | "false" | "no" | "off"));
+    let configured = crate::settings::met_again(crate::settings::flag(
+        "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",
+    ));
     statutory::pick(
         scope,
         "WORKFORCE_PLANNING_MANAGEMENT_REQUIRE_PAY_RANGE",

@@ -180,13 +180,23 @@ pub fn completed_on(versions: &[SignOffs]) -> Option<Date> {
     versions.iter().find_map(SignOffs::completed_on)
 }
 
-/// The configured months before a first PADR. Anything that is not a whole number from 1 to [`MAX_FIRST_AFTER_MONTHS`] is no
-/// configuration: no default is shipped, so the due date stays unknown rather than invented.
-#[must_use]
-pub fn first_after_months(configured: Option<&str>) -> Option<u32> {
-    configured
-        .and_then(|v| v.trim().parse::<u32>().ok())
-        .filter(|m| (1..=MAX_FIRST_AFTER_MONTHS).contains(m))
+/// The configured months before a first PADR. No default is shipped, so an absent setting leaves the due date unknown rather than
+/// invented.
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number from 1 to [`MAX_FIRST_AFTER_MONTHS`] (RCA-IN-2, RCA-IN-4): it is never read
+/// as absent.
+pub fn first_after_months(configured: Option<&str>) -> Result<Option<u32>, String> {
+    let Some(text) = configured else {
+        return Ok(None);
+    };
+    match text.trim().parse::<u32>() {
+        Ok(months) if (1..=MAX_FIRST_AFTER_MONTHS).contains(&months) => Ok(Some(months)),
+        _ => Err(format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_PADR_FIRST_AFTER_MONTHS must be a whole number of months from 1 to {MAX_FIRST_AFTER_MONTHS}, not {text:?}"
+        )),
+    }
 }
 
 /// Where a person stands against the cycle.
@@ -365,12 +375,16 @@ mod tests {
 
     #[test]
     fn the_first_after_setting_has_no_default() {
-        assert_eq!(first_after_months(Some("6")), Some(6));
-        assert_eq!(first_after_months(Some(" 60 ")), Some(60));
-        assert_eq!(first_after_months(None), None);
-        assert_eq!(first_after_months(Some("0")), None);
-        assert_eq!(first_after_months(Some("61")), None);
-        assert_eq!(first_after_months(Some("soon")), None);
+        assert_eq!(first_after_months(Some("6")), Ok(Some(6)));
+        assert_eq!(first_after_months(Some(" 60 ")), Ok(Some(60)));
+        assert_eq!(first_after_months(None), Ok(None));
+        for bad in ["0", "61", "soon", ""] {
+            let error = first_after_months(Some(bad)).unwrap_err();
+            assert!(
+                error.contains("PADR_FIRST_AFTER_MONTHS"),
+                "{bad:?}: {error}"
+            );
+        }
     }
 
     #[test]

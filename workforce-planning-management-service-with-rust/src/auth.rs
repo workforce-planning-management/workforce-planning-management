@@ -136,18 +136,37 @@ pub fn require_auth() -> bool {
 /// revocation list (WPM-R72, WPM-T200), so the lifetime is the bound on how long a stolen token works.
 pub const DEFAULT_MAX_TOKEN_LIFETIME_SECONDS: i64 = 86_400;
 
-/// The configured limit: a positive number of seconds, or `None` (no limit) for `0`/`off`. Unset, empty or
-/// unreadable keeps the default, so a typo can only make the check stricter.
-#[must_use]
-pub fn parse_max_token_lifetime(value: Option<&str>) -> Option<i64> {
-    match value.map(|v| v.trim().to_ascii_lowercase()).as_deref() {
-        Some("0" | "off" | "false" | "no") => None,
-        Some(v) => match v.parse::<i64>() {
-            Ok(n) if n > 0 => Some(n),
-            _ => Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS),
+/// The configured limit: a positive number of seconds, or `None` (no limit) for `0`/`off`. An absent setting is the default.
+///
+/// # Errors
+///
+/// A setting that is supplied but is neither a positive number of seconds nor `0`/`off`/`false`/`no` (RCA-IN-2, RCA-IN-4).
+pub fn parse_max_token_lifetime(value: Option<&str>) -> Result<Option<i64>, String> {
+    let Some(text) = value else {
+        return Ok(Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS));
+    };
+    match text.trim().to_ascii_lowercase().as_str() {
+        "0" | "off" | "false" | "no" => Ok(None),
+        v => match v.parse::<i64>() {
+            Ok(n) if n > 0 => Ok(Some(n)),
+            _ => Err(format!(
+                "WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS must be a positive number of seconds, or off, not {text:?}"
+            )),
         },
-        None => Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS),
     }
+}
+
+/// The setting, checked once at start (RCA-IN-4).
+///
+/// # Errors
+///
+/// A setting that is supplied but invalid.
+pub fn max_token_lifetime_setting() -> Result<(), String> {
+    parse_max_token_lifetime(
+        crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS")
+            .as_deref(),
+    )
+    .map(|_| ())
 }
 
 /// `WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS`, read once.
@@ -159,6 +178,12 @@ pub fn max_token_lifetime() -> Option<i64> {
             crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_TOKEN_LIFETIME_SECONDS")
                 .as_deref(),
         )
+        // Refused at start (`max_token_lifetime_setting`), so not reached in a running service. If it is, the check stays on: a
+        // token limit that cannot be read must not become "no limit".
+        .unwrap_or_else(|why| {
+            tracing::error!("{why}");
+            Some(DEFAULT_MAX_TOKEN_LIFETIME_SECONDS)
+        })
     })
 }
 
@@ -735,15 +760,19 @@ mod tests {
     }
 
     #[test]
-    fn the_token_lifetime_limit_parses_and_a_typo_keeps_the_default() {
-        assert_eq!(parse_max_token_lifetime(None), Some(86_400));
-        assert_eq!(parse_max_token_lifetime(Some("")), Some(86_400));
-        assert_eq!(parse_max_token_lifetime(Some("900")), Some(900));
-        assert_eq!(parse_max_token_lifetime(Some(" 3600 ")), Some(3600));
-        assert_eq!(parse_max_token_lifetime(Some("-5")), Some(86_400));
-        assert_eq!(parse_max_token_lifetime(Some("an hour")), Some(86_400));
-        assert_eq!(parse_max_token_lifetime(Some("0")), None);
-        assert_eq!(parse_max_token_lifetime(Some("OFF")), None);
+    fn the_token_lifetime_limit_parses_and_a_typo_is_refused() {
+        assert_eq!(parse_max_token_lifetime(None), Ok(Some(86_400)));
+        assert_eq!(parse_max_token_lifetime(Some("900")), Ok(Some(900)));
+        assert_eq!(parse_max_token_lifetime(Some(" 3600 ")), Ok(Some(3600)));
+        assert_eq!(parse_max_token_lifetime(Some("0")), Ok(None));
+        assert_eq!(parse_max_token_lifetime(Some("OFF")), Ok(None));
+        for bad in ["", "-5", "an hour", "1.5"] {
+            let error = parse_max_token_lifetime(Some(bad)).unwrap_err();
+            assert!(
+                error.contains("MAX_TOKEN_LIFETIME_SECONDS"),
+                "{bad:?}: {error}"
+            );
+        }
     }
 
     #[test]
