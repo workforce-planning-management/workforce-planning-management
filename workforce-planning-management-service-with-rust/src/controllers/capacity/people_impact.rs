@@ -4,6 +4,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 
 use std::collections::BTreeSet;
@@ -182,7 +183,7 @@ async fn gather(
     let committed: Vec<impact::Committed> = staff
         .values()
         .map(|w| impact::Committed {
-            pools: pools_of.get(&w.pid).cloned().unwrap_or_default(),
+            pools: pools_of.get(&w.pid).cloned().or_empty(),
             contingent: matches!(w.employment_type.as_str(), "fixed_term" | "contractor"),
             engagement_ends: w.engagement_ends_on,
         })

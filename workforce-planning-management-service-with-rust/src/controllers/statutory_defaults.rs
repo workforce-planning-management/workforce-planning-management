@@ -127,6 +127,8 @@ fn value_of(setting: &str, scope: Option<&Scope>, as_of: Date) -> (Value, Value)
         };
         (value, came_from)
     };
+    // A setting that is supplied but invalid stops the start (RCA-IN-4); met here, it is unknown, with the reason.
+    let refused = |message: String| (Value::Null, json!({ "error": message }));
     match setting {
         "WORKFORCE_PLANNING_MANAGEMENT_AI_ACT_APPLIES_FROM" => {
             shown(super::ai_register::applies_from_in(scope, as_of))
@@ -164,29 +166,32 @@ fn value_of(setting: &str, scope: Option<&Scope>, as_of: Date) -> (Value, Value)
             shown(pay_information::pay_range_required(scope, as_of))
         }
         "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES" => {
-            fixed(json!(payroll::contracted_day()))
+            payroll::contracted_day().map_or_else(&refused, |day| fixed(json!(day)))
         }
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES" => {
-            fixed(json!(payroll::tax_stub().0.month_minutes))
+            payroll::tax_stub().map_or_else(&refused, |(stub, _)| fixed(json!(stub.month_minutes)))
         }
-        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR" => {
-            fixed(json!(payroll::tax_stub().0.allowance_minor))
-        }
+        "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR" => payroll::tax_stub()
+            .map_or_else(&refused, |(stub, _)| fixed(json!(stub.allowance_minor))),
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY" => {
-            fixed(json!(payroll::tax_stub().0.currency))
+            payroll::tax_stub().map_or_else(&refused, |(stub, _)| fixed(json!(stub.currency)))
         }
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT" => {
-            fixed(json!(payroll::tax_stub().0.rate_percent))
+            payroll::tax_stub().map_or_else(&refused, |(stub, _)| fixed(json!(stub.rate_percent)))
         }
         "WORKFORCE_PLANNING_MANAGEMENT_RESIGNATION_NOTICE_CALENDAR_DAYS" => {
             shown(super::resignations::notice_days(scope, as_of))
         }
-        other => super::privacy::horizons(scope, as_of)
-            .into_iter()
-            .find(|(kind, _)| kind.env_name() == other)
-            .map_or((Value::Null, Value::Null), |(_, found)| {
-                (json!(found.value.days), found.came_from)
-            }),
+        other => match super::privacy::horizons(scope, as_of) {
+            Ok(all) => all
+                .into_iter()
+                .find(|(kind, _)| kind.env_name() == other)
+                .map_or((Value::Null, Value::Null), |(_, found)| {
+                    (json!(found.value.days), found.came_from)
+                }),
+            // A setting that is supplied but invalid stops the start (RCA-IN-4); met here, it is unknown, with the reason.
+            Err(message) => (Value::Null, json!({ "error": message })),
+        },
     }
 }
 

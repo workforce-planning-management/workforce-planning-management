@@ -194,25 +194,23 @@ impl RateLimits {
     }
 
     /// The limits `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE` and
-    /// `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE` set, or the defaults.
-    #[must_use]
-    pub fn from_env(trusted: Vec<ProxyNet>) -> Self {
-        let read = |name: &str, default: u32| {
-            crate::compat::env_var(name)
-                .and_then(|v| v.trim().parse::<u32>().ok())
-                .unwrap_or(default)
-        };
-        Self::new(
-            read(
+    /// `WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE` set, or the defaults when they are absent.
+    ///
+    /// # Errors
+    ///
+    /// A limit that is set but is not a whole number (RCA-IN-2, RCA-IN-4); it is never replaced by the default.
+    pub fn from_env(trusted: Vec<ProxyNet>) -> Result<Self, String> {
+        Ok(Self::new(
+            crate::settings::per_minute(
                 "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_PER_MINUTE",
                 DEFAULT_LIMIT,
-            ),
-            read(
+            )?,
+            crate::settings::per_minute(
                 "WORKFORCE_PLANNING_MANAGEMENT_RATE_LIMIT_SENSITIVE_PER_MINUTE",
                 DEFAULT_SENSITIVE_LIMIT,
-            ),
+            )?,
             trusted,
-        )
+        ))
     }
 
     /// The limiter for a request in this class, if the class is limited.

@@ -7,6 +7,7 @@
 //! The register exists to fund backups and succession, not to judge anyone (WPM-D47). Pure rules in
 //! [`crate::rules::key_person`].
 
+use crate::absent::AbsentIsEmpty as _;
 use std::collections::{BTreeMap, BTreeSet};
 
 use axa::prelude::*;
@@ -221,7 +222,7 @@ pub(super) async fn rows(
                 .copied()
                 .filter(|b| *b != w.pid && holds(b) && at_the_site.contains(b))
                 .collect(),
-            ready_successors: successors_of.get(&w.pid).cloned().unwrap_or_default(),
+            ready_successors: successors_of.get(&w.pid).cloned().or_empty(),
         };
         let mut pools: Vec<(Option<String>, Vec<&Staff>)> = vec![(None, holders.clone())];
         let departments: BTreeSet<&str> = holders.iter().map(|w| w.department.as_str()).collect();

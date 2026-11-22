@@ -4,6 +4,7 @@
 //! the category an audience is defined by is `unknown`, counted apart. The status arithmetic is `rules::mandatory_learning`.
 //! Spec: `spec/staff-records-and-pay.md`.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use jiff::civil::Date;
 use std::collections::HashMap;
@@ -71,10 +72,11 @@ struct Evaluation {
 }
 
 /// The deployment's due-soon window in calendar days: `WORKFORCE_PLANNING_MANAGEMENT_LEARNING_DUE_SOON_DAYS`, 1 to 366, else 90 (WPM-T434).
-fn due_soon_days() -> i64 {
+fn due_soon_days() -> Result<i64> {
     rules::due_soon_window(
         crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_LEARNING_DUE_SOON_DAYS").as_deref(),
     )
+    .map_err(|message| Error::string(&message))
 }
 
 fn evaluate(
@@ -82,6 +84,7 @@ fn evaluate(
     categories: &[rules::Categories],
     completions: &[rules::Completion],
     today: Date,
+    due_soon: i64,
 ) -> Evaluation {
     let applies = rules::applies(&audience_of(&req.audience), categories);
     let refresher = req.refresher_months.and_then(|m| u32::try_from(m).ok());
@@ -91,7 +94,7 @@ fn evaluate(
         req.accepts_transferred,
         refresher,
         today,
-        rules::window_for(req.due_soon_days, due_soon_days()),
+        rules::window_for(req.due_soon_days, due_soon),
     );
     let last = completions
         .iter()
@@ -486,18 +489,19 @@ async fn of_worker(
 ) -> Result<Response> {
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let today = crate::dates::today();
+    let due_soon = due_soon_days()?;
     let reqs = live_requirements(&ctx, &worker.organization_ref, today).await?;
     let cats = categories_of(&ctx, &[worker.pid], today).await?;
     let comps = completions_of(&ctx, std::slice::from_ref(&worker), &reqs).await?;
-    let mine = cats.get(&worker.pid).cloned().unwrap_or_default();
+    let mine = cats.get(&worker.pid).cloned().or_empty();
     let rows: Vec<Value> = reqs
         .iter()
         .map(|r| {
             let done = comps
                 .get(&(worker.pid, r.pid))
                 .cloned()
-                .unwrap_or_default();
-            let e = evaluate(r, &mine, &done, today);
+                .or_empty();
+            let e = evaluate(r, &mine, &done, today, due_soon);
             json!({
                 "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis, "source": r.source,
                 "status": status_name(e.status), "last_completed_on": e.last_completed_on, "expires_on": e.expires_on,
@@ -587,6 +591,7 @@ async fn rollup(
         }
     };
     let today = crate::dates::today();
+    let due_soon = due_soon_days()?;
     let people = current_staff(&ctx, &q.organization).await?;
     let pids: Vec<Uuid> = people.iter().map(|w| w.pid).collect();
     let reqs = live_requirements(&ctx, &q.organization, today).await?;
@@ -604,10 +609,11 @@ async fn rollup(
             let statuses: Vec<(Uuid, rules::Status)> = people
                 .iter()
                 .map(|w| {
-                    let done = comps.get(&(w.pid, r.pid)).cloned().unwrap_or_default();
+                    let done = comps.get(&(w.pid, r.pid)).cloned().or_empty();
                     (
                         w.pid,
-                        evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today).status,
+                        evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today, due_soon)
+                            .status,
                     )
                 })
                 .collect();
@@ -673,6 +679,7 @@ async fn team(
         return Err(forbidden("a team's learning is for that team's manager"));
     }
     let today = crate::dates::today();
+    let due_soon = due_soon_days()?;
     let staff = current_staff(&ctx, &manager.organization_ref).await?;
     let mut reports_of: std::collections::BTreeMap<Uuid, Vec<Uuid>> =
         std::collections::BTreeMap::new();
@@ -699,8 +706,8 @@ async fn team(
             let items: Vec<Value> = reqs
                 .iter()
                 .filter_map(|r| {
-                    let done = comps.get(&(w.pid, r.pid)).cloned().unwrap_or_default();
-                    let e = evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today);
+                    let done = comps.get(&(w.pid, r.pid)).cloned().or_empty();
+                    let e = evaluate(r, cats.get(&w.pid).unwrap_or(&none), &done, today, due_soon);
                     (e.status != rules::Status::NotApplicable).then(|| {
                         json!({
                             "requirement_pid": r.pid, "subject": r.subject, "basis": r.basis,

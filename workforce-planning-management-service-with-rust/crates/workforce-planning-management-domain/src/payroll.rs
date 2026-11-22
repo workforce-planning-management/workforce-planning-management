@@ -348,7 +348,12 @@ mod tests {
         assert!(with.deductions[0].amount_minor >= plain.deductions[0].amount_minor);
         assert_eq!(
             with.net_minor,
-            with.gross_minor - with.deductions.iter().map(|d| d.amount_minor).sum::<i64>()
+            with.gross_minor
+                - with
+                    .deductions
+                    .iter()
+                    .try_fold(0_i64, |total, d| total.checked_add(d.amount_minor))
+                    .unwrap()
         );
         assert!(compute_payslip_with_premium(&stub, "GBP", 3_600_000, 100, 0, -1, &[]).is_err());
         assert!(compute_payslip_with_premium(&stub, "GBP", i64::MAX, 100, 0, 1, &[]).is_err());

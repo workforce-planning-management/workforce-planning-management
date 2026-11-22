@@ -3,6 +3,7 @@
 
 use serde_json::{Value, json};
 use serial_test::serial;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{a_person, an_org};
 use sqlx::Row;
@@ -108,7 +109,7 @@ async fn the_report_counts_withholds_and_says_what_it_cannot_know() {
         assert!(!rows.is_empty());
         for row in rows {
             let snapshot: Option<String> = row.try_get("snapshot").unwrap();
-            assert!(!snapshot.unwrap_or_default().contains("headcount"));
+            assert!(!snapshot.or_empty().contains("headcount"));
         }
     })
     .await;

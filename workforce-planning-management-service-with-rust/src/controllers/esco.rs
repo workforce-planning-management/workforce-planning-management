@@ -8,6 +8,7 @@
 //! the result is a draft for a human to edit. Essential skills draft
 //! importance `important`, optional ones `useful`.
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Json;
 use axa::prelude::*;
 use serde::Deserialize;
@@ -66,7 +67,7 @@ async fn search_occupations(
     State(ctx): State<AppContext>,
     axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
-    let term = query.q.unwrap_or_default();
+    let term = query.q.or_empty();
     if term.trim().chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }
@@ -125,7 +126,7 @@ async fn search_skills(
     State(ctx): State<AppContext>,
     axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
-    let term = query.q.unwrap_or_default();
+    let term = query.q.or_empty();
     if term.trim().chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }

@@ -124,7 +124,11 @@ pub fn hijri_dates(month: u32, day: u32, year: i32) -> Vec<Date> {
     if !(1..=12).contains(&month) || day == 0 {
         return Vec::new();
     }
-    hijri_dates_checked(i64::from(month), i64::from(day), year).unwrap_or_default()
+    let Some(dates) = hijri_dates_checked(i64::from(month), i64::from(day), year) else {
+        // The year is beyond any date that can be held, where no date of this kind exists: the list is empty.
+        return Vec::new();
+    };
+    dates
 }
 
 /// [`hijri_dates`] for a month and day already checked; `None` when a figure does not fit.

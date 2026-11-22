@@ -4,6 +4,7 @@
 //! high-sensitivity: reads are audited (WPM-D7).
 
 use super::row_json;
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
 use jiff::civil::Date;
@@ -971,7 +972,7 @@ async fn list_succession(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
     }
     let mut out = Vec::with_capacity(plans.len());
     for plan in plans {
-        let candidates = bench.remove(&plan.pid).unwrap_or_default();
+        let candidates = bench.remove(&plan.pid).or_empty();
         out.push(serde_json::json!({ "plan": plan, "candidates": candidates }));
     }
     if let Some(actor) = caller.actor() {

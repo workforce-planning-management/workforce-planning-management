@@ -187,8 +187,10 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
     if (a.len() == 1) != (b.len() == 1) {
         return None;
     }
-    let mut pairs: Vec<(f64, usize, usize, &String, &String)> =
-        Vec::with_capacity(a.len().checked_mul(b.len()).unwrap_or_default());
+    let mut pairs: Vec<(f64, usize, usize, &String, &String)> = a
+        .len()
+        .checked_mul(b.len())
+        .map_or_else(Vec::new, Vec::with_capacity); // a size hint only: none when it does not fit
     for (i, x) in a.iter().enumerate() {
         for (j, y) in b.iter().enumerate() {
             pairs.push((combined_similarity(x, y), i, j, x, y));

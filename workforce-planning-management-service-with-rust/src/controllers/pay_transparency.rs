@@ -9,6 +9,7 @@
 //!   (off until a deployer records a lawful basis), so it does not exist where that is off.
 //! - **Pay components beyond salary are not held**, so the variable-pay indicators are `unknown` until a source exists.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use jiff::{Timestamp, civil::Date};
 use std::collections::BTreeMap;
@@ -594,7 +595,7 @@ fn reason_text(reason: pay_gap::Reason) -> String {
     serde_json::to_value(reason)
         .ok()
         .and_then(|v| v.as_str().map(ToString::to_string))
-        .unwrap_or_default()
+        .or_empty()
 }
 
 fn composition_row(

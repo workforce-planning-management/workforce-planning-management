@@ -17,13 +17,26 @@ pub const RETENTION_DEFAULT_DAYS: i64 = 365;
 /// every soft-delete into a hard-delete (WPM-D22).
 pub const RETENTION_FLOOR_DAYS: i64 = 30;
 
-/// Parse the retention horizon from the raw env value: unset / blank /
-/// junk ⇒ the default; anything below the floor is clamped up to it.
-#[must_use]
-pub fn retention_days(raw: Option<&str>) -> i64 {
-    raw.and_then(|value| value.trim().parse::<i64>().ok())
-        .unwrap_or(RETENTION_DEFAULT_DAYS)
-        .max(RETENTION_FLOOR_DAYS)
+/// Parse the retention horizon from the raw setting: absent gives the default (RCA-IN-3).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number of days of at least [`RETENTION_FLOOR_DAYS`] (RCA-IN-2, RCA-IN-4): a sweep
+/// that could run at 0 days would turn every soft-delete into a hard-delete (WPM-D22), so it is refused, never raised to the floor.
+pub fn retention_days(raw: Option<&str>) -> Result<i64, String> {
+    raw.map_or(Ok(RETENTION_DEFAULT_DAYS), |text| {
+        retention_setting("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS", text)
+    })
+}
+
+/// One retention setting `text`, named `name`: whole days, at least the floor.
+fn retention_setting(name: &str, text: &str) -> Result<i64, String> {
+    match text.trim().parse::<i64>() {
+        Ok(days) if days >= RETENTION_FLOOR_DAYS => Ok(days),
+        _ => Err(format!(
+            "{name} must be a whole number of days, at least {RETENTION_FLOOR_DAYS}, not {text:?}"
+        )),
+    }
 }
 
 /// A kind of record, for retention (WPM-R91, WPM-D60). Every soft-deleting
@@ -200,34 +213,43 @@ pub struct Horizon {
     pub source: HorizonSource,
 }
 
-/// The horizon for `kind`: its own override if set and numeric, else the
-/// legacy single value if set and numeric, else the kind's default; always
-/// floored (WPM-D22). A junk value is ignored, not trusted.
-#[must_use]
-pub fn horizon_for(kind: RecordKind, own: Option<&str>, legacy: Option<&str>) -> Horizon {
-    let parse = |raw: Option<&str>| raw.and_then(|v| v.trim().parse::<i64>().ok());
-    let (days, source) = if let Some(days) = parse(own) {
-        (days, HorizonSource::Override)
-    } else if let Some(days) = parse(legacy) {
-        (days, HorizonSource::Legacy)
-    } else {
-        (kind.default_days(), HorizonSource::Default)
+/// The horizon for `kind`: its own override if set, else the legacy single value if set, else the kind's default (WPM-D22).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number of days of at least [`RETENTION_FLOOR_DAYS`] (RCA-IN-2, RCA-IN-4). It is
+/// refused whichever source it comes from, never ignored in favour of the next one and never raised to the floor.
+pub fn horizon_for(
+    kind: RecordKind,
+    own: Option<&str>,
+    legacy: Option<&str>,
+) -> Result<Horizon, String> {
+    let own = own
+        .map(|text| retention_setting(&kind.env_name(), text))
+        .transpose()?;
+    let legacy = legacy
+        .map(|text| retention_setting("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS", text))
+        .transpose()?;
+    let (days, source) = match (own, legacy) {
+        (Some(days), _) => (days, HorizonSource::Override),
+        (None, Some(days)) => (days, HorizonSource::Legacy),
+        (None, None) => (kind.default_days(), HorizonSource::Default),
     };
-    Horizon {
-        days: days.max(RETENTION_FLOOR_DAYS),
-        source,
-    }
+    Ok(Horizon { days, source })
 }
 
 /// The horizon a profile's `bounded` range gives (WPM-T384): its floor, so a record is kept as long as
-/// the strictest floor requires and no longer; where only a ceiling is given, the ceiling. Always floored
-/// at [`RETENTION_FLOOR_DAYS`]. `None` when the range gives neither.
+/// the strictest floor requires and no longer; where only a ceiling is given, the ceiling. `None` when the range gives neither, or
+/// gives fewer than [`RETENTION_FLOOR_DAYS`]: a stored value below the floor is corrupt data, so it is unknown, never raised to the
+/// floor (RCA-IN-6).
 #[must_use]
 pub fn horizon_from_range(min: Option<i64>, max: Option<i64>) -> Option<Horizon> {
-    min.or(max).map(|days| Horizon {
-        days: days.max(RETENTION_FLOOR_DAYS),
-        source: HorizonSource::Profile,
-    })
+    min.or(max)
+        .filter(|days| *days >= RETENTION_FLOOR_DAYS)
+        .map(|days| Horizon {
+            days,
+            source: HorizonSource::Profile,
+        })
 }
 
 /// Every table with a `deleted_at` column, for the retention sweep.
@@ -308,10 +330,13 @@ mod tests {
         let days = |min, max| horizon_from_range(min, max).map(|h| (h.days, h.source.label()));
         assert_eq!(days(Some(400), Some(900)), Some((400, "profile")));
         assert_eq!(days(None, Some(900)), Some((900, "profile")));
+        // below the floor is corrupt stored data: unknown, never raised to the floor (RCA-IN-6)
+        assert_eq!(days(Some(10), None), None);
         assert_eq!(
-            days(Some(10), None),
+            days(Some(RETENTION_FLOOR_DAYS), None),
             Some((RETENTION_FLOOR_DAYS, "profile"))
         );
+        assert_eq!(days(Some(RETENTION_FLOOR_DAYS - 1), None), None);
         assert_eq!(days(None, None), None);
     }
 
@@ -323,21 +348,18 @@ mod tests {
         }
     }
 
-    /// The horizon: default on unset/junk, floor-clamped, and a sane
-    /// value passes through.
+    /// The horizon: the default when absent, a sane value passes through, and a supplied value that is
+    /// junk or below the floor is refused, naming the setting (RCA-IN-2, RCA-IN-4).
     #[test]
-    fn retention_horizon_defaults_and_floors() {
-        assert_eq!(retention_days(None), RETENTION_DEFAULT_DAYS);
-        assert_eq!(retention_days(Some("")), RETENTION_DEFAULT_DAYS);
-        assert_eq!(retention_days(Some("junk")), RETENTION_DEFAULT_DAYS);
-        assert_eq!(retention_days(Some("730")), 730);
-        assert_eq!(
-            retention_days(Some("0")),
-            RETENTION_FLOOR_DAYS,
-            "0 would hard-delete"
-        );
-        assert_eq!(retention_days(Some("-5")), RETENTION_FLOOR_DAYS);
-        assert_eq!(retention_days(Some("30")), 30);
+    fn retention_horizon_defaults_when_absent_and_refuses_a_bad_value() {
+        assert_eq!(retention_days(None), Ok(RETENTION_DEFAULT_DAYS));
+        assert_eq!(retention_days(Some("730")), Ok(730));
+        assert_eq!(retention_days(Some("30")), Ok(30));
+        for bad in ["", "junk", "0", "-5", "29"] {
+            let error = retention_days(Some(bad)).unwrap_err();
+            assert!(error.contains("RETENTION_DAYS"), "{bad:?}: {error}");
+            assert!(error.contains("at least 30"), "{bad:?}: {error}");
+        }
     }
 
     #[test]
@@ -354,7 +376,8 @@ mod tests {
                     .filter(|t| kind_of(t) == Some(*kind))
                     .count()
             })
-            .sum();
+            .try_fold(0_usize, usize::checked_add)
+            .unwrap();
         assert_eq!(total, SOFT_DELETED_TABLES.len(), "no table in two kinds");
         for kind in RecordKind::ALL {
             assert!(
@@ -369,7 +392,7 @@ mod tests {
     fn a_horizon_is_the_override_then_the_legacy_value_then_the_default() {
         use HorizonSource::{Default, Legacy, Override};
         let kind = RecordKind::Wellbeing;
-        let h = |own, legacy| horizon_for(kind, own, legacy);
+        let h = |own, legacy| horizon_for(kind, own, legacy).unwrap();
         assert_eq!(
             h(None, None),
             Horizon {
@@ -391,24 +414,20 @@ mod tests {
                 source: Override
             }
         );
-        // Junk is ignored, and the next source is used.
-        assert_eq!(
-            h(Some("junk"), Some("500")),
-            Horizon {
-                days: 500,
-                source: Legacy
-            }
-        );
-        assert_eq!(
-            h(Some(""), Some("junk")),
-            Horizon {
-                days: 365,
-                source: Default
-            }
-        );
-        // The floor holds for every source, so no kind can be set to hard-delete at once.
-        assert_eq!(h(Some("0"), None).days, RETENTION_FLOOR_DAYS);
-        assert_eq!(h(None, Some("-5")).days, RETENTION_FLOOR_DAYS);
+        // A supplied value that is junk or below the floor is refused whichever source it is, naming the
+        // setting. It is not ignored for the next source and not raised, so no kind can be set to
+        // hard-delete at once (RCA-IN-2).
+        for (own, legacy, name) in [
+            (Some("junk"), Some("500"), "RETENTION_WELLBEING_DAYS"),
+            (Some(""), None, "RETENTION_WELLBEING_DAYS"),
+            (Some("0"), None, "RETENTION_WELLBEING_DAYS"),
+            (None, Some("-5"), "RETENTION_DAYS"),
+            (None, Some("junk"), "RETENTION_DAYS"),
+            (Some("90"), Some("junk"), "RETENTION_DAYS"),
+        ] {
+            let error = horizon_for(kind, own, legacy).unwrap_err();
+            assert!(error.contains(name), "{own:?} {legacy:?}: {error}");
+        }
     }
 
     #[test]

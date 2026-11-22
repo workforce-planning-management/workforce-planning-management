@@ -8,6 +8,7 @@
 //! daily dates a condition late, and the answer says so. A warning names a pool or a measure, never a
 //! person, and the notification carries no figure (WPM-D23).
 
+use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -147,7 +148,7 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: Date) -> Result<Report> {
     };
     let mut connection = pool(ctx).acquire().await?;
     for key in &plan.opened {
-        let name = now.get(key).cloned().unwrap_or_default();
+        let name = now.get(key).cloned().or_empty();
         let warning_pid = Uuid::new_v4();
         sqlx::query!(
             "INSERT INTO early_warnings

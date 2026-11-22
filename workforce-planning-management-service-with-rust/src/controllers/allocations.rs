@@ -10,6 +10,7 @@
 //!
 //! Spec: `spec/workforce-planning-and-scenarios.md`.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use authentication_verifier::Claims;
 use axa::extract::{Json, Path, Query};
@@ -389,7 +390,7 @@ async fn of_worker(
         &worker,
         &assignments.iter().collect::<Vec<_>>(),
         &rows.iter().collect::<Vec<_>>(),
-        leave.remove(&worker.pid).unwrap_or_default(),
+        leave.remove(&worker.pid).or_empty(),
         tracking,
         &span,
     )?;
@@ -501,7 +502,7 @@ async fn list(
             worker,
             &mine,
             &theirs,
-            leave.remove(&worker.pid).unwrap_or_default(),
+            leave.remove(&worker.pid).or_empty(),
             tracking,
             &span,
         )?);

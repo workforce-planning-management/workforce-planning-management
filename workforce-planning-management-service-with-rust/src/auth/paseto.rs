@@ -94,19 +94,24 @@ const KEY_REFRESH_DEFAULT_SECS: u64 = 3600;
 /// [`KEY_REFRESH_DEFAULT_SECS`]); **`0` disables** the loop.
 ///
 /// A no-op when `WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL` is unset (env-supplied keys have
-/// nothing to re-fetch). Call once at boot (`app.rs::after_routes`).
-pub fn spawn_key_refresh() {
+/// nothing to re-fetch).
+///
+/// # Errors
+///
+/// A refresh interval that is set but is not a whole number of seconds (RCA-IN-4). Call once at boot (`app.rs::after_routes`).
+pub fn spawn_key_refresh() -> Result<(), String> {
     let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL")
         .map(|u| u.trim().to_string())
         .filter(|u| !u.is_empty())
     else {
-        return;
+        return Ok(());
     };
-    let secs = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS")
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .unwrap_or(KEY_REFRESH_DEFAULT_SECS);
+    let secs = crate::settings::refresh_secs(
+        "WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_REFRESH_SECS",
+        KEY_REFRESH_DEFAULT_SECS,
+    )?;
     if secs == 0 {
-        return; // explicitly disabled
+        return Ok(()); // explicitly disabled
     }
     let issuer = env_or("WORKFORCE_PLANNING_MANAGEMENT_TOKEN_ISSUER", DEFAULT_ISSUER);
     let audience = env_or(
@@ -123,6 +128,7 @@ pub fn spawn_key_refresh() {
         secs,
         "polling WORKFORCE_PLANNING_MANAGEMENT_PASETO_KEYS_URL for key rotation"
     );
+    Ok(())
 }
 
 fn spawn_refresh(

@@ -14,6 +14,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -207,7 +208,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         }
         for row in &rows {
             let snapshot: Option<String> = row.try_get("snapshot").unwrap();
-            let snapshot = snapshot.unwrap_or_default();
+            let snapshot = snapshot.or_empty();
             for figure in ["9000000", "10000000", "gap_bp", "female", "male"] {
                 assert!(!snapshot.contains(figure), "{figure} in an audit snapshot: {snapshot}");
             }
@@ -238,7 +239,7 @@ async fn only_those_who_may_read_salaries_get_the_report_and_it_names_no_one() {
         assert!(audits.len() >= 2);
         for row in &audits {
             let snapshot: Option<String> = row.try_get("snapshot").unwrap();
-            assert!(!snapshot.unwrap_or_default().contains("job evaluation"), "the words are not in the audit");
+            assert!(!snapshot.or_empty().contains("job evaluation"), "the words are not in the audit");
         }
 
         // ── The human capital report: HR, payroll and the service read it; a worker does not; it names no one ──

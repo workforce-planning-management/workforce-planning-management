@@ -14,6 +14,7 @@
 //!   is audited); a manager (their reports) and HR see only **cleared** or **not cleared** per
 //!   requirement; the only aggregate is a compliance count with small groups withheld.
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use jiff::civil::Date;
@@ -582,7 +583,7 @@ async fn clearance(
                 continue;
             }
         }
-        let held = held_by.remove(&worker.pid).unwrap_or_default();
+        let held = held_by.remove(&worker.pid).or_empty();
         for r in requirements
             .iter()
             .filter(|r| rules::applies(&departments_of(r), &worker.department))
@@ -678,7 +679,7 @@ async fn compliance(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         {
             continue;
         }
-        let held = held_by.remove(&worker.pid).unwrap_or_default();
+        let held = held_by.remove(&worker.pid).or_empty();
         for r in requirements
             .iter()
             .filter(|r| rules::applies(&departments_of(r), &worker.department))

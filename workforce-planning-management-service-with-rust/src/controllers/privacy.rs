@@ -669,14 +669,14 @@ async fn erase(
 pub(crate) fn horizons(
     scope: Option<&super::jurisdictions::Scope>,
     as_of: Date,
-) -> Vec<(rules::RecordKind, InForce<rules::Horizon>)> {
+) -> std::result::Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>, String> {
     let legacy = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS");
     rules::RecordKind::ALL
         .iter()
         .map(|&kind| {
             let name = kind.env_name();
             let own = crate::compat::env_var(&name);
-            let configured = rules::horizon_for(kind, own.as_deref(), legacy.as_deref());
+            let configured = rules::horizon_for(kind, own.as_deref(), legacy.as_deref())?;
             let mut found = statutory::pick(
                 scope,
                 &name,
@@ -696,7 +696,7 @@ pub(crate) fn horizons(
                     serde_json::json!({"setting": "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_DAYS"}),
                 );
             }
-            (kind, found)
+            Ok((kind, found))
         })
         .collect()
 }
@@ -709,14 +709,16 @@ async fn sweep_horizons(
     ctx: &AppContext,
 ) -> Result<Vec<(rules::RecordKind, InForce<rules::Horizon>)>> {
     let as_of = crate::dates::today();
-    let mut all = horizons(None, as_of);
+    let mut all = horizons(None, as_of).map_err(|message| Error::string(&message))?;
     for organization in
         super::jurisdictions::organizations_with_a_home(crate::db::pool(ctx)).await?
     {
         let scope =
             super::jurisdictions::Scope::for_organization(crate::db::pool(ctx), &organization)
                 .await?;
-        for (kind, found) in horizons(Some(&scope), as_of) {
+        for (kind, found) in
+            horizons(Some(&scope), as_of).map_err(|message| Error::string(&message))?
+        {
             if found.value.source != rules::HorizonSource::Profile {
                 continue;
             }
@@ -786,6 +788,7 @@ async fn retention_schedule(
         None => None,
     };
     let kinds: Vec<serde_json::Value> = horizons(scope.as_ref(), as_of)
+        .map_err(|message| Error::string(&message))?
         .into_iter()
         .map(|(kind, found)| {
             let tables: Vec<&str> = rules::SOFT_DELETED_TABLES

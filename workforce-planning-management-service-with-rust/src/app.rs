@@ -624,6 +624,8 @@ impl App {
             );
         }
         controllers::install_cursor_key(cursor_key);
+        // Every setting that has a range is checked once, here: a supplied but invalid one stops the start (RCA-IN-4).
+        crate::settings::validate().map_err(|message| Error::string(&message))?;
         // The failed sign-in lockout (WPM-R242, WPM-D190). A count that is set but unreadable stops the start.
         let lockout = crate::security::lockout_from(
             crate::compat::env_var("LOCKOUT_CLIENT_ADDRESS_AFTER_COUNT").as_deref(),
@@ -641,7 +643,7 @@ impl App {
             tracing::warn!("{warning}");
         }
         auth::init().await;
-        auth::spawn_key_refresh();
+        auth::spawn_key_refresh().map_err(|message| Error::string(&message))?;
         auth::spawn_policy_watcher();
         // Later layers are outer: headers wrap everything (so a 401 or 429
         // carries them), the rate limit runs before the token is checked.
@@ -686,9 +688,10 @@ impl App {
         Ok(router
             // Outside `axa`'s layers, so it resolves the address itself, from the same list (WPM-D187).
             .layer(axum::middleware::from_fn_with_state(
-                std::sync::Arc::new(crate::security::RateLimits::from_env(
-                    ctx.config.http.trusted_proxies.clone(),
-                )),
+                std::sync::Arc::new(
+                    crate::security::RateLimits::from_env(ctx.config.http.trusted_proxies.clone())
+                        .map_err(|message| Error::string(&message))?,
+                ),
                 crate::security::rate_limit_mw,
             ))
             // Outside everything that refuses a request, so a 401, 406, 408, 429 or panic is a problem too (WPM-R238).

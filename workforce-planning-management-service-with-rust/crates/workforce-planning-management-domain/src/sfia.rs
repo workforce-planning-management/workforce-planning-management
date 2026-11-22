@@ -13,7 +13,7 @@ use super::csv::parse_csv;
 
 /// The documented name of column `c`; an index past the header (never reached, the row width is checked first) is blank.
 fn column_name(names: &[&'static str], c: usize) -> &'static str {
-    names.get(c).copied().unwrap_or_default()
+    names.get(c).copied().unwrap_or("")
 }
 
 /// SFIA's own scale: seven levels of responsibility.

@@ -98,33 +98,37 @@ fn setting(lookup: Lookup<'_>, name: &str) -> Option<String> {
     lookup(name).filter(|v| !v.trim().is_empty())
 }
 
-fn parsed<T: std::str::FromStr>(lookup: Lookup<'_>, name: &str) -> Option<T> {
-    let text = setting(lookup, name)?;
-    let value = text.trim().parse::<T>().ok();
-    if value.is_none() {
-        tracing::warn!("{name} is not a whole number; using the example");
-    }
-    value
+/// A whole-number setting: `None` when it is absent (blank is absent), an error naming it when it is supplied but is not a
+/// whole number (RCA-IN-2, RCA-IN-4). It is never ignored in favour of the example.
+fn parsed<T: std::str::FromStr>(lookup: Lookup<'_>, name: &str) -> Result<Option<T>, String> {
+    let Some(text) = setting(lookup, name) else {
+        return Ok(None);
+    };
+    text.trim()
+        .parse::<T>()
+        .map(Some)
+        .map_err(|_| format!("{name} must be a whole number, not {text:?}"))
 }
 
-/// The full-time contracted day in minutes: `WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES`, 1 to 1,440, else the
-/// example's 450 (7.5 hours). Overtime is the recorded time beyond it (FTE-scaled).
-#[must_use]
-pub fn contracted_day() -> i32 {
+/// The full-time contracted day in minutes: `WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES`, 1 to 1,440; the example's
+/// 450 (7.5 hours) when it is absent. Overtime is the recorded time beyond it (FTE-scaled).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number of minutes from 1 to 1,440 (RCA-IN-2, RCA-IN-4).
+pub fn contracted_day() -> Result<i32, String> {
     contracted_day_from(&from_env)
 }
 
 /// [`contracted_day`] read through `lookup`.
-fn contracted_day_from(lookup: Lookup<'_>) -> i32 {
-    parsed::<i32>(lookup, "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES")
-        .filter(|&m| {
-            let ok = workforce::validate_contracted_day(m).is_ok();
-            if !ok {
-                tracing::warn!("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES is not 1 to 1440; using the example");
-            }
-            ok
-        })
-        .unwrap_or(workforce::CONTRACTED_DAY_MINUTES)
+fn contracted_day_from(lookup: Lookup<'_>) -> Result<i32, String> {
+    const NAME: &str = "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES";
+    match parsed::<i32>(lookup, NAME)? {
+        None => Ok(workforce::CONTRACTED_DAY_MINUTES), // WPM-T383: absent means the example's day
+        Some(minutes) => workforce::validate_contracted_day(minutes)
+            .map(|()| minutes)
+            .map_err(|why| format!("{NAME}: {why}")),
+    }
 }
 
 /// The payroll stub in force and whether the deployer configured it. `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY`,
@@ -132,14 +136,18 @@ fn contracted_day_from(lookup: Lookup<'_>) -> i32 {
 /// `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT` replace the example; `WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES` the working
 /// minutes in a month. A currency other than the example's is taken only with its own allowance and
 /// rate, so the example's pounds are never read as another currency's units; a setting that does not
-/// check is ignored with a warning.
-#[must_use]
-pub fn tax_stub() -> (rules::TaxStub, bool) {
+/// check is refused.
+///
+/// # Errors
+///
+/// A setting that is supplied but does not check (RCA-IN-2, RCA-IN-4): it is never ignored in favour of the example, and the
+/// example is never half applied.
+pub fn tax_stub() -> Result<(rules::TaxStub, bool), String> {
     tax_stub_from(&from_env)
 }
 
 /// [`tax_stub`] read through `lookup`.
-fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
+fn tax_stub_from(lookup: Lookup<'_>) -> Result<(rules::TaxStub, bool), String> {
     let example = rules::TaxStub::example();
     let currency = setting(
         lookup,
@@ -149,17 +157,16 @@ fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
     let allowance = parsed::<i64>(
         lookup,
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
-    );
+    )?;
     let rate = parsed::<i64>(
         lookup,
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
-    );
+    )?;
     let month = parsed::<i64>(
         lookup,
         "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
-    );
-    // Configured means a deployer's value is in force, not merely present: a currency refused for want
-    // of its own allowance and rate leaves the example in force and is not "configured" (WPM-T401).
+    )?;
+    // Configured means a deployer's value is in force, not merely present (WPM-T401).
     let mut configured = false;
     let mut stub = example.clone();
     if let Some(m) = month {
@@ -168,9 +175,10 @@ fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
     }
     match currency {
         Some(code) if code != example.currency && (allowance.is_none() || rate.is_none()) => {
-            tracing::warn!(
+            return Err(
                 "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY needs WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR and \
-                 WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT for that currency; using the example"
+                 WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT for that currency"
+                    .to_string(),
             );
         }
         other => {
@@ -186,11 +194,9 @@ fn tax_stub_from(lookup: Lookup<'_>) -> (rules::TaxStub, bool) {
             }
         }
     }
-    if let Err(why) = stub.validate() {
-        tracing::warn!("payroll stub settings ignored: {why}");
-        return (example, false);
-    }
-    (stub, configured)
+    stub.validate()
+        .map_err(|why| format!("the payroll stub settings do not check: {why}"))?;
+    Ok((stub, configured))
 }
 
 /// `POST /api/payroll-runs` body.
@@ -348,8 +354,8 @@ async fn calculate_run(
     sqlx::query!("DELETE FROM payslips WHERE run_pid = $1", run.pid)
         .execute(&mut *tx)
         .await?;
-    let (stub, stub_configured) = tax_stub();
-    let full_day = contracted_day();
+    let (stub, stub_configured) = tax_stub().map_err(|message| Error::string(&message))?;
+    let full_day = contracted_day().map_err(|message| Error::string(&message))?;
     let no_profile = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&no_profile);
     let holidays = holiday_dates(
@@ -1107,7 +1113,10 @@ fn employer_costs_for(
     let Resolution::Resolved { value, .. } = get("employer_contribution.lines") else {
         return Ok((0, serde_json::json!([])));
     };
-    let lines = ec::parse_lines(&value.as_names().unwrap_or_default())?;
+    let names = value
+        .as_names()
+        .ok_or_else(|| "employer_contribution.lines must be a list of names".to_string())?;
+    let lines = ec::parse_lines(&names)?;
     let class = match get("employer_contribution.class") {
         Resolution::Resolved { value, .. } => {
             value.as_names().and_then(|names| names.into_iter().next())
@@ -1283,17 +1292,25 @@ fn statutory_outcome(
             },
             kinds,
         };
-        let week_start = get("calendar.week_start")
-            .integer()
-            .and_then(|d| u32::try_from(d).ok())
-            .unwrap_or(1);
+        // Absent means Monday, the declared default (WPM-T383); a stored value that is not a weekday number is corrupt (RCA-IN-6).
+        let week_start = match get("calendar.week_start").integer() {
+            None => 1,
+            Some(day) => {
+                let Ok(day) = u32::try_from(day) else {
+                    let (r, n) = unknown("week_start_invalid");
+                    break 'outcome (Some(r), n);
+                };
+                day
+            }
+        };
         // A day's kind comes from the place's stored holidays and its configured weekend. With no weekend configured no day is a
         // rest day: it is never guessed.
         let weekend = match get("holidays.weekend_days") {
             Resolution::Resolved { value, .. } => value
                 .as_weekdays()
                 .and_then(|days| crate::rules::holiday::weekend_from_iso(&days))
-                .unwrap_or_default(),
+                // A weekend that does not read is none configured, and no day is a rest day; the profile check (WPM-T384) refuses one.
+                .unwrap_or(Vec::new()),
             _ => Vec::new(),
         };
         let kind_of = |date: Date| {
@@ -1449,7 +1466,10 @@ async fn overtime_check(
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
     let as_of = run.period_end.get();
-    let month_minutes = tax_stub().0.month_minutes;
+    let month_minutes = tax_stub()
+        .map_err(|message| Error::string(&message))?
+        .0
+        .month_minutes;
 
     let mut counts: BTreeMap<&'static str, u64> = [
         "derived",
@@ -1560,17 +1580,17 @@ mod tests {
         }
     }
 
-    fn stub(pairs: &[(&str, &str)]) -> (rules::TaxStub, bool) {
+    fn stub(pairs: &[(&str, &str)]) -> Result<(rules::TaxStub, bool), String> {
         tax_stub_from(&table(pairs))
     }
 
-    fn day(pairs: &[(&str, &str)]) -> i32 {
+    fn day(pairs: &[(&str, &str)]) -> Result<i32, String> {
         contracted_day_from(&table(pairs))
     }
 
     #[test]
     fn nothing_set_is_the_example() {
-        assert_eq!(stub(&[]), (rules::TaxStub::example(), false));
+        assert_eq!(stub(&[]), Ok((rules::TaxStub::example(), false)));
         // Blank counts as unset.
         assert_eq!(
             stub(&[
@@ -1580,7 +1600,7 @@ mod tests {
                     ""
                 )
             ]),
-            (rules::TaxStub::example(), false)
+            Ok((rules::TaxStub::example(), false))
         );
     }
 
@@ -1603,7 +1623,8 @@ mod tests {
                 "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
                 "9600",
             ),
-        ]);
+        ])
+        .unwrap();
         assert!(configured);
         assert_eq!(
             yen,
@@ -1618,8 +1639,7 @@ mod tests {
 
     #[test]
     fn another_currency_needs_its_own_allowance_and_rate() {
-        // The example's pounds are never read as yen: with either missing, the example stays in force
-        // and is not reported as configured.
+        // The example's pounds are never read as yen: with either missing, the settings are refused, naming the currency setting.
         for pairs in [
             &[("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY")][..],
             &[
@@ -1636,28 +1656,19 @@ mod tests {
                     "10",
                 ),
             ][..],
-            &[
-                ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
-                (
-                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
-                    "lots",
-                ),
-                (
-                    "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
-                    "10",
-                ),
-            ][..],
         ] {
-            assert_eq!(stub(pairs), (rules::TaxStub::example(), false), "{pairs:?}");
+            let error = stub(pairs).unwrap_err();
+            assert!(
+                error.contains("PAYROLL_STUB_CURRENCY needs"),
+                "{pairs:?}: {error}"
+            );
         }
         // The month minutes are their own setting and still apply.
-        let (s, configured) = stub(&[
-            ("WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_CURRENCY", "JPY"),
-            (
-                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
-                "9600",
-            ),
-        ]);
+        let (s, configured) = stub(&[(
+            "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_MONTH_MINUTES",
+            "9600",
+        )])
+        .unwrap();
         assert!(configured);
         assert_eq!(s.currency, "GBP");
         assert_eq!(s.month_minutes, 9_600);
@@ -1668,7 +1679,8 @@ mod tests {
         let (s, configured) = stub(&[(
             "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
             "25",
-        )]);
+        )])
+        .unwrap();
         assert!(configured);
         assert_eq!(
             s,
@@ -1683,13 +1695,14 @@ mod tests {
                 "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
                 "0",
             ),
-        ]);
+        ])
+        .unwrap();
         assert!(configured);
         assert_eq!(s.allowance_minor, 0);
     }
 
     #[test]
-    fn a_setting_that_does_not_check_is_never_half_applied() {
+    fn a_setting_that_does_not_check_is_refused_and_never_half_applied() {
         for pairs in [
             // Not ISO 4217, or not upper case.
             &[
@@ -1714,7 +1727,7 @@ mod tests {
                     "1",
                 ),
             ][..],
-            // Out of range: the whole stub falls back, the month minutes with it.
+            // Out of range.
             &[
                 (
                     "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
@@ -1735,45 +1748,35 @@ mod tests {
                 "99999999",
             )][..],
         ] {
-            assert_eq!(stub(pairs), (rules::TaxStub::example(), false), "{pairs:?}");
+            let error = stub(pairs).unwrap_err();
+            assert!(error.contains("do not check"), "{pairs:?}: {error}");
         }
-        // Not a whole number: ignored, as if unset.
-        assert_eq!(
-            stub(&[(
+        // Not a whole number: refused, naming the setting.
+        for (name, text) in [
+            (
                 "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_RATE_PERCENT",
-                "12.5"
-            )]),
-            (rules::TaxStub::example(), false)
-        );
+                "12.5",
+            ),
+            (
+                "WORKFORCE_PLANNING_MANAGEMENT_PAYROLL_STUB_ALLOWANCE_MINOR",
+                "lots",
+            ),
+        ] {
+            let error = stub(&[(name, text)]).unwrap_err();
+            assert!(error.contains(name), "{name}: {error}");
+        }
     }
 
     #[test]
     fn the_contracted_day_is_one_to_a_full_day() {
-        assert_eq!(day(&[]), workforce::CONTRACTED_DAY_MINUTES);
-        assert_eq!(
-            day(&[(
-                "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
-                " 480 "
-            )]),
-            480
-        );
-        assert_eq!(
-            day(&[("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES", "1")]),
-            1
-        );
-        assert_eq!(
-            day(&[(
-                "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES",
-                "1440"
-            )]),
-            1_440
-        );
-        for junk in ["0", "1441", "-5", "7.5h", "", "eight hours"] {
-            assert_eq!(
-                day(&[("WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES", junk)]),
-                workforce::CONTRACTED_DAY_MINUTES,
-                "{junk}"
-            );
+        const NAME: &str = "WORKFORCE_PLANNING_MANAGEMENT_CONTRACTED_DAY_MINUTES";
+        assert_eq!(day(&[]), Ok(workforce::CONTRACTED_DAY_MINUTES));
+        assert_eq!(day(&[(NAME, " 480 ")]), Ok(480));
+        assert_eq!(day(&[(NAME, "1")]), Ok(1));
+        assert_eq!(day(&[(NAME, "1440")]), Ok(1_440));
+        for junk in ["0", "1441", "-5", "7.5h", "eight hours"] {
+            let error = day(&[(NAME, junk)]).unwrap_err();
+            assert!(error.contains(NAME), "{junk}: {error}");
         }
     }
 }

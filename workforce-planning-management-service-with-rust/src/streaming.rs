@@ -19,6 +19,7 @@
 //! `payroll_run_calculated` / `review_shared` / … (the full kind list
 //! is spec `audit.md`).
 
+use crate::absent::AbsentIsEmpty as _;
 use jiff::Timestamp;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -160,8 +161,7 @@ pub fn transport() -> EventTransport {
     static TRANSPORT: OnceLock<EventTransport> = OnceLock::new();
     *TRANSPORT.get_or_init(|| {
         EventTransport::parse(
-            &crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT")
-                .unwrap_or_default(),
+            &crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_EVENT_TRANSPORT").or_empty(),
         )
     })
 }

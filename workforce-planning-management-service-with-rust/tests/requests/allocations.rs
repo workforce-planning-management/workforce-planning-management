@@ -4,6 +4,7 @@
 use serde_json::{Value, json};
 use serial_test::serial;
 use sqlx::Row;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{activate, an_org, seed_worker};
 
@@ -41,7 +42,7 @@ fn kinds(month: &Value) -> Vec<String> {
                 .map(|x| x["kind"].as_str().unwrap().to_string())
                 .collect()
         })
-        .unwrap_or_default()
+        .or_empty()
 }
 
 #[tokio::test]

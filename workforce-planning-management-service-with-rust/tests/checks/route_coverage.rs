@@ -13,6 +13,7 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use workforce_planning_management::app::route_groups;
 
@@ -228,7 +229,7 @@ fn every_route_is_called_with_its_method_by_some_test() {
 
     let mut routes = BTreeSet::new();
     for group in route_groups() {
-        let prefix = group.prefix.clone().unwrap_or_default();
+        let prefix = group.prefix.clone().or_empty();
         for handler in &group.handlers {
             // A `MethodRouter` says which verbs it serves only through its debug text.
             let text = format!("{:?}", handler.method);

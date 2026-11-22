@@ -9,6 +9,7 @@
 //! The report names no one: counts, dates and skill or role names. **The go/no-go stays a human
 //! decision outside WPM**, and the answer says so.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use jiff::civil::Date;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -121,7 +122,7 @@ async fn create(
     problems.require_text("site", &p.site);
     ensure_valid(&problems.into_vec())?;
     rules::validate_window(p.window_start, p.window_end).map_err(|e| unprocessable(&e))?;
-    let aliases = p.site_aliases.clone().unwrap_or_default();
+    let aliases = p.site_aliases.clone().or_empty();
     if aliases.len() > 10 || aliases.iter().any(|a| a.trim().is_empty() || a.len() > 200) {
         return Err(unprocessable(
             "site_aliases takes up to ten names, none blank and none over 200 characters",

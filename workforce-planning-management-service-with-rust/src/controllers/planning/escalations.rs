@@ -10,6 +10,7 @@ use super::{
     debug_handler, dimension_states, ensure_org_in_scope, format, records, scoped_plan,
     unprocessable, workforce_plans,
 };
+use crate::absent::AbsentIsEmpty as _;
 use crate::db;
 use crate::models::_entities::plan_escalations;
 use crate::rules::escalation as esc;
@@ -279,7 +280,7 @@ pub(super) async fn decide_escalation(
     })?;
     let note = esc::clean_note(Some(&payload.note), true)
         .map_err(|m| unprocessable(&m))?
-        .unwrap_or_default();
+        .or_empty();
     // what the plan looks like as it is decided, kept with the decision
     let states = dimension_states(&ctx, &caller, &plan.pid.to_string(), &plan).await?;
     let now = states.iter().find(|s| s.dimension.as_str() == e.dimension);

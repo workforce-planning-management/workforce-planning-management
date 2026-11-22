@@ -64,7 +64,9 @@ pub fn clean_ref(value: Option<&str>) -> Result<Option<String>, String> {
 #[must_use]
 pub fn valid_jurisdiction(value: &str) -> bool {
     let mut parts = value.split('-');
-    let country = parts.next().unwrap_or_default();
+    let Some(country) = parts.next() else {
+        return false;
+    };
     let upper = |s: &str| {
         s.chars()
             .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())

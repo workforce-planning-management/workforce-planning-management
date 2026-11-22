@@ -13,6 +13,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 use workforce_planning_management::app::App;
 
 const ISSUER: &str = "authentication-service";
@@ -215,7 +216,7 @@ async fn a_worker_asks_for_their_own_pay_information_and_only_those_who_may_answ
         }
         for row in &rows {
             let snapshot: Option<String> = row.try_get("snapshot").unwrap();
-            assert!(!snapshot.unwrap_or_default().contains("000000"), "a figure in an audit snapshot");
+            assert!(!snapshot.or_empty().contains("000000"), "a figure in an audit snapshot");
         }
     })
     .await;

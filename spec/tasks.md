@@ -7266,3 +7266,22 @@ the entry records only the evidence it needs.
       the other RCA-ENF-1 lints (`as_conversions`, `float_arithmetic`, `integer_division` and the rest), the
       `disallowed-methods` list (RCA-ENF-2), `overflow-checks` in the release profile (RCA-ENF-4), the figure declarations
       (RCA-DECL-1), and `unwrap_or_default` on the remaining 80 or so non-arithmetic sites.
+- [x] WPM-T636 (2026-11-22) **Reject invalid settings and stored values; adopt RCA-ENF-2 and RCA-ENF-4.** *(RCA-IN-2 to RCA-IN-6,
+      RCA-DECL-6, RCA-ENF-2, RCA-ENF-4, RCA-ENF-7; follow-up to WPM-T635)* A setting that is **supplied but invalid** now stops the
+      start with an error that names it, instead of being replaced by a default or raised to a bound: the due-soon window
+      (`LEARNING_DUE_SOON_DAYS`), the organization ceiling (`MAX_ORG_WORKERS`), every retention horizon (`RETENTION_DAYS` and
+      `RETENTION_<KIND>_DAYS`, which were ignored for the next source or raised to the 30-day floor), the two rate limits, the two key
+      refresh intervals, the contracted day and the payroll stub (which was "ignored with a warning" and fell back to the example).
+      An **absent** setting still takes its declared default (RCA-IN-3). `src/settings.rs::validate` checks them all once at start;
+      the request path returns a 500 naming the setting if one is somehow invalid. A **stored value** out of range is now an error
+      or an unknown, not a repaired value: a course's hours and levels, a skill's hours per level, the week start of the overtime
+      derivation (`week_start_invalid`) and a profile's retention range below the floor (unknown). A holiday year is checked, not
+      defaulted. The `reader_check` and employer-contribution readers refuse a value that is not a list of names. `clippy.toml` now
+      carries the RCA-ENF-2 `disallowed-methods` and `disallowed-types` (plus `f64::clamp`), so `Iterator::sum`, `product`,
+      `Option::unwrap_or_default` and the rest fail the build; sums in tests are `try_fold` with `checked_add`. `[profile.release]`
+      sets `overflow-checks = true` (RCA-ENF-4). An absent group or optional text is empty, not unknown, and is spelled
+      `.or_empty()` (`src/absent.rs`), never for a figure. **Behaviour changes:** a bad setting now stops the start (it used to be
+      ignored); `retention_schedule` refuses a junk `RETENTION_PAY_DAYS` (the test now asserts the refusal). **Still open:** other
+      readers of settings that replace an invalid value with a default (flexible working, joint assessment, pay information,
+      resignation notice, PADR, health requirements, AI Act date, pay gap tiers, token lifetime, ABAC policy file, the stored
+      `refresher_months` and job-level attributes), the RCA-ENF-1 lint list in `Cargo.toml`, and the figure declarations.

@@ -9,6 +9,7 @@
 //! managers up the chain read it, audited with the pid and no content. HR reads the roll-up's counts and nothing else. Whether a
 //! wellbeing conversation was offered is a yes or no, and nothing here can hold what was said.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use jiff::civil::Date;
 use std::collections::HashMap;
@@ -290,7 +291,7 @@ async fn summaries(
     }
     let mut lines: HashMap<Uuid, Vec<serde_json::Value>> = HashMap::new();
     for review in rows {
-        let versions = by_review.remove(&review.pid).unwrap_or_default();
+        let versions = by_review.remove(&review.pid).or_empty();
         let offs: Vec<SignOffs> = versions.iter().map(sign_offs).collect();
         let latest = versions.last();
         lines
@@ -332,14 +333,14 @@ pub(crate) async fn mine_and_team(
                 "worker_pid": worker.pid,
                 "display_name": worker.display_name,
                 "due": standing_json(standing.get(&worker.pid).copied()),
-                "padrs": lines.remove(&worker.pid).unwrap_or_default(),
+                "padrs": lines.remove(&worker.pid).or_empty(),
             })
         })
         .collect();
     format::json(serde_json::json!({
         "worker_pid": me.pid,
         "due": standing_json(standing.get(&me.pid).copied()),
-        "padrs": lines.remove(&me.pid).unwrap_or_default(),
+        "padrs": lines.remove(&me.pid).or_empty(),
         "team": team,
     }))
 }

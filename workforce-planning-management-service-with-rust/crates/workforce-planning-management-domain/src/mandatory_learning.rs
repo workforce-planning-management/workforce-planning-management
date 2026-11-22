@@ -16,14 +16,22 @@ pub const DUE_SOON_DAYS: i64 = 90;
 /// The longest due-soon window a deployment may configure, in calendar days.
 pub const MAX_DUE_SOON_DAYS: i64 = 366;
 
-/// The due-soon window a deployment configured (`configured` is the raw setting), in calendar days: 1 to 366, else the default
-/// of 90. A value that is not a whole number in range is the default, never a silent zero (a zero window would show nothing as due).
-#[must_use]
-pub fn due_soon_window(configured: Option<&str>) -> i64 {
-    configured
-        .and_then(|v| v.trim().parse::<i64>().ok())
-        .filter(|d| (1..=MAX_DUE_SOON_DAYS).contains(d))
-        .unwrap_or(DUE_SOON_DAYS)
+/// The due-soon window a deployment configured (`configured` is the raw setting, `None` when it is not set), in calendar days:
+/// 1 to 366; 90 when the setting is absent (RCA-IN-3).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number from 1 to 366 (RCA-IN-2, RCA-IN-4): it is never replaced by the default.
+pub fn due_soon_window(configured: Option<&str>) -> Result<i64, String> {
+    let Some(text) = configured else {
+        return Ok(DUE_SOON_DAYS); // WPM-T434: absent means 90 days
+    };
+    match text.trim().parse::<i64>() {
+        Ok(days) if (1..=MAX_DUE_SOON_DAYS).contains(&days) => Ok(days),
+        _ => Err(format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_LEARNING_DUE_SOON_DAYS must be a whole number of days from 1 to {MAX_DUE_SOON_DAYS}, not {text:?}"
+        )),
+    }
 }
 
 /// The window that applies to one requirement: its own when it has one in range (1 to 366), else the deployment's `fallback`. A stored
@@ -480,12 +488,15 @@ mod tests {
     }
 
     #[test]
-    fn the_configured_window_is_a_whole_number_of_days_in_range_else_the_default() {
-        assert_eq!(due_soon_window(None), 90);
-        assert_eq!(due_soon_window(Some("30")), 30);
-        assert_eq!(due_soon_window(Some(" 366 ")), 366);
+    fn the_configured_window_is_a_whole_number_of_days_in_range_and_a_bad_one_is_refused() {
+        assert_eq!(due_soon_window(None), Ok(90));
+        assert_eq!(due_soon_window(Some("1")), Ok(1));
+        assert_eq!(due_soon_window(Some("30")), Ok(30));
+        assert_eq!(due_soon_window(Some(" 366 ")), Ok(366));
         for bad in ["0", "-5", "367", "ninety", "", "1.5"] {
-            assert_eq!(due_soon_window(Some(bad)), 90, "{bad:?} is the default");
+            let error = due_soon_window(Some(bad)).unwrap_err();
+            assert!(error.contains("LEARNING_DUE_SOON_DAYS"), "{bad:?}: {error}");
+            assert!(error.contains("1 to 366"), "{bad:?}: {error}");
         }
     }
 

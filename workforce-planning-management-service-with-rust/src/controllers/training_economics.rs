@@ -159,12 +159,18 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
     )
     .fetch_all(db::pool(ctx))
     .await?;
-    let per_level: HashMap<Uuid, i32> = sqlx::query!("SELECT pid, hours_per_level FROM skills")
+    // Absent means the service default; a stored figure out of range is corrupt data (RCA-IN-3, RCA-IN-6).
+    let mut per_level: HashMap<Uuid, u32> = HashMap::new();
+    for s in sqlx::query!("SELECT pid, hours_per_level FROM skills")
         .fetch_all(db::pool(ctx))
         .await?
-        .into_iter()
-        .filter_map(|s| s.hours_per_level.map(|h| (s.pid, h)))
-        .collect();
+    {
+        if let Some(h) = s.hours_per_level {
+            let h = u32::try_from(h)
+                .map_err(|_| unprocessable("a skill's stored hours per level are out of range"))?;
+            per_level.insert(s.pid, h);
+        }
+    }
     let courses: HashMap<(Uuid, String), skill_courses::Model> = live_courses(ctx)
         .await?
         .into_iter()
@@ -182,7 +188,7 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
             };
             let each = per_level
                 .get(&item.skill_pid)
-                .and_then(|h| u32::try_from(*h).ok())
+                .copied()
                 .unwrap_or(DEFAULT_HOURS_PER_LEVEL);
             // Hours are stored figures: a product that does not fit a u32 is a plan that cannot be costed, not a capped one.
             let estimate = levels

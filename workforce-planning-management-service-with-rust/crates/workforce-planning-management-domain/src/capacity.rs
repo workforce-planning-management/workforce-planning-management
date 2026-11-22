@@ -1847,7 +1847,8 @@ mod tests {
             let weighted: i64 = staff
                 .chunks(3)
                 .map(|batch| pool_weighted_days(&members, batch, jan).unwrap())
-                .sum();
+                .try_fold(0_i64, i64::checked_add)
+                .unwrap();
             assert_eq!(
                 supply_from_weighted(weighted, reservation, jan).unwrap(),
                 whole

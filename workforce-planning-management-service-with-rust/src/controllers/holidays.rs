@@ -3,6 +3,7 @@
 //! `rules::holiday`); the listing says so. Reading is open to a signed-in caller in scope; generating and adding are HR's.
 
 use super::tally::bump;
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Json;
 use axa::prelude::*;
 use jiff::civil::Date;
@@ -104,6 +105,7 @@ struct GeneratePayload {
 /// `POST /api/holidays/generate` — generate a region's holidays for a year. Safe to repeat: a row it made is brought up to date, a row
 /// someone added by hand is never changed. HR.
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // one handler: validate, resolve, generate, answer
 async fn generate(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -127,8 +129,9 @@ async fn generate(
     )
     .await?
     .remove(&p.organization_ref)
-    .unwrap_or_default();
-    let on = crate::dates::ymd(p.year, 1, 1).unwrap_or_default();
+    .or_empty();
+    let on = crate::dates::ymd(p.year, 1, 1)
+        .ok_or_else(|| unprocessable("year must be between 1970 and 2100"))?;
     let resolved = profile.resolve("holidays.weekend_days", Some(&p.region), on);
     let configured = match &resolved {
         crate::rules::jurisdiction::Resolution::Resolved { value, .. } => value

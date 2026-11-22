@@ -3,6 +3,7 @@
 
 use serde_json::{Value, json};
 use serial_test::serial;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{a_person, an_org};
 use sqlx::Row;
@@ -168,7 +169,7 @@ async fn a_seat_moves_with_its_facts_and_the_establishment_never_nets() {
         assert!(rows.len() >= 10);
         for row in rows {
             let s: Option<String> = row.try_get("s").unwrap();
-            assert!(!s.unwrap_or_default().contains(&w), "no worker in an audit snapshot");
+            assert!(!s.or_empty().contains(&w), "no worker in an audit snapshot");
         }
 
         // No audit, no change (WPM-D107).

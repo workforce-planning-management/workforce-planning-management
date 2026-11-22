@@ -1,6 +1,7 @@
 //! Positions (WPM-R152, WPM-D104): budgeted seats, their moves, their links and the establishment per cost centre. A position
 //! holds no pay. Who holds it is HR's to see: other callers get the state and the count, not the holder. Spec: `spec/positions.md`.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
@@ -128,7 +129,7 @@ fn problems(p: &Payload) -> Vec<String> {
         p.programme_ref.as_deref(),
     )
     .err()
-    .unwrap_or_default();
+    .or_empty();
     if !(1..=120).contains(&p.title.trim().chars().count()) {
         out.push("title is 1 to 120 characters".to_string());
     }
@@ -191,7 +192,7 @@ async fn create(
     caller: MaybeAuthUser,
     Json(payload): Json<Payload>,
 ) -> Result<Response> {
-    let organization = payload.organization_ref.clone().unwrap_or_default();
+    let organization = payload.organization_ref.clone().or_empty();
     ensure_valid(&organization_problems(&organization))?;
     ensure_org_in_scope(&ctx, &caller, &organization).await?;
     ensure_valid(&problems(&payload))?;

@@ -8,6 +8,7 @@
 //! group aggregates only, with `peer`/`report` cells withheld below a
 //! floor of 3 (count included).
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use std::collections::BTreeMap;
 
@@ -274,7 +275,7 @@ async fn appraisal_status(
     )
     .fetch_optional(&mut *tx)
     .await?
-    .unwrap_or_default();
+    .or_empty();
     for (recipient, kind) in
         notify::appraisal_recipients(&payload.to, updated.worker_pid, &rater_pids)
     {

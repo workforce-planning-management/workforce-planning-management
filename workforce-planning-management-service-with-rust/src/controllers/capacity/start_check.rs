@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Json;
 use jiff::civil::Date;
 
@@ -175,11 +176,11 @@ pub(super) async fn record_start_decision(
     caller: MaybeAuthUser,
     Json(payload): Json<StartPayload>,
 ) -> Result<Response> {
-    let decision = payload.decision.clone().unwrap_or_default();
+    let decision = payload.decision.clone().or_empty();
     if !matches!(decision.as_str(), "proceed" | "defer") {
         return Err(unprocessable("decision must be proceed or defer"));
     }
-    let reason = payload.reason.clone().unwrap_or_default();
+    let reason = payload.reason.clone().or_empty();
     let mut problems = Problems::new();
     problems.cap_text("reason", &reason);
     if reason.trim().is_empty() {

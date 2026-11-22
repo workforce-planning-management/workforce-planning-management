@@ -8,6 +8,7 @@
 //! organization as a whole (no single worker) over the organization's **home jurisdiction**, the legal entity's registered
 //! jurisdiction, which HR sets (`PUT /api/home-jurisdiction`). [`Scope`] is the one place a reader gets its chain.
 
+use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 use std::collections::BTreeMap;
 
@@ -105,7 +106,7 @@ impl Scope {
         let profile = profiles_for(db, std::slice::from_ref(&organization))
             .await?
             .remove(&organization)
-            .unwrap_or_default();
+            .or_empty();
         Ok(Self {
             organization,
             reader: Reader::Worker,
@@ -123,7 +124,7 @@ impl Scope {
         let profile = profiles_for(db, &[organization.to_string()])
             .await?
             .remove(organization)
-            .unwrap_or_default();
+            .or_empty();
         Ok(Self {
             organization: organization.to_string(),
             reader: Reader::Organization,
@@ -261,18 +262,24 @@ pub async fn deployer_countries(
 /// What a reader needs of a value beyond its registry shape (WPM-T384): refusal reasons are lowercase tokens, and reporting tiers
 /// parse as the gap report reads them. A row the reader could not use is refused here rather than ignored later.
 fn reader_check(key: &str, value: &rules::Value) -> Result<(), String> {
-    let joined = || value.as_names().unwrap_or_default().join(",");
+    // A value that is not a list of names is refused here, never read as an empty list (RCA-IN-2).
+    let names = || {
+        value
+            .as_names()
+            .ok_or_else(|| format!("{key}: the value must be a list of names"))
+    };
+    let joined = || names().map(|list| list.join(","));
     match key {
         "flexible_working.refusal_reasons" => {
-            crate::rules::flexible_working::parse_reasons(&joined())
+            crate::rules::flexible_working::parse_reasons(&joined()?)
                 .map(|_| ())
                 .map_err(|why| format!("{key}: {why}"))
         }
-        "pay_transparency.reporting_tiers" => crate::rules::pay_gap::parse_tiers(&joined())
+        "pay_transparency.reporting_tiers" => crate::rules::pay_gap::parse_tiers(&joined()?)
             .map(|_| ())
             .map_err(|why| format!("{key}: {why}")),
         "employer_contribution.lines" => {
-            crate::rules::employer_contribution::parse_lines(&value.as_names().unwrap_or_default())
+            crate::rules::employer_contribution::parse_lines(&names()?)
                 .map(|_| ())
                 .map_err(|why| format!("{key}: {why}"))
         }
@@ -411,7 +418,7 @@ async fn record_code(
     )
     .await?
     .remove(&p.organization_ref)
-    .unwrap_or_default();
+    .or_empty();
     profile.links.retain(|link| link.code != p.code);
     profile.links.push(Link {
         code: p.code.clone(),
@@ -584,7 +591,7 @@ async fn set_home(
         )
         .await?
         .remove(&p.organization_ref)
-        .unwrap_or_default();
+        .or_empty();
         if let Err(error) = rules::chain(code, &profile.links) {
             return Err(unprocessable(&format!(
                 "the chain from {code} is malformed: {error:?}"

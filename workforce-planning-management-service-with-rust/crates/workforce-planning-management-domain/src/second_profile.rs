@@ -160,15 +160,14 @@ fn holiday_rules_of_another_shape_keep_a_weekend_day_where_it_falls() {
 #[test]
 fn retention_takes_a_profile_of_other_horizons_and_keeps_its_floor() {
     use privacy::{HorizonSource, RecordKind, horizon_for};
-    let pay = horizon_for(RecordKind::Pay, Some("3650"), Some("1000"));
+    let pay = horizon_for(RecordKind::Pay, Some("3650"), Some("1000")).unwrap();
     assert_eq!((pay.days, pay.source), (3650, HorizonSource::Override));
     let recruitment = horizon_for(RecordKind::Recruitment, Some("14"), None);
-    assert_eq!(
-        (recruitment.days, recruitment.source),
-        (privacy::RETENTION_FLOOR_DAYS, HorizonSource::Override),
-        "below the floor is raised to it"
+    assert!(
+        recruitment.is_err(),
+        "below the floor is refused, not raised to it"
     );
-    let learning = horizon_for(RecordKind::Learning, None, Some("1000"));
+    let learning = horizon_for(RecordKind::Learning, None, Some("1000")).unwrap();
     assert_eq!(
         (learning.days, learning.source),
         (1000, HorizonSource::Legacy)

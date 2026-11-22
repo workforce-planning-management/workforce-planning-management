@@ -44,8 +44,7 @@ async fn each_kind_is_swept_at_its_own_horizon() {
             "WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PLANNING_DAYS",
             "100",
         );
-        // A junk value is ignored, not trusted.
-        std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS", "junk");
+        std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS");
     }
     request::<App, _, _>(|request, ctx| async move {
         // ── The schedule states each kind, its tables and where its horizon came from.
@@ -59,13 +58,24 @@ async fn each_kind_is_swept_at_its_own_horizon() {
         assert_eq!(kind("planning")["default_days"], 365);
         assert_eq!(kind("recruitment")["days"], 180);
         assert_eq!(kind("recruitment")["source"], "default");
-        assert_eq!(kind("pay")["days"], 2190, "junk override ignored");
+        assert_eq!(kind("pay")["days"], 2190, "absent means the default");
         assert_eq!(kind("pay")["source"], "default");
         let tables: usize = kinds
             .iter()
             .map(|k| k["tables"].as_array().unwrap().len())
-            .sum();
+            .try_fold(0_usize, usize::checked_add)
+            .unwrap();
         assert_eq!(tables, 62, "every swept table is in exactly one kind");
+
+        // ── A setting that is supplied but invalid is refused, never replaced by the default (RCA-IN-2, RCA-IN-4).
+        for bad in ["junk", "0", "29"] {
+            // SAFETY: the test is single-threaded (`--test-threads=1`) and sets the variable before the request.
+            unsafe { std::env::set_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS", bad) };
+            let refused = request.get("/api/retention/schedule").await;
+            assert_eq!(refused.status_code(), 500, "{bad:?} is refused");
+        }
+        // SAFETY: as above.
+        unsafe { std::env::remove_var("WORKFORCE_PLANNING_MANAGEMENT_RETENTION_PAY_DAYS") };
 
         // ── Two candidates (recruitment, 180) and two announcements (planning,
         // 100), each pair deleted 150 and 200 calendar days ago.

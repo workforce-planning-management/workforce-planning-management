@@ -57,6 +57,7 @@
 // resolve inside this crate as well as in its tests.
 extern crate self as workforce_planning_management;
 
+pub mod absent;
 pub mod app;
 pub mod audit_export;
 pub mod auth;
@@ -81,6 +82,7 @@ pub mod request_log;
 pub use workforce_planning_management_domain as rules;
 pub mod scheduler;
 pub mod security;
+pub mod settings;
 pub mod shared_cache;
 pub mod sql_time;
 pub mod statutory_defaults;

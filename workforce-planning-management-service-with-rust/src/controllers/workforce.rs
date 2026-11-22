@@ -4,6 +4,7 @@
 //! transaction.
 
 use super::row_json;
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
@@ -180,7 +181,7 @@ async fn list_time_entries(
     .fetch_all(db::pool(&ctx))
     .await?;
     // Per-day overtime derivation over the returned window, against the deployment's day (WPM-T383).
-    let full_day = super::payroll::contracted_day();
+    let full_day = super::payroll::contracted_day().map_err(|message| Error::string(&message))?;
     let mut days: std::collections::BTreeMap<Date, (i32, i32)> = std::collections::BTreeMap::new();
     for entry in &rows {
         let slot = days.entry(entry.worked_on.get()).or_default();
@@ -688,7 +689,7 @@ async fn list_shifts(
     }
     let mut out = Vec::with_capacity(rows.len());
     for shift in rows {
-        let assignments = by_shift.remove(&shift.pid).unwrap_or_default();
+        let assignments = by_shift.remove(&shift.pid).or_empty();
         out.push(serde_json::json!({ "shift": shift, "assignments": assignments }));
     }
     format::json(out)

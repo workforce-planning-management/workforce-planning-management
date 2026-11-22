@@ -5,6 +5,7 @@
 //! `import_sfia` filled, and only for a signed-in caller, so it does not leave
 //! the organization (WPM-R113).
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
@@ -250,7 +251,7 @@ async fn search(
     State(ctx): State<AppContext>,
     axa::extract::Query(query): axa::extract::Query<SearchQuery>,
 ) -> Result<Response> {
-    let q = query.q.unwrap_or_default().trim().to_lowercase();
+    let q = query.q.or_empty().trim().to_lowercase();
     if q.chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }

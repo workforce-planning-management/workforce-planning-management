@@ -175,3 +175,8 @@ split-debuginfo = "unpacked"
 
 [profile.dev.package."*"]
 debug = false
+
+# RCA-ENF-4: an operator no lint reaches (in a macro, a dependency or an exception) panics, which is detectable, instead of wrapping,
+# which is not. A backstop only: RCA-P-1 still forbids the panic.
+[profile.release]
+overflow-checks = true

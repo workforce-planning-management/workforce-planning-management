@@ -83,9 +83,10 @@ pub fn to_csv(lines: &[Line]) -> String {
             field(&line.worker_number),
             field(&line.display_name),
             line.last_day.to_string(),
-            field(line.reason_code.as_deref().unwrap_or_default()),
+            // A missing code or reference is a blank field, and is listed in the gaps column.
+            field(line.reason_code.as_deref().unwrap_or("")),
             line.final_pay_on.map_or_default(|d| d.to_string()),
-            field(line.pay_summary_ref.as_deref().unwrap_or_default()),
+            field(line.pay_summary_ref.as_deref().unwrap_or("")),
             field(&gaps.join(" ")),
         ]));
     }

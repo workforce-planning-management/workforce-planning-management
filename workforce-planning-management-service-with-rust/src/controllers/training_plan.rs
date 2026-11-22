@@ -14,6 +14,7 @@
 //!
 //! These are planning estimates, not promises.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlTimestamp;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
@@ -336,8 +337,11 @@ pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Re
         courses.entry(c.skill_pid).or_default().push(Course {
             course_ref: c.course_ref,
             title: c.title,
-            hours: u32::try_from(c.hours).unwrap_or(0),
-            levels: u32::try_from(c.levels).unwrap_or(1),
+            // A stored figure out of range is corrupt data: an error, not a repaired value (RCA-IN-6).
+            hours: u32::try_from(c.hours)
+                .map_err(|_| unprocessable("a course's stored hours are out of range"))?,
+            levels: u32::try_from(c.levels)
+                .map_err(|_| unprocessable("a course's stored levels are out of range"))?,
         });
     }
     let mut hours_per_level = HashMap::new();
@@ -346,7 +350,10 @@ pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Re
         .fetch_all(db)
         .await?
     {
-        if let Some(h) = s.hours_per_level.and_then(|h| u32::try_from(h).ok()) {
+        // Absent means the service default; a stored figure out of range is corrupt data (RCA-IN-3, RCA-IN-6).
+        if let Some(h) = s.hours_per_level {
+            let h = u32::try_from(h)
+                .map_err(|_| unprocessable("a skill's stored hours per level are out of range"))?;
             hours_per_level.insert(s.pid, h);
         }
         names.insert(s.pid, s.name);
@@ -468,7 +475,7 @@ async fn worker_plan(
                 "shortfall": g.shortfall,
                 "priority": gap_rules::priority(g),
                 "recommendation": r,
-                "sfiaplus_pointers": pointers.get(&g.skill).cloned().unwrap_or_default(),
+                "sfiaplus_pointers": pointers.get(&g.skill).cloned().or_empty(),
                 "starts_on": slot.starts_on,
                 "ends_on": slot.ends_on,
                 "weeks": slot.weeks,

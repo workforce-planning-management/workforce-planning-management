@@ -141,7 +141,8 @@ pub fn unprocessable(message: &str) -> Error {
 pub fn ensure_within_ceiling(count: u64) -> Result<()> {
     let ceiling = crate::rules::scale::parse_ceiling(
         crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS").as_deref(),
-    );
+    )
+    .map_err(|message| Error::string(&message))?;
     crate::rules::scale::check(count, ceiling).map_err(|m| unprocessable(&m))
 }
 

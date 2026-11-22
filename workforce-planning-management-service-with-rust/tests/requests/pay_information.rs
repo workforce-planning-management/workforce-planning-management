@@ -4,6 +4,7 @@
 
 use serde_json::{Value, json};
 use serial_test::serial;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{a_person, an_org};
 use sqlx::Row;
@@ -169,7 +170,7 @@ async fn hr_answers_with_the_workers_pay_and_their_categorys_average_and_the_fig
         assert!(actions.contains(&"pay_information_answer_read".to_string()) && actions.contains(&"pay_information_answered".to_string()), "{actions:?}");
         for r in &audits {
             let snapshot: Option<String> = r.try_get("snapshot").unwrap();
-            assert!(!snapshot.unwrap_or_default().contains("000000"));
+            assert!(!snapshot.or_empty().contains("000000"));
         }
     })
     .await;

@@ -9,6 +9,7 @@
 //! a goal. A review lists the goals of its period, the reviewer and the reviewee each record an outcome, and a review that is
 //! shared freezes a snapshot (WPM-D165).
 
+use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 use std::collections::HashMap;
 
@@ -94,7 +95,9 @@ pub(crate) async fn is_reviewer(
     let Some(claims) = caller.claims() else {
         return Ok(false);
     };
-    let id = review.reviewer_ref.rsplit(':').next().unwrap_or_default();
+    let Some(id) = review.reviewer_ref.rsplit(':').next() else {
+        return Ok(false);
+    };
     let pid = Uuid::parse_str(id).ok();
     Ok(sqlx::query_scalar!(
         "SELECT person_ref FROM workers
@@ -202,8 +205,8 @@ pub(crate) async fn views(
         .map(|goal| {
             serde_json::json!({
                 "goal": goal,
-                "measures": measures.get(&goal.pid).cloned().unwrap_or_default(),
-                "check_ins": check_ins.get(&goal.pid).cloned().unwrap_or_default(),
+                "measures": measures.get(&goal.pid).cloned().or_empty(),
+                "check_ins": check_ins.get(&goal.pid).cloned().or_empty(),
                 "skill_name": goal.skill_pid.and_then(|pid| skill_names.get(&pid)),
                 "plan_step": goal.plan_item_pid.and_then(|pid| plan_steps.get(&pid)),
                 "skill_evidence": goal.skill_pid.zip(goal.skill_target_level).map(|(skill, target)| {

@@ -1533,7 +1533,7 @@ async fn capacity_supply_equals_walking_the_days() {
                     specs.iter().enumerate().filter(|(w, _)| counts(kind, *w)).map(|(_, (fte, hired, ended, _, _, leave))| {
                         let leave: Vec<_> = leave.iter().map(|(s, e)| (d(s), d(e))).collect();
                         walked_weighted_days(i64::from(*fte), d(hired), ended.map(d), &leave, *month)
-                    }).sum()
+                    }).try_fold(0_i64, i64::checked_add).unwrap()
                 };
                 let dim = i64::from((*month + jiff::Span::new().months(1) - workforce_planning_management::dates::days(1)).day());
                 assert_eq!(cells[i]["supply_centi"], (2 * weighted + dim) / (2 * dim), "{kind} {month}");
@@ -2069,7 +2069,7 @@ async fn a_reused_peer_event_id_is_a_repeat_only_for_its_own_pool_programme_and_
         assert_eq!((repeat["duplicate"].as_bool(), repeat["pid"].clone(), repeat["status"].as_str()), (Some(true), applied["pid"].clone(), Some("proposed")), "{repeat}");
         let claims: Value = request.get(&format!("/api/programme-demands?pool={theirs}")).await.json();
         let figures: Vec<i64> = claims.as_array().unwrap().iter().map(|c| c["fte_centi"].as_i64().unwrap()).collect();
-        assert_eq!(figures.iter().sum::<i64>(), 50, "the repeat changed nothing: {claims}");
+        assert_eq!(figures.iter().try_fold(0_i64, |total, n| total.checked_add(*n)).unwrap(), 50, "the repeat changed nothing: {claims}");
     })
     .await;
 }

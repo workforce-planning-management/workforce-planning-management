@@ -9,6 +9,7 @@
 //! replay another caller's response. A request with no key is untouched. The rules are pure, in
 //! [`crate::rules::idempotency`].
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::AppContext;
 use axum::{
     body::{Body, to_bytes},
@@ -136,7 +137,7 @@ fn replay(h: &Held) -> Response {
         .and_then(|s| u16::try_from(s).ok())
         .and_then(|s| StatusCode::from_u16(s).ok())
         .unwrap_or(StatusCode::OK);
-    let mut response = Response::new(Body::from(h.body.clone().unwrap_or_default()));
+    let mut response = Response::new(Body::from(h.body.clone().or_empty()));
     *response.status_mut() = status;
     if let Some(content_type) = h
         .content_type

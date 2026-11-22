@@ -13,13 +13,21 @@
 /// The largest worker count a whole-organization view accepts by default.
 pub const DEFAULT_MAX_ORG_WORKERS: u64 = 200_000;
 
-/// The ceiling from a setting: absent, blank, zero or unparseable means the default.
-#[must_use]
-pub fn parse_ceiling(setting: Option<&str>) -> u64 {
-    setting
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .filter(|v| *v > 0)
-        .unwrap_or(DEFAULT_MAX_ORG_WORKERS)
+/// The ceiling from a setting: the default when the setting is absent (RCA-IN-3).
+///
+/// # Errors
+///
+/// A setting that is supplied but is not a whole number above zero (RCA-IN-2, RCA-IN-4): it is never replaced by the default.
+pub fn parse_ceiling(setting: Option<&str>) -> Result<u64, String> {
+    let Some(text) = setting else {
+        return Ok(DEFAULT_MAX_ORG_WORKERS); // WPM-D90: absent means the measured ceiling
+    };
+    match text.trim().parse::<u64>() {
+        Ok(ceiling) if ceiling > 0 => Ok(ceiling),
+        _ => Err(format!(
+            "WORKFORCE_PLANNING_MANAGEMENT_MAX_ORG_WORKERS must be a whole number above zero, not {text:?}"
+        )),
+    }
 }
 
 /// Whether `count` workers may be loaded under `ceiling`; otherwise the refusal to show the caller.
@@ -53,17 +61,12 @@ mod tests {
     }
 
     #[test]
-    fn a_setting_that_is_not_a_positive_number_means_the_default() {
-        for bad in [
-            None,
-            Some(""),
-            Some("  "),
-            Some("0"),
-            Some("-1"),
-            Some("many"),
-        ] {
-            assert_eq!(parse_ceiling(bad), DEFAULT_MAX_ORG_WORKERS, "{bad:?}");
+    fn a_setting_that_is_not_a_positive_number_is_refused_and_an_absent_one_is_the_default() {
+        assert_eq!(parse_ceiling(None), Ok(DEFAULT_MAX_ORG_WORKERS));
+        for bad in [Some(""), Some("  "), Some("0"), Some("-1"), Some("many")] {
+            let error = parse_ceiling(bad).unwrap_err();
+            assert!(error.contains("MAX_ORG_WORKERS"), "{bad:?}: {error}");
         }
-        assert_eq!(parse_ceiling(Some(" 120000 ")), 120_000);
+        assert_eq!(parse_ceiling(Some(" 120000 ")), Ok(120_000));
     }
 }

@@ -3,6 +3,7 @@
 
 use serde_json::{Value, json};
 use serial_test::serial;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{a_person, an_org};
 use sqlx::Row;
@@ -187,7 +188,7 @@ async fn the_signal_follows_the_gap_the_clock_and_what_a_person_recorded() {
         let actions: Vec<String> = rows.iter().map(|r| r.try_get("action").unwrap()).collect();
         assert!(actions.contains(&"joint_assessment_read".to_string()) && actions.contains(&"pay_assessment_recorded".to_string()), "{actions:?}");
         for r in &rows {
-            let snapshot: String = r.try_get::<Option<String>, _>("snapshot").unwrap().unwrap_or_default();
+            let snapshot: String = r.try_get::<Option<String>, _>("snapshot").unwrap().or_empty();
             assert!(!snapshot.contains("job evaluation") && !snapshot.contains("gap_bp") && !snapshot.contains("Staff side"), "{snapshot}");
         }
         let text = request.get(&url("&as_of=2026-10-24")).await.text();

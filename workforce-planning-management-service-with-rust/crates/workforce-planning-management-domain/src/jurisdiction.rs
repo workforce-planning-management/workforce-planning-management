@@ -1705,7 +1705,7 @@ mod tests {
             .filter(|line| line.starts_with("| `"))
             .map(|line| {
                 let cells: Vec<&str> = line.split('|').map(str::trim).collect();
-                let unquote = |cell: &str| cell.split('`').nth(1).unwrap_or_default().to_string();
+                let unquote = |cell: &str| cell.split('`').nth(1).unwrap_or("").to_string();
                 (unquote(cells[1]), unquote(cells[3]))
             })
             .collect();

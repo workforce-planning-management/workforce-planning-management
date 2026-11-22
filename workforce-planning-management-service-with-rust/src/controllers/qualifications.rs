@@ -3,6 +3,7 @@
 //! list shows how each requirement of their current role stands: met only by a verified match in date. No role recorded reads
 //! `role: null`, never an empty gap. The arithmetic is `rules::qualification`. Spec: `spec/staff-records-and-pay.md`.
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path, Query};
 use axa::prelude::*;
@@ -605,7 +606,7 @@ async fn rollup(
     let floor = crate::rules::equality_monitoring::DEFAULT_FLOOR;
     let mut cells: Vec<Value> = Vec::new();
     for profile in &profiles {
-        let group = holders.get(&profile.pid).cloned().unwrap_or_default();
+        let group = holders.get(&profile.pid).cloned().or_empty();
         for r in reqs.iter().filter(|r| r.role_profile_pid == profile.pid) {
             let req = rules::Requirement {
                 title: r.title.clone(),

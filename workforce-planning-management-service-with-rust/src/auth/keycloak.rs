@@ -87,6 +87,7 @@ use super::{
     BTreeMap, Claims, ENTITY, Method, OnceLock, Policy, StatusCode, derive_action, env_or,
     is_public_path,
 };
+use crate::absent::AbsentIsEmpty as _;
 use axum::http::HeaderMap;
 use axum::http::header::AUTHORIZATION;
 use jsonwebtoken::jwk::JwkSet;
@@ -362,18 +363,23 @@ const KEY_REFRESH_DEFAULT_SECS: u64 = 3600;
 ///
 /// A no-op when `WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL` is unset. Call once at boot
 /// (`app.rs::after_routes`).
-pub fn spawn_key_refresh() {
+///
+/// # Errors
+///
+/// A refresh interval that is set but is not a whole number of seconds (RCA-IN-4).
+pub fn spawn_key_refresh() -> Result<(), String> {
     let Some(url) = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL")
         .map(|u| u.trim().to_string())
         .filter(|u| !u.is_empty())
     else {
-        return;
+        return Ok(());
     };
-    let secs = crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS")
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .unwrap_or(KEY_REFRESH_DEFAULT_SECS);
+    let secs = crate::settings::refresh_secs(
+        "WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_REFRESH_SECS",
+        KEY_REFRESH_DEFAULT_SECS,
+    )?;
     if secs == 0 {
-        return; // explicitly disabled
+        return Ok(()); // explicitly disabled
     }
     tokio::spawn(async move {
         let mut ticker = tokio::time::interval(std::time::Duration::from_secs(secs));
@@ -396,6 +402,7 @@ pub fn spawn_key_refresh() {
         secs,
         "polling WORKFORCE_PLANNING_MANAGEMENT_KEYCLOAK_JWKS_URL for key rotation"
     );
+    Ok(())
 }
 
 /// Extract and verify the bearer token from request headers, mapping
@@ -479,17 +486,14 @@ pub fn bearer_claims(
         .ok_or_else(|| unauthorized("token has no subject claim"))?;
     super::within_lifetime(Claims {
         sub,
-        email: claims.email.unwrap_or_default(),
-        name: claims
-            .name
-            .or(claims.preferred_username)
-            .unwrap_or_default(),
+        email: claims.email.or_empty(),
+        name: claims.name.or(claims.preferred_username).or_empty(),
         iss: key_material.issuer.clone(),
         aud: key_material.audience.clone(),
         exp: claims.exp,
         iat: claims.iat,
         nbf: claims.nbf,
-        sid: claims.sid.unwrap_or_default(),
+        sid: claims.sid.or_empty(),
         scope: Vec::new(),
         roles,
         attrs,

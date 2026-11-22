@@ -289,7 +289,8 @@ mod tests {
         let union: usize = ASSESSMENT_CATEGORIES
             .iter()
             .map(|c| own_scales(c).expect("known").len())
-            .sum();
+            .try_fold(0_usize, usize::checked_add)
+            .unwrap();
         assert_eq!(union, ASSESSMENT_SCALES.len());
         assert_eq!(scale_category("telepathy"), None);
         assert_eq!(own_scales("astrology"), None);

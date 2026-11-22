@@ -5,6 +5,7 @@
 //! responsibility, WPM-R110) is read from the database. Both need a signed-in
 //! caller: the imported wording does not leave the organization (WPM-R113).
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Path;
 use axa::prelude::*;
 use serde_json::json;
@@ -49,7 +50,7 @@ pub(crate) async fn all_frameworks(db: &PgPool) -> Result<Vec<StoredFramework>> 
                             .attributes
                             .as_deref()
                             .and_then(|a| serde_json::from_str(a).ok())
-                            .unwrap_or_default(),
+                            .or_empty(),
                     })
                 })
                 .collect(),

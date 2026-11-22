@@ -9,6 +9,7 @@
 //! the colleague's. Both are told the outcome (`swap_requested`,
 //! `swap_decided`; reference-only).
 
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::{SqlDate, SqlTimestamp};
 use axa::extract::{Json, Path};
 use axa::prelude::*;
@@ -242,7 +243,7 @@ async fn accept(
     }
     let note = format!(
         "Swap with {}",
-        name_of(&people, Some(request.requester_pid)).unwrap_or_default()
+        name_of(&people, Some(request.requester_pid)).or_empty()
     );
     let froms: Vec<Date> = stretches.iter().map(|run| run.from).collect();
     let tos: Vec<Date> = stretches.iter().map(|run| run.to).collect();

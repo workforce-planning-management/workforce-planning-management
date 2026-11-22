@@ -70,7 +70,7 @@ async fn an_on_call_rota_rotates_swaps_and_skips_leave() {
         assert_eq!(who, [a.as_str(), b.as_str(), c.as_str(), a.as_str()]);
         assert!(runs.iter().all(|r| r["source"] == "rotation"));
         let load = view["load"].as_array().expect("load");
-        assert_eq!(load.iter().map(|l| l["days"].as_i64().unwrap()).sum::<i64>(), 28);
+        assert_eq!(load.iter().map(|l| l["days"].as_i64().unwrap()).try_fold(0_i64, i64::checked_add).unwrap(), 28);
 
         let next: Value = request
             .get(&format!("/api/rotas/{rota_pid}/on-call?on={}", day(7)))

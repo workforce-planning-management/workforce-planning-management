@@ -12,6 +12,7 @@
 //!
 //! It compares **declarations**: an undeclared skill is unknown, never zero.
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::Path;
 use axa::prelude::*;
 use serde::Deserialize;
@@ -259,7 +260,7 @@ async fn worker_gaps(
         .map(|g| {
             serde_json::json!({
                 "skill_pid": g.skill,
-                "sfiaplus_pointers": pointers.get(&g.skill).cloned().unwrap_or_default(),
+                "sfiaplus_pointers": pointers.get(&g.skill).cloned().or_empty(),
                 "skill": index.get(&g.skill).map(|s| s.0.clone()),
                 "category": index.get(&g.skill).map(|s| s.1.clone()),
                 "required": g.required,

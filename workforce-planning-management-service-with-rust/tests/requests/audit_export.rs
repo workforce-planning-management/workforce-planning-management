@@ -4,6 +4,7 @@
 use jiff::Timestamp;
 use serde_json::Value;
 use serial_test::serial;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 use super::{a_person, an_org, seed_worker};
 
@@ -29,7 +30,7 @@ async fn the_trail_is_exported_in_order_and_resumes_where_it_stopped() {
             .headers()
             .get("content-type")
             .and_then(|v| v.to_str().ok())
-            .unwrap_or_default()
+            .or_empty()
             .to_string();
         assert!(
             content_type.starts_with("application/x-ndjson"),

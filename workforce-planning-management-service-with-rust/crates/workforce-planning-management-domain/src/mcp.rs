@@ -485,7 +485,7 @@ pub fn metadata_path(resource: &str) -> Result<String, String> {
     let path = rest
         .find('/')
         .and_then(|i| rest.get(i..))
-        .unwrap_or_default()
+        .unwrap_or("") // a resource with no path has the empty path
         .trim_end_matches('/');
     Ok(format!("/.well-known/oauth-protected-resource{path}"))
 }

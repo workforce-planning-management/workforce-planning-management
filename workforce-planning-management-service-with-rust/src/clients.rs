@@ -15,6 +15,7 @@
 //!   reading a best-effort `name`-ish field. (Thin by design; the
 //!   family front-ends do the rich rendering.)
 
+use crate::absent::AbsentIsEmpty as _;
 use jiff::civil::Date;
 use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
@@ -36,7 +37,7 @@ pub fn mode() -> Mode {
     static MODE: OnceLock<Mode> = OnceLock::new();
     *MODE.get_or_init(|| {
         match crate::compat::env_var("WORKFORCE_PLANNING_MANAGEMENT_UPSTREAM_MODE")
-            .unwrap_or_default()
+            .or_empty()
             .trim()
             .to_ascii_lowercase()
             .as_str()

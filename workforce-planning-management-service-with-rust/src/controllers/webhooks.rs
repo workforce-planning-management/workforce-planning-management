@@ -5,6 +5,7 @@
 //! attempts, never a body. Deliveries are queued in the transaction of the change that caused them (`streaming::emit_in`) and
 //! sent by the `webhook_deliver` task. Spec: `spec/integrations.md`.
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use serde::Deserialize;
@@ -94,7 +95,7 @@ const fn yes() -> bool {
 fn problems(payload: &Payload) -> Vec<String> {
     let mut out = rules::check_subscription(&payload.name, &payload.kinds)
         .err()
-        .unwrap_or_default();
+        .or_empty();
     if let Err(e) = rules::check_url(&payload.url) {
         out.push(e);
     }

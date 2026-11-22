@@ -15,6 +15,7 @@
 //! outside the caller's readable set are not considered, so a cover is
 //! only ever someone the caller could find in the directory anyway.
 
+use crate::absent::AbsentIsEmpty as _;
 use axa::prelude::*;
 use jiff::civil::Date;
 use serde::Deserialize;
@@ -243,7 +244,7 @@ async fn directory(
             location: w.location.clone(),
             organization_ref: w.organization_ref.clone(),
             manager_name: w.manager_pid.and_then(|m| known.get(&m)).cloned(),
-            on_call: on_call.get(&w.pid).cloned().unwrap_or_default(),
+            on_call: on_call.get(&w.pid).cloned().or_empty(),
             away_today: away.contains(&w.pid),
             covered_by: if away.contains(&w.pid) {
                 // Only backups in the readable set (`known`) can cover here.

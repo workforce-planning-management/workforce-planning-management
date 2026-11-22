@@ -257,9 +257,9 @@ pub fn rollup_counted(rows: &[(Row, usize)]) -> Option<Vec<SkillRollup>> {
         .map(|mut e| {
             let mut d: Vec<(String, usize)> = depts
                 .remove(&e.skill)
-                .unwrap_or_default()
-                .into_iter()
-                .collect();
+                .map_or_else(Vec::new, |by_department| {
+                    by_department.into_iter().collect()
+                });
             d.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
             e.departments = d;
             e

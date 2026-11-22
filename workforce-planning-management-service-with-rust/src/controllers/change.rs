@@ -8,6 +8,7 @@
 //! affected role, and no individual is named or ranked.
 
 use super::ratio_json;
+use crate::absent::AbsentIsEmpty as _;
 use crate::sql_time::SqlDate;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
@@ -539,7 +540,7 @@ async fn readiness(
     let roles: Vec<serde_json::Value> = impacts
         .iter()
         .map(|i| {
-            let title = titles.get(&i.role_profile_pid).cloned().unwrap_or_default();
+            let title = titles.get(&i.role_profile_pid).cloned().or_empty();
             let holders: Vec<&Holder> = employed
                 .iter()
                 .filter(|w| same_title(&w.job_title, &title))

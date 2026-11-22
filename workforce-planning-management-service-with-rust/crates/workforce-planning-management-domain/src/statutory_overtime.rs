@@ -731,7 +731,13 @@ mod tests {
     #[test]
     fn a_day_is_capped_at_the_minutes_in_it() {
         let d = derived(derive(Status::NonExempt, &weekly40(), &[5_000], 0));
-        assert_eq!(d.minutes_at.values().sum::<u32>(), 1_440);
+        assert_eq!(
+            d.minutes_at
+                .values()
+                .try_fold(0_u32, |total, n| total.checked_add(*n))
+                .unwrap(),
+            1_440
+        );
     }
 
     #[test]

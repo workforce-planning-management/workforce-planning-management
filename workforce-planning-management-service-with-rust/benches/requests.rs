@@ -150,7 +150,7 @@ fn bench_csv(c: &mut Criterion) {
                 rows.iter()
                     .map(|r| csv::row(black_box(r)))
                     .map(|line| line.len())
-                    .sum::<usize>()
+                    .try_fold(0_usize, usize::checked_add)
             });
         });
     }

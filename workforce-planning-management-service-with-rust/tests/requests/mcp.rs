@@ -4,6 +4,7 @@
 use serde_json::{Value, json};
 use serial_test::serial;
 use sqlx::Row;
+use workforce_planning_management::absent::AbsentIsEmpty as _;
 
 async fn rpc(request: &axa_test::TestServer, body: Value) -> (u16, Value) {
     let response = request.post("/mcp").json(&body).await;
@@ -53,7 +54,7 @@ async fn tools_are_the_api_reads_and_a_call_that_cannot_be_audited_is_not_made()
         assert_eq!(rows.len(), 2, "one per tool call, none for initialize or list");
         for row in rows {
             let snapshot: Option<String> = row.try_get("snapshot").unwrap();
-            let snapshot = snapshot.unwrap_or_default();
+            let snapshot = snapshot.or_empty();
             assert!(snapshot.contains("tool") && !snapshot.contains("11111111"), "{snapshot}");
         }
 

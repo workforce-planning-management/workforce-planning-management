@@ -27,6 +27,7 @@
 //! (`is_employed_on`, starters, leavers) written once in SQL and a request test that pins the answers.
 
 use super::ratio_json;
+use crate::absent::AbsentIsEmpty as _;
 use axa::prelude::*;
 use jiff::civil::Date;
 use serde::Deserialize;
@@ -655,7 +656,7 @@ async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
     let mut covered_now = 0usize;
 
     for plan in &plans {
-        let readiness: Vec<String> = readiness_of.remove(&plan.pid).unwrap_or_default();
+        let readiness: Vec<String> = readiness_of.remove(&plan.pid).or_empty();
         let coverage = rules::bench_coverage(&readiness);
         crate::controllers::tally::bump(by_coverage.entry(coverage).or_default());
         if coverage == "covered_now" {
@@ -738,7 +739,7 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     let mut live_total = 0usize;
     for pipeline in &pipelines {
         crate::controllers::tally::bump(by_purpose.entry(pipeline.purpose.clone()).or_default());
-        let stages: Vec<String> = stages_of.remove(&pipeline.pid).unwrap_or_default();
+        let stages: Vec<String> = stages_of.remove(&pipeline.pid).or_empty();
         let health = rules::pipeline_health(&stages);
         crate::controllers::tally::add(&mut ready_total, health.ready)?;
         crate::controllers::tally::add(&mut live_total, health.live)?;
@@ -772,7 +773,7 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
 
     let mut per_kind: BTreeMap<&str, (usize, Vec<String>, usize)> = BTreeMap::new();
     for program in &programs {
-        let mine: Vec<(String, String)> = placements_of.remove(&program.pid).unwrap_or_default();
+        let mine: Vec<(String, String)> = placements_of.remove(&program.pid).or_empty();
         let entry = per_kind.entry(program.kind.as_str()).or_default();
         crate::controllers::tally::bump(&mut entry.0);
         entry.1.extend(

@@ -6,6 +6,7 @@
 //! erased with them. Nothing here changes an engagement.
 
 use super::ensure_org_in_scope;
+use crate::absent::AbsentIsEmpty as _;
 use axa::extract::{Json, Path};
 use axa::prelude::*;
 use jiff::civil::Date;
@@ -328,7 +329,7 @@ async fn contingent_list(
     caller: MaybeAuthUser,
     axa::extract::Query(query): axa::extract::Query<ListQuery>,
 ) -> Result<Response> {
-    let list = query.list.unwrap_or_default();
+    let list = query.list.or_empty();
     if !LISTS.contains(&list.as_str()) {
         return Err(unprocessable(&format!(
             "list must be one of {}",

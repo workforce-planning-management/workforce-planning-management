@@ -100,7 +100,8 @@ async fn payroll_run_derives_reconciled_payslips() {
                 .unwrap()
                 .iter()
                 .map(|d| d["amount_minor"].as_i64().unwrap())
-                .sum();
+                .try_fold(0_i64, i64::checked_add)
+                .unwrap();
             assert_eq!(net, gross - deductions, "payslip reconciles");
         }
         // The enrolled worker's slip: base 400000 + overtime
@@ -1225,7 +1226,7 @@ async fn employer_cost_lines_follow_the_place_the_class_and_the_wage_base_and_ne
         assert_eq!(line(&a, "injury").unwrap()["unresolved"], true);
         assert_eq!(a["employer_cost_minor"].as_i64(), Some(base / 100 + base * 3 / 100));
         // Never deducted from net: no deduction carries an employer line, and gross less deductions is still net.
-        let deducted: i64 = a["deductions"].as_array().unwrap().iter().map(|d| d["amount_minor"].as_i64().unwrap()).sum();
+        let deducted: i64 = a["deductions"].as_array().unwrap().iter().map(|d| d["amount_minor"].as_i64().unwrap()).try_fold(0_i64, i64::checked_add).unwrap();
         assert_eq!(a["gross_minor"].as_i64().unwrap() - deducted, a["net_minor"].as_i64().unwrap());
         assert!(!a["deductions"].to_string().contains("unemployment") && !a["deductions"].to_string().contains("pension"));
         // A place with nothing configured, and a worker with no place, have no lines: nothing is made up.
