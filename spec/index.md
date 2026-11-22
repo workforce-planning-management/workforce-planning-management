@@ -128,6 +128,7 @@ identities by `EntityRef` URN, never duplicating them.
 | [regulatory.md](regulatory.md)                     | Demo status; UK GDPR / employment-records posture; subject rights (WPM-R30)               |
 | [roadmap.md](roadmap.md)                           | Beyond the v1 queue                                                                       |
 | [glossary.md](glossary.md)                         | ATS, FTE, LMS, requisition, accrual, …                                                    |
+| [licenses/index.md](licenses/index.md)             | The licence options and the SPDX expression                                               |
 
 ## Specification-driven delivery (SDD)
 
