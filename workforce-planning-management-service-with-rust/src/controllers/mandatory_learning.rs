@@ -87,6 +87,7 @@ fn evaluate(
     due_soon: i64,
 ) -> Evaluation {
     let applies = rules::applies(&audience_of(&req.audience), categories);
+    // The column is checked 1 to 600 by the database (RCA-EXC-2 in spirit: the bound is the code's own), so it always converts.
     let refresher = req.refresher_months.and_then(|m| u32::try_from(m).ok());
     let status = rules::status(
         applies,
@@ -390,7 +391,10 @@ async fn create(
         subject,
         p.basis,
         source,
-        p.refresher_months.and_then(|m| i32::try_from(m).ok()),
+        p.refresher_months
+            .map(i32::try_from)
+            .transpose()
+            .map_err(|_| super::unprocessable("refresher_months must be at most 600"))?,
         json!(courses),
         audience,
         p.accepts_transferred.unwrap_or(true),
