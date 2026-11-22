@@ -303,10 +303,14 @@ pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Da
 /// A pool's supply in centi-FTE from the summed [`pool_weighted_days`]: less the operations
 /// reservation, rounded half up. The rounding happens once, on the total.
 ///
-/// `None` when a figure does not fit an `i64`.
+/// `None` when a figure does not fit an `i64`, or the reservation is outside 0..=10,000 basis points.
 #[must_use]
 pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: Date) -> Option<i64> {
-    let kept = i64::from(FULL_BP.checked_sub(reservation_bp.clamp(0, FULL_BP))?);
+    // A reservation outside 0..=FULL_BP is refused on input (`validate_reservation_bp`); met here, it is unknown, not clamped.
+    if !(0..=FULL_BP).contains(&reservation_bp) {
+        return None;
+    }
+    let kept = i64::from(FULL_BP.checked_sub(reservation_bp)?);
     let denominator = days_in_month(month).checked_mul(i64::from(FULL_BP))?;
     weighted
         .checked_mul(2)?
@@ -1858,9 +1862,10 @@ mod tests {
         let at = |n: i64| base + jiff::Span::new().days(n.rem_euclid(120));
         let mut state = 12_345_u64;
         let mut next = |m: i64| {
-            state = state
-                .wrapping_mul(6_364_136_223_846_793_005)
-                .wrapping_add(1);
+            // xorshift64: shifts and xor only, so nothing wraps.
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
             i64::try_from(state >> 33).unwrap() % m
         };
         for _ in 0..4_000 {
@@ -2547,6 +2552,9 @@ mod tests {
         // Supply.
         assert_eq!(supply_from_weighted(big, 0, jan), None);
         assert_eq!(supply_from_weighted(0, 0, jan), Some(0));
+        // a reservation outside 0..=10,000 is unknown, not clamped
+        assert_eq!(supply_from_weighted(0, -1, jan), None);
+        assert_eq!(supply_from_weighted(0, 10_001, jan), None);
         // A proposal.
         let views = wi_pool(0, &[wi_demand("programme:a", 1, big)], &[]);
         let unknown = |w: &WhatIf| (w.answer, w.cells.len(), w.earliest_shift_months);

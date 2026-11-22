@@ -114,10 +114,10 @@ fn through_proxy(port: u16) -> String {
 struct Seeded(u64);
 impl Seeded {
     fn next(&mut self) -> u64 {
-        self.0 = self
-            .0
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
+        // xorshift64: shifts and xor only, so nothing wraps. The seed must not be zero.
+        self.0 ^= self.0 << 13;
+        self.0 ^= self.0 >> 7;
+        self.0 ^= self.0 << 17;
         self.0 >> 33
     }
 }
@@ -231,7 +231,8 @@ async fn the_service_fails_cleanly_and_heals() {
         heal(&request, workforce_planning_management::db::pool(&ctx)).await;
 
         // The monkey: random faults between and during writes (one after another: the test server is not shared across tasks).
-        let mut rng = Seeded(seed);
+        // xorshift is stuck at zero, so a zero seed is replaced by one.
+        let mut rng = Seeded(seed.max(1));
         let mut created = 0usize;
         let mut attempted = 0usize;
         for round in 0..30 {
