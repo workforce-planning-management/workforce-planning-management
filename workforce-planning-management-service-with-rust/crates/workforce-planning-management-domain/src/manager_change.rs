@@ -77,7 +77,10 @@ pub fn items(facts: &[ReportFacts], as_of: Date) -> Vec<GetToKnowItem> {
     let mut out: Vec<GetToKnowItem> = facts
         .iter()
         .filter_map(|f| {
-            let until = f.manager_since + crate::dates::days(WINDOW_DAYS);
+            let until = f
+                .manager_since
+                .checked_add(crate::dates::days(WINDOW_DAYS))
+                .ok()?;
             (as_of >= f.manager_since && as_of <= until).then_some(GetToKnowItem {
                 person_ref: f.person_ref,
                 from: f.manager_since,
@@ -191,5 +194,12 @@ mod tests {
         for bad in ["String", "&str", "Vec<", "Value", "Cow"] {
             assert!(!body.contains(bad), "GetToKnowItem must not contain {bad}");
         }
+    }
+
+    #[test]
+    fn a_window_that_runs_past_the_calendar_shows_no_item() {
+        let mut f = facts(1, 0);
+        f.manager_since = Date::MAX;
+        assert_eq!(items(&[f], Date::MAX), vec![]);
     }
 }

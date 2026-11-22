@@ -265,11 +265,17 @@ pub fn rollup(rows: &[RollupRow]) -> Vec<RollupLine> {
             .entry(&row.department)
             .or_default()
             .insert(row.worker);
-        *counts
-            .entry(&row.department)
-            .or_default()
-            .entry(row.status.clone())
-            .or_insert(0) += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a count of rows: bounded by the slice length"
+        )]
+        {
+            *counts
+                .entry(&row.department)
+                .or_default()
+                .entry(row.status.clone())
+                .or_insert(0) += 1;
+        }
     }
     let groups: Vec<(String, usize, i64)> = people
         .iter()

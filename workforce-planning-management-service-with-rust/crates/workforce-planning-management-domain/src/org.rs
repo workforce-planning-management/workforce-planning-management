@@ -1,7 +1,7 @@
 //! Org-chart rules (WPM-R7), DB-free: the manager chain must stay a
 //! forest — assigning a manager may not create a cycle.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::hash::BuildHasher;
 use uuid::Uuid;
 
@@ -56,14 +56,22 @@ pub fn upline<T: Ord + Copy>(worker: T, manager_of: &BTreeMap<T, T>) -> Vec<T> {
 pub fn downline<T: Ord + Copy>(manager: T, reports_of: &BTreeMap<T, Vec<T>>) -> Vec<(T, usize)> {
     let mut out = Vec::new();
     let mut seen = BTreeSet::from([manager]);
-    let mut queue = VecDeque::from([(manager, 0usize)]);
-    while let Some((person, depth)) = queue.pop_front() {
-        for report in reports_of.get(&person).into_iter().flatten() {
-            if seen.insert(*report) {
-                out.push((*report, depth + 1));
-                queue.push_back((*report, depth + 1));
+    // One level at a time, so the depth is the number of the level, which a finite tree cannot take past `usize::MAX`.
+    let mut level = vec![manager];
+    for depth in 1_usize.. {
+        let mut next = Vec::new();
+        for person in &level {
+            for report in reports_of.get(person).into_iter().flatten() {
+                if seen.insert(*report) {
+                    out.push((*report, depth));
+                    next.push(*report);
+                }
             }
         }
+        if next.is_empty() {
+            break;
+        }
+        level = next;
     }
     out
 }

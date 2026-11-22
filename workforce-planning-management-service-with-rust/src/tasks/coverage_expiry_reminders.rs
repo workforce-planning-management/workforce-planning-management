@@ -65,6 +65,10 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let held = sqlx::query!(

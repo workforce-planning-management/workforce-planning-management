@@ -59,8 +59,14 @@ pub struct Balance {
 }
 
 /// Balances per kind and year, from entitlements and requests, as of `today`.
+///
+/// `None` when a total does not fit an `i32`: there is no balance to show, and it is not shown as a wrong one.
 #[must_use]
-pub fn balances(entitlements: &[Entitlement], requests: &[Request], today: Date) -> Vec<Balance> {
+pub fn balances(
+    entitlements: &[Entitlement],
+    requests: &[Request],
+    today: Date,
+) -> Option<Vec<Balance>> {
     let mut rows: BTreeMap<(i32, String), Balance> = BTreeMap::new();
     let blank = |kind: &str, year: i32| Balance {
         kind: kind.to_string(),
@@ -86,17 +92,23 @@ pub fn balances(entitlements: &[Entitlement], requests: &[Request], today: Date)
             .entry((year, r.kind.clone()))
             .or_insert_with(|| blank(&r.kind, year));
         match r.status.as_str() {
-            "approved" if r.end_on < today => row.taken += r.days,
-            "approved" => row.booked += r.days,
-            "requested" => row.requested += r.days,
+            "approved" if r.end_on < today => row.taken = row.taken.checked_add(r.days)?,
+            "approved" => row.booked = row.booked.checked_add(r.days)?,
+            "requested" => row.requested = row.requested.checked_add(r.days)?,
             _ => {}
         }
     }
     rows.into_values()
         .map(|mut b| {
-            b.remaining = b.entitled.map(|e| e - b.used);
-            b.remaining_if_requested_approved = b.remaining.map(|r| r - b.requested);
-            b
+            b.remaining = match b.entitled {
+                Some(e) => Some(e.checked_sub(b.used)?),
+                None => None,
+            };
+            b.remaining_if_requested_approved = match b.remaining {
+                Some(r) => Some(r.checked_sub(b.requested)?),
+                None => None,
+            };
+            Some(b)
         })
         .collect()
 }
@@ -113,9 +125,10 @@ pub struct Absence {
     pub days: i32,
 }
 
-/// Historical absence by year (the year a request starts in), oldest first.
+/// Historical absence by year (the year a request starts in), oldest first. `None` when a count or total does not
+/// fit an `i32`.
 #[must_use]
-pub fn history(requests: &[Request], today: Date) -> Vec<(i32, Vec<Absence>)> {
+pub fn history(requests: &[Request], today: Date) -> Option<Vec<(i32, Vec<Absence>)>> {
     let mut by: BTreeMap<i32, BTreeMap<String, (i32, i32)>> = BTreeMap::new();
     for r in requests
         .iter()
@@ -126,24 +139,32 @@ pub fn history(requests: &[Request], today: Date) -> Vec<(i32, Vec<Absence>)> {
             .or_default()
             .entry(r.kind.clone())
             .or_insert((0, 0));
-        entry.0 += 1;
-        entry.1 += r.days;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "one per request: bounded by the slice length, far below i32::MAX"
+        )]
+        {
+            entry.0 += 1;
+        }
+        entry.1 = entry.1.checked_add(r.days)?;
     }
-    by.into_iter()
-        .map(|(year, kinds)| {
-            (
-                year,
-                kinds
-                    .into_iter()
-                    .map(|(kind, (absences, days))| Absence {
-                        kind,
-                        absences,
-                        days,
-                    })
-                    .collect(),
-            )
-        })
-        .collect()
+    Some(
+        by.into_iter()
+            .map(|(year, kinds)| {
+                (
+                    year,
+                    kinds
+                        .into_iter()
+                        .map(|(kind, (absences, days))| Absence {
+                            kind,
+                            absences,
+                            days,
+                        })
+                        .collect(),
+                )
+            })
+            .collect(),
+    )
 }
 
 /// Whether a worker may cancel their own request: one awaiting a decision, at any time, or one
@@ -226,7 +247,8 @@ mod tests {
                 req("annual", d(2026, 11, 1), d(2026, 11, 2), 2, "cancelled"),
             ],
             today,
-        );
+        )
+        .unwrap();
         assert_eq!(b.len(), 1);
         let a = &b[0];
         assert_eq!((a.taken, a.booked, a.requested), (5, 3, 3));
@@ -245,7 +267,8 @@ mod tests {
             &[],
             &[req("unpaid", d(2026, 2, 2), d(2026, 2, 3), 2, "approved")],
             d(2026, 6, 1),
-        );
+        )
+        .unwrap();
         assert_eq!(b.len(), 1);
         assert_eq!(b[0].entitled, None);
         assert_eq!(b[0].remaining, None, "unknown, never 0");
@@ -255,7 +278,7 @@ mod tests {
 
     #[test]
     fn an_entitlement_with_no_requests_is_all_remaining() {
-        let b = balances(&[ent("sick", 2026, 30, 0)], &[], d(2026, 6, 1));
+        let b = balances(&[ent("sick", 2026, 30, 0)], &[], d(2026, 6, 1)).unwrap();
         assert_eq!(b[0].remaining, Some(30));
         assert_eq!((b[0].taken, b[0].booked, b[0].requested), (0, 0, 0));
     }
@@ -272,7 +295,8 @@ mod tests {
                 "requested",
             )],
             d(2026, 6, 1),
-        );
+        )
+        .unwrap();
         let y26 = b.iter().find(|x| x.year == 2026).unwrap();
         let y27 = b.iter().find(|x| x.year == 2027).unwrap();
         assert_eq!(y26.requested, 5);
@@ -297,7 +321,8 @@ mod tests {
                 req("sick", d(2025, 6, 6), d(2025, 6, 6), 1, "requested"),
             ],
             d(2026, 6, 15),
-        );
+        )
+        .unwrap();
         assert_eq!(h.len(), 2);
         assert_eq!(h[0].0, 2025);
         let sick25 = h[0].1.iter().find(|a| a.kind == "sick").unwrap();
@@ -310,5 +335,37 @@ mod tests {
             h[1].1[0].days, 2,
             "the absence still to come is not history"
         );
+    }
+
+    #[test]
+    fn totals_that_do_not_fit_are_no_balance() {
+        let today = d(2026, 6, 15);
+        let over = |s: &str, e| req("annual", d(2026, 3, 2), e, i32::MAX, s);
+        let two = |s: &str, e: Date| [over(s, e), over(s, e)];
+        let past = d(2026, 3, 3);
+        let ahead = d(2026, 8, 3);
+        assert_eq!(balances(&[], &two("approved", past), today), None, "taken");
+        assert_eq!(
+            balances(&[], &two("approved", ahead), today),
+            None,
+            "booked"
+        );
+        assert_eq!(
+            balances(&[], &two("requested", ahead), today),
+            None,
+            "requested"
+        );
+        assert_eq!(
+            balances(&[ent("annual", 2026, i32::MIN, 1)], &[], today),
+            None,
+            "remaining"
+        );
+        let one = [over("requested", ahead)];
+        assert_eq!(
+            balances(&[ent("annual", 2026, -2, 0)], &one, today),
+            None,
+            "if approved"
+        );
+        assert_eq!(history(&two("approved", past), today), None);
     }
 }

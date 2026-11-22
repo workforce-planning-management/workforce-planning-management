@@ -81,7 +81,13 @@ async fn position(
     if params.salary_minor.is_some_and(|s| s < 0) {
         return Err(super::unprocessable("salary_minor must be non-negative"));
     }
-    let located = params.salary_minor.map(|s| rules::locate(band, s));
+    let located = params
+        .salary_minor
+        .map(|s| {
+            rules::locate(band, s)
+                .ok_or_else(|| super::unprocessable("salary_minor is out of range"))
+        })
+        .transpose()?;
     let progression = match (params.step, params.months_on_step) {
         (Some(step), Some(months)) => {
             Some(rules::progression(band, step, months).ok_or_else(|| {

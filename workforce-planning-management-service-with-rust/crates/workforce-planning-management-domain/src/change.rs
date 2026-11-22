@@ -90,15 +90,20 @@ pub struct SkillReadiness {
 /// Tally declared proficiencies against a bar; `None` is undeclared.
 #[must_use]
 pub fn skill_readiness(declared: &[Option<i32>], bar: i32) -> SkillReadiness {
-    let mut out = SkillReadiness::default();
-    for level in declared {
-        match crate::gap::grade(*level, bar) {
-            "met" => out.meeting += 1,
-            "below" => out.below += 1,
-            _ => out.undeclared += 1,
-        }
+    // Each count is taken from the list itself, so it cannot exceed the list's length.
+    let grades: Vec<&str> = declared
+        .iter()
+        .map(|level| crate::gap::grade(*level, bar))
+        .collect();
+    let count = |wanted: &str| grades.iter().filter(|g| **g == wanted).count();
+    SkillReadiness {
+        meeting: count("met"),
+        below: count("below"),
+        undeclared: grades
+            .iter()
+            .filter(|g| !matches!(**g, "met" | "below"))
+            .count(),
     }
-    out
 }
 
 #[cfg(test)]

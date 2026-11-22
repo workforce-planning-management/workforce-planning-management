@@ -17,7 +17,8 @@ use crate::rules::oversight::{Origin, Reading};
 /// The first day of the month a period number stands for.
 fn month_of(period: i64) -> Option<Date> {
     let year = i32::try_from(period.div_euclid(12)).ok()?;
-    let month = u32::try_from(period.rem_euclid(12) + 1).ok()?;
+    // The month of the year, 1 to 12: the position of the period in its year, counted from one.
+    let month = (1..=12_u32).nth(usize::try_from(period.rem_euclid(12)).ok()?)?;
     crate::dates::ymd(year, month, 1)
 }
 
@@ -121,17 +122,22 @@ async fn contingent(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<
         .collect())
 }
 
+/// How many months the periods run across, first to last inclusive; `None` when there are no periods or the count does not fit.
+fn months_spanned(periods: &[i64]) -> Option<u32> {
+    let (min, max) = (periods.iter().min()?, periods.iter().max()?);
+    u32::try_from(max.checked_sub(*min)?.checked_add(1)?).ok()
+}
+
 async fn overcommitted(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<Vec<Option<i64>>> {
     let Some(first) = periods.iter().min().and_then(|p| month_of(*p)) else {
         return Ok(Vec::new());
     };
-    let span = periods.iter().max().map_or(1, |m| {
-        u32::try_from(m - periods.iter().min().unwrap_or(m) + 1).unwrap_or(1)
-    });
-    // Months past the supported horizon are unknown, not guessed.
-    if span > crate::rules::capacity::MAX_HORIZON_MONTHS {
+    // Months past the supported horizon, or too many to count, are unknown, not guessed.
+    let Some(span) =
+        months_spanned(periods).filter(|s| *s <= crate::rules::capacity::MAX_HORIZON_MONTHS)
+    else {
         return Ok(vec![None; periods.len()]);
-    }
+    };
     let cap = capacity::load_org_capacity(ctx, org, first, span).await?;
     Ok(periods
         .iter()
@@ -171,4 +177,31 @@ async fn time_to_report(ctx: &AppContext, org: &str, periods: &[i64]) -> Result<
             crate::rules::early_warning::time_to_report_days(&in_month)
         })
         .collect())
+}
+
+#[cfg(test)]
+mod span_tests {
+    use super::{month_of, months_spanned};
+
+    #[test]
+    fn months_run_first_to_last_inclusive_and_an_unreachable_count_is_none() {
+        assert_eq!(months_spanned(&[]), None);
+        assert_eq!(months_spanned(&[24_312]), Some(1));
+        assert_eq!(months_spanned(&[24_314, 24_312, 24_313]), Some(3));
+        assert_eq!(months_spanned(&[i64::MIN, i64::MAX]), None);
+        assert_eq!(months_spanned(&[0, i64::from(u32::MAX)]), None);
+    }
+
+    #[test]
+    fn a_period_names_the_first_of_its_month() {
+        assert_eq!(
+            month_of(24_312).map(|d| d.to_string()).as_deref(),
+            Some("2026-01-01")
+        );
+        assert_eq!(
+            month_of(24_323).map(|d| d.to_string()).as_deref(),
+            Some("2026-12-01")
+        );
+        assert_eq!(month_of(i64::MAX), None);
+    }
 }

@@ -854,7 +854,8 @@ async fn expiring_training(
     Query(params): Query<ExpiringParams>,
 ) -> Result<Response> {
     let today = crate::dates::today();
-    let horizon = today + crate::dates::days(params.within_days.clamp(0, 3650));
+    let horizon =
+        crate::controllers::tally::date_plus_days(today, params.within_days.clamp(0, 3650))?;
     let rows = sqlx::query_as!(
         training_enrollments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,

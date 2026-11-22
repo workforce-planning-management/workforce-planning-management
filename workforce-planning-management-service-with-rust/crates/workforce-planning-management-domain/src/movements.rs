@@ -74,18 +74,20 @@ pub fn valid_kind(kind: &str) -> bool {
 }
 
 /// The dated checklist for `kind` around `effective` (start day for a
-/// joiner, last day for a leaver).
+/// joiner, last day for a leaver). `None` when a due date falls outside the dates there are.
 #[must_use]
-pub fn plan(kind: &str, effective: Date) -> Vec<Planned> {
+pub fn plan(kind: &str, effective: Date) -> Option<Vec<Planned>> {
     let lines = if kind == "leaver" { LEAVER } else { JOINER };
     lines
         .iter()
         .enumerate()
-        .map(|(i, (offset, title, category))| Planned {
-            position: i32::try_from(i).unwrap_or(i32::MAX),
-            title: (*title).to_string(),
-            category: (*category).to_string(),
-            due_on: effective + crate::dates::days(*offset),
+        .map(|(i, (offset, title, category))| {
+            Some(Planned {
+                position: i32::try_from(i).unwrap_or(i32::MAX),
+                title: (*title).to_string(),
+                category: (*category).to_string(),
+                due_on: effective.checked_add(crate::dates::days(*offset)).ok()?,
+            })
         })
         .collect()
 }
@@ -320,7 +322,7 @@ mod tests {
 
     #[test]
     fn a_checklist_is_dated_around_the_effective_day() {
-        let leaver = plan("leaver", d(30));
+        let leaver = plan("leaver", d(30)).unwrap();
         assert_eq!(leaver.len(), 8);
         assert_eq!(
             leaver[0].due_on,
@@ -337,7 +339,12 @@ mod tests {
             crate::dates::ymd(2026, 12, 5).unwrap(),
             "5 days after"
         );
-        let joiner = plan("joiner", d(3));
+        let joiner = plan("joiner", d(3)).unwrap();
+        assert_eq!(
+            plan("joiner", Date::MAX),
+            None,
+            "a due date past the last date is unknown"
+        );
         assert_eq!(joiner[0].due_on, crate::dates::ymd(2026, 10, 27).unwrap());
         assert_eq!(
             joiner.iter().map(|p| p.position).collect::<Vec<_>>(),

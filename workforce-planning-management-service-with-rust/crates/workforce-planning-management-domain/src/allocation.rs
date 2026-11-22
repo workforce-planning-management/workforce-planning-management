@@ -168,6 +168,10 @@ pub fn valid_source(source: &str) -> bool {
 
 /// The number of months from `from` to `to`, both included; zero when `to` is before `from`.
 #[must_use]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "years are i16 and months 1 to 12, so the result is under 400 000"
+)]
 pub fn months_spanned(from: Date, to: Date) -> i64 {
     let (from, to) = (month_start(from), month_start(to));
     if to < from {
@@ -277,9 +281,13 @@ fn facts(
 }
 
 /// `fte × days ÷ days in the month`, rounded half up, in hundredths.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the FTE is under 2^31 and the days are clamped to the month's 28 to 31, so every figure is under 2^40"
+)]
 fn weighted(fte_percent: i32, days: i64, month: Date) -> i64 {
-    let numerator = i64::from(fte_percent.max(0)) * days;
     let denominator = days_in_month(month);
+    let numerator = i64::from(fte_percent.max(0)) * days.clamp(0, denominator);
     (2 * numerator + denominator) / (2 * denominator)
 }
 
@@ -367,7 +375,8 @@ pub struct PersonMonth {
 /// A person-month, or unknown where the scope does not track allocation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MonthStanding {
-    /// The scope does not record allocation: nothing can be said, and nothing is assumed.
+    /// The scope does not record allocation, or a total does not fit a 64-bit count: nothing can be said, and nothing is
+    /// assumed.
     Unknown,
     /// The month, worked out.
     Known(PersonMonth),
@@ -388,19 +397,24 @@ pub fn person_month(
     if tracking == Tracking::Untracked {
         return MonthStanding::Unknown;
     }
+    standing(person, month, available_below_bp).map_or(MonthStanding::Unknown, MonthStanding::Known)
+}
+
+/// The month worked out, or `None` when a total or a difference does not fit.
+fn standing(person: &Person, month: Date, available_below_bp: i32) -> Option<PersonMonth> {
     let month = month_start(month);
     let mut totals = HoldingMonth::default();
     let mut assignment_signals = Vec::new();
     for (index, holding) in person.holdings.iter().enumerate() {
         let one = holding_month(holding, person, month);
-        totals.contracted_centi += one.contracted_centi;
-        totals.available_centi += one.available_centi;
-        totals.allocated_centi += one.allocated_centi;
-        totals.tentative_centi += one.tentative_centi;
+        totals.contracted_centi = totals.contracted_centi.checked_add(one.contracted_centi)?;
+        totals.available_centi = totals.available_centi.checked_add(one.available_centi)?;
+        totals.allocated_centi = totals.allocated_centi.checked_add(one.allocated_centi)?;
+        totals.tentative_centi = totals.tentative_centi.checked_add(one.tentative_centi)?;
         if one.allocated_centi > one.contracted_centi {
             assignment_signals.push(Signal::AssignmentOverAllocated {
                 holding: index,
-                by_centi: one.allocated_centi - one.contracted_centi,
+                by_centi: one.allocated_centi.checked_sub(one.contracted_centi)?,
             });
         }
     }
@@ -408,21 +422,24 @@ pub fn person_month(
     let threshold = i64::from(available_below_bp.clamp(0, FULL_BP));
     if totals.allocated_centi > totals.contracted_centi {
         signals.push(Signal::OverAllocated {
-            by_centi: totals.allocated_centi - totals.contracted_centi,
+            by_centi: totals
+                .allocated_centi
+                .checked_sub(totals.contracted_centi)?,
         });
     } else if totals.allocated_centi > totals.available_centi {
         signals.push(Signal::LeaveClash {
-            short_centi: totals.allocated_centi - totals.available_centi,
+            short_centi: totals.allocated_centi.checked_sub(totals.available_centi)?,
         });
     } else if totals.available_centi > 0
-        && totals.allocated_centi * i64::from(FULL_BP) < totals.available_centi * threshold
+        && totals.allocated_centi.checked_mul(i64::from(FULL_BP))?
+            < totals.available_centi.checked_mul(threshold)?
     {
         signals.push(Signal::Available {
-            free_centi: totals.available_centi - totals.allocated_centi,
+            free_centi: totals.available_centi.checked_sub(totals.allocated_centi)?,
         });
     }
     signals.extend(assignment_signals);
-    MonthStanding::Known(PersonMonth {
+    Some(PersonMonth {
         month,
         totals,
         signals,
@@ -470,7 +487,8 @@ pub enum Staffing {
     },
 }
 
-/// Compare an active claim with the confirmed allocations to it.
+/// Compare an active claim with the confirmed allocations to it. A difference that does not fit a 64-bit count is
+/// [`Staffing::Unknown`].
 #[must_use]
 pub fn reconcile(tracking: Tracking, claim_centi: Option<i64>, allocated_centi: i64) -> Staffing {
     match (tracking, claim_centi) {
@@ -478,12 +496,16 @@ pub fn reconcile(tracking: Tracking, claim_centi: Option<i64>, allocated_centi: 
         (Tracking::Tracked, None) => Staffing::NotClaimed { allocated_centi },
         (Tracking::Tracked, Some(claim)) => match allocated_centi.cmp(&claim) {
             std::cmp::Ordering::Equal => Staffing::Staffed,
-            std::cmp::Ordering::Less => Staffing::Understaffed {
-                by_centi: claim - allocated_centi,
-            },
-            std::cmp::Ordering::Greater => Staffing::Overstaffed {
-                by_centi: allocated_centi - claim,
-            },
+            std::cmp::Ordering::Less => claim
+                .checked_sub(allocated_centi)
+                .map_or(Staffing::Unknown, |by_centi| Staffing::Understaffed {
+                    by_centi,
+                }),
+            std::cmp::Ordering::Greater => allocated_centi
+                .checked_sub(claim)
+                .map_or(Staffing::Unknown, |by_centi| Staffing::Overstaffed {
+                    by_centi,
+                }),
         },
     }
 }
@@ -1347,6 +1369,40 @@ mod tests {
         assert_eq!(
             reconcile(Tracking::Tracked, Some(100), 130),
             Staffing::Overstaffed { by_centi: 30 }
+        );
+    }
+
+    #[test]
+    fn totals_that_do_not_fit_are_unknown_not_wrapped() {
+        let big = |fte: i64| {
+            holding(
+                assignment(100, d(2025, 1, 1), None),
+                vec![confirmed(fte, m(2026, 4), m(2026, 4))],
+            )
+        };
+        let stand =
+            |p: &Person| person_month(p, m(2026, 4), Tracking::Tracked, DEFAULT_AVAILABLE_BELOW_BP);
+        assert_eq!(
+            stand(&person(vec![big(i64::MAX), big(1)])),
+            MonthStanding::Unknown,
+            "allocated totals overflow"
+        );
+        assert_eq!(
+            stand(&person(vec![big(i64::MIN)])),
+            MonthStanding::Unknown,
+            "the share of what is available overflows"
+        );
+        assert!(matches!(
+            stand(&person(vec![big(1)])),
+            MonthStanding::Known(_)
+        ));
+        assert_eq!(
+            reconcile(Tracking::Tracked, Some(i64::MIN), i64::MAX),
+            Staffing::Unknown
+        );
+        assert_eq!(
+            reconcile(Tracking::Tracked, Some(i64::MAX), i64::MIN),
+            Staffing::Unknown
         );
     }
 }

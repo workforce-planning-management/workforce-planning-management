@@ -507,8 +507,8 @@ async fn set_skills(
                     super::esco::resolve_catalogue_skill_in(&mut tx, &esco, version.as_deref())
                         .await?;
                 match how {
-                    Resolution::Created => created += 1,
-                    Resolution::Linked => linked += 1,
+                    Resolution::Created => crate::controllers::tally::bump(&mut created),
+                    Resolution::Linked => crate::controllers::tally::bump(&mut linked),
                     Resolution::Existing => {}
                 }
                 pid
@@ -524,9 +524,9 @@ async fn set_skills(
         )
         .await?
         {
-            declared += 1;
+            crate::controllers::tally::bump(&mut declared);
         } else {
-            removed += 1;
+            crate::controllers::tally::bump(&mut removed);
         }
     }
     db::audit(

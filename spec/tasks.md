@@ -7234,3 +7234,15 @@ the entry records only the evidence it needs.
       (183 service, 1,230 domain) and the database-backed suite passes (277). **Not verified:** the Keycloak build
       (`--features keycloak`), tarpaulin coverage after the change, and arithmetic overflow, which the arithmetic lint flagged but this
       task did not touch. `gap_sql` now zips six parallel vectors, so a length mismatch would truncate where it used to panic.
+- [x] WPM-T634 (2026-11-22) **Checked arithmetic in production code, first batch.** *(spec/rust-checked-arithmetic, RCA-INT-1, RCA-INT-2, RCA-NONE-2)*
+      `clippy::arithmetic_side_effects` is now `deny` in the service and domain crate roots and the binary, with tests exempt.
+      589 flagged sites in 132 files were removed: counters became iterator counts or `tally::bump`; stored figures use
+      `checked_*` and `tally::add`; dates use `checked_add` and `Span::try_days`. Many functions now return `Option` or `Result`
+      where an overflow used to panic or wrap, and their callers answer with an error, `null` or an "unknown". The remaining
+      plain operators are on values the code bounds itself, each with an `#[allow(..., reason)]`. Verified: `cargo clippy
+      --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, the unit tests pass (207 service, 1,265
+      domain) and the database-backed suite passes (277). **Not verified:** the Keycloak build; line coverage after the change;
+      the overflow branches of database-backed handlers, which need about 2^31 rows or an overflowing stored value. **Still open
+      against the RCA spec:** `saturating_*`, `wrapping_*` and `clamp` (RCA-INT-4, RCA-INT-6), `Iterator::sum` and `product`
+      (RCA-AGG-1), numeric `as` (RCA-CONV-2), `#[allow]` instead of `#[expect(.. "RCA-EXC-n")]` (RCA-EXC-6), the other lints in
+      RCA-ENF-1, and `overflow-checks` in the release profile (RCA-ENF-4).

@@ -39,25 +39,23 @@ pub struct Service {
     pub unknown: Vec<String>,
 }
 
-fn days(span: Span) -> i64 {
-    crate::dates::days_between(span.0, span.1) + 1
+/// The inclusive days of a span; `None` when the count does not fit.
+fn days(span: Span) -> Option<i64> {
+    crate::dates::days_between(span.0, span.1).checked_add(1)
 }
 
-/// Whole years completed by service that began on `start` and has run for `total_days` inclusive days.
-fn whole_years(start: Date, total_days: i64) -> i32 {
-    let mut n = 0;
-    while let Some(next) = jiff::Span::new()
-        .try_months(12 * (n + 1))
-        .ok()
-        .and_then(|span| start.checked_add(span).ok())
-    {
-        if total_days >= crate::dates::days_between(start, next) {
-            n += 1;
-        } else {
-            break;
-        }
-    }
-    n
+/// Whole years completed by service that began on `start` and has run for `total_days` inclusive days. `None` when the count does not fit.
+fn whole_years(start: Date, total_days: i64) -> Option<i32> {
+    // The calendar ends long before the bound, so the walk stops at its first year that does not fit.
+    let years = (1_i32..=i32::MAX / 12)
+        .take_while(|n| {
+            n.checked_mul(12)
+                .and_then(|months| jiff::Span::new().try_months(months).ok())
+                .and_then(|span| start.checked_add(span).ok())
+                .is_some_and(|next| total_days >= crate::dates::days_between(start, next))
+        })
+        .count();
+    i32::try_from(years).ok()
 }
 
 /// Union of spans with gaps up to `tolerance` days joined. A gap is the days not worked between two spans.
@@ -66,7 +64,11 @@ fn merge(mut spans: Vec<Span>, tolerance: i64) -> Vec<Span> {
     let mut out: Vec<Span> = Vec::new();
     for s in spans {
         match out.last_mut() {
-            Some(last) if crate::dates::days_between(last.1, s.0) - 1 <= tolerance => {
+            Some(last)
+                if crate::dates::days_between(last.1, s.0)
+                    .checked_sub(1)
+                    .is_none_or(|gap| gap <= tolerance) =>
+            {
                 last.1 = last.1.max(s.1);
             }
             _ => out.push(s),
@@ -99,16 +101,23 @@ pub fn service(periods: &[Period], tolerance_days: Option<u32>, as_of: Date) -> 
             unknown,
         };
     }
-    let total: i64 = union.iter().copied().map(days).sum();
-    let total_years = union.first().map(|f| whole_years(f.0, total));
     let chains = merge(spans, i64::from(tolerance_days.unwrap_or(0)));
-    let (continuous_days, continuous_years) = match chains.last() {
-        Some(c) if c.1 >= as_of => (days(*c), whole_years(c.0, days(*c))),
-        _ => (0, 0),
+    // A count that does not fit leaves every figure unknown, with no period named.
+    let Some((total, total_years, continuous_days, continuous_years)) =
+        figures(&union, &chains, as_of)
+    else {
+        return Service {
+            total_days: None,
+            total_years: None,
+            continuous_days: None,
+            continuous_years: None,
+            spans: union,
+            unknown,
+        };
     };
     Service {
         total_days: Some(total),
-        total_years: Some(total_years.unwrap_or(0)),
+        total_years: Some(total_years),
         continuous_days: Some(continuous_days),
         continuous_years: Some(continuous_years),
         spans: union,
@@ -116,24 +125,43 @@ pub fn service(periods: &[Period], tolerance_days: Option<u32>, as_of: Date) -> 
     }
 }
 
+/// The total days and whole years, and the continuous days and whole years; `None` when a count does not fit.
+fn figures(union: &[Span], chains: &[Span], as_of: Date) -> Option<(i64, i32, i64, i32)> {
+    let total = union
+        .iter()
+        .try_fold(0_i64, |sum, span| sum.checked_add(days(*span)?))?;
+    let total_years = match union.first() {
+        Some(f) => whole_years(f.0, total)?,
+        None => 0,
+    };
+    let (continuous_days, continuous_years) = match chains.last() {
+        Some(c) if c.1 >= as_of => (days(*c)?, whole_years(c.0, days(*c)?)?),
+        _ => (0, 0),
+    };
+    Some((total, total_years, continuous_days, continuous_years))
+}
+
 /// Days of recognised prior service, shown apart and never added to [`Service`]. Only periods HR recorded are passed in; one
 /// with no end runs to `as_of`, and overlaps count once.
 #[must_use]
-pub fn prior_days(recorded: &[(Date, Option<Date>)], as_of: Date) -> i64 {
+/// `None` when the count does not fit.
+pub fn prior_days(recorded: &[(Date, Option<Date>)], as_of: Date) -> Option<i64> {
     let spans = recorded
         .iter()
         .filter(|(s, _)| *s <= as_of)
         .filter(|(s, e)| e.is_none_or(|e| e >= *s))
         .map(|(s, e)| (*s, e.map_or(as_of, |e| e.min(as_of))))
         .collect();
-    merge(spans, 0).into_iter().map(days).sum()
+    merge(spans, 0)
+        .into_iter()
+        .try_fold(0_i64, |sum, span| sum.checked_add(days(span)?))
 }
 
 /// The day a period of `n` years of service is reached from `start`: the anniversary, one day before the date n years on.
 #[must_use]
 pub fn anniversary(start: Date, years: u32) -> Option<Date> {
     start
-        .checked_add(jiff::Span::new().try_months(12 * years).ok()?)
+        .checked_add(jiff::Span::new().try_months(years.checked_mul(12)?).ok()?)
         .ok()
         .and_then(|d| d.checked_sub(jiff::Span::new().days(1)).ok())
 }
@@ -308,14 +336,15 @@ mod tests {
             (d(2010, 1, 1), Some(d(2010, 12, 31))),
             (d(2010, 6, 1), Some(d(2011, 5, 31))),
         ];
-        assert_eq!(prior_days(&rec, NOW()), 365 + 151);
-        assert_eq!(prior_days(&[], NOW()), 0);
-        assert_eq!(prior_days(&[(d(2030, 1, 1), None)], NOW()), 0);
+        assert_eq!(prior_days(&rec, NOW()), Some(365 + 151));
+        assert_eq!(prior_days(&[], NOW()), Some(0));
+        assert_eq!(prior_days(&[(d(2030, 1, 1), None)], NOW()), Some(0));
     }
 
     #[test]
     fn the_anniversary_is_the_day_before() {
         assert_eq!(anniversary(d(2024, 3, 1), 1), Some(d(2025, 2, 28)));
         assert_eq!(anniversary(d(2024, 3, 1), 0), Some(d(2024, 2, 29)));
+        assert_eq!(anniversary(d(2024, 3, 1), u32::MAX), None);
     }
 }

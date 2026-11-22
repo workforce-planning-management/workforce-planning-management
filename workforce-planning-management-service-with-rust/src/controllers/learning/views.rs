@@ -103,7 +103,7 @@ pub(super) async fn training_analytics(
 ) -> Result<Response> {
     let horizon_days = query.expiring_within_days.unwrap_or(90).clamp(0, 3650);
     let today = crate::dates::today();
-    let horizon = today + crate::dates::days(horizon_days);
+    let horizon = crate::controllers::tally::date_plus_days(today, horizon_days)?;
     // Counted by the database: per department and status, over enrolments of workers who still exist.
     let mut per_dept: std::collections::BTreeMap<
         String,
@@ -125,8 +125,12 @@ pub(super) async fn training_analytics(
     .await?
     {
         let entry = per_dept.entry(row.department).or_default();
-        *entry.0.entry(row.status).or_default() += usize::try_from(row.total).unwrap_or(0);
-        entry.1 += usize::try_from(row.expiring).unwrap_or(0);
+        let total = usize::try_from(row.total)
+            .map_err(|_| crate::controllers::internal("a negative enrolment count"))?;
+        let expiring = usize::try_from(row.expiring)
+            .map_err(|_| crate::controllers::internal("a negative expiring count"))?;
+        crate::controllers::tally::add(entry.0.entry(row.status).or_default(), total)?;
+        crate::controllers::tally::add(&mut entry.1, expiring)?;
     }
     let departments: Vec<serde_json::Value> = per_dept
         .iter()
@@ -169,7 +173,7 @@ pub(super) async fn mentorship_overview(
 ) -> Result<Response> {
     let stale_days = query.days.unwrap_or(30).clamp(1, 365);
     let today = crate::dates::today();
-    let stale_before = today - crate::dates::days(stale_days);
+    let stale_before = crate::controllers::tally::date_minus_days(today, stale_days)?;
     let unmatched_limit = query.unmatched_limit.unwrap_or(200).clamp(1, 1000);
     let active = sqlx::query!(
         "SELECT pid, mentor_pid, mentee_pid FROM mentorships
@@ -207,7 +211,7 @@ pub(super) async fn mentorship_overview(
         std::collections::BTreeMap::new();
     let mut stale = Vec::new();
     for mentorship in &active {
-        *mentor_load.entry(mentorship.mentor_pid).or_default() += 1;
+        crate::controllers::tally::bump(mentor_load.entry(mentorship.mentor_pid).or_default());
         let last = last_session.get(&mentorship.pid).copied();
         if last.is_none_or(|d| d < stale_before) {
             stale.push(serde_json::json!({

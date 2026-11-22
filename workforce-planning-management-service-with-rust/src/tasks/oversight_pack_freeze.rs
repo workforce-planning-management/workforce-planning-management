@@ -44,6 +44,10 @@ impl Task for OversightPackFreeze {
 /// # Errors
 ///
 /// A database error.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn freeze_all(ctx: &AppContext, as_of: Date) -> Result<usize> {
     let this_month = as_of.first_of_month();
     let month = this_month

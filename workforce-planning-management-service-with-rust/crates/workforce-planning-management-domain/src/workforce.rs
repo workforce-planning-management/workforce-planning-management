@@ -56,6 +56,10 @@ pub fn check_day_minutes(existing_minutes: i32, new_minutes: i32) -> Result<(), 
 /// time) of a full-time day of `full_day_minutes`, rounded down to
 /// whole minutes.
 #[must_use]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "both factors are clamped to 0..=1440 and 0..=100, so the product is at most 144 000"
+)]
 pub fn contracted_day_minutes(fte_percent: i32, full_day_minutes: i32) -> i32 {
     (full_day_minutes.clamp(0, DAY_MINUTES) * fte_percent.clamp(0, 100)) / 100
 }
@@ -71,7 +75,10 @@ pub fn overtime_minutes(
     full_day_minutes: i32,
 ) -> i32 {
     let contracted = contracted_day_minutes(fte_percent, full_day_minutes);
-    let derived = (regular_minutes - contracted).max(0);
+    // A difference below the type's minimum is negative whatever it is, so no overtime.
+    let derived = regular_minutes
+        .checked_sub(contracted)
+        .map_or(0, |over| over.max(0));
     derived.saturating_add(explicit_overtime_minutes.max(0))
 }
 

@@ -101,11 +101,14 @@ pub fn fte_problems(existing: &[Assignment], new: &Assignment) -> Vec<String> {
             .map(|a| a.starts_on)
             .filter(|d| *d > new.starts_on && new.current_on(*d)),
     );
-    let worst = days
+    let totals: Option<Vec<(Date, i32)>> = days
         .into_iter()
-        .map(|d| (d, fte_total(existing, d) + new.fte_percent))
-        .max_by_key(|(_, t)| *t);
-    match worst {
+        .map(|d| Some((d, fte_total(existing, d).checked_add(new.fte_percent)?)))
+        .collect();
+    let Some(totals) = totals else {
+        return vec![format!("FTE is too large to total; the most is {FTE_MAX}")];
+    };
+    match totals.into_iter().max_by_key(|(_, t)| *t) {
         Some((d, t)) if t > FTE_MAX => {
             vec![format!("FTE would total {t} on {d}; the most is {FTE_MAX}")]
         }
@@ -240,16 +243,17 @@ pub struct Cell {
 
 /// Headcount and FTE by category. `rows` is `(worker, category, fte_percent)` for each assignment in force; a worker with two
 /// assignments in one category counts once there. A category not recorded is its own cell, `unknown`, never merged into another.
-/// A cell under `floor` (0 is read as 1) shows nothing. **No total is returned**, so a hidden cell cannot be found by subtraction.
+/// A cell under `floor` (0 is read as 1) shows nothing; a cell whose FTE sum does not fit shows no FTE. **No total is returned**, so a hidden cell cannot be found by subtraction.
 #[must_use]
 pub fn breakdown<W: Ord + Clone>(rows: &[(W, Option<String>, i32)], floor: usize) -> Vec<Cell> {
-    let mut by: BTreeMap<String, (BTreeSet<W>, i64)> = BTreeMap::new();
+    // The FTE of a cell is `None` once its sum does not fit: unknown, not capped.
+    let mut by: BTreeMap<String, (BTreeSet<W>, Option<i64>)> = BTreeMap::new();
     for (worker, category, fte) in rows {
         let cell = by
             .entry(category_or_unknown(category.as_deref()).to_string())
-            .or_default();
+            .or_insert_with(|| (BTreeSet::new(), Some(0)));
         cell.0.insert(worker.clone());
-        cell.1 += i64::from(*fte);
+        cell.1 = cell.1.and_then(|total| total.checked_add(i64::from(*fte)));
     }
     by.into_iter()
         .map(|(category, (workers, fte))| {
@@ -257,7 +261,7 @@ pub fn breakdown<W: Ord + Clone>(rows: &[(W, Option<String>, i32)], floor: usize
             Cell {
                 category,
                 headcount: shown.then_some(workers.len()),
-                fte_percent: shown.then_some(fte),
+                fte_percent: shown.then_some(fte).flatten(),
             }
         })
         .collect()
@@ -515,5 +519,13 @@ mod tests {
                 .any(|p| p.contains(&format!("1 to {CODE_MAX} characters"))),
             "{out:?}"
         );
+    }
+
+    /// A total that does not fit is a problem to report, never a wrapped number.
+    #[test]
+    fn totals_that_do_not_fit_are_reported_not_wrapped() {
+        let existing = [a(i32::MAX, d(2026, 1, 1), None, true)];
+        let new = a(1, d(2026, 2, 1), None, false);
+        assert_eq!(fte_problems(&existing, &new).len(), 1);
     }
 }

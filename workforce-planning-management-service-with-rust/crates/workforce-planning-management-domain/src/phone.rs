@@ -104,8 +104,11 @@ pub fn e164(value: &str, country: Option<&str>) -> Option<String> {
         .trunk
         .and_then(|trunk| digits.strip_prefix(trunk))
         .unwrap_or(&digits);
-    (national.len() >= NATIONAL_MIN && plan.calling_code.len() + national.len() <= E164_MAX)
-        .then(|| format!("+{}{national}", plan.calling_code))
+    (national.len() >= NATIONAL_MIN
+        && E164_MAX
+            .checked_sub(plan.calling_code.len())
+            .is_some_and(|room| national.len() <= room))
+    .then(|| format!("+{}{national}", plan.calling_code))
 }
 
 /// The two derived forms of one number.

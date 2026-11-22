@@ -99,7 +99,7 @@ pub fn facility_problems(
     let mut out = Vec::new();
     if end < start {
         out.push("period_end must not be before period_start".to_string());
-    } else if crate::dates::days_between(start, end) + 1 > PERIOD_MAX_DAYS {
+    } else if crate::dates::days_between(start, end) >= PERIOD_MAX_DAYS {
         out.push(format!("a period must be at most {PERIOD_MAX_DAYS} days"));
     }
     for (name, value) in [

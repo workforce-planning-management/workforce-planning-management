@@ -565,7 +565,7 @@ async fn group_skills(
                 "coverage": r.coverage(),
                 "levels": { "1": r.levels[0], "2": r.levels[1], "3": r.levels[2], "4": r.levels[3], "5": r.levels[4] },
             })),
-            None => withheld += 1,
+            None => crate::controllers::tally::bump(&mut withheld),
         }
     }
     shown.sort_by(|a, b| {

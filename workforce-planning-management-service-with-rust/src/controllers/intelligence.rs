@@ -96,8 +96,11 @@ async fn overview(
     let mut by_tenure: BTreeMap<&str, usize> = BTreeMap::new();
     for row in hire_dates {
         let months = rules::months_of_service(row.hired_on.get(), as_of);
-        *by_tenure.entry(rules::tenure_bucket(months)).or_default() +=
-            usize::try_from(row.n).unwrap_or(0);
+        let n = usize::try_from(row.n).map_err(|_| super::internal("a negative head count"))?;
+        crate::controllers::tally::add(
+            by_tenure.entry(rules::tenure_bucket(months)).or_default(),
+            n,
+        )?;
     }
     let fte_percent_total = sqlx::query_scalar!(
         r#"SELECT COALESCE(SUM(fte_percent), 0)::bigint AS "total!" FROM workers
@@ -363,11 +366,13 @@ async fn capability_analysis(
         let (declared_by, proficient, departments) =
             per_skill.get(&skill.pid).copied().unwrap_or((0, 0, 0));
         let status = capability_rules::depth_status(declared_by, proficient, min_depth);
-        *by_category
-            .entry(skill.category.clone())
-            .or_default()
-            .entry(status)
-            .or_default() += 1;
+        crate::controllers::tally::bump(
+            by_category
+                .entry(skill.category.clone())
+                .or_default()
+                .entry(status)
+                .or_default(),
+        );
         skills_out.push(serde_json::json!({
             "skill": skill.name,
             "category": skill.category,
@@ -652,13 +657,13 @@ async fn succession(State(ctx): State<AppContext>) -> Result<Response> {
     for plan in &plans {
         let readiness: Vec<String> = readiness_of.remove(&plan.pid).unwrap_or_default();
         let coverage = rules::bench_coverage(&readiness);
-        *by_coverage.entry(coverage).or_default() += 1;
+        crate::controllers::tally::bump(by_coverage.entry(coverage).or_default());
         if coverage == "covered_now" {
-            covered_now += 1;
+            crate::controllers::tally::bump(&mut covered_now);
         }
         let mut by_readiness: BTreeMap<String, usize> = BTreeMap::new();
         for rating in &readiness {
-            *by_readiness.entry(rating.clone()).or_default() += 1;
+            crate::controllers::tally::bump(by_readiness.entry(rating.clone()).or_default());
         }
         let spof = rules::is_single_point_of_failure(
             plan.criticality,
@@ -732,11 +737,11 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     let mut ready_total = 0usize;
     let mut live_total = 0usize;
     for pipeline in &pipelines {
-        *by_purpose.entry(pipeline.purpose.clone()).or_default() += 1;
+        crate::controllers::tally::bump(by_purpose.entry(pipeline.purpose.clone()).or_default());
         let stages: Vec<String> = stages_of.remove(&pipeline.pid).unwrap_or_default();
         let health = rules::pipeline_health(&stages);
-        ready_total += health.ready;
-        live_total += health.live;
+        crate::controllers::tally::add(&mut ready_total, health.ready)?;
+        crate::controllers::tally::add(&mut live_total, health.live)?;
         per_pipeline.push(serde_json::json!({
             "pid": pipeline.pid,
             "name": pipeline.name,
@@ -769,13 +774,16 @@ async fn pipelines(State(ctx): State<AppContext>) -> Result<Response> {
     for program in &programs {
         let mine: Vec<(String, String)> = placements_of.remove(&program.pid).unwrap_or_default();
         let entry = per_kind.entry(program.kind.as_str()).or_default();
-        entry.0 += 1;
+        crate::controllers::tally::bump(&mut entry.0);
         entry.1.extend(
             mine.iter()
                 .filter(|(status, _)| status == "completed")
                 .map(|(_, outcome)| outcome.clone()),
         );
-        entry.2 += mine.iter().filter(|(status, _)| status == "active").count();
+        crate::controllers::tally::add(
+            &mut entry.2,
+            mine.iter().filter(|(status, _)| status == "active").count(),
+        )?;
     }
     let early_careers: Vec<serde_json::Value> = per_kind
         .iter()

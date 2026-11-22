@@ -152,8 +152,16 @@ pub fn cost_lines(
         let base = if line.wage_base_minor == 0 {
             gross_minor
         } else {
-            gross_minor.min((line.wage_base_minor - earlier_gross_minor).max(0))
+            let room = line
+                .wage_base_minor
+                .checked_sub(earlier_gross_minor)
+                .ok_or("employer cost overflows")?;
+            gross_minor.min(room.max(0))
         };
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "an i64 times an i32 plus 5 000 always fits an i128"
+        )]
         let amount = (i128::from(base) * i128::from(line.rate_bp) + 5_000) / 10_000;
         out.costs.push(Cost {
             name: line.name.clone(),
@@ -290,5 +298,12 @@ mod tests {
             outcome.total_minor(),
             Err("employer cost overflows".to_string())
         );
+    }
+
+    #[test]
+    fn a_wage_base_that_cannot_be_reduced_is_an_error() {
+        let mut l = lines(&["unemployment:250:700000"]);
+        l[0].wage_base_minor = i64::MIN;
+        assert!(cost_lines(&l, None, 1, 1).is_err());
     }
 }

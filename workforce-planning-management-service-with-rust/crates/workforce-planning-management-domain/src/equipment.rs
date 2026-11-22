@@ -104,7 +104,7 @@ pub fn team_holding(team: usize, holding: usize, floor: usize) -> TeamHolding {
         let holding = holding.min(team);
         TeamHolding::Shown {
             holding,
-            none: team - holding,
+            none: team.abs_diff(holding),
         }
     }
 }

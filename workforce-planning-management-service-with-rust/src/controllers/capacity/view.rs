@@ -98,14 +98,7 @@ async fn weighted_days(
     let mut weighted = vec![vec![0_i64; months.len()]; members_by_pool.len()];
     let mut heads = vec![vec![0_usize; months.len()]; members_by_pool.len()];
     let firsts: Vec<Date> = months.iter().map(|m| rules::month_start(*m)).collect();
-    let lasts: Vec<Date> = firsts
-        .iter()
-        .map(|first| {
-            first
-                .checked_add(jiff::Span::new().days(rules::days_in_month(*first) - 1))
-                .unwrap_or(*first)
-        })
-        .collect();
+    let lasts: Vec<Date> = firsts.iter().map(|first| first.last_of_month()).collect();
     let sql_firsts: Vec<SqlDate> = firsts.iter().copied().map(SqlDate).collect();
     let sql_lasts: Vec<SqlDate> = lasts.iter().copied().map(SqlDate).collect();
     for ((members, sums), counts) in members_by_pool
@@ -213,7 +206,8 @@ pub(crate) async fn load_org_capacity(
             .map(|(month, total)| {
                 rules::supply_from_weighted(*total, pool.operations_reservation_bp, *month)
             })
-            .collect();
+            .collect::<Option<_>>()
+            .ok_or_else(|| super::super::internal("a pool's supply overflowed"))?;
         let linked = pool.peer_pool_ref.is_some();
         let demand = parse_demand_rows(
             &demand_rows
@@ -224,7 +218,8 @@ pub(crate) async fn load_org_capacity(
         );
         let commitments = commitments_of(&commitment_rows, pool.pid);
         let key = pool.pid.to_string();
-        let mut view = rules::build_pool(&months, &supply, &demand, &commitments);
+        let mut view = rules::build_pool(&months, &supply, &demand, &commitments)
+            .ok_or_else(|| super::super::internal("a pool's view overflowed"))?;
         // A linked pool the peer has sent nothing to has unknown demand, not none (WPM-D141).
         if linked
             && !demand_rows

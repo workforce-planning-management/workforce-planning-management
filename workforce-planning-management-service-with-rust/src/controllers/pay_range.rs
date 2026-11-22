@@ -53,7 +53,7 @@ fn most_common_currency(staff: &[&Staff]) -> Option<String> {
         if w.salary_minor.is_some()
             && let Some(code) = &w.salary_currency
         {
-            *counts.entry(code.as_str()).or_insert(0) += 1;
+            crate::controllers::tally::bump(counts.entry(code.as_str()).or_insert(0));
         }
     }
     counts

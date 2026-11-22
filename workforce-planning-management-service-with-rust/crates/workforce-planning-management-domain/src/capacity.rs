@@ -212,6 +212,10 @@ fn day_number(date: Date) -> i64 {
 /// Counted by interval arithmetic (the employed span within the month, less the merged leave spans),
 /// not by walking the days: the view calls this for every worker and month (WPM-D90).
 #[must_use]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "day numbers of dates the calendar holds are within 4 million, so sums and differences of them cannot overflow"
+)]
 pub fn available_days(worker: &WorkerFacts, month: Date) -> i64 {
     let first = day_number(month_start(month));
     let last = first + days_in_month(month_start(month)) - 1;
@@ -265,16 +269,16 @@ fn available_days_by_walking(worker: &WorkerFacts, month: Date) -> i64 {
 /// A pool's supply in `month`, in centi-FTE: the workers who count toward it, weighted by
 /// available days, less the operations reservation, rounded half up. A pool with no
 /// members, or none employed that month, has a supply of `0` (a known zero: the pool
-/// exists and has nobody).
+/// exists and has nobody). `None` when a figure does not fit an `i64`.
 #[must_use]
 pub fn pool_supply_centi(
     members: &[Member],
     reservation_bp: i32,
     workers: &[WorkerFacts],
     month: Date,
-) -> i64 {
+) -> Option<i64> {
     supply_from_weighted(
-        pool_weighted_days(members, workers, month),
+        pool_weighted_days(members, workers, month)?,
         reservation_bp,
         month,
     )
@@ -283,22 +287,32 @@ pub fn pool_supply_centi(
 /// The part of a pool's supply that adds up across workers: FTE percent times available days, for
 /// those who count toward the pool. Workers can be summed in batches and the batches added, so an
 /// organization need not be held in memory whole (WPM-D90); [`supply_from_weighted`] finishes it.
+///
+/// `None` when the total does not fit an `i64`.
 #[must_use]
-pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Date) -> i64 {
+pub fn pool_weighted_days(members: &[Member], workers: &[WorkerFacts], month: Date) -> Option<i64> {
     workers
         .iter()
         .filter(|w| counts_toward(members, w))
-        .map(|w| i64::from(w.fte_percent.max(0)) * available_days(w, month))
-        .sum()
+        .try_fold(0_i64, |total, w| {
+            total
+                .checked_add(i64::from(w.fte_percent.max(0)).checked_mul(available_days(w, month))?)
+        })
 }
 
 /// A pool's supply in centi-FTE from the summed [`pool_weighted_days`]: less the operations
 /// reservation, rounded half up. The rounding happens once, on the total.
+///
+/// `None` when a figure does not fit an `i64`.
 #[must_use]
-pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: Date) -> i64 {
-    let kept = i64::from(FULL_BP - reservation_bp.clamp(0, FULL_BP));
-    let denominator = days_in_month(month) * i64::from(FULL_BP);
-    (2 * weighted * kept + denominator) / (2 * denominator)
+pub fn supply_from_weighted(weighted: i64, reservation_bp: i32, month: Date) -> Option<i64> {
+    let kept = i64::from(FULL_BP.checked_sub(reservation_bp.clamp(0, FULL_BP))?);
+    let denominator = days_in_month(month).checked_mul(i64::from(FULL_BP))?;
+    weighted
+        .checked_mul(2)?
+        .checked_mul(kept)?
+        .checked_add(denominator)?
+        .checked_div(denominator.checked_mul(2)?)
 }
 
 // ─── Demand, commitments and the grid ───────────────────────────────────────
@@ -491,8 +505,9 @@ pub fn with_demand_unknown(mut view: PoolView) -> PoolView {
 
 /// What a pool-month comes to, from its balance (`supply - active demand`), the firm partner capacity and whether a partner has not
 /// answered. Also the shortfall left after firm partner capacity. The one place the rule is written, used by the view and the what-if.
-fn classify(balance: i64, firm: i64, any_unknown: bool) -> (CellStatus, i64) {
-    let remaining = (-(balance + firm)).max(0);
+/// `None` when the figures do not fit an `i64`.
+fn classify(balance: i64, firm: i64, any_unknown: bool) -> Option<(CellStatus, i64)> {
+    let remaining = balance.checked_add(firm)?.checked_neg()?.max(0);
     let status = if balance >= 0 {
         CellStatus::Fits
     } else if remaining == 0 {
@@ -502,35 +517,36 @@ fn classify(balance: i64, firm: i64, any_unknown: bool) -> (CellStatus, i64) {
     } else {
         CellStatus::Over
     };
-    (status, remaining)
+    Some((status, remaining))
 }
 
 /// Build a pool's view over `months`, given its supply in each (same order), the demand
 /// claims and the partner commitments. Where a partner has two commitments for one month
 /// the later in the list wins.
+///
+/// `None` when a total does not fit an `i64`: there is then no view to show, and it is not shown as a wrong one.
 #[must_use]
 pub fn build_pool(
     months: &[Date],
     supply_centi: &[i64],
     demand: &[Demand],
     commitments: &[Commitment],
-) -> PoolView {
+) -> Option<PoolView> {
     let partners: BTreeSet<&str> = commitments.iter().map(|c| c.partner.as_str()).collect();
     let mut cells = Vec::with_capacity(months.len());
-    let mut over_total = 0;
-    let mut over_months = 0;
-    let mut unknown_months = 0;
+    let mut over_total = 0_i64;
+    let mut over_months = 0_usize;
+    let mut unknown_months = 0_usize;
     for (index, month) in months.iter().enumerate() {
         let supply = supply_centi.get(index).copied().unwrap_or(0);
-        let sum = |status: DemandStatus| -> i64 {
+        let sum = |status: DemandStatus| -> Option<i64> {
             demand
                 .iter()
                 .filter(|d| d.month == *month && d.status == status)
-                .map(|d| d.fte_centi)
-                .sum()
+                .try_fold(0_i64, |total, d| total.checked_add(d.fte_centi))
         };
-        let active = sum(DemandStatus::Active);
-        let proposed = sum(DemandStatus::Proposed);
+        let active = sum(DemandStatus::Active)?;
+        let proposed = sum(DemandStatus::Proposed)?;
         let mut by_partner: BTreeMap<&str, (CommitmentStatus, i64)> = BTreeMap::new();
         for c in commitments.iter().filter(|c| c.month == *month) {
             by_partner.insert(c.partner.as_str(), (c.status, c.fte_centi));
@@ -546,17 +562,28 @@ pub fn build_pool(
             .iter()
             .filter_map(|p| p.commitment)
             .filter(|(status, _)| status.is_firm())
-            .map(|(_, fte)| fte)
-            .sum();
+            .try_fold(0_i64, |total, (_, fte)| total.checked_add(fte))?;
         let any_unknown = partner_cells.iter().any(|p| p.commitment.is_none());
-        let balance = supply - active;
-        let (status, remaining) = classify(balance, firm, any_unknown);
+        let balance = supply.checked_sub(active)?;
+        let (status, remaining) = classify(balance, firm, any_unknown)?;
         match status {
             CellStatus::Over => {
-                over_total += remaining;
-                over_months += 1;
+                over_total = over_total.checked_add(remaining)?;
+                #[allow(
+                    clippy::arithmetic_side_effects,
+                    reason = "a count of months: bounded by the slice length"
+                )]
+                {
+                    over_months += 1;
+                }
             }
-            CellStatus::Unknown => unknown_months += 1,
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a count of months: bounded by the slice length"
+            )]
+            CellStatus::Unknown => {
+                unknown_months += 1;
+            }
             _ => {}
         }
         cells.push(Cell {
@@ -571,13 +598,13 @@ pub fn build_pool(
             status,
         });
     }
-    PoolView {
+    Some(PoolView {
         cells,
         over_total_centi: over_total,
         over_months,
         unknown_months,
         demand_known: true,
-    }
+    })
 }
 
 /// The **constraint pool**: the one most over-committed over the horizon, or `None` when
@@ -693,11 +720,12 @@ fn check_lines(
     candidate: &Candidate,
     pools: &BTreeMap<String, PoolView>,
     shift: u32,
-) -> Vec<LineResult> {
+) -> Option<Vec<LineResult>> {
     let mut needed: BTreeMap<(String, Date), i64> = BTreeMap::new();
     for (pool, month, fte) in &candidate.lines {
         let moved = shift_month(*month, shift).unwrap_or(*month);
-        *needed.entry((pool.clone(), moved)).or_insert(0) += fte;
+        let slot = needed.entry((pool.clone(), moved)).or_insert(0);
+        *slot = slot.checked_add(*fte)?;
     }
     needed
         .into_iter()
@@ -706,17 +734,19 @@ fn check_lines(
                 .get(&pool)
                 .and_then(|view| view.cells.iter().find(|c| c.month == month));
             match cell {
-                None => LineResult {
+                None => Some(LineResult {
                     pool,
                     month,
                     needed_centi,
                     available_centi: None,
                     short_by_centi: 0,
                     outcome: "outside_horizon",
-                },
+                }),
                 Some(cell) => {
-                    let available = cell.own_balance_centi + cell.firm_partner_centi;
-                    let short = (needed_centi - available).max(0);
+                    let available = cell
+                        .own_balance_centi
+                        .checked_add(cell.firm_partner_centi)?;
+                    let short = needed_centi.checked_sub(available)?.max(0);
                     let any_unknown = cell.partners.iter().any(|p| p.commitment.is_none());
                     let outcome = if short == 0 {
                         "fits"
@@ -725,14 +755,14 @@ fn check_lines(
                     } else {
                         "short"
                     };
-                    LineResult {
+                    Some(LineResult {
                         pool,
                         month,
                         needed_centi,
                         available_centi: Some(available),
                         short_by_centi: if outcome == "short" { short } else { 0 },
                         outcome,
-                    }
+                    })
                 }
             }
         })
@@ -761,7 +791,15 @@ pub fn start_check(
     constraint: Option<&str>,
     active_on_constraint: &BTreeSet<String>,
 ) -> StartCheck {
-    let lines = check_lines(candidate, pools, 0);
+    let Some(lines) = check_lines(candidate, pools, 0) else {
+        return StartCheck {
+            fit: Fit::Unknown,
+            lines: Vec::new(),
+            earliest_shift_months: None,
+            wip: None,
+            derivation: "A figure is too large to add up, so the check cannot say whether the programme fits.".to_string(),
+        };
+    };
     let fit = fit_of(&lines);
     let latest = pools
         .values()
@@ -769,14 +807,17 @@ pub fn start_check(
         .max()
         .unwrap_or(0);
     let earliest_shift_months = (0..=u32::try_from(latest).unwrap_or(0)).find(|shift| {
-        let shifted = check_lines(candidate, pools, *shift);
-        fit_of(&shifted) == Fit::Yes
+        check_lines(candidate, pools, *shift).is_some_and(|shifted| fit_of(&shifted) == Fit::Yes)
     });
     let wip = match (wip_limit, constraint) {
         (Some(limit), Some(pool)) => {
             let draws = candidate.lines.iter().any(|(p, _, _)| p == pool);
             let active = active_on_constraint.len();
             let adds = usize::from(draws && !active_on_constraint.contains(&candidate.programme));
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a count of programmes plus one: bounded by the set's size"
+            )]
             let would_be = active + adds;
             Some(Wip {
                 pool: pool.to_string(),
@@ -890,8 +931,7 @@ pub fn change_problems(
     if changes.is_empty() {
         out.push("propose at least one change".to_string());
     }
-    for (i, c) in changes.iter().enumerate() {
-        let n = i + 1;
+    for (c, n) in changes.iter().zip(1_usize..) {
         if !views.contains_key(&c.pool) {
             out.push(format!("change {n}: no such pool"));
         }
@@ -900,7 +940,7 @@ pub fn change_problems(
                 "change {n}: the month is outside the view (start each month on its first day)"
             ));
         }
-        if c.fte_centi == 0 || c.fte_centi.abs() > MAX_FTE_CENTI {
+        if c.fte_centi == 0 || c.fte_centi.unsigned_abs() > MAX_FTE_CENTI.unsigned_abs() {
             out.push(format!(
                 "change {n}: the change must be non-zero and within {MAX_FTE_CENTI} centi-FTE"
             ));
@@ -910,24 +950,41 @@ pub fn change_problems(
 }
 
 /// The view with each month's active demand moved by `moves` (month, centi-FTE), never below zero.
-fn moved(view: &PoolView, moves: &BTreeMap<Date, i64>) -> PoolView {
+///
+/// `None` when a figure does not fit an `i64`.
+fn moved(view: &PoolView, moves: &BTreeMap<Date, i64>) -> Option<PoolView> {
     let mut cells = Vec::with_capacity(view.cells.len());
-    let (mut over_total, mut over_months, mut unknown_months) = (0, 0, 0);
+    let (mut over_total, mut over_months, mut unknown_months) = (0_i64, 0_usize, 0_usize);
     for cell in &view.cells {
-        let active = (cell.demand_centi + moves.get(&cell.month).copied().unwrap_or(0)).max(0);
-        let balance = cell.supply_centi - active;
+        let active = cell
+            .demand_centi
+            .checked_add(moves.get(&cell.month).copied().unwrap_or(0))?
+            .max(0);
+        let balance = cell.supply_centi.checked_sub(active)?;
         let any_unknown = cell.partners.iter().any(|p| p.commitment.is_none());
         let (status, remaining) = if view.demand_known {
-            classify(balance, cell.firm_partner_centi, any_unknown)
+            classify(balance, cell.firm_partner_centi, any_unknown)?
         } else {
             (CellStatus::Unknown, 0)
         };
         match status {
             CellStatus::Over => {
-                over_total += remaining;
-                over_months += 1;
+                over_total = over_total.checked_add(remaining)?;
+                #[allow(
+                    clippy::arithmetic_side_effects,
+                    reason = "a count of months: bounded by the slice length"
+                )]
+                {
+                    over_months += 1;
+                }
             }
-            CellStatus::Unknown => unknown_months += 1,
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a count of months: bounded by the slice length"
+            )]
+            CellStatus::Unknown => {
+                unknown_months += 1;
+            }
             _ => {}
         }
         cells.push(Cell {
@@ -938,13 +995,13 @@ fn moved(view: &PoolView, moves: &BTreeMap<Date, i64>) -> PoolView {
             ..cell.clone()
         });
     }
-    PoolView {
+    Some(PoolView {
         cells,
         over_total_centi: over_total,
         over_months,
         unknown_months,
         demand_known: view.demand_known,
-    }
+    })
 }
 
 fn pools_of(views: &BTreeMap<String, PoolView>) -> Vec<(&str, &PoolView)> {
@@ -972,12 +1029,13 @@ fn apply(
             .get(&(c.pool.clone(), c.month))
             .copied()
             .unwrap_or(0);
-        let delta = c.fte_centi.max(-have);
-        *by_pool
+        let delta = c.fte_centi.max(have.checked_neg()?);
+        let slot = by_pool
             .entry(&c.pool)
             .or_default()
             .entry(month)
-            .or_insert(0) += delta;
+            .or_insert(0);
+        *slot = slot.checked_add(delta)?;
         touched.push((c.pool.clone(), month));
     }
     touched.sort();
@@ -985,12 +1043,13 @@ fn apply(
     let after = views
         .iter()
         .map(|(k, v)| {
-            let view = by_pool
-                .get(k.as_str())
-                .map_or_else(|| v.clone(), |m| moved(v, m));
-            (k.clone(), view)
+            let view = match by_pool.get(k.as_str()) {
+                Some(m) => moved(v, m)?,
+                None => v.clone(),
+            };
+            Some((k.clone(), view))
         })
-        .collect();
+        .collect::<Option<_>>()?;
     Some((after, touched))
 }
 
@@ -1036,8 +1095,19 @@ pub fn what_if(
     programme_active: &BTreeMap<(String, Date), i64>,
     changes: &[Change],
 ) -> WhatIf {
-    let (after, touched) =
-        apply(views, programme_active, changes, 0).unwrap_or_else(|| (views.clone(), Vec::new()));
+    // A figure that does not fit cannot be said, and is not passed off as a proposal that fits.
+    let Some((after, touched)) = apply(views, programme_active, changes, 0) else {
+        return WhatIf {
+            answer: Answer::Unknown,
+            cells: Vec::new(),
+            becomes_over: 0,
+            stops_over: 0,
+            unknown: 0,
+            constraint_before: constraint_pool(&pools_of(views)).map(ToString::to_string),
+            constraint_after: None,
+            earliest_shift_months: None,
+        };
+    };
     let mut cells = Vec::new();
     let (mut becomes_over, mut stops_over, mut unknown) = (0, 0, 0);
     for (pool, month) in &touched {
@@ -1045,14 +1115,20 @@ pub fn what_if(
         else {
             continue;
         };
-        if a.status == CellStatus::Over && b.status != CellStatus::Over {
-            becomes_over += 1;
-        }
-        if b.status == CellStatus::Over && a.status != CellStatus::Over {
-            stops_over += 1;
-        }
-        if a.status == CellStatus::Unknown {
-            unknown += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "counts of touched cells: bounded by the number of changes"
+        )]
+        {
+            if a.status == CellStatus::Over && b.status != CellStatus::Over {
+                becomes_over += 1;
+            }
+            if b.status == CellStatus::Over && a.status != CellStatus::Over {
+                stops_over += 1;
+            }
+            if a.status == CellStatus::Unknown {
+                unknown += 1;
+            }
         }
         cells.push(CellChange {
             pool: pool.clone(),
@@ -1397,13 +1473,16 @@ mod tests {
             worker(50, Some(role)),
             worker(100, None),
         ];
-        assert_eq!(pool_supply_centi(&members, 0, &staff, jan), 250);
+        assert_eq!(pool_supply_centi(&members, 0, &staff, jan).unwrap(), 250);
         // A 20% reservation keeps 80%: 2.00 FTE.
-        assert_eq!(pool_supply_centi(&members, 2_000, &staff, jan), 200);
+        assert_eq!(
+            pool_supply_centi(&members, 2_000, &staff, jan).unwrap(),
+            200
+        );
         // A 100% reservation leaves nothing, and is a known zero.
-        assert_eq!(pool_supply_centi(&members, 10_000, &staff, jan), 0);
+        assert_eq!(pool_supply_centi(&members, 10_000, &staff, jan).unwrap(), 0);
         // No members: a known zero.
-        assert_eq!(pool_supply_centi(&[], 0, &staff, jan), 0);
+        assert_eq!(pool_supply_centi(&[], 0, &staff, jan).unwrap(), 0);
     }
 
     #[test]
@@ -1414,7 +1493,10 @@ mod tests {
         let mut starter = worker(100, Some(role));
         starter.hired_on = d(2026, 1, 17); // employed 17th..31st = 15 days
         assert_eq!(available_days(&starter, jan), 15);
-        assert_eq!(pool_supply_centi(&members, 0, &[starter.clone()], jan), 48); // 15/31
+        assert_eq!(
+            pool_supply_centi(&members, 0, &[starter.clone()], jan).unwrap(),
+            48
+        ); // 15/31
         let mut leaver = worker(100, Some(role));
         leaver.terminated_on = Some(d(2026, 1, 11)); // last day is the 10th
         assert_eq!(available_days(&leaver, jan), 10);
@@ -1440,7 +1522,7 @@ mod tests {
             demand("urn:p2", months[1], 999, DemandStatus::Proposed),
             demand("urn:p3", months[2], 999, DemandStatus::Closed),
         ];
-        let view = build_pool(&months, &[250, 250, 250], &demand, &[]);
+        let view = build_pool(&months, &[250, 250, 250], &demand, &[]).unwrap();
         assert_eq!(view.cells[0].status, CellStatus::Fits);
         assert_eq!(view.cells[1].status, CellStatus::Over);
         assert_eq!(view.cells[1].remaining_shortfall_centi, 50);
@@ -1461,7 +1543,7 @@ mod tests {
             demand("urn:p", months[0], 250, DemandStatus::Active),
             demand("urn:p", months[1], 251, DemandStatus::Active),
         ];
-        let view = build_pool(&months, &[250, 250], &demand, &[]);
+        let view = build_pool(&months, &[250, 250], &demand, &[]).unwrap();
         assert_eq!(view.cells[0].status, CellStatus::Fits);
         assert_eq!(view.cells[1].status, CellStatus::Over);
     }
@@ -1482,7 +1564,7 @@ mod tests {
             commit("urn:b", months[1], 0, CommitmentStatus::Confirmed),
             commit("urn:b", months[2], 0, CommitmentStatus::Confirmed),
         ];
-        let view = build_pool(&months, &[250, 250, 250], &demand, &commitments);
+        let view = build_pool(&months, &[250, 250, 250], &demand, &commitments).unwrap();
         // Month 1: short by 150, confirmed 150 covers it.
         assert_eq!(view.cells[0].status, CellStatus::FitsWithPartners);
         // Month 2: short by 150; a requested 100 does not cover it; everyone has answered.
@@ -1510,7 +1592,7 @@ mod tests {
             50,
             CommitmentStatus::Confirmed,
         )];
-        let view = build_pool(&months, &[250], &demand, &commitments);
+        let view = build_pool(&months, &[250], &demand, &commitments).unwrap();
         assert_eq!(view.cells[0].status, CellStatus::Fits);
     }
 
@@ -1524,8 +1606,9 @@ mod tests {
                 &[demand("urn:p", months[0], short, DemandStatus::Active)],
                 &[],
             )
+            .unwrap()
         };
-        let fine = build_pool(&months, &[100], &[], &[]);
+        let fine = build_pool(&months, &[100], &[], &[]).unwrap();
         let (a, b, c) = (over(50), over(80), over(80));
         assert_eq!(
             constraint_pool(&[("a", &a), ("b", &b), ("f", &fine)]),
@@ -1549,7 +1632,7 @@ mod tests {
             .collect();
         BTreeMap::from([(
             "pool".to_string(),
-            build_pool(&months, supply, &demand, &[]),
+            build_pool(&months, supply, &demand, &[]).unwrap(),
         )])
     }
 
@@ -1640,7 +1723,7 @@ mod tests {
             10,
             CommitmentStatus::Confirmed,
         )];
-        let view = build_pool(&months, &[100], &[], &commitments);
+        let view = build_pool(&months, &[100], &[], &commitments).unwrap();
         let pools = BTreeMap::from([("pool".to_string(), view)]);
         let check = start_check(&wish(&[(1, 150)]), &pools, None, None, &BTreeSet::new());
         assert_eq!(check.fit, Fit::Unknown);
@@ -1652,7 +1735,7 @@ mod tests {
     fn a_firm_partner_commitment_adds_to_capacity() {
         let months = months(d(2026, 1, 1), 1).unwrap();
         let commitments = [commit("urn:a", months[0], 50, CommitmentStatus::Confirmed)];
-        let view = build_pool(&months, &[100], &[], &commitments);
+        let view = build_pool(&months, &[100], &[], &commitments).unwrap();
         let pools = BTreeMap::from([("pool".to_string(), view)]);
         let check = start_check(&wish(&[(1, 150)]), &pools, None, None, &BTreeSet::new());
         assert_eq!(check.fit, Fit::Yes);
@@ -1756,12 +1839,15 @@ mod tests {
         }
         let members = [Member::RoleProfile(role)];
         for reservation in [0, 1_234, 10_000] {
-            let whole = pool_supply_centi(&members, reservation, &staff, jan);
+            let whole = pool_supply_centi(&members, reservation, &staff, jan).unwrap();
             let weighted: i64 = staff
                 .chunks(3)
-                .map(|batch| pool_weighted_days(&members, batch, jan))
+                .map(|batch| pool_weighted_days(&members, batch, jan).unwrap())
                 .sum();
-            assert_eq!(supply_from_weighted(weighted, reservation, jan), whole);
+            assert_eq!(
+                supply_from_weighted(weighted, reservation, jan).unwrap(),
+                whole
+            );
         }
     }
 
@@ -1833,7 +1919,7 @@ mod tests {
         let mut views = BTreeMap::new();
         views.insert(
             "nurses".to_string(),
-            build_pool(&months, &[supply; 6], demands, commitments),
+            build_pool(&months, &[supply; 6], demands, commitments).unwrap(),
         );
         views
     }
@@ -2091,7 +2177,7 @@ mod tests {
             (100, 300, 50, true),
             (100, 300, 50, false),
         ] {
-            let (status, remaining) = classify(supply - active, firm, unknown);
+            let (status, remaining) = classify(supply - active, firm, unknown).unwrap();
             let partners = if unknown {
                 vec![PartnerCell {
                     partner: "p".into(),
@@ -2118,7 +2204,7 @@ mod tests {
                 unknown_months: 0,
                 demand_known: true,
             };
-            let again = moved(&view, &BTreeMap::new());
+            let again = moved(&view, &BTreeMap::new()).unwrap();
             assert_eq!(again.cells[0].status, status);
             assert_eq!(again.cells[0].remaining_shortfall_centi, remaining);
             let summary = match status {
@@ -2174,7 +2260,7 @@ mod tests {
         let mut views = BTreeMap::new();
         views.insert(
             "nurses".to_string(),
-            build_pool(&months, &[100, 100, 100, 900, 900, 900], &[], &[partner]),
+            build_pool(&months, &[100, 100, 100, 900, 900, 900], &[], &[partner]).unwrap(),
         );
         let w = what_if(&views, &wi_none(), &[wi_change(1, 300)]);
         assert_eq!(w.answer, Answer::Unknown);
@@ -2390,7 +2476,7 @@ mod tests {
     #[test]
     fn a_pool_whose_peer_has_sent_no_demand_is_unknown_in_every_month_not_fitting() {
         let months = [d(2027, 1, 1), d(2027, 2, 1)];
-        let view = build_pool(&months, &[100, 100], &[], &[]);
+        let view = build_pool(&months, &[100, 100], &[], &[]).unwrap();
         assert!(view.cells.iter().all(|c| c.status == CellStatus::Fits));
         let unknown = with_demand_unknown(view);
         assert!(
@@ -2412,21 +2498,99 @@ mod tests {
             "the supply is still known"
         );
         assert!(!unknown.demand_known);
-        let after = moved(&unknown, &BTreeMap::from([(months[0], 50)]));
+        let after = moved(&unknown, &BTreeMap::from([(months[0], 50)])).unwrap();
         assert_eq!(
             after.cells[0].status,
             CellStatus::Unknown,
             "a what-if cannot make unknown demand fit"
         );
-        let over = with_demand_unknown(build_pool(
-            &months,
-            &[0, 0],
-            &[demand("thing:x", months[0], 50, DemandStatus::Active)],
-            &[],
-        ));
+        let over = with_demand_unknown(
+            build_pool(
+                &months,
+                &[0, 0],
+                &[demand("thing:x", months[0], 50, DemandStatus::Active)],
+                &[],
+            )
+            .unwrap(),
+        );
         assert_eq!(
             over.over_months, 0,
             "an overcommitted month is not claimed when demand is unknown"
         );
+    }
+
+    #[test]
+    fn figures_that_do_not_fit_are_no_view_and_no_answer() {
+        let months = wi_six();
+        let jan = wi_m(1);
+        let (feb, mar) = (wi_m(2), wi_m(3));
+        let d = |month, fte| demand("programme:a", month, fte, DemandStatus::Active);
+        let big = i64::MAX;
+        // Demand in one month adds up past an i64.
+        assert!(build_pool(&months, &[0; 6], &[d(jan, big), d(jan, 1)], &[]).is_none());
+        // Proposed demand too.
+        let p = |fte| demand("programme:a", jan, fte, DemandStatus::Proposed);
+        assert!(build_pool(&months, &[0; 6], &[p(big), p(1)], &[]).is_none());
+        // Firm partner capacity adds up past an i64.
+        let firm = [
+            commit("a", jan, big, CommitmentStatus::Confirmed),
+            commit("b", jan, 1, CommitmentStatus::Committed),
+        ];
+        assert!(build_pool(&months, &[0; 6], &[], &firm).is_none());
+        // Balance, and balance plus firm.
+        assert!(build_pool(&months, &[i64::MIN; 6], &[d(jan, 1)], &[]).is_none());
+        let one = [commit("a", jan, 1, CommitmentStatus::Confirmed)];
+        assert!(build_pool(&months, &[big; 6], &[], &one).is_none());
+        // Shortfalls in two months add up past an i64.
+        assert!(build_pool(&months, &[0; 6], &[d(jan, big), d(feb, big)], &[]).is_none());
+        assert!(build_pool(&months, &[0; 6], &[d(jan, big)], &[]).is_some());
+        // Supply.
+        assert_eq!(supply_from_weighted(big, 0, jan), None);
+        assert_eq!(supply_from_weighted(0, 0, jan), Some(0));
+        // A proposal.
+        let views = wi_pool(0, &[wi_demand("programme:a", 1, big)], &[]);
+        let unknown = |w: &WhatIf| (w.answer, w.cells.len(), w.earliest_shift_months);
+        let w = what_if(&views, &wi_none(), &[wi_change(1, 1)]);
+        assert_eq!(
+            unknown(&w),
+            (Answer::Unknown, 0, None),
+            "demand plus change"
+        );
+        let views = wi_pool(0, &[], &[]);
+        let w = what_if(&views, &wi_none(), &[wi_change(2, big), wi_change(2, big)]);
+        assert_eq!(
+            unknown(&w),
+            (Answer::Unknown, 0, None),
+            "two changes add up"
+        );
+        let held = BTreeMap::from([(("nurses".to_string(), wi_m(1)), i64::MIN)]);
+        let w = what_if(&views, &held, &[wi_change(1, 1)]);
+        assert_eq!(
+            w.answer,
+            Answer::Unknown,
+            "a held claim that cannot be negated"
+        );
+        // A start check.
+        let pools = BTreeMap::from([(
+            "pool".to_string(),
+            build_pool(&[jan, feb, mar], &[100; 3], &[], &[]).unwrap(),
+        )]);
+        let line = |fte| ("pool".to_string(), jan, fte);
+        let wish = |lines: Vec<(String, Date, i64)>| Candidate {
+            programme: "urn:new".to_string(),
+            lines,
+        };
+        let none = BTreeSet::new();
+        let check = start_check(&wish(vec![line(big), line(1)]), &pools, None, None, &none);
+        assert_eq!((check.fit, check.lines.len()), (Fit::Unknown, 0));
+        let check = start_check(&wish(vec![line(i64::MIN)]), &pools, None, None, &none);
+        assert_eq!(
+            check.fit,
+            Fit::Unknown,
+            "needed less available does not fit"
+        );
+        // A change of exactly the limit is still named a problem only beyond it.
+        let problems = change_problems(&wi_pool(0, &[], &[]), &wi_six(), &[wi_change(1, i64::MIN)]);
+        assert_eq!(problems.len(), 1);
     }
 }

@@ -235,9 +235,21 @@ pub fn rollup(statuses: &[Status], floor: usize) -> Rollup {
         n(Status::Expired),
         n(Status::NeverCompleted),
     );
-    let counted = compliant + due_soon + expired + never_completed;
+    let counted = statuses
+        .iter()
+        .filter(|s| {
+            matches!(
+                s,
+                Status::Compliant | Status::DueSoon | Status::Expired | Status::NeverCompleted
+            )
+        })
+        .count();
+    let in_date = statuses
+        .iter()
+        .filter(|s| matches!(s, Status::Compliant | Status::DueSoon))
+        .count();
     #[allow(clippy::cast_precision_loss)]
-    let rate = (counted > 0).then(|| (compliant + due_soon) as f64 / counted as f64);
+    let rate = (counted > 0).then(|| in_date as f64 / counted as f64);
     Rollup::Shown {
         compliant,
         due_soon,

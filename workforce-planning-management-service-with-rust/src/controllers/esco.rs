@@ -342,8 +342,8 @@ async fn from_esco(
         let (skill_pid, how) =
             resolve_catalogue_skill_in(&mut tx, esco_skill, version.as_deref()).await?;
         match how {
-            Resolution::Created => created += 1,
-            Resolution::Linked => linked += 1,
+            Resolution::Created => crate::controllers::tally::bump(&mut created),
+            Resolution::Linked => crate::controllers::tally::bump(&mut linked),
             Resolution::Existing => {}
         }
         // One requirement per (profile, skill); two ESCO skills mapping to one
@@ -370,7 +370,7 @@ async fn from_esco(
         )
         .execute(&mut *tx)
         .await?;
-        requirements += 1;
+        crate::controllers::tally::bump(&mut requirements);
     }
     db::audit(
         &mut tx,

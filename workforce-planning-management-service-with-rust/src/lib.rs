@@ -37,9 +37,10 @@
     clippy::todo,
     clippy::unimplemented,
     clippy::indexing_slicing,
-    clippy::string_slice
+    clippy::string_slice,
+    clippy::arithmetic_side_effects
 )]
-#![cfg_attr(test, allow(clippy::string_slice))]
+#![cfg_attr(test, allow(clippy::string_slice, clippy::arithmetic_side_effects))]
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 // The hand-written OpenAPI document is one large nested `json!` literal.

@@ -195,14 +195,30 @@ pub(super) fn name_of(people: &HashMap<Uuid, RotaPerson>, pid: Option<Uuid>) -> 
         .map(|w| w.display_name.clone())
 }
 
+/// `date` moved by `days` whole days (negative goes back).
+///
+/// # Errors
+///
+/// 422 when the result is outside the calendar.
+fn offset_days(date: Date, days: i64) -> Result<Date> {
+    jiff::Span::new()
+        .try_days(days)
+        .and_then(|span| date.checked_add(span))
+        .map_err(|_| unprocessable("the date is outside the supported calendar"))
+}
+
 /// The `from..=to` window from a query, defaulting to 28 days from today.
 fn window(from: Option<Date>, to: Option<Date>) -> Result<(Date, Date)> {
     let from = from.unwrap_or_else(crate::dates::today);
-    let to = to.unwrap_or(from + crate::dates::days(DEFAULT_WINDOW_DAYS - 1));
+    let to = match to {
+        Some(to) => to,
+        None => offset_days(from, DEFAULT_WINDOW_DAYS - 1)?,
+    };
     if to < from {
         return Err(unprocessable("to must not be before from"));
     }
-    if crate::dates::days_between(from, to) + 1 > rules::MAX_WINDOW_DAYS {
+    // `days + 1 > MAX` is `days >= MAX` for whole days.
+    if crate::dates::days_between(from, to) >= rules::MAX_WINDOW_DAYS {
         return Err(unprocessable(&format!(
             "the window may cover at most {} calendar days",
             rules::MAX_WINDOW_DAYS
@@ -415,8 +431,8 @@ async fn get_rota(
         "description": rota.description,
         "period_days": rota.period_days,
         "starts_on": rota.starts_on,
-        "members": members.iter().enumerate().map(|(i, w)| serde_json::json!({
-            "position": i + 1,
+        "members": members.iter().zip(1_usize..).map(|(w, position)| serde_json::json!({
+            "position": position,
             "worker_pid": w,
             "name": name_of(&people, Some(*w)),
             "job_title": people.get(w).map(|p| p.job_title.clone()),
@@ -740,9 +756,9 @@ pub(crate) async fn turns_starting_on(
     let mut out = Vec::new();
     let mut all = rotas_in(ctx, None).await?;
     all.sort_by_key(|r| r.id);
+    let day_before = offset_days(date, -1)?;
     for rota in all {
-        let (_, _, assignments, _) =
-            compute(ctx, &rota, date - crate::dates::days(1), date).await?;
+        let (_, _, assignments, _) = compute(ctx, &rota, day_before, date).await?;
         if let [yesterday, today] = assignments.as_slice()
             && let Some(worker) = rules::turn_starts(yesterday, today)
         {
@@ -765,4 +781,27 @@ pub fn routes() -> Routes {
         .add("/rotas/{pid}/overrides", post(add_override))
         .add("/rota-overrides/{pid}", delete(delete_override))
         .add("/workers/{pid}/on-call", get(worker_on_call))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn offset_days_moves_and_refuses_the_calendar_edge() {
+        let d = crate::dates::ymd(2026, 3, 1).expect("date");
+        assert_eq!(offset_days(d, 1).ok(), crate::dates::ymd(2026, 3, 2));
+        assert_eq!(offset_days(d, -1).ok(), crate::dates::ymd(2026, 2, 28));
+        assert!(offset_days(Date::MAX, 1).is_err());
+        assert!(offset_days(Date::MIN, -1).is_err());
+        assert!(offset_days(d, i64::MAX).is_err());
+    }
+
+    #[test]
+    fn window_default_overflow_is_refused_not_a_panic() {
+        assert!(window(Some(Date::MAX), None).is_err());
+        let from = crate::dates::ymd(2026, 1, 1).expect("date");
+        let (f, t) = window(Some(from), None).expect("window");
+        assert_eq!(crate::dates::days_between(f, t), DEFAULT_WINDOW_DAYS - 1);
+    }
 }

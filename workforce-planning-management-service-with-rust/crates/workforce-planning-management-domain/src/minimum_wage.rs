@@ -209,11 +209,16 @@ impl Outcome {
 /// in a year with no 29 February.
 #[must_use]
 pub fn completed_years(born: Date, on: Date) -> i64 {
-    let mut years = i64::from(on.year()) - i64::from(born.year());
+    // The difference of two years is never negative here, and a birthday still to come takes one off, never below zero.
+    let mut years = if on.year() < born.year() {
+        0
+    } else {
+        on.year().abs_diff(born.year())
+    };
     if (on.month(), on.day()) < (born.month(), born.day()) {
-        years -= 1;
+        years = years.saturating_sub(1);
     }
-    years.max(0)
+    i64::from(years)
 }
 
 /// The band for a worker, from the age on the last day of the period.
@@ -257,9 +262,12 @@ fn compare(pay_scaled: i128, required_scaled: i128, near_margin_bp: i64) -> Outc
     }
     let margin = i128::from(near_margin_bp.max(0));
     // pay < floor × (10 000 + margin) / 10 000, kept in integers.
-    if margin > 0
-        && pay_scaled.saturating_mul(10_000) < required_scaled.saturating_mul(10_000 + margin)
-    {
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "the margin is at most i64::MAX, so adding 10 000 to it fits an i128"
+    )]
+    let factor = 10_000 + margin;
+    if margin > 0 && pay_scaled.saturating_mul(10_000) < required_scaled.saturating_mul(factor) {
         return Outcome::Near;
     }
     Outcome::Ok

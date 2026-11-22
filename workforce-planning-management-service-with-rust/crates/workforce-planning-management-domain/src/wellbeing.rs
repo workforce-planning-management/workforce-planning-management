@@ -54,12 +54,15 @@ pub fn age_on(born: Date, on: Date) -> Option<i32> {
     if born > on {
         return None;
     }
-    let mut age = i32::from(on.year()) - i32::from(born.year());
+    // `born` is not after `on`, so the years between are not negative.
+    let years = on.year().abs_diff(born.year());
     let had_birthday = (on.month(), on.day()) >= (born.month(), born.day());
-    if !had_birthday {
-        age -= 1;
-    }
-    (age >= 0).then_some(age)
+    let age = if had_birthday {
+        Some(years)
+    } else {
+        years.checked_sub(1)
+    };
+    age.map(i32::from)
 }
 
 /// One rule's non-clinical predicates, borrowed from the stored row.

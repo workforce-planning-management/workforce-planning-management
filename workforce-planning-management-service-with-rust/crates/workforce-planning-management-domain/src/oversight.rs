@@ -71,10 +71,13 @@ pub struct Spec {
 }
 
 /// The period number of a month: months counted from year 0, so consecutive months are consecutive
-/// numbers.
+/// numbers. `None` when the number does not fit an `i64`.
 #[must_use]
-pub fn month_period(year: i32, month: u32) -> i64 {
-    i64::from(year) * 12 + i64::from(month) - 1
+pub fn month_period(year: i32, month: u32) -> Option<i64> {
+    i64::from(year)
+        .checked_mul(12)?
+        .checked_add(i64::from(month))?
+        .checked_sub(1)
 }
 
 /// Check a spec before it is stored.
@@ -176,7 +179,6 @@ pub struct MeasureVerdict {
 pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> MeasureVerdict {
     let by_period: BTreeMap<i64, &Reading> = readings.iter().map(|r| (r.period, r)).collect();
     let mut counted: Vec<i64> = Vec::new();
-    let mut reported = 0u32;
     let mut period = latest;
     let reason = loop {
         if u32::try_from(counted.len()).unwrap_or(u32::MAX) >= spec.sustain {
@@ -185,22 +187,27 @@ pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> Measu
         match by_period.get(&period) {
             None => break Reason::NoReading(period),
             Some(Reading { value: None, .. }) => break Reason::NullReading(period),
-            Some(Reading {
-                value: Some(v),
-                origin,
-                ..
-            }) => {
+            Some(Reading { value: Some(v), .. }) => {
                 if !meets(*v, spec) {
                     break Reason::Breach(period);
                 }
                 counted.push(period);
-                if *origin == Origin::Reported {
-                    reported += 1;
-                }
             }
         }
-        period -= 1;
+        // The earliest period there is has no earlier one: nothing to read.
+        let Some(earlier) = period.checked_sub(1) else {
+            break Reason::NoReading(period);
+        };
+        period = earlier;
     };
+    let reported = counted
+        .iter()
+        .filter(|p| {
+            by_period
+                .get(p)
+                .is_some_and(|r| r.origin == Origin::Reported)
+        })
+        .count();
     counted.reverse();
     let status = match reason {
         Reason::Sustained => Status::Met,
@@ -213,7 +220,7 @@ pub fn evaluate_measure(spec: &Spec, readings: &[Reading], latest: i64) -> Measu
         required: spec.sustain,
         reason,
         periods: counted,
-        reported_periods: reported,
+        reported_periods: u32::try_from(reported).unwrap_or(u32::MAX),
     }
 }
 
@@ -270,6 +277,19 @@ mod tests {
         }
     }
 
+    /// The earliest period there is has no earlier one: the run stops there, it does not wrap.
+    #[test]
+    fn a_run_stops_at_the_earliest_period_of_the_type() {
+        let v = evaluate_measure(
+            &spec(5, Direction::AtMost, 2),
+            &[reported(i64::MIN, 1)],
+            i64::MIN,
+        );
+        assert_eq!(v.status, Status::Unknown);
+        assert_eq!(v.reason, Reason::NoReading(i64::MIN));
+        assert_eq!((v.run, v.reported_periods), (1, 1));
+    }
+
     fn reported(period: i64, value: i64) -> Reading {
         Reading {
             period,
@@ -280,8 +300,10 @@ mod tests {
 
     #[test]
     fn consecutive_months_are_consecutive_numbers_across_a_year_end() {
-        assert_eq!(month_period(2027, 1), month_period(2026, 12) + 1);
-        assert_eq!(month_period(2026, 2), month_period(2026, 1) + 1);
+        assert_eq!(month_period(2027, 1), month_period(2026, 12).map(|p| p + 1));
+        assert_eq!(month_period(2026, 2), month_period(2026, 1).map(|p| p + 1));
+        assert!(month_period(i32::MAX, u32::MAX).is_some());
+        assert_eq!(month_period(0, 0), Some(-1));
     }
 
     #[test]

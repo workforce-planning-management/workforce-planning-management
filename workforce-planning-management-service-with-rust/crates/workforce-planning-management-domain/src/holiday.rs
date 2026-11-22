@@ -101,13 +101,21 @@ pub fn weekend_to_iso(weekend: &[Weekday]) -> Vec<u32> {
 }
 
 /// The Julian day number of a tabular Islamic date (civil epoch: 1 Muharram 1 is 16 July 622 Julian, day 1,948,440).
-const fn hijri_jdn(year: i64, month: i64, day: i64) -> i64 {
-    day + (59 * (month - 1) + 1) / 2 + (year - 1) * 354 + (3 + 11 * year) / 30 + 1_948_439
+/// `None` when a figure does not fit.
+fn hijri_jdn(year: i64, month: i64, day: i64) -> Option<i64> {
+    let months = month.checked_sub(1)?.checked_mul(59)?.checked_add(1)? / 2;
+    let years = year.checked_sub(1)?.checked_mul(354)?;
+    let leaps = year.checked_mul(11)?.checked_add(3)? / 30;
+    day.checked_add(months)?
+        .checked_add(years)?
+        .checked_add(leaps)?
+        .checked_add(1_948_439)
 }
 
 /// Whether a tabular Islamic year is a leap year (Dhu al-Hijja has 30 days).
-const fn hijri_leap(year: i64) -> bool {
-    (14 + 11 * year).rem_euclid(30) < 11
+/// `None` when `year` is too large to compute with.
+fn hijri_leap(year: i64) -> Option<bool> {
+    Some(year.checked_mul(11)?.checked_add(14)?.rem_euclid(30) < 11)
 }
 
 /// The dates in Gregorian `year` that are `day` `month` in the tabular Islamic calendar (zero, one or two of them).
@@ -116,26 +124,40 @@ pub fn hijri_dates(month: u32, day: u32, year: i32) -> Vec<Date> {
     if !(1..=12).contains(&month) || day == 0 {
         return Vec::new();
     }
-    let (month, day) = (i64::from(month), i64::from(day));
-    let first = (i64::from(year) - 622) * 33 / 32;
-    (first - 1..=first + 2)
-        .filter(|hijri_year| *hijri_year >= 1)
-        .filter(|hijri_year| {
-            let length = if month % 2 == 1 || (month == 12 && hijri_leap(*hijri_year)) {
-                30
-            } else {
-                29
-            };
-            day <= length
-        })
-        .filter_map(|hijri_year| {
-            let days_from_ce = i32::try_from(hijri_jdn(hijri_year, month, day) - 1_721_425).ok()?;
-            // day 1 is 1 January of year 1
-            let after_epoch = jiff::Span::new().try_days(days_from_ce - 1).ok()?;
-            jiff::civil::date(1, 1, 1).checked_add(after_epoch).ok()
-        })
-        .filter(|date| i32::from(date.year()) == year)
-        .collect()
+    hijri_dates_checked(i64::from(month), i64::from(day), year).unwrap_or_default()
+}
+
+/// [`hijri_dates`] for a month and day already checked; `None` when a figure does not fit.
+fn hijri_dates_checked(month: i64, day: i64, year: i32) -> Option<Vec<Date>> {
+    let first = i64::from(year)
+        .checked_sub(622)?
+        .checked_mul(33)?
+        .checked_div(32)?;
+    Some(
+        (first.checked_sub(1)?..=first.checked_add(2)?)
+            .filter(|hijri_year| *hijri_year >= 1)
+            .filter(|hijri_year| {
+                let length =
+                    if month % 2 == 1 || (month == 12 && hijri_leap(*hijri_year) == Some(true)) {
+                        30
+                    } else {
+                        29
+                    };
+                day <= length
+            })
+            .filter_map(|hijri_year| {
+                let days_from_ce =
+                    i32::try_from(hijri_jdn(hijri_year, month, day)?.checked_sub(1_721_425)?)
+                        .ok()?;
+                // day 1 is 1 January of year 1
+                let after_epoch = jiff::Span::new()
+                    .try_days(days_from_ce.checked_sub(1)?)
+                    .ok()?;
+                jiff::civil::date(1, 1, 1).checked_add(after_epoch).ok()
+            })
+            .filter(|date| i32::from(date.year()) == year)
+            .collect(),
+    )
 }
 
 /// One holiday rule.
@@ -169,15 +191,33 @@ pub fn easter(year: i32) -> Option<Date> {
     let c = year % 100;
     let d = b / 4;
     let e = b % 4;
-    let f = (b + 8) / 25;
-    let g = (b - f + 1) / 3;
-    let h = (19 * a + b - d - g + 15) % 30;
+    let f = b.checked_add(8)? / 25;
+    let g = b.checked_sub(f)?.checked_add(1)? / 3;
+    let h = a
+        .checked_mul(19)?
+        .checked_add(b)?
+        .checked_sub(d)?
+        .checked_sub(g)?
+        .checked_add(15)?
+        % 30;
     let i = c / 4;
     let k = c % 4;
-    let l = (32 + 2 * e + 2 * i - h - k) % 7;
-    let m = (a + 11 * h + 22 * l) / 451;
-    let month = (h + l - 7 * m + 114) / 31;
-    let day = (h + l - 7 * m + 114) % 31 + 1;
+    let l = 32_i32
+        .checked_add(e.checked_mul(2)?)?
+        .checked_add(i.checked_mul(2)?)?
+        .checked_sub(h)?
+        .checked_sub(k)?
+        % 7;
+    let m = a
+        .checked_add(h.checked_mul(11)?)?
+        .checked_add(l.checked_mul(22)?)?
+        / 451;
+    let n = h
+        .checked_add(l)?
+        .checked_sub(m.checked_mul(7)?)?
+        .checked_add(114)?;
+    let month = n / 31;
+    let day = (n % 31).checked_add(1)?;
     crate::dates::ymd(year, u32::try_from(month).ok()?, u32::try_from(day).ok()?)
 }
 
@@ -189,9 +229,9 @@ fn nth_weekday(year: i32, month: u32, weekday: Weekday, n: u32) -> Option<Date> 
 
 fn last_weekday(year: i32, month: u32, weekday: Weekday) -> Option<Date> {
     let first_next = if month == 12 {
-        crate::dates::ymd(year + 1, 1, 1)?
+        crate::dates::ymd(year.checked_add(1)?, 1, 1)?
     } else {
-        crate::dates::ymd(year, month + 1, 1)?
+        crate::dates::ymd(year, month.checked_add(1)?, 1)?
     };
     let mut d = first_next.checked_sub(jiff::Span::new().days(1)).ok()?;
     while d.weekday() != weekday {
@@ -738,6 +778,21 @@ mod tests {
             "1 Muharram 1 is 16 July 622 Julian"
         );
         assert_eq!(hijri_dates(10, 1, 2024), vec![d(2024, 4, 10)]);
+        assert_eq!(hijri_jdn(i64::MAX, 1, 1), None);
+        assert_eq!(hijri_dates(1, u32::MAX, i32::MAX), Vec::<Date>::new());
+        assert_eq!(hijri_dates(1, 1, i32::MIN), Vec::<Date>::new());
+        assert_eq!(easter(i32::MAX), None);
+        assert_eq!(easter(i32::MIN), None);
+        assert_eq!(
+            natural_dates(
+                When::Last {
+                    month: 12,
+                    weekday: Weekday::Friday
+                },
+                i32::MAX
+            ),
+            Vec::<Date>::new()
+        );
         assert_eq!(
             hijri_dates(12, 10, 2024),
             vec![d(2024, 6, 17)],
@@ -748,7 +803,8 @@ mod tests {
         assert_eq!(hijri_dates(1, 1, 2008).len(), 2);
         // The second month has 29 days; Dhu al-Hijja has 30 only in a leap year (1446 is not one, 1447 is).
         assert_eq!(hijri_dates(2, 30, 2026), Vec::<Date>::new());
-        assert!(hijri_leap(1447) && !hijri_leap(1446));
+        assert!(hijri_leap(1447) == Some(true) && hijri_leap(1446) == Some(false));
+        assert_eq!(hijri_leap(i64::MAX), None);
         assert!(hijri_dates(13, 1, 2026).is_empty() && hijri_dates(1, 0, 2026).is_empty());
         // Every Gregorian year from 1970 to 2100 holds each day of a 30-day month at least once or twice, never three times.
         for year in 1970..=2100 {

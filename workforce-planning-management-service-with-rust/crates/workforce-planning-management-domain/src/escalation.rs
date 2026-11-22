@@ -48,7 +48,11 @@ impl Level {
     /// One level up, or `None` at the top.
     #[must_use]
     pub const fn next(self) -> Option<Self> {
-        Self::from_number(self.number() + 1)
+        match self {
+            Self::PlanOwner => Some(Self::Board),
+            Self::Board => Some(Self::Executive),
+            Self::Executive => None,
+        }
     }
 }
 

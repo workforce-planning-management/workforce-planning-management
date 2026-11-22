@@ -33,9 +33,9 @@ pub(super) async fn resolve_attrition(
     let mut by_date: BTreeMap<Date, (i64, Option<i64>)> = BTreeMap::new();
     for row in &rows {
         let entry = by_date.entry(row.as_of.get()).or_insert((0, Some(0)));
-        entry.0 += i64::from(row.headcount);
+        crate::controllers::tally::add(&mut entry.0, i64::from(row.headcount))?;
         entry.1 = match (entry.1, row.leavers) {
-            (Some(total), Some(n)) => Some(total + i64::from(n)),
+            (Some(total), Some(n)) => total.checked_add(i64::from(n)),
             _ => None,
         };
     }
@@ -161,7 +161,7 @@ pub(super) async fn forecast_value(
             let projection =
                 rules::project_by_basis(people, today, *target_on, attrition, source);
             let supply = projection.total_headcount;
-            let gap = supply.map(|s| rules::headcount_gap(demand, s));
+            let gap = supply.and_then(|s| rules::headcount_gap(demand, s));
             let contract = rules::contract_fte(people);
             let conversions = rules::conversion_cover(
                 &open_conversions
@@ -174,7 +174,7 @@ pub(super) async fn forecast_value(
             let gap_fte = demand_total
                 .fte_percent
                 .zip(projection.total_fte_centi)
-                .map(|(d, s)| rules::headcount_gap(d, s));
+                .and_then(|(d, s)| rules::headcount_gap(d, s));
             let competency: Vec<serde_json::Value> = group
                 .iter()
                 .filter_map(|line| line.role_profile_pid.map(|role| (line, role)))
@@ -184,7 +184,7 @@ pub(super) async fn forecast_value(
                         .iter()
                         .filter(move |r| r.role_profile_pid == role)
                         .map(|r| {
-                            let (proficient, reskill_pool) = rules::proficiency_split(
+                            let split = rules::proficiency_split(
                                 declared
                                     .get(&(department.clone(), r.skill_pid))
                                     .into_iter()
@@ -197,9 +197,9 @@ pub(super) async fn forecast_value(
                                 "importance": r.importance,
                                 "min_proficiency": r.min_proficiency,
                                 "needed": needed,
-                                "proficient_now": proficient,
-                                "shortfall": rules::competency_shortfall(needed, proficient),
-                                "reskill_pool": reskill_pool,
+                                "proficient_now": split.map(|(proficient, _)| proficient),
+                                "shortfall": split.map(|(proficient, _)| rules::competency_shortfall(needed, proficient)),
+                                "reskill_pool": split.map(|(_, reskill_pool)| reskill_pool),
                             })
                         })
                         .collect::<Vec<_>>()
@@ -229,15 +229,15 @@ pub(super) async fn forecast_value(
                 "supply_assumptions": projection.assumptions,
                 "headcount_gap": gap,
                 "fte_gap": gap_fte.map(centi),
-                "levers": gap.map(|g| rules::suggested_levers(g, &contract)),
-                "contract_fte_now": {
+                "levers": gap.zip(contract.as_ref()).map(|(g, c)| rules::suggested_levers(g, c)),
+                "contract_fte_now": contract.map(|contract| serde_json::json!({
                     "contractor": { "headcount": contract.contractor_headcount, "fte": centi(contract.contractor_fte_centi) },
                     "fixed_term": { "headcount": contract.fixed_term_headcount, "fte": centi(contract.fixed_term_fte_centi) },
-                },
-                "conversions": {
+                })),
+                "conversions": conversions.map(|conversions| serde_json::json!({
                     "agreed": { "headcount": conversions.agreed_headcount, "fte": centi(conversions.agreed_fte_centi) },
                     "hoped": { "headcount": conversions.hoped_headcount, "fte": centi(conversions.hoped_fte_centi) },
-                },
+                })),
                 "competency_gaps": competency,
             })
         })

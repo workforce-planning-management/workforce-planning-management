@@ -19,17 +19,24 @@ pub fn cohort_average_minor(salaries: &[i64]) -> Option<i64> {
     if salaries.len() < MIN_COHORT {
         return None;
     }
-    let total: i128 = salaries.iter().map(|s| i128::from(*s)).sum();
+    let total = salaries
+        .iter()
+        .try_fold(0_i128, |sum, s| sum.checked_add(i128::from(*s)))?;
     let n = i128::try_from(salaries.len()).ok()?;
-    i64::try_from((total + n / 2) / n).ok()
+    i64::try_from(total.checked_add(n.checked_div(2)?)?.checked_div(n)?).ok()
 }
 
 /// An annual cost with a stated employer on-cost (basis points of salary:
-/// 2500 = +25%), rounded to the nearest minor unit.
+/// 2500 = +25%), rounded to the nearest minor unit. `None` when the result
+/// does not fit an `i64`: an overflow is an unknown, never a maximum.
 #[must_use]
-pub fn with_on_cost(annual_minor: i64, on_cost_bp: i32) -> i64 {
-    let factor = i128::from(10_000 + on_cost_bp.max(0));
-    i64::try_from((i128::from(annual_minor) * factor + 5_000) / 10_000).unwrap_or(i64::MAX)
+pub fn with_on_cost(annual_minor: i64, on_cost_bp: i32) -> Option<i64> {
+    let factor = i128::from(on_cost_bp.max(0)).checked_add(10_000)?;
+    let scaled = i128::from(annual_minor)
+        .checked_mul(factor)?
+        .checked_add(5_000)?
+        .checked_div(10_000)?;
+    i64::try_from(scaled).ok()
 }
 
 /// How many people must be hired to close a headcount gap (zero for a
@@ -75,31 +82,36 @@ pub fn pick_unit_cost(
 /// weights sum to zero.
 #[must_use]
 pub fn weighted_unit_cost(parts: &[(i64, usize)]) -> Option<i64> {
-    let weight: i128 = parts
-        .iter()
-        .map(|(_, w)| i128::try_from(*w).unwrap_or(0))
-        .sum();
+    let weight = parts.iter().try_fold(0_i128, |sum, (_, w)| {
+        sum.checked_add(i128::try_from(*w).ok()?)
+    })?;
     if weight == 0 {
         return None;
     }
-    let total: i128 = parts
-        .iter()
-        .map(|(cost, w)| i128::from(*cost) * i128::try_from(*w).unwrap_or(0))
-        .sum();
-    i64::try_from((total + weight / 2) / weight).ok()
+    let total = parts.iter().try_fold(0_i128, |sum, (cost, w)| {
+        sum.checked_add(i128::from(*cost).checked_mul(i128::try_from(*w).ok()?)?)
+    })?;
+    i64::try_from(
+        total
+            .checked_add(weight.checked_div(2)?)?
+            .checked_div(weight)?,
+    )
+    .ok()
 }
 
-/// Annual cost of `hires` people at `unit_annual_minor`, with on-cost.
+/// Annual cost of `hires` people at `unit_annual_minor`, with on-cost; `None`
+/// when it does not fit an `i64`.
 #[must_use]
-pub fn annual_cost(hires: usize, unit_annual_minor: i64, on_cost_bp: i32) -> i64 {
-    let hires = i128::try_from(hires).unwrap_or(0);
-    let each = i128::from(with_on_cost(unit_annual_minor, on_cost_bp));
-    i64::try_from(hires * each).unwrap_or(i64::MAX)
+pub fn annual_cost(hires: usize, unit_annual_minor: i64, on_cost_bp: i32) -> Option<i64> {
+    let hires = i128::try_from(hires).ok()?;
+    let each = i128::from(with_on_cost(unit_annual_minor, on_cost_bp)?);
+    i64::try_from(hires.checked_mul(each)?).ok()
 }
 
 /// The annual cost of one demand group, or why there is none: the reason is
 /// `salary_not_visible` first (money is withheld whatever else is known), then
-/// `insufficient_history` (no gap to cost), then `no_unit_cost`.
+/// `insufficient_history` (no gap to cost), then `no_unit_cost`; a cost too
+/// large to represent is `cost_overflow`, not a maximum.
 #[must_use]
 pub fn group_annual(
     hires: Option<usize>,
@@ -111,9 +123,10 @@ pub fn group_annual(
         (_, _, false) => (None, Some("salary_not_visible")),
         (None, _, _) => (None, Some("insufficient_history")),
         (Some(_), None, _) => (None, Some("no_unit_cost")),
-        (Some(h), Some((unit_cost, _)), true) => {
-            (Some(annual_cost(h, unit_cost, on_cost_bp)), None)
-        }
+        (Some(h), Some((unit_cost, _)), true) => match annual_cost(h, unit_cost, on_cost_bp) {
+            Some(cost) => (Some(cost), None),
+            None => (None, Some("cost_overflow")),
+        },
     }
 }
 
@@ -131,10 +144,14 @@ pub fn budget_in(
     }
 }
 
-/// Budget remaining after `cost`, and whether the cost fits.
+/// Budget remaining after `cost`, and whether the cost fits; `None` when the
+/// difference does not fit an `i64`.
 #[must_use]
-pub fn against_budget(cost_minor: i64, budget_minor: i64) -> (i64, bool) {
-    (budget_minor - cost_minor, cost_minor <= budget_minor)
+pub fn against_budget(cost_minor: i64, budget_minor: i64) -> Option<(i64, bool)> {
+    Some((
+        budget_minor.checked_sub(cost_minor)?,
+        cost_minor <= budget_minor,
+    ))
 }
 
 /// Whether `code` is an ISO-4217 currency code: three uppercase ASCII letters
@@ -177,10 +194,13 @@ mod tests {
     /// On-cost is a stated percentage, rounded; negative input is ignored.
     #[test]
     fn on_cost() {
-        assert_eq!(with_on_cost(4_000_000, 0), 4_000_000);
-        assert_eq!(with_on_cost(4_000_000, 2500), 5_000_000);
-        assert_eq!(with_on_cost(100, 3333), 133);
-        assert_eq!(with_on_cost(4_000_000, -500), 4_000_000);
+        assert_eq!(with_on_cost(4_000_000, 0), Some(4_000_000));
+        assert_eq!(with_on_cost(4_000_000, 2500), Some(5_000_000));
+        assert_eq!(with_on_cost(100, 3333), Some(133));
+        assert_eq!(with_on_cost(4_000_000, -500), Some(4_000_000));
+        assert_eq!(with_on_cost(i64::MAX, 2500), None, "overflow is unknown");
+        assert_eq!(with_on_cost(i64::MAX, 0), Some(i64::MAX));
+        assert_eq!(with_on_cost(1, i32::MAX), Some(214_749));
     }
 
     /// Hires close a shortfall; a surplus needs none.
@@ -213,16 +233,29 @@ mod tests {
         assert_eq!(weighted_unit_cost(&[(1, 2), (2, 2)]), Some(2));
         assert_eq!(weighted_unit_cost(&[(100, 0)]), None);
         assert_eq!(weighted_unit_cost(&[]), None);
-        assert_eq!(annual_cost(3, 4_000_000, 2500), 15_000_000);
-        assert_eq!(annual_cost(0, 4_000_000, 2500), 0);
+        assert_eq!(annual_cost(3, 4_000_000, 2500), Some(15_000_000));
+        assert_eq!(annual_cost(0, 4_000_000, 2500), Some(0));
+        assert_eq!(annual_cost(2, i64::MAX, 0), None);
+        assert_eq!(annual_cost(usize::MAX, i64::MAX, 0), None);
+        assert_eq!(annual_cost(1, i64::MAX, 2500), None);
+        assert_eq!(
+            weighted_unit_cost(&[(i64::MAX, usize::MAX), (i64::MAX, usize::MAX)]),
+            None
+        );
+        assert_eq!(
+            weighted_unit_cost(&[(1, usize::MAX), (1, usize::MAX)]),
+            Some(1)
+        );
+        assert_eq!(cohort_average_minor(&[i64::MAX; 5]), Some(i64::MAX));
     }
 
     /// Budget comparison and currency codes.
     #[test]
     fn budget_and_currency() {
-        assert_eq!(against_budget(80, 100), (20, true));
-        assert_eq!(against_budget(100, 100), (0, true));
-        assert_eq!(against_budget(120, 100), (-20, false));
+        assert_eq!(against_budget(80, 100), Some((20, true)));
+        assert_eq!(against_budget(100, 100), Some((0, true)));
+        assert_eq!(against_budget(120, 100), Some((-20, false)));
+        assert_eq!(against_budget(i64::MAX, i64::MIN), None);
         assert!(valid_currency("GBP"));
         assert!(!valid_currency("gbp") && !valid_currency("GB") && !valid_currency("GBPP"));
         assert!(!valid_currency("ZZZ") && valid_currency("IDR"));
@@ -251,6 +284,10 @@ mod tests {
         assert_eq!(
             group_annual(Some(2), unit, true, 2_000),
             (Some(12_000_000), None)
+        );
+        assert_eq!(
+            group_annual(Some(2), Some((i64::MAX, CostSource::Benchmark)), true, 0),
+            (None, Some("cost_overflow"))
         );
         assert_eq!(
             group_annual(Some(0), unit, true, 2_000),

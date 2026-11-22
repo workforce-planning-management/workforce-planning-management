@@ -178,6 +178,10 @@ pub(super) async fn category_suggestions(State(ctx): State<AppContext>) -> Resul
     )
     .fetch_all(db::pool(&ctx))
     .await?;
+    let unsuggested = rows
+        .iter()
+        .filter(|s| rules::suggest_category(&s.name).is_none())
+        .count();
     let out: Vec<serde_json::Value> = rows
         .iter()
         .filter_map(|s| {
@@ -196,7 +200,7 @@ pub(super) async fn category_suggestions(State(ctx): State<AppContext>) -> Resul
                        technical, domain); a suggestion for a planner to accept or correct, \
                        never applied automatically",
         "suggestions": out,
-        "unsuggested": rows.len() - out.len(),
+        "unsuggested": unsuggested,
     }))
 }
 
@@ -246,9 +250,9 @@ pub(super) async fn apply_suggestions(
                     Some(serde_json::json!({ "category": category })),
                 )
                 .await?;
-                applied += 1;
+                crate::controllers::tally::bump(&mut applied);
             }
-            _ => skipped += 1,
+            _ => crate::controllers::tally::bump(&mut skipped),
         }
     }
     tx.commit().await?;
@@ -310,9 +314,11 @@ pub(super) async fn delete_skill(
     let skill = find_live_skill(&ctx, &pid).await?;
     let usage = skill_usage(&ctx, skill.pid).await?;
     if !usage.deletable() {
+        let places = usage
+            .total()
+            .ok_or_else(|| crate::controllers::internal("a skill's use count overflowed"))?;
         return Err(unprocessable(&format!(
-            "the skill is in use ({} place(s)); merge it into another skill instead",
-            usage.total()
+            "the skill is in use ({places} place(s)); merge it into another skill instead",
         )));
     }
     let mut tx = db::pool(&ctx).begin().await?;
@@ -393,7 +399,7 @@ pub(super) async fn merge_skill(
             sqlx::query!("DELETE FROM worker_skills WHERE id = $1", row.id)
                 .execute(&mut *tx)
                 .await?;
-            merged += 1;
+            crate::controllers::tally::bump(&mut merged);
         } else {
             sqlx::query!(
                 "UPDATE worker_skills SET skill_pid = $2 WHERE id = $1",
@@ -402,7 +408,7 @@ pub(super) async fn merge_skill(
             )
             .execute(&mut *tx)
             .await?;
-            moved += 1;
+            crate::controllers::tally::bump(&mut moved);
         }
     }
     // Role requirements.
@@ -443,7 +449,7 @@ pub(super) async fn merge_skill(
             sqlx::query!("DELETE FROM role_skill_requirements WHERE id = $1", row.id)
                 .execute(&mut *tx)
                 .await?;
-            merged += 1;
+            crate::controllers::tally::bump(&mut merged);
         } else {
             sqlx::query!(
                 "UPDATE role_skill_requirements SET skill_pid = $2 WHERE id = $1",
@@ -452,7 +458,7 @@ pub(super) async fn merge_skill(
             )
             .execute(&mut *tx)
             .await?;
-            moved += 1;
+            crate::controllers::tally::bump(&mut moved);
         }
     }
     // Initiative skill shifts: the target's statement wins a conflict.
@@ -475,7 +481,7 @@ pub(super) async fn merge_skill(
             sqlx::query!("DELETE FROM initiative_skill_shifts WHERE id = $1", row.id)
                 .execute(&mut *tx)
                 .await?;
-            merged += 1;
+            crate::controllers::tally::bump(&mut merged);
         } else {
             sqlx::query!(
                 "UPDATE initiative_skill_shifts SET skill_pid = $2 WHERE id = $1",
@@ -484,7 +490,7 @@ pub(super) async fn merge_skill(
             )
             .execute(&mut *tx)
             .await?;
-            moved += 1;
+            crate::controllers::tally::bump(&mut moved);
         }
     }
     // Development-plan items: the target's item wins a conflict.
@@ -507,7 +513,7 @@ pub(super) async fn merge_skill(
             sqlx::query!("DELETE FROM development_plan_items WHERE id = $1", row.id)
                 .execute(&mut *tx)
                 .await?;
-            merged += 1;
+            crate::controllers::tally::bump(&mut merged);
         } else {
             sqlx::query!(
                 "UPDATE development_plan_items SET skill_pid = $2 WHERE id = $1",
@@ -516,7 +522,7 @@ pub(super) async fn merge_skill(
             )
             .execute(&mut *tx)
             .await?;
-            moved += 1;
+            crate::controllers::tally::bump(&mut moved);
         }
     }
     // External references: keep the target's per framework, move the rest.

@@ -183,13 +183,14 @@ pub fn gap(s: &Seat) -> Gap {
         },
         Holding::Held(held) => {
             let held = i64::from(held);
+            // Both are i64 from i32, so the differences always fit; unknown is the honest answer if they did not.
+            let beyond = |a: i64, b: i64| {
+                a.checked_sub(b)
+                    .map_or(Fte::Unknown, |d| Fte::Known { percent: d.max(0) })
+            };
             Gap {
-                vacant: Fte::Known {
-                    percent: (budget - held).max(0),
-                },
-                over: Fte::Known {
-                    percent: (held - budget).max(0),
-                },
+                vacant: beyond(budget, held),
+                over: beyond(held, budget),
             }
         }
         Holding::HeldUnknown => Gap {
@@ -231,7 +232,9 @@ fn add(total: Fte, next: Fte) -> Fte {
     match (total, next) {
         (Fte::Withheld, _) | (_, Fte::Withheld) => Fte::Withheld,
         (Fte::Unknown, _) | (_, Fte::Unknown) => Fte::Unknown,
-        (Fte::Known { percent: a }, Fte::Known { percent: b }) => Fte::Known { percent: a + b },
+        (Fte::Known { percent: a }, Fte::Known { percent: b }) => a
+            .checked_add(b)
+            .map_or(Fte::Unknown, |percent| Fte::Known { percent }),
     }
 }
 
@@ -250,7 +253,13 @@ pub fn establishment(seats: &[Seat], floor: Option<usize>) -> Vec<CostCentre> {
             let counted: Vec<&&Seat> = all.iter().filter(|s| in_establishment(&s.state)).collect();
             let mut by_state = BTreeMap::new();
             for s in &all {
-                *by_state.entry(s.state.clone()).or_insert(0) += 1;
+                #[allow(
+                    clippy::arithmetic_side_effects,
+                    reason = "a count of seats: bounded by the slice length"
+                )]
+                {
+                    *by_state.entry(s.state.clone()).or_insert(0) += 1;
+                }
             }
             let zero = Fte::Known { percent: 0 };
             let (mut budgeted, mut held, mut vacant, mut over, mut frozen_vacant) =
@@ -571,5 +580,13 @@ mod tests {
         assert_eq!(add(n(10), Fte::Withheld), Fte::Withheld);
         assert_eq!(add(Fte::Unknown, n(10)), Fte::Unknown);
         assert_eq!(add(n(10), n(5)), n(15));
+    }
+
+    #[test]
+    fn a_total_that_does_not_fit_is_unknown_not_wrapped() {
+        let big = Fte::Known { percent: i64::MAX };
+        let one = Fte::Known { percent: 1 };
+        assert_eq!(add(big, one), Fte::Unknown);
+        assert_eq!(add(one, one), Fte::Known { percent: 2 });
     }
 }

@@ -84,7 +84,9 @@ pub fn day_span(start: Date, end: Date) -> Result<i32, String> {
     if end < start {
         return Err(format!("end_on {end} is before start_on {start}"));
     }
-    let days = crate::dates::days_between(start, end) + 1;
+    let days = crate::dates::days_between(start, end)
+        .checked_add(1)
+        .ok_or_else(|| "leave spans more days than can be counted".to_string())?;
     if days > 366 {
         return Err(format!(
             "leave spans {days} calendar days; the cap is 366 calendar days"

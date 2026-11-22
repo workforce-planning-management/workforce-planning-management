@@ -77,17 +77,24 @@ pub fn validate(kind: &str, frequency: &str, minutes: i32, holders: i32) -> Resu
     Ok(())
 }
 
-/// Person-minutes a year one commitment absorbs: occurrences × minutes × people.
+/// Person-minutes a year one commitment absorbs: occurrences × minutes × people. `None` when the product does not fit an `i64`.
 #[must_use]
-pub fn minutes_per_year(c: &Commitment) -> i64 {
-    occurrences_per_year(&c.frequency).unwrap_or(0) * i64::from(c.minutes) * i64::from(c.holders)
+pub fn minutes_per_year(c: &Commitment) -> Option<i64> {
+    occurrences_per_year(&c.frequency)
+        .unwrap_or(0)
+        .checked_mul(i64::from(c.minutes))?
+        .checked_mul(i64::from(c.holders))
 }
 
-/// Hours a month for `minutes_a_year` person-minutes, in tenths of an hour, rounded to nearest.
+/// Hours a month for `minutes_a_year` person-minutes, in tenths of an hour, rounded to nearest. `None` when it does not fit an
+/// `i64`.
 #[must_use]
-pub fn tenth_hours_per_month(minutes_a_year: i64) -> i64 {
+pub fn tenth_hours_per_month(minutes_a_year: i64) -> Option<i64> {
     // minutes / 12 months / 60 → hours; ×10 for tenths; round half up on the whole division.
-    (minutes_a_year * 10 + 360) / 720
+    minutes_a_year
+        .checked_mul(10)?
+        .checked_add(360)?
+        .checked_div(720)
 }
 
 /// The load of one role.
@@ -116,37 +123,44 @@ pub struct Load {
 
 /// Add up the register. A role is senior if any of its commitments says so, so one stray entry
 /// cannot drop a role out of the senior total. Totals are summed before rounding, so rounding
-/// does not drift with the number of commitments.
+/// does not drift with the number of commitments. `None` when a total does not fit an `i64`.
 #[must_use]
-pub fn load(commitments: &[Commitment]) -> Load {
+pub fn load(commitments: &[Commitment]) -> Option<Load> {
     let mut by_role: BTreeMap<&str, (bool, usize, i64)> = BTreeMap::new();
     for c in commitments {
         let e = by_role.entry(c.role.as_str()).or_insert((false, 0, 0));
         e.0 |= c.senior;
-        e.1 += 1;
-        e.2 += minutes_per_year(c);
+        e.1 = e.1.checked_add(1)?;
+        e.2 = e.2.checked_add(minutes_per_year(c)?)?;
     }
-    let senior_total: i64 = by_role.values().filter(|v| v.0).map(|v| v.2).sum();
-    let all_total: i64 = by_role.values().map(|v| v.2).sum();
+    let senior_total = by_role
+        .values()
+        .filter(|v| v.0)
+        .try_fold(0_i64, |total, v| total.checked_add(v.2))?;
+    let all_total = by_role
+        .values()
+        .try_fold(0_i64, |total, v| total.checked_add(v.2))?;
     let mut roles: Vec<RoleLoad> = by_role
         .into_iter()
-        .map(|(role, (senior, n, mins))| RoleLoad {
-            role: role.to_string(),
-            senior,
-            commitments: n,
-            tenth_hours_per_month: tenth_hours_per_month(mins),
+        .map(|(role, (senior, n, mins))| {
+            Some(RoleLoad {
+                role: role.to_string(),
+                senior,
+                commitments: n,
+                tenth_hours_per_month: tenth_hours_per_month(mins)?,
+            })
         })
-        .collect();
+        .collect::<Option<_>>()?;
     roles.sort_by(|a, b| {
         b.tenth_hours_per_month
             .cmp(&a.tenth_hours_per_month)
             .then_with(|| a.role.cmp(&b.role))
     });
-    Load {
+    Some(Load {
         roles,
-        senior_tenth_hours_per_month: tenth_hours_per_month(senior_total),
-        all_tenth_hours_per_month: tenth_hours_per_month(all_total),
-    }
+        senior_tenth_hours_per_month: tenth_hours_per_month(senior_total)?,
+        all_tenth_hours_per_month: tenth_hours_per_month(all_total)?,
+    })
 }
 
 #[cfg(test)]
@@ -162,6 +176,34 @@ mod tests {
             minutes,
             holders,
         }
+    }
+
+    fn minutes_per_year(c: &Commitment) -> i64 {
+        super::minutes_per_year(c).unwrap()
+    }
+
+    fn tenth_hours_per_month(minutes: i64) -> i64 {
+        super::tenth_hours_per_month(minutes).unwrap()
+    }
+
+    fn load(commitments: &[Commitment]) -> Load {
+        super::load(commitments).unwrap()
+    }
+
+    #[test]
+    fn figures_that_do_not_fit_are_unknown() {
+        let huge = c("r", true, "weekly", i32::MAX, i32::MAX);
+        assert_eq!(super::minutes_per_year(&huge), None);
+        let fits = c("r", true, "daily_never", i32::MAX, i32::MAX);
+        assert_eq!(super::minutes_per_year(&fits), Some(0));
+        assert_eq!(super::tenth_hours_per_month(i64::MAX), None);
+        assert_eq!(super::tenth_hours_per_month(i64::MAX / 10), None);
+        assert_eq!(super::load(&[huge]), None);
+        // Each commitment fits, the role's total does not.
+        let big = c("r", true, "annually", i32::MAX, i32::MAX);
+        assert!(super::minutes_per_year(&big).is_some());
+        let two = [big.clone(), big.clone(), big.clone(), big.clone(), big];
+        assert_eq!(super::load(&two), None);
     }
 
     #[test]

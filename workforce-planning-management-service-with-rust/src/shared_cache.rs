@@ -90,6 +90,10 @@ impl Memory {
         Some(value.clone())
     }
 
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "`bytes` is the sum of the held entries' sizes, so removing one cannot go below zero; the size of one live key and value cannot overflow usize"
+    )]
     fn remove(&mut self, key: &str) {
         if let Some((value, _)) = self.entries.remove(key) {
             self.bytes -= key.len() + value.len();
@@ -97,8 +101,18 @@ impl Memory {
     }
 
     /// Hold `value`. Over `capacity`, expired entries go first and then everything, which only makes later lookups misses.
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "every operand is the length of a string held in memory or `bytes`, the sum of such lengths, so no sum can exceed the address space; a TTL too long to add to the clock is checked"
+    )]
     fn put(&mut self, key: &str, value: String, ttl: Option<Duration>, capacity: usize) {
         self.remove(key);
+        // An expiry that cannot be represented is a value that is not held: a miss, never one that lives forever.
+        let expires = match ttl.map(|ttl| Instant::now().checked_add(ttl)) {
+            None => None,
+            Some(Some(at)) => Some(at),
+            Some(None) => return,
+        };
         let size = key.len() + value.len();
         if self.bytes + size > capacity {
             let now = Instant::now();
@@ -116,10 +130,7 @@ impl Memory {
         }
         if size <= capacity {
             self.bytes += size;
-            self.entries.insert(
-                key.to_string(),
-                (value, ttl.map(|ttl| Instant::now() + ttl)),
-            );
+            self.entries.insert(key.to_string(), (value, expires));
         }
     }
 }
@@ -319,10 +330,18 @@ pub async fn put_in(cache: &Cache, namespace: Namespace, key: &str, value: &str)
     .await;
 }
 
+/// The generation after `current`, or `None` when the counter is spent: it is never wrapped, which would revive old entries.
+fn next_generation(current: u64) -> Option<u64> {
+    current.checked_add(1)
+}
+
 /// Orphan every entry in `namespace` now, by moving its generation on. Entries expire by their time to
 /// live. Use after the data behind a namespace changes.
 pub async fn invalidate_in(cache: &Cache, namespace: Namespace) {
-    let next = generation(cache, namespace).await + 1;
+    let Some(next) = next_generation(generation(cache, namespace).await) else {
+        // The counter is spent, so there is no newer generation to move to; entries still expire by their time to live.
+        return;
+    };
     let _ = bounded(
         "invalidate",
         cache.put(&generation_key(namespace), &next, None),
@@ -384,6 +403,21 @@ mod tests {
             make_key(Namespace::OrganizationName, 0, "k"),
             "namespaces do not collide"
         );
+    }
+
+    #[test]
+    fn a_spent_generation_counter_does_not_wrap() {
+        assert_eq!(next_generation(3), Some(4));
+        assert_eq!(next_generation(u64::MAX), None);
+    }
+
+    #[test]
+    fn a_ttl_beyond_the_clock_is_not_held() {
+        let mut memory = Memory::default();
+        memory.put("k", "v".to_string(), Some(Duration::MAX), 64);
+        assert!(memory.entries.is_empty() && memory.bytes == 0);
+        memory.put("k", "v".to_string(), Some(Duration::from_mins(1)), 64);
+        assert_eq!(memory.bytes, 2);
     }
 
     #[test]

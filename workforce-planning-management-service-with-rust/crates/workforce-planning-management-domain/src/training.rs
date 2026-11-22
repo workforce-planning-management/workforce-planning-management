@@ -9,6 +9,7 @@
 //! declared — that needs assessing first, not training.
 //!
 //! DB-free and clock-free (the start day is supplied).
+use jiff::Span;
 use jiff::civil::Date;
 use serde::Serialize;
 use std::collections::HashSet;
@@ -66,37 +67,40 @@ pub struct Recommendation {
 /// the person has already `completed` are skipped; the rest are taken
 /// cheapest-per-level first (ties by title, so it is stable) until the gap
 /// is covered. Whatever the courses leave is the per-level estimate.
+///
+/// `None` when the levels or hours add up to more than a `u32` holds: there is then no recommendation to make, and
+/// not a smaller one.
 #[must_use]
 pub fn recommend<S: std::hash::BuildHasher>(
     shortfall: u32,
     catalogue: &[Course],
     completed: &HashSet<String, S>,
     hours_per_level: u32,
-) -> Recommendation {
+) -> Option<Recommendation> {
     let mut available: Vec<&Course> = catalogue
         .iter()
         .filter(|c| !completed.contains(&c.course_ref) && c.levels > 0)
         .collect();
     // hours/levels ascending, compared by cross-multiplication (no floats).
     available.sort_by(|a, b| {
-        (u64::from(a.hours) * u64::from(b.levels))
-            .cmp(&(u64::from(b.hours) * u64::from(a.levels)))
+        cross(a.hours, b.levels)
+            .cmp(&cross(b.hours, a.levels))
             .then(a.title.cmp(&b.title))
             .then(a.course_ref.cmp(&b.course_ref))
     });
     let mut courses = Vec::new();
-    let mut course_levels = 0;
-    let mut hours = 0;
+    let mut course_levels: u32 = 0;
+    let mut hours: u32 = 0;
     for c in available {
         if course_levels >= shortfall {
             break;
         }
-        course_levels += c.levels;
-        hours += c.hours;
+        course_levels = course_levels.checked_add(c.levels)?;
+        hours = hours.checked_add(c.hours)?;
         courses.push(c.clone());
     }
     let estimated_levels = shortfall.saturating_sub(course_levels);
-    hours += estimated_levels * hours_per_level;
+    hours = hours.checked_add(estimated_levels.checked_mul(hours_per_level)?)?;
     let basis = if courses.is_empty() {
         Basis::Estimate
     } else if estimated_levels > 0 {
@@ -104,13 +108,22 @@ pub fn recommend<S: std::hash::BuildHasher>(
     } else {
         Basis::Courses
     };
-    Recommendation {
+    Some(Recommendation {
         courses,
         course_levels,
         estimated_levels,
         hours,
         basis,
-    }
+    })
+}
+
+/// `hours * levels` as a `u64`, for comparing two courses' hours per level without division.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the product of two u32 always fits a u64"
+)]
+fn cross(hours: u32, levels: u32) -> u64 {
+    u64::from(hours) * u64::from(levels)
 }
 
 /// The weekly hours a plan assumes: the request if given and within 1–40,
@@ -149,33 +162,38 @@ pub struct Slot {
 /// Lay items out one after another, in the order given, at `weekly_hours`:
 /// each takes `ceil(hours / weekly_hours)` whole weeks starting where the last
 /// ended. An item with no hours takes no time and is not placed.
+///
+/// `None` when the hours add up to more than a `u32` holds, or the plan runs past the last date the calendar has.
 #[must_use]
-pub fn schedule(hours: &[u32], weekly_hours: u32, start: Date) -> Vec<Slot> {
+pub fn schedule(hours: &[u32], weekly_hours: u32, start: Date) -> Option<Vec<Slot>> {
     let pace = weekly_hours.max(1);
     let mut cursor = start;
-    let mut total = 0;
+    let mut total: u32 = 0;
     hours
         .iter()
         .map(|h| {
-            total += h;
+            total = total.checked_add(*h)?;
             if *h == 0 {
-                return Slot {
+                return Some(Slot {
                     starts_on: None,
                     ends_on: None,
                     weeks: 0,
                     cumulative_hours: total,
-                };
+                });
             }
             let weeks = h.div_ceil(pace);
             let starts_on = cursor;
-            let ends_on = cursor + crate::dates::days(i64::from(weeks) * 7 - 1);
-            cursor = ends_on + crate::dates::days(1);
-            Slot {
+            let next = cursor
+                .checked_add(Span::new().try_weeks(i64::from(weeks)).ok()?)
+                .ok()?;
+            let ends_on = next.yesterday().ok()?;
+            cursor = next;
+            Some(Slot {
                 starts_on: Some(starts_on),
                 ends_on: Some(ends_on),
                 weeks,
                 cumulative_hours: total,
-            }
+            })
         })
         .collect()
 }
@@ -198,7 +216,7 @@ mod tests {
 
     #[test]
     fn no_catalogue_means_the_per_level_estimate_and_says_so() {
-        let r = recommend(3, &[], &none(), 30);
+        let r = recommend(3, &[], &none(), 30).unwrap();
         assert_eq!(
             (r.hours, r.basis, r.estimated_levels),
             (90, Basis::Estimate, 3)
@@ -214,7 +232,7 @@ mod tests {
             course("slow", 40, 1),
         ];
         // fast = 10/level, big = 30/level, slow = 40/level.
-        let r = recommend(2, &cat, &none(), 99);
+        let r = recommend(2, &cat, &none(), 99).unwrap();
         let refs: Vec<&str> = r.courses.iter().map(|c| c.course_ref.as_str()).collect();
         assert_eq!(refs, ["fast", "big"]);
         assert_eq!((r.course_levels, r.hours, r.basis), (3, 70, Basis::Courses));
@@ -222,7 +240,7 @@ mod tests {
 
     #[test]
     fn what_courses_leave_is_estimated_and_the_basis_is_mixed() {
-        let r = recommend(3, &[course("a", 20, 1)], &none(), 30);
+        let r = recommend(3, &[course("a", 20, 1)], &none(), 30).unwrap();
         assert_eq!((r.course_levels, r.estimated_levels), (1, 2));
         assert_eq!(r.hours, 20 + 60);
         assert_eq!(r.basis, Basis::Mixed);
@@ -232,17 +250,17 @@ mod tests {
     fn a_completed_course_is_not_recommended_again() {
         let cat = [course("done", 10, 1), course("next", 25, 1)];
         let completed: HashSet<String> = ["done".to_string()].into();
-        let r = recommend(1, &cat, &completed, 30);
+        let r = recommend(1, &cat, &completed, 30).unwrap();
         assert_eq!(r.courses.len(), 1);
         assert_eq!(r.courses[0].course_ref, "next");
         // Everything completed: back to the estimate.
         let all: HashSet<String> = ["done".to_string(), "next".to_string()].into();
-        assert_eq!(recommend(1, &cat, &all, 30).basis, Basis::Estimate);
+        assert_eq!(recommend(1, &cat, &all, 30).unwrap().basis, Basis::Estimate);
     }
 
     #[test]
     fn no_shortfall_needs_no_training() {
-        let r = recommend(0, &[course("a", 20, 1)], &none(), 30);
+        let r = recommend(0, &[course("a", 20, 1)], &none(), 30).unwrap();
         assert_eq!((r.hours, r.courses.len()), (0, 0));
     }
 
@@ -260,7 +278,7 @@ mod tests {
     #[test]
     fn items_run_one_after_another_in_whole_weeks() {
         let start = crate::dates::ymd(2026, 10, 5).unwrap();
-        let slots = schedule(&[10, 0, 3], 4, start);
+        let slots = schedule(&[10, 0, 3], 4, start).unwrap();
         // 10h at 4/week = 3 weeks: 5–25 Oct. Then a zero-hour item: not placed.
         assert_eq!(slots[0].weeks, 3);
         assert_eq!(slots[0].starts_on, Some(start));
@@ -282,5 +300,26 @@ mod tests {
             Some(crate::dates::ymd(2026, 10, 26).unwrap())
         );
         assert_eq!(slots[2].cumulative_hours, 13);
+    }
+
+    #[test]
+    fn totals_that_do_not_fit_are_no_recommendation_and_no_plan() {
+        let big = |r: &str, h, l| course(r, h, l);
+        // Levels add up past u32.
+        let cat = [big("a", 1, u32::MAX - 1), big("b", 1, 2)];
+        assert!(recommend(u32::MAX, &cat, &none(), 1).is_none());
+        // Hours add up past u32.
+        let cat = [big("a", u32::MAX, 1), big("b", 1, 1)];
+        assert!(recommend(2, &cat, &none(), 1).is_none());
+        // The estimate overflows, or tips the hours over.
+        assert!(recommend(10, &[], &none(), u32::MAX).is_none());
+        assert!(recommend(2, &[big("a", u32::MAX, 1)], &none(), 1).is_none());
+        let start = crate::dates::ymd(2026, 10, 5).unwrap();
+        assert!(schedule(&[u32::MAX, 1], 1, start).is_none(), "hours total");
+        assert!(
+            schedule(&[u32::MAX], 1, start).is_none(),
+            "weeks beyond a span"
+        );
+        assert!(schedule(&[1], 1, Date::MAX).is_none(), "past the calendar");
     }
 }

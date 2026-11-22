@@ -75,18 +75,101 @@ pub struct PayScale {
     pub allowances: Vec<Allowance>,
 }
 
+/// A band from its steps, each `(annual pay in pence, years to the next step)`.
 fn band(code: &'static str, closed: bool, steps: &[(i64, Option<u8>)]) -> Band {
     Band {
         code,
         closed,
         steps: steps
             .iter()
-            .map(|&(pounds, years_to_next)| Step {
-                annual_minor: pounds * 100,
+            .map(|&(annual_minor, years_to_next)| Step {
+                annual_minor,
                 years_to_next,
             })
             .collect(),
     }
+}
+
+/// The bands of [`national_2026_27`], lowest first.
+fn national_bands() -> Vec<Band> {
+    vec![
+        band("1", true, &[(2_630_000, None)]),
+        band("2", false, &[(2_630_000, None)]),
+        band("3", false, &[(2_630_000, Some(2)), (2_789_000, None)]),
+        band("4", false, &[(2_881_900, Some(3)), (3_162_600, None)]),
+        band(
+            "5",
+            false,
+            &[
+                (3_255_700, Some(2)),
+                (3_511_400, Some(2)),
+                (3_963_100, None),
+            ],
+        ),
+        band(
+            "6",
+            false,
+            &[
+                (4_055_900, Some(2)),
+                (4_280_500, Some(3)),
+                (4_884_100, None),
+            ],
+        ),
+        band(
+            "7",
+            false,
+            &[
+                (5_012_900, Some(2)),
+                (5_271_200, Some(3)),
+                (5_736_500, None),
+            ],
+        ),
+        band(
+            "8a",
+            false,
+            &[
+                (5_837_900, Some(2)),
+                (6_131_700, Some(3)),
+                (6_572_300, None),
+            ],
+        ),
+        band(
+            "8b",
+            false,
+            &[
+                (6_758_300, Some(2)),
+                (7_195_200, Some(3)),
+                (7_853_000, None),
+            ],
+        ),
+        band(
+            "8c",
+            false,
+            &[
+                (8_069_800, Some(2)),
+                (8_561_100, Some(3)),
+                (9_298_400, None),
+            ],
+        ),
+        band(
+            "8d",
+            false,
+            &[
+                (9_577_300, Some(2)),
+                (10_164_300, Some(3)),
+                (11_044_800, None),
+            ],
+        ),
+        band(
+            "9",
+            false,
+            &[
+                (11_447_500, Some(2)),
+                (12_137_700, Some(3)),
+                (13_173_200, None),
+            ],
+        ),
+    ]
 }
 
 /// The national banded pay scale, from 1 April 2026 (the government's pay
@@ -103,52 +186,7 @@ pub fn national_2026_27() -> PayScale {
         uplift_tenths_percent: 33,
         source: "Government pay circular for 2026/27, Annex 1",
         minutes_per_week: 2250,
-        bands: vec![
-            band("1", true, &[(26_300, None)]),
-            band("2", false, &[(26_300, None)]),
-            band("3", false, &[(26_300, Some(2)), (27_890, None)]),
-            band("4", false, &[(28_819, Some(3)), (31_626, None)]),
-            band(
-                "5",
-                false,
-                &[(32_557, Some(2)), (35_114, Some(2)), (39_631, None)],
-            ),
-            band(
-                "6",
-                false,
-                &[(40_559, Some(2)), (42_805, Some(3)), (48_841, None)],
-            ),
-            band(
-                "7",
-                false,
-                &[(50_129, Some(2)), (52_712, Some(3)), (57_365, None)],
-            ),
-            band(
-                "8a",
-                false,
-                &[(58_379, Some(2)), (61_317, Some(3)), (65_723, None)],
-            ),
-            band(
-                "8b",
-                false,
-                &[(67_583, Some(2)), (71_952, Some(3)), (78_530, None)],
-            ),
-            band(
-                "8c",
-                false,
-                &[(80_698, Some(2)), (85_611, Some(3)), (92_984, None)],
-            ),
-            band(
-                "8d",
-                false,
-                &[(95_773, Some(2)), (101_643, Some(3)), (110_448, None)],
-            ),
-            band(
-                "9",
-                false,
-                &[(114_475, Some(2)), (121_377, Some(3)), (131_732, None)],
-            ),
-        ],
+        bands: national_bands(),
         allowances: vec![
             Allowance {
                 code: "sleeping_in",
@@ -219,31 +257,34 @@ pub enum Position {
 }
 
 /// Locate `salary_minor` on `band`. Pure: callers normalise part-time pay to a
-/// full-time equivalent first.
+/// full-time equivalent first. `None` when the distance from a step does not
+/// fit an `i64`.
 #[must_use]
-pub fn locate(band: &Band, salary_minor: i64) -> Position {
+pub fn locate(band: &Band, salary_minor: i64) -> Option<Position> {
     let steps = &band.steps;
     let entry = steps.first().map_or(0, |s| s.annual_minor);
     let top = steps.last().map_or(0, |s| s.annual_minor);
     if salary_minor < entry {
-        return Position::BelowEntry {
-            shortfall_minor: entry - salary_minor,
-        };
+        return Some(Position::BelowEntry {
+            shortfall_minor: entry.checked_sub(salary_minor)?,
+        });
     }
     if salary_minor > top {
-        return Position::AboveTop {
-            excess_minor: salary_minor - top,
-        };
+        return Some(Position::AboveTop {
+            excess_minor: salary_minor.checked_sub(top)?,
+        });
     }
     if let Some(i) = steps.iter().position(|s| s.annual_minor == salary_minor) {
-        return Position::OnStep { step: i + 1 };
+        return Some(Position::OnStep {
+            step: i.checked_add(1)?,
+        });
     }
     // Between: the last step strictly below the salary.
     let below = steps
         .iter()
         .rposition(|s| s.annual_minor < salary_minor)
-        .map_or(1, |i| i + 1);
-    Position::BetweenSteps { below_step: below }
+        .map_or(Some(1), |i| i.checked_add(1))?;
+    Some(Position::BetweenSteps { below_step: below })
 }
 
 /// Whether a person on a step can move up yet.
@@ -277,16 +318,15 @@ pub fn progression(band: &Band, step: usize, months_on_step: u32) -> Option<Prog
     let (Some(years), Some(next)) = (current.years_to_next, band.steps.get(step)) else {
         return Some(Progression::AtTop);
     };
-    let needed = u32::from(years) * 12;
-    Some(if months_on_step >= needed {
-        Progression::Due {
+    let needed = u32::from(years).checked_mul(12)?;
+    Some(match needed.checked_sub(months_on_step) {
+        None | Some(0) => Progression::Due {
             next_annual_minor: next.annual_minor,
-        }
-    } else {
-        Progression::NotYet {
-            months_remaining: needed - months_on_step,
+        },
+        Some(months_remaining) => Progression::NotYet {
+            months_remaining,
             next_annual_minor: next.annual_minor,
-        }
+        },
     })
 }
 
@@ -355,35 +395,57 @@ mod tests {
         let scale = national();
         let b5 = scale.band("5").unwrap();
         assert_eq!(
-            locate(b5, 3_255_600),
+            locate(b5, 3_255_600).unwrap(),
             Position::BelowEntry {
                 shortfall_minor: 100
             }
         );
-        assert_eq!(locate(b5, 3_255_700), Position::OnStep { step: 1 });
+        assert_eq!(locate(b5, 3_255_700).unwrap(), Position::OnStep { step: 1 });
         assert_eq!(
-            locate(b5, 3_400_000),
+            locate(b5, 3_400_000).unwrap(),
             Position::BetweenSteps { below_step: 1 }
         );
-        assert_eq!(locate(b5, 3_511_400), Position::OnStep { step: 2 });
+        assert_eq!(locate(b5, 3_511_400).unwrap(), Position::OnStep { step: 2 });
         assert_eq!(
-            locate(b5, 3_600_000),
+            locate(b5, 3_600_000).unwrap(),
             Position::BetweenSteps { below_step: 2 }
         );
-        assert_eq!(locate(b5, 3_963_100), Position::OnStep { step: 3 });
+        assert_eq!(locate(b5, 3_963_100).unwrap(), Position::OnStep { step: 3 });
         assert_eq!(
-            locate(b5, 3_963_101),
+            locate(b5, 3_963_101).unwrap(),
             Position::AboveTop { excess_minor: 1 }
         );
         // A single-rate band: only on, below or above.
         let b2 = scale.band("2").unwrap();
-        assert_eq!(locate(b2, 2_630_000), Position::OnStep { step: 1 });
+        assert_eq!(locate(b2, 2_630_000).unwrap(), Position::OnStep { step: 1 });
         assert_eq!(
-            locate(b2, 2_700_000),
+            locate(b2, 2_700_000).unwrap(),
             Position::AboveTop {
                 excess_minor: 70_000
             }
         );
+    }
+
+    /// A distance that does not fit is unknown, not wrapped.
+    #[test]
+    fn locate_at_the_edges_of_the_type() {
+        let scale = national();
+        let b5 = scale.band("5").unwrap();
+        assert_eq!(locate(b5, i64::MIN), None);
+        let odd = band("x", false, &[(-1, None)]);
+        assert_eq!(locate(&odd, i64::MAX), None);
+        assert_eq!(
+            locate(&odd, i64::MAX - 1),
+            Some(Position::AboveTop {
+                excess_minor: i64::MAX
+            })
+        );
+        let empty = band("y", false, &[]);
+        assert_eq!(
+            locate(&empty, 1),
+            Some(Position::AboveTop { excess_minor: 1 })
+        );
+        assert!(progression(b5, 1, u32::MAX).is_some());
     }
 
     /// Eligibility is whole years on the step, exact at the boundary; the top

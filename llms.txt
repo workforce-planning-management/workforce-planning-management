@@ -11,7 +11,7 @@ Start with the specification: it is the single source of truth, and no code
 lands without it. A change is a requirement (WPM-R*), a design decision
 (WPM-D*), a task (WPM-T*), code and tests.
 
-Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 134 migrations, 97 controllers, 70 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
+Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted in spec/implementation-status.md); requirements up to WPM-R217; decisions up to WPM-D150; 134 migrations, 98 controllers, 70 pages. Counts come from [spec/implementation-status.md](spec/implementation-status.md); they count what is declared, not what passes.
 
 ## Specification
 
@@ -80,7 +80,7 @@ Status as of 2026-10-30: tasks WPM-T1–T399 (done, open and part done counted i
 - [spec/serial-comma/index.md](spec/serial-comma/index.md): convention: prose uses the serial comma
 - [spec/oxford-spelling/index.md](spec/oxford-spelling/index.md): convention: prose uses Oxford spelling
 - [spec/calendar-days-or-business-days/index.md](spec/calendar-days-or-business-days/index.md): convention: every duration in days says calendar days or business days
-- [spec/arithmetic/index.md](spec/arithmetic/index.md): convention: arithmetic never panics or wraps; use checked_* and return None
+- [spec/rust-checked-arithmetic/index.md](spec/rust-checked-arithmetic/index.md): convention: Rust arithmetic never panics, wraps, truncates or invents a number; checked_* with declared fallbacks (RCA-*)
 - [spec/special-files-for-public-repos/index.md](spec/special-files-for-public-repos/index.md): convention: the special top-level files a public repository carries
 - [spec/lily-design-system-svelte-with-picker-bar/index.md](spec/lily-design-system-svelte-with-picker-bar/index.md): convention: the Lily Design System with the picker bar in each Svelte app
 - [spec/contents-for-global-sharing-with-svelte/index.md](spec/contents-for-global-sharing-with-svelte/index.md): convention: tables of contents for global sharing with Svelte

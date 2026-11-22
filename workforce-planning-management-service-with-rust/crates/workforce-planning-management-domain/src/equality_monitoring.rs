@@ -221,12 +221,18 @@ pub fn summarise(
     let mut org: BTreeMap<String, usize> = BTreeMap::new();
     let mut dept: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
     for (department, value) in rows {
-        *org.entry(value.clone()).or_insert(0) += 1;
-        *dept
-            .entry(department.clone())
-            .or_default()
-            .entry(value.clone())
-            .or_insert(0) += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "counts of responses: bounded by the slice length"
+        )]
+        {
+            *org.entry(value.clone()).or_insert(0) += 1;
+            *dept
+                .entry(department.clone())
+                .or_default()
+                .entry(value.clone())
+                .or_insert(0) += 1;
+        }
     }
     let organization = (responded >= floor).then(|| {
         org.iter()
@@ -241,7 +247,9 @@ pub fn summarise(
     Summary {
         headcount,
         responded,
-        completeness_percent: (headcount > 0).then(|| responded * 100 / headcount),
+        completeness_percent: responded
+            .checked_mul(100)
+            .and_then(|n| n.checked_div(headcount)),
         organization,
         by_department: departments_ok.then_some(dept),
     }

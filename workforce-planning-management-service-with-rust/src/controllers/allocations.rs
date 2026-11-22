@@ -568,7 +568,10 @@ async fn summary(
                 let cell = cells
                     .entry((row.pool_pid, row.source_ref.clone(), *month))
                     .or_default();
-                cell.0 += i64::from(row.fte_centi);
+                cell.0 = cell
+                    .0
+                    .checked_add(i64::from(row.fte_centi))
+                    .ok_or_else(|| super::internal("allocation FTE total overflowed"))?;
                 cell.1.insert(row.worker_pid);
             }
         }
@@ -586,9 +589,12 @@ async fn summary(
     .fetch_all(db::pool(&ctx))
     .await?
     {
-        *claims
+        let claim = claims
             .entry((Some(row.pool_pid), row.programme_ref, row.month.get()))
-            .or_default() += row.fte_centi;
+            .or_default();
+        *claim = claim
+            .checked_add(row.fte_centi)
+            .ok_or_else(|| super::internal("programme demand FTE total overflowed"))?;
     }
     let keys: BTreeSet<CellKey> = cells
         .keys()

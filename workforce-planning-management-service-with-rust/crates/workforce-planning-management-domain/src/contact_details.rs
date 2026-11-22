@@ -42,7 +42,10 @@ pub const DIGIT_ZEROS: [u32; 31] = [
 pub fn fold_width(c: char) -> char {
     match u32::from(c) {
         0x3000 => ' ',
-        code @ 0xff01..=0xff5e => char::from_u32(code - 0xfee0).unwrap_or(c),
+        code @ 0xff01..=0xff5e => code
+            .checked_sub(0xfee0)
+            .and_then(char::from_u32)
+            .unwrap_or(c),
         _ => c,
     }
 }
@@ -55,10 +58,10 @@ pub fn digit_value(c: char) -> Option<u32> {
         return Some(d);
     }
     let code = u32::from(c);
+    // A digit set starts at its zero and runs ten code points; the offset is the value.
     DIGIT_ZEROS
         .iter()
-        .find(|zero| (**zero..**zero + 10).contains(&code))
-        .map(|zero| code - zero)
+        .find_map(|zero| code.checked_sub(*zero).filter(|offset| *offset < 10))
 }
 
 /// How many digits a telephone number holds, or `None` when it holds a character a number does
@@ -68,15 +71,14 @@ pub fn digit_value(c: char) -> Option<u32> {
 pub fn phone_digits(value: &str) -> Option<usize> {
     let folded: String = value.chars().map(fold_width).collect();
     let body = folded.strip_prefix('+').unwrap_or(&folded);
-    let mut digits = 0;
-    for c in body.chars() {
-        if digit_value(c).is_some() {
-            digits += 1;
-        } else if !matches!(c, ' ' | '-' | '.' | '(' | ')') {
-            return None;
-        }
+    let is_digit = |c: &char| digit_value(*c).is_some();
+    if body
+        .chars()
+        .any(|c| !is_digit(&c) && !matches!(c, ' ' | '-' | '.' | '(' | ')'))
+    {
+        return None;
     }
-    Some(digits)
+    Some(body.chars().filter(is_digit).count())
 }
 
 /// Trim, and treat blank as absent.

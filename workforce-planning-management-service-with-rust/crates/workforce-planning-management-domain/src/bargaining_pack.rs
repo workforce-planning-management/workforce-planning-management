@@ -92,8 +92,14 @@ fn group_by(rows: &[&Row], key: impl Fn(&Row) -> String) -> Vec<(String, usize, 
     let mut map: BTreeMap<String, (usize, i64)> = BTreeMap::new();
     for row in rows {
         let entry = map.entry(key(row)).or_default();
-        entry.0 += 1;
-        entry.1 += i64::from(row.fte_percent);
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a count of rows and a sum of i32 percentages in an i64: both far below their limits for any slice that fits in memory"
+        )]
+        {
+            entry.0 += 1;
+            entry.1 += i64::from(row.fte_percent);
+        }
     }
     map.into_iter().map(|(k, (n, fte))| (k, n, fte)).collect()
 }
@@ -131,14 +137,12 @@ fn one_cell(n: usize, floor: usize) -> Cell {
 #[must_use]
 pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
     let working: Vec<&Row> = rows.iter().filter(|r| r.in_work(as_of)).collect();
-    let year_ago = as_of - crate::dates::days(365);
-    let starters = rows
-        .iter()
-        .filter(|r| r.hired_on > year_ago && r.hired_on <= as_of)
-        .count();
+    // In the 365 days to `as_of`: `as_of` less the day itself is under 365 (no date arithmetic to overflow).
+    let in_year = |d: Date| d <= as_of && crate::dates::days_between(d, as_of) < 365;
+    let starters = rows.iter().filter(|r| in_year(r.hired_on)).count();
     let leavers = rows
         .iter()
-        .filter(|r| r.terminated_on.is_some_and(|e| e > year_ago && e <= as_of))
+        .filter(|r| r.terminated_on.is_some_and(in_year))
         .count();
     if working.len() < floor.max(1) {
         // Too few to say anything about: the unit is a handful of people, and every figure would point at them.

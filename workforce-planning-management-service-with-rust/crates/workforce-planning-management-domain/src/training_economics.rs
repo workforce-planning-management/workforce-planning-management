@@ -99,10 +99,8 @@ pub fn plan_cost(steps: &[Step]) -> PlanCost {
     };
     for step in steps {
         match &step.fee {
-            Fee::NotACourse => {}
-            Fee::Unknown => out.courses_without_fee += 1,
+            Fee::NotACourse | Fee::Unknown => {}
             Fee::Known { minor, currency } => {
-                out.courses_with_fee += 1;
                 let total = out.fees.entry(currency.clone()).or_insert(0);
                 *total = total.saturating_add(*minor);
             }
@@ -112,6 +110,15 @@ pub fn plan_cost(steps: &[Step]) -> PlanCost {
             out.estimated_hours = out.estimated_hours.saturating_add(step.hours);
         }
     }
+    // Counted from the steps themselves, so they cannot exceed the number of steps.
+    out.courses_with_fee = steps
+        .iter()
+        .filter(|s| matches!(s.fee, Fee::Known { .. }))
+        .count();
+    out.courses_without_fee = steps
+        .iter()
+        .filter(|s| matches!(s.fee, Fee::Unknown))
+        .count();
     out
 }
 
@@ -141,9 +148,9 @@ impl PlanCost {
 fn divide(numerator: i128, denominator: i128) -> Option<i64> {
     let half = denominator / 2;
     let rounded = if numerator >= 0 {
-        numerator.checked_add(half)? / denominator
+        numerator.checked_add(half)?.checked_div(denominator)?
     } else {
-        numerator.checked_sub(half)? / denominator
+        numerator.checked_sub(half)?.checked_div(denominator)?
     };
     i64::try_from(rounded).ok()
 }
@@ -215,7 +222,15 @@ pub fn hours_cost(
     if year <= 0 {
         return HoursCost::Unresolved { missing };
     }
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "BP is 10 000 and the other operand is under 2^64, so both results fit an i128"
+    )]
     let factor = i128::from(annual).saturating_mul(BP + i128::from(on_cost.max(0)));
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "BP is 10 000 and the year is under 2^64, so the product fits an i128"
+    )]
     let denominator = BP * i128::from(year);
     match (
         divide(factor, denominator),
@@ -307,8 +322,12 @@ fn days_of(annual: i64, days: i64) -> Option<i64> {
 }
 
 /// Whether `a` and `b` lie within [`SIMILAR_MARGIN_BP`] of the larger.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "every operand is a widened i64 or a small constant, so each product is under 2^80 and fits an i128"
+)]
 fn within_margin(a: i64, b: i64) -> bool {
-    let gap = (i128::from(a) - i128::from(b)).abs();
+    let gap = i128::from(a.abs_diff(b));
     let larger = i128::from(a).abs().max(i128::from(b).abs());
     gap * BP <= larger * i128::from(SIMILAR_MARGIN_BP)
 }
@@ -441,14 +460,14 @@ pub struct Viability {
 /// Present value of `amount` after `period` periods at `rate_bp`, half away from zero at each step.
 fn present_value(amount: i64, period: u32, rate_bp: u32) -> Option<i128> {
     let mut value = i128::from(amount);
-    let divisor = BP + i128::from(rate_bp);
+    let divisor = BP.checked_add(i128::from(rate_bp))?;
     for _ in 0..period {
         let scaled = value.checked_mul(BP)?;
         let half = divisor / 2;
         value = if scaled >= 0 {
-            (scaled + half) / divisor
+            scaled.checked_add(half)?.checked_div(divisor)?
         } else {
-            (scaled - half) / divisor
+            scaled.checked_sub(half)?.checked_div(divisor)?
         };
     }
     Some(value)
@@ -462,9 +481,12 @@ fn payback_of(flows: &[Flow], rate_bp: u32, last_out: u32) -> Option<Payback> {
     for f in sorted {
         let value = present_value(f.amount_minor, f.period, rate_bp)?;
         let before = running;
-        running += value;
+        running = running.checked_add(value)?;
         if before < 0 && running >= 0 && value > 0 && f.period > last_out {
-            let fraction = u32::try_from(-before * BP / value).unwrap_or(0).min(9_999);
+            let fraction =
+                u32::try_from(before.checked_neg()?.checked_mul(BP)?.checked_div(value)?)
+                    .unwrap_or(0)
+                    .min(9_999);
             return Some(Payback {
                 periods: f.period.saturating_sub(last_out).saturating_sub(1),
                 fraction_bp: fraction,
@@ -507,14 +529,13 @@ pub fn assess(flows: &[Flow], rate_bp: u32) -> Viability {
     if benefit == 0 {
         return unmeasured(Absent::NoBenefit);
     }
-    let mut npv: i128 = 0;
-    for f in flows {
-        match present_value(f.amount_minor, f.period, rate_bp) {
-            Some(value) => npv += value,
-            None => return unmeasured(Absent::OutOfRange),
-        }
-    }
-    let Ok(npv_minor) = i64::try_from(npv) else {
+    let Some(npv_minor) = flows
+        .iter()
+        .try_fold(0_i128, |npv, f| {
+            npv.checked_add(present_value(f.amount_minor, f.period, rate_bp)?)
+        })
+        .and_then(|npv| i64::try_from(npv).ok())
+    else {
         return unmeasured(Absent::OutOfRange);
     };
     let last_out = flows
@@ -650,14 +671,17 @@ pub fn plan_viability(
         period: b.year,
         amount_minor: b.amount_minor,
     });
-    let series = |out: i64| -> Vec<Flow> {
-        std::iter::once(Flow {
-            period: 0,
-            amount_minor: -out,
-        })
-        .filter(|f| f.amount_minor != 0)
-        .chain(inflows.clone())
-        .collect()
+    // `None` when the outlay cannot be negated (`i64::MIN`).
+    let series = |out: i64| -> Option<Vec<Flow>> {
+        Some(
+            std::iter::once(Flow {
+                period: 0,
+                amount_minor: out.checked_neg()?,
+            })
+            .filter(|f| f.amount_minor != 0)
+            .chain(inflows.clone())
+            .collect(),
+        )
     };
     let with_hours = match hours {
         HoursCost::Resolved {
@@ -666,7 +690,8 @@ pub fn plan_viability(
             ..
         } if *pay == code => fees
             .checked_add(*minor)
-            .map(|out| assess(&series(out), rate)),
+            .and_then(series)
+            .map(|flows| assess(&flows, rate)),
         HoursCost::Resolved { .. } => {
             missing.push("one_currency");
             None
@@ -676,10 +701,14 @@ pub fn plan_viability(
             None
         }
     };
+    let on_fees = series(fees).map(|flows| assess(&flows, rate));
+    if on_fees.is_none() {
+        missing.push("fee");
+    }
     PlanViability {
         currency,
         rate_bp,
-        on_fees: Some(assess(&series(fees), rate)),
+        on_fees,
         with_hours,
         missing,
     }
@@ -1139,6 +1168,26 @@ mod tests {
     }
 
     #[test]
+    fn an_outlay_that_cannot_be_negated_is_unknown_not_a_number() {
+        let cost = plan_cost(&[fee(i64::MIN, "GBP", 1)]);
+        let hours = hours_cost(1, pay(180_000), Some(0), Some(1_800));
+        let v = plan_viability(&cost, &hours, &[benefit(1, 9_000, "GBP")], Some(0));
+        assert_eq!(v.on_fees, None);
+        assert_eq!(v.missing, vec!["fee"]);
+        let present = plan_cost(&[fee(i64::MAX, "GBP", 1)]);
+        let big_hours = HoursCost::Resolved {
+            currency: "GBP".to_string(),
+            hours: 1,
+            hourly_minor: 1,
+            minor: 1,
+            on_cost_bp: 0,
+            full_time_annual_hours: 1_800,
+        };
+        let v = plan_viability(&present, &big_hours, &[benefit(1, 1, "GBP")], Some(0));
+        assert_eq!(v.with_hours, None, "fees plus hours overflow");
+    }
+
+    #[test]
     fn an_unknown_fee_means_no_figure_at_all() {
         let cost = plan_cost(&[fee(1_000, "GBP", 10), unknown(5)]);
         let hours = hours_cost(15, pay(180_000), Some(0), Some(1_800));
@@ -1216,6 +1265,10 @@ mod tests {
         assert_eq!(divide(5, 2), Some(3));
         assert_eq!(divide(-5, 2), Some(-3));
         assert_eq!(divide(-4, 2), Some(-2));
+        assert_eq!(divide(5, 0), None, "a zero divisor is unknown");
+        assert_eq!(divide(-5, 0), None);
+        assert_eq!(divide(i128::MAX, 2), None);
+        assert_eq!(divide(i128::MIN, 2), None);
     }
 
     #[test]

@@ -109,7 +109,7 @@ pub fn merge(needs: &[Need], declared: &BTreeMap<Uuid, i32>) -> Vec<Gap> {
             let (status, shortfall) = match have {
                 None => (Status::Undeclared, None),
                 Some(level) if level >= required => (Status::Met, None),
-                Some(level) => (Status::Below, Some(required - level)),
+                Some(level) => (Status::Below, required.checked_sub(level)),
             };
             Gap {
                 skill,
@@ -125,12 +125,22 @@ pub fn merge(needs: &[Need], declared: &BTreeMap<Uuid, i32>) -> Vec<Gap> {
 }
 
 /// A gap's priority: importance weight × levels short. Zero for a gap that is
-/// met or unknown — an unknown has no size.
+/// met or unknown — an unknown has no size. `None` when it does not fit a `u32`.
 #[must_use]
-pub fn priority(gap: &Gap) -> u32 {
-    gap.shortfall.map_or(0, |s| {
-        weight(&gap.importance) * u32::try_from(s).unwrap_or(0)
+pub fn priority(gap: &Gap) -> Option<u32> {
+    gap.shortfall.map_or(Some(0), |s| {
+        weight(&gap.importance).checked_mul(u32::try_from(s).unwrap_or(0))
     })
+}
+
+/// Highest priority first; a priority too large for a `u32` is above every one that fits.
+fn higher_priority_first(a: &Gap, b: &Gap) -> std::cmp::Ordering {
+    match (priority(a), priority(b)) {
+        (Some(x), Some(y)) => y.cmp(&x),
+        (None, Some(_)) => std::cmp::Ordering::Less,
+        (Some(_), None) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    }
 }
 
 /// Order for reading: real gaps by priority (highest first), then the
@@ -144,7 +154,7 @@ pub fn rank(gaps: &mut [Gap]) {
     gaps.sort_by(|a, b| {
         tier(a)
             .cmp(&tier(b))
-            .then(priority(b).cmp(&priority(a)))
+            .then(higher_priority_first(a, b))
             .then(weight(&b.importance).cmp(&weight(&a.importance)))
             .then(a.skill.cmp(&b.skill))
     });
@@ -190,16 +200,17 @@ pub struct SkillRollup {
 
 /// Roll `rows` up per skill, highest score first (then critical-below, then
 /// skill id).
+/// `None` when a count or a sum does not fit its type.
 #[must_use]
-pub fn rollup(rows: &[Row]) -> Vec<SkillRollup> {
+pub fn rollup(rows: &[Row]) -> Option<Vec<SkillRollup>> {
     let counted: Vec<(Row, usize)> = rows.iter().map(|r| (r.clone(), 1)).collect();
     rollup_counted(&counted)
 }
 
 /// [`rollup`] over groups: each entry is a row and the number of people who share it. The same answer
-/// as one row per person, from the distinct rows instead.
+/// as one row per person, from the distinct rows instead. `None` when a count or a sum does not fit its type.
 #[must_use]
-pub fn rollup_counted(rows: &[(Row, usize)]) -> Vec<SkillRollup> {
+pub fn rollup_counted(rows: &[(Row, usize)]) -> Option<Vec<SkillRollup>> {
     let mut by_skill: BTreeMap<Uuid, SkillRollup> = BTreeMap::new();
     let mut depts: BTreeMap<Uuid, BTreeMap<String, usize>> = BTreeMap::new();
     for (r, n) in rows {
@@ -215,25 +226,29 @@ pub fn rollup_counted(rows: &[(Row, usize)]) -> Vec<SkillRollup> {
             score: 0,
             departments: Vec::new(),
         });
-        let times = i32::try_from(n).unwrap_or(i32::MAX);
-        let times_u32 = u32::try_from(n).unwrap_or(u32::MAX);
-        e.needed_by += n;
+        e.needed_by = e.needed_by.checked_add(n)?;
         match r.status {
-            Status::Met => e.met += n,
-            Status::Undeclared => e.undeclared += n,
+            Status::Met => e.met = e.met.checked_add(n)?,
+            Status::Undeclared => e.undeclared = e.undeclared.checked_add(n)?,
             Status::Below => {
-                e.below += n;
+                let times = i32::try_from(n).ok()?;
+                let times_u32 = u32::try_from(n).ok()?;
+                e.below = e.below.checked_add(n)?;
                 let s = r.shortfall.unwrap_or(0);
-                e.total_shortfall += s * times;
-                e.score += weight(&r.importance) * u32::try_from(s).unwrap_or(0) * times_u32;
+                e.total_shortfall = e.total_shortfall.checked_add(s.checked_mul(times)?)?;
+                let added = weight(&r.importance)
+                    .checked_mul(u32::try_from(s).unwrap_or(0))?
+                    .checked_mul(times_u32)?;
+                e.score = e.score.checked_add(added)?;
                 if r.importance == "critical" {
-                    e.critical_below += n;
+                    e.critical_below = e.critical_below.checked_add(n)?;
                 }
-                *depts
+                let in_department = depts
                     .entry(r.skill)
                     .or_default()
                     .entry(r.department.clone())
-                    .or_default() += n;
+                    .or_default();
+                *in_department = in_department.checked_add(n)?;
             }
         }
     }
@@ -256,7 +271,7 @@ pub fn rollup_counted(rows: &[(Row, usize)]) -> Vec<SkillRollup> {
             .then(b.critical_below.cmp(&a.critical_below))
             .then(a.skill.cmp(&b.skill))
     });
-    out
+    Some(out)
 }
 
 #[cfg(test)]
@@ -309,8 +324,8 @@ mod tests {
         assert_eq!(by(1).status, Status::Met);
         assert_eq!((by(2).status, by(2).shortfall), (Status::Below, Some(2)));
         assert_eq!((by(3).status, by(3).shortfall), (Status::Undeclared, None));
-        assert_eq!(priority(by(3)), 0, "an unknown has no size");
-        assert_eq!(priority(by(2)), 6, "critical (3) × 2 levels");
+        assert_eq!(priority(by(3)), Some(0), "an unknown has no size");
+        assert_eq!(priority(by(2)), Some(6), "critical (3) × 2 levels");
     }
 
     #[test]
@@ -349,7 +364,7 @@ mod tests {
             row(1, "ops", Status::Undeclared, None, "critical"),
             row(2, "eng", Status::Below, Some(3), "useful"),
         ];
-        let out = rollup(&rows);
+        let out = rollup(&rows).unwrap();
         assert_eq!(out.len(), 2);
         let first = &out[0];
         assert_eq!(first.skill, id(1));
@@ -369,8 +384,77 @@ mod tests {
 
     #[test]
     fn an_all_unknown_skill_scores_zero_but_is_still_listed() {
-        let out = rollup(&[row(9, "eng", Status::Undeclared, None, "critical")]);
+        let out = rollup(&[row(9, "eng", Status::Undeclared, None, "critical")]).unwrap();
         assert_eq!(out.len(), 1);
         assert_eq!((out[0].score, out[0].undeclared, out[0].below), (0, 1, 0));
+    }
+
+    /// A sum or product that does not fit is unknown for the whole roll-up, never capped.
+    #[test]
+    fn overflow_is_unknown_not_capped() {
+        let below =
+            |n: usize, short: i32| (row(1, "eng", Status::Below, Some(short), "critical"), n);
+        let other = |status| (row(1, "eng", status, None, "critical"), usize::MAX);
+        assert!(
+            rollup_counted(&[below(usize::MAX, 1)]).is_none(),
+            "count past i32"
+        );
+        assert!(
+            rollup_counted(&[below(2, i32::MAX)]).is_none(),
+            "shortfall total"
+        );
+        assert!(
+            rollup_counted(&[below(1, i32::MAX), below(1, 1)]).is_none(),
+            "sum of shortfalls"
+        );
+        assert!(
+            rollup_counted(&[below(1, 1_500_000_000), below(1, 1_500_000_000)]).is_none(),
+            "score sum or total"
+        );
+        assert!(
+            rollup_counted(&[below(1, i32::MAX)]).is_none(),
+            "weight x shortfall"
+        );
+        assert!(rollup_counted(&[other(Status::Met), other(Status::Met)]).is_none());
+        assert!(rollup_counted(&[other(Status::Undeclared), other(Status::Undeclared)]).is_none());
+        assert!(
+            rollup_counted(&[
+                other(Status::Met),
+                (row(1, "eng", Status::Met, None, "x"), 1)
+            ])
+            .is_none()
+        );
+        assert!(
+            rollup_counted(&[
+                (row(1, "eng", Status::Below, Some(1), "useful"), 1),
+                below(i32::MAX as usize, 1),
+                below(i32::MAX as usize, 1)
+            ])
+            .is_none()
+        );
+        let huge = Gap {
+            skill: id(1),
+            required: i32::MAX,
+            importance: "critical".into(),
+            sources: vec![],
+            declared: None,
+            status: Status::Below,
+            shortfall: Some(i32::MAX),
+        };
+        assert_eq!(priority(&huge), None);
+        let small = Gap {
+            shortfall: Some(1),
+            ..huge.clone()
+        };
+        assert_eq!(priority(&small), Some(3));
+        let mut gaps = vec![small.clone(), huge.clone(), huge.clone()];
+        rank(&mut gaps);
+        assert_eq!(gaps[0].shortfall, Some(i32::MAX));
+        assert_eq!(gaps[2].shortfall, Some(1));
+        let wide = merge(
+            &[need(1, i32::MAX, "useful", Source::Role)],
+            &have(&[(1, -1)]),
+        );
+        assert_eq!(wide[0].shortfall, None, "the difference does not fit");
     }
 }

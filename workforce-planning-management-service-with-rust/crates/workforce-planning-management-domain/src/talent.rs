@@ -212,10 +212,13 @@ pub fn pipeline_transition(current: &str, to: &str) -> Result<(), String> {
 /// members have left the pipeline).
 #[must_use]
 pub fn pipeline_health(stages: &[String]) -> PipelineHealth {
-    let mut by_stage: BTreeMap<String, usize> = BTreeMap::new();
-    for stage in stages {
-        *by_stage.entry(stage.clone()).or_default() += 1;
-    }
+    // Each count is taken from the list itself, so it cannot exceed the list's length.
+    let by_stage: BTreeMap<String, usize> = stages
+        .iter()
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .map(|stage| (stage.clone(), stages.iter().filter(|s| *s == stage).count()))
+        .collect();
     let ready = by_stage.get("ready").copied().unwrap_or(0);
     let live = stages
         .iter()
@@ -397,6 +400,10 @@ pub fn tenure_bucket(months: i64) -> &'static str {
 /// when the hire date is in the future, so a future start is visible
 /// rather than silently zero).
 #[must_use]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "a Date's year is an i16, so the difference times 12 plus a month is under 2^20 and fits an i64"
+)]
 pub fn months_of_service(hired_on: Date, as_of: Date) -> i64 {
     let years = i64::from(as_of.year()) - i64::from(hired_on.year());
     let months = years * 12 + i64::from(as_of.month()) - i64::from(hired_on.month());

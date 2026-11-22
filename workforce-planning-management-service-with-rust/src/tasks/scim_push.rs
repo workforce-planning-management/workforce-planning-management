@@ -72,14 +72,31 @@ pub fn config_from_env() -> std::result::Result<Config, String> {
 fn depth(pid: Uuid, manager_of: &HashMap<Uuid, Option<Uuid>>) -> usize {
     let mut at = pid;
     let mut n = 0;
-    while let Some(Some(up)) = manager_of.get(&at) {
-        n += 1;
-        at = *up;
-        if n > 64 {
+    for level in 1..=65 {
+        let Some(Some(up)) = manager_of.get(&at) else {
             break;
-        }
+        };
+        n = level;
+        at = *up;
     }
     n
+}
+
+/// The attempt count and the time of the next try after a push fails, given the `previous` failures. `attempts` counts this
+/// failure; the first retry is one minute away (the webhook task counts the same way).
+///
+/// # Errors
+///
+/// When the count or the time does not fit.
+fn after_failure(previous: i32, now: Timestamp) -> Result<(i32, Timestamp)> {
+    let attempts = previous
+        .checked_add(1)
+        .ok_or_else(|| Error::string("the SCIM attempt count exceeds the supported range"))?;
+    let wait = scim::backoff_seconds(u32::try_from(previous).unwrap_or(0));
+    let retry_at = now
+        .checked_add(jiff::SignedDuration::from_secs(wait))
+        .map_err(|e| Error::string(&format!("the SCIM retry time leaves the calendar: {e}")))?;
+    Ok((attempts, retry_at))
 }
 
 enum Outcome {
@@ -208,6 +225,10 @@ async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
 #[allow(clippy::too_many_lines)] // load → classify → push each change → record the outcomes, linearly
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each summary counter rises by one per worker handled in this run, so it is at most the number of workers read"
+)]
 pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) -> Result<Summary> {
     let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
@@ -293,16 +314,15 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
             }
             Outcome::Failed(why) => {
                 summary.failed += 1;
-                let attempts = held.as_ref().map_or(0, |h| h.attempts) + 1;
-                // `attempts` already counts this failure; the first retry is one minute away (the webhook task counts the same way).
-                let wait = scim::backoff_seconds(u32::try_from(attempts - 1).unwrap_or(0));
+                let (attempts, retry_at) =
+                    after_failure(held.as_ref().map_or(0, |h| h.attempts), now)?;
                 (
                     known,
                     held.as_ref().and_then(|h| h.body_hash.clone()),
                     held.as_ref()
                         .and_then(|h| h.pushed_at.map(SqlTimestamp::get)),
                     attempts,
-                    Some(now + jiff::SignedDuration::from_secs(wait)),
+                    Some(retry_at),
                     Some(why),
                 )
             }
@@ -336,5 +356,30 @@ impl Task for ScimPush {
             )));
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod arithmetic_tests {
+    use super::*;
+
+    #[test]
+    fn a_failure_counts_one_more_and_backs_off() {
+        let now = Timestamp::UNIX_EPOCH;
+        let (attempts, at) = after_failure(0, now).expect("first failure");
+        assert_eq!(attempts, 1);
+        assert_eq!(at, Timestamp::from_second(60).expect("second"));
+        assert!(after_failure(i32::MAX, now).is_err());
+        assert!(after_failure(1, Timestamp::MAX).is_err());
+    }
+
+    #[test]
+    fn depth_counts_managers_and_stops_at_a_loop() {
+        let (a, b) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let chain = HashMap::from([(a, Some(b)), (b, None)]);
+        assert_eq!(depth(a, &chain), 1);
+        assert_eq!(depth(b, &chain), 0);
+        let cycle = HashMap::from([(a, Some(b)), (b, Some(a))]);
+        assert_eq!(depth(a, &cycle), 65);
     }
 }

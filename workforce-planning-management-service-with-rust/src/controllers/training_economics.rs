@@ -153,7 +153,12 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
         .iter()
         .filter(|item| item.status != "abandoned")
         .map(|item| {
-            let levels = u32::try_from(item.target_level - item.current_level).unwrap_or(0);
+            // Levels still to climb: none when the target is not above the current level.
+            let levels = if item.target_level > item.current_level {
+                item.target_level.abs_diff(item.current_level)
+            } else {
+                0
+            };
             let each = per_level
                 .get(&item.skill_pid)
                 .and_then(|h| u32::try_from(*h).ok())
@@ -563,7 +568,7 @@ async fn candidate_steps(
         .collect();
     let mut steps = Vec::new();
     for gap in gaps.iter().filter(|g| g.status == Status::Below) {
-        let plan = catalogue.recommend(candidate.pid, gap);
+        let plan = catalogue.recommend(candidate.pid, gap)?;
         let course_hours: u32 = plan.courses.iter().map(|c| c.hours).sum();
         for course in &plan.courses {
             steps.push(Step {
@@ -575,10 +580,14 @@ async fn candidate_steps(
                 estimated_hours: false,
             });
         }
-        if plan.hours > course_hours {
+        if let Some(rest) = plan
+            .hours
+            .checked_sub(course_hours)
+            .filter(|rest| *rest > 0)
+        {
             steps.push(Step {
                 fee: Fee::NotACourse,
-                hours: plan.hours - course_hours,
+                hours: rest,
                 estimated_hours: true,
             });
         }
@@ -624,11 +633,15 @@ async fn seat_unit(
     ))
 }
 
-/// An annual figure with on-cost, at the seat's budgeted FTE.
-fn loaded(annual: i64, on_cost_bp: i64, fte_percent: i32) -> i64 {
-    let with_cost = cost_rules::with_on_cost(annual, i32::try_from(on_cost_bp).unwrap_or(0));
-    let scaled = i128::from(with_cost) * i128::from(fte_percent);
-    i64::try_from((scaled + 50) / 100).unwrap_or(i64::MAX)
+/// An annual figure with on-cost, at the seat's budgeted FTE. `None` when the on-cost is not a basis-point figure that fits
+/// or the result does not fit an `i64`: an overflow is an unknown, never a maximum.
+fn loaded(annual: i64, on_cost_bp: i64, fte_percent: i32) -> Option<i64> {
+    let with_cost = cost_rules::with_on_cost(annual, i32::try_from(on_cost_bp).ok()?)?;
+    let scaled = i128::from(with_cost)
+        .checked_mul(i128::from(fte_percent))?
+        .checked_add(50)?
+        .checked_div(100)?;
+    i64::try_from(scaled).ok()
 }
 
 /// The recruitment cost when it is stated in `currency`; it is never converted.
@@ -727,12 +740,12 @@ async fn train_or_hire(
     let unit = seat_unit(&ctx, &position, &currency).await?;
     let seat_annual = unit
         .zip(on_cost)
-        .map(|((annual, _), bp)| loaded(annual, bp, position.budget_fte_percent));
+        .and_then(|((annual, _), bp)| loaded(annual, bp, position.budget_fte_percent));
     let candidate_annual = candidate
         .salary_minor
         .filter(|_| pay_visible)
         .zip(on_cost)
-        .map(|(annual, bp)| loaded(annual, bp, position.budget_fte_percent));
+        .and_then(|(annual, bp)| loaded(annual, bp, position.budget_fte_percent));
     let (vacancy, filled) = vacancy_days(&ctx, &position.organization_ref).await?;
 
     let train = TrainSide {
@@ -839,6 +852,10 @@ fn fees_by_ref(courses: Vec<skill_courses::Model>) -> HashMap<String, (i64, Stri
 /// completed enrollment at its course's catalogue fee, in the year it was completed; a completion with no single fee is
 /// counted, not priced, and no other actual is invented.
 #[debug_handler]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the unpriced count rises by one per completion read, so it is at most the number of completions"
+)]
 async fn learning_budget(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -903,7 +920,15 @@ async fn learning_budget(
                     .or_insert(0);
                 *total = total.saturating_add(*minor);
             }
-            None => *unpriced.entry(name.clone()).or_insert(0) += 1,
+            None => {
+                #[allow(
+                    clippy::arithmetic_side_effects,
+                    reason = "a count of the lines of one plan"
+                )]
+                {
+                    *unpriced.entry(name.clone()).or_insert(0) += 1;
+                }
+            }
         }
     }
     let names: BTreeSet<&String> = budgets
@@ -1015,4 +1040,22 @@ pub fn routes() -> Routes {
         .add("/positions/{pid}/train-or-hire", get(train_or_hire))
         .add("/learning-budgets", get(learning_budget))
         .add("/learning-budgets", put(set_budget))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn loaded_rounds_and_scales_by_fte() {
+        // 100_000 + 25% = 125_000, at 50% FTE = 62_500.
+        assert_eq!(loaded(100_000, 2_500, 50), Some(62_500));
+    }
+
+    #[test]
+    fn loaded_is_unknown_not_a_maximum_on_overflow() {
+        assert_eq!(loaded(i64::MAX, 10_000, 100), None);
+        assert_eq!(loaded(i64::MAX, 0, 200), None);
+        assert_eq!(loaded(1, i64::from(i32::MAX) + 1, 100), None);
+    }
 }

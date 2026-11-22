@@ -202,9 +202,11 @@ pub fn check_cutoff(bp: i64) -> Result<i64, String> {
     }
 }
 
-/// Divide, rounding half up, for any sign. `den` is positive.
-fn div_round(num: i128, den: i128) -> i128 {
-    (2 * num + den).div_euclid(2 * den)
+/// Divide, rounding half up, for any sign. `den` is positive; `None` when it is not or a figure does not fit.
+fn div_round(num: i128, den: i128) -> Option<i128> {
+    num.checked_mul(2)?
+        .checked_add(den)?
+        .checked_div_euclid(den.checked_mul(2)?)
 }
 
 fn clamp_i64(v: i128) -> i64 {
@@ -214,20 +216,27 @@ fn clamp_i64(v: i128) -> i64 {
 /// Compa-ratio in basis points: pay over the midpoint. `None` when the midpoint is not above zero.
 #[must_use]
 pub fn compa_bp(salary: i64, r: Range) -> Option<i64> {
-    let twice_mid = i128::from(r.min) + i128::from(r.max);
-    (twice_mid > 0).then(|| clamp_i64(div_round(i128::from(salary) * 20_000, twice_mid)))
+    let twice_mid = i128::from(r.min).checked_add(i128::from(r.max))?;
+    if twice_mid <= 0 {
+        return None;
+    }
+    Some(clamp_i64(div_round(
+        i128::from(salary).checked_mul(20_000)?,
+        twice_mid,
+    )?))
 }
 
 /// Range penetration in basis points; `None` when the band has one rate (or none).
 #[must_use]
 pub fn penetration_bp(salary: i64, r: Range) -> Option<i64> {
-    let width = i128::from(r.max) - i128::from(r.min);
-    (width > 0).then(|| {
-        clamp_i64(div_round(
-            (i128::from(salary) - i128::from(r.min)) * 10_000,
-            width,
-        ))
-    })
+    let width = i128::from(r.max).checked_sub(i128::from(r.min))?;
+    if width <= 0 {
+        return None;
+    }
+    let through = i128::from(salary)
+        .checked_sub(i128::from(r.min))?
+        .checked_mul(10_000)?;
+    Some(clamp_i64(div_round(through, width)?))
 }
 
 #[derive(Clone, Copy)]
@@ -236,9 +245,14 @@ struct Point {
     pen: Option<i64>,
 }
 
-fn mean(values: impl Iterator<Item = i64>) -> Option<i64> {
-    let (sum, n) = values.fold((0_i128, 0_i128), |(s, n), v| (s + i128::from(v), n + 1));
-    (n > 0).then(|| clamp_i64(div_round(sum, n)))
+fn mean(mut values: impl Iterator<Item = i64>) -> Option<i64> {
+    let (sum, n) = values.try_fold((0_i128, 0_i128), |(s, n), v| {
+        Some((s.checked_add(i128::from(v))?, n.checked_add(1)?))
+    })?;
+    if n == 0 {
+        return None;
+    }
+    Some(clamp_i64(div_round(sum, n)?))
 }
 
 fn stat(points: &[Point], floor: usize) -> Figure<Stat> {
@@ -310,13 +324,16 @@ type Built = (Dimension, Vec<(String, Figure<Stat>)>);
 fn outlier(figure: &Figure<Stat>, reference: Option<i64>, cutoff_bp: i64) -> Outlier {
     match (figure, reference) {
         (Figure::Shown { value }, Some(all)) => {
-            let delta = value.compa_mean_bp - all;
+            let Some(delta) = value.compa_mean_bp.checked_sub(all) else {
+                return Outlier::Unknown;
+            };
             if delta > cutoff_bp {
-                Outlier::Above { delta_bp: delta }
-            } else if delta < -cutoff_bp {
-                Outlier::Below { delta_bp: -delta }
-            } else {
-                Outlier::No
+                return Outlier::Above { delta_bp: delta };
+            }
+            match delta.checked_neg() {
+                Some(below) if below > cutoff_bp => Outlier::Below { delta_bp: below },
+                Some(_) => Outlier::No,
+                None => Outlier::Unknown,
             }
         }
         _ => Outlier::Unknown,
@@ -328,21 +345,22 @@ fn outlier(figure: &Figure<Stat>, reference: Option<i64>, cutoff_bp: i64) -> Out
 pub fn analyse(entries: &[Entry], floor: usize, cutoff_bp: i64) -> Report {
     let floor = floor.max(1);
     let no_pay = entries.iter().filter(|e| e.salary_minor.is_none()).count();
+    let point_of = |e: &Entry| {
+        let (salary, range) = (e.salary_minor?, e.range?);
+        Some(Point {
+            compa: compa_bp(salary, range)?,
+            pen: penetration_bp(salary, range),
+        })
+    };
     let rows: Vec<(&Entry, Point)> = entries
         .iter()
-        .filter_map(|e| {
-            let (salary, range) = (e.salary_minor?, e.range?);
-            Some((
-                e,
-                Point {
-                    compa: compa_bp(salary, range)?,
-                    pen: penetration_bp(salary, range),
-                },
-            ))
-        })
+        .filter_map(|e| Some((e, point_of(e)?)))
         .collect();
     // Pay with no usable band (none known, or a midpoint not above zero) is left out as having no band.
-    let no_band = entries.len() - no_pay - rows.len();
+    let no_band = entries
+        .iter()
+        .filter(|e| e.salary_minor.is_some() && point_of(e).is_none())
+        .count();
     let everyone: Vec<Point> = rows.iter().map(|(_, p)| *p).collect();
     let overall_mean = mean(everyone.iter().map(|p| p.compa));
 
@@ -466,6 +484,43 @@ mod tests {
     }
 
     #[test]
+    fn the_extreme_values_of_the_type_are_handled() {
+        let top = Range {
+            min: i64::MAX,
+            max: i64::MAX,
+        };
+        assert_eq!(compa_bp(i64::MAX, top), Some(10_000));
+        let wide = Range {
+            min: i64::MIN,
+            max: i64::MAX,
+        };
+        assert_eq!(penetration_bp(i64::MAX, wide), Some(10_000));
+        assert_eq!(mean([i64::MAX, i64::MAX].into_iter()), Some(i64::MAX));
+        assert_eq!(mean(std::iter::empty()), None);
+        let shown = |compa_mean_bp: i64| Figure::Shown {
+            value: Stat {
+                workers: 5,
+                compa_mean_bp,
+                penetration: Figure::Withheld,
+            },
+        };
+        assert_eq!(
+            outlier(&shown(i64::MAX), Some(i64::MIN), 500),
+            Outlier::Unknown
+        );
+        assert_eq!(outlier(&shown(i64::MIN), Some(0), 500), Outlier::Unknown);
+        assert_eq!(
+            outlier(&shown(10_600), Some(10_000), 500),
+            Outlier::Above { delta_bp: 600 }
+        );
+        assert_eq!(
+            outlier(&shown(9_400), Some(10_000), 500),
+            Outlier::Below { delta_bp: 600 }
+        );
+        assert_eq!(outlier(&shown(10_100), Some(10_000), 500), Outlier::No);
+    }
+
+    #[test]
     fn a_band_with_no_midpoint_gives_no_ratio() {
         let zero = Range { min: 0, max: 0 };
         assert_eq!(compa_bp(1, zero), None);
@@ -473,10 +528,13 @@ mod tests {
 
     #[test]
     fn rounding_is_half_up_for_either_sign() {
-        assert_eq!(div_round(1, 2), 1);
-        assert_eq!(div_round(-1, 2), 0);
-        assert_eq!(div_round(-3, 2), -1);
-        assert_eq!(div_round(5, 3), 2);
+        assert_eq!(div_round(1, 2), Some(1));
+        assert_eq!(div_round(-1, 2), Some(0));
+        assert_eq!(div_round(-3, 2), Some(-1));
+        assert_eq!(div_round(5, 3), Some(2));
+        assert_eq!(div_round(1, 0), None, "no zero divisor");
+        assert_eq!(div_round(i128::MAX, 1), None, "overflow is unknown");
+        assert_eq!(div_round(1, i128::MAX), None);
     }
 
     #[test]

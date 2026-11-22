@@ -409,7 +409,11 @@ async fn add_agreement(
         payload.effective_from,
         newest.as_ref().map(|n| n.effective_from.get()),
     ))?;
-    let version = newest.map_or(1, |n| n.version + 1);
+    let version = newest.map_or(Ok(1), |n| {
+        n.version
+            .checked_add(1)
+            .ok_or_else(|| super::internal("the agreement version overflowed"))
+    })?;
     let new_pid = Uuid::new_v4();
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(

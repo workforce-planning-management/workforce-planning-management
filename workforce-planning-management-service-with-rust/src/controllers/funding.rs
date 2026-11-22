@@ -425,7 +425,8 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     })
     .collect();
     let floor = DEFAULT_FLOOR;
-    let share = rules::contingent_share_counted(&groups, floor);
+    let share = rules::contingent_share_counted(&groups, floor)
+        .ok_or_else(|| super::internal("contingent share totals overflowed"))?;
     // Only the contractors and fixed-term people are read whole: the engagement figures are about them.
     let contingent_staff = employed(&ctx, scope.as_deref(), today, None, true).await?;
     // The funding ends of employed people, with their FTE.
@@ -445,7 +446,8 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         .into_iter()
         .filter_map(|f| Some((f.ends_on.get(), employed.get(&f.worker_pid)?.fte_percent)))
         .collect();
-    let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor);
+    let horizon = rules::funding_horizon(&ends, today, HORIZON_MONTHS, floor)
+        .ok_or_else(|| super::internal("funding horizon counts overflowed"))?;
     let counts = engagement_counts(&ctx, &contingent_staff, today, floor).await?;
     let trend = snapshot_trend(&ctx, scope.as_deref(), floor).await?;
     db::audit(

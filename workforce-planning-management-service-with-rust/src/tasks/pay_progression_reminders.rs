@@ -48,10 +48,22 @@ impl Task for PayProgressionReminders {
                 })?,
             Err(_) => 30,
         };
-        let sent = send_reminders(ctx, as_of, as_of + crate::dates::days(days_ahead)).await?;
+        let sent = send_reminders(ctx, as_of, window_end(as_of, days_ahead)?).await?;
         tracing::info!(%as_of, days_ahead, sent, "pay-progression reminders sent");
         Ok(())
     }
+}
+
+/// The last day of a window of `days_ahead` days from `as_of`.
+///
+/// # Errors
+///
+/// When the day is outside the supported calendar.
+fn window_end(as_of: Date, days_ahead: i64) -> Result<Date> {
+    jiff::Span::new()
+        .try_days(days_ahead)
+        .and_then(|span| as_of.checked_add(span))
+        .map_err(|e| Error::string(&format!("the reminder window leaves the calendar: {e}")))
 }
 
 /// Tell everyone who becomes eligible between `from` and `to` (inclusive); returns
@@ -60,6 +72,10 @@ impl Task for PayProgressionReminders {
 /// # Errors
 ///
 /// A database error.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<usize> {
     let mut sent = 0;
     let positions = sqlx::query!(
@@ -120,4 +136,17 @@ pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<us
         sent += 1;
     }
     Ok(sent)
+}
+
+#[cfg(test)]
+mod window_tests {
+    use super::*;
+
+    #[test]
+    fn the_window_end_is_days_ahead_and_refuses_the_calendar_edge() {
+        let day = crate::dates::ymd(2026, 3, 1).expect("date");
+        assert_eq!(window_end(day, 2).ok(), crate::dates::ymd(2026, 3, 3));
+        assert!(window_end(Date::MAX, 1).is_err());
+        assert!(window_end(day, i64::MAX).is_err());
+    }
 }

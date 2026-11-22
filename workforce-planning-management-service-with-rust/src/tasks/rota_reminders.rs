@@ -43,10 +43,22 @@ impl Task for RotaReminders {
                 .ok_or_else(|| Error::string("days_ahead must be a number from 0 to 14"))?,
             Err(_) => 1,
         };
-        let sent = send_reminders(ctx, as_of + crate::dates::days(days_ahead)).await?;
+        let sent = send_reminders(ctx, window_end(as_of, days_ahead)?).await?;
         tracing::info!(%as_of, days_ahead, sent, "on-call reminders sent");
         Ok(())
     }
+}
+
+/// The day `days_ahead` days after `as_of`.
+///
+/// # Errors
+///
+/// When the day is outside the supported calendar.
+fn window_end(as_of: Date, days_ahead: i64) -> Result<Date> {
+    jiff::Span::new()
+        .try_days(days_ahead)
+        .and_then(|span| as_of.checked_add(span))
+        .map_err(|e| Error::string(&format!("the reminder day leaves the calendar: {e}")))
 }
 
 /// Remind everyone whose on-call turn starts on `starts_on`; returns how many
@@ -55,6 +67,10 @@ impl Task for RotaReminders {
 /// # Errors
 ///
 /// A database error.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn send_reminders(ctx: &AppContext, starts_on: Date) -> Result<usize> {
     let mut sent = 0;
     for (rota, worker) in turns_starting_on(ctx, starts_on).await? {
@@ -83,4 +99,17 @@ pub async fn send_reminders(ctx: &AppContext, starts_on: Date) -> Result<usize> 
         sent += 1;
     }
     Ok(sent)
+}
+
+#[cfg(test)]
+mod window_tests {
+    use super::*;
+
+    #[test]
+    fn the_window_end_is_days_ahead_and_refuses_the_calendar_edge() {
+        let day = crate::dates::ymd(2026, 3, 1).expect("date");
+        assert_eq!(window_end(day, 2).ok(), crate::dates::ymd(2026, 3, 3));
+        assert!(window_end(Date::MAX, 1).is_err());
+        assert!(window_end(day, i64::MAX).is_err());
+    }
 }

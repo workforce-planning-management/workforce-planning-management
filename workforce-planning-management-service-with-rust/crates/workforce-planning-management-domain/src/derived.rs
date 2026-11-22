@@ -72,31 +72,40 @@ pub fn find(key: &str) -> Option<&'static Derivation> {
 /// `floor` or there is nothing to divide by.
 #[must_use]
 pub fn turnover_bp(leavers: usize, opening: usize, closing: usize, floor: usize) -> Option<i64> {
-    if opening.max(closing) < floor || opening + closing == 0 {
+    let both = opening.checked_add(closing)?;
+    if opening.max(closing) < floor || both == 0 {
         return None;
     }
     let leavers = i64::try_from(leavers).ok()?;
-    let sum = i64::try_from(opening + closing).ok()?;
-    Some((leavers * 40_000 + sum) / (2 * sum))
+    let sum = i64::try_from(both).ok()?;
+    leavers
+        .checked_mul(40_000)?
+        .checked_add(sum)?
+        .checked_div(sum.checked_mul(2)?)
 }
 
 /// The contingent share, in basis points, of the department rows of one snapshot date. `None` for no
-/// rows, a row without the split, fewer people than `floor`, or no FTE.
+/// rows, a row without the split, fewer people than `floor`, no FTE, or a figure that does not fit.
 #[must_use]
 pub fn contingent_bp(rows: &[SplitRow], floor: usize) -> Option<i64> {
     if rows.is_empty() {
         return None;
     }
-    let mut contingent = 0;
+    let mut contingent: i64 = 0;
     for r in rows {
-        contingent += r.contractor_fte? + r.fixed_term_fte?;
+        contingent = contingent.checked_add(r.contractor_fte?.checked_add(r.fixed_term_fte?)?)?;
     }
-    let people: i64 = rows.iter().map(|r| r.headcount).sum();
-    let fte: i64 = rows.iter().map(|r| r.fte).sum();
+    let people = rows
+        .iter()
+        .try_fold(0_i64, |a, r| a.checked_add(r.headcount))?;
+    let fte = rows.iter().try_fold(0_i64, |a, r| a.checked_add(r.fte))?;
     if usize::try_from(people).ok()? < floor || fte <= 0 {
         return None;
     }
-    Some((contingent * 20_000 + fte) / (2 * fte))
+    contingent
+        .checked_mul(20_000)?
+        .checked_add(fte)?
+        .checked_div(fte.checked_mul(2)?)
 }
 
 /// How many pools are over in a month, given each pool's cell. `None` for no pools, or when any cell
@@ -186,5 +195,57 @@ mod tests {
             assert!(!d.unit.is_empty() && !d.definition.is_empty());
         }
         assert!(find("single_points_of_failure").is_none());
+    }
+
+    #[test]
+    fn arithmetic_that_does_not_fit_is_absent_not_wrapped() {
+        assert_eq!(
+            turnover_bp(1, usize::MAX, 1, 0),
+            None,
+            "headcounts overflow"
+        );
+        assert_eq!(turnover_bp(1, usize::MAX / 2, 1, 0), None, "sum beyond i64");
+        assert_eq!(
+            turnover_bp(usize::MAX, 10, 10, 0),
+            None,
+            "leavers beyond i64"
+        );
+        assert_eq!(
+            turnover_bp(usize::MAX / 2, 10, 10, 0),
+            None,
+            "product overflows"
+        );
+        let big = row(10, i64::MAX, Some(i64::MAX), Some(1));
+        assert_eq!(contingent_bp(&[big], 10), None, "contingent FTE overflows");
+        let rows = [
+            row(10, i64::MAX, Some(1), Some(1)),
+            row(10, 1, Some(1), Some(1)),
+        ];
+        assert_eq!(contingent_bp(&rows, 10), None, "FTE total overflows");
+        let rows = [
+            row(i64::MAX, 10, Some(1), Some(1)),
+            row(1, 10, Some(1), Some(1)),
+        ];
+        assert_eq!(contingent_bp(&rows, 10), None, "headcount total overflows");
+        let rows = [
+            row(10, 10, Some(i64::MAX), Some(0)),
+            row(10, 10, Some(1), Some(0)),
+        ];
+        assert_eq!(contingent_bp(&rows, 10), None, "contingent total overflows");
+        assert_eq!(
+            contingent_bp(&[row(10, i64::MAX, Some(i64::MAX), Some(0))], 10),
+            None,
+            "scaled share overflows"
+        );
+        assert_eq!(
+            contingent_bp(&[row(10, i64::MAX / 2 + 1, Some(0), Some(0))], 10),
+            None,
+            "doubled FTE overflows"
+        );
+        assert_eq!(
+            contingent_bp(&[row(10, i64::MAX - 5, Some(1), Some(0))], 10),
+            None,
+            "rounding add overflows"
+        );
     }
 }

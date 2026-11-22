@@ -120,10 +120,10 @@ pub struct Progress {
 }
 
 impl Progress {
-    /// Still to do on recorded entries (never negative).
+    /// Still to do on recorded entries (never negative); `None` when the difference does not fit an `i64`.
     #[must_use]
-    pub fn remaining(&self) -> i64 {
-        (self.required - self.recorded).max(0)
+    pub fn remaining(&self) -> Option<i64> {
+        Some(self.required.checked_sub(self.recorded)?.max(0))
     }
 
     /// Whether recorded entries meet the requirement.
@@ -202,13 +202,14 @@ pub const PACE_BASIS: &str = "a straight line from the first to the last day of 
 behind means less recorded than that line gives by today. Real CPD comes in lumps, so behind is a prompt \
 to look, not a finding. Verification is not used.";
 
-/// Compare `recorded` with a requirement of `required` over `start..=end`, as of `today`.
+/// Compare `recorded` with a requirement of `required` over `start..=end`, as of `today`. `None` when a figure does not fit an
+/// `i64`: the pace is then unknown, not a capped number.
 #[must_use]
-pub fn pace(recorded: i64, required: i64, start: Date, end: Date, today: Date) -> Pace {
+pub fn pace(recorded: i64, required: i64, start: Date, end: Date, today: Date) -> Option<Pace> {
     let days_left = if today > end {
         0
     } else {
-        crate::dates::days_between(today.max(start), end) + 1
+        crate::dates::days_between(today.max(start), end).checked_add(1)?
     };
     let none = |status| Pace {
         status,
@@ -217,29 +218,34 @@ pub fn pace(recorded: i64, required: i64, start: Date, end: Date, today: Date) -
         expected_by_today_hundredths: None,
     };
     if recorded >= required {
-        return none(PaceStatus::Met);
+        return Some(none(PaceStatus::Met));
     }
     if today > end {
-        return none(PaceStatus::Missed);
+        return Some(none(PaceStatus::Missed));
     }
     if today < start {
-        return none(PaceStatus::NotStarted);
+        return Some(none(PaceStatus::NotStarted));
     }
-    let total_days = crate::dates::days_between(start, end) + 1;
-    let elapsed = crate::dates::days_between(start, today) + 1;
+    let total_days = crate::dates::days_between(start, end).checked_add(1)?;
+    let elapsed = crate::dates::days_between(start, today).checked_add(1)?;
     // required × elapsed ÷ total, rounded down: a worker exactly on the line is on track
-    let expected = required * elapsed / total_days;
-    let remaining = required - recorded;
-    Pace {
+    let expected = required.checked_mul(elapsed)?.checked_div(total_days)?;
+    let remaining = required.checked_sub(recorded)?;
+    let needed = remaining
+        .checked_mul(30)?
+        .checked_add(days_left)?
+        .checked_sub(1)?
+        .checked_div(days_left)?;
+    Some(Pace {
         status: if recorded >= expected {
             PaceStatus::OnTrack
         } else {
             PaceStatus::Behind
         },
         days_left,
-        needed_per_30_days_hundredths: Some((remaining * 30 + days_left - 1) / days_left),
+        needed_per_30_days_hundredths: Some(needed),
         expected_by_today_hundredths: Some(expected),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -315,20 +321,20 @@ mod tests {
     fn progress_sums() {
         let p = progress(&[(300, true), (200, false), (100, true)], 1000);
         assert_eq!((p.recorded, p.verified, p.required), (600, 400, 1000));
-        assert_eq!(p.remaining(), 400);
+        assert_eq!(p.remaining(), Some(400));
         assert!(!p.met() && !p.met_verified());
         let done = progress(&[(1000, false)], 1000);
         assert!(
             done.met() && !done.met_verified(),
             "recorded meets it; verified does not yet"
         );
-        assert_eq!(done.remaining(), 0);
+        assert_eq!(done.remaining(), Some(0));
         assert!(progress(&[(1000, true)], 1000).met_verified());
         let none = progress(&[], 500);
-        assert_eq!((none.recorded, none.remaining()), (0, 500));
+        assert_eq!((none.recorded, none.remaining()), (0, Some(500)));
         assert_eq!(
             progress(&[(900, true)], 500).remaining(),
-            0,
+            Some(0),
             "never negative"
         );
     }
@@ -365,6 +371,29 @@ mod tests {
 
     fn d(m: u32, day: u32) -> Date {
         crate::dates::ymd(2026, m, day).unwrap()
+    }
+
+    fn pace(recorded: i64, required: i64, start: Date, end: Date, today: Date) -> Pace {
+        super::pace(recorded, required, start, end, today).unwrap()
+    }
+
+    #[test]
+    fn a_pace_or_remainder_that_does_not_fit_is_unknown() {
+        let (start, end, today) = (d(1, 1), d(1, 30), d(1, 15));
+        assert_eq!(super::pace(0, i64::MAX, start, end, today), None);
+        assert_eq!(super::pace(i64::MIN, 1, start, end, today), None);
+        let one_day = d(1, 1);
+        assert_eq!(
+            super::pace(0, i64::MAX / 20, one_day, one_day, one_day),
+            None,
+            "the amount needed per 30 days overflows"
+        );
+        let p = Progress {
+            recorded: i64::MIN,
+            verified: 0,
+            required: 1,
+        };
+        assert_eq!(p.remaining(), None);
     }
 
     #[test]

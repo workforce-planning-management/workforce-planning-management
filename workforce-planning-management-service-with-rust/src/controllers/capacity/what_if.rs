@@ -3,6 +3,7 @@
 // A section of one controller: it shares the parent module's imports.
 #[allow(clippy::wildcard_imports)]
 use super::*;
+use crate::controllers::tally;
 use crate::sql_time::SqlDate;
 use axa::extract::Json;
 use jiff::civil::Date;
@@ -17,6 +18,26 @@ pub(super) struct ChangeLine {
     month: Date,
     /// Centi-FTE; negative gives capacity back.
     fte_centi: i64,
+}
+
+/// What `programme` already holds in each pool and month (active demand only).
+fn programme_held(
+    capacity: &OrgCapacity,
+    programme: &str,
+) -> Result<BTreeMap<(String, Date), i64>> {
+    let mut held = BTreeMap::new();
+    for (pool, demand) in &capacity.demand {
+        for d in demand
+            .iter()
+            .filter(|d| d.programme == programme && d.status == rules::DemandStatus::Active)
+        {
+            tally::add(
+                held.entry((pool.clone(), d.month)).or_insert(0),
+                d.fte_centi,
+            )?;
+        }
+    }
+    Ok(held)
 }
 
 /// `POST /api/capacity/what-if` body.
@@ -35,6 +56,7 @@ pub(super) struct WhatIfPayload {
 /// nothing**. It names no one: a pool is a skill, and no worker, member, partner or other programme appears. Where the model has no pools,
 /// or a partner has not answered, the answer is `unknown`, never "no impact" (WPM-R97).
 #[debug_handler]
+#[allow(clippy::too_many_lines)] // one handler: parse, load, apply, answer
 pub(super) async fn what_if(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -93,14 +115,7 @@ pub(super) async fn what_if(
         &changes,
     ))?;
     // What this programme already holds, by pool and month: a change cannot take back more.
-    let mut held: BTreeMap<(String, Date), i64> = BTreeMap::new();
-    for (pool, demand) in &capacity.demand {
-        for d in demand.iter().filter(|d| {
-            d.programme == payload.programme_ref && d.status == rules::DemandStatus::Active
-        }) {
-            *held.entry((pool.clone(), d.month)).or_insert(0) += d.fte_centi;
-        }
-    }
+    let held = programme_held(&capacity, &payload.programme_ref)?;
     let result = rules::what_if(&capacity.views, &held, &changes);
     let contingent = match payload.programme_new_end {
         Some(new_end) => {

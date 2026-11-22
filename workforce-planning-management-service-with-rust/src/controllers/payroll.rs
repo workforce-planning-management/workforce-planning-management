@@ -402,9 +402,9 @@ async fn calculate_run(
         for entry in &entries {
             let slot = days.entry(entry.worked_on.get()).or_default();
             if entry.kind == "overtime" {
-                slot.1 += entry.minutes;
+                crate::controllers::tally::add(&mut slot.1, entry.minutes)?;
             } else {
-                slot.0 += entry.minutes;
+                crate::controllers::tally::add(&mut slot.0, entry.minutes)?;
             }
         }
         let overtime: i64 = days
@@ -449,8 +449,10 @@ async fn calculate_run(
         .await?;
         let mut worked: std::collections::BTreeMap<Date, u32> = std::collections::BTreeMap::new();
         for entry in entries.iter().filter(|entry| entry.kind != "on_call") {
-            *worked.entry(entry.worked_on.get()).or_default() +=
-                u32::try_from(entry.minutes.max(0)).unwrap_or(0);
+            crate::controllers::tally::add(
+                worked.entry(entry.worked_on.get()).or_default(),
+                u32::try_from(entry.minutes.max(0)).unwrap_or(0),
+            )?;
         }
         let found = statutory_outcome(
             Some(worker),
@@ -525,7 +527,7 @@ async fn calculate_run(
         )
         .execute(&mut *tx)
         .await?;
-        count += 1;
+        crate::controllers::tally::bump(&mut count);
     }
     sqlx::query!(
         "UPDATE payroll_runs SET status = 'calculated' WHERE id = $1",
@@ -922,7 +924,10 @@ pub(crate) async fn check_minimum_wage(
     .await?;
     let mut minutes: BTreeMap<Uuid, i64> = BTreeMap::new();
     for entry in entries {
-        *minutes.entry(entry.worker_pid).or_default() += i64::from(entry.minutes);
+        crate::controllers::tally::add(
+            minutes.entry(entry.worker_pid).or_default(),
+            i64::from(entry.minutes),
+        )?;
     }
     let profiles = super::jurisdictions::profiles_for(
         crate::db::pool(ctx),
@@ -932,7 +937,9 @@ pub(crate) async fn check_minimum_wage(
     let empty = super::jurisdictions::Profile::default();
     let profile = profiles.get(&run.organization_ref).unwrap_or(&empty);
     let as_of = run.period_end.get();
-    let period_days = crate::dates::days_between(run.period_start.get(), run.period_end.get()) + 1;
+    let period_days = crate::dates::days_between(run.period_start.get(), run.period_end.get())
+        .checked_add(1)
+        .ok_or_else(|| super::internal("the run's day count overflowed"))?;
 
     let mut counts: BTreeMap<&'static str, u64> = ["below", "near", "ok", "none_by_law", "unknown"]
         .into_iter()
@@ -942,8 +949,8 @@ pub(crate) async fn check_minimum_wage(
     let mut rows = Vec::with_capacity(slips.len());
     for slip in &slips {
         let Some(worker) = people.get(&slip.worker_pid) else {
-            *counts.entry("unknown").or_default() += 1;
-            *reasons.entry("worker_not_found").or_default() += 1;
+            crate::controllers::tally::bump(counts.entry("unknown").or_default());
+            crate::controllers::tally::bump(reasons.entry("worker_not_found").or_default());
             rows.push(json!({ "worker_pid": slip.worker_pid, "outcome": "unknown", "reason": "worker_not_found", "band": null }));
             continue;
         };
@@ -1018,9 +1025,9 @@ pub(crate) async fn check_minimum_wage(
                 band.ok().filter(|_| floors.any()).map(mw::Band::name),
             )
         };
-        *counts.entry(outcome.name()).or_default() += 1;
+        crate::controllers::tally::bump(counts.entry(outcome.name()).or_default());
         if let Some(reason) = outcome.reason() {
-            *reasons.entry(reason).or_default() += 1;
+            crate::controllers::tally::bump(reasons.entry(reason).or_default());
         }
         rows.push(json!({
             "worker_pid": slip.worker_pid,
@@ -1293,11 +1300,10 @@ fn statutory_outcome(
                 ot::DayKind::Ordinary
             }
         };
-        match ot::derive_period_kinds(
-            status,
-            &rules,
-            &ot::weeks_with(on_days, week_start, kind_of),
-        ) {
+        match ot::weeks_with(on_days, week_start, kind_of)
+            .map_or(ot::Outcome::NotDerived("date_out_of_range"), |weeks| {
+                ot::derive_period_kinds(status, &rules, &weeks)
+            }) {
             ot::Outcome::Derived(d) => {
                 let base =
                     rules::monthly_base_minor(worker.salary_minor.unwrap_or(0), worker.fte_percent)
@@ -1315,12 +1321,9 @@ fn statutory_outcome(
                     let year_start =
                         crate::dates::ymd(i32::from(as_of.year()), 1, 1).unwrap_or(as_of);
                     let used = |from: Date| {
-                        let days = ot::weeks_beginning_between(year_days, week_start, from, as_of);
-                        match ot::derive_period_kinds(
-                            status,
-                            &rules,
-                            &ot::weeks_with(&days, week_start, kind_of),
-                        ) {
+                        let weeks = ot::weeks_beginning_between(year_days, week_start, from, as_of)
+                            .and_then(|days| ot::weeks_with(&days, week_start, kind_of))?;
+                        match ot::derive_period_kinds(status, &rules, &weeks) {
                             ot::Outcome::Derived(d) => Some(d.overtime_minutes()),
                             _ => None,
                         }
@@ -1397,10 +1400,10 @@ async fn overtime_check(
         }
     }
     // The caps count whole weeks from the start of the year, so the time and the holidays are read from a week before 1 January.
-    let year_from = {
-        crate::dates::ymd(i32::from(run.period_end.year()), 1, 1).unwrap_or(run.period_start.get())
-            - crate::dates::days(6)
-    }
+    let year_from = crate::controllers::tally::date_minus_days(
+        crate::dates::ymd(i32::from(run.period_end.year()), 1, 1).unwrap_or(run.period_start.get()),
+        6,
+    )?
     .min(run.period_start.get());
     // Approved minutes by worker and day. On-call entries are not hours worked.
     let entries = sqlx::query!(
@@ -1418,13 +1421,19 @@ async fn overtime_check(
     for entry in entries {
         let (worker, on) = (entry.worker_pid, entry.worked_on);
         let minutes = u32::try_from(entry.minutes.max(0)).unwrap_or(0);
-        *year_days
-            .entry(worker)
-            .or_default()
-            .entry(on.get())
-            .or_default() += minutes;
+        crate::controllers::tally::add(
+            year_days
+                .entry(worker)
+                .or_default()
+                .entry(on.get())
+                .or_default(),
+            minutes,
+        )?;
         if on >= run.period_start {
-            *days.entry(worker).or_default().entry(on.get()).or_default() += minutes;
+            crate::controllers::tally::add(
+                days.entry(worker).or_default().entry(on.get()).or_default(),
+                minutes,
+            )?;
         }
     }
     let profiles = super::jurisdictions::profiles_for(
@@ -1473,9 +1482,9 @@ async fn overtime_check(
             },
         );
         let (reason, name, extra) = (found.reason, found.name, found.extra);
-        *counts.entry(name).or_default() += 1;
+        crate::controllers::tally::bump(counts.entry(name).or_default());
         if let Some(reason) = reason {
-            *reasons.entry(reason).or_default() += 1;
+            crate::controllers::tally::bump(reasons.entry(reason).or_default());
         }
         let mut row = json!({ "worker_pid": slip.worker_pid, "outcome": name, "reason": reason });
         if let (Some(object), Some(more)) = (row.as_object_mut(), extra.as_object()) {

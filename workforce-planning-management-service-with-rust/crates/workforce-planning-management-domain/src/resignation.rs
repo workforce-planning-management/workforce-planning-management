@@ -202,10 +202,16 @@ pub struct DepartmentSummary {
 pub fn summarise(rows: &[(String, Option<String>)], floor: usize) -> Vec<DepartmentSummary> {
     let mut by: BTreeMap<&str, BTreeMap<String, usize>> = BTreeMap::new();
     for (department, reason) in rows {
-        *by.entry(department)
-            .or_default()
-            .entry(reason.clone().unwrap_or_else(|| "not_given".to_string()))
-            .or_insert(0) += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a count of rows: bounded by the slice length"
+        )]
+        {
+            *by.entry(department)
+                .or_default()
+                .entry(reason.clone().unwrap_or_else(|| "not_given".to_string()))
+                .or_insert(0) += 1;
+        }
     }
     by.into_iter()
         .map(|(department, cells)| {

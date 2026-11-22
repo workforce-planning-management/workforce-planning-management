@@ -371,6 +371,10 @@ struct FromSfiaPayload {
 /// human to edit; catalogue skills are matched by their SFIA code, then by exact name, else created and linked.
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // validate → profile → each skill, linearly
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the three counters each rise by one per skill the planner picked, a request-bounded list far below usize::MAX"
+)]
 async fn from_sfia(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -507,7 +511,7 @@ async fn from_sfia(
                 _ => None,
             };
             let pid = if let Some(pid) = reused {
-                linked += 1;
+                crate::controllers::tally::bump(&mut linked);
                 pid
             } else {
                 let taken_name = sqlx::query_scalar!(
@@ -522,7 +526,7 @@ async fn from_sfia(
                 } else {
                     sfia.name.clone()
                 };
-                created += 1;
+                crate::controllers::tally::bump(&mut created);
                 let pid = Uuid::new_v4();
                 sqlx::query!(
                     "INSERT INTO skills (pid, name, category, deleted_at) VALUES ($1, $2, $3, NULL)",
@@ -574,7 +578,7 @@ async fn from_sfia(
         )
         .execute(&mut *tx)
         .await?;
-        requirements += 1;
+        crate::controllers::tally::bump(&mut requirements);
     }
     db::audit(
         &mut tx,

@@ -33,7 +33,7 @@ fn view(row: &table::Model) -> serde_json::Value {
         "frequency": row.frequency,
         "minutes": row.minutes,
         "holders": row.holders,
-        "hours_per_month": display::from_tenths(rules::tenth_hours_per_month(rules::minutes_per_year(&c))),
+        "hours_per_month": rules::minutes_per_year(&c).and_then(rules::tenth_hours_per_month).map(display::from_tenths),
     })
 }
 
@@ -268,7 +268,8 @@ async fn load(
 ) -> Result<Response> {
     let (org, rows) = rows_of(&ctx, &caller, &query).await?;
     let commitments: Vec<_> = rows.iter().map(commitment).collect();
-    let total = rules::load(&commitments);
+    let total = rules::load(&commitments)
+        .ok_or_else(|| Error::string("a governance load exceeds the supported range"))?;
     format::json(json!({
         "organization_ref": org,
         "commitments": rows.len(),
@@ -298,7 +299,8 @@ pub(super) async fn pack_json(ctx: &AppContext, org: &str) -> Result<serde_json:
     .fetch_all(pool(ctx))
     .await?;
     let commitments: Vec<_> = rows.iter().map(commitment).collect();
-    let total = rules::load(&commitments);
+    let total = rules::load(&commitments)
+        .ok_or_else(|| Error::string("a governance load exceeds the supported range"))?;
     Ok(json!({
         "commitments": rows.len(),
         "senior_hours_per_month": display::from_tenths(total.senior_tenth_hours_per_month),

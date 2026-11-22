@@ -92,10 +92,11 @@ pub fn validate_window(start: Date, end: Date) -> Result<(), String> {
     if end < start {
         return Err("the window must not end before it starts".to_string());
     }
-    let days = crate::dates::days_between(start, end) + 1;
-    if days > MAX_WINDOW_CALENDAR_DAYS {
+    let days = crate::dates::days_between(start, end).checked_add(1);
+    if days.is_none_or(|d| d > MAX_WINDOW_CALENDAR_DAYS) {
+        let shown = days.map_or_else(|| "more".to_string(), |d| d.to_string());
         return Err(format!(
-            "the window may cover at most {MAX_WINDOW_CALENDAR_DAYS} calendar days, not {days}"
+            "the window may cover at most {MAX_WINDOW_CALENDAR_DAYS} calendar days, not {shown}"
         ));
     }
     Ok(())
@@ -146,10 +147,10 @@ pub fn trained_staff(roles: &[(String, RoleCount)]) -> Check {
             ));
             continue;
         }
-        if r.trained >= r.required {
+        // Nothing short when trained reaches the requirement.
+        let Some(short) = r.required.checked_sub(r.trained).filter(|s| *s > 0) else {
             continue;
-        }
-        let short = r.required - r.trained;
+        };
         if r.unplaced >= short {
             status = status.max(Readiness::Unknown);
             reasons.push(why(

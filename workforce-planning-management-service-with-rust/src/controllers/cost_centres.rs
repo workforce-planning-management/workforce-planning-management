@@ -238,7 +238,7 @@ async fn unmatched(
     .await?
     {
         if !codes.contains(&cost_centre) {
-            *by.entry(cost_centre).or_default() += 1;
+            crate::controllers::tally::bump(by.entry(cost_centre).or_default());
         }
     }
     let values: Vec<_> = by

@@ -183,6 +183,10 @@ pub async fn import_sfia_levels(
 /// # Errors
 /// A refusal naming the licence field or the file row, or a database error.
 #[allow(clippy::too_many_lines)] // validate → upsert → retire → link, linearly
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> Result<Report> {
     let checked_on = check_licence(licence)?;
     let parsed: Vec<Skill> = rules::parse_skills(text).map_err(|e| Error::string(&e))?;

@@ -293,7 +293,7 @@ async fn issues(State(ctx): State<AppContext>) -> Result<Response> {
     let mut by_department: std::collections::BTreeMap<String, usize> =
         std::collections::BTreeMap::new();
     for row in &rows {
-        *by_department.entry(row.department.clone()).or_default() += 1;
+        crate::controllers::tally::bump(by_department.entry(row.department.clone()).or_default());
         listed.push(serde_json::json!({
             "department": row.department,
             "worker_pid": row.worker_pid,

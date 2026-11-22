@@ -222,7 +222,7 @@ async fn summary(
     let mut headcount: BTreeMap<String, usize> = BTreeMap::new();
     let mut department_of: BTreeMap<uuid::Uuid, String> = BTreeMap::new();
     for w in &staff {
-        *headcount.entry(w.department.clone()).or_insert(0) += 1;
+        crate::controllers::tally::bump(headcount.entry(w.department.clone()).or_insert(0));
         department_of.insert(w.pid, w.department.clone());
     }
     let answers = sqlx::query!(

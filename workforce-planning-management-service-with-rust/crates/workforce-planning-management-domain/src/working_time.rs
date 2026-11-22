@@ -22,7 +22,12 @@ pub const MIN_DAILY_REST_MINUTES_KEY: &str = "working_time.min_daily_rest_minute
 /// answer. `None` when either limit is not positive.
 #[must_use]
 pub fn heavy_week_minutes(ceiling: i64, weeks: i64) -> Option<i64> {
-    (ceiling > 0 && weeks > 0).then(|| ceiling.saturating_mul(weeks) / (weeks + 1))
+    if ceiling <= 0 || weeks <= 0 {
+        return None;
+    }
+    ceiling
+        .checked_mul(weeks)?
+        .checked_div(weeks.checked_add(1)?)
 }
 
 /// Average weekly minutes over `weeks`, or `None` when `weeks` is not
@@ -269,5 +274,11 @@ mod tests {
         ] {
             assert!(crate::jurisdiction::parameter(key).is_some(), "{key}");
         }
+    }
+
+    #[test]
+    fn a_window_that_does_not_fit_has_no_heavy_week() {
+        assert_eq!(heavy_week_minutes(i64::MAX, 2), None);
+        assert_eq!(heavy_week_minutes(1, i64::MAX), None);
     }
 }

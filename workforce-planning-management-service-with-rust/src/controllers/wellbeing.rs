@@ -568,13 +568,13 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
     let view: Vec<serde_json::Value> = entitlements
         .iter()
         .map(|entitlement| {
-            let mut by_response: std::collections::BTreeMap<&str, usize> =
-                rules::RESPONSES.iter().map(|r| (*r, 0)).collect();
+            // Only the closed set of responses is counted; anything else is ignored.
+            let mut responses: Vec<&str> = Vec::new();
             let mut acknowledgers: std::collections::HashSet<Uuid> =
                 std::collections::HashSet::new();
             for ack in acks.iter().filter(|a| a.entitlement_pid == entitlement.pid) {
-                if let Some(count) = by_response.get_mut(ack.response.as_str()) {
-                    *count += 1;
+                if let Some(known) = rules::RESPONSES.iter().find(|r| **r == ack.response) {
+                    responses.push(known);
                 }
                 acknowledgers.insert(ack.worker_pid);
             }
@@ -590,9 +590,15 @@ async fn uptake(State(ctx): State<AppContext>) -> Result<Response> {
                     "numerator": enrolled, "denominator": acknowledgers.len(), "value": value,
                 })
             });
-            let uptaken = by_response.get("booked").copied().unwrap_or(0)
-                + by_response.get("done").copied().unwrap_or(0);
-            let responded: usize = by_response.values().sum();
+            let by_response: std::collections::BTreeMap<&str, usize> = rules::RESPONSES
+                .iter()
+                .map(|r| (*r, responses.iter().filter(|x| **x == *r).count()))
+                .collect();
+            let uptaken = responses
+                .iter()
+                .filter(|r| matches!(**r, "booked" | "done"))
+                .count();
+            let responded = responses.len();
             let value = crate::rules::display::ratio(uptaken, responded)
                 .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
             serde_json::json!({

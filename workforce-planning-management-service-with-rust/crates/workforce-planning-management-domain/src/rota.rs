@@ -93,7 +93,7 @@ fn turn_index(rota: &Rota, date: Date) -> Option<usize> {
     if rota.members.is_empty() || date < rota.starts_on || rota.period_days < 1 {
         return None;
     }
-    let turns = crate::dates::days_between(rota.starts_on, date) / rota.period_days;
+    let turns = crate::dates::days_between(rota.starts_on, date).checked_div(rota.period_days)?;
     let n = i64::try_from(rota.members.len()).ok()?;
     usize::try_from(turns.rem_euclid(n)).ok()
 }
@@ -205,7 +205,7 @@ pub fn validate_swap(
     if ends_on < today {
         return Err("a swap must include today or a later day".to_string());
     }
-    if crate::dates::days_between(starts_on, ends_on) + 1 > MAX_WINDOW_DAYS {
+    if crate::dates::days_between(starts_on, ends_on) >= MAX_WINDOW_DAYS {
         return Err(format!(
             "a swap may cover at most {MAX_WINDOW_DAYS} calendar days"
         ));
@@ -237,7 +237,11 @@ pub fn schedule(
     let mut day = from;
     while day <= to {
         out.push(assign(rota, overrides, unavailable, day));
-        day += crate::dates::days(1);
+        // The last day the calendar holds is the last day there is.
+        let Ok(next) = day.tomorrow() else {
+            break;
+        };
+        day = next;
     }
     out
 }
@@ -264,7 +268,7 @@ pub fn runs(assignments: &[Assignment]) -> Vec<Run> {
             Some(last)
                 if last.worker == a.worker
                     && last.source == a.source
-                    && last.to + crate::dates::days(1) == a.date =>
+                    && last.to.tomorrow().is_ok_and(|next| next == a.date) =>
             {
                 last.to = a.date;
             }
@@ -285,7 +289,13 @@ pub fn load(assignments: &[Assignment]) -> BTreeMap<Uuid, usize> {
     let mut counts = BTreeMap::new();
     for a in assignments {
         if let Some(w) = a.worker {
-            *counts.entry(w).or_insert(0) += 1;
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a count of days: bounded by the slice length"
+            )]
+            {
+                *counts.entry(w).or_insert(0) += 1;
+            }
         }
     }
     counts
@@ -477,5 +487,23 @@ mod tests {
         let on = crate::dates::ymd(2026, 2, 2).unwrap();
         let a = assign(&empty, &[], &|_, _| false, on);
         assert_eq!((a.worker, a.source), (None, None));
+    }
+
+    #[test]
+    fn the_calendar_has_a_last_day_and_the_schedule_stops_there() {
+        let rota = Rota {
+            members: vec![Uuid::from_u128(1)],
+            starts_on: Date::MAX,
+            period_days: 1,
+        };
+        let out = schedule(&rota, &[], &|_, _| false, Date::MAX, Date::MAX);
+        assert_eq!(out.len(), 1);
+        let a = &out[0];
+        assert_eq!(runs(&out).len(), 1);
+        assert_eq!(
+            runs(&[*a, *a]).len(),
+            2,
+            "the same day twice is not consecutive"
+        );
     }
 }

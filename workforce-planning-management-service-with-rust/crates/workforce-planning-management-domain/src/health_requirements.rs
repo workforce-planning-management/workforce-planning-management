@@ -198,14 +198,17 @@ pub struct Compliance {
 /// person it applies to. A group below the floor shows nothing.
 #[must_use]
 pub fn compliance(rows: &[(String, String, bool)], floor: usize) -> Vec<Compliance> {
-    let mut by: BTreeMap<(&str, &str), (usize, usize)> = BTreeMap::new();
+    // One entry per person the requirement applies to, whether they are cleared; the counts are taken from the list.
+    let mut by: BTreeMap<(&str, &str), Vec<bool>> = BTreeMap::new();
     for (requirement, department, cleared) in rows {
-        let cell = by.entry((requirement, department)).or_insert((0, 0));
-        cell.0 += 1;
-        cell.1 += usize::from(*cleared);
+        by.entry((requirement, department))
+            .or_default()
+            .push(*cleared);
     }
     by.into_iter()
-        .map(|((requirement, department), (applicable, cleared))| {
+        .map(|((requirement, department), people)| {
+            let applicable = people.len();
+            let cleared = people.iter().filter(|c| **c).count();
             let shown = applicable >= floor;
             Compliance {
                 requirement: requirement.to_string(),

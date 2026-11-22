@@ -395,9 +395,11 @@ async fn interest_summary(State(ctx): State<AppContext>) -> Result<Response> {
     let mut counts: BTreeMap<(&'static str, Uuid), usize> = BTreeMap::new();
     for row in &rows {
         if let Some(role) = row.role_profile_pid {
-            *counts.entry(("role", role)).or_default() += 1;
+            crate::controllers::tally::bump(counts.entry(("role", role)).or_default());
         } else if let Some(requisition) = row.requisition_pid {
-            *counts.entry(("requisition", requisition)).or_default() += 1;
+            crate::controllers::tally::bump(
+                counts.entry(("requisition", requisition)).or_default(),
+            );
         }
     }
     let mut out: Vec<serde_json::Value> = counts

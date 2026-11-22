@@ -688,7 +688,10 @@ pub(crate) async fn correct(
     let mut tx = db::pool(&ctx).begin().await?;
     let latest = latest_locked(&mut tx, review.pid).await?;
     rules::may_correct(sign_offs(&latest)).map_err(unprocessable)?;
-    let next = latest.version + 1;
+    let next = latest
+        .version
+        .checked_add(1)
+        .ok_or_else(|| super::internal("the review version overflowed"))?;
     sqlx::query!(
         "INSERT INTO padr_versions (pid, review_pid, worker_pid, version, period_start, period_end, values_summary,
                                     wellbeing_offered, development_needs)

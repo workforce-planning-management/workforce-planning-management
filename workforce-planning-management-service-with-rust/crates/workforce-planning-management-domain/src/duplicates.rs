@@ -188,7 +188,7 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
         return None;
     }
     let mut pairs: Vec<(f64, usize, usize, &String, &String)> =
-        Vec::with_capacity(a.len() * b.len());
+        Vec::with_capacity(a.len().checked_mul(b.len()).unwrap_or_default());
     for (i, x) in a.iter().enumerate() {
         for (j, y) in b.iter().enumerate() {
             pairs.push((combined_similarity(x, y), i, j, x, y));
@@ -201,7 +201,10 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
             .then_with(|| key(p.3, p.4).cmp(&key(q.3, q.4)))
     });
     let letters = |s: &String| s.chars().count();
-    let total: usize = a.iter().map(letters).sum::<usize>() + b.iter().map(letters).sum::<usize>();
+    let total = a
+        .iter()
+        .chain(b)
+        .try_fold(0_usize, |sum, s| sum.checked_add(letters(s)))?;
     let mut used_a = std::collections::HashSet::new();
     let mut used_b = std::collections::HashSet::new();
     let mut weighted = 0.0;
@@ -212,7 +215,7 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
         used_a.insert(i);
         used_b.insert(j);
         #[allow(clippy::cast_precision_loss)] // name lengths are far below 2^52
-        let weight = (letters(x) + letters(y)) as f64;
+        let weight = letters(x).checked_add(letters(y))? as f64;
         weighted += similarity * weight;
     }
     #[allow(clippy::cast_precision_loss)] // name lengths are far below 2^52

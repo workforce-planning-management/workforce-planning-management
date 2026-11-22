@@ -154,15 +154,8 @@ impl SkillRollup {
 /// group itself is smaller than the floor.
 #[must_use]
 pub fn rollup(members: usize, levels: &[i32]) -> Option<SkillRollup> {
-    let mut counts = [0usize; 5];
-    for level in levels {
-        if let Some(slot) = usize::try_from(*level - 1)
-            .ok()
-            .and_then(|i| counts.get_mut(i))
-        {
-            *slot += 1;
-        }
-    }
+    // One count per level 1 to 5, each taken from the list itself; a level outside that is not counted.
+    let counts: [usize; 5] = [1, 2, 3, 4, 5].map(|at| levels.iter().filter(|l| **l == at).count());
     let declared: usize = counts.iter().sum();
     (members >= MIN_ROLLUP && declared >= MIN_ROLLUP).then_some(SkillRollup {
         declared,

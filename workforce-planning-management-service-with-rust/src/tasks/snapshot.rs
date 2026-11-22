@@ -46,6 +46,10 @@ impl Task for SnapshotHeadcount {
 ///
 /// # Errors
 /// A database error.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
     let facts: Vec<WorkerFacts> = sqlx::query!(
         "SELECT organization_ref, department, fte_percent, employment_type, hired_on, terminated_on

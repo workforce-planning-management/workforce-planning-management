@@ -78,7 +78,7 @@ pub(super) async fn alignment_value(
     let (mut spof_total, mut spof_in_plan, mut plans_in_plan) = (0usize, 0usize, 0usize);
     for s in &succession {
         if plan_departments.contains(s.department.as_str()) {
-            plans_in_plan += 1;
+            crate::controllers::tally::bump(&mut plans_in_plan);
         }
         let readiness: Vec<String> = candidates
             .iter()
@@ -91,9 +91,9 @@ pub(super) async fn alignment_value(
             coverage,
             s.risk_of_loss.as_deref(),
         ) {
-            spof_total += 1;
+            crate::controllers::tally::bump(&mut spof_total);
             if plan_departments.contains(s.department.as_str()) {
-                spof_in_plan += 1;
+                crate::controllers::tally::bump(&mut spof_in_plan);
             }
         }
     }

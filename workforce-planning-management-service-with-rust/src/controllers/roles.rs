@@ -555,30 +555,29 @@ async fn role_gap(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
     let rows: Vec<serde_json::Value> = requirements
         .iter()
         .map(|r| {
-            let (mut met, mut below, mut declared_count) = (0usize, 0usize, 0usize);
-            for worker in &employed_set {
-                match gap_rules::grade(
-                    have.get(&(*worker, r.skill_pid)).copied(),
-                    r.min_proficiency,
-                ) {
-                    "met" => {
-                        met += 1;
-                        declared_count += 1;
-                    }
-                    "below" => {
-                        below += 1;
-                        declared_count += 1;
-                    }
-                    _ => {}
-                }
-            }
+            let grades: Vec<&str> = employed_set
+                .iter()
+                .map(|worker| {
+                    gap_rules::grade(
+                        have.get(&(*worker, r.skill_pid)).copied(),
+                        r.min_proficiency,
+                    )
+                })
+                .collect();
+            let met = grades.iter().filter(|g| **g == "met").count();
+            let below = grades.iter().filter(|g| **g == "below").count();
+            // Neither met nor below: no declaration, which is unknown, not below.
+            let undeclared = grades
+                .iter()
+                .filter(|g| !matches!(**g, "met" | "below"))
+                .count();
             serde_json::json!({
                 "skill": names.get(&r.skill_pid),
                 "importance": r.importance,
                 "min_proficiency": r.min_proficiency,
                 "meeting": met,
                 "below": below,
-                "undeclared": headcount - declared_count,
+                "undeclared": undeclared,
                 "coverage": ratio_json(ratio(met, headcount)),
             })
         })

@@ -2,6 +2,7 @@
 //! plus any day added by hand for what the rules cannot know. The shipped rule packs are **unverified examples** (see
 //! `rules::holiday`); the listing says so. Reading is open to a signed-in caller in scope; generating and adding are HR's.
 
+use super::tally::bump;
 use axa::extract::Json;
 use axa::prelude::*;
 use jiff::civil::Date;
@@ -171,10 +172,10 @@ async fn generate(
                 )
                 .execute(&mut *tx)
                 .await?;
-                created += 1;
+                bump(&mut created);
             }
-            Some(row) if row.source == "manual" => kept_manual += 1,
-            Some(row) if row.observed_on == h.observed_on => unchanged += 1,
+            Some(row) if row.source == "manual" => bump(&mut kept_manual),
+            Some(row) if row.observed_on == h.observed_on => bump(&mut unchanged),
             Some(row) => {
                 sqlx::query!(
                     "UPDATE holidays SET observed_on = $2 WHERE id = $1",
@@ -183,7 +184,7 @@ async fn generate(
                 )
                 .execute(&mut *tx)
                 .await?;
-                updated += 1;
+                bump(&mut updated);
             }
         }
     }

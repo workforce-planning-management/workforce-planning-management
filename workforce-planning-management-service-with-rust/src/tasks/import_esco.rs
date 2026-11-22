@@ -88,6 +88,10 @@ fn read(dir: &Path, name: &str) -> Result<String> {
 /// # Errors
 /// A filesystem, parse, or database error.
 #[allow(clippy::too_many_lines)] // read → parse → replace → link, linearly
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
+)]
 pub async fn import_esco(
     pool: &sqlx::PgPool,
     dir: &Path,
@@ -105,19 +109,17 @@ pub async fn import_esco(
     let skill_uris: BTreeSet<&str> = skills_csv.iter().map(|s| s.uri.as_str()).collect();
     let occupation_uris: BTreeSet<&str> = occupations_csv.iter().map(|o| o.uri.as_str()).collect();
     let mut seen: BTreeSet<(&str, &str)> = BTreeSet::new();
-    let relations: Vec<&rules::EscoRelation> = relations_csv
-        .iter()
-        .filter(|r| {
+    let (relations, dangling): (Vec<&rules::EscoRelation>, Vec<&rules::EscoRelation>) =
+        relations_csv.iter().partition(|r| {
             skill_uris.contains(r.skill_uri.as_str())
                 && occupation_uris.contains(r.occupation_uri.as_str())
                 && seen.insert((r.occupation_uri.as_str(), r.skill_uri.as_str()))
-        })
-        .collect();
+        });
     let mut report = Report {
         skills: skills_csv.len(),
         occupations: occupations_csv.len(),
         relations: relations.len(),
-        relations_dangling: relations_csv.len() - relations.len(),
+        relations_dangling: dangling.len(),
         ..Report::default()
     };
 

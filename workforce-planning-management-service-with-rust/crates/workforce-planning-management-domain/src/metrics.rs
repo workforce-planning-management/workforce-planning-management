@@ -90,7 +90,7 @@ pub fn leavers(from: Date, to: Date, workers: &[Tenure]) -> usize {
 /// mean headcount is zero.
 #[must_use]
 pub fn turnover_rate(leavers: usize, opening: usize, closing: usize) -> Option<f64> {
-    let mean_twice = opening + closing;
+    let mean_twice = opening.checked_add(closing)?;
     if mean_twice == 0 {
         return None;
     }
@@ -169,6 +169,11 @@ pub fn snapshot_rows(
             starters: since.map(|_| 0),
             leavers: since.map(|_| 0),
         });
+        // Counts of workers and sums of i32 percentages in i64s: bounded by the slice length, far from overflowing.
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "bounded by the slice length"
+        )]
         if is_employed_on(as_of, w.hired_on, w.terminated_on) {
             row.headcount += 1;
             row.fte_percent_total += i64::from(w.fte_percent);
@@ -184,9 +189,17 @@ pub fn snapshot_rows(
                 _ => {}
             }
         }
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "bounded by the slice length"
+        )]
         if in_window(w.hired_on) {
             row.starters = row.starters.map(|n| n + 1);
         }
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "bounded by the slice length"
+        )]
         if w.terminated_on.is_some_and(in_window) {
             row.leavers = row.leavers.map(|n| n + 1);
         }
@@ -231,9 +244,13 @@ pub fn fill_time_summary(days: &[i64]) -> Option<FillTime> {
         if n % 2 == 1 {
             sorted.get(n / 2).map_or(0.0, |m| *m as f64)
         } else {
+            // The middle two: the one `n / 2` from the end, and the one `n / 2` from the start.
             sorted
-                .get(n / 2 - 1..=n / 2)
-                .map_or(0.0, |pair| pair.iter().sum::<i64>() as f64 / 2.0)
+                .iter()
+                .rev()
+                .nth(n / 2)
+                .zip(sorted.get(n / 2))
+                .map_or(0.0, |(lo, hi)| f64::midpoint(*lo as f64, *hi as f64))
         },
     );
     Some(FillTime {
@@ -494,5 +511,10 @@ mod tests {
                 "{name} undefined"
             );
         }
+    }
+
+    #[test]
+    fn turnover_over_headcounts_that_do_not_add_up_is_absent() {
+        assert_eq!(turnover_rate(1, usize::MAX, 1), None);
     }
 }

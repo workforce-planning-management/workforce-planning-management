@@ -20,12 +20,13 @@ pub fn grade(declared: Option<i32>, min_proficiency: i32) -> &'static str {
 }
 
 /// How far below the minimum a declared proficiency is; `None` when met
-/// or undeclared (an unknown shortfall is not reported as a number).
+/// or undeclared (an unknown shortfall is not reported as a number), and when the
+/// difference does not fit an `i32`.
 #[must_use]
 pub fn shortfall(declared: Option<i32>, min_proficiency: i32) -> Option<i32> {
     declared
         .filter(|level| *level < min_proficiency)
-        .map(|level| min_proficiency - level)
+        .and_then(|level| min_proficiency.checked_sub(level))
 }
 
 /// Counts behind a worker's readiness for a role: requirements met out
@@ -45,25 +46,13 @@ pub struct Readiness {
 /// Roll `(importance, grade)` pairs up into [`Readiness`].
 #[must_use]
 pub fn readiness(graded: &[(&str, &str)]) -> Readiness {
-    let mut out = Readiness {
-        critical_met: 0,
-        critical_total: 0,
-        met: 0,
+    let count = |pred: &dyn Fn(&(&str, &str)) -> bool| graded.iter().filter(|g| pred(g)).count();
+    Readiness {
+        critical_met: count(&|(importance, grade)| *importance == "critical" && *grade == "met"),
+        critical_total: count(&|(importance, _)| *importance == "critical"),
+        met: count(&|(_, grade)| *grade == "met"),
         total: graded.len(),
-    };
-    for (importance, grade) in graded {
-        let met = *grade == "met";
-        if met {
-            out.met += 1;
-        }
-        if *importance == "critical" {
-            out.critical_total += 1;
-            if met {
-                out.critical_met += 1;
-            }
-        }
     }
-    out
 }
 
 #[cfg(test)]
@@ -115,5 +104,11 @@ mod tests {
                 total: 0
             }
         );
+    }
+
+    #[test]
+    fn shortfall_that_does_not_fit_is_absent() {
+        assert_eq!(shortfall(Some(i32::MIN), 1), None);
+        assert_eq!(shortfall(Some(1), 3), Some(2));
     }
 }

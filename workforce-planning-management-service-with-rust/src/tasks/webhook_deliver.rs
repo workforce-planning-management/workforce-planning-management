@@ -34,6 +34,10 @@ pub struct Summary {
 /// # Errors
 ///
 /// A database error. A subscriber's failure is recorded and counted, not returned.
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "each summary counter rises by one per delivery handled in this run, so it is at most the batch size"
+)]
 pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
     let due = sqlx::query_as!(
         webhook_deliveries::Model,
@@ -64,7 +68,7 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
         )
         .fetch_optional(crate::db::pool(ctx))
         .await?;
-        let attempts = delivery.attempts + 1;
+        let attempts = next_attempt(delivery.attempts)?;
         let (status, reason) = match subscription.filter(|s| s.active) {
             None => (None, Some("subscription off".to_string())),
             Some(s) => send(&http, &s, &delivery, now).await,
@@ -90,7 +94,7 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
                 (
                     delivery.status.clone(),
                     delivery.delivered_at.map(SqlTimestamp::get),
-                    Some(now + jiff::SignedDuration::from_secs(wait)),
+                    Some(retry_time(now, wait)?),
                 )
             }
             Next::GiveUp => {
@@ -118,6 +122,27 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
         .await?;
     }
     Ok(summary)
+}
+
+/// The attempt number after `previous` attempts.
+///
+/// # Errors
+///
+/// When the count does not fit.
+fn next_attempt(previous: i32) -> Result<i32> {
+    previous
+        .checked_add(1)
+        .ok_or_else(|| Error::string("the delivery attempt count exceeds the supported range"))
+}
+
+/// The time `wait` seconds after `now`.
+///
+/// # Errors
+///
+/// When it is outside the supported calendar.
+fn retry_time(now: Timestamp, wait: i64) -> Result<Timestamp> {
+    now.checked_add(jiff::SignedDuration::from_secs(wait))
+        .map_err(|e| Error::string(&format!("the retry time leaves the calendar: {e}")))
 }
 
 /// Post one delivery. Returns the HTTP status, or `None` and a short reason when the request did not complete.
@@ -171,5 +196,23 @@ impl Task for WebhookDeliver {
         let summary = run(ctx, Timestamp::now()).await?;
         println!("{}", json!(summary));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod arithmetic_tests {
+    use super::*;
+
+    #[test]
+    fn attempts_and_retry_times_refuse_overflow() {
+        assert_eq!(next_attempt(2).ok(), Some(3));
+        assert!(next_attempt(i32::MAX).is_err());
+        let now = Timestamp::UNIX_EPOCH;
+        assert_eq!(
+            retry_time(now, 60).ok(),
+            Some(Timestamp::from_second(60).expect("second"))
+        );
+        assert!(retry_time(Timestamp::MAX, 1).is_err());
+        assert!(retry_time(now, i64::MAX).is_err());
     }
 }

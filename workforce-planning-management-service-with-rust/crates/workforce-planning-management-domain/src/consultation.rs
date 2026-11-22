@@ -226,7 +226,10 @@ fn counted_in_window(date: Date, own: u32, others: &[(Date, u32)], window_days: 
     let mut starts: Vec<Date> = others.iter().map(|(d, _)| *d).collect();
     starts.push(date);
     for start in starts {
-        let end = start + crate::dates::days(window - 1);
+        // A window that runs past the last date there is holds every later date, so it ends there. `window` is at least 1.
+        let end = start
+            .checked_add(crate::dates::days(window.saturating_sub(1)))
+            .unwrap_or(Date::MAX);
         if start > date || end < date {
             continue;
         }
@@ -241,6 +244,10 @@ fn counted_in_window(date: Date, own: u32, others: &[(Date, u32)], window_days: 
     best
 }
 
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "the product of two u32 values fits a u64"
+)]
 fn needed(threshold: Threshold, size: u32) -> u32 {
     match threshold {
         Threshold::Count(n) => n,
@@ -249,6 +256,11 @@ fn needed(threshold: Threshold, size: u32) -> u32 {
             .try_into()
             .unwrap_or(u32::MAX),
     }
+}
+
+/// The date `days` before `termination`, or `None` when that is before the earliest date there is.
+fn before_termination(termination: Date, days: i64) -> Option<Date> {
+    termination.checked_sub(crate::dates::days(days)).ok()
 }
 
 fn period_for(periods: &[Period], counted: u32) -> Option<i64> {
@@ -282,7 +294,8 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment
             if met.is_none_or(|(c, _, _)| counted > c) {
                 met = Some(entry);
             }
-        } else if closest.is_none_or(|(c, n, _)| need - counted < n.saturating_sub(c)) {
+        } else if closest.is_none_or(|(c, n, _)| need.saturating_sub(counted) < n.saturating_sub(c))
+        {
             closest = Some(entry);
         }
     }
@@ -302,9 +315,9 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment
         };
         (
             days,
-            days.map(|d| proposal.earliest_termination - crate::dates::days(d)),
+            days.and_then(|d| before_termination(proposal.earliest_termination, d)),
             period_for(&profile.authority_notice, counted)
-                .map(|d| proposal.earliest_termination - crate::dates::days(d)),
+                .and_then(|d| before_termination(proposal.earliest_termination, d)),
         )
     } else {
         (None, None, None)
@@ -379,6 +392,32 @@ mod tests {
             authority_notice: vec![],
             checklist: vec![],
         }
+    }
+
+    #[test]
+    fn a_date_before_the_earliest_there_is_unknown_and_a_window_past_the_last_still_counts() {
+        let date = day(6, 30);
+        assert_eq!(counted_in_window(date, 1, &[(date, 2)], i64::MAX), 3);
+        assert_eq!(before_termination(Date::MIN, 1), None);
+        assert_eq!(before_termination(day(6, 30), 1), Some(day(6, 29)));
+        let mut profile = selection_profile(vec![Test {
+            size_from: 0,
+            size_to: None,
+            threshold: Threshold::Count(1),
+            window_days: 10,
+        }]);
+        profile.consultation = vec![Period {
+            from_dismissals: 1,
+            days: 30,
+        }];
+        let mut p = proposal(100, 5);
+        p.earliest_termination = Date::MIN;
+        let a = assess(&profile, &p, day(1, 1));
+        assert_eq!(a.consultation_days, Some(30));
+        assert_eq!(
+            a.latest_consultation_start, None,
+            "unknown, not a made-up date"
+        );
     }
 
     #[test]

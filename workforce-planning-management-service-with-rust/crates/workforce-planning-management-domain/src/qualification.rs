@@ -173,7 +173,10 @@ impl Reminder {
 pub fn reminder_for(expires_on: Date, today: Date, window_days: i64) -> Option<Reminder> {
     let until = crate::dates::days_between(today, expires_on);
     if until < 0 {
-        (-until <= window_days).then_some(Reminder::Expired)
+        until
+            .checked_neg()
+            .is_some_and(|ago| ago <= window_days)
+            .then_some(Reminder::Expired)
     } else {
         (until <= window_days).then_some(Reminder::Expiring)
     }

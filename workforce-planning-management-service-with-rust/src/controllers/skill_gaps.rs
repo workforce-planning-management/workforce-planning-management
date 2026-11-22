@@ -321,7 +321,8 @@ async fn workforce_gaps(
     // Counted by the database (see `gap_sql`): the same grading as `Evidence::gaps_for`, for everyone at once.
     let (considered, rows, with_needs) =
         super::gap_sql::gap_rows(&ctx, scope.as_deref(), department, today).await?;
-    let rolled = rules::rollup_counted(&rows);
+    let rolled = rules::rollup_counted(&rows)
+        .ok_or_else(|| super::internal("skill gap roll-up totals overflowed"))?;
     let total = rolled.len();
     let index = skill_index(&ctx).await?;
     let skills_out: Vec<serde_json::Value> = rolled

@@ -171,7 +171,11 @@ pub fn verify(secret: &[u8], header: &str, body: &[u8], now: i64, tolerance_seco
     let (Some(t), Some(v1)) = (t, v1) else {
         return false;
     };
-    if (now - t).abs() > tolerance_seconds {
+    // A negative tolerance admits nothing.
+    let Ok(tolerance) = u64::try_from(tolerance_seconds) else {
+        return false;
+    };
+    if now.abs_diff(t) > tolerance {
         return false;
     }
     let expected = signature(secret, t, body);
@@ -206,9 +210,14 @@ pub enum Next {
 pub fn after_attempt(status: Option<u16>, attempts: i32) -> Next {
     match status {
         Some(200..=299) => Next::Delivered,
-        None | Some(408 | 429 | 500..=599) if attempts < MAX_ATTEMPTS => Next::Retry(
-            crate::scim::backoff_seconds(u32::try_from(attempts - 1).unwrap_or(0)),
-        ),
+        None | Some(408 | 429 | 500..=599) if attempts < MAX_ATTEMPTS => {
+            Next::Retry(crate::scim::backoff_seconds(
+                attempts
+                    .checked_sub(1)
+                    .and_then(|n| u32::try_from(n).ok())
+                    .unwrap_or(0),
+            ))
+        }
         _ => Next::GiveUp,
     }
 }
@@ -606,5 +615,15 @@ mod tests {
         assert!(internal_literal("255.255.255.255"));
         assert!(internal_literal("fe80::1"));
         assert!(!internal_literal("93.184.216.34"));
+    }
+
+    #[test]
+    fn a_negative_tolerance_admits_nothing_and_a_minimum_attempt_count_backs_off_least() {
+        assert!(!verify(b"s", "t=1,v1=x", b"", 1, -1));
+        assert!(!verify(b"s", "t=0,v1=x", b"", i64::MAX, i64::MAX - 1));
+        assert_eq!(
+            after_attempt(None, i32::MIN),
+            Next::Retry(crate::scim::backoff_seconds(0))
+        );
     }
 }

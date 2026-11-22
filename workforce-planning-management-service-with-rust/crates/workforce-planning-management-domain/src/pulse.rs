@@ -49,23 +49,23 @@ pub fn aggregate_cell(scores: &[i32]) -> Cell {
     if scores.len() < K_ANONYMITY {
         return Cell::Suppressed;
     }
+    // Out-of-scale rows cannot exist (validated at write), but a pure function does not trust its
+    // caller: clamp, don't panic.
     let mut distribution = [0usize; 5];
-    let mut total: i64 = 0;
-    for &score in scores {
-        // Out-of-scale rows cannot exist (validated at write), but a
-        // pure function does not trust its caller: clamp, don't panic.
-        let idx = score.clamp(SCORE_MIN, SCORE_MAX) - 1;
-        #[allow(clippy::cast_sign_loss)] // clamped to 0..=4
-        let slot = distribution.get_mut(idx as usize);
-        if let Some(count) = slot {
-            *count += 1;
-        }
-        total += i64::from(score.clamp(SCORE_MIN, SCORE_MAX));
+    for (slot, level) in distribution.iter_mut().zip(SCORE_MIN..=SCORE_MAX) {
+        *slot = scores
+            .iter()
+            .filter(|s| (**s).clamp(SCORE_MIN, SCORE_MAX) == level)
+            .count();
     }
+    let total: f64 = scores
+        .iter()
+        .map(|s| f64::from((*s).clamp(SCORE_MIN, SCORE_MAX)))
+        .sum();
     Cell::Disclosed {
         count: scores.len(),
         distribution,
-        mean: total as f64 / scores.len() as f64,
+        mean: total / scores.len() as f64,
     }
 }
 

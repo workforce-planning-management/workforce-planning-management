@@ -429,7 +429,7 @@ fn most_common_currency(staff: &[Paid]) -> Option<String> {
         if w.salary_minor.is_some()
             && let Some(code) = &w.salary_currency
         {
-            *counts.entry(code.as_str()).or_insert(0) += 1;
+            crate::controllers::tally::bump(counts.entry(code.as_str()).or_insert(0));
         }
     }
     counts
@@ -662,8 +662,8 @@ fn composition_rows(r: &Report) -> String {
             String::new(),
         ),
     });
-    for (i, band) in r.quartiles.iter().enumerate() {
-        let name = format!("(f) quartile {} composition", i + 1);
+    for (number, band) in (1..).zip(r.quartiles.iter()) {
+        let name = format!("(f) quartile {number} composition");
         out.push_str(&match band {
             Figure::Shown(c) => composition_row(
                 &name,

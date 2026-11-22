@@ -261,7 +261,9 @@ pub(crate) async fn open_in(
             e.into()
         }
     })?;
-    let plan = rules::plan(&payload.kind, effective);
+    let plan = rules::plan(&payload.kind, effective).ok_or_else(|| {
+        unprocessable("the effective date is too near the end of the calendar for a checklist")
+    })?;
     let assignees: Vec<Option<Uuid>> = plan
         .iter()
         .map(|item| {

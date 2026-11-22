@@ -37,9 +37,9 @@ pub fn tax_year_of(date: Date, start: (u32, u32)) -> Option<(Date, Date)> {
     let first = if date >= this_year {
         this_year
     } else {
-        crate::dates::ymd(i32::from(date.year()) - 1, month, day)?
+        crate::dates::ymd(i32::from(date.year()).checked_sub(1)?, month, day)?
     };
-    let next = crate::dates::ymd(i32::from(first.year()) + 1, month, day)?;
+    let next = crate::dates::ymd(i32::from(first.year()).checked_add(1)?, month, day)?;
     Some((first, next.yesterday().ok()?))
 }
 

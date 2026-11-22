@@ -591,11 +591,17 @@ pub(super) fn spec_of(m: &measures::Model) -> rules::Spec {
 }
 
 /// The last complete month, as a period number.
-pub(super) fn last_complete_month(today: Date) -> i64 {
+///
+/// # Errors
+///
+/// A `500` when the period number does not fit, which no calendar date can cause.
+pub(super) fn last_complete_month(today: Date) -> Result<i64> {
     rules::month_period(
         i32::from(today.year()),
         u32::from(today.month().unsigned_abs()),
-    ) - 1
+    )
+    .and_then(|period| period.checked_sub(1))
+    .ok_or_else(|| super::internal("the period number of the last complete month overflowed"))
 }
 
 /// The readings a measure is judged on: entered ones for a reported measure; for a derived one, the
@@ -607,26 +613,32 @@ pub(super) async fn measure_readings(
     latest: i64,
 ) -> Result<Vec<rules::Reading>> {
     if let Some(key) = m.derivation.as_deref() {
-        let first = latest - i64::from(m.sustain) + 1;
+        let first = latest
+            .checked_sub(i64::from(m.sustain))
+            .and_then(|before| before.checked_add(1))
+            .ok_or_else(|| super::internal("the sustain window of a measure overflowed"))?;
         let periods: Vec<i64> = (first..=latest).collect();
         return oversight_derived::readings(ctx, org, key, &periods).await;
     }
-    Ok(sqlx::query!(
+    sqlx::query!(
         "SELECT period_on, value FROM oversight_readings WHERE measure_pid = $1 ORDER BY id",
         m.pid,
     )
     .fetch_all(db::pool(ctx))
     .await?
     .into_iter()
-    .map(|r| rules::Reading {
-        period: rules::month_period(
-            i32::from(r.period_on.year()),
-            u32::from(r.period_on.month().unsigned_abs()),
-        ),
-        value: r.value,
-        origin: rules::Origin::Reported,
+    .map(|r| {
+        Ok(rules::Reading {
+            period: rules::month_period(
+                i32::from(r.period_on.year()),
+                u32::from(r.period_on.month().unsigned_abs()),
+            )
+            .ok_or_else(|| super::internal("the period number of a reading overflowed"))?,
+            value: r.value,
+            origin: rules::Origin::Reported,
+        })
     })
-    .collect())
+    .collect()
 }
 
 /// The measures behind the criteria of the level the organization is at on `today` (none when no
@@ -709,7 +721,7 @@ pub(super) async fn status_json(
     .fetch_all(db::pool(ctx))
     .await?;
     let current = history.iter().find(|p| p.effective_on <= today);
-    let latest = last_complete_month(today);
+    let latest = last_complete_month(today)?;
     let mut verdicts = Vec::new();
     if let Some(level) = current.and_then(|p| by_pid.get(&p.level_pid)) {
         let cs = sqlx::query!(
@@ -767,6 +779,10 @@ pub(super) async fn status_json(
     }))
 }
 
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "rem_euclid(12) is 0 to 11, so adding one cannot overflow"
+)]
 fn month_label(period: i64) -> String {
     format!(
         "{:04}-{:02}",

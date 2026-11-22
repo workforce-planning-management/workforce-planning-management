@@ -600,16 +600,18 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 "required": display::from_hundredths(p.required),
                 "recorded": display::from_hundredths(p.recorded),
                 "verified": display::from_hundredths(p.verified),
-                "remaining": display::from_hundredths(p.remaining()),
+                "remaining": p.remaining().map(display::from_hundredths),
                 "met": p.met(),
                 "met_verified": p.met_verified(),
-                "pace": pace_json(&rules::pace(
+                "pace": rules::pace(
                     p.recorded,
                     p.required,
                     r.period_start.get(),
                     r.period_end.get(),
                     today,
-                )),
+                )
+                .as_ref()
+                .map(pace_json),
             })
         })
         .collect();
@@ -664,7 +666,7 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
         }));
     }
     // Only the registrations that need attention are read: expired, or expiring inside the warning window.
-    let horizon = today + jiff::Span::new().days(rules::DEFAULT_WARN_DAYS);
+    let horizon = crate::controllers::tally::date_plus_days(today, rules::DEFAULT_WARN_DAYS)?;
     let (mut expiring, mut expired) = (0usize, 0usize);
     for expires_on in sqlx::query_scalar!(
         "SELECT r.expires_on FROM professional_registrations r
@@ -683,8 +685,8 @@ async fn overview(State(ctx): State<AppContext>) -> Result<Response> {
             today,
             rules::DEFAULT_WARN_DAYS,
         ) {
-            "expiring" => expiring += 1,
-            "expired" => expired += 1,
+            "expiring" => crate::controllers::tally::bump(&mut expiring),
+            "expired" => crate::controllers::tally::bump(&mut expired),
             _ => {}
         }
     }

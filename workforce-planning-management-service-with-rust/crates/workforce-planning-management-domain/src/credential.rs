@@ -88,31 +88,35 @@ pub fn gunzip_stored(bytes: &[u8]) -> Result<Vec<u8>, String> {
     }
     let mut at = 10;
     let mut out = Vec::new();
+    // The byte `offset` on from `at`, or "truncated" when there is none (or the position does not fit).
+    let byte = |at: usize, offset: usize| -> Result<u8, &'static str> {
+        at.checked_add(offset)
+            .and_then(|i| bytes.get(i))
+            .copied()
+            .ok_or("truncated")
+    };
     loop {
-        let header = *bytes.get(at).ok_or("truncated")?;
+        let header = byte(at, 0)?;
         if header & 0b110 != 0 {
             return Err("only stored blocks are read here".to_string());
         }
-        let len = usize::from(u16::from_le_bytes([
-            *bytes.get(at + 1).ok_or("truncated")?,
-            *bytes.get(at + 2).ok_or("truncated")?,
-        ]));
-        let complement = u16::from_le_bytes([
-            *bytes.get(at + 3).ok_or("truncated")?,
-            *bytes.get(at + 4).ok_or("truncated")?,
-        ]);
+        let len = usize::from(u16::from_le_bytes([byte(at, 1)?, byte(at, 2)?]));
+        let complement = u16::from_le_bytes([byte(at, 3)?, byte(at, 4)?]);
         if complement != !u16::try_from(len).unwrap_or(u16::MAX) {
             return Err("stored block length check does not match".to_string());
         }
-        let body = bytes.get(at + 5..at + 5 + len).ok_or("truncated")?;
+        let start = at.checked_add(5).ok_or("truncated")?;
+        let end = start.checked_add(len).ok_or("truncated")?;
+        let body = bytes.get(start..end).ok_or("truncated")?;
         out.extend_from_slice(body);
-        at += 5 + len;
+        at = end;
         if header & 1 == 1 {
             break;
         }
     }
-    let tail: [u8; 8] = bytes
-        .get(at..at + 8)
+    let tail: [u8; 8] = at
+        .checked_add(8)
+        .and_then(|end| bytes.get(at..end))
         .and_then(|t| t.try_into().ok())
         .ok_or("truncated")?;
     let [c0, c1, c2, c3, s0, s1, s2, s3] = tail;

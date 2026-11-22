@@ -65,10 +65,15 @@ fn stamp(at: Timestamp) -> String {
     crate::dates::rfc3339_seconds(at)
 }
 
+/// The position of an issuance in the revocation list: its row id counted from zero.
+fn status_index(id: i32) -> Option<usize> {
+    usize::try_from(id.checked_sub(1)?).ok()
+}
+
 fn row(i: &credential_issuances::Model) -> serde_json::Value {
     json!({
         "pid": i.pid, "kind": i.kind, "source_pid": i.source_pid, "issued_at": i.issued_at,
-        "revoked_at": i.revoked_at, "status_index": i.id - 1,
+        "revoked_at": i.revoked_at, "status_index": status_index(i.id),
     })
 }
 
@@ -130,7 +135,7 @@ pub(crate) async fn issue(
     )
     .fetch_one(&mut *tx)
     .await?;
-    let index = usize::try_from(id - 1).unwrap_or(usize::MAX);
+    let index = status_index(id).unwrap_or(usize::MAX);
     if index >= rules::STATUS_BITS {
         return Err(unprocessable(
             "the revocation list is full; a new list is needed before more can be issued",
@@ -322,7 +327,7 @@ async fn status_list(State(ctx): State<AppContext>) -> Result<Response> {
             .fetch_all(pool(&ctx))
             .await?
             .into_iter()
-            .filter_map(|id| usize::try_from(id - 1).ok())
+            .filter_map(status_index)
             .collect();
     let encoded = rules::encoded_list(&revoked).map_err(|e| unprocessable(&e))?;
     let credential = rules::status_list(
@@ -342,4 +347,17 @@ pub fn routes() -> Routes {
         .add("/credentials/{pid}/revoke", post(revoke))
         .add("/credentials/issuer", get(issuer_key))
         .add("/credentials/status-list", get(status_list))
+}
+
+#[cfg(test)]
+mod status_index_tests {
+    use super::status_index;
+
+    #[test]
+    fn the_first_row_is_position_zero_and_an_impossible_id_has_none() {
+        assert_eq!(status_index(1), Some(0));
+        assert_eq!(status_index(i32::MAX), Some(2_147_483_646));
+        assert_eq!(status_index(0), None);
+        assert_eq!(status_index(i32::MIN), None);
+    }
 }

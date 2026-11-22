@@ -556,7 +556,7 @@ pub async fn replay_erasures(pool: &sqlx::PgPool, since: Option<Date>) -> Result
     .await?;
     let mut report = ReplayReport::default();
     for epid in rows {
-        report.considered += 1;
+        crate::controllers::tally::bump(&mut report.considered);
         let mut tx = pool.begin().await?;
         let found = sqlx::query!(
             "UPDATE workers SET display_name = $2, person_ref = $3, upstream_worker_ref = NULL, salary_minor = NULL,
@@ -570,7 +570,7 @@ pub async fn replay_erasures(pool: &sqlx::PgPool, since: Option<Date>) -> Result
         .await?
         .rows_affected();
         if found == 0 {
-            report.missing += 1;
+            crate::controllers::tally::bump(&mut report.missing);
             tx.commit().await?;
             continue;
         }
@@ -587,7 +587,7 @@ pub async fn replay_erasures(pool: &sqlx::PgPool, since: Option<Date>) -> Result
         )
         .await?;
         tx.commit().await?;
-        report.reapplied += 1;
+        crate::controllers::tally::bump(&mut report.reapplied);
     }
     Ok(report)
 }
@@ -844,7 +844,10 @@ async fn retention_report(State(ctx): State<AppContext>) -> Result<Response> {
     let recruitment_days = days_for("candidates", &all);
     let expired_candidates = sqlx::query_scalar!(
         r#"SELECT COUNT(*) AS "n!" FROM candidates WHERE deleted_at IS NULL AND consent_until < $1"#,
-        SqlDate(crate::dates::today() - crate::dates::days(recruitment_days)),
+        SqlDate(crate::controllers::tally::date_minus_days(
+            crate::dates::today(),
+            recruitment_days,
+        )?),
     )
     .fetch_one(crate::db::pool(&ctx))
     .await?;
@@ -888,7 +891,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
         .await?;
         if affected > 0 {
             deleted.insert(table.to_string(), serde_json::json!(affected));
-            total += affected;
+            crate::controllers::tally::add(&mut total, affected)?;
         }
     }
     for table in rules::SOFT_DELETED_TABLES {
@@ -900,7 +903,7 @@ async fn retention_sweep(State(ctx): State<AppContext>, caller: MaybeAuthUser) -
         .await?;
         if affected > 0 {
             deleted.insert((*table).to_string(), serde_json::json!(affected));
-            total += affected;
+            crate::controllers::tally::add(&mut total, affected)?;
         }
     }
     let scrubbed = run_statement(

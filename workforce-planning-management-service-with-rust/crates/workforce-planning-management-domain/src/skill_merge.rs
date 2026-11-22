@@ -51,19 +51,22 @@ pub struct Usage {
 }
 
 impl Usage {
-    /// Total uses.
+    /// Total uses; `None` when the sum does not fit.
     #[must_use]
-    pub fn total(&self) -> usize {
+    pub fn total(&self) -> Option<usize> {
         self.declared_by
-            + self.required_by_profiles
-            + self.in_development_plans
-            + self.in_initiatives
+            .checked_add(self.required_by_profiles)?
+            .checked_add(self.in_development_plans)?
+            .checked_add(self.in_initiatives)
     }
 
     /// Whether the skill can be deleted outright: nothing uses it.
     #[must_use]
     pub fn deletable(&self) -> bool {
-        self.total() == 0
+        self.declared_by == 0
+            && self.required_by_profiles == 0
+            && self.in_development_plans == 0
+            && self.in_initiatives == 0
     }
 }
 
@@ -110,7 +113,16 @@ mod tests {
                 in_initiatives: 4
             }
             .total(),
-            10
+            Some(10)
+        );
+        assert_eq!(
+            Usage {
+                declared_by: usize::MAX,
+                required_by_profiles: 1,
+                ..Usage::default()
+            }
+            .total(),
+            None
         );
     }
 }

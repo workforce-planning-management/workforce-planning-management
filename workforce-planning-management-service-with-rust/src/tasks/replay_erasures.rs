@@ -29,22 +29,22 @@ use crate::controllers::privacy::replay_erasures;
 /// The first malformed line.
 pub fn parse_ledger(text: &str) -> std::result::Result<Vec<(Uuid, Timestamp)>, String> {
     let mut out = Vec::new();
-    for (number, line) in text.lines().enumerate() {
+    for (line, number) in text.lines().zip(1_usize..) {
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
         let (pid, at) = line
             .split_once(',')
-            .ok_or_else(|| format!("line {}: expected `pid,time`", number + 1))?;
+            .ok_or_else(|| format!("line {number}: expected `pid,time`"))?;
         let pid = pid
             .trim()
             .parse::<Uuid>()
-            .map_err(|e| format!("line {}: bad pid: {e}", number + 1))?;
+            .map_err(|e| format!("line {number}: bad pid: {e}"))?;
         let at = at
             .trim()
             .parse::<Timestamp>()
-            .map_err(|e| format!("line {}: bad time: {e}", number + 1))?;
+            .map_err(|e| format!("line {number}: bad time: {e}"))?;
         out.push((pid, at));
     }
     Ok(out)

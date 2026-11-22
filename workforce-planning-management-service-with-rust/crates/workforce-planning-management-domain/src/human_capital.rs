@@ -39,6 +39,8 @@ pub enum Reason {
     NoRecord,
     /// Nothing to divide by or to take a middle of.
     NothingToDivide,
+    /// The figure does not fit the number it is held in, so it is unknown, never a wrapped or capped number.
+    OutOfRange,
     /// The figure sits behind a stricter read than this report, which is offered by its own route.
     ReadElsewhere,
 }
@@ -243,9 +245,13 @@ pub struct WageRun {
 }
 
 impl WageRun {
-    /// Every payslip of the run.
-    const fn payslips(self) -> usize {
-        self.below + self.near + self.ok + self.none_by_law + self.unknown
+    /// Every payslip of the run, or `None` when the count does not fit a `usize`.
+    fn payslips(self) -> Option<usize> {
+        self.below
+            .checked_add(self.near)?
+            .checked_add(self.ok)?
+            .checked_add(self.none_by_law)?
+            .checked_add(self.unknown)
     }
 }
 
@@ -309,21 +315,26 @@ fn count(n: usize, floor: usize) -> Value {
     }
 }
 
-/// `part / whole` in basis points, halves rounded up. `None` with nothing to divide.
-fn basis_points(part: usize, whole: usize) -> Option<i64> {
+/// `part / whole` in basis points, halves rounded up. [`Reason::NothingToDivide`] with nothing to divide, and
+/// [`Reason::OutOfRange`] when a count or the result does not fit.
+fn basis_points(part: usize, whole: usize) -> Result<i64, Reason> {
     if whole == 0 {
-        return None;
+        return Err(Reason::NothingToDivide);
     }
-    let (p, w) = (i64::try_from(part).ok()?, i64::try_from(whole).ok()?);
-    Some((p * 20_000 + w) / (2 * w))
+    let fit = |n: usize| i64::try_from(n).map_err(|_| Reason::OutOfRange);
+    let (p, w) = (fit(part)?, fit(whole)?);
+    p.checked_mul(20_000)
+        .and_then(|scaled| scaled.checked_add(w))
+        .and_then(|scaled| scaled.checked_div(w.checked_mul(2)?))
+        .ok_or(Reason::OutOfRange)
 }
 
 fn unknown(reason: Reason) -> Value {
     Value::Unknown { reason }
 }
 
-fn bp_value(v: Option<i64>) -> Value {
-    v.map_or(unknown(Reason::NothingToDivide), |value| Value::Shown {
+fn bp_value(v: Result<i64, Reason>) -> Value {
+    v.map_or_else(unknown, |value| Value::Shown {
         value,
         unit: Unit::BasisPoints,
     })
@@ -334,20 +345,26 @@ fn median(days: &[i64]) -> Option<i64> {
     let mut sorted = days.to_vec();
     sorted.sort_unstable();
     let n = sorted.len();
+    let mid = n / 2;
     match n {
         0 => None,
-        _ if n % 2 == 1 => sorted.get(n / 2).copied(),
-        _ => sorted
-            .get(n / 2 - 1..=n / 2)
-            .and_then(|pair| <&[i64; 2]>::try_from(pair).ok())
-            .map(|[low, high]| (low + high + 1) / 2),
+        _ if n % 2 == 1 => sorted.get(mid).copied(),
+        _ => {
+            let low = *sorted.get(mid.checked_sub(1)?)?;
+            let high = *sorted.get(mid)?;
+            low.checked_add(high)?.checked_add(1)?.checked_div(2)
+        }
     }
 }
 
 /// The mean of the days, halves rounded up: `None` when there are none.
 fn mean(days: &[i64]) -> Option<i64> {
     let n = i64::try_from(days.len()).ok().filter(|n| *n > 0)?;
-    Some((days.iter().sum::<i64>() * 2 + n) / (2 * n))
+    let total = days.iter().try_fold(0_i64, |sum, d| sum.checked_add(*d))?;
+    total
+        .checked_mul(2)?
+        .checked_add(n)?
+        .checked_div(n.checked_mul(2)?)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -425,11 +442,17 @@ fn workforce_figures(i: &Inputs, floor: usize, on: Period) -> Vec<Figure> {
 /// Starters, leavers and turnover.
 fn movement_figures(i: &Inputs, floor: usize, over: Period) -> Vec<Figure> {
     let leavers = count(i.leavers, floor);
-    let turnover = match (&leavers, i.opening + i.closing) {
-        (Value::Withheld, _) => Value::Withheld,
-        (_, 0) => unknown(Reason::NothingToDivide),
-        (_, both) if both < 2 * floor => Value::Withheld,
-        _ => bp_value(basis_points(i.leavers * 2, i.opening + i.closing)),
+    let turnover = match (
+        &leavers,
+        i.opening.checked_add(i.closing),
+        floor.checked_mul(2),
+        i.leavers.checked_mul(2),
+    ) {
+        (Value::Withheld, ..) => Value::Withheld,
+        (_, Some(0), ..) => unknown(Reason::NothingToDivide),
+        (_, Some(both), Some(least), _) if both < least => Value::Withheld,
+        (_, Some(both), Some(_), Some(doubled)) => bp_value(basis_points(doubled, both)),
+        _ => unknown(Reason::OutOfRange),
     };
     vec![
         figure(
@@ -638,22 +661,23 @@ fn safety_figures(i: &Inputs, floor: usize, over: Period) -> Vec<Figure> {
 /// The share of pay periods with a payslip under a legal floor. A run with an unanswered payslip and no `below` cannot be called clear,
 /// and a run where no floor applies has nothing to compare, so neither is counted; both are said. Indicative, like the check.
 fn wage_floor_figure(i: &Inputs, floor: usize, over: Period) -> Figure {
-    let counted: Vec<&WageRun> = i
+    let is_counted = |r: &&WageRun| r.below > 0 || (r.unknown == 0 && (r.near > 0 || r.ok > 0));
+    let is_unanswered = |r: &&WageRun| r.below == 0 && r.unknown > 0;
+    let counted: Vec<&WageRun> = i.wage_runs.iter().filter(is_counted).collect();
+    let unanswered = i.wage_runs.iter().filter(is_unanswered).count();
+    let no_floor = i
         .wage_runs
         .iter()
-        .filter(|r| r.below > 0 || (r.unknown == 0 && r.near + r.ok > 0))
-        .collect();
-    let unanswered = i
-        .wage_runs
-        .iter()
-        .filter(|r| r.below == 0 && r.unknown > 0)
+        .filter(|r| !is_counted(r) && !is_unanswered(r))
         .count();
-    let no_floor = i.wage_runs.len() - counted.len() - unanswered;
-    let largest = counted.iter().map(|r| r.payslips()).max().unwrap_or(0);
-    let value = match counted.len() {
-        0 => unknown(Reason::NothingToDivide),
-        n if n < floor || largest < floor => Value::Withheld,
-        n => bp_value(basis_points(
+    let largest = counted
+        .iter()
+        .try_fold(0_usize, |most, r| Some(most.max(r.payslips()?)));
+    let value = match (counted.len(), largest) {
+        (0, _) => unknown(Reason::NothingToDivide),
+        (_, None) => unknown(Reason::OutOfRange),
+        (n, Some(largest)) if n < floor || largest < floor => Value::Withheld,
+        (n, Some(_)) => bp_value(basis_points(
             counted.iter().filter(|r| r.below > 0).count(),
             n,
         )),
@@ -811,6 +835,36 @@ mod tests {
             .into_iter()
             .find(|f| f.key == "pay_periods_below_minimum_wage")
             .unwrap()
+    }
+
+    #[test]
+    fn counts_that_do_not_fit_make_the_figure_unknown() {
+        let too_big = Value::Unknown {
+            reason: Reason::OutOfRange,
+        };
+        let wage_runs = vec![run(usize::MAX, 1, 0, 0)];
+        let f = wage(&Inputs {
+            wage_runs,
+            ..inputs()
+        });
+        assert_eq!(f.value, too_big);
+        let r = report(
+            &Inputs {
+                opening: usize::MAX,
+                closing: 1,
+                ..inputs()
+            },
+            1,
+        );
+        assert_eq!(find(&r, "turnover_rate").value, too_big);
+        let r = report(
+            &Inputs {
+                leavers: usize::MAX,
+                ..inputs()
+            },
+            1,
+        );
+        assert_eq!(find(&r, "turnover_rate").value, too_big);
     }
 
     #[test]
@@ -991,6 +1045,9 @@ mod tests {
         assert_eq!(median(&[3, 1, 2]), Some(2));
         assert_eq!(mean(&[]), None);
         assert_eq!(median(&[]), None);
+        assert_eq!(median(&[i64::MAX, i64::MAX]), None, "does not fit");
+        assert_eq!(mean(&[i64::MAX, 1]), None, "does not fit");
+        assert_eq!(mean(&[i64::MAX]), None, "does not fit");
     }
 
     #[test]
@@ -1119,7 +1176,12 @@ mod tests {
 
     #[test]
     fn a_share_of_nothing_is_unknown() {
-        assert_eq!(basis_points(1, 0), None);
-        assert_eq!(basis_points(1, 4), Some(2_500));
+        assert_eq!(basis_points(1, 0), Err(Reason::NothingToDivide));
+        assert_eq!(basis_points(1, 4), Ok(2_500));
+        assert_eq!(basis_points(usize::MAX, 1), Err(Reason::OutOfRange));
+        assert_eq!(basis_points(1, usize::MAX), Err(Reason::OutOfRange));
+        let biggest = usize::try_from(i64::MAX).unwrap();
+        assert_eq!(basis_points(biggest, 1), Err(Reason::OutOfRange));
+        assert_eq!(basis_points(1, biggest), Err(Reason::OutOfRange));
     }
 }

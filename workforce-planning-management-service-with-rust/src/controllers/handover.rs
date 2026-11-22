@@ -947,8 +947,8 @@ async fn reassign_all(
         )
         .await
         {
-            Ok("revoked") => revoked += 1,
-            Ok(_) => moved += 1,
+            Ok("revoked") => crate::controllers::tally::bump(&mut revoked),
+            Ok(_) => crate::controllers::tally::bump(&mut moved),
             Err(e) => failed.push(serde_json::json!({
                 "kind": held.kind.as_str(),
                 "subject_pid": held.subject,

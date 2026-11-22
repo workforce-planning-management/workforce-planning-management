@@ -76,8 +76,8 @@ pub fn parse_skills(text: &str) -> Result<Vec<Skill>, String> {
         ));
     }
     let mut skills: BTreeMap<String, Skill> = BTreeMap::new();
-    for (i, row) in body.iter().enumerate() {
-        let n = i + 2;
+    // Row numbers count from 2: the header is row 1.
+    for (row, n) in body.iter().zip(2_usize..) {
         if row.len() != COLUMNS.len() {
             return Err(format!(
                 "row {n}: expected {} columns, found {}",
@@ -199,8 +199,8 @@ pub fn parse_levels(text: &str) -> Result<Vec<ResponsibilityLevel>, String> {
         ));
     }
     let mut out: Vec<ResponsibilityLevel> = Vec::new();
-    for (i, row) in body.iter().enumerate() {
-        let n = i + 2;
+    // Row numbers count from 2: the header is row 1.
+    for (row, n) in body.iter().zip(2_usize..) {
         let Ok(cells) = <&[String; LEVEL_COLUMNS.len()]>::try_from(row.as_slice()) else {
             return Err(format!(
                 "row {n}: expected {} columns, found {}",
@@ -288,8 +288,8 @@ pub fn parse_resources(text: &str) -> Result<Vec<Resource>, String> {
         ));
     }
     let mut out: Vec<Resource> = Vec::new();
-    for (i, row) in body.iter().enumerate() {
-        let n = i + 2;
+    // Row numbers count from 2: the header is row 1.
+    for (row, n) in body.iter().zip(2_usize..) {
         if row.len() != RESOURCE_COLUMNS.len() {
             return Err(format!(
                 "row {n}: expected {} columns, found {}",

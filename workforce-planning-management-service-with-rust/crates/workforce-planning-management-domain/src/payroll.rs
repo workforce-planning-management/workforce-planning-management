@@ -262,7 +262,9 @@ pub fn compute_payslip_with_premium(
         .try_fold(0_i64, |acc, d| acc.checked_add(d.amount_minor))
         .ok_or_else(|| "deductions overflow".to_string())?;
     // Gross and every deduction are non-negative here, so the difference cannot overflow; `reconcile` still checks it.
-    let net = gross - total;
+    let net = gross
+        .checked_sub(total)
+        .ok_or_else(|| "net pay overflows".to_string())?;
     let slip = Payslip {
         gross_minor: gross,
         deductions,

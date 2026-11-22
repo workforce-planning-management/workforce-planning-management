@@ -577,6 +577,7 @@ async fn my_time_off(
         })
         .collect();
     let balances: Vec<serde_json::Value> = time_rules::balances(&entitlements, &requests, today)
+        .ok_or_else(|| unprocessable("a leave total is too large to show"))?
         .into_iter()
         .filter(|b| b.year == year)
         .map(|b| {
@@ -601,6 +602,7 @@ async fn my_time_off(
         })
         .collect();
     let history: Vec<serde_json::Value> = time_rules::history(&requests, today)
+        .ok_or_else(|| unprocessable("a leave total is too large to show"))?
         .into_iter()
         .map(|(y, absences)| {
             json!({

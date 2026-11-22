@@ -181,7 +181,7 @@ pub fn team_count(in_audience: usize, acknowledged: usize, floor: usize) -> Coun
         let acknowledged = acknowledged.min(in_audience);
         Count::Shown {
             acknowledged,
-            waiting: in_audience - acknowledged,
+            waiting: in_audience.abs_diff(acknowledged),
         }
     }
 }

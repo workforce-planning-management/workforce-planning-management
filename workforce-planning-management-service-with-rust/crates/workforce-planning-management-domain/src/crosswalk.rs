@@ -119,7 +119,7 @@ pub fn apply(
                 gap.shortfall = None;
             } else {
                 gap.status = Status::Below;
-                gap.shortfall = Some(gap.required - level);
+                gap.shortfall = gap.required.checked_sub(level);
             }
             out.via.push(Via {
                 skill: gap.skill,
@@ -133,7 +133,13 @@ pub fn apply(
                 confidence: m.confidence.to_string(),
             });
         } else {
-            out.unmapped += 1;
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a count of gaps: bounded by the slice length"
+            )]
+            {
+                out.unmapped += 1;
+            }
         }
     }
     out
@@ -334,5 +340,21 @@ mod tests {
             "exact beats close; of the exact, level 3 beats 2"
         );
         assert_eq!(gaps[0].declared, Some(3));
+    }
+
+    #[test]
+    fn a_shortfall_that_does_not_fit_is_not_stated() {
+        let (needed, held) = (id(10), id(20));
+        let mut gaps = merge(&[need(needed, i32::MAX)], &BTreeMap::new());
+        apply(
+            &mut gaps,
+            &BTreeMap::from([(held, i32::MIN)]),
+            &[Mapping {
+                from: held,
+                to: needed,
+                confidence: "exact",
+            }],
+        );
+        assert_eq!((gaps[0].status, gaps[0].shortfall), (Status::Below, None));
     }
 }

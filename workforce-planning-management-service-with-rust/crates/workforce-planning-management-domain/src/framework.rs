@@ -110,17 +110,17 @@ pub fn parse_role_summary(text: &str) -> Result<ParsedLevel, String> {
             section = Section::Accountabilities;
         } else if let Some(name) = line.strip_prefix("Skill:") {
             let name = name.trim().to_string();
-            let index = out
-                .skills
-                .iter()
-                .position(|s| s.name == name)
-                .unwrap_or_else(|| {
-                    out.skills.push(ParsedSkill {
-                        name,
-                        statements: Vec::new(),
-                    });
-                    out.skills.len() - 1
+            let index = if let Some(index) = out.skills.iter().position(|s| s.name == name) {
+                index
+            } else {
+                // The new skill goes at the end, so its index is the length before it.
+                let at = out.skills.len();
+                out.skills.push(ParsedSkill {
+                    name,
+                    statements: Vec::new(),
                 });
+                at
+            };
             section = Section::Skill(index);
         } else if let Some(bullet) = line.strip_prefix("- ") {
             let bullet = bullet.trim().to_string();
@@ -171,7 +171,8 @@ pub fn parse_baselines(text: &str) -> BTreeMap<String, i32> {
         // Every `Baseline:` on the line, in order; the first followed by an integer wins.
         let level = line.match_indices("Baseline:").find_map(|(at, marker)| {
             let digits: String = line
-                .get(at + marker.len()..)?
+                .get(at..)?
+                .strip_prefix(marker)?
                 .trim_start()
                 .chars()
                 .take_while(char::is_ascii_digit)
@@ -270,9 +271,16 @@ pub fn map_level(
     match mapping {
         LevelMapping::Identity => (source <= target_max).then_some(source),
         LevelMapping::Linear => {
-            let numerator = (source - 1) * (target_max - 1);
-            let denominator = source_max - 1;
-            Some(1 + (2 * numerator + denominator) / (2 * denominator))
+            let numerator = source
+                .checked_sub(1)?
+                .checked_mul(target_max.checked_sub(1)?)?;
+            let denominator = source_max.checked_sub(1)?;
+            1_i32.checked_add(
+                numerator
+                    .checked_mul(2)?
+                    .checked_add(denominator)?
+                    .checked_div(denominator.checked_mul(2)?)?,
+            )
         }
     }
 }
@@ -497,6 +505,12 @@ The baseline for Inline variant at this level is 2 — prose, not the marker.
             "same scale is the identity"
         );
         assert_eq!(map_level(LevelMapping::Identity, 0, 4, 5), None);
+        assert_eq!(
+            map_level(LevelMapping::Linear, i32::MAX, i32::MAX, i32::MAX),
+            None,
+            "a product that does not fit is unknown"
+        );
+        assert_eq!(map_level(LevelMapping::Linear, 2, 3, i32::MAX), None);
         assert_eq!(map_level(LevelMapping::Identity, 5, 4, 5), None);
         assert_eq!(
             map_level(LevelMapping::Linear, 1, 1, 5),

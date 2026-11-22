@@ -106,11 +106,16 @@ pub fn assess(deviation: Option<i64>, limit: i64, amber_percent: i32) -> Rag {
         return Rag::Red;
     }
     // deviation / limit >= amber_percent / 100, without dividing
-    if i128::from(deviation) * 100 >= i128::from(limit) * i128::from(amber_percent) {
-        Rag::Amber
-    } else {
-        Rag::Green
-    }
+    i128::from(deviation)
+        .checked_mul(100)
+        .zip(i128::from(limit).checked_mul(i128::from(amber_percent)))
+        .map_or(Rag::Unknown, |(scaled_deviation, scaled_limit)| {
+            if scaled_deviation >= scaled_limit {
+                Rag::Amber
+            } else {
+                Rag::Green
+            }
+        })
 }
 
 /// The plan's status from its dimensions' statuses: red if any is, else amber, else unknown, else green
@@ -154,11 +159,18 @@ pub fn time_deviation(lines: &[Line], today: Date) -> Option<i64> {
 /// `None` when no line has both a known gap and a demand above zero.
 #[must_use]
 pub fn resources_deviation(lines: &[Line]) -> Option<i64> {
+    // A share that does not fit an `i64` leaves the whole figure unknown.
     let shares: Vec<i64> = lines
         .iter()
         .filter(|l| l.planned > 0)
-        .filter_map(|l| l.gap.map(|g| g.max(0) * 10_000 / l.planned))
-        .collect();
+        .filter_map(|l| {
+            l.gap.map(|g| {
+                g.max(0)
+                    .checked_mul(10_000)
+                    .and_then(|scaled| scaled.checked_div(l.planned))
+            })
+        })
+        .collect::<Option<Vec<i64>>>()?;
     shares.into_iter().max()
 }
 
@@ -172,7 +184,9 @@ pub fn cost_deviation(total: Option<i64>, budget: Option<i64>, complete: bool) -
     if budget <= 0 || (total <= budget && !complete) {
         return None;
     }
-    let over = i128::from((total - budget).max(0)) * 10_000 / i128::from(budget);
+    let over = i128::from(total.checked_sub(budget)?.max(0))
+        .checked_mul(10_000)?
+        .checked_div(i128::from(budget))?;
     Some(i64::try_from(over).unwrap_or(i64::MAX))
 }
 
@@ -293,6 +307,12 @@ mod tests {
         assert_eq!(resources_deviation(&lines), Some(3_333)); // 1 of 3
         assert_eq!(resources_deviation(&[line(t, 5, Some(-2))]), Some(0)); // surplus is no shortfall
         assert_eq!(
+            resources_deviation(&[line(t, 1, Some(i64::MAX))]),
+            None,
+            "a share that does not fit is unknown"
+        );
+        assert_eq!(resources_deviation(&[line(t, i64::MAX, Some(1))]), Some(0));
+        assert_eq!(
             resources_deviation(&[line(t, 0, Some(5)), line(t, 5, None)]),
             None
         );
@@ -306,6 +326,11 @@ mod tests {
         assert_eq!(cost_deviation(None, Some(1_000), true), None);
         assert_eq!(cost_deviation(Some(500), None, true), None);
         assert_eq!(cost_deviation(Some(500), Some(0), true), None);
+        assert_eq!(
+            cost_deviation(Some(i64::MIN), Some(1), true),
+            None,
+            "the difference does not fit"
+        );
         // a huge overspend saturates and stays red; it never becomes an unknown
         assert_eq!(
             cost_deviation(Some(i64::MAX / 2), Some(1), true),

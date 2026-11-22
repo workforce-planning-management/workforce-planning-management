@@ -74,7 +74,8 @@ pub fn expires_at(now: Timestamp, ttl_minutes: i64) -> Result<Timestamp, String>
             "a link lives {TTL_MIN_MINUTES} to {TTL_MAX_MINUTES} minutes"
         ));
     }
-    Ok(now + jiff::SignedDuration::from_mins(ttl_minutes))
+    now.checked_add(jiff::SignedDuration::from_mins(ttl_minutes))
+        .map_err(|_| "the link would outlive the calendar".to_string())
 }
 
 /// What is stored about a token.
@@ -214,6 +215,10 @@ mod tests {
         assert!(expires_at(at(10, 0), TTL_MAX_MINUTES + 1).is_err());
         assert!(expires_at(at(10, 0), TTL_MAX_MINUTES).is_ok());
         assert!(expires_at(at(10, 0), TTL_MIN_MINUTES).is_ok());
+        assert!(
+            expires_at(Timestamp::MAX, TTL_MIN_MINUTES).is_err(),
+            "past the calendar"
+        );
     }
 
     #[test]

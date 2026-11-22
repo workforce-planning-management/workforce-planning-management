@@ -108,8 +108,9 @@ pub(super) async fn cost_value(
             let headcount = people_in.get(department).map_or(0, Vec::len);
             let demand: i64 = group.iter().map(|l| i64::from(l.target_headcount)).sum();
             let days = crate::dates::days_between(today, *target_on).max(0);
-            let gap = attrition
-                .map(|bp| rules::headcount_gap(demand, rules::project_supply(headcount, bp, days)));
+            let gap = attrition.and_then(|bp| {
+                rules::headcount_gap(demand, rules::project_supply(headcount, bp, days)?)
+            });
             let hires = gap.map(cost_rules::hires_to_close);
             let benchmark_parts: Vec<(i64, usize)> = group
                 .iter()
@@ -136,7 +137,7 @@ pub(super) async fn cost_value(
                         *entry = (*target_on, amount);
                     }
                 }
-                None => uncosted += 1,
+                None => crate::controllers::tally::bump(&mut uncosted),
             }
             serde_json::json!({
                 "department": department,
@@ -157,9 +158,9 @@ pub(super) async fn cost_value(
         &currency,
     );
     let affordability = if salary_visible {
-        budget.map(|b| {
-            let (remaining, within) = cost_rules::against_budget(total, b);
-            serde_json::json!({ "budget_minor": b, "remaining_minor": remaining, "within_budget": within })
+        budget.and_then(|b| {
+            let (remaining, within) = cost_rules::against_budget(total, b)?;
+            Some(serde_json::json!({ "budget_minor": b, "remaining_minor": remaining, "within_budget": within }))
         })
     } else {
         None

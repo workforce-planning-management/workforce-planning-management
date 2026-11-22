@@ -30,6 +30,10 @@ impl Task for Seed {
     }
 
     #[allow(clippy::too_many_lines)] // one linear walk building the demo org
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "`n` counts the demo workers inserted by fixed loops of a few hundred rows at most"
+    )]
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
         let mut tx = crate::db::pool(ctx).begin().await?;
         let org = format!("organization:{}", Uuid::new_v4());
@@ -70,8 +74,10 @@ impl Task for Seed {
             .await?;
             for i in 0..9 {
                 n += 1;
-                let (title, salary) = *titles
-                    .get(usize::try_from(n).unwrap_or(0) % titles.len())
+                let (title, salary) = *usize::try_from(n)
+                    .unwrap_or(0)
+                    .checked_rem(titles.len())
+                    .and_then(|index| titles.get(index))
                     .ok_or_else(|| Error::string("seed data: no job titles"))?;
                 let pid = Uuid::new_v4();
                 sqlx::query!(

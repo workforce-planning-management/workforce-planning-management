@@ -103,6 +103,18 @@ fn start_of(day: Date) -> Timestamp {
     crate::dates::start_of_day(day)
 }
 
+/// The instant the day ends (the start of the next day), or `None` past the last instant a timestamp can hold.
+fn end_of(day: Date) -> Option<Timestamp> {
+    start_of(day).checked_add(crate::dates::days(1)).ok()
+}
+
+/// The last whole second of the day, or `None` when the day ends past the last instant a timestamp can hold.
+fn last_second_of(day: Date) -> Option<Timestamp> {
+    end_of(day)?
+        .checked_sub(jiff::SignedDuration::from_secs(1))
+        .ok()
+}
+
 // ─── Role history ───────────────────────────────────────────────────────────
 
 /// Query naming a framework.
@@ -180,7 +192,7 @@ async fn add_past_role(
     let worker = writable_worker(&ctx, &caller, &pid).await?;
     let interval = rules::validate_past(
         start_of(payload.started_on),
-        start_of(payload.ended_on) + crate::dates::days(1),
+        end_of(payload.ended_on).ok_or_else(|| unprocessable("ended_on is out of range"))?,
         Timestamp::now(),
     )
     .map_err(|e| unprocessable(&e))?;
@@ -340,7 +352,7 @@ async fn add_past_skill(
     }
     let interval = rules::validate_past(
         start_of(payload.started_on),
-        start_of(payload.ended_on) + crate::dates::days(1),
+        end_of(payload.ended_on).ok_or_else(|| unprocessable("ended_on is out of range"))?,
         Timestamp::now(),
     )
     .map_err(|e| unprocessable(&e))?;
@@ -403,7 +415,7 @@ async fn skills_as_of(
     axa::extract::Query(query): axa::extract::Query<AsOfQuery>,
 ) -> Result<Response> {
     let worker = records::worker_by_pid(&ctx, records::parse_pid(&pid)?).await?;
-    let instant = start_of(query.at) + crate::dates::days(1) - jiff::SignedDuration::from_secs(1);
+    let instant = last_second_of(query.at).ok_or_else(|| unprocessable("at is out of range"))?;
     let rows = skill_intervals_of(&ctx, worker.pid, None).await?;
     let names = skill_names(&ctx).await?;
     let mut by_skill: BTreeMap<Uuid, Vec<(Interval, i32)>> = BTreeMap::new();
@@ -613,7 +625,9 @@ async fn progress_toward(
         return Ok(serde_json::json!({
             "current_level": have,
             "target_level": a.target_level,
-            "gap": have.map_or(Some(target), |h| (h < target).then_some(target - h)),
+            "gap": have.map_or(Some(i64::from(target)), |h| {
+                (h < target).then(|| i64::from(target.abs_diff(h)))
+            }),
             "achieved": have.is_some_and(|h| h >= target),
         }));
     }
@@ -1001,4 +1015,25 @@ pub fn routes() -> Routes {
         )
         .add("/aspirations/{pid}", put(update_aspiration))
         .add("/aspirations/{pid}", delete(delete_aspiration))
+}
+
+#[cfg(test)]
+mod day_end_tests {
+    use super::{end_of, last_second_of};
+    use jiff::civil::Date;
+
+    #[test]
+    fn a_day_ends_at_the_next_midnight_and_the_last_second_is_one_before() {
+        let day = Date::constant(2026, 3, 1);
+        let end = end_of(day).map(|t| t.to_string());
+        assert_eq!(end.as_deref(), Some("2026-03-02T00:00:00Z"));
+        let last = last_second_of(day).map(|t| t.to_string());
+        assert_eq!(last.as_deref(), Some("2026-03-01T23:59:59Z"));
+    }
+
+    #[test]
+    fn the_last_day_the_calendar_holds_has_no_end() {
+        assert_eq!(end_of(Date::MAX), None);
+        assert_eq!(last_second_of(Date::MAX), None);
+    }
 }

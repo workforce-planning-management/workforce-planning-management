@@ -88,15 +88,11 @@ pub fn validate_target(nodes: &[Node]) -> Result<(), Vec<String>> {
             ));
         }
         // A walk up that does not end within the number of nodes is a cycle.
-        let mut at = n.key.as_str();
-        let mut steps = 0;
-        while let Some(up) = parent_of.get(at) {
-            at = up;
-            steps += 1;
-            if steps > nodes.len() {
-                out.push(format!("{}: the parents loop back on themselves", n.key));
-                break;
-            }
+        let mut walk = std::iter::successors(parent_of.get(n.key.as_str()).copied(), |up| {
+            parent_of.get(up).copied()
+        });
+        if walk.nth(nodes.len()).is_some() {
+            out.push(format!("{}: the parents loop back on themselves", n.key));
         }
     }
     out.sort();
@@ -205,22 +201,26 @@ fn current_side(people: &[Person]) -> Side {
             ))
         })
         .collect();
-    let mut layers = 0;
-    for p in people {
-        let mut at = p.key.as_str();
-        let mut depth = 1;
-        while let Some(up) = manager_of.get(at) {
-            at = up;
-            depth += 1;
-            if depth > people.len() {
-                break;
-            }
-        }
-        layers = layers.max(depth.min(people.len()));
-    }
+    // The chain from a person up through their managers, itself included, and no longer than the number of people (a loop
+    // in the data cannot make it longer).
+    let layers = people
+        .iter()
+        .map(|p| {
+            std::iter::successors(Some(p.key.as_str()), |at| manager_of.get(at).copied())
+                .zip(0..people.len())
+                .count()
+        })
+        .max()
+        .unwrap_or(0);
     let mut reports: HashMap<&str, i64> = HashMap::new();
     for m in manager_of.values() {
-        *reports.entry(m).or_insert(0) += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a count of people: bounded by the slice length"
+        )]
+        {
+            *reports.entry(m).or_insert(0) += 1;
+        }
     }
     let managers = i64::try_from(reports.len()).unwrap_or(0);
     let total: i64 = reports.values().sum();
@@ -229,10 +229,26 @@ fn current_side(people: &[Person]) -> Side {
         headcount: i64::try_from(people.len()).unwrap_or(0),
         span: Span {
             managers,
-            mean_hundredths: (managers > 0).then(|| (total * 200 + managers) / (2 * managers)),
+            mean_hundredths: mean_hundredths(total, managers),
             max: reports.values().copied().max().unwrap_or(0),
         },
     }
+}
+
+/// `total / count` in hundredths, rounded half up; `None` with nothing to divide by or a figure that does not fit.
+fn mean_hundredths(total: i64, count: i64) -> Option<i64> {
+    total
+        .checked_mul(200)?
+        .checked_add(count)?
+        .checked_div(count.checked_mul(2)?)
+}
+
+/// `reports / managers` rounded up, for a team of `managers` people sharing `reports` direct reports; `None` for no managers.
+fn ceil_div(reports: i64, managers: i64) -> Option<i64> {
+    reports
+        .checked_add(managers)?
+        .checked_sub(1)?
+        .checked_div(managers)
 }
 
 fn target_side(nodes: &[Node]) -> Side {
@@ -240,34 +256,50 @@ fn target_side(nodes: &[Node]) -> Side {
     let mut children: HashMap<&str, i64> = HashMap::new();
     for n in nodes {
         if let Some(p) = n.parent.as_deref() {
-            *children.entry(p).or_insert(0) += i64::from(n.headcount);
-        }
-    }
-    let mut layers = 0;
-    for n in nodes {
-        let (mut at, mut depth) = (n, 1);
-        while let Some(up) = at.parent.as_deref().and_then(|p| by_key.get(p)) {
-            at = up;
-            depth += 1;
-            if depth > nodes.len() {
-                break;
+            #[allow(
+                clippy::arithmetic_side_effects,
+                reason = "a sum of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
+            )]
+            {
+                *children.entry(p).or_insert(0) += i64::from(n.headcount);
             }
         }
-        layers = layers.max(depth);
     }
+    // The chain from a node up through its parents, itself included, and no longer than one past the number of nodes (a loop in
+    // the data cannot make it longer).
+    let layers = nodes
+        .iter()
+        .map(|n| {
+            std::iter::successors(Some(n), |at| {
+                at.parent.as_deref().and_then(|p| by_key.get(p)).copied()
+            })
+            .zip(0..=nodes.len())
+            .count()
+        })
+        .max()
+        .unwrap_or(0);
     let (mut managers, mut reports, mut max) = (0_i64, 0_i64, 0_i64);
     for (key, r) in &children {
         let h = i64::from(by_key.get(key).map_or(1, |n| n.headcount));
-        managers += h;
-        reports += r;
-        max = max.max((r + h - 1) / h);
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "sums of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
+        )]
+        {
+            managers += h;
+            reports += r;
+        }
+        // A node with no people has no managers to share its reports among: it adds no figure.
+        if let Some(per_manager) = ceil_div(*r, h) {
+            max = max.max(per_manager);
+        }
     }
     Side {
         layers,
         headcount: nodes.iter().map(|n| i64::from(n.headcount)).sum(),
         span: Span {
             managers,
-            mean_hundredths: (managers > 0).then(|| (reports * 200 + managers) / (2 * managers)),
+            mean_hundredths: mean_hundredths(reports, managers),
             max,
         },
     }
@@ -290,16 +322,28 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
     }
     let mut roles: BTreeMap<String, Agg> = BTreeMap::new();
     for p in people {
-        *entry(&mut roles, &p.title)
-            .current
-            .entry(p.department.trim().to_string())
-            .or_insert(0) += 1;
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a count of people: bounded by the slice length"
+        )]
+        {
+            *entry(&mut roles, &p.title)
+                .current
+                .entry(p.department.trim().to_string())
+                .or_insert(0) += 1;
+        }
     }
     for n in target {
-        *entry(&mut roles, &n.title)
-            .target
-            .entry(n.department.trim().to_string())
-            .or_insert(0) += i64::from(n.headcount);
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "a sum of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
+        )]
+        {
+            *entry(&mut roles, &n.title)
+                .target
+                .entry(n.department.trim().to_string())
+                .or_insert(0) += i64::from(n.headcount);
+        }
     }
     let floor = i64::try_from(floor).unwrap_or(i64::MAX);
     let roles = roles
@@ -325,7 +369,11 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
                 },
                 target: plan,
                 change,
-                delta: (!withheld).then_some(plan - now),
+                delta: if withheld {
+                    None
+                } else {
+                    plan.checked_sub(now)
+                },
                 moved: now > 0 && plan > 0 && current_departments != target_departments,
                 current_departments,
                 target_departments,
@@ -574,5 +622,38 @@ mod tests {
         ];
         let side = target_side(&looped);
         assert!(side.layers <= 3, "{side:?}");
+    }
+
+    #[test]
+    fn a_target_node_with_no_people_adds_no_span_and_does_not_panic() {
+        let target = [
+            node("a", None, "eng", "Head", 0),
+            node("b", Some("a"), "eng", "Engineer", 3),
+        ];
+        let d = diff(&[], &target, 1);
+        assert_eq!(d.target.span.max, 0);
+        assert_eq!(d.target.span.managers, 0);
+        assert_eq!(d.target.span.mean_hundredths, None);
+        assert_eq!(d.target.layers, 2);
+    }
+
+    #[test]
+    fn a_loop_in_the_data_is_bounded_not_endless() {
+        let people = [
+            person("a", Some("b"), "eng", "X"),
+            person("b", Some("a"), "eng", "X"),
+        ];
+        assert_eq!(diff(&people, &[], 1).current.layers, 2);
+        let target = [
+            node("a", Some("b"), "eng", "X", 1),
+            node("b", Some("a"), "eng", "X", 1),
+        ];
+        assert_eq!(diff(&[], &target, 1).target.layers, 3);
+        assert!(
+            validate_target(&target)
+                .unwrap_err()
+                .iter()
+                .any(|p| p.contains("loop"))
+        );
     }
 }

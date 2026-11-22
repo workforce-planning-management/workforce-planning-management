@@ -58,7 +58,7 @@ async fn true_now(ctx: &AppContext, org: &str, today: Date) -> Result<BTreeMap<K
             );
         }
     }
-    let latest = oversight::last_complete_month(today);
+    let latest = oversight::last_complete_month(today)?;
     for m in oversight::current_measures(ctx, org, today).await? {
         let rs = oversight::measure_readings(ctx, org, &m, latest).await?;
         let verdict = oversight_rules::evaluate_measure(&oversight::spec_of(&m), &rs, latest);
@@ -178,9 +178,9 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: Date) -> Result<Report> {
                 json!({ "warning_pid": warning_pid, "kind": key.kind, "subject_pid": key.subject }),
             )
             .await?;
-            report.told += 1;
+            crate::controllers::tally::bump(&mut report.told);
         }
-        report.opened += 1;
+        crate::controllers::tally::bump(&mut report.opened);
     }
     for key in &plan.cleared {
         if let Some(row) = open_rows
@@ -194,7 +194,7 @@ pub async fn sweep(ctx: &AppContext, org: &str, today: Date) -> Result<Report> {
             )
             .execute(&mut *connection)
             .await?;
-            report.cleared += 1;
+            crate::controllers::tally::bump(&mut report.cleared);
         }
     }
     Ok(report)

@@ -71,9 +71,14 @@ pub fn progression_diff(current: &[(String, i32)], next: &[(String, i32)]) -> Pr
         match now.get(skill) {
             None => out.added.push(((*skill).to_string(), *to)),
             Some(from) if to > from => out.raised.push(((*skill).to_string(), *from, *to)),
-            Some(_) => out.unchanged += 1,
+            Some(_) => {}
         }
     }
+    // Present in both and not raised: counted from the lists, so it cannot exceed their length.
+    out.unchanged = then
+        .iter()
+        .filter(|(skill, to)| now.get(*skill).is_some_and(|from| to <= &from))
+        .count();
     out.dropped = now
         .keys()
         .filter(|skill| !then.contains_key(*skill))

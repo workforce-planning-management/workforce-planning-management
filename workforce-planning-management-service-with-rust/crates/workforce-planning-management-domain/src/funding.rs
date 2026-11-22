@@ -141,8 +141,9 @@ fn percent(part: i64, whole: i64) -> Option<f64> {
 /// `(department, employment_type, fte_percent)` for each person employed. The organization's figure
 /// is always shown; the breakdown by department is shown only when every department reaches the
 /// floor, so a withheld one cannot be worked out from the others.
+/// `None` when a sum of people or FTE does not fit its type: the figures are then unknown, not capped.
 #[must_use]
-pub fn contingent_share(rows: &[(String, String, i32)], floor: usize) -> ContingentShare {
+pub fn contingent_share(rows: &[(String, String, i32)], floor: usize) -> Option<ContingentShare> {
     let counted: Vec<(String, String, i32, usize)> = rows
         .iter()
         .map(|(department, kind, fte)| (department.clone(), kind.clone(), *fte, 1))
@@ -152,12 +153,12 @@ pub fn contingent_share(rows: &[(String, String, i32)], floor: usize) -> Conting
 
 /// [`contingent_share`] over groups: each row is `(department, basis, fte_percent, people)`, the
 /// number of people who share those three values. The same answer as one row per person, from a
-/// few hundred groups instead of one row per worker of the organization.
+/// few hundred groups instead of one row per worker of the organization. `None` when a sum of people or FTE does not fit its type.
 #[must_use]
 pub fn contingent_share_counted(
     rows: &[(String, String, i32, usize)],
     floor: usize,
-) -> ContingentShare {
+) -> Option<ContingentShare> {
     use std::collections::BTreeMap;
     #[derive(Default)]
     struct Sum {
@@ -170,13 +171,13 @@ pub fn contingent_share_counted(
     let mut all = Sum::default();
     for (department, kind, fte, people) in rows {
         let people = *people;
-        let fte = i64::from(*fte) * i64::try_from(people).unwrap_or(i64::MAX);
+        let fte = i64::from(*fte).checked_mul(i64::try_from(people).ok()?)?;
         for sum in [by.entry(department).or_default(), &mut all] {
-            sum.people += people;
-            sum.fte += fte;
+            sum.people = sum.people.checked_add(people)?;
+            sum.fte = sum.fte.checked_add(fte)?;
             match kind.as_str() {
-                "contractor" => sum.contractor += fte,
-                "fixed_term" => sum.fixed_term += fte,
+                "contractor" => sum.contractor = sum.contractor.checked_add(fte)?,
+                "fixed_term" => sum.fixed_term = sum.fixed_term.checked_add(fte)?,
                 _ => {}
             }
         }
@@ -184,7 +185,7 @@ pub fn contingent_share_counted(
     let shown = by.values().all(|s| s.people >= floor);
     #[allow(clippy::cast_precision_loss)]
     let fte = all.fte as f64 / 100.0;
-    ContingentShare {
+    Some(ContingentShare {
         headcount: all.people,
         fte,
         contractor_percent: percent(all.contractor, all.fte),
@@ -207,7 +208,7 @@ pub fn contingent_share_counted(
                 },
             })
             .collect(),
-    }
+    })
 }
 
 /// People whose funding ends in one month (or has already ended).
@@ -225,32 +226,38 @@ pub struct FundingMonth {
 /// fte_percent)` for each person employed whose funding has an end. Nobody counts twice. A month
 /// with no one shows zero; a month with some, but fewer than the floor, is withheld; **no total is
 /// shown**, so a withheld month cannot be worked out. Funding that has already ended is its own
-/// entry, because someone is still engaged on it.
+/// entry, because someone is still engaged on it. `None` when a count or a month index does not fit.
 #[must_use]
 pub fn funding_horizon(
     ends: &[(Date, i32)],
     today: Date,
     months: u32,
     floor: usize,
-) -> Vec<FundingMonth> {
-    let index = |d: Date| i64::from(d.year()) * 12 + i64::from(d.month()) - 1;
-    let start = index(today);
-    let mut buckets: Vec<(usize, i64)> = vec![(0, 0); months as usize + 1];
+) -> Option<Vec<FundingMonth>> {
+    let index = |d: Date| {
+        i64::from(d.year())
+            .checked_mul(12)?
+            .checked_add(i64::from(d.month()))?
+            .checked_sub(1)
+    };
+    let start = index(today)?;
+    let mut buckets: Vec<(usize, i64)> =
+        vec![(0, 0); usize::try_from(months).ok()?.checked_add(1)?];
     for (end, fte) in ends {
         let slot = if *end < today {
             0
         } else {
-            let offset = index(*end) - start;
+            let offset = index(*end)?.checked_sub(start)?;
             if offset >= i64::from(months) {
                 continue;
             }
-            usize::try_from(offset).unwrap_or(0) + 1
+            usize::try_from(offset).ok()?.checked_add(1)?
         };
         let Some(bucket) = buckets.get_mut(slot) else {
             continue;
         };
-        bucket.0 += 1;
-        bucket.1 += i64::from(*fte);
+        bucket.0 = bucket.0.checked_add(1)?;
+        bucket.1 = bucket.1.checked_add(i64::from(*fte))?;
     }
     buckets
         .into_iter()
@@ -259,16 +266,22 @@ pub fn funding_horizon(
             let month = if slot == 0 {
                 "already_ended".to_string()
             } else {
-                let i = start + i64::try_from(slot).unwrap_or(1) - 1;
-                format!("{:04}-{:02}", i.div_euclid(12), i.rem_euclid(12) + 1)
+                let i = start
+                    .checked_add(i64::try_from(slot).ok()?)?
+                    .checked_sub(1)?;
+                format!(
+                    "{:04}-{:02}",
+                    i.div_euclid(12),
+                    i.rem_euclid(12).checked_add(1)?
+                )
             };
             let shown = people == 0 || people >= floor;
             #[allow(clippy::cast_precision_loss)]
-            FundingMonth {
+            Some(FundingMonth {
                 month,
                 people: shown.then_some(people),
                 fte: shown.then_some(fte as f64 / 100.0),
-            }
+            })
         })
         .collect()
 }
@@ -306,10 +319,57 @@ pub struct ContingentTrend {
     pub status: &'static str,
     /// The dates, oldest first.
     pub points: Vec<TrendPoint>,
-    /// Dates left out because any department's row there predates the split (unknown, not zero).
+    /// Dates left out because any department's row there predates the split, or a sum of their figures does not fit (unknown, not zero).
     pub dates_without_split: usize,
     /// Dates left out because fewer people than the floor were employed.
     pub dates_below_floor: usize,
+}
+
+/// What one snapshot date gives the trend.
+enum DateVerdict {
+    /// Some row predates the split, or a sum of the date's figures does not fit: the figures are unknown.
+    WithoutSplit,
+    /// Fewer people than the floor were employed.
+    BelowFloor,
+    /// The date's point.
+    Usable(TrendPoint),
+}
+
+/// Sum one figure of a date's rows; `None` when the sum does not fit.
+fn sum_rows<'a>(
+    group: &[&'a SplitRow],
+    figure: impl Fn(&'a SplitRow) -> Option<i64>,
+) -> Option<i64> {
+    group
+        .iter()
+        .try_fold(0_i64, |sum, r| sum.checked_add(figure(r)?))
+}
+
+fn trend_date(as_of: Date, group: &[&SplitRow], floor: usize) -> DateVerdict {
+    if group
+        .iter()
+        .any(|r| r.contractor_fte.is_none() || r.fixed_term_fte.is_none())
+    {
+        return DateVerdict::WithoutSplit;
+    }
+    let Some(people) = sum_rows(group, |r| Some(r.headcount)) else {
+        return DateVerdict::WithoutSplit;
+    };
+    if usize::try_from(people).unwrap_or(0) < floor {
+        return DateVerdict::BelowFloor;
+    }
+    match (
+        sum_rows(group, |r| Some(r.fte)),
+        sum_rows(group, |r| r.contractor_fte),
+        sum_rows(group, |r| r.fixed_term_fte),
+    ) {
+        (Some(fte), Some(contractor), Some(fixed)) => DateVerdict::Usable(TrendPoint {
+            as_of,
+            contractor_percent: percent(contractor, fte),
+            fixed_term_percent: percent(fixed, fte),
+        }),
+        _ => DateVerdict::WithoutSplit,
+    }
 }
 
 /// The trend of the contingent share, organization wide, from the snapshots (WPM-D27: too little
@@ -325,30 +385,25 @@ pub fn contingent_trend(rows: &[SplitRow], floor: usize) -> ContingentTrend {
     for r in rows {
         by.entry(r.as_of).or_default().push(r);
     }
-    let (mut without_split, mut below_floor) = (0, 0);
-    let mut points = Vec::new();
-    for (as_of, group) in by {
-        if group
-            .iter()
-            .any(|r| r.contractor_fte.is_none() || r.fixed_term_fte.is_none())
-        {
-            without_split += 1;
-            continue;
-        }
-        let people: i64 = group.iter().map(|r| r.headcount).sum();
-        if usize::try_from(people).unwrap_or(0) < floor {
-            below_floor += 1;
-            continue;
-        }
-        let fte: i64 = group.iter().map(|r| r.fte).sum();
-        let contractor: i64 = group.iter().filter_map(|r| r.contractor_fte).sum();
-        let fixed: i64 = group.iter().filter_map(|r| r.fixed_term_fte).sum();
-        points.push(TrendPoint {
-            as_of,
-            contractor_percent: percent(contractor, fte),
-            fixed_term_percent: percent(fixed, fte),
-        });
-    }
+    let verdicts: Vec<DateVerdict> = by
+        .into_iter()
+        .map(|(as_of, group)| trend_date(as_of, &group, floor))
+        .collect();
+    let without_split = verdicts
+        .iter()
+        .filter(|v| matches!(v, DateVerdict::WithoutSplit))
+        .count();
+    let below_floor = verdicts
+        .iter()
+        .filter(|v| matches!(v, DateVerdict::BelowFloor))
+        .count();
+    let points: Vec<TrendPoint> = verdicts
+        .into_iter()
+        .filter_map(|v| match v {
+            DateVerdict::Usable(point) => Some(point),
+            DateVerdict::WithoutSplit | DateVerdict::BelowFloor => None,
+        })
+        .collect();
     let span = match (points.first(), points.last()) {
         (Some(a), Some(b)) => crate::dates::days_between(a.as_of, b.as_of),
         _ => 0,
@@ -389,8 +444,8 @@ mod tests {
             }
         }
         for floor in [1, 5, 8] {
-            let one = contingent_share(&rows, floor);
-            let many = contingent_share_counted(&counted, floor);
+            let one = contingent_share(&rows, floor).unwrap();
+            let many = contingent_share_counted(&counted, floor).unwrap();
             assert_eq!(format!("{one:?}"), format!("{many:?}"), "floor {floor}");
         }
     }
@@ -470,7 +525,7 @@ mod tests {
         let mut rows = people("A", "permanent", 6);
         rows.extend(people("A", "contractor", 2));
         rows.extend(people("A", "fixed_term", 2));
-        let s = contingent_share(&rows, 5);
+        let s = contingent_share(&rows, 5).unwrap();
         assert_eq!(s.contractor_percent, Some(20.0));
         assert_eq!(s.fixed_term_percent, Some(20.0));
         assert_eq!(s.headcount, 10);
@@ -479,12 +534,15 @@ mod tests {
     #[test]
     fn the_share_is_of_fte_not_of_heads() {
         let rows = vec![row("A", "permanent", 100), row("A", "contractor", 50)];
-        assert_eq!(contingent_share(&rows, 1).contractor_percent, Some(33.3));
+        assert_eq!(
+            contingent_share(&rows, 1).unwrap().contractor_percent,
+            Some(33.3)
+        );
     }
 
     #[test]
     fn no_fte_gives_no_share_not_zero() {
-        let s = contingent_share(&[], 5);
+        let s = contingent_share(&[], 5).unwrap();
         assert_eq!(s.contractor_percent, None);
         assert_eq!(s.fixed_term_percent, None);
     }
@@ -494,22 +552,30 @@ mod tests {
         let mut rows = people("Big", "permanent", 8);
         rows.extend(people("Big", "contractor", 2));
         rows.extend(people("Small", "contractor", 4));
-        let s = contingent_share(&rows, 5);
+        let s = contingent_share(&rows, 5).unwrap();
         assert!(!s.departments_shown);
         assert!(s.departments.iter().all(|d| d.headcount.is_none()
             && d.contractor_percent.is_none()
             && d.fixed_term_percent.is_none()));
         assert!(s.contractor_percent.is_some());
         rows.extend(people("Small", "permanent", 1));
-        let s = contingent_share(&rows, 5);
+        let s = contingent_share(&rows, 5).unwrap();
         assert!(s.departments_shown);
         assert_eq!(s.departments[0].contractor_percent, Some(20.0));
     }
 
     #[test]
     fn the_floor_is_inclusive_for_departments() {
-        assert!(contingent_share(&people("A", "permanent", 5), 5).departments_shown);
-        assert!(!contingent_share(&people("A", "permanent", 4), 5).departments_shown);
+        assert!(
+            contingent_share(&people("A", "permanent", 5), 5)
+                .unwrap()
+                .departments_shown
+        );
+        assert!(
+            !contingent_share(&people("A", "permanent", 4), 5)
+                .unwrap()
+                .departments_shown
+        );
     }
 
     fn ends(spec: &[(Date, i32)]) -> Vec<(Date, i32)> {
@@ -523,7 +589,7 @@ mod tests {
             .map(|_| (d(2026, 11, 30), 100))
             .chain((0..5).map(|_| (d(2027, 1, 5), 50)))
             .collect();
-        let h = funding_horizon(&ends(&spec), today, 3, 5);
+        let h = funding_horizon(&ends(&spec), today, 3, 5).unwrap();
         assert_eq!(h.len(), 4);
         assert_eq!(h[0].month, "already_ended");
         assert_eq!(h[1].month, "2026-11");
@@ -539,7 +605,7 @@ mod tests {
     fn a_month_with_a_few_is_withheld_and_a_month_with_none_is_zero() {
         let today = d(2026, 11, 20);
         let spec = vec![(d(2026, 12, 1), 100), (d(2026, 12, 2), 100)];
-        let h = funding_horizon(&spec, today, 2, 5);
+        let h = funding_horizon(&spec, today, 2, 5).unwrap();
         assert_eq!(h[2].people, None);
         assert_eq!(h[2].fte, None);
         assert_eq!(h[1].people, Some(0));
@@ -550,7 +616,7 @@ mod tests {
         let today = d(2026, 11, 20);
         let mut spec: Vec<_> = (0..5).map(|_| (d(2026, 11, 19), 100)).collect();
         spec.push((d(2030, 1, 1), 100));
-        let h = funding_horizon(&spec, today, 12, 5);
+        let h = funding_horizon(&spec, today, 12, 5).unwrap();
         assert_eq!(h[0].people, Some(5));
         assert!(h[1..].iter().all(|m| m.people == Some(0)));
     }
@@ -558,11 +624,11 @@ mod tests {
     #[test]
     fn the_end_of_the_window_is_exclusive_and_today_is_not_over() {
         let today = d(2026, 11, 20);
-        let h = funding_horizon(&[(today, 100)], today, 1, 1);
+        let h = funding_horizon(&[(today, 100)], today, 1, 1).unwrap();
         assert_eq!(h[0].people, Some(0));
         assert_eq!(h[1].people, Some(1));
         assert_eq!(
-            funding_horizon(&[(d(2026, 12, 1), 100)], today, 1, 1)[1].people,
+            funding_horizon(&[(d(2026, 12, 1), 100)], today, 1, 1).unwrap()[1].people,
             Some(0)
         );
     }
@@ -667,5 +733,43 @@ mod tests {
             ),
             (0, 0, 0)
         );
+    }
+
+    /// A sum that does not fit is unknown, never capped or wrapped.
+    #[test]
+    fn overflowing_sums_are_unknown() {
+        let big =
+            |fte: i32, people: usize| ("A".to_string(), "contractor".to_string(), fte, people);
+        assert!(contingent_share_counted(&[big(100, usize::MAX)], 1).is_none());
+        assert!(contingent_share_counted(&[big(100, usize::MAX), big(100, 1)], 1).is_none());
+        let huge = usize::try_from(i64::MAX).unwrap();
+        assert!(contingent_share_counted(&[big(100, huge)], 1).is_none());
+        assert!(
+            contingent_share_counted(&[big(2, huge / 2), big(2, huge / 2), big(2, huge / 2)], 1)
+                .is_none()
+        );
+        assert!(
+            contingent_share_counted(
+                &[big(1, 1), ("B".into(), "contractor".into(), 1, usize::MAX)],
+                1
+            )
+            .is_none()
+        );
+        let row = |as_of: Date, headcount: i64, fte: i64| SplitRow {
+            as_of,
+            headcount,
+            fte,
+            contractor_fte: Some(1),
+            fixed_term_fte: Some(1),
+        };
+        let rows = [
+            row(d(2026, 1, 1), 1, i64::MAX),
+            row(d(2026, 1, 1), 1, 1),
+            row(d(2026, 1, 2), i64::MAX, 1),
+            row(d(2026, 1, 2), 1, 1),
+        ];
+        let t = contingent_trend(&rows, 1);
+        assert_eq!(t.dates_without_split, 2, "both dates' sums overflow");
+        assert_eq!(t.points, Vec::<TrendPoint>::new());
     }
 }

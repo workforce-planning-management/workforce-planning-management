@@ -35,10 +35,15 @@ pub fn compare_fit(a: &Readiness, b: &Readiness) -> Ordering {
         (None, None) => Ordering::Equal,
         (None, Some(_)) => Ordering::Greater,
         (Some(_), None) => Ordering::Less,
-        (Some((an, ad)), Some((bn, bd))) => (bn * ad)
-            .cmp(&(an * bd))
-            .then_with(|| (b.met * a.total).cmp(&(a.met * b.total))),
+        (Some((an, ad)), Some((bn, bd))) => product(bn, ad)
+            .cmp(&product(an, bd))
+            .then_with(|| product(b.met, a.total).cmp(&product(a.met, b.total))),
     }
+}
+
+/// `a × b` widened to `u128`, which two `usize` counts cannot overflow; `None` only on a platform whose `usize` is wider than 128 bits.
+fn product(a: usize, b: usize) -> Option<u128> {
+    u128::try_from(a).ok()?.checked_mul(u128::try_from(b).ok()?)
 }
 
 /// Which target an interest points at.

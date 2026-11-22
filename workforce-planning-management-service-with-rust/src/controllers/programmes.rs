@@ -49,7 +49,8 @@ async fn programmes(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
         })
         .collect();
     let floor = DEFAULT_FLOOR;
-    let result = rollup(&rows, today, MONTHS, floor);
+    let result = rollup(&rows, today, MONTHS, floor)
+        .ok_or_else(|| Error::string("a programme roll-up figure exceeds the supported range"))?;
     db::audit(
         &mut *pool(&ctx).acquire().await?,
         "contingent_workforce",

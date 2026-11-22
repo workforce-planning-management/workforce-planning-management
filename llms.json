@@ -14,14 +14,14 @@
     "api": "Rust, Axum, axa, sqlx, PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 1422,
+      "service_unit_declared": 1481,
       "service_request_declared": 277,
       "ui_unit_declared": 311,
       "ui_e2e_declared": 343,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
     "migrations": 134,
-    "controllers": 97,
+    "controllers": 98,
     "pages": 70
   },
   "sections": {
@@ -352,9 +352,9 @@
         "description": "convention: every duration in days says calendar days or business days"
       },
       {
-        "title": "spec/arithmetic/index.md",
-        "path": "spec/arithmetic/index.md",
-        "description": "convention: arithmetic never panics or wraps; use checked_* and return None"
+        "title": "spec/rust-checked-arithmetic/index.md",
+        "path": "spec/rust-checked-arithmetic/index.md",
+        "description": "convention: Rust arithmetic never panics, wraps, truncates or invents a number; checked_* with declared fallbacks (RCA-*)"
       },
       {
         "title": "spec/special-files-for-public-repos/index.md",

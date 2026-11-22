@@ -375,7 +375,11 @@ pub(crate) async fn load_catalogue(ctx: &AppContext, worker_pids: &[Uuid]) -> Re
 
 impl Catalogue {
     /// The training that would close `gap` for `worker`.
-    pub(crate) fn recommend(&self, worker: Uuid, gap: &Gap) -> Recommendation {
+    ///
+    /// # Errors
+    ///
+    /// Unprocessable when the hours or levels are too large to add up.
+    pub(crate) fn recommend(&self, worker: Uuid, gap: &Gap) -> Result<Recommendation> {
         let empty = HashSet::new();
         rules::recommend(
             u32::try_from(gap.shortfall.unwrap_or(0)).unwrap_or(0),
@@ -386,6 +390,7 @@ impl Catalogue {
                 .copied()
                 .unwrap_or(DEFAULT_HOURS_PER_LEVEL),
         )
+        .ok_or_else(|| unprocessable("the training hours are too large to add up"))
     }
 }
 
@@ -435,9 +440,10 @@ async fn worker_plan(
     let recs: Vec<Recommendation> = below
         .iter()
         .map(|g| catalogue.recommend(worker.pid, g))
-        .collect();
+        .collect::<Result<_>>()?;
     let hours: Vec<u32> = recs.iter().map(|r| r.hours).collect();
-    let slots = rules::schedule(&hours, weekly, start);
+    let slots = rules::schedule(&hours, weekly, start)
+        .ok_or_else(|| unprocessable("the plan runs past the dates the calendar holds"))?;
     // `SFIAplus` pointers (WPM-R112): resources the deployer is licensed for, for the level each skill is needed at. Not booked.
     let pointers = super::sfia::pointers_for(
         &ctx,
@@ -550,21 +556,21 @@ async fn training_demand(
             .iter()
             .filter(|g| g.status == Status::Below)
         {
-            let rec = catalogue.recommend(w.pid, g);
+            let rec = catalogue.recommend(w.pid, g)?;
             let e = by_skill.entry(g.skill).or_default();
-            e.0 += 1;
-            e.1 += rec.hours;
+            e.0 = tick(e.0)?;
+            e.1 = plus_hours(e.1, rec.hours)?;
             if rec.basis != rules::Basis::Courses {
-                e.2 += 1;
+                e.2 = tick(e.2)?;
             }
-            person_hours += rec.hours;
+            person_hours = plus_hours(person_hours, rec.hours)?;
         }
         if person_hours > 0 {
-            people_with_gaps += 1;
-            total_hours += person_hours;
+            people_with_gaps = tick(people_with_gaps)?;
+            total_hours = plus_hours(total_hours, person_hours)?;
             let d = by_department.entry(w.department.clone()).or_default();
-            d.0 += 1;
-            d.1 += person_hours;
+            d.0 = tick(d.0)?;
+            d.1 = plus_hours(d.1, person_hours)?;
         }
     }
     let mut skills_out: Vec<(Uuid, (usize, u32, usize))> = by_skill.into_iter().collect();
@@ -597,6 +603,19 @@ async fn training_demand(
     }))
 }
 
+/// `count` plus one, or an error when it would not fit: a count is never wrapped.
+fn tick(count: usize) -> Result<usize> {
+    count
+        .checked_add(1)
+        .ok_or_else(|| Error::string("a training-demand count exceeds the supported range"))
+}
+
+/// `a` plus `b` hours, or an error when the sum would not fit: hours are never wrapped or capped.
+fn plus_hours(a: u32, b: u32) -> Result<u32> {
+    a.checked_add(b)
+        .ok_or_else(|| Error::string("the training hours exceed the supported range"))
+}
+
 /// The training-time routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -611,4 +630,18 @@ pub fn routes() -> Routes {
             "/workforce-intelligence/training-demand",
             get(training_demand),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn counts_and_hours_add_and_refuse_overflow() {
+        assert_eq!(tick(4).ok(), Some(5));
+        assert!(tick(usize::MAX).is_err());
+        assert_eq!(plus_hours(40, 2).ok(), Some(42));
+        assert_eq!(plus_hours(u32::MAX, 0).ok(), Some(u32::MAX));
+        assert!(plus_hours(u32::MAX, 1).is_err());
+    }
 }

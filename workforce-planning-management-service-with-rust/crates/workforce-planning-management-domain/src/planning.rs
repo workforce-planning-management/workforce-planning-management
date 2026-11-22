@@ -276,30 +276,37 @@ pub fn observed_attrition_bp(snaps: &[Snap]) -> Option<i32> {
     if days < MIN_WINDOW_DAYS {
         return None;
     }
-    let leavers: i64 = known.iter().filter_map(|s| s.leavers).sum();
-    let mean_headcount_x = sorted.iter().map(|s| s.headcount).sum::<i64>();
+    let leavers: i64 = known
+        .iter()
+        .filter_map(|s| s.leavers)
+        .try_fold(0_i64, i64::checked_add)?;
+    let mean_headcount_x = sorted
+        .iter()
+        .map(|s| s.headcount)
+        .try_fold(0_i64, i64::checked_add)?;
     let n = i64::try_from(sorted.len()).ok()?;
     if mean_headcount_x == 0 {
         return None;
     }
     // bp = leavers * (365 / days) / (sum / n) * 10000, in integer arithmetic.
-    let numerator = i128::from(leavers) * 365 * i128::from(n) * 10_000;
-    let denominator = i128::from(days) * i128::from(mean_headcount_x);
-    let bp = (numerator + denominator / 2) / denominator;
+    let numerator = i128::from(leavers)
+        .checked_mul(365)?
+        .checked_mul(i128::from(n))?
+        .checked_mul(10_000)?;
+    let denominator = i128::from(days).checked_mul(i128::from(mean_headcount_x))?;
+    let bp = numerator
+        .checked_add(denominator / 2)?
+        .checked_div(denominator)?;
     i32::try_from(bp).ok()
 }
 
 /// Projected supply after `days` at an annual attrition of `attrition_bp`
 /// basis points, from `opening` employed workers; **no hires are assumed**.
-/// Rounded to the nearest whole person and never negative.
+/// Rounded to the nearest whole person and never negative. `None` when the figure does not
+/// fit (an overflow is an unknown, never a zero).
 #[must_use]
-pub fn project_supply(opening: usize, attrition_bp: i32, days: i64) -> i64 {
-    let opening = i128::try_from(opening).unwrap_or(i128::MAX);
-    let days = i128::from(days.max(0));
-    let bp = i128::from(attrition_bp.max(0));
-    let denominator = 10_000 * 365;
-    let leavers = (opening * bp * days + denominator / 2) / denominator;
-    i64::try_from((opening - leavers).max(0)).unwrap_or(i64::MAX)
+pub fn project_supply(opening: usize, attrition_bp: i32, days: i64) -> Option<i64> {
+    attrit(i64::try_from(opening).ok()?, attrition_bp, days)
 }
 
 /// One employed worker, as the basis-aware projection sees them (WPM-R85). No name and no
@@ -350,14 +357,23 @@ pub struct Projection {
 }
 
 /// Apply an annual attrition (basis points) over `days` calendar days to an amount,
-/// rounded to the nearest whole unit and never negative.
-fn attrit(opening: i64, attrition_bp: i32, days: i64) -> i64 {
+/// rounded to the nearest whole unit and never negative. `None` when it does not fit.
+fn attrit(opening: i64, attrition_bp: i32, days: i64) -> Option<i64> {
     let days = i128::from(days.max(0));
     let bp = i128::from(attrition_bp.max(0));
     let opening = i128::from(opening);
-    let denominator = 10_000 * 365;
-    let leavers = (opening * bp * days + denominator / 2) / denominator;
-    i64::try_from((opening - leavers).max(0)).unwrap_or(i64::MAX)
+    let denominator: i128 = 3_650_000;
+    let leavers = opening
+        .checked_mul(bp)?
+        .checked_mul(days)?
+        .checked_add(denominator / 2)?
+        .checked_div(denominator)?;
+    i64::try_from(opening.checked_sub(leavers)?.max(0)).ok()
+}
+
+/// Sum of figures, `None` when the total does not fit an `i64`.
+fn checked_sum(mut values: impl Iterator<Item = i64>) -> Option<i64> {
+    values.try_fold(0_i64, i64::checked_add)
 }
 
 /// Project supply at `target`, each basis on its own terms (WPM-R85, WPM-D57):
@@ -384,7 +400,7 @@ pub fn project_by_basis(
     let supply_of = |basis: Basis| -> BasisSupply {
         let group: Vec<&Person> = people.iter().filter(|p| p.basis == basis).collect();
         let opening = i64::try_from(group.len()).unwrap_or(i64::MAX);
-        let opening_fte: i64 = group.iter().map(|p| i64::from(p.fte_percent.max(0))).sum();
+        let opening_fte = checked_sum(group.iter().map(|p| i64::from(p.fte_percent.max(0))));
         if basis == Basis::Permanent {
             return match (opening, permanent_attrition_bp) {
                 (0, _) => BasisSupply {
@@ -394,8 +410,8 @@ pub fn project_by_basis(
                     leaving_before: 0,
                 },
                 (_, Some(bp)) => BasisSupply {
-                    headcount: Some(attrit(opening, bp, days)),
-                    fte_centi: Some(attrit(opening_fte, bp, days)),
+                    headcount: attrit(opening, bp, days),
+                    fte_centi: opening_fte.and_then(|fte| attrit(fte, bp, days)),
                     no_end_date: 0,
                     leaving_before: 0,
                 },
@@ -407,29 +423,20 @@ pub fn project_by_basis(
                 },
             };
         }
-        let mut headcount = 0;
-        let mut fte = 0;
-        let mut no_end = 0;
-        let mut leaving = 0;
-        for person in &group {
-            match person.ends_on {
-                None => {
-                    no_end += 1;
-                    headcount += 1;
-                    fte += i64::from(person.fte_percent.max(0));
-                }
-                Some(end) if end >= target => {
-                    headcount += 1;
-                    fte += i64::from(person.fte_percent.max(0));
-                }
-                Some(_) => leaving += 1,
-            }
-        }
+        // Engaged on the target date: no end recorded, or an end on or after it.
+        let engaged = || {
+            group
+                .iter()
+                .filter(|p| p.ends_on.is_none_or(|end| end >= target))
+        };
         BasisSupply {
-            headcount: Some(headcount),
-            fte_centi: Some(fte),
-            no_end_date: no_end,
-            leaving_before: leaving,
+            headcount: i64::try_from(engaged().count()).ok(),
+            fte_centi: checked_sum(engaged().map(|p| i64::from(p.fte_percent.max(0)))),
+            no_end_date: group.iter().filter(|p| p.ends_on.is_none()).count(),
+            leaving_before: group
+                .iter()
+                .filter(|p| p.ends_on.is_some_and(|end| end < target))
+                .count(),
         }
     };
     let permanent = supply_of(Basis::Permanent);
@@ -438,7 +445,9 @@ pub fn project_by_basis(
     let intern = supply_of(Basis::Intern);
     let parts = [permanent, fixed_term, contractor, intern];
     let sum = |pick: fn(&BasisSupply) -> Option<i64>| -> Option<i64> {
-        parts.iter().map(pick).sum::<Option<i64>>()
+        parts
+            .iter()
+            .try_fold(0_i64, |total, part| total.checked_add(pick(part)?))
     };
     let mut assumptions = vec!["No hires are assumed.".to_string()];
     match permanent_attrition_bp {
@@ -476,10 +485,10 @@ pub fn project_by_basis(
 }
 
 /// Headcount gap: demand minus projected supply. Positive is a shortfall,
-/// negative a surplus.
+/// negative a surplus. `None` when the difference does not fit an `i64`.
 #[must_use]
-pub fn headcount_gap(demand: i64, supply: i64) -> i64 {
-    demand - supply
+pub fn headcount_gap(demand: i64, supply: i64) -> Option<i64> {
+    demand.checked_sub(supply)
 }
 
 /// The contract FTE a department holds today, which is the evidence for the conversion lever
@@ -500,7 +509,7 @@ impl ContractFte {
     /// True when anyone is engaged on a contract basis.
     #[must_use]
     pub fn any(&self) -> bool {
-        self.contractor_headcount + self.fixed_term_headcount > 0
+        self.contractor_headcount > 0 || self.fixed_term_headcount > 0
     }
 }
 
@@ -508,24 +517,15 @@ impl ContractFte {
 /// end date (a conversion is decided before the end, so an engagement that has not yet ended is
 /// the one that can be converted).
 #[must_use]
-pub fn contract_fte(people: &[Person]) -> ContractFte {
+pub fn contract_fte(people: &[Person]) -> Option<ContractFte> {
     use crate::engagement::Basis;
-    let mut out = ContractFte::default();
-    for p in people {
-        let fte = i64::from(p.fte_percent);
-        match p.basis {
-            Basis::Contractor => {
-                out.contractor_headcount += 1;
-                out.contractor_fte_centi += fte;
-            }
-            Basis::FixedTerm => {
-                out.fixed_term_headcount += 1;
-                out.fixed_term_fte_centi += fte;
-            }
-            _ => {}
-        }
-    }
-    out
+    let on = |basis: Basis| people.iter().filter(move |p| p.basis == basis);
+    Some(ContractFte {
+        contractor_headcount: on(Basis::Contractor).count(),
+        contractor_fte_centi: checked_sum(on(Basis::Contractor).map(|p| i64::from(p.fte_percent)))?,
+        fixed_term_headcount: on(Basis::FixedTerm).count(),
+        fixed_term_fte_centi: checked_sum(on(Basis::FixedTerm).map(|p| i64::from(p.fte_percent)))?,
+    })
 }
 
 /// What the conversion plans of a department's contract staff come to (WPM-T164). A plan to convert
@@ -549,22 +549,22 @@ pub struct ConversionCover {
 /// is done, abandoned or of any other status is not counted (a done one has already made the worker
 /// permanent, so they are in the supply).
 #[must_use]
-pub fn conversion_cover(plans: &[(&str, i32)]) -> ConversionCover {
-    let mut out = ConversionCover::default();
-    for (status, fte) in plans {
-        match *status {
-            "approved" => {
-                out.agreed_headcount += 1;
-                out.agreed_fte_centi += i64::from(*fte);
-            }
-            "proposed" => {
-                out.hoped_headcount += 1;
-                out.hoped_fte_centi += i64::from(*fte);
-            }
-            _ => {}
-        }
-    }
-    out
+pub fn conversion_cover(plans: &[(&str, i32)]) -> Option<ConversionCover> {
+    let with = |status: &str| {
+        let open = plans.iter().filter(move |(s, _)| *s == status);
+        (
+            open.clone().count(),
+            checked_sum(open.map(|(_, fte)| i64::from(*fte))),
+        )
+    };
+    let (agreed_headcount, agreed_fte) = with("approved");
+    let (hoped_headcount, hoped_fte) = with("proposed");
+    Some(ConversionCover {
+        agreed_headcount,
+        agreed_fte_centi: agreed_fte?,
+        hoped_headcount,
+        hoped_fte_centi: hoped_fte?,
+    })
 }
 
 /// Suggested levers for a headcount gap — suggestions with evidence, never
@@ -595,18 +595,19 @@ pub fn competency_shortfall(needed: usize, proficient: usize) -> usize {
 
 /// Split `(declared level, people)` counts at a requirement's bar: those at or
 /// above it are proficient, those declared below it are the reskill pool.
+/// `None` when the counts do not fit a `usize`.
 #[must_use]
 pub fn proficiency_split<'a>(
     declared: impl IntoIterator<Item = &'a (i32, usize)>,
     min_proficiency: i32,
-) -> (usize, usize) {
+) -> Option<(usize, usize)> {
     declared
         .into_iter()
-        .fold((0, 0), |(proficient, pool), (level, n)| {
+        .try_fold((0_usize, 0_usize), |(proficient, pool), (level, n)| {
             if *level >= min_proficiency {
-                (proficient + n, pool)
+                Some((proficient.checked_add(*n)?, pool))
             } else {
-                (proficient, pool + n)
+                Some((proficient, pool.checked_add(*n)?))
             }
         })
 }
@@ -771,6 +772,31 @@ mod tests {
         assert!(validate_line("eng", day(2027, 6, 30), a, b, 100_001).is_err());
     }
 
+    #[test]
+    fn a_total_that_does_not_fit_is_unknown() {
+        assert_eq!(checked_sum([1, 2].into_iter()), Some(3));
+        assert_eq!(checked_sum([i64::MAX, 1].into_iter()), None);
+        let huge = [
+            snap(day(2026, 1, 1), i64::MAX, None),
+            snap(day(2026, 7, 1), 1, Some(0)),
+            snap(day(2027, 1, 1), 1, Some(0)),
+        ];
+        assert_eq!(observed_attrition_bp(&huge), None);
+        let many_leavers = [
+            snap(day(2026, 1, 1), 1, None),
+            snap(day(2026, 7, 1), 1, Some(i64::MAX)),
+            snap(day(2027, 1, 1), 1, Some(i64::MAX)),
+        ];
+        assert_eq!(observed_attrition_bp(&many_leavers), None);
+        let big_rate = [
+            snap(day(2026, 1, 1), 1, None),
+            snap(day(2026, 7, 1), 1, Some(i64::MAX)),
+            snap(day(2027, 1, 1), 1, Some(0)),
+        ];
+        assert_eq!(observed_attrition_bp(&big_rate), None, "rate does not fit");
+        assert_eq!(attrit(i64::MAX, i32::MAX, i64::MAX), None);
+    }
+
     fn snap(d: Date, headcount: i64, leavers: Option<i64>) -> Snap {
         Snap {
             as_of: d,
@@ -848,19 +874,29 @@ mod tests {
     /// below zero, and assumes no hires.
     #[test]
     fn supply_projection() {
-        assert_eq!(project_supply(100, 1000, 365), 90);
-        assert_eq!(project_supply(100, 1000, 0), 100, "today is today");
-        assert_eq!(project_supply(100, 0, 365), 100);
+        assert_eq!(project_supply(100, 1000, 365), Some(90));
+        assert_eq!(project_supply(100, 1000, 0), Some(100), "today is today");
+        assert_eq!(project_supply(100, 0, 365), Some(100));
         assert_eq!(
             project_supply(100, 1000, 182),
-            95,
+            Some(95),
             "half a year ≈ 5 leavers"
         );
-        assert_eq!(project_supply(3, 10_000, 365 * 5), 0, "never negative");
-        assert_eq!(project_supply(0, 1000, 365), 0);
+        assert_eq!(
+            project_supply(3, 10_000, 365 * 5),
+            Some(0),
+            "never negative"
+        );
+        assert_eq!(project_supply(0, 1000, 365), Some(0));
+        assert_eq!(
+            project_supply(usize::MAX, i32::MAX, i64::MAX),
+            None,
+            "an overflow is unknown, not a number"
+        );
+        assert_eq!(project_supply(usize::MAX, 0, 0), None, "too many to count");
         assert_eq!(
             project_supply(100, 1000, -5),
-            100,
+            Some(100),
             "past dates do not grow supply"
         );
     }
@@ -868,8 +904,10 @@ mod tests {
     /// Gap sign and lever suggestions.
     #[test]
     fn gap_and_levers() {
-        assert_eq!(headcount_gap(12, 9), 3);
-        assert_eq!(headcount_gap(8, 9), -1);
+        assert_eq!(headcount_gap(12, 9), Some(3));
+        assert_eq!(headcount_gap(8, 9), Some(-1));
+        assert_eq!(headcount_gap(i64::MAX, -1), None);
+        assert_eq!(headcount_gap(i64::MIN, 1), None);
         assert_eq!(
             suggested_levers(3, &ContractFte::default()),
             [
@@ -894,12 +932,14 @@ mod tests {
     fn declared_levels_split_at_the_bar() {
         assert_eq!(
             proficiency_split(&[(2, 3), (3, 4), (4, 1), (1, 6)], 3),
-            (5, 9)
+            Some((5, 9))
         );
-        assert_eq!(proficiency_split(&[], 3), (0, 0));
+        assert_eq!(proficiency_split(&[], 3), Some((0, 0)));
+        assert_eq!(proficiency_split(&[(3, usize::MAX), (4, 1)], 3), None);
+        assert_eq!(proficiency_split(&[(1, usize::MAX), (2, 1)], 3), None);
         assert_eq!(
             proficiency_split(&[(3, 2)], 3),
-            (2, 0),
+            Some((2, 0)),
             "at the bar is proficient"
         );
     }
@@ -1034,7 +1074,8 @@ mod tests {
             person(Basis::Contractor, 50, None),
             person(Basis::FixedTerm, 80, None),
             person(Basis::Intern, 100, None),
-        ]);
+        ])
+        .unwrap();
         assert_eq!((c.contractor_headcount, c.contractor_fte_centi), (2, 150));
         assert_eq!((c.fixed_term_headcount, c.fixed_term_fte_centi), (1, 80));
         assert!(c.any());
@@ -1043,6 +1084,7 @@ mod tests {
                 person(Basis::Permanent, 100, None),
                 person(Basis::Intern, 100, None)
             ])
+            .unwrap()
             .any()
         );
     }
@@ -1058,20 +1100,20 @@ mod tests {
         ]);
         assert_eq!(
             cover,
-            ConversionCover {
+            Some(ConversionCover {
                 agreed_headcount: 2,
                 agreed_fte_centi: 150,
                 hoped_headcount: 1,
                 hoped_fte_centi: 100,
-            }
+            })
         );
-        assert_eq!(conversion_cover(&[]), ConversionCover::default());
+        assert_eq!(conversion_cover(&[]), Some(ConversionCover::default()));
     }
 
     #[test]
     fn the_conversion_lever_needs_a_shortfall_and_contract_fte() {
         use crate::engagement::Basis;
-        let with = contract_fte(&[person(Basis::FixedTerm, 100, None)]);
+        let with = contract_fte(&[person(Basis::FixedTerm, 100, None)]).unwrap();
         let none = ContractFte::default();
         assert_eq!(
             suggested_levers(2, &with)[..2],

@@ -56,7 +56,7 @@ pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
         months_setting,
         rules::DEFAULT_REMEDY_MONTHS,
     );
-    match rules::config(percent.value * 100, months.value) {
+    match config_of(percent.value, months.value) {
         Ok(config) => Configured {
             config,
             threshold_from: percent.came_from,
@@ -77,6 +77,18 @@ pub(crate) fn configured(scope: Option<&Scope>, as_of: Date) -> Configured {
             }
         }
     }
+}
+
+/// The settings as a configuration, the percentage turned into basis points; a percentage too large to count is refused with the
+/// same sentence as any other threshold out of range.
+fn config_of(percent: i64, months: u32) -> Result<Config, String> {
+    let basis_points = percent.checked_mul(100).ok_or_else(|| {
+        format!(
+            "the threshold is 1 to {} basis points",
+            rules::MAX_THRESHOLD_BP
+        )
+    })?;
+    rules::config(basis_points, months)
 }
 
 fn organization_problems(value: &str) -> Vec<String> {
@@ -364,4 +376,19 @@ pub fn routes() -> Routes {
         .add("/pay-transparency/joint-assessment", get(signals))
         .add("/pay-transparency/assessment-records", get(list_records))
         .add("/pay-transparency/assessment-records", put(put_record))
+}
+
+#[cfg(test)]
+mod config_tests {
+    use super::config_of;
+
+    #[test]
+    fn a_percentage_becomes_basis_points_and_one_too_large_to_count_is_refused() {
+        assert!(config_of(5, 12).is_ok());
+        assert!(config_of(0, 12).is_err());
+        assert_eq!(
+            config_of(i64::MAX, 12).err().as_deref(),
+            Some("the threshold is 1 to 5000 basis points")
+        );
+    }
 }

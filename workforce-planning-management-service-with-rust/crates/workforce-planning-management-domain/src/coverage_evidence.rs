@@ -63,7 +63,12 @@ pub fn standing(
     if to < today {
         return Standing::Expired;
     }
-    if to <= today + crate::dates::days(window_days.max(0)) {
+    // A window that runs past the last date the calendar holds reaches every `to`.
+    if today
+        .checked_add(crate::dates::days(window_days.max(0)))
+        .ok()
+        .is_none_or(|limit| to <= limit)
+    {
         return Standing::EndingSoon(crate::dates::days_between(today, to));
     }
     Standing::InForce
@@ -268,6 +273,15 @@ mod tests {
             )
             .len(),
             1
+        );
+    }
+
+    #[test]
+    fn a_window_past_the_last_date_reaches_every_end_date() {
+        let last = Date::MAX;
+        assert_eq!(
+            standing(None, Some(last), last, 60),
+            Standing::EndingSoon(0)
         );
     }
 }

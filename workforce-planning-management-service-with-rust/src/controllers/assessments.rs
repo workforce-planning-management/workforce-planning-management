@@ -956,11 +956,13 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
         let Some(category) = category_of.get(&sitting.instrument_pid) else {
             continue;
         };
-        *by_category
-            .entry(category)
-            .or_default()
-            .entry(sitting.status.clone())
-            .or_default() += 1;
+        crate::controllers::tally::bump(
+            by_category
+                .entry(category)
+                .or_default()
+                .entry(sitting.status.clone())
+                .or_default(),
+        );
     }
 
     // scale → band → count, over every recorded result.
@@ -971,11 +973,13 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
     .await?;
     let mut bands: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
     for row in results {
-        *bands
-            .entry(row.scale)
-            .or_default()
-            .entry(row.band)
-            .or_default() += 1;
+        crate::controllers::tally::bump(
+            bands
+                .entry(row.scale)
+                .or_default()
+                .entry(row.band)
+                .or_default(),
+        );
     }
 
     let categories: Vec<serde_json::Value> = by_category

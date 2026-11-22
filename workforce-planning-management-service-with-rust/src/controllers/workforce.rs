@@ -182,9 +182,9 @@ async fn list_time_entries(
     for entry in &rows {
         let slot = days.entry(entry.worked_on.get()).or_default();
         if entry.kind == "overtime" {
-            slot.1 += entry.minutes;
+            slot.1 = plus_minutes(slot.1, entry.minutes)?;
         } else {
-            slot.0 += entry.minutes;
+            slot.0 = plus_minutes(slot.0, entry.minutes)?;
         }
     }
     let overtime: Vec<serde_json::Value> = days
@@ -486,13 +486,7 @@ pub(crate) async fn decide_leave(
     .await?;
     // Balance mutation: approve uses days; cancelling an approved
     // request restores them.
-    let delta = if to == "approved" {
-        days
-    } else if to == "cancelled" && was == "approved" {
-        -days
-    } else {
-        0
-    };
+    let delta = leave_delta(to, &was, days)?;
     if delta != 0 {
         let entitlement = sqlx::query_scalar!(
             "SELECT id FROM leave_entitlements
@@ -841,6 +835,41 @@ struct WorkingTimeQuery {
     as_of: Option<Date>,
 }
 
+/// `a` plus `b` minutes, or an error when the sum does not fit: a total is never wrapped.
+fn plus_minutes(a: i32, b: i32) -> Result<i32> {
+    a.checked_add(b)
+        .ok_or_else(|| unprocessable("the minutes recorded for one day exceed the supported range"))
+}
+
+/// The change to a leave balance when a request moves to `to` from `was`: approving uses `days`, cancelling an approved
+/// request restores them, anything else changes nothing.
+fn leave_delta(to: &str, was: &str, days: i32) -> Result<i32> {
+    if to == "approved" {
+        Ok(days)
+    } else if to == "cancelled" && was == "approved" {
+        days.checked_neg()
+            .ok_or_else(|| unprocessable("the leave days exceed the supported range"))
+    } else {
+        Ok(0)
+    }
+}
+
+/// `date` moved by `days` whole days (negative goes back), or an error outside the calendar.
+fn shift_days(date: Date, days: i64) -> Result<Date> {
+    jiff::Span::new()
+        .try_days(days)
+        .and_then(|span| date.checked_add(span))
+        .map_err(|_| unprocessable("the date is outside the supported calendar"))
+}
+
+/// The start of a window of `weeks` weeks ending on `as_of`, or an error when it does not fit the calendar.
+fn weeks_back(as_of: Date, weeks: i64) -> Result<Date> {
+    let days = weeks
+        .checked_mul(-7)
+        .ok_or_else(|| unprocessable("the reference period is too long"))?;
+    shift_days(as_of, days)
+}
+
 /// How far the rest-gap check looks around `as_of` (days, each way) —
 /// recent turnarounds and the *planned* rota alike.
 const REST_WINDOW_DAYS: i64 = 28;
@@ -932,7 +961,7 @@ async fn working_time(
     // a week at the heavy floor; only their entries are then summed over the exact window.
     let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
     for (&(weeks, ceiling), pids) in &groups {
-        let window_start = as_of - crate::dates::days(7 * weeks);
+        let window_start = weeks_back(as_of, weeks)?;
         let total_ceiling = ceiling.saturating_mul(weeks);
         let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
         // One bind for the whole list (`ANY`), so the statement's parameter limit does not apply.
@@ -964,15 +993,16 @@ async fn working_time(
         }
     }
     // Shift intervals per worker around `as_of` (recent + planned): only the shifts in the window.
-    let rest_start = as_of - crate::dates::days(REST_WINDOW_DAYS);
-    let rest_end = as_of + crate::dates::days(REST_WINDOW_DAYS);
+    let rest_start = shift_days(as_of, -REST_WINDOW_DAYS)?;
+    let rest_end = shift_days(as_of, REST_WINDOW_DAYS)?;
+    let rest_end_exclusive = shift_days(rest_end, 1)?;
     let utc_midnight = |date: Date| crate::sql_time::SqlTimestamp(crate::dates::start_of_day(date));
     let shift_rows = sqlx::query!(
         r#"SELECT pid, starts_at,
                   ends_at
              FROM shifts WHERE deleted_at IS NULL AND starts_at >= $1 AND starts_at < $2"#,
         utc_midnight(rest_start),
-        utc_midnight(rest_end + crate::dates::days(1)),
+        utc_midnight(rest_end_exclusive),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -1008,7 +1038,7 @@ async fn working_time(
             "SELECT SUM(minutes)::bigint FROM time_entries
               WHERE deleted_at IS NULL AND worker_pid = $1 AND worked_on > $2 AND worked_on <= $3",
             *pid,
-            SqlDate(as_of - crate::dates::days(7 * weeks)),
+            SqlDate(weeks_back(as_of, weeks)?),
             SqlDate(as_of),
         )
         .fetch_one(db::pool(&ctx))
@@ -1116,4 +1146,33 @@ pub fn routes() -> Routes {
         .add("/workforce/working-time", get(working_time))
         .add("/shifts/{pid}/assignments", post(assign_shift))
         .add("/shift-assignments/{pid}", delete(unassign_shift))
+}
+
+#[cfg(test)]
+mod arithmetic_tests {
+    use super::*;
+
+    #[test]
+    fn minutes_add_and_refuse_overflow() {
+        assert_eq!(plus_minutes(60, 30).ok(), Some(90));
+        assert!(plus_minutes(i32::MAX, 1).is_err());
+    }
+
+    #[test]
+    fn leave_delta_signs_and_refuses_min() {
+        assert_eq!(leave_delta("approved", "pending", 3).ok(), Some(3));
+        assert_eq!(leave_delta("cancelled", "approved", 3).ok(), Some(-3));
+        assert_eq!(leave_delta("cancelled", "pending", 3).ok(), Some(0));
+        assert!(leave_delta("cancelled", "approved", i32::MIN).is_err());
+    }
+
+    #[test]
+    fn date_shifts_refuse_the_calendar_edge() {
+        let d = crate::dates::ymd(2026, 3, 1).expect("date");
+        assert_eq!(shift_days(d, -1).ok(), crate::dates::ymd(2026, 2, 28));
+        assert!(shift_days(Date::MAX, 1).is_err());
+        assert_eq!(weeks_back(d, 1).ok(), crate::dates::ymd(2026, 2, 22));
+        assert!(weeks_back(d, i64::MAX).is_err());
+        assert!(weeks_back(d, i64::MAX / 7).is_err());
+    }
 }

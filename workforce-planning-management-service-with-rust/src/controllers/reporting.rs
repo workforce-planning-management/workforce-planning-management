@@ -130,6 +130,10 @@ fn person_json(w: &Person) -> serde_json::Value {
 /// nearest first: `level` 1 is their direct manager, 2 their manager's
 /// manager, and so on up to the top.
 #[debug_handler]
+#[allow(
+    clippy::arithmetic_side_effects,
+    reason = "`chain.len() + 1`: the chain holds at most one entry per distinct worker, far below usize::MAX"
+)]
 async fn upline(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -151,10 +155,15 @@ async fn upline(
         let Some(boss) = staff_among(&ctx, &caller, &[pid]).await?.remove(&pid) else {
             break;
         };
+        #[allow(
+            clippy::arithmetic_side_effects,
+            reason = "the chain holds one entry per manager visited, so its length is far below usize::MAX"
+        )]
+        let level = chain.len() + 1;
         chain.push(with_fields(
             person_json(&boss),
             serde_json::json!({
-                "level": chain.len() + 1,
+                "level": level,
                 "direct_manager": chain.is_empty(),
             }),
         ));
@@ -247,7 +256,7 @@ async fn downline(
     let direct = team.iter().filter(|(_, d)| *d == 1).count();
     format::json(serde_json::json!({
         "manager": person_json(&Person::from(&manager)),
-        "summary": { "direct": direct, "indirect": team.len() - direct, "total": team.len() },
+        "summary": { "direct": direct, "indirect": team.iter().filter(|(_, d)| *d != 1).count(), "total": team.len() },
         "downline": team.iter().take(limit).map(|(w, d)| report_json(w, *d)).collect::<Vec<_>>(),
         "truncated": team.len() > limit,
     }))

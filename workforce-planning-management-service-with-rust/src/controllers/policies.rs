@@ -263,6 +263,9 @@ async fn add_version(
         .await?
         .last()
         .map_or(0, |v| v.version);
+    let next_version = latest
+        .checked_add(1)
+        .ok_or_else(|| super::internal("the policy version overflowed"))?;
     let version_pid = Uuid::new_v4();
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
@@ -271,7 +274,7 @@ async fn add_version(
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
         version_pid,
         policy.pid,
-        latest + 1,
+        next_version,
         payload.title.trim(),
         payload.document_ref.trim(),
         SqlDate(payload.effective_on),
@@ -292,11 +295,11 @@ async fn add_version(
         version_pid,
         "policy_version_added",
         caller.actor(),
-        Some(json!({ "version": latest + 1 })),
+        Some(json!({ "version": next_version })),
     )
     .await?;
     tx.commit().await?;
-    format::json(json!({ "pid": version_pid, "version": latest + 1 }))
+    format::json(json!({ "pid": version_pid, "version": next_version }))
 }
 
 /// `GET /api/workers/{pid}/policies` — the newest version in force of each policy aimed at the worker, and where they stand on it.
@@ -353,7 +356,7 @@ pub(crate) async fn list_for(ctx: &AppContext, worker: &workers::Model) -> Resul
             today,
         );
         if !matches!(standing, rules::Standing::Done { .. }) {
-            waiting += 1;
+            crate::controllers::tally::bump(&mut waiting);
         }
         out.push(json!({ "policy": p.name, "version": version_json(v), "standing": standing }));
     }

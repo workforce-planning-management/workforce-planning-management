@@ -165,13 +165,33 @@ impl Status {
 }
 
 /// Group worked minutes by week, each week's days in date order, with a week starting on ISO weekday `week_start` (1 Monday to 7
-/// Sunday; anything else is read as Monday). Days with no entry are left out, which does not change a derivation.
+/// Sunday; anything else is read as Monday). Days with no entry are left out, which does not change a derivation. `None` when a
+/// week's first day falls before the earliest date there is, which is unknown, not a shorter week.
 #[must_use]
-pub fn weeks(days: &BTreeMap<Date, u32>, week_start: u32) -> Vec<Vec<u32>> {
-    weeks_with(days, week_start, |_| DayKind::Ordinary)
-        .into_iter()
-        .map(|week| week.into_iter().map(|(m, _)| m).collect())
-        .collect()
+pub fn weeks(days: &BTreeMap<Date, u32>, week_start: u32) -> Option<Vec<Vec<u32>>> {
+    Some(
+        weeks_with(days, week_start, |_| DayKind::Ordinary)?
+            .into_iter()
+            .map(|week| week.into_iter().map(|(m, _)| m).collect())
+            .collect(),
+    )
+}
+
+/// The ISO weekday a week starts on: 1 Monday to 7 Sunday, anything else is Monday.
+fn week_start_day(week_start: u32) -> i64 {
+    i64::from(if (1..=7).contains(&week_start) {
+        week_start
+    } else {
+        1
+    })
+}
+
+/// The first day of the week holding `date`, or `None` when it falls before the earliest date there is.
+fn week_beginning(date: Date, start: i64) -> Option<Date> {
+    let back = i64::from(date.weekday().to_monday_one_offset())
+        .checked_sub(start)?
+        .rem_euclid(7);
+    date.checked_sub(crate::dates::days(back)).ok()
 }
 
 /// [`weeks`] with each day's kind, given by `kind_of`.
@@ -180,46 +200,38 @@ pub fn weeks_with(
     days: &BTreeMap<Date, u32>,
     week_start: u32,
     kind_of: impl Fn(Date) -> DayKind,
-) -> Vec<Vec<(u32, DayKind)>> {
-    let start = i64::from(if (1..=7).contains(&week_start) {
-        week_start
-    } else {
-        1
-    });
+) -> Option<Vec<Vec<(u32, DayKind)>>> {
+    let start = week_start_day(week_start);
     let mut by_week: BTreeMap<Date, Vec<(u32, DayKind)>> = BTreeMap::new();
     for (date, minutes) in days {
-        let back = (i64::from(date.weekday().to_monday_one_offset()) - start).rem_euclid(7);
-        let first = *date - crate::dates::days(back);
+        let first = week_beginning(*date, start)?;
         by_week
             .entry(first)
             .or_default()
             .push((*minutes, kind_of(*date)));
     }
-    by_week.into_values().collect()
+    Some(by_week.into_values().collect())
 }
 
 /// The days of the weeks that **begin** on or after `from` and on or before `to`, whole weeks only. A week counts toward the month or
-/// year in which it begins, so a week is never split between two (WPM-T426). `week_start` is read as for [`weeks`].
+/// year in which it begins, so a week is never split between two (WPM-T426). `week_start` is read as for [`weeks`]. `None` as for
+/// [`weeks`].
 #[must_use]
 pub fn weeks_beginning_between(
     days: &BTreeMap<Date, u32>,
     week_start: u32,
     from: Date,
     to: Date,
-) -> BTreeMap<Date, u32> {
-    let start = i64::from(if (1..=7).contains(&week_start) {
-        week_start
-    } else {
-        1
-    });
-    days.iter()
-        .filter(|(date, _)| {
-            let back = (i64::from(date.weekday().to_monday_one_offset()) - start).rem_euclid(7);
-            let first = **date - crate::dates::days(back);
-            first >= from && first <= to
-        })
-        .map(|(date, minutes)| (*date, *minutes))
-        .collect()
+) -> Option<BTreeMap<Date, u32>> {
+    let start = week_start_day(week_start);
+    let mut kept = BTreeMap::new();
+    for (date, minutes) in days {
+        let first = week_beginning(*date, start)?;
+        if first >= from && first <= to {
+            kept.insert(*date, *minutes);
+        }
+    }
+    Some(kept)
 }
 
 /// Whether `minutes` is past a cap: `Some(true)` over, `Some(false)` at or under, `None` where no cap is configured (never "fine").
@@ -253,15 +265,23 @@ pub fn derive_period_kinds(
     if !matches!(derive_kinds(status, rules, &[], 0), Outcome::Derived(_)) {
         return derive_kinds(status, rules, &[], 0);
     }
-    let mut total: BTreeMap<u32, u32> = BTreeMap::new();
-    for week in weeks {
-        if let Outcome::Derived(d) = derive_kinds(status, rules, week, 0) {
+    let total = || -> Option<BTreeMap<u32, u32>> {
+        let mut total: BTreeMap<u32, u32> = BTreeMap::new();
+        for week in weeks {
+            // The status and rules were settled above, so a week that does not derive is an overflow.
+            let Outcome::Derived(d) = derive_kinds(status, rules, week, 0) else {
+                return None;
+            };
             for (bp, m) in d.minutes_at {
-                *total.entry(bp).or_insert(0) += m;
+                let slot = total.entry(bp).or_insert(0);
+                *slot = slot.checked_add(m)?;
             }
         }
-    }
-    Outcome::Derived(Derived { minutes_at: total })
+        Some(total)
+    };
+    total().map_or(Outcome::NotDerived("overflow"), |minutes_at| {
+        Outcome::Derived(Derived { minutes_at })
+    })
 }
 
 /// Whether an exempt post's weekly salary is below the configured weekly floor: `Some(true)` below, `Some(false)` at or above, `None`
@@ -273,6 +293,10 @@ pub fn exempt_below_floor(
     floor_weekly_minor: Option<i64>,
 ) -> Option<bool> {
     let floor = floor_weekly_minor?;
+    #[allow(
+        clippy::arithmetic_side_effects,
+        reason = "an i64 times a percentage of at most 100 fits an i128, and the divisors are non-zero constants"
+    )]
     let weekly = i128::from(annual_salary_minor) * i128::from(fte_percent.clamp(0, 100)) / 100 / 52;
     Some(weekly < i128::from(floor))
 }
@@ -320,17 +344,30 @@ impl Derived {
         }
         let mut total: i128 = 0;
         for (bp, minutes) in &self.minutes_at {
-            let extra = i128::from(*bp) - i128::from(REGULAR_BP);
-            total += i128::from(*minutes) * i128::from(rate_minor) * extra;
+            let extra = i128::from(*bp).checked_sub(i128::from(REGULAR_BP))?;
+            total = i128::from(*minutes)
+                .checked_mul(i128::from(rate_minor))?
+                .checked_mul(extra)?
+                .checked_add(total)?;
         }
-        let unit = i128::from(per_minutes) * i128::from(REGULAR_BP);
-        let rounded = (total * 2 + unit * total.signum()) / (2 * unit);
+        let unit = i128::from(per_minutes).checked_mul(i128::from(REGULAR_BP))?;
+        let rounded = total
+            .checked_mul(2)?
+            .checked_add(unit.checked_mul(total.signum())?)?
+            .checked_div(unit.checked_mul(2)?)?;
         i64::try_from(rounded).ok()
     }
 }
 
-fn multiplier(rules: &Rules, day_pos: u32, week_pos: u32, month_pos: u32, kind: DayKind) -> u32 {
-    let hits = rules
+/// The multiplier in basis points, or `None` when stacked bands overflow a `u32`.
+fn multiplier(
+    rules: &Rules,
+    day_pos: u32,
+    week_pos: u32,
+    month_pos: u32,
+    kind: DayKind,
+) -> Option<u32> {
+    let mut hits = rules
         .bands
         .iter()
         .filter(|b| {
@@ -344,8 +381,10 @@ fn multiplier(rules: &Rules, day_pos: u32, week_pos: u32, month_pos: u32, kind: 
         .map(|b| b.multiplier_bp)
         .chain(rules.kinds.bp(kind));
     match rules.stacking {
-        Stacking::Highest => hits.max().unwrap_or(REGULAR_BP).max(REGULAR_BP),
-        Stacking::Add => REGULAR_BP + hits.map(|bp| bp.saturating_sub(REGULAR_BP)).sum::<u32>(),
+        Stacking::Highest => Some(hits.max().unwrap_or(REGULAR_BP).max(REGULAR_BP)),
+        Stacking::Add => hits.try_fold(REGULAR_BP, |total, bp| {
+            total.checked_add(bp.saturating_sub(REGULAR_BP))
+        }),
     }
 }
 
@@ -374,22 +413,35 @@ pub fn derive_kinds(
     if rules.bands.is_empty() && rules.kinds == Kinds::default() {
         return Outcome::NoLimitConfigured;
     }
+    minutes_at_each(rules, days, month_before_minutes)
+        .map_or(Outcome::NotDerived("overflow"), |minutes_at| {
+            Outcome::Derived(Derived { minutes_at })
+        })
+}
+
+/// The minutes at each multiplier, or `None` when a count or a multiplier does not fit a `u32`.
+fn minutes_at_each(
+    rules: &Rules,
+    days: &[(u32, DayKind)],
+    month_before_minutes: u32,
+) -> Option<BTreeMap<u32, u32>> {
     let mut minutes_at: BTreeMap<u32, u32> = BTreeMap::new();
     let mut week_pos: u32 = 0;
     for (worked, kind) in days {
         for day_pos in 1..=(*worked).min(DAY) {
-            week_pos += 1;
+            week_pos = week_pos.checked_add(1)?;
             let bp = multiplier(
                 rules,
                 day_pos,
                 week_pos,
-                month_before_minutes + week_pos,
+                month_before_minutes.checked_add(week_pos)?,
                 *kind,
-            );
-            *minutes_at.entry(bp).or_insert(0) += 1;
+            )?;
+            let slot = minutes_at.entry(bp).or_insert(0);
+            *slot = slot.checked_add(1)?;
         }
     }
-    Outcome::Derived(Derived { minutes_at })
+    Some(minutes_at)
 }
 
 #[cfg(test)]
@@ -582,8 +634,8 @@ mod tests {
         let d = |day| crate::dates::ymd(2026, 11, day).unwrap();
         // 2026-11-01 is a Sunday. Monday weeks: {1} then {2..4}; Sunday weeks: {1..4}.
         let days = BTreeMap::from([(d(1), 60), (d(2), 120), (d(4), 180)]);
-        assert_eq!(weeks(&days, 1), vec![vec![60], vec![120, 180]]);
-        assert_eq!(weeks(&days, 7), vec![vec![60, 120, 180]]);
+        assert_eq!(weeks(&days, 1), Some(vec![vec![60], vec![120, 180]]));
+        assert_eq!(weeks(&days, 7), Some(vec![vec![60, 120, 180]]));
         assert_eq!(weeks(&days, 0), weeks(&days, 1), "a stray start is Monday");
     }
 
@@ -769,7 +821,7 @@ mod tests {
         });
         assert_eq!(
             weeks,
-            vec![vec![(60, DayKind::Ordinary), (120, DayKind::Rest)]]
+            Some(vec![vec![(60, DayKind::Ordinary), (120, DayKind::Rest)]])
         );
     }
 
@@ -779,12 +831,12 @@ mod tests {
         days.insert(d(2026, 6, 29), 60); // Monday, week begins in June
         days.insert(d(2026, 7, 2), 60); // Thursday of that same week
         days.insert(d(2026, 7, 6), 60); // Monday, week begins in July
-        let july = weeks_beginning_between(&days, 1, d(2026, 7, 1), d(2026, 7, 31));
+        let july = weeks_beginning_between(&days, 1, d(2026, 7, 1), d(2026, 7, 31)).unwrap();
         assert_eq!(
             july.keys().copied().collect::<Vec<_>>(),
             vec![d(2026, 7, 6)]
         );
-        let june = weeks_beginning_between(&days, 1, d(2026, 6, 1), d(2026, 6, 30));
+        let june = weeks_beginning_between(&days, 1, d(2026, 6, 1), d(2026, 6, 30)).unwrap();
         assert_eq!(june.len(), 2, "both days of the June week");
     }
 
@@ -811,5 +863,62 @@ mod tests {
             minutes_at: BTreeMap::new(),
         };
         assert_eq!(derived.premium_minor(1_000, 0), None);
+    }
+
+    /// A week that begins before the earliest date there is has no start: unknown, not a shorter week.
+    #[test]
+    fn a_week_before_the_earliest_date_is_unknown() {
+        let days: BTreeMap<Date, u32> = [(Date::MIN, 60)].into_iter().collect();
+        assert!((1..=7).any(|start| weeks(&days, start).is_none()));
+        assert!((1..=7).any(|start| weeks_with(&days, start, |_| DayKind::Ordinary).is_none()));
+        assert!(
+            (1..=7)
+                .any(|start| weeks_beginning_between(&days, start, Date::MIN, Date::MAX).is_none())
+        );
+    }
+
+    #[test]
+    fn counts_and_multipliers_that_do_not_fit_are_not_derived_not_wrapped() {
+        let rules = Rules {
+            bands: vec![band(Period::Day, 0, 15_000)],
+            kinds: Kinds::default(),
+            stacking: Stacking::Highest,
+        };
+        assert_eq!(
+            derive(Status::NonExempt, &rules, &[1], u32::MAX),
+            Outcome::NotDerived("overflow"),
+            "the month's earlier minutes plus this week overflow"
+        );
+        let stacked = Rules {
+            bands: vec![
+                band(Period::Day, 0, u32::MAX),
+                band(Period::Week, 0, u32::MAX),
+            ],
+            kinds: Kinds::default(),
+            stacking: Stacking::Add,
+        };
+        assert_eq!(
+            derive(Status::NonExempt, &stacked, &[1], 0),
+            Outcome::NotDerived("overflow"),
+            "stacked multipliers overflow"
+        );
+        assert_eq!(
+            derive_period(Status::NonExempt, &stacked, &[vec![1]]),
+            Outcome::NotDerived("overflow"),
+            "a week that overflows is not left out of the period"
+        );
+    }
+
+    #[test]
+    fn a_premium_that_does_not_fit_is_none() {
+        let derived = Derived {
+            minutes_at: BTreeMap::from([(u32::MAX, u32::MAX)]),
+        };
+        assert_eq!(derived.premium_minor(i64::MAX, 60), None);
+        assert_eq!(derived.premium_minor(i64::MAX, i64::MAX), None);
+        let regular = Derived {
+            minutes_at: BTreeMap::from([(REGULAR_BP, 60)]),
+        };
+        assert_eq!(regular.premium_minor(i64::MAX, 60), Some(0));
     }
 }

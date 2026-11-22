@@ -771,15 +771,17 @@ fn build_org_node(
     depth: usize,
     as_of: Date,
 ) -> OrgNode {
-    let reports = if depth > 32 {
-        Vec::new() // corrupt-cycle guard; the write path prevents cycles
-    } else {
-        children.get(&Some(node.pid)).map_or_default(|kids| {
-            kids.iter()
-                .map(|k| build_org_node(k, children, depth + 1, as_of))
-                .collect()
-        })
-    };
+    // Corrupt-cycle guard (depth over 32); the write path prevents cycles.
+    let reports = depth
+        .checked_add(1)
+        .filter(|_| depth <= 32)
+        .map_or_default(|below| {
+            children.get(&Some(node.pid)).map_or_default(|kids| {
+                kids.iter()
+                    .map(|k| build_org_node(k, children, below, as_of))
+                    .collect()
+            })
+        });
     OrgNode {
         pid: node.pid.to_string(),
         display_name: node.display_name.clone(),
@@ -832,7 +834,11 @@ async fn org_chart(
     .await?;
     let mut frontier: Vec<Uuid> = rows.iter().map(|r| r.pid).collect();
     for _ in 0..33 {
-        if frontier.is_empty() || rows.len() >= limit {
+        // The room left under the limit; none left ends the walk.
+        let Some(room) = limit.checked_sub(rows.len()).filter(|room| *room > 0) else {
+            break;
+        };
+        if frontier.is_empty() {
             break;
         }
         let mut next = sqlx::query_as!(
@@ -847,7 +853,7 @@ async fn org_chart(
         )
         .fetch_all(db::pool(&ctx))
         .await?;
-        next.truncate(limit - rows.len());
+        next.truncate(room);
         frontier = next.iter().map(|r| r.pid).collect();
         rows.extend(next);
     }

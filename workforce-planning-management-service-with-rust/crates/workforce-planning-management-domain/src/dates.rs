@@ -78,13 +78,17 @@ pub fn utc(
 /// `(later - earlier).num_days()`).
 #[must_use]
 pub fn days_between(earlier: Date, later: Date) -> i64 {
-    i64::from((later - earlier).get_days())
+    // A civil duration is a whole number of days, so the hours divide exactly by 24.
+    later.duration_since(earlier).as_hours() / 24
 }
 
 /// A duration of whole 24-hour days, for adding to a [`Timestamp`] (as `chrono`'s `Duration::days`).
 #[must_use]
 pub fn days(n: i64) -> SignedDuration {
-    SignedDuration::from_hours(n.saturating_mul(24))
+    // `SignedDuration` holds seconds in an `i64`, so more days than that is no duration at all. No date is that far from any
+    // other (a `Date` spans some 3.7 million days), so the bound changes no sum with a date, which fails either way.
+    const MOST_DAYS: i64 = i64::MAX / 86_400;
+    SignedDuration::from_secs(n.clamp(-MOST_DAYS, MOST_DAYS).saturating_mul(86_400))
 }
 
 /// RFC 3339 to the whole second, in UTC with a `Z`, the fraction cut off and not rounded (as `chrono`'s
@@ -113,6 +117,14 @@ mod tests {
         assert_eq!(ymd(2024, 2, 29), Some(jiff::civil::date(2024, 2, 29)));
         assert_eq!(ymd(2026, 13, 1), None);
         assert_eq!(ymd(100_000, 1, 1), None);
+    }
+
+    #[test]
+    fn a_huge_number_of_days_is_a_duration_no_date_can_take_not_a_panic() {
+        assert!(Date::MIN.checked_add(days(i64::MAX)).is_err());
+        assert!(Date::MAX.checked_sub(days(i64::MAX)).is_err());
+        assert!(Date::MAX.checked_add(days(i64::MIN)).is_err());
+        assert_eq!(days(2).as_hours(), 48);
     }
 
     #[test]

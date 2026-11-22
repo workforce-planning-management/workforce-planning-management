@@ -201,37 +201,44 @@ struct Eligible<'a> {
 pub fn report(workers: &[WorkerPay], floor: usize, basis: VariableBasis) -> Result<Report, String> {
     equality_monitoring::validate_floor(floor)?;
 
-    let mut tally = Tally::default();
     let mut eligible: Vec<Eligible> = Vec::new();
     for worker in workers {
         let female = match worker.sex {
-            None => {
-                tally.no_sex += 1;
-                continue;
-            }
-            Some(Declared::Other) => {
-                tally.not_binary += 1;
-                continue;
-            }
+            None | Some(Declared::Other) => continue,
             Some(Declared::Female) => true,
             Some(Declared::Male) => false,
         };
         let Some(pay) = worker.basic_minor else {
-            tally.no_pay += 1;
             continue;
         };
-        if worker.variable == Variable::Unknown {
-            tally.variable_unknown += 1;
-        }
-        if worker.category.is_none() {
-            tally.uncategorised += 1;
-        }
         eligible.push(Eligible {
             worker,
             female,
             basic: pay,
         });
     }
+    // Each worker is counted once, under the first reason that applies, so the counts are made by what is left at each step.
+    let tally = Tally {
+        no_sex: workers.iter().filter(|w| w.sex.is_none()).count(),
+        not_binary: workers
+            .iter()
+            .filter(|w| w.sex == Some(Declared::Other))
+            .count(),
+        no_pay: workers
+            .iter()
+            .filter(|w| {
+                matches!(w.sex, Some(Declared::Female | Declared::Male)) && w.basic_minor.is_none()
+            })
+            .count(),
+        variable_unknown: eligible
+            .iter()
+            .filter(|e| e.worker.variable == Variable::Unknown)
+            .count(),
+        uncategorised: eligible
+            .iter()
+            .filter(|e| e.worker.category.is_none())
+            .count(),
+    };
 
     // Total pay needs both parts; a worker whose variable part is unknown is in the basic-pay figures only.
     let total: Vec<(&Eligible, i64)> = eligible
@@ -376,7 +383,9 @@ impl Rational {
         }
         match statistic {
             Statistic::Mean => Some(Self {
-                numerator: values.iter().map(|v| i128::from(*v)).sum(),
+                numerator: values
+                    .iter()
+                    .try_fold(0_i128, |sum, v| sum.checked_add(i128::from(*v)))?,
                 denominator: n,
             }),
             Statistic::Median => {
@@ -391,7 +400,7 @@ impl Rational {
                     })
                 } else {
                     Some(Self {
-                        numerator: at(middle - 1)? + at(middle)?,
+                        numerator: at(middle.checked_sub(1)?)?.checked_add(at(middle)?)?,
                         denominator: 2,
                     })
                 }
@@ -400,7 +409,7 @@ impl Rational {
     }
 
     fn rounded(self) -> Option<i64> {
-        i64::try_from(round_div(self.numerator, self.denominator)).ok()
+        i64::try_from(round_div(self.numerator, self.denominator)?).ok()
     }
 }
 
@@ -410,13 +419,28 @@ pub fn mean_minor(values: &[i64]) -> Option<i64> {
     Rational::of(values, Statistic::Mean)?.rounded()
 }
 
-/// Integer division rounding half away from zero.
-fn round_div(numerator: i128, denominator: i128) -> i128 {
+/// Integer division rounding half away from zero; `None` for a zero divisor or a figure that does not fit.
+fn round_div(numerator: i128, denominator: i128) -> Option<i128> {
     let negative = (numerator < 0) != (denominator < 0);
-    let n = numerator.abs();
-    let d = denominator.abs();
-    let quotient = (2 * n + d) / (2 * d);
-    if negative { -quotient } else { quotient }
+    let n = numerator.unsigned_abs();
+    let d = denominator.unsigned_abs();
+    let quotient = n
+        .checked_mul(2)?
+        .checked_add(d)?
+        .checked_div(d.checked_mul(2)?)?;
+    let quotient = i128::try_from(quotient).ok()?;
+    if negative {
+        quotient.checked_neg()
+    } else {
+        Some(quotient)
+    }
+}
+
+/// `(M - F) / M` for `M = mn/md` and `F = fn/fd`, kept exact as `(mn*fd - fn*md) / (mn*fd)`; `None` when a figure does not fit.
+fn gap_parts(f: Rational, m: Rational) -> Option<(i128, i128)> {
+    let bottom = m.numerator.checked_mul(f.denominator)?;
+    let top = bottom.checked_sub(f.numerator.checked_mul(m.denominator)?)?;
+    Some((top, bottom))
 }
 
 fn gap_figure(female: &[i64], male: &[i64], floor: usize, statistic: Statistic) -> Figure<Gap> {
@@ -439,13 +463,10 @@ fn gap_figure(female: &[i64], male: &[i64], floor: usize, statistic: Statistic) 
         return Figure::Unknown(Reason::NoBase);
     }
     // (M - F) / M with M = mn/md and F = fn/fd, kept exact: (mn*fd - fn*md) / (mn*fd).
-    let top = m.numerator * f.denominator - f.numerator * m.denominator;
-    let bottom = m.numerator * f.denominator;
-    let (Some(female_minor), Some(male_minor), Ok(gap_bp)) = (
-        f.rounded(),
-        m.rounded(),
-        i64::try_from(round_div(top * 10_000, bottom)),
-    ) else {
+    let gap_bp = gap_parts(f, m)
+        .and_then(|(top, bottom)| i64::try_from(round_div(top.checked_mul(10_000)?, bottom)?).ok());
+    let (Some(female_minor), Some(male_minor), Some(gap_bp)) = (f.rounded(), m.rounded(), gap_bp)
+    else {
         return Figure::Unknown(Reason::NoBase);
     };
     Figure::Shown(Gap {
@@ -475,15 +496,15 @@ fn receiving_figure(known: &[(&Eligible, i64)], floor: usize) -> Figure<Shares> 
     }
     let share = |part: usize, whole: usize| {
         i64::try_from(round_div(
-            i128::try_from(part).unwrap_or(0) * 10_000,
-            i128::try_from(whole).unwrap_or(1),
-        ))
-        .unwrap_or(0)
+            i128::try_from(part).ok()?.checked_mul(10_000)?,
+            i128::try_from(whole).ok()?,
+        )?)
+        .ok()
     };
-    Figure::Shown(Shares {
-        female_bp: share(received(true), f),
-        male_bp: share(received(false), m),
-    })
+    match (share(received(true), f), share(received(false), m)) {
+        (Some(female_bp), Some(male_bp)) => Figure::Shown(Shares { female_bp, male_bp }),
+        _ => Figure::Unknown(Reason::NoBase),
+    }
 }
 
 /// Four equal groups by total pay, lowest first; a tie across a boundary is broken by the worker key so the split
@@ -494,39 +515,44 @@ fn quartile_figures(total: &[(&Eligible, i64)], floor: usize) -> Vec<Figure<Comp
         .map(|(e, pay)| (*pay, e.worker.key.as_str(), e.female))
         .collect();
     ranked.sort_unstable();
-    let n = ranked.len();
-    // (female, male) counts per quarter of the ranking
-    let mut quarters = [(0_usize, 0_usize); 4];
-    for (rank, (_, _, is_female)) in ranked.iter().enumerate() {
-        let band = rank * 4 / n.max(1);
-        if let Some(quarter) = quarters.get_mut(band) {
-            if *is_female {
-                quarter.0 += 1;
-            } else {
-                quarter.1 += 1;
-            }
-        }
-    }
-    quarters
-        .iter()
-        .map(|&(f, m)| {
-            if f + m == 0 {
-                return Figure::Unknown(Reason::NoWorkers);
-            }
-            if f < floor || m < floor {
-                return Figure::Withheld;
-            }
-            let female_bp = i64::try_from(round_div(
-                i128::try_from(f).unwrap_or(0) * 10_000,
-                i128::try_from(f + m).unwrap_or(1),
-            ))
-            .unwrap_or(0);
-            Figure::Shown(Composition {
-                female_bp,
-                male_bp: 10_000 - female_bp,
+    let n = ranked.len().max(1);
+    // The quarter a rank falls in, 0 (lowest) to 3.
+    let band_of = |rank: usize| rank.checked_mul(4).and_then(|r| r.checked_div(n));
+    let in_band = |band: usize, female: bool| {
+        ranked
+            .iter()
+            .enumerate()
+            .filter(|(rank, (_, _, is_female))| {
+                band_of(*rank) == Some(band) && *is_female == female
             })
+            .count()
+    };
+    (0..4)
+        .map(|band| {
+            quarter_figure(in_band(band, true), in_band(band, false), floor)
+                .unwrap_or(Figure::Unknown(Reason::NoBase))
         })
         .collect()
+}
+
+/// One quarter's composition from its female and male counts; `None` when a figure does not fit.
+fn quarter_figure(f: usize, m: usize, floor: usize) -> Option<Figure<Composition>> {
+    let total = f.checked_add(m)?;
+    if total == 0 {
+        return Some(Figure::Unknown(Reason::NoWorkers));
+    }
+    if f < floor || m < floor {
+        return Some(Figure::Withheld);
+    }
+    let female_bp = i64::try_from(round_div(
+        i128::try_from(f).ok()?.checked_mul(10_000)?,
+        i128::try_from(total).ok()?,
+    )?)
+    .ok()?;
+    Some(Figure::Shown(Composition {
+        female_bp,
+        male_bp: 10_000_i64.checked_sub(female_bp)?,
+    }))
 }
 
 /// How often an employer of a given size reports, and from when (Article 9 of the Directive).
@@ -635,9 +661,11 @@ pub fn tier_for(headcount: usize, tiers: &[Obligation]) -> Option<Obligation> {
 #[must_use]
 pub fn next_due(obligation: Obligation, today: Date) -> Date {
     let mut due = obligation.first_report_on;
-    let mut step = 0_u32;
-    while due < today {
-        step += 1;
+    // The walk ends at the calendar's end long before `u32::MAX` steps.
+    for step in 1..=u32::MAX {
+        if due >= today {
+            break;
+        }
         let months = obligation
             .every_years
             .saturating_mul(12)
@@ -1106,12 +1134,17 @@ mod tests {
 
     #[test]
     fn rounding_is_half_away_from_zero_in_both_directions() {
-        assert_eq!(round_div(5, 2), 3);
-        assert_eq!(round_div(-5, 2), -3);
-        assert_eq!(round_div(4, 3), 1);
-        assert_eq!(round_div(-4, 3), -1);
-        assert_eq!(round_div(7, -2), -4);
-        assert_eq!(round_div(0, 5), 0);
+        assert_eq!(round_div(5, 2), Some(3));
+        assert_eq!(round_div(-5, 2), Some(-3));
+        assert_eq!(round_div(4, 3), Some(1));
+        assert_eq!(round_div(-4, 3), Some(-1));
+        assert_eq!(round_div(7, -2), Some(-4));
+        assert_eq!(round_div(0, 5), Some(0));
+        assert_eq!(round_div(5, 0), None, "no zero divisor");
+        assert_eq!(round_div(i128::MAX, 1), Some(i128::MAX));
+        assert_eq!(round_div(i128::MAX, i128::MAX), None, "2n + d does not fit");
+        assert_eq!(round_div(i128::MIN, 1), None);
+        assert_eq!(round_div(1, i128::MIN), None);
     }
 
     #[test]
@@ -1247,5 +1280,64 @@ mod tests {
             first,
             "no later report fits the calendar"
         );
+    }
+
+    /// A figure that does not fit is unknown, never a wrapped or capped number.
+    #[test]
+    fn edges_of_the_integer_types_are_unknown_not_wrong() {
+        assert_eq!(quarter_figure(usize::MAX, 1, 1), None);
+        assert_eq!(
+            quarter_figure(0, 0, 1),
+            Some(Figure::Unknown(Reason::NoWorkers))
+        );
+        assert_eq!(quarter_figure(1, 3, 2), Some(Figure::Withheld));
+        assert_eq!(
+            quarter_figure(1, 1, 1),
+            Some(Figure::Shown(Composition {
+                female_bp: 5_000,
+                male_bp: 5_000
+            }))
+        );
+        let huge = Rational {
+            numerator: i128::MAX,
+            denominator: 1,
+        };
+        let one = Rational {
+            numerator: 1,
+            denominator: 1,
+        };
+        assert!(gap_parts(huge, huge).is_some());
+        assert!(gap_parts(one, huge).is_some());
+        assert!(
+            gap_parts(
+                Rational {
+                    numerator: 1,
+                    denominator: i128::MAX
+                },
+                huge
+            )
+            .is_none()
+        );
+        assert!(
+            gap_parts(
+                Rational {
+                    numerator: i128::MIN,
+                    denominator: 1
+                },
+                huge
+            )
+            .is_none()
+        );
+        assert_eq!(mean_minor(&[i64::MAX, i64::MAX]), Some(i64::MAX));
+        assert!(Rational::of(&[1, 2], Statistic::Median).is_some());
+        let due = next_due(
+            Obligation {
+                from_workers: 1,
+                every_years: 1,
+                first_report_on: crate::dates::ymd(2027, 6, 7).unwrap(),
+            },
+            Date::MAX,
+        );
+        assert!(due <= Date::MAX);
     }
 }
