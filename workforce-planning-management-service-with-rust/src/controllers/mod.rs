@@ -390,13 +390,20 @@ pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: &Window) -> 
     let page: Vec<T> = items
         .into_iter()
         .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
-        .take(
-            usize::try_from(window.limit())
-                .unwrap_or(usize::MAX)
-                .saturating_add(1),
-        )
+        .take(rows_to_read(window.limit()))
         .collect();
     window.respond(page)
+}
+
+/// The rows to read for a page of `limit`: one more, to learn whether another page follows.
+///
+/// A limit already at the top of `usize` takes every row there is, so one more adds none: that is the whole of the list
+/// (`usize::MAX`), not a wrapped or smaller count.
+pub(crate) fn rows_to_read(limit: u64) -> usize {
+    usize::try_from(limit)
+        .ok()
+        .and_then(|rows| rows.checked_add(1))
+        .unwrap_or(usize::MAX)
 }
 
 /// `response` with the `Link` to the next page when `more` rows follow: for a list whose body is not a bare array.
@@ -411,7 +418,19 @@ pub(crate) fn with_next(mut response: Response, window: &Window, more: bool) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::row_json;
+    use super::{row_json, rows_to_read};
+
+    #[test]
+    fn one_more_row_is_read_than_the_page_holds() {
+        assert_eq!(rows_to_read(0), 1);
+        assert_eq!(rows_to_read(500), 501);
+        assert_eq!(rows_to_read(u64::MAX), usize::MAX);
+        assert_eq!(rows_to_read(u64::try_from(usize::MAX).unwrap()), usize::MAX);
+        assert_eq!(
+            rows_to_read(u64::try_from(usize::MAX - 1).unwrap()),
+            usize::MAX
+        );
+    }
 
     fn sources(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
         for entry in std::fs::read_dir(dir).unwrap() {

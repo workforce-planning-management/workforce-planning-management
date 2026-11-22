@@ -102,7 +102,10 @@ async fn create_time_entry(
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let existing_minutes: i32 = existing.iter().sum();
+    let existing_minutes = existing
+        .iter()
+        .try_fold(0_i32, |total, minutes| total.checked_add(*minutes))
+        .ok_or_else(|| unprocessable("the day's recorded minutes are too many to total"))?;
     workforce::check_day_minutes(existing_minutes, payload.minutes)
         .map_err(|e| unprocessable(&e))?;
     let pid = Uuid::new_v4();
@@ -422,7 +425,7 @@ async fn balance_check(
     .fetch_optional(db::pool(ctx))
     .await?;
     let (entitled, used) = entitlement.map_or((0, 0), |e| (e.entitled_days, e.used_days));
-    Ok(leave::check_balance(kind, entitled, used, days))
+    leave::check_balance(kind, entitled, used, days).map_err(|e| unprocessable(&e))
 }
 
 /// `GET /api/workers/{pid}/leave-requests`.
@@ -962,7 +965,10 @@ async fn working_time(
     let mut minutes_of: std::collections::BTreeMap<Uuid, i64> = std::collections::BTreeMap::new();
     for (&(weeks, ceiling), pids) in &groups {
         let window_start = weeks_back(as_of, weeks)?;
-        let total_ceiling = ceiling.saturating_mul(weeks);
+        // A ceiling over a window too long for an i64 is more minutes than anyone can have recorded: nobody in the group is over it.
+        let Some(total_ceiling) = ceiling.checked_mul(weeks) else {
+            continue;
+        };
         let heavy = working_time::heavy_week_minutes(ceiling, weeks).unwrap_or(0);
         // One bind for the whole list (`ANY`), so the statement's parameter limit does not apply.
         let rows = sqlx::query!(

@@ -15,6 +15,9 @@ use std::collections::BTreeMap;
 /// Basis points in 100 percent: the regular rate.
 pub const REGULAR_BP: u32 = 10_000;
 
+/// The premium a multiplier at or below the regular rate adds when premiums stack: none.
+const NO_EXTRA_BP: u32 = 0;
+
 /// The most minutes in a day.
 const DAY: u32 = 1_440;
 
@@ -285,7 +288,7 @@ pub fn derive_period_kinds(
 }
 
 /// Whether an exempt post's weekly salary is below the configured weekly floor: `Some(true)` below, `Some(false)` at or above, `None`
-/// with no floor configured (not "fine"). Advisory; it never classifies a role from its duties (WPM-D157).
+/// with no floor configured (not "fine") or an FTE outside 0 to 100 (not trusted, not clamped: RCA-INT-6). Advisory; it never classifies a role from its duties (WPM-D157).
 #[must_use]
 pub fn exempt_below_floor(
     annual_salary_minor: i64,
@@ -293,11 +296,13 @@ pub fn exempt_below_floor(
     floor_weekly_minor: Option<i64>,
 ) -> Option<bool> {
     let floor = floor_weekly_minor?;
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "an i64 times a percentage of at most 100 fits an i128, and the divisors are non-zero constants"
-    )]
-    let weekly = i128::from(annual_salary_minor) * i128::from(fte_percent.clamp(0, 100)) / 100 / 52;
+    if !(0..=100).contains(&fte_percent) {
+        return None;
+    }
+    let weekly = i128::from(annual_salary_minor)
+        .checked_mul(i128::from(fte_percent))?
+        .checked_div(100)?
+        .checked_div(52)?;
     Some(weekly < i128::from(floor))
 }
 
@@ -324,14 +329,13 @@ pub struct Derived {
 }
 
 impl Derived {
-    /// Minutes paid above the regular rate.
+    /// Minutes paid above the regular rate; `None` when they do not fit a `u32` (RCA-AGG-1).
     #[must_use]
-    pub fn overtime_minutes(&self) -> u32 {
+    pub fn overtime_minutes(&self) -> Option<u32> {
         self.minutes_at
             .iter()
             .filter(|(bp, _)| **bp > REGULAR_BP)
-            .map(|(_, m)| *m)
-            .sum()
+            .try_fold(0_u32, |total, (_, m)| total.checked_add(*m))
     }
 
     /// The premium pay in minor units: the extra over the regular rate, where `rate_minor` is the base pay for `per_minutes` minutes
@@ -383,7 +387,8 @@ fn multiplier(
     match rules.stacking {
         Stacking::Highest => Some(hits.max().unwrap_or(REGULAR_BP).max(REGULAR_BP)),
         Stacking::Add => hits.try_fold(REGULAR_BP, |total, bp| {
-            total.checked_add(bp.saturating_sub(REGULAR_BP))
+            // A multiplier at or below the regular rate adds no premium (the doc on `Stacking::Add`): the extra is `NO_EXTRA_BP`.
+            total.checked_add(bp.checked_sub(REGULAR_BP).unwrap_or(NO_EXTRA_BP))
         }),
     }
 }
@@ -466,6 +471,36 @@ mod tests {
         }
     }
 
+    #[test]
+    fn a_multiplier_below_the_regular_rate_adds_no_premium_when_stacking() {
+        let rules = Rules {
+            bands: Vec::new(),
+            stacking: Stacking::Add,
+            kinds: Kinds {
+                rest_day_bp: Some(5_000),
+                holiday_bp: None,
+            },
+        };
+        assert_eq!(multiplier(&rules, 0, 0, 0, DayKind::Rest), Some(REGULAR_BP));
+    }
+
+    #[test]
+    fn overtime_minutes_that_do_not_fit_are_unknown_and_an_odd_fte_is_not_clamped() {
+        let at = |bp: u32, m: u32| (bp, m);
+        let too_many = Derived {
+            minutes_at: BTreeMap::from([at(15_000, u32::MAX), at(20_000, 1)]),
+        };
+        assert_eq!(too_many.overtime_minutes(), None);
+        let few = Derived {
+            minutes_at: BTreeMap::from([at(REGULAR_BP, 100), at(15_000, 30), at(20_000, 5)]),
+        };
+        assert_eq!(few.overtime_minutes(), Some(35));
+        assert_eq!(exempt_below_floor(5_200_000, 101, Some(1)), None);
+        assert_eq!(exempt_below_floor(5_200_000, -1, Some(1)), None);
+        assert_eq!(exempt_below_floor(i64::MAX, 100, Some(1)), Some(false));
+        assert_eq!(exempt_below_floor(5_200, 100, Some(101)), Some(true));
+    }
+
     fn derived(o: Outcome) -> Derived {
         match o {
             Outcome::Derived(d) => d,
@@ -476,9 +511,9 @@ mod tests {
     #[test]
     fn a_forty_hour_week_has_no_overtime_and_a_forty_five_hour_week_has_five_hours() {
         let d = derived(derive(Status::NonExempt, &weekly40(), &[8 * H; 5], 0));
-        assert_eq!(d.overtime_minutes(), 0);
+        assert_eq!(d.overtime_minutes(), Some(0));
         let d = derived(derive(Status::NonExempt, &weekly40(), &[9 * H; 5], 0));
-        assert_eq!(d.overtime_minutes(), 5 * H);
+        assert_eq!(d.overtime_minutes(), Some(5 * H));
         assert_eq!(d.minutes_at[&REGULAR_BP], 40 * H);
         assert_eq!(d.minutes_at[&15_000], 5 * H);
     }
@@ -491,7 +526,11 @@ mod tests {
             kinds: Kinds::default(),
         };
         let eight = derived(derive(Status::NonExempt, &rules, &[8 * H], 0));
-        assert_eq!(eight.overtime_minutes(), 0, "an 8-hour day is not overtime");
+        assert_eq!(
+            eight.overtime_minutes(),
+            Some(0),
+            "an 8-hour day is not overtime"
+        );
         let twelve = derived(derive(Status::NonExempt, &rules, &[12 * H], 0));
         assert_eq!(twelve.minutes_at[&15_000], 4 * H);
         assert!(
@@ -524,7 +563,7 @@ mod tests {
         assert_eq!(highest.minutes_at.get(&20_000), None, "no pyramiding");
         assert_eq!(
             highest.overtime_minutes(),
-            18 * H,
+            Some(18 * H),
             "two hours a day past eight on four days, and all ten of the last day past forty"
         );
         let add = derived(derive(
@@ -554,7 +593,7 @@ mod tests {
         let d = derived(derive(Status::NonExempt, &rules, &[8 * H; 5], 80 * H));
         assert_eq!(
             d.overtime_minutes(),
-            20 * H,
+            Some(20 * H),
             "20 hours past 100 in the month"
         );
     }
@@ -645,7 +684,7 @@ mod tests {
         let d = derived(derive_period(Status::NonExempt, &weekly40(), &two));
         assert_eq!(
             d.overtime_minutes(),
-            10 * H,
+            Some(10 * H),
             "five hours past forty in each week"
         );
         let monthly = Rules {
@@ -666,7 +705,7 @@ mod tests {
             Outcome::Unknown
         );
         let nothing = derived(derive_period(Status::NonExempt, &weekly40(), &[]));
-        assert_eq!(nothing.overtime_minutes(), 0);
+        assert_eq!(nothing.overtime_minutes(), Some(0));
     }
 
     #[test]

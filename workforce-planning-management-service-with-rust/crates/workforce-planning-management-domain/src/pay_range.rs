@@ -374,12 +374,12 @@ pub fn analyse(entries: &[Entry], floor: usize, cutoff_bp: i64) -> Report {
         Dimension::Location,
     ] {
         let groups = grouping(by, &rows);
-        let held_back: usize = groups
+        // A sum too large for a `usize` is at least `floor`, so it is not a small remainder: `is_some_and` is exactly right.
+        let held_back = groups
             .iter()
             .filter(|(_, pts)| pts.len() < floor)
-            .map(|(_, pts)| pts.len())
-            .sum();
-        if held_back > 0 && held_back < floor {
+            .try_fold(0_usize, |sum, (_, pts)| sum.checked_add(pts.len()));
+        if held_back.is_some_and(|held| held > 0 && held < floor) {
             total_safe = false;
         }
         built.push((

@@ -212,9 +212,9 @@ fn day_number(date: Date) -> i64 {
 /// Counted by interval arithmetic (the employed span within the month, less the merged leave spans),
 /// not by walking the days: the view calls this for every worker and month (WPM-D90).
 #[must_use]
-#[allow(
+#[expect(
     clippy::arithmetic_side_effects,
-    reason = "day numbers of dates the calendar holds are within 4 million, so sums and differences of them cannot overflow"
+    reason = "RCA-EXC-2: day numbers of dates (years -9999 to 9999) are within 4 million, so sums and differences of them cannot overflow an i64"
 )]
 pub fn available_days(worker: &WorkerFacts, month: Date) -> i64 {
     let first = day_number(month_start(month));

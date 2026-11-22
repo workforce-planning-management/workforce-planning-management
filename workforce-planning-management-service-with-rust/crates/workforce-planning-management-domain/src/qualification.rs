@@ -131,8 +131,10 @@ pub fn rollup(standings: &[Standing], floor: usize) -> Rollup {
     }
     let n = |s: Standing| standings.iter().filter(|x| **x == s).count();
     let met = n(Standing::Met);
-    #[allow(clippy::cast_precision_loss)]
-    let rate = met as f64 / standings.len() as f64;
+    // A count past 2^53 would round in a float: the group is withheld rather than shown with a rounded rate.
+    let Some(rate) = super::display::ratio(met, standings.len()) else {
+        return Rollup::Hidden;
+    };
     Rollup::Shown {
         met,
         declared_only: n(Standing::DeclaredOnly),

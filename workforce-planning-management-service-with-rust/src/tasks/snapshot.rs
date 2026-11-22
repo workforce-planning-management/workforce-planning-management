@@ -46,10 +46,6 @@ impl Task for SnapshotHeadcount {
 ///
 /// # Errors
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
     let facts: Vec<WorkerFacts> = sqlx::query!(
         "SELECT organization_ref, department, fte_percent, employment_type, hired_on, terminated_on
@@ -78,7 +74,10 @@ pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
 
     let mut tx = pool.begin().await?;
     let mut written = 0;
-    for row in metrics::snapshot_rows(as_of, since, &facts) {
+    // A count or total that does not fit its type is a broken invariant: no snapshot is better than a wrong one (RCA-NONE-2).
+    let rows = metrics::snapshot_rows(as_of, since, &facts)
+        .ok_or_else(|| crate::controllers::internal("a headcount total overflowed"))?;
+    for row in rows {
         let exists = sqlx::query_scalar!(
             r#"SELECT EXISTS (SELECT 1 FROM headcount_snapshots
                                WHERE organization_ref = $1 AND department = $2 AND as_of = $3) AS "e!""#,
@@ -111,7 +110,7 @@ pub async fn run_snapshot(pool: &sqlx::PgPool, as_of: Date) -> Result<usize> {
         )
         .execute(&mut *tx)
         .await?;
-        written += 1;
+        crate::controllers::tally::bump(&mut written);
     }
     tx.commit().await?;
     Ok(written)

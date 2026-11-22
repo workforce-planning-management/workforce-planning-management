@@ -205,6 +205,13 @@ impl Outcome {
     }
 }
 
+/// The least age in whole years: an age is never below zero.
+const MIN_AGE_YEARS: u16 = 0;
+
+/// The reason an outcome is unknown when a scaled figure does not fit 128 bits: the comparison cannot be made, so it is not guessed
+/// (RCA-P-3).
+const ARITHMETIC_OVERFLOW: &str = "arithmetic_overflow";
+
 /// Whole years completed on `on` by someone born on `born`, never below zero. A birthday on 29 February is reached on 1 March
 /// in a year with no 29 February.
 #[must_use]
@@ -216,7 +223,8 @@ pub fn completed_years(born: Date, on: Date) -> i64 {
         on.year().abs_diff(born.year())
     };
     if (on.month(), on.day()) < (born.month(), born.day()) {
-        years = years.saturating_sub(1);
+        // A birthday still to come takes a year off, and an age is never below zero (the doc above): the floor is `MIN_AGE_YEARS`.
+        years = years.checked_sub(1).unwrap_or(MIN_AGE_YEARS);
     }
     i64::from(years)
 }
@@ -261,13 +269,22 @@ fn compare(pay_scaled: i128, required_scaled: i128, near_margin_bp: i64) -> Outc
         return Outcome::Below;
     }
     let margin = i128::from(near_margin_bp.max(0));
+    if margin <= 0 {
+        return Outcome::Ok;
+    }
     // pay < floor × (10 000 + margin) / 10 000, kept in integers.
-    #[allow(
+    #[expect(
         clippy::arithmetic_side_effects,
-        reason = "the margin is at most i64::MAX, so adding 10 000 to it fits an i128"
+        reason = "RCA-EXC-2: the margin is at most i64::MAX, so adding 10 000 to it fits an i128"
     )]
     let factor = 10_000 + margin;
-    if margin > 0 && pay_scaled.saturating_mul(10_000) < required_scaled.saturating_mul(factor) {
+    let Some(pay_near) = pay_scaled.checked_mul(10_000) else {
+        return Outcome::Unknown(ARITHMETIC_OVERFLOW);
+    };
+    let Some(required_near) = required_scaled.checked_mul(factor) else {
+        return Outcome::Unknown(ARITHMETIC_OVERFLOW);
+    };
+    if pay_near < required_near {
         return Outcome::Near;
     }
     Outcome::Ok
@@ -330,11 +347,15 @@ fn evaluate(floor: &Floor, inputs: &Inputs) -> Outcome {
         && inputs.worked_minutes > 0
     {
         // pay / (minutes / 60) >= hourly  <=>  pay × 60 >= hourly × minutes
-        results.push(compare(
-            pay.saturating_mul(60),
-            i128::from(hourly).saturating_mul(i128::from(inputs.worked_minutes)),
-            inputs.near_margin_bp,
-        ));
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "RCA-EXC-2: pay and minutes are i64 and the hourly floor is an i64, so the products (at most 2^126) fit an i128"
+        )]
+        let (pay_scaled, required_scaled) = (
+            pay * 60,
+            i128::from(hourly) * i128::from(inputs.worked_minutes),
+        );
+        results.push(compare(pay_scaled, required_scaled, inputs.near_margin_bp));
     }
     if let Some(monthly) = floor.monthly_minor {
         if inputs.period_days <= 0 {
@@ -350,14 +371,20 @@ fn evaluate(floor: &Floor, inputs: &Inputs) -> Outcome {
         };
         // floor for the period = monthly × payments × days / 365 × fte / 100; pay × 36 500 against monthly × payments × days × fte.
         let required_scaled = i128::from(monthly)
-            .saturating_mul(i128::from(payments))
-            .saturating_mul(i128::from(inputs.period_days))
-            .saturating_mul(i128::from(inputs.fte_percent));
-        results.push(compare(
-            pay.saturating_mul(36_500),
-            required_scaled,
-            inputs.near_margin_bp,
-        ));
+            .checked_mul(i128::from(payments))
+            .and_then(|n| n.checked_mul(i128::from(inputs.period_days)))
+            .and_then(|n| n.checked_mul(i128::from(inputs.fte_percent)));
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "RCA-EXC-2: pay is an i64 and 36 500 is a constant, so the product (at most 2^79) fits an i128"
+        )]
+        let pay_scaled = pay * 36_500;
+        // A floor that does not fit is unknown; the worse of the two results still wins, so an hourly `below` is not lost.
+        results.push(
+            required_scaled.map_or(Outcome::Unknown(ARITHMETIC_OVERFLOW), |required| {
+                compare(pay_scaled, required, inputs.near_margin_bp)
+            }),
+        );
     }
     results
         .into_iter()
@@ -581,6 +608,45 @@ mod tests {
             run(&monthly_only(), Band::Adult, &year(1_709_400)),
             Outcome::Ok
         );
+    }
+
+    #[test]
+    fn a_figure_that_does_not_fit_is_unknown_not_a_guess() {
+        let huge = Inputs {
+            payments_per_year: i64::MAX,
+            period_days: i64::MAX,
+            ..inputs(1_000, 0)
+        };
+        let floors = Floors {
+            adult: Floor {
+                hourly_minor: None,
+                monthly_minor: Some(i64::MAX),
+            },
+            ..Floors::default()
+        };
+        assert_eq!(
+            run(&floors, Band::Adult, &huge),
+            Outcome::Unknown("arithmetic_overflow")
+        );
+        // The pay side of the near test overflows.
+        assert_eq!(
+            compare(i128::MAX, 1, 1),
+            Outcome::Unknown("arithmetic_overflow")
+        );
+        // The floor side of the near test overflows while the pay side fits.
+        let edge = i128::MAX / 10_000;
+        assert_eq!(
+            compare(edge, edge, 5_000),
+            Outcome::Unknown("arithmetic_overflow")
+        );
+        assert_eq!(compare(edge, edge, 0), Outcome::Ok);
+    }
+
+    #[test]
+    fn an_age_is_never_below_zero() {
+        // `on` before `born` in the same month: no year is taken off zero.
+        assert_eq!(completed_years(date(2030, 6, 15), date(2026, 3, 1)), 0);
+        assert_eq!(completed_years(date(2026, 6, 15), date(2026, 3, 1)), 0);
     }
 
     #[test]

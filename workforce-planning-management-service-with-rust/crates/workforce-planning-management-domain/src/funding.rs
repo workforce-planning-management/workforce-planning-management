@@ -133,8 +133,12 @@ fn percent(part: i64, whole: i64) -> Option<f64> {
     if whole <= 0 {
         return None;
     }
-    #[allow(clippy::cast_precision_loss)]
-    Some(((part as f64) * 1000.0 / (whole as f64)).round() / 10.0)
+    // Counts and amounts above 2^53 are not held exactly by an `f64`, so their share is unknown (RCA-CONV-4).
+    Some(
+        (crate::exact_float::from_i64(part)? * 1000.0 / crate::exact_float::from_i64(whole)?)
+            .round()
+            / 10.0,
+    )
 }
 
 /// The share of FTE that is contractor, and that is fixed-term, each shown separately. `rows` is
@@ -183,8 +187,7 @@ pub fn contingent_share_counted(
         }
     }
     let shown = by.values().all(|s| s.people >= floor);
-    #[allow(clippy::cast_precision_loss)]
-    let fte = all.fte as f64 / 100.0;
+    let fte = crate::exact_float::from_i64(all.fte)? / 100.0;
     Some(ContingentShare {
         headcount: all.people,
         fte,
@@ -276,11 +279,11 @@ pub fn funding_horizon(
                 )
             };
             let shown = people == 0 || people >= floor;
-            #[allow(clippy::cast_precision_loss)]
+            let fte_units = crate::exact_float::from_i64(fte)? / 100.0;
             Some(FundingMonth {
                 month,
                 people: shown.then_some(people),
-                fte: shown.then_some(fte as f64 / 100.0),
+                fte: shown.then_some(fte_units),
             })
         })
         .collect()

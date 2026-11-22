@@ -106,9 +106,12 @@ pub fn derive(inputs: &Inputs) -> Vec<Insight> {
         });
     }
 
-    if inputs.opening > 0 {
-        #[allow(clippy::cast_precision_loss)] // ratio over small counts
-        let change = (inputs.closing as f64 - inputs.opening as f64) / inputs.opening as f64;
+    // A count above 2^53 is not held exactly by an `f64`: no change is stated for it (RCA-CONV-4).
+    if inputs.opening > 0
+        && let Some((closing, opening)) = crate::exact_float::from_usize(inputs.closing)
+            .zip(crate::exact_float::from_usize(inputs.opening))
+    {
+        let change = (closing - opening) / opening;
         if change.abs() >= threshold("headcount_change") {
             let (code, word, suggestion) = if change < 0.0 {
                 (

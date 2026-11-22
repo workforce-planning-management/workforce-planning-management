@@ -178,8 +178,17 @@ pub fn over_committed(months: &[ClaimedMonth]) -> Sub<Over> {
             CellStatus::Fits | CellStatus::FitsWithPartners => {}
         }
     }
-    let over = pools.values().map(|(o, _)| o.len()).sum();
-    let unknown = pools.values().map(|(_, u)| u.len()).sum();
+    // Each count is at most the number of months given, so neither sum can overflow; if it ever did the answer is unknown.
+    let (Some(over), Some(unknown)) = (
+        pools
+            .values()
+            .try_fold(0_usize, |total, (o, _)| total.checked_add(o.len())),
+        pools
+            .values()
+            .try_fold(0_usize, |total, (_, u)| total.checked_add(u.len())),
+    ) else {
+        return Sub::Unknown(COUNT_TOO_LARGE);
+    };
     Sub::Known(Over {
         considered: seen.len(),
         over,
@@ -195,6 +204,9 @@ pub fn over_committed(months: &[ClaimedMonth]) -> Sub<Over> {
             .collect(),
     })
 }
+
+/// Why the months over are unknown when a count does not fit its type.
+const COUNT_TOO_LARGE: &str = "too many months to count";
 
 /// How the answer explains itself.
 pub const DERIVATION: &str = "Workers committed = people employed today whose post is recorded as funded by the programme and whose \

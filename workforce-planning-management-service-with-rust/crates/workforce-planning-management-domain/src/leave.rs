@@ -50,18 +50,25 @@ pub fn validate_reason(kind: &str, reason: Option<&str>) -> Result<(), String> {
 
 /// Check taking `requested` days of `kind` leave against
 /// `entitled - used`. A category with no balance (`unpaid`, `public_holiday`) always passes.
-#[must_use]
-pub fn check_balance(kind: &str, entitled: i32, used: i32, requested: i32) -> BalanceCheck {
+///
+/// # Errors
+///
+/// A refusal when the balance does not fit an `i32`: a balance nobody recorded is unknown, never a capped number.
+pub fn check_balance(
+    kind: &str,
+    entitled: i32,
+    used: i32,
+    requested: i32,
+) -> Result<BalanceCheck, String> {
     use super::absence_category::{Balance, balance_of};
     let balance = balance_of(kind);
-    if balance == Balance::None {
-        return BalanceCheck::Ok {
-            remaining_after: entitled.saturating_sub(used).saturating_sub(requested),
-        };
-    }
-    let remaining = entitled.saturating_sub(used);
-    let remaining_after = remaining.saturating_sub(requested);
-    if remaining_after >= 0 {
+    let remaining = entitled
+        .checked_sub(used)
+        .ok_or_else(|| BALANCE_TOO_LARGE.to_string())?;
+    let remaining_after = remaining
+        .checked_sub(requested)
+        .ok_or_else(|| BALANCE_TOO_LARGE.to_string())?;
+    Ok(if balance == Balance::None || remaining_after >= 0 {
         BalanceCheck::Ok { remaining_after }
     } else if balance == Balance::MayGoNegative {
         BalanceCheck::NegativeFlagged { remaining_after }
@@ -70,8 +77,11 @@ pub fn check_balance(kind: &str, entitled: i32, used: i32, requested: i32) -> Ba
             remaining,
             requested,
         }
-    }
+    })
 }
+
+/// The refusal when a leave balance does not fit its type.
+const BALANCE_TOO_LARGE: &str = "the leave balance is too large to work out";
 
 /// Inclusive day span of a leave request (`start..=end`), refusing a
 /// reversed range or a span over a year.
@@ -128,11 +138,11 @@ mod tests {
     #[test]
     fn annual_balance_is_enforced() {
         assert_eq!(
-            check_balance("annual", 25, 20, 5),
+            check_balance("annual", 25, 20, 5).unwrap(),
             BalanceCheck::Ok { remaining_after: 0 }
         );
         assert_eq!(
-            check_balance("annual", 25, 20, 6),
+            check_balance("annual", 25, 20, 6).unwrap(),
             BalanceCheck::OverBalance {
                 remaining: 5,
                 requested: 6
@@ -145,11 +155,11 @@ mod tests {
     #[test]
     fn sick_negative_is_flagged_not_refused() {
         assert_eq!(
-            check_balance("sick", 10, 8, 2),
+            check_balance("sick", 10, 8, 2).unwrap(),
             BalanceCheck::Ok { remaining_after: 0 }
         );
         assert_eq!(
-            check_balance("sick", 10, 8, 5),
+            check_balance("sick", 10, 8, 5).unwrap(),
             BalanceCheck::NegativeFlagged {
                 remaining_after: -3
             }
@@ -160,9 +170,28 @@ mod tests {
     #[test]
     fn unpaid_always_passes() {
         assert!(matches!(
-            check_balance("unpaid", 0, 0, 30),
+            check_balance("unpaid", 0, 0, 30).unwrap(),
             BalanceCheck::Ok { .. }
         ));
+    }
+
+    /// A balance that does not fit an `i32` is refused, never capped.
+    #[test]
+    fn a_balance_past_i32_is_refused() {
+        let refusal = Err(BALANCE_TOO_LARGE.to_string());
+        assert_eq!(check_balance("annual", i32::MIN, 1, 0), refusal);
+        assert_eq!(check_balance("unpaid", 0, 0, i32::MIN), refusal);
+        assert_eq!(
+            check_balance("annual", i32::MAX, -1, 0),
+            refusal,
+            "the first overflow"
+        );
+        assert_eq!(
+            check_balance("annual", i32::MAX, 0, 0),
+            Ok(BalanceCheck::Ok {
+                remaining_after: i32::MAX
+            })
+        );
     }
 
     /// Day spans are inclusive; reversed and oversized ranges are

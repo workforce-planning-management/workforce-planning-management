@@ -291,8 +291,9 @@ fn without_comments(source: &str) -> String {
             }
         } else if c == 'r'
             && matches!(next, Some('#' | '"'))
-            && !chars
-                .get(i.wrapping_sub(1))
+            && !i
+                .checked_sub(1)
+                .and_then(|before| chars.get(before))
                 .is_some_and(|p| p.is_alphanumeric() || *p == '_')
         {
             // a raw string: r"…" or r#"…"#

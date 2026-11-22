@@ -31,18 +31,25 @@ pub fn heavy_week_minutes(ceiling: i64, weeks: i64) -> Option<i64> {
 }
 
 /// Average weekly minutes over `weeks`, or `None` when `weeks` is not
-/// positive (a zero-width window has no average — `null`, never `0`).
+/// positive (a zero-width window has no average — `null`, never `0`), or when a figure is past 2^53 and a float would round it.
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // display average
 pub fn weekly_average(total_minutes: i64, weeks: i64) -> Option<f64> {
-    (weeks > 0).then(|| total_minutes as f64 / weeks as f64)
+    if weeks <= 0 {
+        return None;
+    }
+    Some(crate::metrics::exact_f64(total_minutes)? / crate::metrics::exact_f64(weeks)?)
 }
 
 /// Whether the average weekly minutes over `weeks` exceed `ceiling` (minutes a week).
 /// Integer comparison (`total > ceiling × weeks`) — no float edge.
 #[must_use]
 pub fn over_average(total_minutes: i64, weeks: i64, ceiling: i64) -> bool {
-    weeks > 0 && total_minutes > ceiling.saturating_mul(weeks)
+    // A product past `i64` is beyond every total (`total_minutes` is an `i64`) when the ceiling is positive, and below every one
+    // when it is negative: the comparison is decided by the ceiling's sign, exactly.
+    weeks > 0
+        && ceiling
+            .checked_mul(weeks)
+            .map_or(ceiling < 0, |limit| total_minutes > limit)
 }
 
 /// One rest-gap breach between two consecutive shift assignments.
@@ -236,6 +243,18 @@ mod tests {
             assert!(over_average(ceiling * weeks + 1, weeks, ceiling));
         }
         assert!(!over_average(i64::MAX, 0, 2_880), "no window, no flag");
+        assert!(
+            !over_average(i64::MAX, 2, i64::MAX),
+            "a limit past i64 is above every total"
+        );
+        assert!(
+            over_average(i64::MIN, 2, i64::MIN),
+            "a limit below i64 is below every total"
+        );
+        assert!(over_average(0, 3, -1));
+        assert_eq!(weekly_average(i64::MAX, 2), None, "past 2^53");
+        assert_eq!(weekly_average(-3, 2), Some(-1.5));
+        assert_eq!(weekly_average(10, i64::MAX), None);
         // The same total is over one profile and not the other.
         let total = 4 * 45 * 60;
         assert!(over_average(total, SECOND.0, SECOND.1));

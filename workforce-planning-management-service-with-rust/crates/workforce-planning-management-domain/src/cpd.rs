@@ -37,8 +37,7 @@ pub fn to_hundredths(amount: f64) -> Option<i64> {
     if !amount.is_finite() || amount <= 0.0 {
         return None;
     }
-    #[allow(clippy::cast_possible_truncation)] // bounded just below
-    let hundredths = (amount * 100.0).round() as i64;
+    let hundredths = crate::metrics::rounded_i64(amount * 100.0)?;
     (1..=MAX_UNITS_PER_ENTRY * 100)
         .contains(&hundredths)
         .then_some(hundredths)
@@ -139,18 +138,20 @@ impl Progress {
     }
 }
 
-/// Sum `(amount_hundredths, verified)` entries against a requirement.
+/// Sum `(amount_hundredths, verified)` entries against a requirement; `None` when a total does not fit an `i64` (unknown, not a
+/// wrapped or capped total).
 #[must_use]
-pub fn progress(entries: &[(i64, bool)], required: i64) -> Progress {
-    Progress {
-        recorded: entries.iter().map(|(amount, _)| amount).sum(),
+pub fn progress(entries: &[(i64, bool)], required: i64) -> Option<Progress> {
+    Some(Progress {
+        recorded: entries
+            .iter()
+            .try_fold(0_i64, |total, (amount, _)| total.checked_add(*amount))?,
         verified: entries
             .iter()
             .filter(|(_, verified)| *verified)
-            .map(|(amount, _)| amount)
-            .sum(),
+            .try_fold(0_i64, |total, (amount, _)| total.checked_add(*amount))?,
         required,
-    }
+    })
 }
 
 /// The default warning window for an expiring registration (days).
@@ -319,24 +320,33 @@ mod tests {
     /// entries has a real 0 of a known requirement.
     #[test]
     fn progress_sums() {
-        let p = progress(&[(300, true), (200, false), (100, true)], 1000);
+        let p = progress(&[(300, true), (200, false), (100, true)], 1000).expect("fits");
         assert_eq!((p.recorded, p.verified, p.required), (600, 400, 1000));
         assert_eq!(p.remaining(), Some(400));
         assert!(!p.met() && !p.met_verified());
-        let done = progress(&[(1000, false)], 1000);
+        let done = progress(&[(1000, false)], 1000).expect("fits");
         assert!(
             done.met() && !done.met_verified(),
             "recorded meets it; verified does not yet"
         );
         assert_eq!(done.remaining(), Some(0));
-        assert!(progress(&[(1000, true)], 1000).met_verified());
-        let none = progress(&[], 500);
+        assert!(
+            progress(&[(1000, true)], 1000)
+                .expect("fits")
+                .met_verified()
+        );
+        let none = progress(&[], 500).expect("fits");
         assert_eq!((none.recorded, none.remaining()), (0, Some(500)));
         assert_eq!(
-            progress(&[(900, true)], 500).remaining(),
+            progress(&[(900, true)], 500).expect("fits").remaining(),
             Some(0),
             "never negative"
         );
+        assert!(progress(&[(i64::MAX, false), (1, false)], 1).is_none());
+        assert!(progress(&[(i64::MAX, true), (1, true)], 1).is_none());
+        assert!(progress(&[(i64::MAX, false)], 1).is_some());
+        assert_eq!(to_hundredths(1.5), Some(150));
+        assert_eq!(to_hundredths(1e300), None);
     }
 
     /// Registration status bands, inclusive at the warning edge.

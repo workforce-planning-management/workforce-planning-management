@@ -80,13 +80,15 @@ pub fn check_scores(declared: &[String], scores: &BTreeMap<String, i32>) -> Resu
 /// Aggregate one group's scores for one competency: `(count, mean)`.
 /// Empty ⇒ `None` (no responses is not a zero).
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // display mean
 pub fn competency_mean(scores: &[i32]) -> Option<(usize, f64)> {
     if scores.is_empty() {
         return None;
     }
-    let total: i64 = scores.iter().map(|&s| i64::from(s)).sum();
-    Some((scores.len(), total as f64 / scores.len() as f64))
+    let total = scores
+        .iter()
+        .try_fold(0_i64, |sum, &s| sum.checked_add(i64::from(s)))?;
+    let count = crate::exact_float::from_usize(scores.len())?;
+    Some((scores.len(), crate::exact_float::from_i64(total)? / count))
 }
 
 #[cfg(test)]

@@ -55,23 +55,23 @@ pub fn validate_key(key: &str) -> Result<(), String> {
 
 /// A fingerprint of a request: its method, its path and query, and its body. Two requests with the
 /// same fingerprint are the same action. Each part is length-prefixed so that moving a byte from
-/// one part to the next changes the fingerprint.
+/// one part to the next changes the fingerprint. `None` when a part is longer than a `u64` can count (no request is).
 #[must_use]
-pub fn fingerprint(method: &str, path_and_query: &str, body: &[u8]) -> String {
+pub fn fingerprint(method: &str, path_and_query: &str, body: &[u8]) -> Option<String> {
     let mut hash = Sha256::new();
     for part in [
         method.to_ascii_uppercase().as_bytes(),
         path_and_query.as_bytes(),
         body,
     ] {
-        hash.update((part.len() as u64).to_be_bytes());
+        hash.update(u64::try_from(part.len()).ok()?.to_be_bytes());
         hash.update(part);
     }
-    hash.finalize().iter().fold(String::new(), |mut s, b| {
+    Some(hash.finalize().iter().fold(String::new(), |mut s, b| {
         use std::fmt::Write;
         let _ = write!(s, "{b:02x}");
         s
-    })
+    }))
 }
 
 /// Whether a response is kept for replay: a success, and not too large. A failure is not kept, so the
@@ -169,22 +169,40 @@ mod tests {
 
     #[test]
     fn the_fingerprint_is_stable_and_sees_every_part() {
-        let base = fingerprint("POST", "/api/workers", b"{\"a\":1}");
-        assert_eq!(base, fingerprint("POST", "/api/workers", b"{\"a\":1}"));
-        assert_eq!(base, fingerprint("post", "/api/workers", b"{\"a\":1}"));
+        let base = fingerprint("POST", "/api/workers", b"{\"a\":1}").unwrap();
+        assert_eq!(
+            base,
+            fingerprint("POST", "/api/workers", b"{\"a\":1}").unwrap()
+        );
+        assert_eq!(
+            base,
+            fingerprint("post", "/api/workers", b"{\"a\":1}").unwrap()
+        );
         assert_eq!(base.len(), 64);
-        assert_ne!(base, fingerprint("PUT", "/api/workers", b"{\"a\":1}"));
-        assert_ne!(base, fingerprint("POST", "/api/workers/1", b"{\"a\":1}"));
-        assert_ne!(base, fingerprint("POST", "/api/workers?x=1", b"{\"a\":1}"));
-        assert_ne!(base, fingerprint("POST", "/api/workers", b"{\"a\":2}"));
-        assert_ne!(base, fingerprint("POST", "/api/workers", b""));
+        assert_ne!(
+            base,
+            fingerprint("PUT", "/api/workers", b"{\"a\":1}").unwrap()
+        );
+        assert_ne!(
+            base,
+            fingerprint("POST", "/api/workers/1", b"{\"a\":1}").unwrap()
+        );
+        assert_ne!(
+            base,
+            fingerprint("POST", "/api/workers?x=1", b"{\"a\":1}").unwrap()
+        );
+        assert_ne!(
+            base,
+            fingerprint("POST", "/api/workers", b"{\"a\":2}").unwrap()
+        );
+        assert_ne!(base, fingerprint("POST", "/api/workers", b"").unwrap());
     }
 
     #[test]
     fn moving_a_byte_between_parts_changes_the_fingerprint() {
         assert_ne!(
-            fingerprint("POST", "/a", b"bc"),
-            fingerprint("POST", "/ab", b"c")
+            fingerprint("POST", "/a", b"bc").unwrap(),
+            fingerprint("POST", "/ab", b"c").unwrap()
         );
     }
 

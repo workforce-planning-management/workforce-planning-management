@@ -248,8 +248,11 @@ pub fn rollup(statuses: &[Status], floor: usize) -> Rollup {
         .iter()
         .filter(|s| matches!(s, Status::Compliant | Status::DueSoon))
         .count();
-    #[allow(clippy::cast_precision_loss)]
-    let rate = (counted > 0).then(|| in_date as f64 / counted as f64);
+    // `None` with nothing counted, or counts above 2^53 that an `f64` does not hold exactly (RCA-CONV-4).
+    let rate = crate::exact_float::from_usize(in_date)
+        .zip(crate::exact_float::from_usize(counted))
+        .filter(|_| counted > 0)
+        .map(|(in_date, counted)| in_date / counted);
     Rollup::Shown {
         compliant,
         due_soon,

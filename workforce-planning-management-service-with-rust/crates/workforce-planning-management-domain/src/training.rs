@@ -63,6 +63,9 @@ pub struct Recommendation {
     pub basis: Basis,
 }
 
+/// The levels left to the per-level estimate when the courses cover the whole shortfall: none.
+const NO_LEVELS_LEFT: u32 = 0;
+
 /// Recommend training to close a gap of `shortfall` levels. Catalogue courses
 /// the person has already `completed` are skipped; the rest are taken
 /// cheapest-per-level first (ties by title, so it is stable) until the gap
@@ -99,7 +102,10 @@ pub fn recommend<S: std::hash::BuildHasher>(
         hours = hours.checked_add(c.hours)?;
         courses.push(c.clone());
     }
-    let estimated_levels = shortfall.saturating_sub(course_levels);
+    // Courses that cover the gap, or more, leave no levels to the per-level estimate ("whatever the courses leave" above).
+    let estimated_levels = shortfall
+        .checked_sub(course_levels)
+        .unwrap_or(NO_LEVELS_LEFT);
     hours = hours.checked_add(estimated_levels.checked_mul(hours_per_level)?)?;
     let basis = if courses.is_empty() {
         Basis::Estimate
@@ -118,12 +124,13 @@ pub fn recommend<S: std::hash::BuildHasher>(
 }
 
 /// `hours * levels` as a `u64`, for comparing two courses' hours per level without division.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "the product of two u32 always fits a u64"
-)]
 fn cross(hours: u32, levels: u32) -> u64 {
-    u64::from(hours) * u64::from(levels)
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: the product of two u32 values is under 2^64"
+    )]
+    let product = u64::from(hours) * u64::from(levels);
+    product
 }
 
 /// The weekly hours a plan assumes: the request if given and within 1–40,
@@ -132,7 +139,7 @@ fn cross(hours: u32, levels: u32) -> u64 {
 ///
 /// # Errors
 ///
-/// A message when the request is outside 1–40.
+/// A message when the request is outside 1–40, or the worker's FTE is outside 1–100 (`spec/domain-model.md`).
 pub fn weekly_hours(requested: Option<i64>, fte_percent: i32) -> Result<u32, String> {
     if let Some(n) = requested {
         return u32::try_from(n)
@@ -140,9 +147,13 @@ pub fn weekly_hours(requested: Option<i64>, fte_percent: i32) -> Result<u32, Str
             .filter(|h| (1..=MAX_WEEKLY_HOURS).contains(h))
             .ok_or_else(|| format!("weekly_hours must be between 1 and {MAX_WEEKLY_HOURS}"));
     }
-    let fte = f64::from(fte_percent.clamp(1, 100)) / 100.0;
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)] // 1..=4
-    let scaled = (DEFAULT_WEEKLY_HOURS * fte).round() as u32;
+    if !(1..=100).contains(&fte_percent) {
+        return Err("the worker's FTE must be between 1 and 100 percent".to_string());
+    }
+    let fte = f64::from(fte_percent) / 100.0;
+    let scaled = crate::metrics::rounded_i64(DEFAULT_WEEKLY_HOURS * fte)
+        .and_then(|n| u32::try_from(n).ok())
+        .ok_or_else(|| "the weekly hours do not fit a count".to_string())?;
     Ok(scaled.max(1))
 }
 
@@ -273,6 +284,14 @@ mod tests {
         assert!(weekly_hours(Some(0), 100).is_err());
         assert!(weekly_hours(Some(41), 100).is_err());
         assert!(weekly_hours(Some(-3), 100).is_err());
+        assert_eq!(weekly_hours(None, 1), Ok(1));
+        for fte in [0, -1, 101, i32::MIN, i32::MAX] {
+            assert_eq!(
+                weekly_hours(None, fte),
+                Err("the worker's FTE must be between 1 and 100 percent".to_string())
+            );
+        }
+        assert_eq!(weekly_hours(Some(6), 0), Ok(6), "a request needs no FTE");
     }
 
     #[test]

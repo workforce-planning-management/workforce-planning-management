@@ -53,8 +53,8 @@ pub(super) async fn resolve_attrition(
     })
 }
 
-/// Hundredths of a person as a number of people.
-pub(super) fn centi(hundredths: i64) -> f64 {
+/// Hundredths of a person as a number of people, or `None` (null) when a float would round it.
+pub(super) fn centi(hundredths: i64) -> Option<f64> {
     crate::rules::display::from_hundredths(hundredths)
 }
 
@@ -161,7 +161,7 @@ pub(super) async fn forecast_value(
             let projection =
                 rules::project_by_basis(people, today, *target_on, attrition, source);
             let supply = projection.total_headcount;
-            let gap = supply.and_then(|s| rules::headcount_gap(demand, s));
+            let gap = supply.zip(demand).and_then(|(s, d)| rules::headcount_gap(d, s));
             let contract = rules::contract_fte(people);
             let conversions = rules::conversion_cover(
                 &open_conversions

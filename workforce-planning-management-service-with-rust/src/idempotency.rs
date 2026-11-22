@@ -252,7 +252,13 @@ pub async fn idempotency_mw(
         .uri
         .path_and_query()
         .map_or_else(|| parts.uri.path().to_string(), ToString::to_string);
-    let fingerprint = rules::fingerprint(parts.method.as_str(), &path_and_query, &bytes);
+    let Some(fingerprint) = rules::fingerprint(parts.method.as_str(), &path_and_query, &bytes)
+    else {
+        return refuse(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "request too large to fingerprint",
+        );
+    };
     if let Err(response) = claim_or_answer(&ctx, &actor, &key, &fingerprint).await {
         return *response;
     }

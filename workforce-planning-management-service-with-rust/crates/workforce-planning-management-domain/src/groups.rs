@@ -142,9 +142,8 @@ impl SkillRollup {
     /// Share of members who declare it, or `None` for an empty group — never
     /// a zero standing in for "unknown".
     #[must_use]
-    #[allow(clippy::cast_precision_loss)] // member counts are tiny
     pub fn coverage(&self) -> Option<f64> {
-        (self.members > 0).then(|| self.declared as f64 / self.members as f64)
+        super::display::ratio(self.declared, self.members)
     }
 }
 
@@ -156,7 +155,9 @@ impl SkillRollup {
 pub fn rollup(members: usize, levels: &[i32]) -> Option<SkillRollup> {
     // One count per level 1 to 5, each taken from the list itself; a level outside that is not counted.
     let counts: [usize; 5] = [1, 2, 3, 4, 5].map(|at| levels.iter().filter(|l| **l == at).count());
-    let declared: usize = counts.iter().sum();
+    let declared = counts
+        .iter()
+        .try_fold(0_usize, |total, count| total.checked_add(*count))?;
     (members >= MIN_ROLLUP && declared >= MIN_ROLLUP).then_some(SkillRollup {
         declared,
         members,

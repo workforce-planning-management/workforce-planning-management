@@ -28,9 +28,12 @@ pub struct Suppressed<K> {
 #[must_use]
 pub fn with_total<K: Clone>(cells: &[(K, usize)], floor: usize) -> Suppressed<K> {
     let mut shown: Vec<bool> = cells.iter().map(|(_, n)| visible(*n, floor)).collect();
-    let total: usize = cells.iter().map(|(_, n)| *n).sum();
+    // A total that does not fit a usize is unknown, so it is not shown.
+    let total = cells
+        .iter()
+        .try_fold(0_usize, |sum, (_, n)| sum.checked_add(*n));
     let hidden = shown.iter().filter(|s| !**s).count();
-    let mut show_total = visible(total, floor);
+    let mut show_total = total.is_some_and(|t| visible(t, floor));
     if hidden == 1 && show_total {
         // Hide the smallest other cell that is not zero; with none, the total itself would give the hidden cell away.
         let next = cells
@@ -55,7 +58,7 @@ pub fn with_total<K: Clone>(cells: &[(K, usize)], floor: usize) -> Suppressed<K>
             .zip(&shown)
             .map(|((k, n), s)| (k.clone(), s.then_some(*n)))
             .collect(),
-        total: show_total.then_some(total),
+        total: total.filter(|_| show_total),
     }
 }
 
@@ -69,6 +72,13 @@ mod tests {
 
     fn hidden(s: &Suppressed<usize>) -> usize {
         s.cells.iter().filter(|(_, n)| n.is_none()).count()
+    }
+
+    #[test]
+    fn a_total_past_usize_is_not_shown() {
+        let table = with_total(&[(0, usize::MAX), (1, 1)], 1);
+        assert_eq!(table.total, None);
+        assert_eq!(table.cells, vec![(0, Some(usize::MAX)), (1, Some(1))]);
     }
 
     #[test]

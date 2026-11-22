@@ -265,9 +265,9 @@ pub fn rollup(rows: &[RollupRow]) -> Vec<RollupLine> {
             .entry(&row.department)
             .or_default()
             .insert(row.worker);
-        #[allow(
+        #[expect(
             clippy::arithmetic_side_effects,
-            reason = "a count of rows: bounded by the slice length"
+            reason = "RCA-EXC-2: a count of rows, at most the slice length, which is at most isize::MAX so the count fits a usize"
         )]
         {
             *counts

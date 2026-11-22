@@ -235,7 +235,8 @@ async fn summary(
         .into_iter()
         .filter_map(|a| Some((department_of.get(&a.worker_pid)?.clone(), a.value)))
         .collect();
-    let result = rules::summarise(&rows, &headcount, floor);
+    let result = rules::summarise(&rows, &headcount, floor)
+        .ok_or_else(|| crate::controllers::internal("the headcounts could not be added up"))?;
     db::audit(
         &mut *pool(&ctx).acquire().await?,
         "equality_monitoring",

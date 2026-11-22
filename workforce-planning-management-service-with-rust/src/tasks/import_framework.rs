@@ -140,10 +140,6 @@ async fn title_in_use(tx: &mut sqlx::PgConnection, title: &str) -> Result<bool> 
 /// # Errors
 /// A filesystem or database error.
 #[allow(clippy::too_many_lines)] // read → plan titles → upsert framework → upsert levels
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn import_pcf(
     pool: &sqlx::PgPool,
     dir: &Path,
@@ -172,9 +168,9 @@ pub async fn import_pcf(
             .map_err(|e| Error::string(&format!("{}: {e}", file.display())))?;
         let parsed =
             rules::parse_role_summary(&text).map_err(|e| Error::string(&format!("{slug}: {e}")))?;
-        report.levels_read += 1;
+        crate::controllers::tally::bump(&mut report.levels_read);
         if parsed.retired || parts.not_in_use {
-            report.retired_skipped += 1;
+            crate::controllers::tally::bump(&mut report.retired_skipped);
             continue;
         }
         let baselines = std::fs::read_to_string(assessments.join(format!("{slug}.md")))
@@ -191,7 +187,7 @@ pub async fn import_pcf(
     let mut base_counts: BTreeMap<String, usize> = BTreeMap::new();
     for item in &items {
         let base = rules::job_title(&item.parsed.level, &item.parsed.role, false);
-        *base_counts.entry(base).or_default() += 1;
+        crate::controllers::tally::bump(base_counts.entry(base).or_default());
     }
 
     // Framework row.
@@ -269,11 +265,11 @@ pub async fn import_pcf(
             )
             .execute(&mut *tx)
             .await?;
-            report.profiles_updated += 1;
+            crate::controllers::tally::bump(&mut report.profiles_updated);
             row.pid
         } else {
             if title_in_use(&mut tx, &title).await? {
-                report.title_taken_skipped += 1;
+                crate::controllers::tally::bump(&mut report.title_taken_skipped);
                 tx.rollback().await?;
                 continue;
             }
@@ -297,13 +293,13 @@ pub async fn import_pcf(
             )
             .execute(&mut *tx)
             .await?;
-            report.profiles_created += 1;
+            crate::controllers::tally::bump(&mut report.profiles_created);
             pid
         };
 
         for skill in &item.parsed.skills {
             let Some(&baseline) = item.baselines.get(&skill.name) else {
-                report.requirements_skipped_no_baseline += 1;
+                crate::controllers::tally::bump(&mut report.requirements_skipped_no_baseline);
                 no_baseline.insert(skill.name.clone());
                 continue;
             };
@@ -313,7 +309,7 @@ pub async fn import_pcf(
                 rules::PCF_SCALE_MAX,
                 rules::WPM_SCALE_MAX,
             ) else {
-                report.requirements_skipped_no_baseline += 1;
+                crate::controllers::tally::bump(&mut report.requirements_skipped_no_baseline);
                 no_baseline.insert(skill.name.clone());
                 continue;
             };
@@ -351,7 +347,7 @@ pub async fn import_pcf(
                         .execute(&mut *tx)
                         .await?;
                 }
-                report.skills_reused += 1;
+                crate::controllers::tally::bump(&mut report.skills_reused);
                 pid
             } else {
                 let pid = Uuid::new_v4();
@@ -362,7 +358,7 @@ pub async fn import_pcf(
                 )
                 .execute(&mut *tx)
                 .await?;
-                report.skills_created += 1;
+                crate::controllers::tally::bump(&mut report.skills_created);
                 pid
             };
             if by_ref.is_none() {
@@ -406,7 +402,7 @@ pub async fn import_pcf(
             .await?
             .rows_affected();
             if refreshed > 0 {
-                report.requirements_refreshed += 1;
+                crate::controllers::tally::bump(&mut report.requirements_refreshed);
             } else {
                 sqlx::query!(
                     "INSERT INTO role_skill_requirements
@@ -424,7 +420,7 @@ pub async fn import_pcf(
                 )
                 .execute(&mut *tx)
                 .await?;
-                report.requirements_created += 1;
+                crate::controllers::tally::bump(&mut report.requirements_created);
             }
         }
         tx.commit().await?;

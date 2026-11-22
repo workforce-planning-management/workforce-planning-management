@@ -68,10 +68,6 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let staff = sqlx::query!(
@@ -147,7 +143,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
                 json!({ "worker_pid": worker.pid, "ends_on": ends_on }),
             )
             .await?;
-            report.told += 1;
+            crate::controllers::tally::bump(&mut report.told);
         }
         sqlx::query!(
             "INSERT INTO engagement_reminders (worker_pid, ends_on, kind, reminded_on) VALUES ($1, $2, $3, $4)",
@@ -160,8 +156,10 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
         .await?;
         tx.commit().await?;
         match reminder {
-            Reminder::Ending => report.ending += 1,
-            Reminder::EndedUndecided => report.ended_undecided += 1,
+            Reminder::Ending => crate::controllers::tally::bump(&mut report.ending),
+            Reminder::EndedUndecided => {
+                crate::controllers::tally::bump(&mut report.ended_undecided);
+            }
         }
     }
     Ok(report)

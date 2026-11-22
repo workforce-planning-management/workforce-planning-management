@@ -253,9 +253,9 @@ pub fn establishment(seats: &[Seat], floor: Option<usize>) -> Vec<CostCentre> {
             let counted: Vec<&&Seat> = all.iter().filter(|s| in_establishment(&s.state)).collect();
             let mut by_state = BTreeMap::new();
             for s in &all {
-                #[allow(
+                #[expect(
                     clippy::arithmetic_side_effects,
-                    reason = "a count of seats: bounded by the slice length"
+                    reason = "RCA-EXC-2: one step per seat of the slice, so each count is at most the slice length, which is under usize::MAX"
                 )]
                 {
                     *by_state.entry(s.state.clone()).or_insert(0) += 1;

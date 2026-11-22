@@ -666,14 +666,13 @@ pub fn next_due(obligation: Obligation, today: Date) -> Date {
         if due >= today {
             break;
         }
-        let months = obligation
+        // A month count that does not fit, or one past the calendar (`try_months`, `checked_add`), ends the walk: no later
+        // report date exists, and none is made up.
+        match obligation
             .every_years
-            .saturating_mul(12)
-            .saturating_mul(step);
-        // `try_months`: a count past the calendar ends the walk, as `checked_add_months` did, not a panic.
-        match jiff::Span::new()
-            .try_months(months)
-            .ok()
+            .checked_mul(12)
+            .and_then(|months| months.checked_mul(step))
+            .and_then(|months| jiff::Span::new().try_months(months).ok())
             .and_then(|span| obligation.first_report_on.checked_add(span).ok())
         {
             Some(next) => due = next,
@@ -1182,6 +1181,19 @@ mod tests {
             None,
             "a deployer with no tiers has none"
         );
+    }
+
+    #[test]
+    fn a_period_too_long_to_count_in_months_ends_the_walk_at_the_first_date() {
+        let day = |y, m, d| crate::dates::ymd(y, m, d).unwrap();
+        for every_years in [u32::MAX / 12 + 1, u32::MAX] {
+            let huge = Obligation {
+                from_workers: 250,
+                every_years,
+                first_report_on: day(2020, 6, 7),
+            };
+            assert_eq!(next_due(huge, day(2030, 1, 1)), day(2020, 6, 7));
+        }
     }
 
     #[test]

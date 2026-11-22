@@ -213,7 +213,7 @@ struct LogQuery {
 }
 
 /// `GET /api/webhook-subscriptions/{pid}/deliveries?limit=` — the delivery log, newest first: kind, URN, status and attempts.
-/// There is no body to show because none is kept.
+/// There is no body to show because none is kept. The log is 100 rows by default and at most 500; a limit of none is refused.
 #[debug_handler]
 async fn deliveries(
     State(ctx): State<AppContext>,
@@ -226,6 +226,8 @@ async fn deliveries(
         .fetch_optional(pool(&ctx))
         .await?
         .ok_or(Error::NotFound)?;
+    let log_limit = crate::rules::page_limit::resolve(query.limit, 100, 500)
+        .ok_or_else(|| super::unprocessable("limit must be at least 1"))?;
     let rows = sqlx::query_as!(
         webhook_deliveries::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, subscription_pid, event_id, kind,
@@ -233,7 +235,7 @@ async fn deliveries(
                   next_attempt_at AS "next_attempt_at: _", delivered_at AS "delivered_at: _"
            FROM webhook_deliveries WHERE subscription_pid = $1 ORDER BY id DESC LIMIT $2"#,
         pid,
-        i64::try_from(query.limit.unwrap_or(100).clamp(1, 500)).unwrap_or(500),
+        i64::try_from(log_limit).map_err(|_| super::internal("the log limit does not fit"))?,
     )
     .fetch_all(pool(&ctx))
     .await?;

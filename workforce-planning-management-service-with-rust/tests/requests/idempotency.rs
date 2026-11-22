@@ -124,7 +124,8 @@ async fn a_repeated_request_under_one_key_runs_once_and_gets_the_first_answer() 
             "POST",
             "/api/announcements",
             body.to_string().as_bytes(),
-        );
+        )
+        .unwrap();
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("INSERT INTO idempotency_keys (actor, idem_key, fingerprint) VALUES ('anonymous', 'stuck-request-key-00001', '{fingerprint}')")))
             .execute(workforce_planning_management::db::pool(&ctx))
             .await

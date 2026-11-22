@@ -40,14 +40,13 @@ impl Assignment {
     }
 }
 
-/// The FTE of the assignments in force on `on`.
+/// The FTE of the assignments in force on `on`, or `None` when it does not fit an `i32`.
 #[must_use]
-pub fn fte_total(assignments: &[Assignment], on: Date) -> i32 {
+pub fn fte_total(assignments: &[Assignment], on: Date) -> Option<i32> {
     assignments
         .iter()
         .filter(|a| a.current_on(on))
-        .map(|a| a.fte_percent)
-        .sum()
+        .try_fold(0_i32, |total, a| total.checked_add(a.fte_percent))
 }
 
 /// Problems with one assignment on its own: FTE from 1 to 100, and an end that is not before the start.
@@ -103,7 +102,7 @@ pub fn fte_problems(existing: &[Assignment], new: &Assignment) -> Vec<String> {
     );
     let totals: Option<Vec<(Date, i32)>> = days
         .into_iter()
-        .map(|d| Some((d, fte_total(existing, d).checked_add(new.fte_percent)?)))
+        .map(|d| Some((d, fte_total(existing, d)?.checked_add(new.fte_percent)?)))
         .collect();
     let Some(totals) = totals else {
         return vec![format!("FTE is too large to total; the most is {FTE_MAX}")];
@@ -291,10 +290,24 @@ mod tests {
             a(40, d(2026, 6, 1), Some(d(2026, 8, 31)), false),
             a(50, d(2025, 1, 1), Some(d(2025, 12, 31)), false),
         ];
-        assert_eq!(fte_total(&list, d(2026, 5, 31)), 60);
-        assert_eq!(fte_total(&list, d(2026, 6, 1)), 100, "start day is in");
-        assert_eq!(fte_total(&list, d(2026, 8, 31)), 100, "end day is in");
-        assert_eq!(fte_total(&list, d(2026, 9, 1)), 60);
+        assert_eq!(fte_total(&list, d(2026, 5, 31)), Some(60));
+        assert_eq!(
+            fte_total(&list, d(2026, 6, 1)),
+            Some(100),
+            "start day is in"
+        );
+        assert_eq!(fte_total(&list, d(2026, 8, 31)), Some(100), "end day is in");
+        assert_eq!(fte_total(&list, d(2026, 9, 1)), Some(60));
+    }
+
+    #[test]
+    fn a_total_past_i32_is_unknown_not_capped() {
+        let list = [
+            a(i32::MAX, d(2026, 1, 1), None, true),
+            a(1, d(2026, 1, 1), None, false),
+        ];
+        assert_eq!(fte_total(&list, d(2026, 5, 31)), None);
+        assert_eq!(fte_total(&list[..1], d(2026, 5, 31)), Some(i32::MAX));
     }
 
     #[test]

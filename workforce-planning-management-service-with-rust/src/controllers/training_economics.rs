@@ -128,6 +128,27 @@ fn fee_of(course: &skill_courses::Model) -> Fee {
     }
 }
 
+/// The refusal when a plan's hours or fees do not fit their types.
+const PLAN_TOTAL_UNKNOWN: &str = "the plan's hours or fees are too large to total";
+
+/// A median of day counts, rounded half away from zero to a whole number of days, or `None` when it is not finite or does not
+/// fit an `i64` (RCA-CONV-3).
+fn rounded_to_i64(x: f64) -> Option<i64> {
+    // 2^63 is exactly representable as f64; `i64::MAX as f64` would round up to it.
+    const TWO_POW_63: f64 = 9_223_372_036_854_775_808.0;
+    let rounded = x.round();
+    if !(rounded.is_finite() && (-TWO_POW_63..TWO_POW_63).contains(&rounded)) {
+        return None;
+    }
+    #[expect(
+        clippy::as_conversions,
+        clippy::cast_possible_truncation,
+        reason = "RCA-CONV-3: finite, integral and within i64, checked above"
+    )]
+    let days = rounded as i64;
+    Some(days)
+}
+
 /// The steps of a plan, leaving out what was abandoned. A course step reads the catalogue; a step with no catalogue row counts
 /// as a course with no fee, at the skill's per-level figure. A step that is not a course has no fee to know.
 async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result<Vec<Step>> {
@@ -149,7 +170,7 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
         .into_iter()
         .map(|c| ((c.skill_pid, c.course_ref.clone()), c))
         .collect();
-    Ok(items
+    items
         .iter()
         .filter(|item| item.status != "abandoned")
         .map(|item| {
@@ -163,12 +184,15 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
                 .get(&item.skill_pid)
                 .and_then(|h| u32::try_from(*h).ok())
                 .unwrap_or(DEFAULT_HOURS_PER_LEVEL);
-            let estimate = levels.saturating_mul(each);
+            // Hours are stored figures: a product that does not fit a u32 is a plan that cannot be costed, not a capped one.
+            let estimate = levels
+                .checked_mul(each)
+                .ok_or_else(|| unprocessable(PLAN_TOTAL_UNKNOWN))?;
             let course = item
                 .course_ref
                 .as_ref()
                 .and_then(|r| courses.get(&(item.skill_pid, r.clone())));
-            match (item.method.as_str(), course) {
+            Ok(match (item.method.as_str(), course) {
                 ("course", Some(course)) => Step {
                     fee: fee_of(course),
                     hours: u32::try_from(course.hours).unwrap_or(0),
@@ -184,9 +208,9 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
                     hours: estimate,
                     estimated_hours: true,
                 },
-            }
+            })
         })
-        .collect())
+        .collect()
 }
 
 /// The worker's pay as the costing needs it.
@@ -229,7 +253,8 @@ async fn plan_cost(
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
-    let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
+    let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?)
+        .ok_or_else(|| unprocessable(PLAN_TOTAL_UNKNOWN))?;
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
     if reader.on_behalf && hours.resolved().is_some() {
         audit_salary_read(&ctx, &caller, &worker).await?;
@@ -453,7 +478,8 @@ async fn plan_viability(
     let reader = plan_reader(&ctx, &caller, &worker).await?;
     let today = crate::dates::today();
     let scope = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
-    let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?);
+    let cost = rules::plan_cost(&plan_steps(&ctx, &plan).await?)
+        .ok_or_else(|| unprocessable(PLAN_TOTAL_UNKNOWN))?;
     let hours = hours_for(reader.pay_visible, cost.hours, &worker, &scope, today);
     // One live benefit a year per plan, so the year orders them; the id breaks any tie.
     let rows = sqlx::query_as!(
@@ -569,7 +595,11 @@ async fn candidate_steps(
     let mut steps = Vec::new();
     for gap in gaps.iter().filter(|g| g.status == Status::Below) {
         let plan = catalogue.recommend(candidate.pid, gap)?;
-        let course_hours: u32 = plan.courses.iter().map(|c| c.hours).sum();
+        let course_hours = plan
+            .courses
+            .iter()
+            .try_fold(0_u32, |total, c| total.checked_add(c.hours))
+            .ok_or_else(|| unprocessable(PLAN_TOTAL_UNKNOWN))?;
         for course in &plan.courses {
             steps.push(Step {
                 fee: fees
@@ -667,9 +697,9 @@ async fn vacancy_days(ctx: &AppContext, organization: &str) -> Result<(Option<i6
     .iter()
         .filter_map(|r| metrics::time_to_fill_days(r.opened_on.map(SqlDate::get), r.filled_on.map(SqlDate::get)))
         .collect();
-    #[allow(clippy::cast_possible_truncation)] // a median of day counts
     Ok(match metrics::fill_time_summary(&days) {
-        Some(fill) => (Some(fill.median.round() as i64), fill.count),
+        // A median that cannot be rounded to a whole number of days is unknown, not a capped figure (RCA-CONV-3).
+        Some(fill) => (rounded_to_i64(fill.median), fill.count),
         None => (None, 0),
     })
 }
@@ -727,7 +757,10 @@ async fn train_or_hire(
         Some(needs) => candidate_steps(&ctx, &candidate, needs).await?,
         None => (None, 0),
     };
-    let cost = steps.as_deref().map(rules::plan_cost);
+    let cost = steps
+        .as_deref()
+        .map(|steps| rules::plan_cost(steps).ok_or_else(|| unprocessable(PLAN_TOTAL_UNKNOWN)))
+        .transpose()?;
     let hours = cost
         .as_ref()
         .map(|c| hours_for(pay_visible, c.hours, &candidate, &scope, today));
@@ -852,10 +885,6 @@ fn fees_by_ref(courses: Vec<skill_courses::Model>) -> HashMap<String, (i64, Stri
 /// completed enrollment at its course's catalogue fee, in the year it was completed; a completion with no single fee is
 /// counted, not priced, and no other actual is invented.
 #[debug_handler]
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "the unpriced count rises by one per completion read, so it is at most the number of completions"
-)]
 async fn learning_budget(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -911,24 +940,19 @@ async fn learning_budget(
         let Some(name) = department.get(&completion.worker_pid) else {
             continue;
         };
-        match fees.get(&completion.course_ref) {
-            Some((minor, currency)) => {
-                let total = spent
-                    .entry(name.clone())
-                    .or_default()
-                    .entry(currency.clone())
-                    .or_insert(0);
-                *total = total.saturating_add(*minor);
-            }
-            None => {
-                #[allow(
-                    clippy::arithmetic_side_effects,
-                    reason = "a count of the lines of one plan"
-                )]
-                {
-                    *unpriced.entry(name.clone()).or_insert(0) += 1;
-                }
-            }
+        if let Some((minor, currency)) = fees.get(&completion.course_ref) {
+            let total = spent
+                .entry(name.clone())
+                .or_default()
+                .entry(currency.clone())
+                .or_insert(0);
+            // A department's spend that does not fit an i64 is unknown: refuse it, never report a capped figure.
+            *total = total
+                .checked_add(*minor)
+                .ok_or_else(|| unprocessable("a department's spend is too large to total"))?;
+        } else {
+            // One per completion read, so at most the number of completions.
+            crate::controllers::tally::bump(unpriced.entry(name.clone()).or_insert(0_usize));
         }
     }
     let names: BTreeSet<&String> = budgets
@@ -1044,6 +1068,19 @@ pub fn routes() -> Routes {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_median_rounds_to_whole_days_or_is_unknown() {
+        assert_eq!(super::rounded_to_i64(12.5), Some(13));
+        assert_eq!(super::rounded_to_i64(-0.4), Some(0));
+        assert_eq!(super::rounded_to_i64(f64::NAN), None);
+        assert_eq!(super::rounded_to_i64(f64::INFINITY), None);
+        assert_eq!(super::rounded_to_i64(9_223_372_036_854_775_808.0), None);
+        assert_eq!(
+            super::rounded_to_i64(-9_223_372_036_854_775_808.0),
+            Some(i64::MIN)
+        );
+    }
+
     use super::*;
 
     #[test]

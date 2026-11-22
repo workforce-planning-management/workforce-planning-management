@@ -74,10 +74,6 @@ pub struct Report {
 /// # Errors
 /// A refusal naming the licence field, the file row, or the SFIA skill or level that is not in the catalogue; or a database error.
 #[allow(clippy::too_many_lines)] // validate → upsert → retire → record the licence, linearly
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn import_sfiaplus(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> Result<Report> {
     let checked_on = check_licence(licence)?;
     let parsed = rules::parse_resources(text).map_err(|e| Error::string(&e))?;
@@ -148,7 +144,7 @@ pub async fn import_sfiaplus(pool: &sqlx::PgPool, text: &str, licence: &Licence)
             )
             .execute(&mut *tx)
             .await?;
-            retired += 1;
+            crate::controllers::tally::bump(&mut retired);
         }
     }
 

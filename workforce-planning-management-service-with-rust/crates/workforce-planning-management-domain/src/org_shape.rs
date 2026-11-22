@@ -188,7 +188,9 @@ fn key_of(title: &str) -> String {
 }
 
 /// Depths of the live people, each root at 1. A manager outside the set, or a loop, makes the person a root.
-fn current_side(people: &[Person]) -> Side {
+///
+/// `None` when a figure does not fit (RCA-NONE-2: an unknown, not a wrong number).
+fn current_side(people: &[Person]) -> Option<Side> {
     let known: BTreeSet<&str> = people.iter().map(|p| p.key.as_str()).collect();
     let manager_of: HashMap<&str, &str> = people
         .iter()
@@ -214,25 +216,27 @@ fn current_side(people: &[Person]) -> Side {
         .unwrap_or(0);
     let mut reports: HashMap<&str, i64> = HashMap::new();
     for m in manager_of.values() {
-        #[allow(
+        #[expect(
             clippy::arithmetic_side_effects,
-            reason = "a count of people: bounded by the slice length"
+            reason = "RCA-EXC-2: a count of people, at most the slice length, which is at most isize::MAX and so fits an i64"
         )]
         {
             *reports.entry(m).or_insert(0) += 1;
         }
     }
-    let managers = i64::try_from(reports.len()).unwrap_or(0);
-    let total: i64 = reports.values().sum();
-    Side {
+    let managers = i64::try_from(reports.len()).ok()?;
+    let total: i64 = reports
+        .values()
+        .try_fold(0_i64, |sum, n| sum.checked_add(*n))?;
+    Some(Side {
         layers,
-        headcount: i64::try_from(people.len()).unwrap_or(0),
+        headcount: i64::try_from(people.len()).ok()?,
         span: Span {
             managers,
             mean_hundredths: mean_hundredths(total, managers),
             max: reports.values().copied().max().unwrap_or(0),
         },
-    }
+    })
 }
 
 /// `total / count` in hundredths, rounded half up; `None` with nothing to divide by or a figure that does not fit.
@@ -251,18 +255,15 @@ fn ceil_div(reports: i64, managers: i64) -> Option<i64> {
         .checked_div(managers)
 }
 
-fn target_side(nodes: &[Node]) -> Side {
+///
+/// `None` when a sum of headcounts does not fit an `i64` (RCA-AGG-1).
+fn target_side(nodes: &[Node]) -> Option<Side> {
     let by_key: HashMap<&str, &Node> = nodes.iter().map(|n| (n.key.as_str(), n)).collect();
     let mut children: HashMap<&str, i64> = HashMap::new();
     for n in nodes {
         if let Some(p) = n.parent.as_deref() {
-            #[allow(
-                clippy::arithmetic_side_effects,
-                reason = "a sum of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
-            )]
-            {
-                *children.entry(p).or_insert(0) += i64::from(n.headcount);
-            }
+            let slot = children.entry(p).or_insert(0);
+            *slot = slot.checked_add(i64::from(n.headcount))?;
         }
     }
     // The chain from a node up through its parents, itself included, and no longer than one past the number of nodes (a loop in
@@ -281,33 +282,31 @@ fn target_side(nodes: &[Node]) -> Side {
     let (mut managers, mut reports, mut max) = (0_i64, 0_i64, 0_i64);
     for (key, r) in &children {
         let h = i64::from(by_key.get(key).map_or(1, |n| n.headcount));
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "sums of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
-        )]
-        {
-            managers += h;
-            reports += r;
-        }
+        managers = managers.checked_add(h)?;
+        reports = reports.checked_add(*r)?;
         // A node with no people has no managers to share its reports among: it adds no figure.
         if let Some(per_manager) = ceil_div(*r, h) {
             max = max.max(per_manager);
         }
     }
-    Side {
+    Some(Side {
         layers,
-        headcount: nodes.iter().map(|n| i64::from(n.headcount)).sum(),
+        headcount: nodes
+            .iter()
+            .try_fold(0_i64, |sum, n| sum.checked_add(i64::from(n.headcount)))?,
         span: Span {
             managers,
             mean_hundredths: mean_hundredths(reports, managers),
             max,
         },
-    }
+    })
 }
 
 /// Compare the live structure with a target. `floor` is the smallest number of people whose count in a role is given.
+///
+/// `None` when a count or a sum of headcounts does not fit an `i64`: the comparison cannot be made, so no number is shown.
 #[must_use]
-pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
+pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Option<Diff> {
     struct Agg {
         title: String,
         current: BTreeMap<String, i64>,
@@ -322,9 +321,9 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
     }
     let mut roles: BTreeMap<String, Agg> = BTreeMap::new();
     for p in people {
-        #[allow(
+        #[expect(
             clippy::arithmetic_side_effects,
-            reason = "a count of people: bounded by the slice length"
+            reason = "RCA-EXC-2: a count of people, at most the slice length, which is at most isize::MAX and so fits an i64"
         )]
         {
             *entry(&mut roles, &p.title)
@@ -334,22 +333,24 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
         }
     }
     for n in target {
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "a sum of i32 headcounts in an i64: it takes over 2^32 nodes to overflow"
-        )]
-        {
-            *entry(&mut roles, &n.title)
-                .target
-                .entry(n.department.trim().to_string())
-                .or_insert(0) += i64::from(n.headcount);
-        }
+        let slot = entry(&mut roles, &n.title)
+            .target
+            .entry(n.department.trim().to_string())
+            .or_insert(0);
+        *slot = slot.checked_add(i64::from(n.headcount))?;
     }
     let floor = i64::try_from(floor).unwrap_or(i64::MAX);
     let roles = roles
         .into_values()
         .map(|a| {
-            let (now, plan): (i64, i64) = (a.current.values().sum(), a.target.values().sum());
+            let now = a
+                .current
+                .values()
+                .try_fold(0_i64, |sum, n| sum.checked_add(*n))?;
+            let plan = a
+                .target
+                .values()
+                .try_fold(0_i64, |sum, n| sum.checked_add(*n))?;
             let change = match (now, plan) {
                 (0, _) => Change::Added,
                 (_, 0) => Change::Removed,
@@ -360,7 +361,7 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
             let withheld = now > 0 && now < floor;
             let current_departments: Vec<String> = a.current.keys().cloned().collect();
             let target_departments: Vec<String> = a.target.keys().cloned().collect();
-            Role {
+            Some(Role {
                 title: a.title,
                 current: if withheld {
                     Count::Withheld
@@ -377,19 +378,24 @@ pub fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
                 moved: now > 0 && plan > 0 && current_departments != target_departments,
                 current_departments,
                 target_departments,
-            }
+            })
         })
-        .collect();
-    Diff {
-        current: current_side(people),
-        target: target_side(target),
+        .collect::<Option<Vec<Role>>>()?;
+    Some(Diff {
+        current: current_side(people)?,
+        target: target_side(target)?,
         roles,
-    }
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The comparison, which in these tests always fits.
+    fn diff(people: &[Person], target: &[Node], floor: usize) -> Diff {
+        super::diff(people, target, floor).unwrap()
+    }
 
     fn person(key: &str, manager: Option<&str>, department: &str, title: &str) -> Person {
         Person {
@@ -620,7 +626,7 @@ mod tests {
             node("a".into(), Some("b".into())),
             node("b".into(), Some("a".into())),
         ];
-        let side = target_side(&looped);
+        let side = target_side(&looped).unwrap();
         assert!(side.layers <= 3, "{side:?}");
     }
 

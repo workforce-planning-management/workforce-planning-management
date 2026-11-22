@@ -200,22 +200,26 @@ pub struct DepartmentSummary {
 /// `(department, reason)` for each resignation counted.
 #[must_use]
 pub fn summarise(rows: &[(String, Option<String>)], floor: usize) -> Vec<DepartmentSummary> {
-    let mut by: BTreeMap<&str, BTreeMap<String, usize>> = BTreeMap::new();
-    for (department, reason) in rows {
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "a count of rows: bounded by the slice length"
-        )]
-        {
-            *by.entry(department)
-                .or_default()
-                .entry(reason.clone().unwrap_or_else(|| "not_given".to_string()))
-                .or_insert(0) += 1;
-        }
-    }
-    by.into_iter()
-        .map(|(department, cells)| {
-            let total: usize = cells.values().sum();
+    // Sorted, so a department's rows and then each reason's rows sit together and every count is a run's length.
+    let mut keyed: Vec<(&str, &str)> = rows
+        .iter()
+        .map(|(department, reason)| {
+            (
+                department.as_str(),
+                reason.as_deref().unwrap_or("not_given"),
+            )
+        })
+        .collect();
+    keyed.sort_unstable();
+    keyed
+        .chunk_by(|a, b| a.0 == b.0)
+        .map(|department_rows| {
+            let department = department_rows.first().map_or("", |row| row.0);
+            let total = department_rows.len();
+            let cells: BTreeMap<String, usize> = department_rows
+                .chunk_by(|a, b| a.1 == b.1)
+                .filter_map(|run| Some((run.first()?.1.to_string(), run.len())))
+                .collect();
             let shown = total >= floor;
             let reasons_ok = shown && cells.values().all(|c| *c >= floor);
             DepartmentSummary {

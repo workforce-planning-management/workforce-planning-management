@@ -58,10 +58,6 @@ impl Task for PolicyReminders {
 /// # Errors
 ///
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn send_reminders(ctx: &AppContext, as_of: Date, days_ahead: i64) -> Result<usize> {
     let mut sent = 0;
     // Versions already reminded, per worker: (worker, version).
@@ -153,7 +149,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, days_ahead: i64) -> R
                 serde_json::json!({ "version_pid": version.pid, "due_on": due }),
             )
             .await?;
-            sent += 1;
+            crate::controllers::tally::bump(&mut sent);
         }
     }
     Ok(sent)

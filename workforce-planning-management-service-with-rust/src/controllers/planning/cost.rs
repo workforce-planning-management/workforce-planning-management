@@ -106,9 +106,12 @@ pub(super) async fn cost_value(
         .iter()
         .map(|((department, target_on), group)| {
             let headcount = people_in.get(department).map_or(0, Vec::len);
-            let demand: i64 = group.iter().map(|l| i64::from(l.target_headcount)).sum();
+            // A demand that does not fit an `i64` is unknown, so is the gap and the hires and the cost (RCA-AGG-1).
+            let demand: Option<i64> = group.iter().try_fold(0_i64, |sum, l| {
+                sum.checked_add(i64::from(l.target_headcount))
+            });
             let days = crate::dates::days_between(today, *target_on).max(0);
-            let gap = attrition.and_then(|bp| {
+            let gap = attrition.zip(demand).and_then(|(bp, demand)| {
                 rules::headcount_gap(demand, rules::project_supply(headcount, bp, days)?)
             });
             let hires = gap.map(cost_rules::hires_to_close);
@@ -151,7 +154,12 @@ pub(super) async fn cost_value(
         })
         .collect();
 
-    let total: i64 = latest.values().map(|(_, amount)| amount).sum();
+    let total: i64 = latest
+        .values()
+        .try_fold(0_i64, |sum, (_, amount)| sum.checked_add(*amount))
+        .ok_or_else(|| {
+            crate::controllers::internal("the plan's total cost could not be computed")
+        })?;
     let budget = cost_rules::budget_in(
         plan.budget_minor,
         plan.budget_currency.as_deref(),

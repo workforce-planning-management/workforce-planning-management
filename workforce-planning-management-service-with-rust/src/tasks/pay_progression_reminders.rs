@@ -72,10 +72,6 @@ fn window_end(as_of: Date, days_ahead: i64) -> Result<Date> {
 /// # Errors
 ///
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<usize> {
     let mut sent = 0;
     let positions = sqlx::query!(
@@ -133,7 +129,7 @@ pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<us
             serde_json::json!({ "eligible_on": on }),
         )
         .await?;
-        sent += 1;
+        crate::controllers::tally::bump(&mut sent);
     }
     Ok(sent)
 }

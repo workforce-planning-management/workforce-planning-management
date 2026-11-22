@@ -168,18 +168,19 @@ pub fn valid_source(source: &str) -> bool {
 
 /// The number of months from `from` to `to`, both included; zero when `to` is before `from`.
 #[must_use]
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "years are i16 and months 1 to 12, so the result is under 400 000"
-)]
 pub fn months_spanned(from: Date, to: Date) -> i64 {
     let (from, to) = (month_start(from), month_start(to));
     if to < from {
         return 0;
     }
-    (i64::from(to.year()) - i64::from(from.year())) * 12 + i64::from(to.month())
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: years are i16 and months 1 to 12, so the result is under 400 000"
+    )]
+    let months = (i64::from(to.year()) - i64::from(from.year())) * 12 + i64::from(to.month())
         - i64::from(from.month())
-        + 1
+        + 1;
+    months
 }
 
 /// Problems with an allocation against its assignment. Running past the end of the assignment or the engagement is **not** a
@@ -280,15 +281,18 @@ fn facts(
     }
 }
 
-/// `fte × days ÷ days in the month`, rounded half up, in hundredths.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "the FTE is under 2^31 and the days are clamped to the month's 28 to 31, so every figure is under 2^40"
-)]
-fn weighted(fte_percent: i32, days: i64, month: Date) -> i64 {
+/// `fte × days ÷ days in the month`, rounded half up, in hundredths; `None` when the days are not within the month's own
+/// (a count that cannot be worked is unknown, not clamped) or a figure does not fit.
+fn weighted(fte_percent: i32, days: i64, month: Date) -> Option<i64> {
     let denominator = days_in_month(month);
-    let numerator = i64::from(fte_percent.max(0)) * days.clamp(0, denominator);
-    (2 * numerator + denominator) / (2 * denominator)
+    if !(0..=denominator).contains(&days) {
+        return None;
+    }
+    let numerator = i64::from(fte_percent.max(0)).checked_mul(days)?;
+    numerator
+        .checked_mul(2)?
+        .checked_add(denominator)?
+        .checked_div(denominator.checked_mul(2)?)
 }
 
 /// What a holding gives and takes in one month.
@@ -304,9 +308,9 @@ pub struct HoldingMonth {
     pub tentative_centi: i64,
 }
 
-/// One holding in one month.
+/// One holding in one month; `None` when a figure does not fit or the days are not within the month.
 #[must_use]
-pub fn holding_month(holding: &Holding, person: &Person, month: Date) -> HoldingMonth {
+pub fn holding_month(holding: &Holding, person: &Person, month: Date) -> Option<HoldingMonth> {
     let month = month_start(month);
     let with_leave = facts(
         &holding.assignment,
@@ -318,20 +322,19 @@ pub fn holding_month(holding: &Holding, person: &Person, month: Date) -> Holding
         ..with_leave.clone()
     };
     let fte = holding.assignment.fte_percent;
-    let sum = |status: Status| -> i64 {
+    let sum = |status: Status| -> Option<i64> {
         holding
             .allocations
             .iter()
             .filter(|a| a.status == status && a.covers(month))
-            .map(|a| a.fte_centi)
-            .sum()
+            .try_fold(0_i64, |total, a| total.checked_add(a.fte_centi))
     };
-    HoldingMonth {
-        contracted_centi: weighted(fte, available_days(&without_leave, month), month),
-        available_centi: weighted(fte, available_days(&with_leave, month), month),
-        allocated_centi: sum(Status::Confirmed),
-        tentative_centi: sum(Status::Tentative),
-    }
+    Some(HoldingMonth {
+        contracted_centi: weighted(fte, available_days(&without_leave, month), month)?,
+        available_centi: weighted(fte, available_days(&with_leave, month), month)?,
+        allocated_centi: sum(Status::Confirmed)?,
+        tentative_centi: sum(Status::Tentative)?,
+    })
 }
 
 /// What a person-month says. Each signal carries the amount it is about.
@@ -406,7 +409,7 @@ fn standing(person: &Person, month: Date, available_below_bp: i32) -> Option<Per
     let mut totals = HoldingMonth::default();
     let mut assignment_signals = Vec::new();
     for (index, holding) in person.holdings.iter().enumerate() {
-        let one = holding_month(holding, person, month);
+        let one = holding_month(holding, person, month)?;
         totals.contracted_centi = totals.contracted_centi.checked_add(one.contracted_centi)?;
         totals.available_centi = totals.available_centi.checked_add(one.available_centi)?;
         totals.allocated_centi = totals.allocated_centi.checked_add(one.allocated_centi)?;
@@ -419,7 +422,11 @@ fn standing(person: &Person, month: Date, available_below_bp: i32) -> Option<Per
         }
     }
     let mut signals = Vec::new();
-    let threshold = i64::from(available_below_bp.clamp(0, FULL_BP));
+    // The threshold is validated by the caller (`validate_threshold_bp`); one outside 0 to 10 000 is no standing, not a clamped one.
+    if !(0..=FULL_BP).contains(&available_below_bp) {
+        return None;
+    }
+    let threshold = i64::from(available_below_bp);
     if totals.allocated_centi > totals.contracted_centi {
         signals.push(Signal::OverAllocated {
             by_centi: totals
@@ -448,19 +455,19 @@ fn standing(person: &Person, month: Date, available_below_bp: i32) -> Option<Per
 
 // ─── Reconciliation with pool demand ────────────────────────────────────────
 
-/// The confirmed allocations to `source` from `pool` in `month`, added. Pass every allocation in the scope.
+/// The confirmed allocations to `source` from `pool` in `month`, added; `None` when the total does not fit a 64-bit count.
+/// Pass every allocation in the scope.
 #[must_use]
 pub fn sum_confirmed<'a>(
     allocations: impl IntoIterator<Item = &'a Allocation>,
     pool: Uuid,
     source: &str,
     month: Date,
-) -> i64 {
+) -> Option<i64> {
     allocations
         .into_iter()
         .filter(|a| a.pool == Some(pool) && a.source == source && a.counts_in(month))
-        .map(|a| a.fte_centi)
-        .sum()
+        .try_fold(0_i64, |total, a| total.checked_add(a.fte_centi))
 }
 
 /// How the named people allocated to a source compare with what the source claims from the pool (WPM-R57).
@@ -579,6 +586,11 @@ mod tests {
             ends_on: ends,
             primary: true,
         }
+    }
+
+    /// `holding_month`, which holds for every holding these tests build.
+    fn holding_in(holding: &Holding, person: &Person, month: Date) -> HoldingMonth {
+        holding_month(holding, person, month).expect("a month that fits")
     }
 
     fn alloc(source: &str, from: Date, to: Date, fte: i64, status: Status) -> Allocation {
@@ -783,7 +795,7 @@ mod tests {
     #[test]
     fn a_full_month_gives_the_whole_fte() {
         let p = person(vec![holding(assignment(60, d(2025, 1, 1), None), vec![])]);
-        let one = holding_month(&p.holdings[0], &p, m(JAN.0, JAN.1));
+        let one = holding_in(&p.holdings[0], &p, m(JAN.0, JAN.1));
         assert_eq!((one.contracted_centi, one.available_centi), (60, 60));
     }
 
@@ -791,10 +803,10 @@ mod tests {
     fn a_mid_month_start_is_weighted_by_its_days() {
         // Starts 16 January: 16 of 31 days; 100 × 16 / 31 = 51.6 → 52.
         let p = person(vec![holding(assignment(100, d(2026, 1, 16), None), vec![])]);
-        let one = holding_month(&p.holdings[0], &p, m(2026, 1));
+        let one = holding_in(&p.holdings[0], &p, m(2026, 1));
         assert_eq!(one.contracted_centi, 52);
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2025, 12)).contracted_centi,
+            holding_in(&p.holdings[0], &p, m(2025, 12)).contracted_centi,
             0,
             "before the start"
         );
@@ -808,11 +820,11 @@ mod tests {
             vec![],
         )]);
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 2)).contracted_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 2)).contracted_centi,
             50
         );
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 3)).contracted_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 3)).contracted_centi,
             0
         );
     }
@@ -822,11 +834,11 @@ mod tests {
         let mut p = person(vec![holding(assignment(100, d(2025, 1, 1), None), vec![])]);
         p.engagement_ends_on = Some(d(2026, 2, 14));
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 2)).contracted_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 2)).contracted_centi,
             50
         );
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 3)).contracted_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 3)).contracted_centi,
             0
         );
     }
@@ -836,7 +848,7 @@ mod tests {
         let mut p = person(vec![holding(assignment(100, d(2025, 1, 1), None), vec![])]);
         // 10 days in April (30 days): 100 × 20 / 30 = 66.7 → 67.
         p.approved_leave = vec![(d(2026, 4, 6), d(2026, 4, 15))];
-        let one = holding_month(&p.holdings[0], &p, m(2026, 4));
+        let one = holding_in(&p.holdings[0], &p, m(2026, 4));
         assert_eq!((one.contracted_centi, one.available_centi), (100, 67));
     }
 
@@ -846,12 +858,12 @@ mod tests {
         // 27 to 31 March (5 of 31) and 1 to 5 April (5 of 30).
         p.approved_leave = vec![(d(2026, 3, 27), d(2026, 4, 5))];
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 3)).available_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 3)).available_centi,
             84,
             "100 × 26 / 31 = 83.9"
         );
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 4)).available_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 4)).available_centi,
             83,
             "100 × 25 / 30 = 83.3"
         );
@@ -869,19 +881,19 @@ mod tests {
             assignment(100, d(2025, 1, 1), None),
             allocations,
         )]);
-        let jan = holding_month(&p.holdings[0], &p, m(2026, 1));
+        let jan = holding_in(&p.holdings[0], &p, m(2026, 1));
         assert_eq!((jan.allocated_centi, jan.tentative_centi), (30, 20));
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 2)).allocated_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 2)).allocated_centi,
             40
         );
         assert_eq!(
-            holding_month(&p.holdings[0], &p, d(2026, 3, 20)).allocated_centi,
+            holding_in(&p.holdings[0], &p, d(2026, 3, 20)).allocated_centi,
             30,
             "any day names its month"
         );
         assert_eq!(
-            holding_month(&p.holdings[0], &p, m(2026, 4)).allocated_centi,
+            holding_in(&p.holdings[0], &p, m(2026, 4)).allocated_centi,
             0
         );
     }
@@ -1325,19 +1337,19 @@ mod tests {
         let all = [a, b, c, t, wrong_source, unpooled];
         assert_eq!(
             sum_confirmed(&all, pool, "thing:programme-a", m(2026, 2)),
-            50
+            Some(50)
         );
         assert_eq!(
             sum_confirmed(&all, pool, "thing:programme-a", m(2026, 1)),
-            30
+            Some(30)
         );
         assert_eq!(
             sum_confirmed(&all, other, "thing:programme-a", m(2026, 2)),
-            50
+            Some(50)
         );
         assert_eq!(
             sum_confirmed(&all, pool, "thing:programme-a", m(2026, 4)),
-            0
+            Some(0)
         );
     }
 
@@ -1404,5 +1416,42 @@ mod tests {
             reconcile(Tracking::Tracked, Some(i64::MAX), i64::MIN),
             Staffing::Unknown
         );
+    }
+
+    #[test]
+    fn days_outside_the_month_and_totals_past_a_count_are_unknown_not_clamped() {
+        let feb = d(2026, 2, 1);
+        assert_eq!(weighted(100, 28, feb), Some(100));
+        assert_eq!(weighted(100, 29, feb), None);
+        assert_eq!(weighted(100, -1, feb), None);
+        assert_eq!(weighted(i32::MAX, 28, feb), Some(i64::from(i32::MAX)));
+        let pool = Uuid::from_u128(1);
+        let mut a = alloc("thing:programme-a", feb, feb, i64::MAX, Status::Confirmed);
+        a.pool = Some(pool);
+        let mut b = a.clone();
+        b.fte_centi = 1;
+        assert_eq!(
+            sum_confirmed([&a, &b], pool, "thing:programme-a", feb),
+            None
+        );
+        assert_eq!(
+            sum_confirmed([&a], pool, "thing:programme-a", feb),
+            Some(i64::MAX)
+        );
+    }
+
+    #[test]
+    fn a_threshold_outside_zero_to_ten_thousand_is_no_standing() {
+        let p = person(vec![holding(assignment(100, d(2026, 1, 1), None), vec![])]);
+        for bp in [-1, FULL_BP + 1] {
+            assert_eq!(
+                person_month(&p, d(2026, 1, 1), Tracking::Tracked, bp),
+                MonthStanding::Unknown
+            );
+        }
+        assert!(matches!(
+            person_month(&p, d(2026, 1, 1), Tracking::Tracked, FULL_BP),
+            MonthStanding::Known(_)
+        ));
     }
 }

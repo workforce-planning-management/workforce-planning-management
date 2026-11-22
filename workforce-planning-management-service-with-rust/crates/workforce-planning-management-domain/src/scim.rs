@@ -137,7 +137,15 @@ pub fn step(
 /// The wait before the next try after `attempts` failures: one minute doubling, at most a day.
 #[must_use]
 pub fn backoff_seconds(attempts: u32) -> i64 {
-    60_i64.saturating_mul(1_i64 << attempts.min(20)).min(86_400)
+    /// One minute: the first wait, doubled for each failure.
+    const BASE_SECONDS: i64 = 60;
+    /// A day: the longest wait.
+    const MAX_SECONDS: i64 = 86_400;
+    2_i64
+        .checked_pow(attempts)
+        .and_then(|factor| BASE_SECONDS.checked_mul(factor))
+        .unwrap_or(MAX_SECONDS) // an overflow is past the cap
+        .min(MAX_SECONDS) // the cap: at most a day
 }
 
 /// A base URL is `https`, or plain `http` to the machine itself (a stub or a local bridge). Anything else is refused so a
@@ -348,6 +356,10 @@ mod tests {
         assert_eq!(backoff_seconds(1), 120);
         assert_eq!(backoff_seconds(3), 480);
         assert_eq!(backoff_seconds(30), 86_400);
+        assert_eq!(backoff_seconds(10), 61_440);
+        assert_eq!(backoff_seconds(11), 86_400);
+        assert_eq!(backoff_seconds(63), 86_400, "2^63 does not fit an i64");
+        assert_eq!(backoff_seconds(u32::MAX), 86_400);
     }
 
     #[test]

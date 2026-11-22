@@ -289,9 +289,9 @@ pub fn load(assignments: &[Assignment]) -> BTreeMap<Uuid, usize> {
     let mut counts = BTreeMap::new();
     for a in assignments {
         if let Some(w) = a.worker {
-            #[allow(
+            #[expect(
                 clippy::arithmetic_side_effects,
-                reason = "a count of days: bounded by the slice length"
+                reason = "RCA-EXC-2: a count of days, at most the slice length, which is at most isize::MAX so the count fits a usize"
             )]
             {
                 *counts.entry(w).or_insert(0) += 1;

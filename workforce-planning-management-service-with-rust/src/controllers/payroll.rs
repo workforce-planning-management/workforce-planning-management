@@ -409,15 +409,14 @@ async fn calculate_run(
         }
         let overtime: i64 = days
             .values()
-            .map(|(regular, explicit)| {
-                i64::from(workforce::overtime_minutes(
-                    *regular,
-                    *explicit,
-                    worker.fte_percent,
-                    full_day,
-                ))
+            .try_fold(0_i64, |sum, (regular, explicit)| {
+                let day =
+                    workforce::overtime_minutes(*regular, *explicit, worker.fte_percent, full_day)?;
+                sum.checked_add(i64::from(day))
             })
-            .sum();
+            .ok_or_else(|| {
+                crate::controllers::internal("overtime minutes could not be computed")
+            })?;
         // Benefit worker-costs (same currency only).
         // Each live enrollment's live plan, in enrollment order.
         let plans = sqlx::query!(
@@ -500,7 +499,13 @@ async fn calculate_run(
             .fetch_all(&mut *tx)
             .await?
             .iter()
-            .sum()
+            .try_fold(0_i64, |total, gross| total.checked_add(*gross))
+            .ok_or_else(|| {
+                unprocessable(&format!(
+                    "payslip for {}: earlier gross pay is too large to total",
+                    worker.worker_number
+                ))
+            })?
         };
         let (employer_cost, employer_costs) = employer_costs_for(
             profile,
@@ -1324,7 +1329,7 @@ fn statutory_outcome(
                         let weeks = ot::weeks_beginning_between(year_days, week_start, from, as_of)
                             .and_then(|days| ot::weeks_with(&days, week_start, kind_of))?;
                         match ot::derive_period_kinds(status, &rules, &weeks) {
-                            ot::Outcome::Derived(d) => Some(d.overtime_minutes()),
+                            ot::Outcome::Derived(d) => d.overtime_minutes(),
                             _ => None,
                         }
                     };

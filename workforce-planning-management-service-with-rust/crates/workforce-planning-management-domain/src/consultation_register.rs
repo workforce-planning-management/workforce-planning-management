@@ -323,7 +323,7 @@ mod tests {
             others: vec![],
             agreed_period_days: None,
         };
-        assess(&great_britain(), &p, d("2026-01-01"))
+        assess(&great_britain(), &p, d("2026-01-01")).expect("counts that fit")
     }
 
     #[test]
@@ -369,7 +369,8 @@ mod tests {
                 agreed_period_days: None,
             },
             d("2026-01-01"),
-        );
+        )
+        .expect("counts that fit");
         assert_eq!(
             timeliness(&eu, None, d("2026-09-01")),
             Timeliness::NoFixedPeriod

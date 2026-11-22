@@ -324,8 +324,7 @@ pub fn conversion_rate(outcomes_of_completed: &[String]) -> Option<(usize, usize
         .iter()
         .filter(|o| o.as_str() == "converted")
         .count();
-    #[allow(clippy::cast_precision_loss)] // display ratio; the terms are returned alongside
-    let ratio = converted as f64 / completed as f64;
+    let ratio = super::display::ratio(converted, completed)?;
     Some((converted, completed, ratio))
 }
 
@@ -400,15 +399,24 @@ pub fn tenure_bucket(months: i64) -> &'static str {
 /// when the hire date is in the future, so a future start is visible
 /// rather than silently zero).
 #[must_use]
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "a Date's year is an i16, so the difference times 12 plus a month is under 2^20 and fits an i64"
-)]
 pub fn months_of_service(hired_on: Date, as_of: Date) -> i64 {
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: a Date's year is an i16, so the difference is under 2^16"
+    )]
     let years = i64::from(as_of.year()) - i64::from(hired_on.year());
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: years is under 2^16 and a month is 1 to 12, so the result is under 2^20 and fits an i64"
+    )]
     let months = years * 12 + i64::from(as_of.month()) - i64::from(hired_on.month());
     if as_of.day() < hired_on.day() {
-        months - 1
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "RCA-EXC-2: months is under 2^20, so one less fits an i64"
+        )]
+        let earlier = months - 1;
+        earlier
     } else {
         months
     }

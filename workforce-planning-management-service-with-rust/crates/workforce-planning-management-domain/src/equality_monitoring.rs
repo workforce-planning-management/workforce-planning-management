@@ -210,20 +210,24 @@ pub struct Summary {
 
 /// Aggregate one category. `rows` is `(department, value)` for each response; `departments` is the
 /// headcount per department of everyone employed (responded or not).
+///
+/// `None` when the departments' headcounts do not add up within a `usize` (RCA-AGG-1): no summary is better than a wrong one.
 #[must_use]
 pub fn summarise(
     rows: &[(String, String)],
     departments: &BTreeMap<String, usize>,
     floor: usize,
-) -> Summary {
-    let headcount: usize = departments.values().sum();
+) -> Option<Summary> {
+    let headcount = departments
+        .values()
+        .try_fold(0_usize, |sum, n| sum.checked_add(*n))?;
     let responded = rows.len();
     let mut org: BTreeMap<String, usize> = BTreeMap::new();
     let mut dept: BTreeMap<String, BTreeMap<String, usize>> = BTreeMap::new();
     for (department, value) in rows {
-        #[allow(
+        #[expect(
             clippy::arithmetic_side_effects,
-            reason = "counts of responses: bounded by the slice length"
+            reason = "RCA-EXC-2: a count of responses, at most the slice length, which is at most isize::MAX"
         )]
         {
             *org.entry(value.clone()).or_insert(0) += 1;
@@ -244,7 +248,7 @@ pub fn summarise(
         && dept
             .values()
             .all(|cells| cells.values().all(|n| *n >= floor));
-    Summary {
+    Some(Summary {
         headcount,
         responded,
         completeness_percent: responded
@@ -252,7 +256,7 @@ pub fn summarise(
             .and_then(|n| n.checked_div(headcount)),
         organization,
         by_department: departments_ok.then_some(dept),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -393,6 +397,21 @@ mod tests {
             .iter()
             .flat_map(|(d, v, n)| (0..*n).map(move |_| ((*d).to_string(), (*v).to_string())))
             .collect()
+    }
+
+    /// The summary, which in these tests always fits.
+    fn summarise(
+        rows: &[(String, String)],
+        departments: &BTreeMap<String, usize>,
+        floor: usize,
+    ) -> Summary {
+        super::summarise(rows, departments, floor).unwrap()
+    }
+
+    #[test]
+    fn headcounts_that_do_not_add_up_give_no_summary() {
+        let huge = heads(&[("eng", usize::MAX), ("ops", 1)]);
+        assert!(super::summarise(&[], &huge, 10).is_none());
     }
 
     fn heads(items: &[(&str, usize)]) -> BTreeMap<String, usize> {

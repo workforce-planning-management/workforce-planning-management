@@ -43,15 +43,17 @@ pub(super) async fn alignment_value(
     let linked_lines: BTreeSet<Uuid> = link_rows.iter().map(|k| k.line_pid).collect();
     let served_objectives: BTreeSet<Uuid> = link_rows.iter().map(|k| k.objective_pid).collect();
 
-    let total_planned: usize = lines
+    let total_planned = lines
         .iter()
         .map(|l| usize::try_from(l.target_headcount).unwrap_or(0))
-        .sum();
-    let aligned_planned: usize = lines
+        .try_fold(0_usize, usize::checked_add)
+        .ok_or_else(|| crate::controllers::internal("a planned headcount total overflowed"))?;
+    let aligned_planned = lines
         .iter()
         .filter(|l| linked_lines.contains(&l.pid))
         .map(|l| usize::try_from(l.target_headcount).unwrap_or(0))
-        .sum();
+        .try_fold(0_usize, usize::checked_add)
+        .ok_or_else(|| crate::controllers::internal("an aligned headcount total overflowed"))?;
     let unresourced: Vec<&str> = objectives
         .iter()
         .filter(|o| !served_objectives.contains(&o.pid))

@@ -88,10 +88,6 @@ fn read(dir: &Path, name: &str) -> Result<String> {
 /// # Errors
 /// A filesystem, parse, or database error.
 #[allow(clippy::too_many_lines)] // read → parse → replace → link, linearly
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn import_esco(
     pool: &sqlx::PgPool,
     dir: &Path,
@@ -255,9 +251,9 @@ pub async fn import_esco(
                 )
                 .execute(&mut *tx)
                 .await?;
-                report.catalogue_linked += 1;
+                crate::controllers::tally::bump(&mut report.catalogue_linked);
             }
-            [_, _, ..] => report.catalogue_ambiguous += 1,
+            [_, _, ..] => crate::controllers::tally::bump(&mut report.catalogue_ambiguous),
             _ => {}
         }
     }

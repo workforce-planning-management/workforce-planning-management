@@ -87,9 +87,10 @@ pub struct PlanCost {
     pub estimated_hours: u32,
 }
 
-/// The fees and hours of a plan's steps.
+/// The fees and hours of a plan's steps, or `None` when a total does not fit its type: a total that overflowed is unknown, never
+/// a capped figure (RCA-INT-4).
 #[must_use]
-pub fn plan_cost(steps: &[Step]) -> PlanCost {
+pub fn plan_cost(steps: &[Step]) -> Option<PlanCost> {
     let mut out = PlanCost {
         fees: BTreeMap::new(),
         courses_with_fee: 0,
@@ -102,12 +103,12 @@ pub fn plan_cost(steps: &[Step]) -> PlanCost {
             Fee::NotACourse | Fee::Unknown => {}
             Fee::Known { minor, currency } => {
                 let total = out.fees.entry(currency.clone()).or_insert(0);
-                *total = total.saturating_add(*minor);
+                *total = total.checked_add(*minor)?;
             }
         }
-        out.hours = out.hours.saturating_add(step.hours);
+        out.hours = out.hours.checked_add(step.hours)?;
         if step.estimated_hours {
-            out.estimated_hours = out.estimated_hours.saturating_add(step.hours);
+            out.estimated_hours = out.estimated_hours.checked_add(step.hours)?;
         }
     }
     // Counted from the steps themselves, so they cannot exceed the number of steps.
@@ -119,7 +120,7 @@ pub fn plan_cost(steps: &[Step]) -> PlanCost {
         .iter()
         .filter(|s| matches!(s.fee, Fee::Unknown))
         .count();
-    out
+    Some(out)
 }
 
 impl PlanCost {
@@ -222,19 +223,16 @@ pub fn hours_cost(
     if year <= 0 {
         return HoursCost::Unresolved { missing };
     }
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "BP is 10 000 and the other operand is under 2^64, so both results fit an i128"
-    )]
-    let factor = i128::from(annual).saturating_mul(BP + i128::from(on_cost.max(0)));
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "BP is 10 000 and the year is under 2^64, so the product fits an i128"
-    )]
-    let denominator = BP * i128::from(year);
+    // The pay, the on-cost and the year are stored figures: a product that does not fit is unknown, never a capped cost.
+    let rates = BP.checked_mul(i128::from(year)).zip(
+        BP.checked_add(i128::from(on_cost.max(0)))
+            .and_then(|loaded| i128::from(annual).checked_mul(loaded)),
+    );
     match (
-        divide(factor, denominator),
-        divide(factor.saturating_mul(i128::from(hours)), denominator),
+        rates.and_then(|(denominator, factor)| divide(factor, denominator)),
+        rates.and_then(|(denominator, factor)| {
+            divide(factor.checked_mul(i128::from(hours))?, denominator)
+        }),
     ) {
         (Some(hourly_minor), Some(minor)) => HoursCost::Resolved {
             currency: currency.to_string(),
@@ -321,15 +319,14 @@ fn days_of(annual: i64, days: i64) -> Option<i64> {
     )
 }
 
-/// Whether `a` and `b` lie within [`SIMILAR_MARGIN_BP`] of the larger.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "every operand is a widened i64 or a small constant, so each product is under 2^80 and fits an i128"
-)]
+/// Whether `a` and `b` lie within [`SIMILAR_MARGIN_BP`] of the larger. Every operand is a widened `i64` or a small constant, so
+/// each product is under 2^80 and fits an `i128`; were that ever untrue the answer is `false`, never a guess.
 fn within_margin(a: i64, b: i64) -> bool {
     let gap = i128::from(a.abs_diff(b));
     let larger = i128::from(a).abs().max(i128::from(b).abs());
-    gap * BP <= larger * i128::from(SIMILAR_MARGIN_BP)
+    gap.checked_mul(BP)
+        .zip(larger.checked_mul(i128::from(SIMILAR_MARGIN_BP)))
+        .is_some_and(|(lhs, rhs)| lhs <= rhs)
 }
 
 /// Sum the parts, or `None` if any is unknown or the sum overflows.
@@ -488,7 +485,8 @@ fn payback_of(flows: &[Flow], rate_bp: u32, last_out: u32) -> Option<Payback> {
                     .unwrap_or(0)
                     .min(9_999);
             return Some(Payback {
-                periods: f.period.saturating_sub(last_out).saturating_sub(1),
+                // The guard above makes `f.period > last_out`, so the first subtraction is at least 1 and neither fails.
+                periods: f.period.checked_sub(last_out)?.checked_sub(1)?,
                 fraction_bp: fraction,
             });
         }
@@ -504,8 +502,11 @@ pub fn assess(flows: &[Flow], rate_bp: u32) -> Viability {
         flows
             .iter()
             .filter(|f| wanted(f.amount_minor))
-            .map(|f| i128::from(f.amount_minor).abs())
-            .sum()
+            .try_fold(0_i128, |total, f| {
+                total.checked_add(i128::from(f.amount_minor).abs())
+            })
+            // At most 2^64 flows of at most 2^63 each fit an i128, so this cannot fail; the echoed figure is capped by `to_i64` below.
+            .unwrap_or(i128::MAX)
     };
     let investment = sum(|a| a < 0);
     let benefit = sum(|a| a > 0);
@@ -756,6 +757,11 @@ pub fn budget_lines(
 mod tests {
     use super::*;
 
+    /// A plan's cost, which every fixture here keeps within range.
+    fn cost_of(steps: &[Step]) -> PlanCost {
+        plan_cost(steps).expect("the fixtures do not overflow")
+    }
+
     fn fee(minor: i64, currency: &str, hours: u32) -> Step {
         Step {
             fee: Fee::Known {
@@ -834,7 +840,7 @@ mod tests {
 
     #[test]
     fn plan_cost_sums_per_currency_and_counts_the_unknown() {
-        let cost = plan_cost(&[
+        let cost = cost_of(&[
             fee(1_000, "GBP", 10),
             fee(500, "GBP", 5),
             fee(700, "EUR", 7),
@@ -850,8 +856,38 @@ mod tests {
     }
 
     #[test]
+    fn a_total_that_overflows_is_unknown_not_capped() {
+        assert_eq!(
+            plan_cost(&[fee(i64::MAX, "GBP", 1), fee(1, "GBP", 1)]),
+            None
+        );
+        assert_eq!(plan_cost(&[mentoring(u32::MAX), mentoring(1)]), None);
+        assert_eq!(plan_cost(&[fee(1, "GBP", u32::MAX), mentoring(1)]), None);
+        let exact = cost_of(&[fee(i64::MAX - 1, "GBP", 1), fee(1, "GBP", 1)]);
+        assert_eq!(exact.fees.get("GBP"), Some(&i64::MAX));
+    }
+
+    #[test]
+    fn an_hourly_cost_that_overflows_is_unresolved_not_capped() {
+        let v = hours_cost(1, Some((i64::MAX, "GBP")), Some(i64::MAX), Some(1));
+        assert_eq!(
+            v,
+            HoursCost::Unresolved {
+                missing: vec!["pay"]
+            }
+        );
+        let v = hours_cost(u32::MAX, Some((i64::MAX, "GBP")), Some(0), Some(1));
+        assert_eq!(
+            v,
+            HoursCost::Unresolved {
+                missing: vec!["pay"]
+            }
+        );
+    }
+
+    #[test]
     fn a_free_course_is_a_recorded_zero_and_counts_as_known() {
-        let cost = plan_cost(&[fee(0, "GBP", 2)]);
+        let cost = cost_of(&[fee(0, "GBP", 2)]);
         assert_eq!(cost.courses_with_fee, 1);
         assert_eq!(cost.courses_without_fee, 0);
         assert_eq!(cost.single_fee("GBP"), Some(0));
@@ -859,7 +895,7 @@ mod tests {
 
     #[test]
     fn a_step_that_is_not_a_course_needs_no_fee() {
-        let cost = plan_cost(&[mentoring(20)]);
+        let cost = cost_of(&[mentoring(20)]);
         assert_eq!(cost.courses_without_fee, 0);
         assert_eq!(cost.single_fee("GBP"), Some(0));
         assert_eq!(cost.fee_currency(), None);
@@ -867,12 +903,12 @@ mod tests {
 
     #[test]
     fn one_total_needs_every_fee_known_in_that_currency() {
-        assert_eq!(plan_cost(&[unknown(1)]).single_fee("GBP"), None);
-        assert_eq!(plan_cost(&[fee(1, "EUR", 1)]).single_fee("GBP"), None);
-        let both = plan_cost(&[fee(1, "EUR", 1), fee(1, "GBP", 1)]);
+        assert_eq!(cost_of(&[unknown(1)]).single_fee("GBP"), None);
+        assert_eq!(cost_of(&[fee(1, "EUR", 1)]).single_fee("GBP"), None);
+        let both = cost_of(&[fee(1, "EUR", 1), fee(1, "GBP", 1)]);
         assert_eq!(both.single_fee("GBP"), None);
         assert_eq!(both.fee_currency(), None);
-        assert_eq!(plan_cost(&[fee(9, "GBP", 1)]).single_fee("GBP"), Some(9));
+        assert_eq!(cost_of(&[fee(9, "GBP", 1)]).single_fee("GBP"), Some(9));
     }
 
     #[test]
@@ -1133,7 +1169,7 @@ mod tests {
 
     #[test]
     fn no_stated_benefit_is_unmeasured() {
-        let cost = plan_cost(&[fee(1_000, "GBP", 10)]);
+        let cost = cost_of(&[fee(1_000, "GBP", 10)]);
         let hours = hours_cost(10, pay(1_800_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[], Some(500));
         assert_eq!(v.on_fees, None);
@@ -1143,7 +1179,7 @@ mod tests {
 
     #[test]
     fn a_plan_is_assessed_on_fees_and_with_hours() {
-        let cost = plan_cost(&[fee(1_000, "GBP", 10)]);
+        let cost = cost_of(&[fee(1_000, "GBP", 10)]);
         let hours = hours_cost(10, pay(180_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 1_500, "GBP")], Some(0));
         assert_eq!(v.currency.as_deref(), Some("GBP"));
@@ -1159,7 +1195,7 @@ mod tests {
 
     #[test]
     fn unresolved_hours_still_leave_the_fees_view() {
-        let cost = plan_cost(&[fee(1_000, "GBP", 10)]);
+        let cost = cost_of(&[fee(1_000, "GBP", 10)]);
         let hours = hours_cost(10, None, Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 1_500, "GBP")], Some(0));
         assert!(v.on_fees.is_some());
@@ -1169,12 +1205,12 @@ mod tests {
 
     #[test]
     fn an_outlay_that_cannot_be_negated_is_unknown_not_a_number() {
-        let cost = plan_cost(&[fee(i64::MIN, "GBP", 1)]);
+        let cost = cost_of(&[fee(i64::MIN, "GBP", 1)]);
         let hours = hours_cost(1, pay(180_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 9_000, "GBP")], Some(0));
         assert_eq!(v.on_fees, None);
         assert_eq!(v.missing, vec!["fee"]);
-        let present = plan_cost(&[fee(i64::MAX, "GBP", 1)]);
+        let present = cost_of(&[fee(i64::MAX, "GBP", 1)]);
         let big_hours = HoursCost::Resolved {
             currency: "GBP".to_string(),
             hours: 1,
@@ -1189,7 +1225,7 @@ mod tests {
 
     #[test]
     fn an_unknown_fee_means_no_figure_at_all() {
-        let cost = plan_cost(&[fee(1_000, "GBP", 10), unknown(5)]);
+        let cost = cost_of(&[fee(1_000, "GBP", 10), unknown(5)]);
         let hours = hours_cost(15, pay(180_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 9_000, "GBP")], Some(0));
         assert_eq!(v.on_fees, None);
@@ -1200,7 +1236,7 @@ mod tests {
     #[test]
     fn currencies_are_never_mixed() {
         let hours = hours_cost(1, pay(180_000), Some(0), Some(1_800));
-        let gbp = plan_cost(&[fee(1_000, "GBP", 1)]);
+        let gbp = cost_of(&[fee(1_000, "GBP", 1)]);
         let two = plan_viability(
             &gbp,
             &hours,
@@ -1221,7 +1257,7 @@ mod tests {
 
     #[test]
     fn no_discount_rate_is_no_figure() {
-        let cost = plan_cost(&[fee(1_000, "GBP", 1)]);
+        let cost = cost_of(&[fee(1_000, "GBP", 1)]);
         let hours = hours_cost(1, pay(180_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 2_000, "GBP")], None);
         assert_eq!(v.on_fees, None);
@@ -1230,7 +1266,7 @@ mod tests {
 
     #[test]
     fn a_plan_of_only_mentoring_has_no_fee_investment() {
-        let cost = plan_cost(&[mentoring(20)]);
+        let cost = cost_of(&[mentoring(20)]);
         let hours = hours_cost(20, pay(180_000), Some(0), Some(1_800));
         let v = plan_viability(&cost, &hours, &[benefit(1, 3_000, "GBP")], Some(0));
         assert_eq!(

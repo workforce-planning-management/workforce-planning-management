@@ -779,16 +779,13 @@ pub(super) async fn status_json(
     }))
 }
 
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "rem_euclid(12) is 0 to 11, so adding one cannot overflow"
-)]
 fn month_label(period: i64) -> String {
-    format!(
-        "{:04}-{:02}",
-        period.div_euclid(12),
-        period.rem_euclid(12) + 1
-    )
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: rem_euclid(12) is 0 to 11, so adding one cannot overflow"
+    )]
+    let month = period.rem_euclid(12) + 1;
+    format!("{:04}-{month:02}", period.div_euclid(12))
 }
 
 fn reason_json(reason: rules::Reason) -> serde_json::Value {

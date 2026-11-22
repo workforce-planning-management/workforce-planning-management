@@ -1303,24 +1303,21 @@ const ANSWERS: &[(&str, &str, Answer)] = &[
 ];
 
 /// `{name}` to `{}`, so a table can ignore what the document calls a parameter.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "`depth` moves by one per character of `path`, so its magnitude is at most the path length"
-)]
 fn blank_params(path: &str) -> String {
     let mut out = String::new();
-    let mut depth = 0;
+    // A path parameter's braces do not nest, so inside or outside is all there is to track.
+    let mut inside = false;
     for c in path.chars() {
         match c {
             '{' => {
-                depth += 1;
+                inside = true;
                 out.push('{');
             }
             '}' => {
-                depth -= 1;
+                inside = false;
                 out.push('}');
             }
-            _ if depth > 0 => {}
+            _ if inside => {}
             _ => out.push(c),
         }
     }

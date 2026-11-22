@@ -183,10 +183,6 @@ pub async fn import_sfia_levels(
 /// # Errors
 /// A refusal naming the licence field or the file row, or a database error.
 #[allow(clippy::too_many_lines)] // validate → upsert → retire → link, linearly
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> Result<Report> {
     let checked_on = check_licence(licence)?;
     let parsed: Vec<Skill> = rules::parse_skills(text).map_err(|e| Error::string(&e))?;
@@ -194,9 +190,14 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
         return Err(Error::string("the file has a header and no skills"));
     }
     let version = licence.version.trim();
+    // The levels held in memory cannot outnumber `usize`, so the sum always fits; the error names the figure all the same (RCA-AGG-1).
+    let levels = parsed
+        .iter()
+        .try_fold(0_usize, |n, s| n.checked_add(s.levels.len()))
+        .ok_or_else(|| Error::string("the number of levels in the file does not fit a count"))?;
     let mut report = Report {
         skills: parsed.len(),
-        levels: parsed.iter().map(|s| s.levels.len()).sum(),
+        levels,
         ..Report::default()
     };
 
@@ -258,7 +259,7 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
             )
             .execute(&mut *tx)
             .await?;
-            report.skills_retired += 1;
+            crate::controllers::tally::bump(&mut report.skills_retired);
         }
     }
     for ((code, level), retired_in) in &known_levels {
@@ -271,7 +272,7 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
             )
             .execute(&mut *tx)
             .await?;
-            report.levels_retired += 1;
+            crate::controllers::tally::bump(&mut report.levels_retired);
         }
     }
 
@@ -345,7 +346,7 @@ pub async fn import_sfia(pool: &sqlx::PgPool, text: &str, licence: &Licence) -> 
             )
             .execute(&mut *tx)
             .await?;
-            report.catalogue_linked += 1;
+            crate::controllers::tally::bump(&mut report.catalogue_linked);
         }
     }
     tx.commit().await?;

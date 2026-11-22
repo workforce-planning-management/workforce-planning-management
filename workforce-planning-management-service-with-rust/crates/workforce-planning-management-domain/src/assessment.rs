@@ -203,17 +203,18 @@ pub fn valid_raw_score(raw: i32, max: i32) -> bool {
 /// The band a percentile falls in, on the conventional
 /// norm-referenced split: bottom decile `low`, next fifth
 /// `below_average`, middle two-fifths `average`, next fifth
-/// `above_average`, top decile `high`. Out-of-range values clamp, so
-/// this is total (validation refuses them at the boundary; this is the
-/// defensive fallback).
+/// `above_average`, top decile `high`. A value outside 0 to 100 has no
+/// band (`None`, not the nearest one): validation refuses it at the
+/// boundary.
 #[must_use]
-pub fn band_for_percentile(percentile: i32) -> &'static str {
-    match percentile.clamp(0, 100) {
-        0..=9 => "low",
-        10..=29 => "below_average",
-        30..=69 => "average",
-        70..=89 => "above_average",
-        _ => "high",
+pub fn band_for_percentile(percentile: i32) -> Option<&'static str> {
+    match percentile {
+        0..=9 => Some("low"),
+        10..=29 => Some("below_average"),
+        30..=69 => Some("average"),
+        70..=89 => Some("above_average"),
+        90..=100 => Some("high"),
+        _ => None,
     }
 }
 
@@ -238,10 +239,12 @@ pub fn mean_percentile(percentiles: &[i32]) -> Option<(i64, usize, f64)> {
     if percentiles.is_empty() {
         return None;
     }
-    let sum: i64 = percentiles.iter().map(|p| i64::from(*p)).sum();
+    let sum = percentiles
+        .iter()
+        .try_fold(0_i64, |total, p| total.checked_add(i64::from(*p)))?;
     let count = percentiles.len();
-    #[allow(clippy::cast_precision_loss)] // display mean; the exact terms are returned alongside
-    let mean = sum as f64 / count as f64;
+    // A display mean; the exact terms are returned alongside. One that cannot be shown exactly is unknown.
+    let mean = crate::metrics::exact_f64(sum)? / crate::metrics::count_f64(count)?;
     Some((sum, count, mean))
 }
 
@@ -354,24 +357,27 @@ mod tests {
     }
 
     /// Bands split the percentile range at 10 / 30 / 70 / 90, and
-    /// out-of-range values clamp rather than panic.
+    /// out-of-range values have no band.
     #[test]
     fn bands_split_the_percentile_range() {
-        assert_eq!(band_for_percentile(0), "low");
-        assert_eq!(band_for_percentile(9), "low");
-        assert_eq!(band_for_percentile(10), "below_average");
-        assert_eq!(band_for_percentile(29), "below_average");
-        assert_eq!(band_for_percentile(30), "average");
-        assert_eq!(band_for_percentile(69), "average");
-        assert_eq!(band_for_percentile(70), "above_average");
-        assert_eq!(band_for_percentile(89), "above_average");
-        assert_eq!(band_for_percentile(90), "high");
-        assert_eq!(band_for_percentile(100), "high");
-        assert_eq!(band_for_percentile(-5), "low");
-        assert_eq!(band_for_percentile(150), "high");
+        assert_eq!(band_for_percentile(0), Some("low"));
+        assert_eq!(band_for_percentile(9), Some("low"));
+        assert_eq!(band_for_percentile(10), Some("below_average"));
+        assert_eq!(band_for_percentile(29), Some("below_average"));
+        assert_eq!(band_for_percentile(30), Some("average"));
+        assert_eq!(band_for_percentile(69), Some("average"));
+        assert_eq!(band_for_percentile(70), Some("above_average"));
+        assert_eq!(band_for_percentile(89), Some("above_average"));
+        assert_eq!(band_for_percentile(90), Some("high"));
+        assert_eq!(band_for_percentile(100), Some("high"));
+        assert_eq!(band_for_percentile(-5), None);
+        assert_eq!(band_for_percentile(101), None);
+        assert_eq!(band_for_percentile(i32::MIN), None);
+        assert_eq!(band_for_percentile(i32::MAX), None);
         // Every band the function can return is in the vocabulary.
         for percentile in 0..=100 {
-            assert!(SCORE_BANDS.contains(&band_for_percentile(percentile)));
+            let band = band_for_percentile(percentile).expect("in range");
+            assert!(SCORE_BANDS.contains(&band));
         }
     }
 

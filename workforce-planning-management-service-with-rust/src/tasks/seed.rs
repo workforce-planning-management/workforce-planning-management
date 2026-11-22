@@ -30,10 +30,6 @@ impl Task for Seed {
     }
 
     #[allow(clippy::too_many_lines)] // one linear walk building the demo org
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "`n` counts the demo workers inserted by fixed loops of a few hundred rows at most"
-    )]
     async fn run(&self, ctx: &AppContext, _vars: &Vars) -> Result<()> {
         let mut tx = crate::db::pool(ctx).begin().await?;
         let org = format!("organization:{}", Uuid::new_v4());
@@ -49,7 +45,7 @@ impl Task for Seed {
         for department in departments {
             // One department head (no manager), then nine reports.
             let head = Uuid::new_v4();
-            n += 1;
+            crate::controllers::tally::bump(&mut n);
             sqlx::query!(
                 "INSERT INTO workers (pid, person_ref, upstream_worker_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
                 head,
@@ -73,7 +69,7 @@ impl Task for Seed {
             .execute(&mut *tx)
             .await?;
             for i in 0..9 {
-                n += 1;
+                crate::controllers::tally::bump(&mut n);
                 let (title, salary) = *usize::try_from(n)
                     .unwrap_or(0)
                     .checked_rem(titles.len())
@@ -204,7 +200,7 @@ impl Task for Seed {
             ("Analyst", 5_200_000),
             ("Coordinator", 4_400_000),
         ] {
-            n += 1;
+            crate::controllers::tally::bump(&mut n);
             sqlx::query!(
                 "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
                 Uuid::new_v4(),
@@ -351,7 +347,7 @@ impl Task for Seed {
             ("Analyst", 120_000_000),
             ("Coordinator", 90_000_000),
         ] {
-            n += 1;
+            crate::controllers::tally::bump(&mut n);
             sqlx::query!(
                 "INSERT INTO workers (pid, person_ref, organization_ref, work_jurisdiction, worker_number, display_name, status, employment_type, fte_percent, department, job_title, salary_minor, salary_currency, hired_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)",
                 Uuid::new_v4(),

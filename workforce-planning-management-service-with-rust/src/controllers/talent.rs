@@ -972,14 +972,10 @@ const CONVERSION_NOTE: &str = "conversion rate = placements whose outcome is `co
      from the denominator (null until something completes)";
 
 /// Placement counts + conversion rate for one programme.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each status count rises by one per placement in the slice, so it is at most the slice length"
-)]
 fn placement_rollup(placements: &[program_placements::Model]) -> serde_json::Value {
     let mut by_status: BTreeMap<String, usize> = BTreeMap::new();
     for placement in placements {
-        *by_status.entry(placement.status.clone()).or_default() += 1;
+        super::tally::bump(by_status.entry(placement.status.clone()).or_default());
     }
     let completed_outcomes: Vec<String> = placements
         .iter()

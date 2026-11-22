@@ -19,7 +19,14 @@
     clippy::string_slice,
     clippy::arithmetic_side_effects
 )]
-#![cfg_attr(test, allow(clippy::string_slice, clippy::arithmetic_side_effects))]
+#![cfg_attr(
+    test,
+    expect(
+        clippy::string_slice,
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-5: tests may use plain operators and slicing"
+    )
+)]
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
@@ -71,6 +78,7 @@ pub mod equipment;
 pub mod ergonomics;
 pub mod escalation;
 pub mod esco;
+pub mod exact_float;
 pub mod expenses;
 pub mod flexible_working;
 pub mod framework;
@@ -110,6 +118,7 @@ pub mod org_access;
 pub mod org_shape;
 pub mod oversight;
 pub mod padr;
+pub mod page_limit;
 pub mod pay_category;
 pub mod pay_gap;
 pub mod pay_information;

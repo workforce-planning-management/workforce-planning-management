@@ -628,7 +628,8 @@ async fn information_pack(
             terminated_on: w.terminated_on.map(SqlDate::get),
         })
         .collect();
-    let pack = pack_rules::pack(&pack_rows, today, DEFAULT_FLOOR);
+    let pack = pack_rules::pack(&pack_rows, today, DEFAULT_FLOOR)
+        .ok_or_else(|| super::internal("a bargaining pack total overflowed"))?;
     // Vacancies are posts, not people. A requisition carries a department and a job title only, so a unit defined by anything else cannot
     // be matched to them: that is said, not shown as nought.
     let vacancies = if unit.location.is_some() || unit.employment_type.is_some() {
@@ -652,8 +653,8 @@ async fn information_pack(
                         .as_deref()
                         .is_none_or(|t| t.trim().eq_ignore_ascii_case(r.job_title.trim()))
             })
-            .map(|r| i64::from(r.headcount))
-            .sum();
+            .try_fold(0_i64, |sum, r| sum.checked_add(i64::from(r.headcount)))
+            .ok_or_else(|| super::internal("open posts could not be counted"))?;
         json!({ "kind": "shown", "open_posts": posts })
     };
     // Reading it is the disclosure: who asked, which unit and when, written with the answer.
@@ -755,7 +756,10 @@ async fn facility_time(
     )
     .fetch_all(db::pool(&ctx))
     .await?;
-    let total: i64 = rows.iter().map(|r| i64::from(r.minutes)).sum();
+    let total: i64 = rows
+        .iter()
+        .try_fold(0_i64, |sum, r| sum.checked_add(i64::from(r.minutes)))
+        .ok_or_else(|| super::internal("facility time could not be totalled"))?;
     format::json(json!({
         "body_pid": body.pid,
         "derivation": "minutes released for representative duties, per body per period. Not per person: no one is named and no person's time is held.",

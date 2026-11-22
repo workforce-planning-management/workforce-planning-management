@@ -62,6 +62,15 @@ fn most_common_currency(staff: &[&Staff]) -> Option<String> {
         .map(|(code, _)| code.to_string())
 }
 
+/// A cut-off asked for in percentage points, as basis points: refused when it is outside the allowed range, and when the
+/// conversion does not fit (a figure that large is no cut-off).
+fn cutoff_from_points(points: i64) -> Result<i64> {
+    let bp = points
+        .checked_mul(100)
+        .ok_or_else(|| unprocessable("the cut-off is past the largest a cut-off can be"))?;
+    rules::check_cutoff(bp).map_err(|e| unprocessable(&e))
+}
+
 /// `GET /api/reports/pay-range` — the analysis. Payroll or HR with an unmasked salary read; audited.
 #[debug_handler]
 #[allow(clippy::too_many_lines)]
@@ -91,9 +100,7 @@ async fn pay_range(
     }
     let cutoff_bp = match query.cutoff {
         None => rules::DEFAULT_CUTOFF_BP,
-        Some(points) => {
-            rules::check_cutoff(points.saturating_mul(100)).map_err(|e| unprocessable(&e))?
-        }
+        Some(points) => cutoff_from_points(points)?,
     };
     let staff: Vec<Staff> = sqlx::query_as!(
         Staff,
@@ -185,4 +192,21 @@ pub fn routes() -> Routes {
     Routes::new()
         .prefix("/api")
         .add("/reports/pay-range", get(pay_range))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::cutoff_from_points;
+
+    #[test]
+    fn a_cutoff_in_points_is_in_basis_points_or_refused() {
+        assert_eq!(cutoff_from_points(1).ok(), Some(100));
+        assert_eq!(cutoff_from_points(10).ok(), Some(1000));
+        assert_eq!(cutoff_from_points(50).ok(), Some(5000));
+        assert!(cutoff_from_points(0).is_err());
+        assert!(cutoff_from_points(51).is_err());
+        assert!(cutoff_from_points(-10).is_err());
+        assert!(cutoff_from_points(i64::MAX / 100 + 1).is_err());
+        assert!(cutoff_from_points(i64::MIN).is_err());
+    }
 }

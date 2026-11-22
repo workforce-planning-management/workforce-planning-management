@@ -144,8 +144,9 @@ pub(crate) async fn add_contact_for(
         )));
     }
     let next = i32::try_from(existing.len())
-        .unwrap_or(i32::MAX)
-        .saturating_add(1);
+        .ok()
+        .and_then(|held| held.checked_add(1))
+        .ok_or_else(|| super::internal("the next priority does not fit"))?;
     let priority = payload.priority.unwrap_or(next);
     let alt_phone = clean(payload.alt_phone);
     let email = clean(payload.email);
@@ -479,8 +480,9 @@ async fn add_backup(
         return Err(unprocessable("that person is already a backup"));
     }
     let next = i32::try_from(existing.len())
-        .unwrap_or(i32::MAX)
-        .saturating_add(1);
+        .ok()
+        .and_then(|held| held.checked_add(1))
+        .ok_or_else(|| super::internal("the next priority does not fit"))?;
     let priority = payload.priority.unwrap_or(next);
     cover_rules::validate_backup(
         worker.pid,

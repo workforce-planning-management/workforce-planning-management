@@ -590,8 +590,9 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 })
                 .map(|e| (e.amount_hundredths, e.verified_on.is_some()))
                 .collect();
-            let p = rules::progress(&counted, r.required_hundredths);
-            serde_json::json!({
+            let p = rules::progress(&counted, r.required_hundredths)
+                .ok_or_else(|| super::internal("a CPD total overflowed"))?;
+            Ok(serde_json::json!({
                 "requirement_pid": r.pid,
                 "name": r.name,
                 "unit": r.unit,
@@ -612,9 +613,9 @@ async fn progress(State(ctx): State<AppContext>, Path(pid): Path<String>) -> Res
                 )
                 .as_ref()
                 .map(pace_json),
-            })
+            }))
         })
-        .collect();
+        .collect::<Result<_>>()?;
     let registrations: Vec<serde_json::Value> = worker_registrations(&ctx, worker.pid)
         .await?
         .iter()

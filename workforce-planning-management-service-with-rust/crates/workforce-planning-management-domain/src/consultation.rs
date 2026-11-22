@@ -219,42 +219,52 @@ pub struct Assessment {
     pub deployer_to_confirm: bool,
 }
 
-/// The dismissals that fall together in the best `window_days` window that includes `date`.
-fn counted_in_window(date: Date, own: u32, others: &[(Date, u32)], window_days: i64) -> u32 {
+/// A window is at least one day long: the day of the dismissal itself.
+const MIN_WINDOW_DAYS: i64 = 1;
+
+/// The dismissals that fall together in the best `window_days` window that includes `date`; `None` when a count does not fit
+/// a `u32` (unknown, not a capped count).
+fn counted_in_window(
+    date: Date,
+    own: u32,
+    others: &[(Date, u32)],
+    window_days: i64,
+) -> Option<u32> {
     let mut best = own;
-    let window = window_days.max(1);
+    // The days after the first that the window holds: a window below the one-day minimum (or one whose length overflows)
+    // holds none (`MIN_WINDOW_DAYS`).
+    let extra_days = window_days.checked_sub(MIN_WINDOW_DAYS).unwrap_or(0).max(0);
     let mut starts: Vec<Date> = others.iter().map(|(d, _)| *d).collect();
     starts.push(date);
     for start in starts {
-        // A window that runs past the last date there is holds every later date, so it ends there. `window` is at least 1.
+        // A window that runs past the last date there is holds every later date, so it ends there.
         let end = start
-            .checked_add(crate::dates::days(window.saturating_sub(1)))
+            .checked_add(crate::dates::days(extra_days))
             .unwrap_or(Date::MAX);
         if start > date || end < date {
             continue;
         }
-        let inside: u32 = others
+        let inside = others
             .iter()
             .filter(|(d, _)| *d >= start && *d <= end)
-            .map(|(_, n)| *n)
-            .fold(0, u32::saturating_add);
+            .try_fold(0_u32, |total, (_, n)| total.checked_add(*n))?;
         let own_in = if date >= start && date <= end { own } else { 0 };
-        best = best.max(inside.saturating_add(own_in));
+        best = best.max(inside.checked_add(own_in)?);
     }
-    best
+    Some(best)
 }
 
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "the product of two u32 values fits a u64"
-)]
-fn needed(threshold: Threshold, size: u32) -> u32 {
+/// What a threshold needs of an establishment of `size`, rounded up; `None` when it does not fit a `u32`.
+fn needed(threshold: Threshold, size: u32) -> Option<u32> {
     match threshold {
-        Threshold::Count(n) => n,
-        Threshold::Percent(p) => (u64::from(size) * u64::from(p))
-            .div_ceil(100)
-            .try_into()
-            .unwrap_or(u32::MAX),
+        Threshold::Count(n) => Some(n),
+        Threshold::Percent(p) => u32::try_from(
+            u64::from(size)
+                .checked_mul(u64::from(p))?
+                .checked_next_multiple_of(100)?
+                .checked_div(100)?,
+        )
+        .ok(),
     }
 }
 
@@ -271,9 +281,10 @@ fn period_for(periods: &[Period], counted: u32) -> Option<i64> {
         .max()
 }
 
-/// Whether a collective duty may apply to `proposal` under `profile`, and what follows.
+/// Whether a collective duty may apply to `proposal` under `profile`, and what follows; `None` when a count of dismissals or a
+/// threshold does not fit a `u32` (unknown, not a capped count).
 #[must_use]
-pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment {
+pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Option<Assessment> {
     let applicable = profile.tests.iter().filter(|t| {
         proposal.establishment_size >= t.size_from
             && t.size_to.is_none_or(|to| proposal.establishment_size <= to)
@@ -281,22 +292,27 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment
     // For each applicable test: what was counted and what it needed. A test met wins; else the closest (the least still short).
     let mut met: Option<(u32, u32, i64)> = None;
     let mut closest: Option<(u32, u32, i64)> = None;
+    let mut closest_short: Option<u32> = None;
     for test in applicable {
         let counted = counted_in_window(
             proposal.earliest_termination,
             proposal.dismissals,
             &proposal.others,
             test.window_days,
-        );
-        let need = needed(test.threshold, proposal.establishment_size).max(1);
+        )?;
+        let need = needed(test.threshold, proposal.establishment_size)?.max(1);
         let entry = (counted, need, test.window_days);
         if counted >= need {
             if met.is_none_or(|(c, _, _)| counted > c) {
                 met = Some(entry);
             }
-        } else if closest.is_none_or(|(c, n, _)| need.saturating_sub(counted) < n.saturating_sub(c))
-        {
-            closest = Some(entry);
+        } else {
+            // Here `counted < need`, so the shortfall is always there.
+            let short = need.checked_sub(counted)?;
+            if closest_short.is_none_or(|s| short < s) {
+                closest = Some(entry);
+                closest_short = Some(short);
+            }
         }
     }
     let chosen = met.or(closest);
@@ -324,7 +340,7 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment
     };
     let nearest = [consult_start, notice_by].into_iter().flatten().min();
     let days_remaining = nearest.map(|d| crate::dates::days_between(today, d));
-    Assessment {
+    Some(Assessment {
         profile: profile.id,
         source: profile.source,
         may_apply,
@@ -340,12 +356,17 @@ pub fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment
             Vec::new()
         },
         deployer_to_confirm: true,
-    }
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `assess`, which holds for every proposal these tests build unless a test says otherwise.
+    fn assess(profile: &Profile, proposal: &Proposal, today: Date) -> Assessment {
+        super::assess(profile, proposal, today).expect("counts that fit")
+    }
 
     fn day(m: u32, d: u32) -> Date {
         crate::dates::ymd(2027, m, d).unwrap()
@@ -380,7 +401,7 @@ mod tests {
             (date - crate::dates::days(10), 8),
             (date + crate::dates::days(10), 16),
         ];
-        assert_eq!(counted_in_window(date, 1, &others, 10), 5);
+        assert_eq!(counted_in_window(date, 1, &others, 10), Some(5));
     }
 
     fn selection_profile(tests: Vec<Test>) -> Profile {
@@ -397,7 +418,7 @@ mod tests {
     #[test]
     fn a_date_before_the_earliest_there_is_unknown_and_a_window_past_the_last_still_counts() {
         let date = day(6, 30);
-        assert_eq!(counted_in_window(date, 1, &[(date, 2)], i64::MAX), 3);
+        assert_eq!(counted_in_window(date, 1, &[(date, 2)], i64::MAX), Some(3));
         assert_eq!(before_termination(Date::MIN, 1), None);
         assert_eq!(before_termination(day(6, 30), 1), Some(day(6, 29)));
         let mut profile = selection_profile(vec![Test {
@@ -670,13 +691,52 @@ mod tests {
         assert!(a.source.contains("1992"));
     }
 
-    /// Nothing goes wrong at the ends of the number line.
+    /// Nothing goes wrong at the ends of the number line: counts that fit are assessed, counts that do not are unknown.
     #[test]
     fn extreme_counts_do_not_panic() {
         let mut p = proposal(u32::MAX, u32::MAX);
-        p.others = vec![(day(6, 30), u32::MAX)];
         let a = assess(&eu_directive_98_59(), &p, day(1, 1));
         assert!(a.may_apply);
+        p.others = vec![(day(6, 30), u32::MAX)];
+        assert_eq!(super::assess(&eu_directive_98_59(), &p, day(1, 1)), None);
         assert!(!assess(&great_britain(), &proposal(0, 0), day(1, 1)).may_apply);
+    }
+
+    #[test]
+    fn a_count_that_does_not_fit_is_no_assessment_not_a_capped_one() {
+        let gb = great_britain();
+        let mut p = proposal(500, u32::MAX);
+        p.others = vec![(day(6, 30), 1)];
+        assert_eq!(super::assess(&gb, &p, day(1, 1)), None);
+        p.others = vec![(day(6, 30), u32::MAX), (day(6, 30), 1)];
+        p.dismissals = 0;
+        assert_eq!(super::assess(&gb, &p, day(1, 1)), None);
+        p.others = vec![];
+        p.dismissals = u32::MAX;
+        assert!(super::assess(&gb, &p, day(1, 1)).is_some());
+    }
+
+    #[test]
+    fn a_percentage_that_does_not_fit_a_count_is_unknown() {
+        assert_eq!(needed(Threshold::Percent(100), 7), Some(7));
+        assert_eq!(needed(Threshold::Percent(10), 105), Some(11));
+        assert_eq!(needed(Threshold::Percent(u32::MAX), u32::MAX), None);
+        assert_eq!(needed(Threshold::Count(3), 9), Some(3));
+    }
+
+    #[test]
+    fn a_window_below_a_day_holds_the_day_itself() {
+        let others = [(day(6, 30), 2)];
+        for window in [i64::MIN, -5, 0, 1] {
+            assert_eq!(counted_in_window(day(6, 30), 3, &others, window), Some(5));
+        }
+        assert_eq!(
+            counted_in_window(day(6, 30), 3, &[(day(6, 29), 2)], 2),
+            Some(5)
+        );
+        assert_eq!(
+            counted_in_window(day(6, 30), 3, &[(day(6, 29), 2)], 1),
+            Some(3)
+        );
     }
 }

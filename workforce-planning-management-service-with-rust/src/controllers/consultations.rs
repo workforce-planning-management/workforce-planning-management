@@ -343,7 +343,9 @@ async fn timeline(
         others,
         agreed_period_days: agreed_period,
     };
-    let assessment = consult::assess(&profile, &proposal, today);
+    let assessment = consult::assess(&profile, &proposal, today).ok_or_else(|| {
+        unprocessable("the dismissals counted do not fit a count, so no assessment can be made")
+    })?;
     let timeliness = rules::timeliness(&assessment, row.started_on.map(SqlDate::get), today);
     format::json(json!({
         "consultation": json_of(&row),

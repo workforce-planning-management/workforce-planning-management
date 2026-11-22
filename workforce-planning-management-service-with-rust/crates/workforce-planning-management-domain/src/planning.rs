@@ -120,8 +120,14 @@ pub fn validate_line_basis(
     if expected_ends_on.is_some_and(|end| end <= target_on) {
         return Err("expected_ends_on must be after target_on".to_string());
     }
+    // The most FTE the line can state is 100 for each person. A product that does not fit an `i32` is beyond every `i32` FTE (and,
+    // for a negative headcount, below every one): the comparison is made without inventing a bound.
+    let within = |fte: i32| match target_headcount.checked_mul(100) {
+        Some(most) => (0..=most).contains(&fte),
+        None => target_headcount > 0 && fte >= 0,
+    };
     if let Some(fte) = target_fte_percent
-        && !(0..=target_headcount.saturating_mul(100)).contains(&fte)
+        && !within(fte)
     {
         return Err(
             "target_fte_percent must be between 0 and 100 for each person of target_headcount"
@@ -190,16 +196,20 @@ pub struct DemandLine {
 /// (a line without an FTE target makes the total unknown, never a guess).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DemandTotal {
-    /// People.
-    pub headcount: i64,
-    /// FTE in percent; `None` when any line gives none.
+    /// People; `None` when the sum does not fit an `i64` (RCA-AGG-1).
+    pub headcount: Option<i64>,
+    /// FTE in percent; `None` when any line gives none, or the sum does not fit an `i64`.
     pub fte_percent: Option<i64>,
 }
 
 fn total(lines: &[&DemandLine]) -> DemandTotal {
     DemandTotal {
-        headcount: lines.iter().map(|l| l.headcount).sum(),
-        fte_percent: lines.iter().map(|l| l.fte_percent).sum::<Option<i64>>(),
+        headcount: lines
+            .iter()
+            .try_fold(0_i64, |sum, l| sum.checked_add(l.headcount)),
+        fte_percent: lines
+            .iter()
+            .try_fold(0_i64, |sum, l| sum.checked_add(l.fte_percent?)),
     }
 }
 
@@ -586,11 +596,15 @@ pub fn suggested_levers(gap: i64, contract: &ContractFte) -> Vec<&'static str> {
     }
 }
 
+/// No shortfall: the floor of [`competency_shortfall`].
+const NO_SHORTFALL: usize = 0;
+
 /// People still needed with a skill: the line's headcount less those
 /// already proficient (never negative).
 #[must_use]
 pub fn competency_shortfall(needed: usize, proficient: usize) -> usize {
-    needed.saturating_sub(proficient)
+    // More proficient people than the line needs leave none to find: the shortfall is never negative (the doc above).
+    needed.checked_sub(proficient).unwrap_or(NO_SHORTFALL)
 }
 
 /// Split `(declared level, people)` counts at a requirement's bar: those at or
@@ -1016,7 +1030,7 @@ mod tests {
         ]);
         assert_eq!(
             (all.headcount, all.fte_percent),
-            (6, None),
+            (Some(6), None),
             "one unknown makes the total unknown"
         );
         let basis = |name: &str| {
@@ -1028,14 +1042,14 @@ mod tests {
         assert_eq!(
             basis("fixed_term").unwrap(),
             DemandTotal {
-                headcount: 1,
+                headcount: Some(1),
                 fte_percent: Some(50)
             }
         );
         assert_eq!(
             basis("permanent").unwrap(),
             DemandTotal {
-                headcount: 5,
+                headcount: Some(5),
                 fte_percent: None
             }
         );
@@ -1046,7 +1060,7 @@ mod tests {
         assert_eq!(
             prog.1,
             DemandTotal {
-                headcount: 3,
+                headcount: Some(3),
                 fte_percent: Some(250)
             }
         );
@@ -1054,6 +1068,34 @@ mod tests {
             by_programme.iter().any(|(k, _)| k.is_none()),
             "lines with no programme stay apart"
         );
+    }
+
+    #[test]
+    fn demand_sums_that_do_not_fit_are_unknown_not_wrapped() {
+        let line = |h: i64, f: Option<i64>| DemandLine {
+            programme: None,
+            basis: "permanent".into(),
+            headcount: h,
+            fte_percent: f,
+        };
+        let all = demand_breakdown(&[line(i64::MAX, Some(i64::MAX)), line(1, Some(1))]).total;
+        assert_eq!((all.headcount, all.fte_percent), (None, None));
+        let none = demand_breakdown(&[]).total;
+        assert_eq!((none.headcount, none.fte_percent), (Some(0), Some(0)));
+    }
+
+    #[test]
+    fn fte_above_what_the_headcount_allows_is_refused_even_past_i32() {
+        let check = |headcount: i32, fte: i32| {
+            validate_line_basis("permanent", day(2026, 1, 1), None, headcount, Some(fte)).is_ok()
+        };
+        assert!(check(2, 200));
+        assert!(!check(2, 201));
+        assert!(!check(2, -1));
+        // 100 × headcount does not fit an i32: the bound is beyond every i32 FTE.
+        assert!(check(i32::MAX, i32::MAX));
+        assert!(!check(i32::MAX, -1));
+        assert!(!check(i32::MIN, 0));
     }
 
     #[test]

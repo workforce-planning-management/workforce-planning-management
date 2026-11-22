@@ -214,12 +214,10 @@ pub fn name_similarity(a: &[String], b: &[String]) -> Option<f64> {
         }
         used_a.insert(i);
         used_b.insert(j);
-        #[allow(clippy::cast_precision_loss)] // name lengths are far below 2^52
-        let weight = letters(x).checked_add(letters(y))? as f64;
+        let weight = crate::exact_float::from_usize(letters(x).checked_add(letters(y))?)?;
         weighted += similarity * weight;
     }
-    #[allow(clippy::cast_precision_loss)] // name lengths are far below 2^52
-    let score = weighted / total as f64;
+    let score = weighted / crate::exact_float::from_usize(total)?;
     Some(score)
 }
 

@@ -488,6 +488,10 @@ async fn worker_plan(
             })
         })
         .collect();
+    let total_hours = hours.iter().try_fold(0_u32, |sum, h| plus_hours(sum, *h))?;
+    let total_weeks = slots
+        .iter()
+        .try_fold(0_u32, |sum, s| plus_hours(sum, s.weeks))?;
     format::json(serde_json::json!({
         "derivation": "For each skill the person is BELOW (declared, under the need), in priority \
                        order: catalogue courses they have not completed, cheapest per level \
@@ -499,8 +503,8 @@ async fn worker_plan(
         "includes_aspirations": own_view,
         "weekly_hours": weekly,
         "start": start,
-        "total_hours": hours.iter().sum::<u32>(),
-        "total_weeks": slots.iter().map(|s| s.weeks).sum::<u32>(),
+        "total_hours": total_hours,
+        "total_weeks": total_weeks,
         "finish_on": slots.iter().filter_map(|s| s.ends_on).max(),
         "plan": plan,
         "assess_first": assess_first,
@@ -577,8 +581,10 @@ async fn training_demand(
     skills_out.sort_by(|a, b| b.1.1.cmp(&a.1.1).then(a.0.cmp(&b.0)));
     let mut depts_out: Vec<(String, (usize, u32))> = by_department.into_iter().collect();
     depts_out.sort_by(|a, b| b.1.1.cmp(&a.1.1).then(a.0.cmp(&b.0)));
-    #[allow(clippy::cast_precision_loss)] // small counts
-    let average = (people_with_gaps > 0).then(|| f64::from(total_hours) / people_with_gaps as f64);
+    // No one with a gap, or a count an `f64` does not hold exactly, is no average (RCA-CONV-4).
+    let average = crate::rules::exact_float::from_usize(people_with_gaps)
+        .filter(|people| *people > 0.0)
+        .map(|people| f64::from(total_hours) / people);
     format::json(serde_json::json!({
         "derivation": "Hours to close each person's BELOW skill gaps (declared, under the need), \
                        from catalogue courses they have not completed and the per-level planning \

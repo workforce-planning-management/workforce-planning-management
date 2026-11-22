@@ -66,10 +66,6 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let held = sqlx::query!(
@@ -130,12 +126,12 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
         let data = json!({ "worker_pid": worker.pid, "expires_on": expires_on });
         let mut tx = crate::db::pool(ctx).begin().await?;
         crate::db::notify(&mut tx, worker.pid, kind, &own, data.clone()).await?;
-        report.told += 1;
+        crate::controllers::tally::bump(&mut report.told);
         if let Some(boss) = worker.manager_pid
             && boss != worker.pid
         {
             crate::db::notify(&mut tx, boss, kind, &theirs, data).await?;
-            report.told += 1;
+            crate::controllers::tally::bump(&mut report.told);
         }
         sqlx::query!(
             "INSERT INTO qualification_reminders (worker_pid, qualification_pid, expires_on, kind, reminded_on)
@@ -150,8 +146,8 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
         .await?;
         tx.commit().await?;
         match reminder {
-            Reminder::Expiring => report.expiring += 1,
-            Reminder::Expired => report.expired += 1,
+            Reminder::Expiring => crate::controllers::tally::bump(&mut report.expiring),
+            Reminder::Expired => crate::controllers::tally::bump(&mut report.expired),
         }
     }
     Ok(report)

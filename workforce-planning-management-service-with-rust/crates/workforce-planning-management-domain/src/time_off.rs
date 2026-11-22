@@ -139,13 +139,7 @@ pub fn history(requests: &[Request], today: Date) -> Option<Vec<(i32, Vec<Absenc
             .or_default()
             .entry(r.kind.clone())
             .or_insert((0, 0));
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "one per request: bounded by the slice length, far below i32::MAX"
-        )]
-        {
-            entry.0 += 1;
-        }
+        entry.0 = entry.0.checked_add(1)?;
         entry.1 = entry.1.checked_add(r.days)?;
     }
     Some(

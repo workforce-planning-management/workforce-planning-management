@@ -173,7 +173,8 @@ pub fn check_token_lifetime(iat: i64, exp: i64, max: Option<i64>) -> Result<(), 
     if iat <= 0 {
         return Err("token has no issue time");
     }
-    if exp.saturating_sub(iat) > max {
+    // `iat` is positive, so a difference that does not fit is below `i64::MIN`: a lifetime far under any maximum, not over it.
+    if exp.checked_sub(iat).is_some_and(|lifetime| lifetime > max) {
         return Err("token lifetime exceeds the maximum");
     }
     Ok(())
@@ -767,6 +768,10 @@ mod tests {
         assert!(
             check_token_lifetime(i64::MIN + 1, i64::MAX, Some(1)).is_err(),
             "no overflow panic"
+        );
+        assert!(
+            check_token_lifetime(5, i64::MIN, Some(1)).is_ok(),
+            "a lifetime below i64::MIN is far under the maximum, not over it"
         );
     }
 

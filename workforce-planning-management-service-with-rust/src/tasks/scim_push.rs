@@ -225,10 +225,6 @@ async fn workers_in(ctx: &AppContext, organization: Option<&str>) -> Result<Vec<
 ///
 /// A database error. A provider failure is recorded and counted, not returned.
 #[allow(clippy::too_many_lines)] // load → classify → push each change → record the outcomes, linearly
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each summary counter rises by one per worker handled in this run, so it is at most the number of workers read"
-)]
 pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) -> Result<Summary> {
     let everyone = workers_in(ctx, cfg.organization.as_deref()).await?;
     let manager_of: HashMap<Uuid, Option<Uuid>> =
@@ -271,7 +267,7 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
             .and_then(|h| h.next_attempt_at)
             .is_some_and(|at| at > now)
         {
-            summary.waiting += 1;
+            crate::controllers::tally::bump(&mut summary.waiting);
             continue;
         }
         let manager_scim = w
@@ -290,11 +286,11 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
         );
         let outcome = match (step, &known) {
             (Step::Skip, _) => {
-                summary.skipped += 1;
+                crate::controllers::tally::bump(&mut summary.skipped);
                 continue;
             }
             (Step::Unchanged, _) => {
-                summary.unchanged += 1;
+                crate::controllers::tally::bump(&mut summary.unchanged);
                 continue;
             }
             (Step::Replace, Some(id)) => replace(&http, cfg, id, &body).await,
@@ -306,14 +302,14 @@ pub async fn run(ctx: &AppContext, cfg: &Config, today: Date, now: Timestamp) ->
         let saved = match outcome {
             Outcome::Sent(id) => {
                 if step == Step::Create {
-                    summary.created += 1;
+                    crate::controllers::tally::bump(&mut summary.created);
                 } else {
-                    summary.replaced += 1;
+                    crate::controllers::tally::bump(&mut summary.replaced);
                 }
                 (Some(id), Some(wanted), Some(stamp), 0, None, None)
             }
             Outcome::Failed(why) => {
-                summary.failed += 1;
+                crate::controllers::tally::bump(&mut summary.failed);
                 let (attempts, retry_at) =
                     after_failure(held.as_ref().map_or(0, |h| h.attempts), now)?;
                 (

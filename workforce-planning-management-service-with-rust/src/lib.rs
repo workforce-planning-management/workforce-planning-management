@@ -40,7 +40,14 @@
     clippy::string_slice,
     clippy::arithmetic_side_effects
 )]
-#![cfg_attr(test, allow(clippy::string_slice, clippy::arithmetic_side_effects))]
+#![cfg_attr(
+    test,
+    expect(
+        clippy::string_slice,
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-5: test code may use plain operators and slice strings"
+    )
+)]
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 // The hand-written OpenAPI document is one large nested `json!` literal.

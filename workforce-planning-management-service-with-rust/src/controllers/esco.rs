@@ -31,8 +31,20 @@ struct SearchQuery {
     limit: Option<u64>,
 }
 
-fn search_limit(limit: Option<u64>) -> u64 {
-    limit.unwrap_or(25).clamp(1, 100)
+/// The most rows a search may return.
+const MAX_SEARCH_LIMIT: u64 = 100;
+
+/// `limit` (default 25) when it is 1 to [`MAX_SEARCH_LIMIT`], else a 422: an out-of-range limit is refused, never clamped
+/// (RCA-INT-6).
+fn search_limit(limit: Option<u64>) -> Result<u64> {
+    let limit = limit.unwrap_or(25);
+    if (1..=MAX_SEARCH_LIMIT).contains(&limit) {
+        Ok(limit)
+    } else {
+        Err(unprocessable(&format!(
+            "limit must be between 1 and {MAX_SEARCH_LIMIT}"
+        )))
+    }
 }
 
 /// Escape `%`, `_` and `\` so a search term is matched literally.
@@ -58,11 +70,8 @@ async fn search_occupations(
     if term.trim().chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }
-    let cache_key = format!(
-        "{}|{}",
-        term.trim().to_lowercase(),
-        search_limit(query.limit)
-    );
+    let limit = search_limit(query.limit)?;
+    let cache_key = format!("{}|{}", term.trim().to_lowercase(), limit);
     if let Some(hit) = crate::shared_cache::get(Namespace::EscoOccupations, &cache_key).await
         && let Ok(value) = serde_json::from_str::<serde_json::Value>(&hit)
     {
@@ -73,7 +82,7 @@ async fn search_occupations(
            WHERE lower(label) LIKE $1 ESCAPE '\'
            ORDER BY label LIMIT $2",
         like_pattern(&term),
-        i64::try_from(search_limit(query.limit)).unwrap_or(100),
+        i64::try_from(limit).unwrap_or(100),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -120,12 +129,13 @@ async fn search_skills(
     if term.trim().chars().count() < 2 {
         return Err(unprocessable("q must be at least 2 characters"));
     }
+    let limit = search_limit(query.limit)?;
     let rows = sqlx::query!(
         r"SELECT uri, label, skill_type, reuse_level FROM esco_skills
            WHERE lower(label) LIKE $1 ESCAPE '\'
            ORDER BY label LIMIT $2",
         like_pattern(&term),
-        i64::try_from(search_limit(query.limit)).unwrap_or(100),
+        i64::try_from(limit).unwrap_or(100),
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -532,4 +542,18 @@ pub fn routes() -> Routes {
         .add("/esco/occupation", get(get_occupation))
         .add("/esco/skills", get(search_skills))
         .add("/role-profiles/from-esco", post(from_esco))
+}
+
+#[cfg(test)]
+mod search_limit_tests {
+    use super::search_limit;
+
+    #[test]
+    fn the_limit_is_one_to_a_hundred_and_refused_outside() {
+        assert_eq!(search_limit(None).ok(), Some(25));
+        assert_eq!(search_limit(Some(1)).ok(), Some(1));
+        assert_eq!(search_limit(Some(100)).ok(), Some(100));
+        assert!(search_limit(Some(0)).is_err());
+        assert!(search_limit(Some(101)).is_err());
+    }
 }

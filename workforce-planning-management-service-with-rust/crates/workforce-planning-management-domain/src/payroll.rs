@@ -183,7 +183,13 @@ pub fn overtime_pay_minor(
 ///
 /// On arithmetic overflow.
 pub fn stub_tax_minor(stub: &TaxStub, gross_minor: i64) -> Result<i64, String> {
-    let taxable = gross_minor.saturating_sub(stub.allowance_minor).max(0);
+    // The stub taxes only what is above its allowance, floor zero (above). A difference past `i64` below the floor is that floor;
+    // one above is a figure that cannot be held, so it is an error and not a smaller tax.
+    let taxable = match gross_minor.checked_sub(stub.allowance_minor) {
+        Some(above) => above.max(0),
+        None if gross_minor < stub.allowance_minor => 0,
+        None => return Err("tax arithmetic overflows".to_string()),
+    };
     taxable
         .checked_mul(stub.rate_percent)
         .map(|v| v / 100)
@@ -376,6 +382,15 @@ mod tests {
             20_000
         );
         assert_eq!(stub_tax_minor(&stub, i64::MIN).unwrap(), 0);
+        let huge_allowance = TaxStub {
+            allowance_minor: i64::MIN,
+            ..stub.clone()
+        };
+        assert_eq!(
+            stub_tax_minor(&huge_allowance, i64::MAX),
+            Err("tax arithmetic overflows".to_string()),
+            "a difference past i64 is no tax"
+        );
     }
 
     /// The example is the GBP one, and checks; a stub in another

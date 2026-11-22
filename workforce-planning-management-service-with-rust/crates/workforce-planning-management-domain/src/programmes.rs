@@ -81,8 +81,12 @@ fn percent(part: i64, whole: i64) -> Option<f64> {
     if whole <= 0 {
         return None;
     }
-    #[allow(clippy::cast_precision_loss)]
-    Some(((part as f64) * 1000.0 / (whole as f64)).round() / 10.0)
+    // Counts and amounts above 2^53 are not held exactly by an `f64`, so their share is unknown (RCA-CONV-4).
+    Some(
+        (crate::exact_float::from_i64(part)? * 1000.0 / crate::exact_float::from_i64(whole)?)
+            .round()
+            / 10.0,
+    )
 }
 
 fn shown(n: usize, floor: usize) -> Option<usize> {
@@ -126,10 +130,10 @@ pub fn rollup(rows: &[OnProgramme], today: Date, months: u32, floor: usize) -> O
                 let fte = checked_sum(funded.iter().map(|p| i64::from(p.fte_percent)))?;
                 let (contractor, fixed_term) = (of("contractor")?, of("fixed_term")?);
                 let funded_shown = shown(funded.len(), floor).is_some();
-                #[allow(clippy::cast_precision_loss)]
+                let fte_units = crate::exact_float::from_i64(fte)? / 100.0;
                 Some(ProgrammeMonth {
                     month: format!("{:04}-{:02}", from.year(), from.month()),
-                    funded_fte: funded_shown.then_some(fte as f64 / 100.0),
+                    funded_fte: funded_shown.then_some(fte_units),
                     contractor_percent: if funded_shown {
                         percent(contractor, fte)
                     } else {

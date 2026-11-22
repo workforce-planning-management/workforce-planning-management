@@ -65,10 +65,6 @@ pub struct Report {
 /// # Errors
 ///
 /// A database error.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each counter rises by one per row handled in this run, so it is at most the number of rows read"
-)]
 pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Result<Report> {
     let mut report = Report::default();
     let held = sqlx::query!(
@@ -126,7 +122,7 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
         .flatten()
         {
             crate::db::notify(&mut tx, pid, kind, &body, data.clone()).await?;
-            report.told += 1;
+            crate::controllers::tally::bump(&mut report.told);
         }
         sqlx::query!(
             "INSERT INTO coverage_reminders (coverage_pid, valid_to, kind, reminded_on) VALUES ($1, $2, $3, $4)",
@@ -139,8 +135,8 @@ pub async fn send_reminders(ctx: &AppContext, as_of: Date, window: i64) -> Resul
         .await?;
         tx.commit().await?;
         match reminder {
-            Reminder::Expiring => report.expiring += 1,
-            Reminder::Expired => report.expired += 1,
+            Reminder::Expiring => crate::controllers::tally::bump(&mut report.expiring),
+            Reminder::Expired => crate::controllers::tally::bump(&mut report.expired),
         }
     }
     Ok(report)

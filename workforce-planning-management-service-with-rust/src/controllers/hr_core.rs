@@ -813,10 +813,13 @@ async fn org_chart(
     caller: MaybeAuthUser,
     Query(params): Query<OrgChartParams>,
 ) -> Result<Response> {
-    let limit = params
-        .limit
-        .unwrap_or(ORG_CHART_DEFAULT_LIMIT)
-        .clamp(1, ORG_CHART_MAX_LIMIT);
+    // The doc above declares the default and the largest answer; a limit of none is refused.
+    let limit = crate::rules::page_limit::resolve(
+        params.limit,
+        ORG_CHART_DEFAULT_LIMIT,
+        ORG_CHART_MAX_LIMIT,
+    )
+    .ok_or_else(|| unprocessable("limit must be at least 1"))?;
     // `organization` outside the caller's scope ANDs down to zero rows here — no separate 403 needed for this read.
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     // Breadth first: the roots, then the reports of each level, until `limit` people are held.

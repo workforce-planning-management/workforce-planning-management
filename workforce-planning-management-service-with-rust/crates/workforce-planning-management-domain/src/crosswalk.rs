@@ -133,9 +133,9 @@ pub fn apply(
                 confidence: m.confidence.to_string(),
             });
         } else {
-            #[allow(
+            #[expect(
                 clippy::arithmetic_side_effects,
-                reason = "a count of gaps: bounded by the slice length"
+                reason = "RCA-EXC-2: one step per gap of the slice, so the count is at most the slice length, which is under usize::MAX"
             )]
             {
                 out.unmapped += 1;

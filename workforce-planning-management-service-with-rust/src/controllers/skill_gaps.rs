@@ -314,7 +314,9 @@ async fn workforce_gaps(
     caller: MaybeAuthUser,
     axa::extract::Query(q): axa::extract::Query<WorkforceQuery>,
 ) -> Result<Response> {
-    let limit = q.limit.unwrap_or(25).clamp(1, 100);
+    // The field's doc declares "default 25, at most 100"; none is refused.
+    let limit = crate::rules::page_limit::resolve(q.limit, 25, 100)
+        .ok_or_else(|| super::unprocessable("limit must be at least 1"))?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let today = crate::dates::today();
     let department = q.department.as_deref();

@@ -87,8 +87,12 @@ pub fn days_between(earlier: Date, later: Date) -> i64 {
 pub fn days(n: i64) -> SignedDuration {
     // `SignedDuration` holds seconds in an `i64`, so more days than that is no duration at all. No date is that far from any
     // other (a `Date` spans some 3.7 million days), so the bound changes no sum with a date, which fails either way.
-    const MOST_DAYS: i64 = i64::MAX / 86_400;
-    SignedDuration::from_secs(n.clamp(-MOST_DAYS, MOST_DAYS).saturating_mul(86_400))
+    const MOST_SECS: i64 = i64::MAX / 86_400 * 86_400;
+    const LEAST_SECS: i64 = -MOST_SECS;
+    let secs = n
+        .checked_mul(86_400)
+        .unwrap_or(if n < 0 { LEAST_SECS } else { MOST_SECS });
+    SignedDuration::from_secs(secs)
 }
 
 /// RFC 3339 to the whole second, in UTC with a `Z`, the fraction cut off and not rounded (as `chrono`'s
@@ -125,6 +129,12 @@ mod tests {
         assert!(Date::MAX.checked_sub(days(i64::MAX)).is_err());
         assert!(Date::MAX.checked_add(days(i64::MIN)).is_err());
         assert_eq!(days(2).as_hours(), 48);
+        let most = i64::MAX / 86_400;
+        assert_eq!(days(most).as_secs(), most * 86_400);
+        assert_eq!(days(-most).as_secs(), -most * 86_400);
+        assert_eq!(days(most + 1).as_secs(), most * 86_400);
+        assert_eq!(days(i64::MAX).as_secs(), most * 86_400);
+        assert_eq!(days(i64::MIN).as_secs(), -most * 86_400);
     }
 
     #[test]

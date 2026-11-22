@@ -34,10 +34,6 @@ pub struct Summary {
 /// # Errors
 ///
 /// A database error. A subscriber's failure is recorded and counted, not returned.
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "each summary counter rises by one per delivery handled in this run, so it is at most the batch size"
-)]
 pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
     let due = sqlx::query_as!(
         webhook_deliveries::Model,
@@ -86,11 +82,11 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
         };
         let (state, delivered_at, next_attempt_at) = match next {
             Next::Delivered => {
-                summary.delivered += 1;
+                crate::controllers::tally::bump(&mut summary.delivered);
                 ("delivered".to_string(), Some(now), None)
             }
             Next::Retry(wait) => {
-                summary.retrying += 1;
+                crate::controllers::tally::bump(&mut summary.retrying);
                 (
                     delivery.status.clone(),
                     delivery.delivered_at.map(SqlTimestamp::get),
@@ -98,7 +94,7 @@ pub async fn run(ctx: &AppContext, now: Timestamp) -> Result<Summary> {
                 )
             }
             Next::GiveUp => {
-                summary.failed += 1;
+                crate::controllers::tally::bump(&mut summary.failed);
                 (
                     "failed".to_string(),
                     delivery.delivered_at.map(SqlTimestamp::get),

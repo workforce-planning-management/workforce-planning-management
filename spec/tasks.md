@@ -7246,3 +7246,23 @@ the entry records only the evidence it needs.
       against the RCA spec:** `saturating_*`, `wrapping_*` and `clamp` (RCA-INT-4, RCA-INT-6), `Iterator::sum` and `product`
       (RCA-AGG-1), numeric `as` (RCA-CONV-2), `#[allow]` instead of `#[expect(.. "RCA-EXC-n")]` (RCA-EXC-6), the other lints in
       RCA-ENF-1, and `overflow-checks` in the release profile (RCA-ENF-4).
+- [x] WPM-T635 (2026-11-22) **Bring production code to spec/rust-checked-arithmetic (RCA), second batch.** *(follow-up to WPM-T634; RCA-INT-4, RCA-INT-6,
+      RCA-AGG-1, RCA-CONV-2, RCA-EXC-6, RCA-NONE-2)* In the service and domain crates: every `saturating_*`, `wrapping_*` and
+      `overflowing_*` call, every `.sum()` and `.product()`, every `.clamp()` and every numeric `as` on a production figure
+      was replaced. Sums use `try_fold` with `checked_add`. Integer to float goes through `exact_float` and `metrics::exact_f64`
+      (`None` above 2^53). A bound the code intends is now `checked_*` plus `unwrap_or(NAMED_CONSTANT)` with a comment; where
+      the old value was an invented number it is now `None`, an error or "unknown". The arithmetic exceptions are
+      `#[expect(.., reason = "RCA-EXC-2: ..")]` on one statement. **Behaviour changes:** a list `limit` of 0, or above its
+      documented maximum, on the reporting, skill-gap, HR-core, webhook and ESCO lists is refused with a 422 instead of being
+      capped; so are the learning windows (`days` over 365, `expiring_within_days` over 3650, `unmatched_limit` over 1000); an
+      FTE outside 0..=100 is unknown (a 500 in payroll) instead of clamped; a pulse cell with an out-of-scale score is
+      suppressed; display figures above 2^53 are unknown instead of rounded. **Declared fallbacks that no figure declaration
+      names yet (RCA-DECL-4):** `u64::MAX` for a count past `u64` in `allocations`, `usize::MAX` for rows to read and for a
+      cache entry too big to hold, `i128::MAX` for the capped echo in `training_economics::assess`. They need declarations.
+      Verified: `cargo clippy --workspace --all-targets -- -D warnings` is clean, `cargo fmt --check` is clean, the unit tests
+      pass (216 service, 1,289 domain) and the database-backed suite passes (the one failure, `learning_round_trip`, relied on
+      the old clamp of `days=3650`; it now asks for 365 and checks 3650 is a 422). **Not verified:** the Keycloak build; line
+      coverage; the overflow branches no input can reach (they need more than `usize::MAX` items). **Still open against RCA:**
+      the other RCA-ENF-1 lints (`as_conversions`, `float_arithmetic`, `integer_division` and the rest), the
+      `disallowed-methods` list (RCA-ENF-2), `overflow-checks` in the release profile (RCA-ENF-4), the figure declarations
+      (RCA-DECL-1), and `unwrap_or_default` on the remaining 80 or so non-arithmetic sites.

@@ -219,14 +219,13 @@ async fn feed(
             (b.pinned, b.publish_on.get(), b.id),
         )
     });
+    let limit = usize::try_from(window.limit()).unwrap_or(usize::MAX);
+    // One more than the limit, to know whether another page follows; past usize the limit already takes every row.
+    let take = limit.checked_add(1).unwrap_or(limit);
     let (page_rows, more) = window.split(
         kept.iter()
             .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
-            .take(
-                usize::try_from(window.limit())
-                    .unwrap_or(usize::MAX)
-                    .saturating_add(1),
-            )
+            .take(take)
             .collect::<Vec<&announcements::Model>>(),
     );
     // Editors see how many have read each post — a count, never who.

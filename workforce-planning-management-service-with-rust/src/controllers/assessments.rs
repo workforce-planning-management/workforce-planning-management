@@ -527,9 +527,8 @@ async fn record_result(
     ensure_valid(&problems.into_vec())?;
 
     let band = payload.band.clone().or_else(|| {
-        payload
-            .percentile
-            .map(|p| rules::band_for_percentile(p).to_string())
+        let derived = payload.percentile.and_then(rules::band_for_percentile);
+        derived.map(str::to_string)
     });
 
     let existing = sqlx::query!(
@@ -986,15 +985,18 @@ async fn analytics(State(ctx): State<AppContext>) -> Result<Response> {
         .iter()
         .map(|(category, by_status)| {
             let completed = by_status.get("completed").copied().unwrap_or(0);
-            let total: usize = by_status.values().sum();
-            serde_json::json!({
+            let total = by_status
+                .values()
+                .try_fold(0_usize, |total, n| total.checked_add(*n))
+                .ok_or_else(|| super::internal("a sitting total overflowed"))?;
+            Ok(serde_json::json!({
                 "category": category,
                 "by_status": by_status,
                 "completed": completed,
                 "total": total,
-            })
+            }))
         })
-        .collect();
+        .collect::<Result<_>>()?;
     format::json(serde_json::json!({
         "as_of": Timestamp::now(),
         "note": "counts over live sittings; the band distribution is aggregate only — \
@@ -1133,7 +1135,9 @@ mod tests {
             raw_score: Some(41),
             max_score: Some(50),
             percentile,
-            band: percentile.map(|p| rules::band_for_percentile(p).to_string()),
+            band: percentile
+                .and_then(rules::band_for_percentile)
+                .map(str::to_string),
             narrative: Some("strong under time pressure".to_string()),
         }
     }

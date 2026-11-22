@@ -371,10 +371,6 @@ struct FromSfiaPayload {
 /// human to edit; catalogue skills are matched by their SFIA code, then by exact name, else created and linked.
 #[debug_handler]
 #[allow(clippy::too_many_lines)] // validate → profile → each skill, linearly
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "the three counters each rise by one per skill the planner picked, a request-bounded list far below usize::MAX"
-)]
 async fn from_sfia(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,

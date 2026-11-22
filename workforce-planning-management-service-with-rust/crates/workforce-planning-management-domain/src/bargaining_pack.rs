@@ -88,20 +88,15 @@ pub fn suppress(groups: Vec<(String, usize, i64)>, floor: usize) -> Vec<Group> {
         .collect()
 }
 
-fn group_by(rows: &[&Row], key: impl Fn(&Row) -> String) -> Vec<(String, usize, i64)> {
+/// Headcount and FTE by `key`; `None` when a count or an FTE total does not fit its type (unknown, not a capped figure).
+fn group_by(rows: &[&Row], key: impl Fn(&Row) -> String) -> Option<Vec<(String, usize, i64)>> {
     let mut map: BTreeMap<String, (usize, i64)> = BTreeMap::new();
     for row in rows {
         let entry = map.entry(key(row)).or_default();
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "a count of rows and a sum of i32 percentages in an i64: both far below their limits for any slice that fits in memory"
-        )]
-        {
-            entry.0 += 1;
-            entry.1 += i64::from(row.fte_percent);
-        }
+        entry.0 = entry.0.checked_add(1)?;
+        entry.1 = entry.1.checked_add(i64::from(row.fte_percent))?;
     }
-    map.into_iter().map(|(k, (n, fte))| (k, n, fte)).collect()
+    Some(map.into_iter().map(|(k, (n, fte))| (k, n, fte)).collect())
 }
 
 /// The pack.
@@ -134,8 +129,9 @@ fn one_cell(n: usize, floor: usize) -> Cell {
 }
 
 /// Build the pack from `rows` (every non-deleted worker the unit's rules cover, in work or not) as of `as_of`, with `floor` the fewest that may be counted.
+/// `None` when a count or an FTE total does not fit its type.
 #[must_use]
-pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
+pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Option<Pack> {
     let working: Vec<&Row> = rows.iter().filter(|r| r.in_work(as_of)).collect();
     // In the 365 days to `as_of`: `as_of` less the day itself is under 365 (no date arithmetic to overflow).
     let in_year = |d: Date| d <= as_of && crate::dates::days_between(d, as_of) < 365;
@@ -146,7 +142,7 @@ pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
         .count();
     if working.len() < floor.max(1) {
         // Too few to say anything about: the unit is a handful of people, and every figure would point at them.
-        return Pack {
+        return Some(Pack {
             as_of,
             headcount: None,
             by_department: vec![],
@@ -155,17 +151,17 @@ pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
             starters_last_year: Cell::Withheld,
             leavers_last_year: Cell::Withheld,
             contingent: vec![],
-        };
+        });
     }
-    Pack {
+    Some(Pack {
         as_of,
         headcount: Some(working.len()),
-        by_department: suppress(group_by(&working, |r| r.department.clone()), floor),
-        by_employment_type: suppress(group_by(&working, |r| r.employment_type.clone()), floor),
+        by_department: suppress(group_by(&working, |r| r.department.clone())?, floor),
+        by_employment_type: suppress(group_by(&working, |r| r.employment_type.clone())?, floor),
         by_pay_band: suppress(
             group_by(&working, |r| {
                 r.band.clone().unwrap_or_else(|| "not_recorded".to_string())
-            }),
+            })?,
             floor,
         ),
         starters_last_year: one_cell(starters, floor),
@@ -178,15 +174,20 @@ pub fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
                     "other_basis"
                 }
                 .to_string()
-            }),
+            })?,
             floor,
         ),
-    }
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `pack`, which holds for every rows these tests build.
+    fn pack(rows: &[Row], as_of: Date, floor: usize) -> Pack {
+        super::pack(rows, as_of, floor).expect("totals that fit")
+    }
 
     fn d(s: &str) -> Date {
         s.parse().unwrap()

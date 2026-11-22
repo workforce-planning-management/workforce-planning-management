@@ -94,8 +94,48 @@ pub fn turnover_rate(leavers: usize, opening: usize, closing: usize) -> Option<f
     if mean_twice == 0 {
         return None;
     }
-    #[allow(clippy::cast_precision_loss)] // display ratio over small counts
-    Some(leavers as f64 * 2.0 / mean_twice as f64)
+    Some(count_f64(leavers)? * 2.0 / count_f64(mean_twice)?)
+}
+
+/// The largest magnitude `f64` holds exactly for every integer up to it, 2^53 (RCA-CONV-4).
+const MAX_EXACT_F64: u64 = 1 << 53;
+
+/// An integer as an `f64` exactly, or `None` when its magnitude is past 2^53 and a float would round it (RCA-CONV-4).
+/// A display figure that cannot be shown exactly is unknown, not rounded.
+#[must_use]
+pub(crate) fn exact_f64(n: i64) -> Option<f64> {
+    let magnitude = n.unsigned_abs();
+    if magnitude > MAX_EXACT_F64 {
+        return None;
+    }
+    // Two 32-bit halves: each converts with `f64::from`, and `high * 2^32 + low` is exact below 2^53.
+    let high = f64::from(u32::try_from(magnitude >> 32).ok()?);
+    let low = f64::from(u32::try_from(magnitude & u64::from(u32::MAX)).ok()?);
+    let value = high * 4_294_967_296.0 + low;
+    Some(if n < 0 { -value } else { value })
+}
+
+/// `x` rounded to the nearest whole number as an `i64`, or `None` when it is not finite or outside the `i64` range (RCA-CONV-3).
+#[must_use]
+pub(crate) fn rounded_i64(x: f64) -> Option<i64> {
+    // 2^63 is exactly representable as an `f64`; `i64::MAX` is not.
+    const TWO_POW_63: f64 = 9_223_372_036_854_775_808.0;
+    let whole = x.round();
+    if !(whole.is_finite() && (-TWO_POW_63..TWO_POW_63).contains(&whole)) {
+        return None;
+    }
+    #[expect(
+        clippy::cast_possible_truncation,
+        reason = "RCA-CONV-3: whole, finite and within the i64 range, checked above"
+    )]
+    let n = whole as i64;
+    Some(n)
+}
+
+/// A count as an `f64` exactly, or `None` past 2^53 (RCA-CONV-4).
+#[must_use]
+pub(crate) fn count_f64(n: usize) -> Option<f64> {
+    exact_f64(i64::try_from(n).ok()?)
 }
 
 /// What a snapshot needs to know about one worker.
@@ -145,13 +185,14 @@ pub struct SnapshotRow {
 /// Build the snapshot rows for `as_of`: one per organization × department
 /// that has either employed workers or leavers in the window, sorted by
 /// organization then department. `since` is the previous snapshot date
-/// (exclusive); with `None`, starters and leavers are unknown.
+/// (exclusive); with `None`, starters and leavers are unknown. `None` when
+/// a count or total does not fit its type (unknown, not a clamped figure).
 #[must_use]
 pub fn snapshot_rows(
     as_of: Date,
     since: Option<Date>,
     workers: &[WorkerFacts],
-) -> Vec<SnapshotRow> {
+) -> Option<Vec<SnapshotRow>> {
     use std::collections::BTreeMap;
     let in_window = |d: Date| since.is_some_and(|s| d > s && d <= as_of);
     let mut rows: BTreeMap<(String, String), SnapshotRow> = BTreeMap::new();
@@ -169,44 +210,42 @@ pub fn snapshot_rows(
             starters: since.map(|_| 0),
             leavers: since.map(|_| 0),
         });
-        // Counts of workers and sums of i32 percentages in i64s: bounded by the slice length, far from overflowing.
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "bounded by the slice length"
-        )]
         if is_employed_on(as_of, w.hired_on, w.terminated_on) {
-            row.headcount += 1;
-            row.fte_percent_total += i64::from(w.fte_percent);
+            let fte = i64::from(w.fte_percent);
+            row.headcount = row.headcount.checked_add(1)?;
+            row.fte_percent_total = row.fte_percent_total.checked_add(fte)?;
             match w.employment_type.as_str() {
                 "contractor" => {
-                    row.contractor_headcount += 1;
-                    row.contractor_fte_percent_total += i64::from(w.fte_percent);
+                    row.contractor_headcount = row.contractor_headcount.checked_add(1)?;
+                    row.contractor_fte_percent_total =
+                        row.contractor_fte_percent_total.checked_add(fte)?;
                 }
                 "fixed_term" => {
-                    row.fixed_term_headcount += 1;
-                    row.fixed_term_fte_percent_total += i64::from(w.fte_percent);
+                    row.fixed_term_headcount = row.fixed_term_headcount.checked_add(1)?;
+                    row.fixed_term_fte_percent_total =
+                        row.fixed_term_fte_percent_total.checked_add(fte)?;
                 }
                 _ => {}
             }
         }
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "bounded by the slice length"
-        )]
         if in_window(w.hired_on) {
-            row.starters = row.starters.map(|n| n + 1);
+            row.starters = match row.starters {
+                Some(n) => Some(n.checked_add(1)?),
+                None => None,
+            };
         }
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "bounded by the slice length"
-        )]
         if w.terminated_on.is_some_and(in_window) {
-            row.leavers = row.leavers.map(|n| n + 1);
+            row.leavers = match row.leavers {
+                Some(n) => Some(n.checked_add(1)?),
+                None => None,
+            };
         }
     }
-    rows.into_values()
-        .filter(|r| r.headcount > 0 || r.leavers.is_some_and(|n| n > 0))
-        .collect()
+    Some(
+        rows.into_values()
+            .filter(|r| r.headcount > 0 || r.leavers.is_some_and(|n| n > 0))
+            .collect(),
+    )
 }
 
 /// Days a requisition took to fill: `filled_on - opened_on`. `None` when
@@ -238,21 +277,18 @@ pub fn fill_time_summary(days: &[i64]) -> Option<FillTime> {
     let mut sorted = days.to_vec();
     sorted.sort_unstable();
     let n = sorted.len();
-    #[allow(clippy::cast_precision_loss)] // display figures over small counts
-    let (mean, median) = (
-        sorted.iter().sum::<i64>() as f64 / n as f64,
-        if n % 2 == 1 {
-            sorted.get(n / 2).map_or(0.0, |m| *m as f64)
-        } else {
-            // The middle two: the one `n / 2` from the end, and the one `n / 2` from the start.
-            sorted
-                .iter()
-                .rev()
-                .nth(n / 2)
-                .zip(sorted.get(n / 2))
-                .map_or(0.0, |(lo, hi)| f64::midpoint(*lo as f64, *hi as f64))
-        },
-    );
+    // A total past i64, or a figure past 2^53, is unknown, not a rounded mean.
+    let total = sorted
+        .iter()
+        .try_fold(0_i64, |acc, d| acc.checked_add(*d))?;
+    let mean = exact_f64(total)? / count_f64(n)?;
+    let median = if n % 2 == 1 {
+        exact_f64(*sorted.get(n / 2)?)?
+    } else {
+        // The middle two: the one `n / 2` from the end, and the one `n / 2` from the start.
+        let lo = sorted.iter().rev().nth(n / 2)?;
+        f64::midpoint(exact_f64(*lo)?, exact_f64(*sorted.get(n / 2)?)?)
+    };
     Some(FillTime {
         count: n,
         mean,
@@ -278,9 +314,10 @@ pub fn span_of_control(direct_reports: &[usize]) -> Option<Span> {
     if managers == 0 {
         return None;
     }
-    let total: usize = direct_reports.iter().sum();
-    #[allow(clippy::cast_precision_loss)] // display mean over small counts
-    let mean = total as f64 / managers as f64;
+    let total = direct_reports
+        .iter()
+        .try_fold(0_usize, |acc, n| acc.checked_add(*n))?;
+    let mean = count_f64(total)? / count_f64(managers)?;
     Some(Span {
         managers,
         mean,
@@ -291,6 +328,15 @@ pub fn span_of_control(direct_reports: &[usize]) -> Option<Span> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `snapshot_rows`, which holds for every workers these tests build.
+    fn snapshot_rows_ok(
+        as_of: Date,
+        since: Option<Date>,
+        workers: &[WorkerFacts],
+    ) -> Vec<SnapshotRow> {
+        snapshot_rows(as_of, since, workers).expect("totals that fit")
+    }
 
     fn day(y: i32, m: u32, d: u32) -> Date {
         crate::dates::ymd(y, m, d).expect("valid date")
@@ -422,7 +468,7 @@ mod tests {
             facts("o2", "eng", 100, day(2021, 1, 1), None),
             facts("o1", "gone", 100, day(2018, 1, 1), Some(day(2026, 6, 15))),
         ];
-        let rows = snapshot_rows(day(2026, 7, 1), Some(day(2026, 6, 1)), &ws);
+        let rows = snapshot_rows_ok(day(2026, 7, 1), Some(day(2026, 6, 1)), &ws);
         let eng = &rows[0];
         assert_eq!(
             (eng.organization_ref.as_str(), eng.department.as_str()),
@@ -453,7 +499,7 @@ mod tests {
             facts("o1", "eng", 100, day(2020, 1, 1), None),
             facts("o1", "gone", 100, day(2018, 1, 1), Some(day(2019, 1, 1))),
         ];
-        let rows = snapshot_rows(day(2026, 7, 1), None, &ws);
+        let rows = snapshot_rows_ok(day(2026, 7, 1), None, &ws);
         assert_eq!(
             rows.len(),
             1,
@@ -461,7 +507,7 @@ mod tests {
         );
         assert_eq!(rows[0].starters, None);
         assert_eq!(rows[0].leavers, None);
-        assert_eq!(snapshot_rows(day(2026, 7, 1), None, &[]), vec![]);
+        assert_eq!(snapshot_rows_ok(day(2026, 7, 1), None, &[]), vec![]);
     }
 
     /// The snapshot splits headcount and FTE by basis; a person not employed on the date is in neither.
@@ -473,7 +519,7 @@ mod tests {
         fixed.employment_type = "fixed_term".into();
         let mut gone = facts("o1", "eng", 100, day(2020, 1, 1), Some(day(2026, 1, 1)));
         gone.employment_type = "contractor".into();
-        let rows = snapshot_rows(
+        let rows = snapshot_rows_ok(
             day(2026, 7, 1),
             None,
             &[

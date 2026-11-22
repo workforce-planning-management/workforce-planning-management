@@ -158,11 +158,12 @@ pub fn cost_lines(
                 .ok_or("employer cost overflows")?;
             gross_minor.min(room.max(0))
         };
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "an i64 times an i32 plus 5 000 always fits an i128"
-        )]
-        let amount = (i128::from(base) * i128::from(line.rate_bp) + 5_000) / 10_000;
+        // Half up at 10 000 basis points; the product of an i64 and an i32 plus 5 000 fits an i128.
+        let amount = i128::from(base)
+            .checked_mul(i128::from(line.rate_bp))
+            .and_then(|product| product.checked_add(5_000))
+            .and_then(|rounded| rounded.checked_div(10_000))
+            .ok_or("employer cost overflows")?;
         out.costs.push(Cost {
             name: line.name.clone(),
             class: line.class.clone(),

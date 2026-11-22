@@ -66,8 +66,8 @@ pub(super) async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Respo
     let matrix: Vec<serde_json::Value> = cells
         .iter()
         .map(|((department, skill_pid), (count, sum, gap))| {
-            #[allow(clippy::cast_precision_loss)] // display average
-            let average = *sum as f64 / *count as f64;
+            // An average of no workers, or of a figure past 2^53, is unknown (null), never a rounded number.
+            let average = crate::rules::display::average(*sum, *count);
             serde_json::json!({
                 "department": department,
                 "skill": skill_name.get(skill_pid),
@@ -85,10 +85,22 @@ pub(super) async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Respo
     }))
 }
 
+/// `value` when it lies in `lo..=hi`, else a 422 naming the parameter: an out-of-range window is refused, never clamped
+/// (RCA-INT-6).
+fn within(value: i64, lo: i64, hi: i64, name: &str) -> Result<i64> {
+    if (lo..=hi).contains(&value) {
+        Ok(value)
+    } else {
+        Err(crate::controllers::unprocessable(&format!(
+            "{name} must be between {lo} and {hi}"
+        )))
+    }
+}
+
 /// Query for the training analytics window.
 #[derive(Debug, Deserialize)]
 pub(super) struct AnalyticsQuery {
-    /// Cert-expiry horizon in days (default 90, cap 3650).
+    /// Cert-expiry horizon in days (default 90, 0 to 3650).
     expiring_within_days: Option<i64>,
 }
 
@@ -101,7 +113,12 @@ pub(super) async fn training_analytics(
     axa::extract::Query(query): axa::extract::Query<AnalyticsQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
-    let horizon_days = query.expiring_within_days.unwrap_or(90).clamp(0, 3650);
+    let horizon_days = within(
+        query.expiring_within_days.unwrap_or(90),
+        0,
+        3650,
+        "expiring_within_days",
+    )?;
     let today = crate::dates::today();
     let horizon = crate::controllers::tally::date_plus_days(today, horizon_days)?;
     // Counted by the database: per department and status, over enrolments of workers who still exist.
@@ -134,25 +151,27 @@ pub(super) async fn training_analytics(
     }
     let departments: Vec<serde_json::Value> = per_dept
         .iter()
-        .map(|(department, (by_status, expiring))| {
-            let completed = by_status.get("completed").copied().unwrap_or(0);
-            let denominator: usize = by_status
-                .iter()
-                .filter(|(status, _)| status.as_str() != "failed")
-                .map(|(_, count)| *count)
-                .sum();
-            let value = crate::rules::display::ratio(completed, denominator)
-                .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
-            serde_json::json!({
-                "department": department,
-                "by_status": by_status,
-                "completion_rate": {
-                    "numerator": completed, "denominator": denominator, "value": value,
-                },
-                "certs_expiring": expiring,
-            })
-        })
-        .collect();
+        .map(
+            |(department, (by_status, expiring))| -> Result<serde_json::Value> {
+                let completed = by_status.get("completed").copied().unwrap_or(0);
+                let denominator = by_status
+                    .iter()
+                    .filter(|(status, _)| status.as_str() != "failed")
+                    .try_fold(0_usize, |total, (_, count)| total.checked_add(*count))
+                    .ok_or_else(|| crate::controllers::internal("an enrolment count overflowed"))?;
+                let value = crate::rules::display::ratio(completed, denominator)
+                    .map_or(serde_json::Value::Null, |v| serde_json::json!(v));
+                Ok(serde_json::json!({
+                    "department": department,
+                    "by_status": by_status,
+                    "completion_rate": {
+                        "numerator": completed, "denominator": denominator, "value": value,
+                    },
+                    "certs_expiring": expiring,
+                }))
+            },
+        )
+        .collect::<Result<_>>()?;
     format::json(serde_json::json!({
         "as_of": today,
         "horizon": horizon,
@@ -171,10 +190,15 @@ pub(super) async fn mentorship_overview(
     axa::extract::Query(query): axa::extract::Query<MentorshipOverviewQuery>,
     State(ctx): State<AppContext>,
 ) -> Result<Response> {
-    let stale_days = query.days.unwrap_or(30).clamp(1, 365);
+    let stale_days = within(query.days.unwrap_or(30), 1, 365, "days")?;
     let today = crate::dates::today();
     let stale_before = crate::controllers::tally::date_minus_days(today, stale_days)?;
-    let unmatched_limit = query.unmatched_limit.unwrap_or(200).clamp(1, 1000);
+    let unmatched_limit = within(
+        query.unmatched_limit.unwrap_or(200),
+        1,
+        1000,
+        "unmatched_limit",
+    )?;
     let active = sqlx::query!(
         "SELECT pid, mentor_pid, mentee_pid FROM mentorships
          WHERE deleted_at IS NULL AND status = 'active'",
@@ -269,6 +293,19 @@ pub(super) async fn mentorship_overview(
 #[derive(Debug, Deserialize)]
 pub(super) struct MentorshipOverviewQuery {
     days: Option<i64>,
-    /// How many unmatched workers to name, newest first (default 200, at most 1,000); the total is always given.
+    /// How many unmatched workers to name, newest first (default 200, 1 to 1,000); the total is always given.
     unmatched_limit: Option<i64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::within;
+
+    #[test]
+    fn a_window_inside_its_range_is_kept_and_outside_is_refused() {
+        assert_eq!(within(0, 0, 3650, "d").ok(), Some(0));
+        assert_eq!(within(3650, 0, 3650, "d").ok(), Some(3650));
+        assert!(within(-1, 0, 3650, "d").is_err());
+        assert!(within(3651, 0, 3650, "d").is_err());
+    }
 }

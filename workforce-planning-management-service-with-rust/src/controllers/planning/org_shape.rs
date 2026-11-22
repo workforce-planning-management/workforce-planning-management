@@ -150,7 +150,9 @@ pub(super) async fn organization_diff(
             "derivation": "This plan has no target organization yet; PUT one to compare.",
         }));
     }
-    let diff = shape::diff(&people, &target, DEFAULT_FLOOR);
+    let diff = shape::diff(&people, &target, DEFAULT_FLOOR).ok_or_else(|| {
+        unprocessable("the organization comparison could not be computed: a count does not fit")
+    })?;
     format::json(serde_json::json!({
         "plan": plan.pid,
         "target_set": true,

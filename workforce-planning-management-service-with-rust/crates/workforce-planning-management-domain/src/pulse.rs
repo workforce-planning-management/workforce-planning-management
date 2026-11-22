@@ -43,29 +43,31 @@ pub enum Cell {
 }
 
 /// Aggregate one cell of scores under the k-floor.
+///
+/// Out-of-scale rows cannot exist (validated at write, WPM-R28), but a pure function does not trust its caller. A cell that
+/// holds one is corrupt data (RCA-DECL-5), so nothing is disclosed from it: it is [`Cell::Suppressed`], never a clamped score.
+/// A mean a float would round is withheld the same way.
 #[must_use]
-#[allow(clippy::cast_precision_loss)] // display mean
 pub fn aggregate_cell(scores: &[i32]) -> Cell {
-    if scores.len() < K_ANONYMITY {
+    if scores.len() < K_ANONYMITY || !scores.iter().all(|s| valid_score(*s)) {
         return Cell::Suppressed;
     }
-    // Out-of-scale rows cannot exist (validated at write), but a pure function does not trust its
-    // caller: clamp, don't panic.
     let mut distribution = [0usize; 5];
     for (slot, level) in distribution.iter_mut().zip(SCORE_MIN..=SCORE_MAX) {
-        *slot = scores
-            .iter()
-            .filter(|s| (**s).clamp(SCORE_MIN, SCORE_MAX) == level)
-            .count();
+        *slot = scores.iter().filter(|s| **s == level).count();
     }
-    let total: f64 = scores
+    let mean = scores
         .iter()
-        .map(|s| f64::from((*s).clamp(SCORE_MIN, SCORE_MAX)))
-        .sum();
-    Cell::Disclosed {
-        count: scores.len(),
-        distribution,
-        mean: total / scores.len() as f64,
+        .try_fold(0_i64, |total, s| total.checked_add(i64::from(*s)))
+        .and_then(super::metrics::exact_f64)
+        .zip(super::metrics::count_f64(scores.len()));
+    match mean {
+        Some((total, count)) => Cell::Disclosed {
+            count: scores.len(),
+            distribution,
+            mean: total / count,
+        },
+        None => Cell::Suppressed,
     }
 }
 
@@ -116,20 +118,12 @@ mod tests {
         assert_eq!(aggregate_cell(&[]), Cell::Suppressed, "empty is suppressed");
     }
 
-    /// Out-of-scale rows (which the write path refuses) are clamped,
-    /// never a panic or an index overflow.
+    /// Out-of-scale rows (which the write path refuses) disclose nothing:
+    /// the cell is suppressed, never a clamped score, a panic or an index overflow.
     #[test]
-    fn aggregate_never_panics_on_bad_rows() {
-        match aggregate_cell(&[0, 99, -7, 3, 3]) {
-            Cell::Disclosed {
-                count,
-                distribution,
-                ..
-            } => {
-                assert_eq!(count, 5);
-                assert_eq!(distribution.iter().sum::<usize>(), 5);
-            }
-            Cell::Suppressed => panic!("floor met"),
-        }
+    fn aggregate_withholds_a_cell_with_bad_rows() {
+        assert_eq!(aggregate_cell(&[0, 4, 4, 3, 3]), Cell::Suppressed);
+        assert_eq!(aggregate_cell(&[6, 4, 4, 3, 3]), Cell::Suppressed);
+        assert_eq!(aggregate_cell(&[0, 99, -7, 3, 3]), Cell::Suppressed);
     }
 }

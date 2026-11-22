@@ -203,9 +203,17 @@ async fn learning_round_trip() {
         assert!(completed["ended_on"].is_string());
 
         let overview: Value = request
-            .get("/api/learning/mentorship-overview?days=3650")
+            .get("/api/learning/mentorship-overview?days=365")
             .await
             .json();
+        // A window past the documented 365 days is refused, not capped (RCA-INT-6).
+        assert_eq!(
+            request
+                .get("/api/learning/mentorship-overview?days=3650")
+                .await
+                .status_code(),
+            422
+        );
         assert_eq!(overview["active_pairings"], 1);
         assert_eq!(overview["mentor_load"][0]["active_mentees"], 1);
         // The bystander is the only unmatched active worker.
@@ -220,7 +228,7 @@ async fn learning_round_trip() {
         // The names are capped and the total is always given: with a limit of one, one name (the newest)
         // is listed and the total still counts everyone unmatched.
         let capped: Value = request
-            .get("/api/learning/mentorship-overview?days=3650&unmatched_limit=1")
+            .get("/api/learning/mentorship-overview?days=365&unmatched_limit=1")
             .await
             .json();
         assert_eq!(capped["unmatched_workers"].as_array().unwrap().len(), 1);

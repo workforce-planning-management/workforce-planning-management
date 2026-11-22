@@ -848,14 +848,28 @@ const fn default_within() -> i64 {
     90
 }
 
+/// The most days ahead a certificate-expiry window may look.
+const MAX_EXPIRING_DAYS: i64 = 3650;
+
+/// `within_days` when it is 0 to [`MAX_EXPIRING_DAYS`], else a 422: an out-of-range window is refused, never clamped (RCA-INT-6).
+fn expiring_window(within_days: i64) -> Result<i64> {
+    if (0..=MAX_EXPIRING_DAYS).contains(&within_days) {
+        Ok(within_days)
+    } else {
+        Err(unprocessable(&format!(
+            "within_days must be between 0 and {MAX_EXPIRING_DAYS}"
+        )))
+    }
+}
+
 #[debug_handler]
 async fn expiring_training(
     State(ctx): State<AppContext>,
     Query(params): Query<ExpiringParams>,
 ) -> Result<Response> {
     let today = crate::dates::today();
-    let horizon =
-        crate::controllers::tally::date_plus_days(today, params.within_days.clamp(0, 3650))?;
+    let within_days = expiring_window(params.within_days)?;
+    let horizon = crate::controllers::tally::date_plus_days(today, within_days)?;
     let rows = sqlx::query_as!(
         training_enrollments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, course_ref, status,
@@ -1186,4 +1200,17 @@ pub fn routes() -> Routes {
             "/succession-candidates/{pid}",
             put(update_succession_candidate),
         )
+}
+
+#[cfg(test)]
+mod expiring_window_tests {
+    use super::expiring_window;
+
+    #[test]
+    fn the_window_is_zero_to_ten_years_and_refused_outside() {
+        assert_eq!(expiring_window(0).ok(), Some(0));
+        assert_eq!(expiring_window(3650).ok(), Some(3650));
+        assert!(expiring_window(-1).is_err());
+        assert!(expiring_window(3651).is_err());
+    }
 }

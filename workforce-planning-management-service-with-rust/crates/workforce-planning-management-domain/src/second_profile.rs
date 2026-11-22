@@ -59,10 +59,10 @@ fn proposal(size: u32, dismissals: u32) -> consultation::Proposal {
 fn consultation_takes_a_percentage_only_profile_with_no_authority_notice() {
     let p = second_consultation_profile();
     let today = day(2027, 1, 1);
-    let under = consultation::assess(&p, &proposal(200, 9), today);
+    let under = consultation::assess(&p, &proposal(200, 9), today).expect("counts that fit");
     assert!(!under.may_apply);
     assert_eq!(under.evidence.needed, Some(10), "5% of 200, rounded up");
-    let met = consultation::assess(&p, &proposal(200, 10), today);
+    let met = consultation::assess(&p, &proposal(200, 10), today).expect("counts that fit");
     assert!(met.may_apply);
     assert_eq!(met.profile, "second_shape");
     assert_eq!(met.consultation_days, Some(15));
@@ -72,9 +72,9 @@ fn consultation_takes_a_percentage_only_profile_with_no_authority_notice() {
         "this profile has no authority notice"
     );
     assert_eq!(met.checklist, ["consult_the_works_council"]);
-    let large = consultation::assess(&p, &proposal(1_000, 50), today);
+    let large = consultation::assess(&p, &proposal(1_000, 50), today).expect("counts that fit");
     assert_eq!(large.consultation_days, Some(75));
-    let small = consultation::assess(&p, &proposal(40, 40), today);
+    let small = consultation::assess(&p, &proposal(40, 40), today).expect("counts that fit");
     assert!(!small.may_apply);
     assert_eq!(
         small.evidence.needed, None,
@@ -87,10 +87,18 @@ fn consultation_counts_together_in_the_profiles_own_window() {
     let p = second_consultation_profile();
     let mut within = proposal(200, 6);
     within.others = vec![(day(2027, 5, 2), 4)]; // 59 days before: inside a 60-day window
-    assert!(consultation::assess(&p, &within, day(2027, 1, 1)).may_apply);
+    assert!(
+        consultation::assess(&p, &within, day(2027, 1, 1))
+            .expect("counts that fit")
+            .may_apply
+    );
     let mut apart = proposal(200, 6);
     apart.others = vec![(day(2027, 4, 30), 4)]; // 61 days before
-    assert!(!consultation::assess(&p, &apart, day(2027, 1, 1)).may_apply);
+    assert!(
+        !consultation::assess(&p, &apart, day(2027, 1, 1))
+            .expect("counts that fit")
+            .may_apply
+    );
 }
 
 /// Holiday rules with no Easter and no substitute day: each day stays where it falls, even on a weekend.

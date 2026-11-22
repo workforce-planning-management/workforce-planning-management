@@ -11,9 +11,9 @@ use jiff::civil::Date;
 /// number of items, which is far below the largest value of any counter type used here. A figure that comes from outside the code
 /// (an amount, a minute count, a version number) is added with `checked_add` instead.
 pub(crate) fn bump<T: AddAssign + From<u8>>(counter: &mut T) {
-    #[allow(
+    #[expect(
         clippy::arithmetic_side_effects,
-        reason = "one step per item held in memory: the count cannot reach the type's largest value"
+        reason = "RCA-EXC-2: one step per item held in memory: the count cannot reach the type's largest value"
     )]
     {
         *counter += T::from(1);

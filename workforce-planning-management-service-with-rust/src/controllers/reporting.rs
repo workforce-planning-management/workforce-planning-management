@@ -130,10 +130,6 @@ fn person_json(w: &Person) -> serde_json::Value {
 /// nearest first: `level` 1 is their direct manager, 2 their manager's
 /// manager, and so on up to the top.
 #[debug_handler]
-#[allow(
-    clippy::arithmetic_side_effects,
-    reason = "`chain.len() + 1`: the chain holds at most one entry per distinct worker, far below usize::MAX"
-)]
 async fn upline(
     State(ctx): State<AppContext>,
     caller: MaybeAuthUser,
@@ -144,6 +140,7 @@ async fn upline(
     let today = crate::dates::today();
     let mut chain: Vec<serde_json::Value> = Vec::new();
     let mut seen = std::collections::BTreeSet::from([worker.pid]);
+    let mut level = 0_usize;
     let mut manager = is_employed_on(
         today,
         worker.hired_on.get(),
@@ -155,11 +152,8 @@ async fn upline(
         let Some(boss) = staff_among(&ctx, &caller, &[pid]).await?.remove(&pid) else {
             break;
         };
-        #[allow(
-            clippy::arithmetic_side_effects,
-            reason = "the chain holds one entry per manager visited, so its length is far below usize::MAX"
-        )]
-        let level = chain.len() + 1;
+        // One step per manager visited, each a distinct worker held in memory.
+        super::tally::bump(&mut level);
         chain.push(with_fields(
             person_json(&boss),
             serde_json::json!({
@@ -194,8 +188,16 @@ struct LimitQuery {
 const LIST_DEFAULT_LIMIT: usize = 5_000;
 const LIST_MAX_LIMIT: usize = 20_000;
 
-fn list_limit(asked: Option<usize>) -> usize {
-    asked.unwrap_or(LIST_DEFAULT_LIMIT).clamp(1, LIST_MAX_LIMIT)
+/// The page size asked for (default 5,000, at most 20,000, as the query documents); one outside 1 to 20,000 is refused, not clamped.
+fn list_limit(asked: Option<usize>) -> Result<usize> {
+    let limit = asked.unwrap_or(LIST_DEFAULT_LIMIT);
+    if (1..=LIST_MAX_LIMIT).contains(&limit) {
+        Ok(limit)
+    } else {
+        Err(unprocessable(&format!(
+            "limit must be 1 to {LIST_MAX_LIMIT}"
+        )))
+    }
 }
 
 /// The downline of a manager: `(worker, depth)` for everyone below.
@@ -249,7 +251,7 @@ async fn downline(
     Path(pid): Path<String>,
     axa::extract::Query(query): axa::extract::Query<LimitQuery>,
 ) -> Result<Response> {
-    let limit = list_limit(query.limit);
+    let limit = list_limit(query.limit)?;
     let manager = visible_worker(&ctx, &caller, &pid).await?;
     let staff = staff_below(&ctx, &caller, manager.pid).await?;
     let team = below(manager.pid, &staff);
@@ -279,7 +281,7 @@ async fn reports(
     };
     let manager = visible_worker(&ctx, &caller, &pid).await?;
     let staff = staff_below(&ctx, &caller, manager.pid).await?;
-    let limit = list_limit(query.limit);
+    let limit = list_limit(query.limit)?;
     let matching: Vec<(&Person, usize)> = below(manager.pid, &staff)
         .into_iter()
         .filter(|(_, d)| wanted.is_none_or(|k| org::report_kind(*d) == Some(k)))
@@ -501,4 +503,19 @@ pub fn routes() -> Routes {
             "/workers/{pid}/dotted-line-managers/{manager_pid}",
             delete(end_dotted_manager),
         )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{LIST_DEFAULT_LIMIT, LIST_MAX_LIMIT, list_limit};
+
+    #[test]
+    fn a_page_size_outside_one_to_the_maximum_is_refused_not_clamped() {
+        assert_eq!(list_limit(None).ok(), Some(LIST_DEFAULT_LIMIT));
+        assert_eq!(list_limit(Some(1)).ok(), Some(1));
+        assert_eq!(list_limit(Some(LIST_MAX_LIMIT)).ok(), Some(LIST_MAX_LIMIT));
+        assert!(list_limit(Some(0)).is_err());
+        assert!(list_limit(Some(LIST_MAX_LIMIT + 1)).is_err());
+        assert!(list_limit(Some(usize::MAX)).is_err());
+    }
 }

@@ -90,21 +90,18 @@ impl Memory {
         Some(value.clone())
     }
 
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "`bytes` is the sum of the held entries' sizes, so removing one cannot go below zero; the size of one live key and value cannot overflow usize"
-    )]
     fn remove(&mut self, key: &str) {
         if let Some((value, _)) = self.entries.remove(key) {
-            self.bytes -= key.len() + value.len();
+            // `bytes` is the sum of the held entries' sizes, so this cannot go below zero; were the books ever wrong, the
+            // true figure is counted again from the entries rather than guessed.
+            self.bytes = self
+                .bytes
+                .checked_sub(entry_size(key, &value))
+                .unwrap_or_else(|| held_bytes(&self.entries));
         }
     }
 
     /// Hold `value`. Over `capacity`, expired entries go first and then everything, which only makes later lookups misses.
-    #[allow(
-        clippy::arithmetic_side_effects,
-        reason = "every operand is the length of a string held in memory or `bytes`, the sum of such lengths, so no sum can exceed the address space; a TTL too long to add to the clock is checked"
-    )]
     fn put(&mut self, key: &str, value: String, ttl: Option<Duration>, capacity: usize) {
         self.remove(key);
         // An expiry that cannot be represented is a value that is not held: a miss, never one that lives forever.
@@ -113,26 +110,48 @@ impl Memory {
             Some(Some(at)) => Some(at),
             Some(None) => return,
         };
-        let size = key.len() + value.len();
-        if self.bytes + size > capacity {
+        let size = entry_size(key, &value);
+        if !self.fits(size, capacity) {
             let now = Instant::now();
             self.entries
                 .retain(|_, (_, expires)| expires.is_none_or(|at| at > now));
-            self.bytes = self
-                .entries
-                .iter()
-                .map(|(k, (v, _))| k.len() + v.len())
-                .sum();
+            self.bytes = held_bytes(&self.entries);
         }
-        if self.bytes + size > capacity {
+        if !self.fits(size, capacity) {
             self.entries.clear();
             self.bytes = 0;
         }
         if size <= capacity {
-            self.bytes += size;
+            // `fits` holds here (the cache is empty or was checked), so the sum is within `capacity`.
+            self.bytes = self.bytes.checked_add(size).unwrap_or(OVER_CAPACITY);
             self.entries.insert(key.to_string(), (value, expires));
         }
     }
+
+    /// Whether `size` more bytes stay within `capacity`; a sum that does not fit `usize` is over any capacity.
+    fn fits(&self, size: usize, capacity: usize) -> bool {
+        self.bytes
+            .checked_add(size)
+            .is_some_and(|total| total <= capacity)
+    }
+}
+
+/// A size no capacity can hold: what a byte count too large for `usize` is, so such an entry is never held.
+const OVER_CAPACITY: usize = usize::MAX;
+
+/// The bytes one entry takes: its key and its value.
+fn entry_size(key: &str, value: &str) -> usize {
+    key.len().checked_add(value.len()).unwrap_or(OVER_CAPACITY)
+}
+
+/// The bytes of all the held entries, counted from the entries themselves.
+fn held_bytes(entries: &HashMap<String, (String, Option<Instant>)>) -> usize {
+    entries
+        .iter()
+        .try_fold(0_usize, |total, (k, (v, _))| {
+            total.checked_add(entry_size(k, v))
+        })
+        .unwrap_or(OVER_CAPACITY)
 }
 
 /// A cache: this process's memory, or a Redis several instances share.
@@ -371,6 +390,28 @@ pub async fn invalidate(namespace: Namespace) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_byte_count_is_recounted_when_the_books_are_wrong() {
+        let mut memory = Memory::default();
+        memory.put("k", "vv".to_string(), None, 100);
+        memory.put("j", "w".to_string(), None, 100);
+        assert_eq!(memory.bytes, 5);
+        memory.bytes = 1; // less than the entry's 3 bytes: the books are wrong
+        memory.remove("k");
+        assert_eq!(memory.bytes, 2, "recounted from the entries left");
+    }
+
+    #[test]
+    fn a_size_past_usize_is_over_any_capacity() {
+        let memory = Memory {
+            bytes: usize::MAX,
+            ..Memory::default()
+        };
+        assert!(!memory.fits(1, usize::MAX));
+        assert!(Memory::default().fits(3, 3));
+        assert!(!Memory::default().fits(4, 3));
+    }
 
     #[test]
     fn the_cacheable_list_is_closed_and_has_nothing_personal() {
