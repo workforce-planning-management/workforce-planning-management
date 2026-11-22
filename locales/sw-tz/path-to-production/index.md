@@ -38,7 +38,7 @@ Uzalishaji unahitaji aina tatu za ushahidi, na programu pekee hutoa ya kwanza tu
 - **60%** **Ufuatiliaji.** Kila jibu lina kitambulisho cha ombi, na mistari ya kumbukumbu haina mfuatano wa hoja wala kitambulisho cha kibinafsi (WPM-T197). Inategemea: majaribio ya kumbukumbu ya maombi. Kinachobaki: dashibodi na tahadhari ni za mwekaji, na vikomo vya maombi vinahusu mfano mmoja pekee (WPM-T198).
 - **60%** **Nakala rudufu na kurejesha.** Nakala rudufu zilizosimbwa, zoezi la kurejesha linaloendeshwa kwenye CI, na kitabu cha uendeshaji. Inategemea: zoezi hilo. Kinachobaki: zoezi la kurejesha kwenye jukwaa la mwekaji mwenyewe ndani ya siku 90 za kalenda zilizopita (kizuizi WPM-G4).
 - **40%** **Ukaguzi wa ufikivu.** Ukaguzi wa kiotomatiki dhidi ya WCAG 2.2 AA unaendeshwa kwenye programu na kwenye tovuti hii, katika mandhari ya mwanga na ya giza. Inategemea: majaribio ya Playwright na axe. Kinachobaki: ukaguzi huru (hapa chini); hakuna kisoma skrini kilichotumika.
-- **20%** **Tafsiri.** Programu ina lugha na maeneo 17 na muhtasari wa majukumu una 21. Inategemea: maandishi yapo. Kinachobaki: akili bandia iliandika tafsiri, na hakuna aliyezikagua kitaalamu (WPM-T155).
+- **20%** **Tafsiri.** Programu ina lugha na maeneo 25 na muhtasari wa majukumu una 21. Inategemea: maandishi yapo. Kinachobaki: akili bandia iliandika tafsiri, na hakuna aliyezikagua kitaalamu (WPM-T155).
 
 ## Ukaguzi unaofanywa na watu wasio mwandishi
 

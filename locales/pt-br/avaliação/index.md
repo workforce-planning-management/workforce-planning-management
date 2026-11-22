@@ -44,7 +44,7 @@
 | Auditoria de segurança por IA com modelo próprio | Sim: traga o seu próprio modelo |
 | Depósito do código nos EUA | Sim: GitLab.com |
 | Depósito do código na UE | Sim: Codeberg.org |
-| Idiomas | 17: ar cy en zh etc. |
+| Idiomas | 25: ar cy en zh etc. |
 | Acessibilidade global, objetivo WCAG 2.2 AAA | Sim: Lily Design System |
 | Pilha moderna de interface | Sim: TypeScript Svelte |
 | Pilha moderna de servidor | Sim: Rust Axum |

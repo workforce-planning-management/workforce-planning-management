@@ -44,7 +44,7 @@
 | AI-sikkerhedsrevision med egen model | Ja medbring din egen model |
 | Kode i depot hos tredjepart i USA | Ja GitLab.com |
 | Kode i depot hos tredjepart i EU | Ja Codeberg.org |
-| Sprog | 17 ar cy en zh osv. |
+| Sprog | 25 ar cy en zh osv. |
 | Global tilgængelighed, mål WCAG 2.2 AAA | Ja Lily Design System |
 | Moderne frontend-stak | Ja TypeScript Svelte |
 | Moderne backend-stak | Ja Rust Axum |

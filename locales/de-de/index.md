@@ -17,7 +17,7 @@ HR-Daten liegen oft in getrennten Werkzeugen, etwa in Bewerbungspostfächern, Ta
 - **Ein einziges System.** Onboarding, Urlaub, Schulungen und Entgeltdaten liegen in einer Anwendung, was das erneute Eintippen verringert.
 - **Datenminimierung.** Daten, die nicht gespeichert werden dürfen, haben kein Feld, und Daten, die nicht offengelegt werden dürfen, haben keine API-Route. Es gibt zum Beispiel kein Diagnosefeld, und Antworten auf Kurzumfragen haben keine Verfasserin und keinen Verfasser.
 - **Regeln für Berichte.** Unbekannte Werte werden nicht als Null ausgewiesen, Aggregate identifizieren keine Einzelpersonen, und Schätzungen nennen ihre Grundlage.
-- **Lokalisierung.** Die Anwendung gibt es in 17 Locales und die Rollenbeschreibungen in 21, darunter Sprachen mit Schreibrichtung von rechts nach links. Länderspezifische Regeln liegen als Daten vor. Die Übersetzungen stammen von einer KI und wurden nicht von Muttersprachlerinnen und Muttersprachlern geprüft.
+- **Lokalisierung.** Die Anwendung gibt es in 25 Locales und die Rollenbeschreibungen in 21, darunter Sprachen mit Schreibrichtung von rechts nach links. Länderspezifische Regeln liegen als Daten vor. Die Übersetzungen stammen von einer KI und wurden nicht von Muttersprachlerinnen und Muttersprachlern geprüft.
 - **Nachvollziehbarkeit.** Der Quellcode ist offen, und jedes Verhalten lässt sich auf eine nummerierte Anforderung, Entwurfsentscheidung und Aufgabe zurückführen.
 - **Unabhängiger Betrieb.** Der Stack besteht aus einer JSON-API in Rust, einem SvelteKit-Client und PostgreSQL. Er lässt sich aus einem frischen Klon bauen, und Integrationen mit Schwesteranwendungen sind optional.
 

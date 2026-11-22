@@ -44,7 +44,7 @@
 | Ukaguzi wa usalama kwa muundo wako mwenyewe (BYOM) | Ndiyo leta muundo wako mwenyewe |
 | Hifadhi ya msimbo kwa dhamana nchini Marekani | Ndiyo GitLab.com |
 | Hifadhi ya msimbo kwa dhamana katika Umoja wa Ulaya | Ndiyo Codeberg.org |
-| Lugha | 17 ar cy en zh n.k. |
+| Lugha | 25 ar cy en zh n.k. |
 | Lengo la ufikivu wa kimataifa WCAG 2.2 AAA | Ndiyo Lily Design System |
 | Teknolojia ya kisasa ya sehemu ya mbele | Ndiyo TypeScript Svelte |
 | Teknolojia ya kisasa ya sehemu ya nyuma | Ndiyo Rust Axum |

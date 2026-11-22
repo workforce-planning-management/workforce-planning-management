@@ -38,7 +38,7 @@ Productie vraagt drie soorten bewijs, en alleen de software levert het eerste:
 - **60%** **Monitoring.** Elk antwoord draagt een verzoek-id en logregels bevatten geen queryreeks en geen persoonlijke id (WPM-T197). Berust op: de tests van het verzoeklogboek. Resteert: dashboards en alarmen zijn aan de inzetter, en aanvraaglimieten gelden maar voor één instantie (WPM-T198).
 - **60%** **Back-up en herstel.** Versleutelde back-ups, een hersteloefening die in CI draait en een draaiboek. Berust op: de oefening. Resteert: een hersteloefening op het eigen platform van de inzetter binnen de laatste 90 kalenderdagen (poort WPM-G4).
 - **40%** **Toegankelijkheidscontroles.** Geautomatiseerde controles tegen WCAG 2.2 AA draaien op de applicatie en op deze website, in licht en donker thema. Berust op: de tests met Playwright en axe. Resteert: de onafhankelijke beoordeling (hieronder); er is geen schermlezer gebruikt.
-- **20%** **Vertalingen.** De applicatie heeft 17 taalvarianten en de rolbeschrijvingen 21. Berust op: de tekst bestaat. Resteert: een AI schreef de vertalingen en niemand heeft ze professioneel beoordeeld (WPM-T155).
+- **20%** **Vertalingen.** De applicatie heeft 25 taalvarianten en de rolbeschrijvingen 21. Berust op: de tekst bestaat. Resteert: een AI schreef de vertalingen en niemand heeft ze professioneel beoordeeld (WPM-T155).
 
 ## Controles door anderen dan de auteur
 

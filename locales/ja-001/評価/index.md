@@ -44,7 +44,7 @@
 | 持ち込みモデルによる AI セキュリティ監査 | はい。自分のモデルを持ち込めます |
 | 米国でのコード・エスクロー | はい。GitLab.com |
 | EU でのコード・エスクロー | はい。Codeberg.org |
-| 言語 | 17: ar cy en zh など |
+| 言語 | 25: ar cy en zh など |
 | グローバルなアクセシビリティ目標 WCAG 2.2 AAA | はい。Lily Design System |
 | 現代的なフロントエンド構成 | はい。TypeScript Svelte |
 | 現代的なバックエンド構成 | はい。Rust Axum |

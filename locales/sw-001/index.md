@@ -17,7 +17,7 @@ Data za rasilimali watu mara nyingi huwekwa katika zana tofauti, kama vile visan
 - **Mfumo mmoja.** Rekodi za kuwapokea wafanyakazi wapya, likizo, mafunzo na malipo huwekwa katika programu moja, jambo linalopunguza kuandika upya data.
 - **Kupunguza data.** Data ambayo haipaswi kuhifadhiwa haina sehemu ya kuijaza, na data ambayo haipaswi kufichuliwa haina njia ya API. Kwa mfano, hakuna sehemu ya utambuzi wa ugonjwa, na majibu ya utafiti mfupi wa mara kwa mara hayana mwandishi.
 - **Kanuni za kuripoti.** Thamani zisizojulikana haziripotiwi kama sifuri, jumla hazimtambui mtu binafsi, na makadirio hueleza msingi wake.
-- **Ujanibishaji.** Programu inapatikana katika lugha na maeneo 17, na muhtasari wa majukumu katika 21, ikiwemo lugha zinazoandikwa kutoka kulia kwenda kushoto. Kanuni za kila nchi huwekwa kama data. Tafsiri zilitolewa na akili bandia na hazijakaguliwa na wazungumzaji asilia.
+- **Ujanibishaji.** Programu inapatikana katika lugha na maeneo 25, na muhtasari wa majukumu katika 21, ikiwemo lugha zinazoandikwa kutoka kulia kwenda kushoto. Kanuni za kila nchi huwekwa kama data. Tafsiri zilitolewa na akili bandia na hazijakaguliwa na wazungumzaji asilia.
 - **Ufuatiliaji.** Msimbo chanzo uko wazi, na kila tabia inafuatiliwa hadi hitaji lenye nambari, uamuzi wa usanifu na kazi.
 - **Usambazaji huru.** Mfumo ni API ya JSON ya Rust, kiteja cha SvelteKit na PostgreSQL. Hujengwa kutoka nakala mpya, na miunganisho na programu dada ni ya hiari.
 

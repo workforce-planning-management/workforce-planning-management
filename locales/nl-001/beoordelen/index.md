@@ -44,7 +44,7 @@
 | AI-beveiligingsaudit met eigen model | Ja, breng uw eigen model mee |
 | Broncode-escrow in de VS | Ja GitLab.com |
 | Broncode-escrow in de EU | Ja Codeberg.org |
-| Talen | 17 ar cy en zh enz. |
+| Talen | 25 ar cy en zh enz. |
 | Wereldwijde toegankelijkheid, doel WCAG 2.2 AAA | Ja Lily Design System |
 | Moderne front-endstack | Ja TypeScript Svelte |
 | Moderne back-endstack | Ja Rust Axum |

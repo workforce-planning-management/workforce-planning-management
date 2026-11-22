@@ -38,7 +38,7 @@ La production exige trois types de preuves, et le logiciel seul ne fournit que l
 - **60%** **Supervision.** Chaque réponse porte un identifiant de requête, et les lignes de journal ne contiennent ni chaîne de requête ni identifiant personnel (WPM-T197). Repose sur : les tests du journal des requêtes. Reste à faire : les tableaux de bord et les alertes relèvent de l’exploitant, et les limites de débit ne s’appliquent qu’à une seule instance (WPM-T198).
 - **60%** **Sauvegarde et restauration.** Des sauvegardes chiffrées, un exercice de restauration qui s’exécute dans la CI, et un guide d’exploitation. Repose sur : l’exercice. Reste à faire : un exercice de restauration sur la plateforme propre de l’exploitant au cours des 90 derniers jours calendaires (jalon WPM-G4).
 - **40%** **Contrôles d’accessibilité.** Des contrôles automatisés par rapport au référentiel WCAG 2.2 AA s’exécutent sur l’application et sur ce site, en thème clair et en thème sombre. Repose sur : les tests Playwright et axe. Reste à faire : l’audit indépendant (ci-dessous) ; aucun lecteur d’écran n’a été utilisé.
-- **20%** **Traductions.** L’application compte 17 locales et les pages par rôle en comptent 21. Repose sur : le texte existe. Reste à faire : une IA a écrit les traductions, et personne ne les a relues de façon professionnelle (WPM-T155).
+- **20%** **Traductions.** L’application compte 25 locales et les pages par rôle en comptent 21. Repose sur : le texte existe. Reste à faire : une IA a écrit les traductions, et personne ne les a relues de façon professionnelle (WPM-T155).
 
 ## Vérifications par des personnes autres que l’auteur
 

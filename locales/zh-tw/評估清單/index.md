@@ -44,7 +44,7 @@
 | 自帶模型的 AI 安全審計 | 是：自帶模型 |
 | 美國的程式碼託管備份（escrow） | 是：GitLab.com |
 | 歐盟的程式碼託管備份（escrow） | 是：Codeberg.org |
-| 語言 | 17 種：ar cy en zh 等 |
+| 語言 | 25 種：ar cy en zh 等 |
 | 全球無障礙 WCAG 2.2 AAA 目標 | 是：Lily 設計系統 |
 | 現代前端技術棧 | 是：TypeScript Svelte |
 | 現代後端技術棧 | 是：Rust Axum |

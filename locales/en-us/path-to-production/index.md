@@ -38,7 +38,7 @@ Production needs three kinds of evidence, and software alone supplies only the f
 - **60%** **Monitoring.** Every response carries a request id, and log lines carry no query string or personal identifier (WPM-T197). Rests on: the tests of the request log. Remains: dashboards and alerts belong to the deployer, and rate limits apply to one instance only (WPM-T198).
 - **60%** **Backup and restore.** Encrypted backups, a restore drill that runs in CI, and a runbook. Rests on: the drill. Remains: a restore drill on the deployer's own platform within the last 90 calendar days (gate WPM-G4).
 - **40%** **Accessibility checks.** Automated checks against WCAG 2.2 AA run on the application and on this site, in light and dark themes. Rests on: the Playwright and axe tests. Remains: the independent audit (below); no screen reader has been used.
-- **20%** **Translations.** The application has 17 locales and the role briefs have 21. Rests on: the text exists. Remains: an AI wrote the translations, and nobody has reviewed them professionally (WPM-T155).
+- **20%** **Translations.** The application has 25 locales and the role briefs have 21. Rests on: the text exists. Remains: an AI wrote the translations, and nobody has reviewed them professionally (WPM-T155).
 
 ## Checks by people other than the author
 

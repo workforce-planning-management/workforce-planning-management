@@ -17,7 +17,7 @@ Data SDM sering tersebar di berbagai alat terpisah, seperti kotak masuk pelamar,
 - **Satu sistem.** Catatan orientasi, cuti, pelatihan, dan gaji disimpan dalam satu aplikasi, sehingga tidak perlu memasukkan ulang data.
 - **Minimalisasi data.** Data yang tidak semestinya disimpan tidak memiliki kolom, dan data yang tidak semestinya diungkapkan tidak memiliki rute API. Misalnya, tidak ada kolom diagnosis, dan jawaban survei denyut tidak memiliki penulis.
 - **Aturan pelaporan.** Nilai yang tidak diketahui tidak dilaporkan sebagai nol, agregat tidak mengidentifikasi individu, dan perkiraan menyebutkan dasarnya.
-- **Lokalisasi.** Aplikasi tersedia dalam 17 lokal dan dokumentasi peran dalam 21, termasuk bahasa yang ditulis dari kanan ke kiri. Aturan khusus setiap negara disimpan sebagai data. Terjemahan dibuat oleh AI dan belum ditinjau oleh penutur asli.
+- **Lokalisasi.** Aplikasi tersedia dalam 25 lokal dan dokumentasi peran dalam 21, termasuk bahasa yang ditulis dari kanan ke kiri. Aturan khusus setiap negara disimpan sebagai data. Terjemahan dibuat oleh AI dan belum ditinjau oleh penutur asli.
 - **Keterlacakan.** Kode sumbernya terbuka, dan setiap perilaku dapat ditelusuri ke persyaratan, keputusan rancangan, dan tugas yang bernomor.
 - **Penerapan mandiri.** Tumpukan teknologinya adalah API JSON Rust, klien SvelteKit, dan PostgreSQL. Ia dibangun dari klon baru, dan integrasi dengan aplikasi saudara bersifat opsional.
 

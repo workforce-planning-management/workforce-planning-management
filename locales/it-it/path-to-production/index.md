@@ -38,7 +38,7 @@ La produzione richiede tre tipi di prove e il solo software ne fornisce soltanto
 - **60%** **Monitoraggio.** Ogni risposta porta un identificativo della richiesta e le righe di log non contengono stringhe di query né identificativi personali (WPM-T197). Si fonda su: i test del log delle richieste. Resta da fare: dashboard e avvisi spettano a chi installa e i limiti di frequenza si applicano a una sola istanza (WPM-T198).
 - **60%** **Backup e ripristino.** Backup cifrati, una prova di ripristino che gira nell'integrazione continua e un manuale operativo. Si fonda su: la prova. Resta da fare: una prova di ripristino sulla piattaforma di chi installa negli ultimi 90 giorni di calendario (porta WPM-G4).
 - **40%** **Verifiche di accessibilità.** Verifiche automatiche rispetto a WCAG 2.2 AA girano sull'applicazione e su questo sito, con i temi chiaro e scuro. Si fonda su: i test Playwright e axe. Resta da fare: l'audit indipendente (più avanti); non è stato usato alcun lettore di schermo.
-- **20%** **Traduzioni.** L'applicazione ha 17 lingue e varianti regionali e le schede per ruolo ne hanno 21. Si fonda su: il testo esiste. Resta da fare: le traduzioni sono state scritte da un'IA e nessuno le ha riviste in modo professionale (WPM-T155).
+- **20%** **Traduzioni.** L'applicazione ha 25 lingue e varianti regionali e le schede per ruolo ne hanno 21. Si fonda su: il testo esiste. Resta da fare: le traduzioni sono state scritte da un'IA e nessuno le ha riviste in modo professionale (WPM-T155).
 
 ## Verifiche svolte da persone diverse dall'autore
 

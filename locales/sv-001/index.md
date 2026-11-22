@@ -17,7 +17,7 @@ HR-data ligger ofta i separata verktyg, som ansökningsinkorgar, kalkylblad för
 - **Ett enda system.** Introduktion, ledighet, utbildning och lönedata finns i en applikation, vilket minskar dubbelregistrering.
 - **Dataminimering.** Data som inte ska lagras har inget fält, och data som inte ska lämnas ut har ingen API-rutt. Det finns till exempel inget diagnosfält, och svar i pulsenkäter har ingen avsändare.
 - **Rapporteringsregler.** Okända värden rapporteras inte som noll, sammanställningar identifierar inte enskilda personer och uppskattningar anger sin grund.
-- **Lokalisering.** Applikationen finns på 17 språkvarianter och rollbeskrivningarna på 21, inklusive språk som skrivs från höger till vänster. Landsspecifika regler lagras som data. Översättningarna är gjorda av AI och har inte granskats av personer med språket som modersmål.
+- **Lokalisering.** Applikationen finns på 25 språkvarianter och rollbeskrivningarna på 21, inklusive språk som skrivs från höger till vänster. Landsspecifika regler lagras som data. Översättningarna är gjorda av AI och har inte granskats av personer med språket som modersmål.
 - **Spårbarhet.** Källkoden är öppen, och varje beteende kan spåras till ett numrerat krav, ett designbeslut och en uppgift.
 - **Oberoende driftsättning.** Stacken är ett JSON-API i Rust, en SvelteKit-klient och PostgreSQL. Den byggs från en ny klon, och integrationer med systerapplikationer är valfria.
 

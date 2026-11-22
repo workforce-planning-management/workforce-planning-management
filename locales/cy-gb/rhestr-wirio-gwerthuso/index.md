@@ -44,7 +44,7 @@
 | Archwiliad diogelwch AI gyda'ch model eich hun | Ie dewch â'ch model eich hun |
 | Escrow cod yn yr UD | Ie GitLab.com |
 | Escrow cod yn yr UE | Ie Codeberg.org |
-| Ieithoedd | 17 ar cy en zh ac ati |
+| Ieithoedd | 25 ar cy en zh ac ati |
 | Targed hygyrchedd byd-eang WCAG 2.2 AAA | Ie System Ddylunio Lily |
 | Pentwr blaen modern | Ie TypeScript Svelte |
 | Pentwr cefn modern | Ie Rust Axum |

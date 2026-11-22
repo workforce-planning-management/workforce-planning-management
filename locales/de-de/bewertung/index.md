@@ -44,7 +44,7 @@
 | KI-Sicherheitsprüfung mit eigenem Modell | Ja, bringen Sie Ihr eigenes Modell mit |
 | Code-Hinterlegung in den USA | Ja GitLab.com |
 | Code-Hinterlegung in der EU | Ja Codeberg.org |
-| Sprachen | 17 ar cy en zh usw. |
+| Sprachen | 25 ar cy en zh usw. |
 | Globale Barrierefreiheit, Ziel WCAG 2.2 AAA | Ja Lily Design System |
 | Modernes Front-End-Stack | Ja TypeScript Svelte |
 | Modernes Back-End-Stack | Ja Rust Axum |

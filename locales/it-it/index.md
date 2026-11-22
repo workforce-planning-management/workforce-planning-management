@@ -17,7 +17,7 @@ I dati HR sono spesso sparsi in strumenti diversi, come le caselle di posta dei 
 - **Sistema unico.** Inserimento, ferie, formazione e dati retributivi sono conservati in un'unica applicazione, il che riduce le reimmissioni.
 - **Minimizzazione dei dati.** I dati che non devono essere conservati non hanno un campo, e quelli che non devono essere divulgati non hanno una rotta API. Per esempio, non esiste un campo per la diagnosi e le risposte ai sondaggi di clima non hanno un autore.
 - **Regole di rendicontazione.** I valori sconosciuti non sono riportati come zero, gli aggregati non identificano le persone e le stime dichiarano su che cosa si fondano.
-- **Localizzazione.** L'applicazione è disponibile in 17 lingue e varianti regionali e le schede per ruolo in 21, comprese le lingue scritte da destra a sinistra. Le regole specifiche di ogni paese sono conservate come dati. Le traduzioni sono state prodotte da un'IA e non sono state riviste da madrelingua.
+- **Localizzazione.** L'applicazione è disponibile in 25 lingue e varianti regionali e le schede per ruolo in 21, comprese le lingue scritte da destra a sinistra. Le regole specifiche di ogni paese sono conservate come dati. Le traduzioni sono state prodotte da un'IA e non sono state riviste da madrelingua.
 - **Tracciabilità.** Il codice sorgente è aperto e ogni comportamento è riconducibile a un requisito numerato, a una decisione di progetto e a un'attività.
 - **Distribuzione indipendente.** Lo stack è composto da un'API JSON in Rust, un client SvelteKit e PostgreSQL. Si compila da un clone appena scaricato e le integrazioni con le applicazioni sorelle sono facoltative.
 

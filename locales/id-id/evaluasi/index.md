@@ -44,7 +44,7 @@
 | Audit keamanan dengan model Anda sendiri | Ya, gunakan model Anda sendiri |
 | Hosting kode AS | Ya, GitLab.com |
 | Hosting kode UE | Ya, Codeberg.org |
-| Bahasa | 17: ar cy en zh dan lainnya |
+| Bahasa | 25: ar cy en zh dan lainnya |
 | Target aksesibilitas global WCAG 2.2 AAA | Ya, Lily Design System |
 | Frontend modern | Ya, TypeScript Svelte |
 | Backend modern | Ya, Rust Axum |

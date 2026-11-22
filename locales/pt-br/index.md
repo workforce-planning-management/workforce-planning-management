@@ -17,7 +17,7 @@ Os dados de RH estão muitas vezes dispersos por ferramentas separadas, como cai
 - **Sistema único.** Os registos de integração, ausências, formação e remuneração ficam numa só aplicação, o que reduz a reintrodução de dados.
 - **Minimização de dados.** Os dados que não devem ser guardados não têm campo, e os dados que não devem ser divulgados não têm rota na API. Por exemplo, não existe campo de diagnóstico e as respostas ao inquérito rápido não têm autor.
 - **Regras de relato.** Valores desconhecidos não são relatados como zero, os agregados não identificam pessoas e as estimativas indicam em que se baseiam.
-- **Localização.** A aplicação está disponível em 17 idiomas e regiões e as fichas por função em 21, incluindo idiomas escritos da direita para a esquerda. As regras de cada país são guardadas como dados. As traduções foram feitas por IA e não foram revistas por falantes nativos.
+- **Localização.** A aplicação está disponível em 25 idiomas e regiões e as fichas por função em 21, incluindo idiomas escritos da direita para a esquerda. As regras de cada país são guardadas como dados. As traduções foram feitas por IA e não foram revistas por falantes nativos.
 - **Rastreabilidade.** O código-fonte é aberto e cada comportamento está ligado a um requisito, uma decisão de desenho e uma tarefa numerados.
 - **Implementação independente.** A pilha é uma API JSON em Rust, um cliente SvelteKit e PostgreSQL. Compila a partir de um clone novo e as integrações com aplicações irmãs são opcionais.
 

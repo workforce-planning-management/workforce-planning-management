@@ -38,7 +38,7 @@ A produção exige três tipos de evidência, e o software, por si só, fornece 
 - **60%** **Monitorização.** Cada resposta inclui um identificador de pedido, e as linhas de registo não incluem cadeia de consulta nem identificador pessoal (WPM-T197). Assenta em: os testes do registo de pedidos. Falta: os painéis e os alertas cabem à entidade implementadora, e os limites de taxa aplicam-se apenas a uma instância (WPM-T198).
 - **60%** **Cópia de segurança e restauro.** Cópias de segurança cifradas, um exercício de restauro executado na CI e um manual de procedimentos. Assenta em: o exercício. Falta: um exercício de restauro na própria plataforma da entidade implementadora nos últimos 90 dias de calendário (barreira WPM-G4).
 - **40%** **Verificações de acessibilidade.** São executadas verificações automáticas face a WCAG 2.2 AA na aplicação e neste sítio, nos temas claro e escuro. Assenta em: os testes de Playwright e axe. Falta: a auditoria independente (abaixo); não foi usado nenhum leitor de ecrã.
-- **20%** **Traduções.** A aplicação tem 17 locales e a documentação por função tem 21. Assenta em: o texto existe. Falta: as traduções foram escritas por uma IA, e ninguém as reviu profissionalmente (WPM-T155).
+- **20%** **Traduções.** A aplicação tem 25 locales e a documentação por função tem 21. Assenta em: o texto existe. Falta: as traduções foram escritas por uma IA, e ninguém as reviu profissionalmente (WPM-T155).
 
 ## Verificações por pessoas que não o autor
 

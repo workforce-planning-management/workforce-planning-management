@@ -17,7 +17,7 @@ HR-gegevens staan vaak verspreid over losse hulpmiddelen, zoals postvakken met s
 - **Eén systeem.** Gegevens over indiensttreding, verlof, opleiding en loon staan in één applicatie, zodat er minder opnieuw ingevoerd hoeft te worden.
 - **Gegevensminimalisatie.** Gegevens die niet bewaard mogen worden, hebben geen veld, en gegevens die niet bekendgemaakt mogen worden, hebben geen API-route. Er is bijvoorbeeld geen veld voor een diagnose en antwoorden op pulsonderzoeken hebben geen auteur.
 - **Rapportageregels.** Onbekende waarden worden niet als nul gerapporteerd, aggregaten maken geen individuen herkenbaar en schattingen vermelden waarop ze berusten.
-- **Lokalisatie.** De applicatie is beschikbaar in 17 taalvarianten en de rolbeschrijvingen in 21, waaronder talen die van rechts naar links worden geschreven. Landspecifieke regels worden als gegevens vastgelegd. De vertalingen zijn door AI gemaakt en niet beoordeeld door moedertaalsprekers.
+- **Lokalisatie.** De applicatie is beschikbaar in 25 taalvarianten en de rolbeschrijvingen in 21, waaronder talen die van rechts naar links worden geschreven. Landspecifieke regels worden als gegevens vastgelegd. De vertalingen zijn door AI gemaakt en niet beoordeeld door moedertaalsprekers.
 - **Traceerbaarheid.** De broncode is open en elk gedrag is herleidbaar tot een genummerde eis, ontwerpbeslissing en taak.
 - **Onafhankelijke inzet.** De stack bestaat uit een Rust-JSON-API, een SvelteKit-client en PostgreSQL. Hij bouwt vanaf een verse kloon en koppelingen met zusterapplicaties zijn optioneel.
 

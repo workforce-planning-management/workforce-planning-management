@@ -38,7 +38,7 @@ La producción necesita tres tipos de evidencia, y el software por sí solo apor
 - **60%** **Monitorización.** Cada respuesta lleva un identificador de petición, y las líneas del registro no llevan cadena de consulta ni identificador personal (WPM-T197). Se basa en: las pruebas del registro de peticiones. Falta: los paneles y las alertas corresponden a quien lo despliega, y los límites de frecuencia se aplican a una sola instancia (WPM-T198).
 - **60%** **Copia de seguridad y restauración.** Copias de seguridad cifradas, un simulacro de restauración que se ejecuta en la CI y un manual de operaciones. Se basa en: el simulacro. Falta: un simulacro de restauración en la propia plataforma de quien lo despliega en los últimos 90 días naturales (puerta WPM-G4).
 - **40%** **Comprobaciones de accesibilidad.** Se ejecutan comprobaciones automáticas frente a WCAG 2.2 AA en la aplicación y en este sitio, con los temas claro y oscuro. Se basa en: las pruebas de Playwright y axe. Falta: la auditoría independiente (más abajo); no se ha usado ningún lector de pantalla.
-- **20%** **Traducciones.** La aplicación tiene 17 configuraciones regionales y las páginas para cada rol tienen 21. Se basa en: el texto existe. Falta: las traducciones las escribió una IA, y nadie las ha revisado profesionalmente (WPM-T155).
+- **20%** **Traducciones.** La aplicación tiene 25 configuraciones regionales y las páginas para cada rol tienen 21. Se basa en: el texto existe. Falta: las traducciones las escribió una IA, y nadie las ha revisado profesionalmente (WPM-T155).
 
 ## Comprobaciones por personas distintas del autor
 

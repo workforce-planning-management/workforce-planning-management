@@ -17,7 +17,7 @@ Yn aml, cedwir data adnoddau dynol mewn offer ar wahân, fel mewnflychau ymgeisw
 - **Un system.** Cedwir cofnodion cynefino, absenoldeb, hyfforddiant a chyflog mewn un rhaglen, sy'n lleihau ailgofnodi.
 - **Lleihau data.** Nid oes maes ar gyfer data na ddylid ei gadw, nac API ar gyfer data na ddylid ei ddatgelu. Er enghraifft, nid oes maes diagnosis, ac nid oes awdur i ymatebion arolwg.
 - **Rheolau adrodd.** Ni adroddir gwerthoedd anhysbys fel sero, nid yw cyfansymiau'n adnabod unigolion, ac mae amcangyfrifon yn nodi eu sail.
-- **Lleoleiddio.** Mae'r rhaglen ar gael mewn 17 locale a'r dogfennau rôl mewn 21, gan gynnwys ieithoedd o'r dde i'r chwith. Cedwir rheolau gwlad-benodol fel data. Cynhyrchwyd y cyfieithiadau gan ddeallusrwydd artiffisial ac nid yw siaradwyr brodorol wedi'u hadolygu.
+- **Lleoleiddio.** Mae'r rhaglen ar gael mewn 25 locale a'r dogfennau rôl mewn 21, gan gynnwys ieithoedd o'r dde i'r chwith. Cedwir rheolau gwlad-benodol fel data. Cynhyrchwyd y cyfieithiadau gan ddeallusrwydd artiffisial ac nid yw siaradwyr brodorol wedi'u hadolygu.
 - **Olrheiniadwyedd.** Mae'r cod ffynhonnell yn agored, ac olrheinir pob ymddygiad i ofyniad, penderfyniad dylunio a thasg wedi'u rhifo.
 - **Defnydd annibynnol.** Y pentwr yw API JSON Rust, cleient SvelteKit a PostgreSQL. Mae'n adeiladu o glôn newydd, ac mae integreiddio ag apiau eraill y teulu yn ddewisol.
 

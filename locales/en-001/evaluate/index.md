@@ -44,7 +44,7 @@
 | AI security audit by BYOM | Yes bring your own model |
 | Code escrow in US | Yes GitLab.com |
 | Code escrow in EU | Yes Codeberg.org |
-| Languages | 17 ar cy en zh etc. |
+| Languages | 25 ar cy en zh etc. |
 | Global accessibility WCAG 2.2 AAA target | Yes Lily Design System |
 | Modern front-end stack | Yes TypeScript Svelte |
 | Modern back-end stack | Yes Rust Axum |

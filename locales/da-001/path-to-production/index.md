@@ -38,7 +38,7 @@ Produktion kræver tre slags dokumentation, og software alene leverer kun den f�
 - **60%** **Overvågning.** Hvert svar bærer et anmodnings-id, og loglinjer indeholder ingen forespørgselsstreng eller personlig identifikator (WPM-T197). Bygger på: testene af anmodningsloggen. Mangler: dashboards og alarmer hører under den driftsansvarlige, og hastighedsgrænser gælder kun én instans (WPM-T198).
 - **60%** **Sikkerhedskopi og genopretning.** Krypterede sikkerhedskopier, en genopretningsøvelse, der kører i CI, og en driftsvejledning. Bygger på: øvelsen. Mangler: en genopretningsøvelse på den driftsansvarliges egen platform inden for de seneste 90 kalenderdage (port WPM-G4).
 - **40%** **Kontrol af tilgængelighed.** Automatiske kontroller mod WCAG 2.2 AA kører på applikationen og på dette websted, i lyst og mørkt tema. Bygger på: Playwright- og axe-testene. Mangler: den uafhængige revision (nedenfor); ingen skærmlæser er brugt.
-- **20%** **Oversættelser.** Applikationen findes på 17 lokaliteter og rollebeskrivelserne på 21. Bygger på: teksten findes. Mangler: en AI skrev oversættelserne, og ingen har gennemgået dem professionelt (WPM-T155).
+- **20%** **Oversættelser.** Applikationen findes på 25 lokaliteter og rollebeskrivelserne på 21. Bygger på: teksten findes. Mangler: en AI skrev oversættelserne, og ingen har gennemgået dem professionelt (WPM-T155).
 
 ## Kontrol udført af andre end forfatteren
 

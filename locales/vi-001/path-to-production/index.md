@@ -38,7 +38,7 @@ Môi trường sản xuất cần ba loại bằng chứng, và riêng phần m�
 - **60%** **Giám sát.** Mọi phản hồi mang một mã yêu cầu, và các dòng nhật ký không mang chuỗi truy vấn hay định danh cá nhân (WPM-T197). Dựa trên: các bài kiểm thử của nhật ký yêu cầu. Còn lại: bảng điều khiển và cảnh báo thuộc về bên triển khai, và giới hạn tốc độ chỉ áp dụng cho một phiên bản (WPM-T198).
 - **60%** **Sao lưu và khôi phục.** Sao lưu được mã hóa, một buổi diễn tập khôi phục chạy trong CI và một sổ tay vận hành. Dựa trên: buổi diễn tập. Còn lại: một buổi diễn tập khôi phục trên nền tảng riêng của bên triển khai trong 90 ngày dương lịch gần nhất (cửa ải WPM-G4).
 - **40%** **Kiểm tra khả năng tiếp cận.** Các kiểm tra tự động theo WCAG 2.2 AA chạy trên ứng dụng và trên trang web này, ở giao diện sáng và tối. Dựa trên: các bài kiểm thử Playwright và axe. Còn lại: cuộc kiểm toán độc lập (bên dưới); chưa dùng trình đọc màn hình nào.
-- **20%** **Bản dịch.** Ứng dụng có 17 ngôn ngữ và vùng, còn các bản tóm tắt vai trò có 21. Dựa trên: văn bản đã tồn tại. Còn lại: một AI đã viết các bản dịch, và chưa ai rà soát chúng một cách chuyên nghiệp (WPM-T155).
+- **20%** **Bản dịch.** Ứng dụng có 25 ngôn ngữ và vùng, còn các bản tóm tắt vai trò có 21. Dựa trên: văn bản đã tồn tại. Còn lại: một AI đã viết các bản dịch, và chưa ai rà soát chúng một cách chuyên nghiệp (WPM-T155).
 
 ## Các kiểm tra do người không phải tác giả thực hiện
 

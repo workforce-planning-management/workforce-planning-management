@@ -44,7 +44,7 @@
 | Audit di sicurezza con un modello proprio | Sì, porta il tuo modello |
 | Deposito del codice (escrow) negli USA | Sì GitLab.com |
 | Deposito del codice (escrow) nell'UE | Sì Codeberg.org |
-| Lingue | 17 ar cy en zh ecc. |
+| Lingue | 25 ar cy en zh ecc. |
 | Accessibilità globale, obiettivo WCAG 2.2 AAA | Sì Lily Design System |
 | Stack front-end moderno | Sì TypeScript Svelte |
 | Stack back-end moderno | Sì Rust Axum |

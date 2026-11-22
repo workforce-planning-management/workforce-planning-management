@@ -17,7 +17,7 @@ Los datos de recursos humanos suelen estar repartidos en herramientas separadas,
 - **Un único sistema.** La incorporación, las ausencias, la formación y los registros de pago están en una sola aplicación, lo que reduce la reintroducción de datos.
 - **Minimización de datos.** Los datos que no deben conservarse no tienen campo, y los que no deben revelarse no tienen ruta en la API. Por ejemplo, no hay campo de diagnóstico y las respuestas de la encuesta de pulso no tienen autor.
 - **Reglas de información.** Un valor desconocido no se informa como cero, los agregados no identifican a personas y las estimaciones indican en qué se basan.
-- **Localización.** La aplicación está disponible en 17 locales y los informes por rol en 21, incluidos idiomas de derecha a izquierda. Las reglas de cada país se guardan como datos. Las traducciones las produjo una IA y ningún hablante nativo las ha revisado.
+- **Localización.** La aplicación está disponible en 25 locales y los informes por rol en 21, incluidos idiomas de derecha a izquierda. Las reglas de cada país se guardan como datos. Las traducciones las produjo una IA y ningún hablante nativo las ha revisado.
 - **Trazabilidad.** El código fuente es abierto y cada comportamiento se vincula a un requisito, una decisión de diseño y una tarea numerados.
 - **Despliegue independiente.** La pila es una API JSON en Rust, un cliente SvelteKit y PostgreSQL. Se compila desde un clon limpio y las integraciones con aplicaciones hermanas son opcionales.
 

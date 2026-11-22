@@ -38,7 +38,7 @@ Der Produktivbetrieb braucht drei Arten von Nachweisen, und Software allein lief
 - **60%** **Überwachung.** Jede Antwort trägt eine Anfrage-ID, und Protokollzeilen enthalten weder Abfragezeichenfolge noch personenbezogene Kennung (WPM-T197). Beruht auf: den Tests des Anfrageprotokolls. Offen: Dashboards und Alarme liegen beim Betreiber, und Ratenbegrenzungen gelten nur für eine einzelne Instanz (WPM-T198).
 - **60%** **Sicherung und Wiederherstellung.** Verschlüsselte Sicherungen, eine Wiederherstellungsübung, die in CI läuft, und ein Betriebshandbuch. Beruht auf: der Übung. Offen: eine Wiederherstellungsübung auf der eigenen Plattform des Betreibers innerhalb der letzten 90 Kalendertage (Schwelle WPM-G4).
 - **40%** **Prüfungen der Barrierefreiheit.** Automatisierte Prüfungen gegen WCAG 2.2 AA laufen auf der Anwendung und auf dieser Website, im hellen und im dunklen Design. Beruht auf: den Tests mit Playwright und axe. Offen: die unabhängige Prüfung (siehe unten); es wurde kein Screenreader verwendet.
-- **20%** **Übersetzungen.** Die Anwendung hat 17 Locales und die Rollenseiten haben 21. Beruht auf: Der Text existiert. Offen: Eine KI hat die Übersetzungen verfasst, und niemand hat sie professionell geprüft (WPM-T155).
+- **20%** **Übersetzungen.** Die Anwendung hat 25 Locales und die Rollenseiten haben 21. Beruht auf: Der Text existiert. Offen: Eine KI hat die Übersetzungen verfasst, und niemand hat sie professionell geprüft (WPM-T155).
 
 ## Prüfungen durch andere Personen als den Autor
 

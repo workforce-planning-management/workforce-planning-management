@@ -44,7 +44,7 @@
 | AI-säkerhetsgranskning med egen modell | Ja ta med din egen modell |
 | Källkodsdeposition i USA | Ja GitLab.com |
 | Källkodsdeposition i EU | Ja Codeberg.org |
-| Språk | 17 ar cy en zh med flera |
+| Språk | 25 ar cy en zh med flera |
 | Global tillgänglighet, mål WCAG 2.2 AAA | Ja Lily Design System |
 | Modern teknik för användargränssnittet | Ja TypeScript Svelte |
 | Modern teknik för serversidan | Ja Rust Axum |

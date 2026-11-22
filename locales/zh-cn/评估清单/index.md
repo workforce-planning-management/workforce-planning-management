@@ -44,7 +44,7 @@
 | 自带模型的 AI 安全审计 | 是：自带模型 |
 | 美国的代码托管备份（escrow） | 是：GitLab.com |
 | 欧盟的代码托管备份（escrow） | 是：Codeberg.org |
-| 语言 | 17 种：ar cy en zh 等 |
+| 语言 | 25 种：ar cy en zh 等 |
 | 全球无障碍 WCAG 2.2 AAA 目标 | 是：Lily 设计系统 |
 | 现代前端技术栈 | 是：TypeScript Svelte |
 | 现代后端技术栈 | 是：Rust Axum |

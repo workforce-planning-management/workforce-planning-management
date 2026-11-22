@@ -17,7 +17,7 @@ Dữ liệu nhân sự thường nằm rải rác ở nhiều công cụ riêng 
 - **Một hệ thống duy nhất.** Hồ sơ tiếp nhận nhân viên, nghỉ phép, đào tạo và lương được lưu trong một ứng dụng, nhờ đó giảm việc nhập lại dữ liệu.
 - **Tối thiểu hóa dữ liệu.** Dữ liệu không nên lưu thì không có trường để lưu, và dữ liệu không nên tiết lộ thì không có tuyến API. Chẳng hạn, không có trường chẩn đoán bệnh, và các phản hồi khảo sát nhanh không có tác giả.
 - **Quy tắc báo cáo.** Giá trị chưa biết không bị báo cáo thành số không, số liệu tổng hợp không nhận diện được cá nhân, và các ước tính nêu rõ cơ sở của chúng.
-- **Bản địa hóa.** Ứng dụng có 17 ngôn ngữ và vùng, còn phần tóm tắt theo vai trò có 21, kể cả các ngôn ngữ viết từ phải sang trái. Quy tắc riêng của từng quốc gia được lưu dưới dạng dữ liệu. Các bản dịch do AI tạo ra và chưa được người bản ngữ rà soát.
+- **Bản địa hóa.** Ứng dụng có 25 ngôn ngữ và vùng, còn phần tóm tắt theo vai trò có 21, kể cả các ngôn ngữ viết từ phải sang trái. Quy tắc riêng của từng quốc gia được lưu dưới dạng dữ liệu. Các bản dịch do AI tạo ra và chưa được người bản ngữ rà soát.
 - **Truy vết được.** Mã nguồn mở, và mỗi hành vi đều được truy về một yêu cầu, một quyết định thiết kế và một nhiệm vụ có đánh số.
 - **Triển khai độc lập.** Ngăn xếp gồm API JSON viết bằng Rust, ứng dụng khách SvelteKit và PostgreSQL. Nó dựng được từ một bản sao mới, và việc tích hợp với các ứng dụng anh em là tùy chọn.
 

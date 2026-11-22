@@ -38,7 +38,7 @@ Produksi memerlukan tiga jenis bukti, dan perangkat lunak saja hanya menyediakan
 - **60%** **Pemantauan.** Setiap respons membawa id permintaan, dan baris log tidak memuat string kueri atau pengenal pribadi (WPM-T197). Dasar: pengujian atas log permintaan. Tersisa: dasbor dan peringatan menjadi tanggung jawab penyelenggara, dan batas laju hanya berlaku untuk satu instans (WPM-T198).
 - **60%** **Pencadangan dan pemulihan.** Cadangan terenkripsi, latihan pemulihan yang berjalan di CI, dan runbook. Dasar: latihan tersebut. Tersisa: latihan pemulihan di platform milik penyelenggara sendiri dalam 90 hari kalender terakhir (gerbang WPM-G4).
 - **40%** **Pemeriksaan aksesibilitas.** Pemeriksaan otomatis terhadap WCAG 2.2 AA dijalankan pada aplikasi dan pada situs ini, dalam tema terang dan gelap. Dasar: pengujian Playwright dan axe. Tersisa: audit independen (lihat di bawah); belum ada pembaca layar yang digunakan.
-- **20%** **Terjemahan.** Aplikasi memiliki 17 lokal dan ringkasan peran memiliki 21. Dasar: teksnya ada. Tersisa: terjemahan ditulis oleh AI, dan belum ada yang meninjaunya secara profesional (WPM-T155).
+- **20%** **Terjemahan.** Aplikasi memiliki 25 lokal dan ringkasan peran memiliki 21. Dasar: teksnya ada. Tersisa: terjemahan ditulis oleh AI, dan belum ada yang meninjaunya secara profesional (WPM-T155).
 
 ## Pemeriksaan oleh orang selain penulis
 

@@ -44,7 +44,7 @@
 | Kiểm toán bảo mật bằng mô hình do bạn mang đến | Có, mang mô hình của riêng bạn |
 | Lưu mã nguồn ký quỹ tại Mỹ | Có, GitLab.com |
 | Lưu mã nguồn ký quỹ tại EU | Có, Codeberg.org |
-| Ngôn ngữ | 17: ar cy en zh v.v. |
+| Ngôn ngữ | 25: ar cy en zh v.v. |
 | Mục tiêu khả năng tiếp cận toàn cầu WCAG 2.2 AAA | Có, Lily Design System |
 | Ngăn xếp giao diện hiện đại | TypeScript Svelte |
 | Ngăn xếp phía máy chủ hiện đại | Rust Axum |

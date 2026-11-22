@@ -38,7 +38,7 @@ Mae defnydd cynhyrchu angen tri math o dystiolaeth, a dim ond y cyntaf y gall me
 - **60%** **Monitro.** Mae gan bob ymateb ddynodwr cais, ac nid oes llinyn ymholiad na dynodwr personol mewn llinellau log (WPM-T197). Yn seiliedig ar: profion log y ceisiadau. Yn weddill: y defnyddiwr biau dangosfyrddau a rhybuddion, ac mae terfynau cyfradd yn berthnasol i un enghraifft yn unig (WPM-T198).
 - **60%** **Copïau wrth gefn ac adfer.** Copïau wrth gefn wedi'u hamgryptio, ymarfer adfer sy'n rhedeg yn CI, a llawlyfr rhedeg. Yn seiliedig ar: yr ymarfer. Yn weddill: ymarfer adfer ar blatfform y defnyddiwr ei hun o fewn y 90 diwrnod calendr diwethaf (porth WPM-G4).
 - **40%** **Gwiriadau hygyrchedd.** Mae gwiriadau awtomatig yn erbyn WCAG 2.2 AA yn rhedeg ar y rhaglen ac ar y wefan hon, mewn themâu golau a thywyll. Yn seiliedig ar: y profion Playwright ac axe. Yn weddill: yr archwiliad annibynnol (isod); nid oes darllenydd sgrin wedi'i ddefnyddio.
-- **20%** **Cyfieithiadau.** Mae gan y rhaglen 17 locale ac mae gan y dogfennau rôl 21. Yn seiliedig ar: mae'r testun yn bodoli. Yn weddill: deallusrwydd artiffisial a ysgrifennodd y cyfieithiadau, ac nid oes neb wedi'u hadolygu'n broffesiynol (WPM-T155).
+- **20%** **Cyfieithiadau.** Mae gan y rhaglen 25 locale ac mae gan y dogfennau rôl 21. Yn seiliedig ar: mae'r testun yn bodoli. Yn weddill: deallusrwydd artiffisial a ysgrifennodd y cyfieithiadau, ac nid oes neb wedi'u hadolygu'n broffesiynol (WPM-T155).
 
 ## Gwiriadau gan bobl heblaw'r awdur
 

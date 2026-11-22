@@ -17,7 +17,7 @@ Les données RH sont souvent dispersées entre des outils distincts, comme les b
 - **Un seul système.** L’intégration, les absences, la formation et les données de paie sont dans une seule application, ce qui limite les ressaisies.
 - **Minimisation des données.** Les données qui ne doivent pas être conservées n’ont pas de champ, et celles qui ne doivent pas être divulguées n’ont pas de route dans l’API. Par exemple, il n’y a pas de champ de diagnostic et les réponses au sondage éclair n’ont pas d’auteur.
 - **Règles de reporting.** Une valeur inconnue n’est jamais présentée comme zéro, les agrégats ne désignent personne et les estimations disent sur quoi elles reposent.
-- **Localisation.** L’application existe dans 17 locales et les notes par rôle dans 21, y compris des langues qui s’écrivent de droite à gauche. Les règles de chaque pays sont stockées sous forme de données. Les traductions ont été produites par une IA et n’ont été relues par aucun locuteur natif.
+- **Localisation.** L’application existe dans 25 locales et les notes par rôle dans 21, y compris des langues qui s’écrivent de droite à gauche. Les règles de chaque pays sont stockées sous forme de données. Les traductions ont été produites par une IA et n’ont été relues par aucun locuteur natif.
 - **Traçabilité.** Le code source est ouvert et chaque comportement renvoie à une exigence, une décision de conception et une tâche numérotées.
 - **Déploiement indépendant.** La pile se compose d’une API JSON en Rust, d’un client SvelteKit et de PostgreSQL. Elle se compile depuis un clone propre et les intégrations avec les applications sœurs sont facultatives.
 

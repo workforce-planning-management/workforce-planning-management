@@ -17,7 +17,7 @@ HR-data ligger ofte i adskilte værktøjer, såsom ansøgerindbakker, regneark t
 - **Ét system.** Onboarding, fravær, uddannelse og lønoplysninger ligger i én applikation, hvilket mindsker genindtastning.
 - **Dataminimering.** Data, der ikke bør opbevares, har intet felt, og data, der ikke bør udleveres, har ingen API-rute. Der er for eksempel intet felt til diagnose, og besvarelser af pulsmålinger har ingen afsender.
 - **Regler for rapportering.** Ukendte værdier rapporteres ikke som nul, sammentællinger identificerer ikke enkeltpersoner, og skøn oplyser, hvad de bygger på.
-- **Lokalisering.** Applikationen findes på 17 lokaliteter og rollebeskrivelserne på 21, herunder sprog, der skrives fra højre mod venstre. Landespecifikke regler opbevares som data. Oversættelserne er lavet af AI og er ikke gennemgået af personer med sproget som modersmål.
+- **Lokalisering.** Applikationen findes på 25 lokaliteter og rollebeskrivelserne på 21, herunder sprog, der skrives fra højre mod venstre. Landespecifikke regler opbevares som data. Oversættelserne er lavet af AI og er ikke gennemgået af personer med sproget som modersmål.
 - **Sporbarhed.** Kildekoden er åben, og hver adfærd kan spores til et nummereret krav, en designbeslutning og en opgave.
 - **Uafhængig drift.** Teknologistakken er et JSON-API i Rust, en SvelteKit-klient og PostgreSQL. Den kan bygges fra en frisk klon, og integrationer med søsterapplikationer er valgfri.
 

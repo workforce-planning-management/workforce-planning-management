@@ -44,7 +44,7 @@
 | Audit de sécurité par votre propre modèle | Oui apportez votre propre modèle |
 | Dépôt de code aux États-Unis | Oui GitLab.com |
 | Dépôt de code dans l’UE | Oui Codeberg.org |
-| Langues | 17 ar cy en zh etc. |
+| Langues | 25 ar cy en zh etc. |
 | Objectif d’accessibilité mondial WCAG 2.2 AAA | Oui Lily Design System |
 | Pile front-end moderne | Oui TypeScript Svelte |
 | Pile back-end moderne | Oui Rust Axum |

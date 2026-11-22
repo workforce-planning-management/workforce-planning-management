@@ -38,7 +38,7 @@ Produktion kräver tre slags belägg, och programvaran ensam ger bara det först
 - **60%** **Övervakning.** Varje svar bär ett begärans-id, och loggrader innehåller ingen frågesträng och inget personligt id (WPM-T197). Vilar på: testerna av begäranloggen. Återstår: instrumentpaneler och larm är driftsättarens, och hastighetsbegränsningar gäller bara en instans (WPM-T198).
 - **60%** **Säkerhetskopiering och återställning.** Krypterade säkerhetskopior, en återställningsövning som körs i CI och en driftbok. Vilar på: övningen. Återstår: en återställningsövning på driftsättarens egen plattform inom de senaste 90 kalenderdagarna (grind WPM-G4).
 - **40%** **Tillgänglighetskontroller.** Automatiska kontroller mot WCAG 2.2 AA körs på applikationen och på den här webbplatsen, i ljust och mörkt tema. Vilar på: testerna med Playwright och axe. Återstår: den oberoende granskningen (nedan); ingen skärmläsare har använts.
-- **20%** **Översättningar.** Applikationen har 17 språkvarianter och rollbeskrivningarna 21. Vilar på: texten finns. Återstår: en AI skrev översättningarna, och ingen har granskat dem professionellt (WPM-T155).
+- **20%** **Översättningar.** Applikationen har 25 språkvarianter och rollbeskrivningarna 21. Vilar på: texten finns. Återstår: en AI skrev översättningarna, och ingen har granskat dem professionellt (WPM-T155).
 
 ## Kontroller av andra än upphovspersonen
 

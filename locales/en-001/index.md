@@ -17,7 +17,7 @@ HR data is often held across separate tools, such as applicant inboxes, leave sp
 - **Single system.** Onboarding, leave, training and pay records are held in one application, which reduces re-keying.
 - **Data minimization.** Data that should not be held has no field, and data that should not be disclosed has no API route. For example, there is no diagnosis field, and pulse survey responses have no author.
 - **Reporting rules.** Unknown values are not reported as zero, aggregates do not identify individuals, and estimates state their basis.
-- **Localization.** The application is available in 17 locales and the role briefs in 21, including right-to-left languages. Country-specific rules are held as data. Translations were produced by AI and have not been reviewed by native speakers.
+- **Localization.** The application is available in 25 locales and the role briefs in 21, including right-to-left languages. Country-specific rules are held as data. Translations were produced by AI and have not been reviewed by native speakers.
 - **Traceability.** The source code is open, and each behaviour is traced to a numbered requirement, design decision and task.
 - **Independent deployment.** The stack is a Rust JSON API, a SvelteKit client and PostgreSQL. It builds from a fresh clone, and integrations with sibling applications are optional.
 
