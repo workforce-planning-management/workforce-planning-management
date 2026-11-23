@@ -33,9 +33,7 @@ const fn importance_of(weight: i32) -> &'static str {
     }
 }
 
-fn count(n: i64) -> usize {
-    usize::try_from(n).unwrap_or(0)
-}
+use super::count_usize as count;
 
 /// The people employed on `today` in `scope` (all organizations when `None`), optionally in one department (ignoring
 /// case), with each of their merged needs graded against their declarations, in one fixed statement (WPM-D184).
@@ -136,13 +134,13 @@ async fn graded(
                 shortfall: (status == Status::Below).then_some(*shortfall),
                 importance: importance_of(*weight).to_string(),
             },
-            count(*people),
+            count(*people)?,
         ));
     }
     Ok(Graded {
-        considered: count(found.considered),
+        considered: count(found.considered)?,
         rows: out,
-        with_needs: count(found.with_needs),
+        with_needs: count(found.with_needs)?,
         below: found.below,
     })
 }

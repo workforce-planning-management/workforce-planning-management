@@ -86,10 +86,9 @@ async fn member_counts(ctx: &AppContext) -> Result<BTreeMap<Uuid, usize>> {
     )
     .fetch_all(db::pool(ctx))
     .await?;
-    Ok(rows
-        .into_iter()
-        .map(|r| (r.group_pid, usize::try_from(r.members).unwrap_or(0)))
-        .collect())
+    rows.into_iter()
+        .map(|r| Ok((r.group_pid, super::count_usize(r.members)?)))
+        .collect()
 }
 
 /// Every live group, by name.

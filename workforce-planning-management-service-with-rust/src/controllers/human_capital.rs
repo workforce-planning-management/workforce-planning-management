@@ -27,9 +27,7 @@ pub(crate) struct ReportQuery {
     as_of: Option<Date>,
 }
 
-fn n(v: i64) -> usize {
-    usize::try_from(v).unwrap_or(0)
-}
+use super::count_usize as n;
 
 /// Read what the report is made of, for one organization.
 async fn read(ctx: &AppContext, organization: &str, as_of: Date) -> Result<Inputs> {
@@ -100,19 +98,21 @@ async fn read(ctx: &AppContext, organization: &str, as_of: Date) -> Result<Input
         from,
         by_type: by_type
             .into_iter()
-            .map(|t| TypeCount {
-                employment_type: t.employment_type,
-                workers: n(t.workers),
-                fte_percent_total: t.fte_percent_total,
+            .map(|t| {
+                Ok(TypeCount {
+                    employment_type: t.employment_type,
+                    workers: n(t.workers)?,
+                    fte_percent_total: t.fte_percent_total,
+                })
             })
-            .collect(),
-        opening: n(counts.opening),
-        closing: n(counts.closing),
-        starters: n(counts.starters),
-        leavers: n(counts.leavers),
+            .collect::<Result<_>>()?,
+        opening: n(counts.opening)?,
+        closing: n(counts.closing)?,
+        starters: n(counts.starters)?,
+        leavers: n(counts.leavers)?,
         fill_days,
-        enrolments: n(training.enrolments),
-        completed: n(training.completed),
+        enrolments: n(training.enrolments)?,
+        completed: n(training.completed)?,
         plans,
         plans_unplaced,
         injury_classes,
@@ -163,7 +163,7 @@ async fn succession(
             covered_now: p.ready_now,
         })
         .collect();
-    Ok((plans, n(unplaced)))
+    Ok((plans, n(unplaced)?))
 }
 
 /// The class of each incident in the period, and how many this organization has ever recorded.

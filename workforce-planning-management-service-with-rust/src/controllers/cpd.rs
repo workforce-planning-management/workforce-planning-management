@@ -734,11 +734,11 @@ async fn requirement_counts(
     )
     .fetch_one(db::pool(ctx))
     .await?;
-    let count = |n: i64| usize::try_from(n).unwrap_or(0);
+    let count = super::count_usize;
     Ok((
-        count(row.applicable),
-        count(row.met),
-        count(row.met_verified),
+        count(row.applicable)?,
+        count(row.met)?,
+        count(row.met_verified)?,
     ))
 }
 

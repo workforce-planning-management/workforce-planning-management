@@ -240,8 +240,8 @@ async fn feed(
     .fetch_all(db::pool(&ctx))
     .await?
     .into_iter()
-    .map(|r| (r.announcement_pid, usize::try_from(r.reads).unwrap_or(0)))
-    .collect();
+    .map(|r| Ok((r.announcement_pid, super::count_usize(r.reads)?)))
+    .collect::<Result<_>>()?;
     let slice: Vec<serde_json::Value> = page_rows
         .iter()
         .map(|a| {
