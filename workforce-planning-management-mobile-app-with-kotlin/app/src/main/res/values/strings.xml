@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every word the app shows or speaks (WPM-R284). English only in the first slice; other locales are WPM-T642. -->
+<resources>
+    <string name="app_name">Workforce Planning Management</string>
+
+    <!-- Connect -->
+    <string name="connect_title">Connect to your organization</string>
+    <string name="connect_address">Address</string>
+    <string name="connect_address_help">The address of your organization\'s Workforce Planning Management, such as https://wpm.example.org</string>
+    <string name="connect_continue">Continue</string>
+    <string name="connect_problem_empty">Enter the address</string>
+    <string name="connect_problem_not_an_address">Enter a full address, starting with https://</string>
+    <string name="connect_problem_insecure">The address must start with https://</string>
+    <string name="connect_problem_credentials">The address must not include a user name or password</string>
+    <string name="connect_problem_query">The address must not include ? or #</string>
+
+    <!-- Sign in -->
+    <string name="signin_title">Sign in</string>
+    <string name="signin_body">Your browser opens your organization\'s sign-in page. After you sign in there, you come back here.</string>
+    <string name="signin_button">Sign in with your browser</string>
+    <string name="signin_change_address">Use a different address</string>
+    <string name="signin_connected_to">Connecting to %1$s</string>
+    <string name="signin_failed">Sign-in did not finish. Try again.</string>
+    <string name="signin_state_mismatch">Sign-in was refused because it did not come from this sign-in. Try again.</string>
+    <string name="signin_denied">Sign-in was refused by your organization\'s sign-in page.</string>
+    <string name="signin_no_browser">There is no browser on this device to sign in with.</string>
+    <string name="signed_out_expired">You were signed out. Sign in again.</string>
+    <string name="sign_out">Sign out</string>
+
+    <!-- Developer token (debug builds only) -->
+    <string name="dev_token_title">Developer: paste a token</string>
+    <string name="dev_token_label">Token</string>
+    <string name="dev_token_help">For a development build against a local service only. A release build has no such screen.</string>
+    <string name="dev_token_use">Use this token</string>
+
+    <!-- My time off -->
+    <string name="time_off_title">My time off</string>
+    <string name="time_off_year">%1$d</string>
+    <string name="time_off_previous_year">Previous year, %1$d</string>
+    <string name="time_off_next_year">Next year, %1$d</string>
+    <string name="time_off_refresh">Refresh</string>
+    <string name="time_off_unit">Every figure is in calendar days.</string>
+    <string name="time_off_as_of">As of %1$s</string>
+    <string name="time_off_balances">Allowances</string>
+    <string name="time_off_no_balances">No leave is recorded for this year.</string>
+    <string name="time_off_requests">Requests</string>
+    <string name="time_off_no_requests">You have made no requests this year.</string>
+    <string name="time_off_history">Past absence</string>
+    <string name="time_off_no_history">No past absence.</string>
+    <string name="time_off_how">How these figures are worked out</string>
+    <string name="balance_entitled">Allowed</string>
+    <string name="balance_taken">Taken</string>
+    <string name="balance_booked">Booked</string>
+    <string name="balance_requested">Requested</string>
+    <string name="balance_remaining">Remaining</string>
+    <string name="not_recorded">Not recorded</string>
+    <plurals name="calendar_days">
+        <item quantity="one">%1$d calendar day</item>
+        <item quantity="other">%1$d calendar days</item>
+    </plurals>
+    <plurals name="absences">
+        <item quantity="one">%1$d absence, %2$s</item>
+        <item quantity="other">%1$d absences, %2$s</item>
+    </plurals>
+    <string name="request_dates">%1$s to %2$s</string>
+    <string name="request_status_label">Status</string>
+    <string name="request_reason">Reason: %1$s</string>
+    <string name="request_cancel">Cancel this request</string>
+    <string name="request_cancel_confirm_title">Cancel this request?</string>
+    <string name="request_cancel_confirm_body">%1$s, %2$s. You cannot undo this.</string>
+    <string name="request_cancel_yes">Cancel the request</string>
+    <string name="request_cancel_no">Keep it</string>
+    <string name="request_cancelled">The request was cancelled.</string>
+
+    <!-- Request leave -->
+    <string name="request_leave">Request leave</string>
+    <string name="request_leave_title">Request leave</string>
+    <string name="leave_kind">Kind of leave</string>
+    <string name="leave_start">First day</string>
+    <string name="leave_end">Last day</string>
+    <string name="leave_choose_date">Choose a date</string>
+    <string name="leave_reason">Reason (optional)</string>
+    <string name="leave_reason_help">Up to 500 characters. Your manager and HR can read it.</string>
+    <string name="leave_sick_no_reason">Sick leave records that it is sick leave and its dates, never why.</string>
+    <string name="leave_span">This is %1$s.</string>
+    <string name="leave_send">Send the request</string>
+    <string name="leave_sent">Your request was sent. A person with authority decides it.</string>
+    <string name="leave_back">Back</string>
+    <string name="date_ok">OK</string>
+    <string name="date_cancel">Cancel</string>
+    <string name="required">required</string>
+    <string name="problem_title">There is a problem</string>
+    <string name="draft_kind_missing">Choose the kind of leave</string>
+    <string name="draft_kind_unknown">Choose a kind of leave from the list</string>
+    <string name="draft_start_missing">Choose the first day</string>
+    <string name="draft_end_missing">Choose the last day</string>
+    <string name="draft_end_before_start">The last day must be on or after the first day</string>
+    <string name="draft_too_long">A request can be at most 366 calendar days</string>
+    <string name="draft_reason_too_long">The reason can be at most 500 characters</string>
+
+    <!-- Kinds and statuses: the service's tokens -->
+    <string name="kind_annual">Annual leave</string>
+    <string name="kind_public_holiday">Public holiday</string>
+    <string name="kind_sick">Sick leave</string>
+    <string name="kind_parental">Parental leave</string>
+    <string name="kind_unpaid">Unpaid leave</string>
+    <string name="kind_other">Other leave</string>
+    <string name="status_requested">Awaiting a decision</string>
+    <string name="status_approved">Approved</string>
+    <string name="status_rejected">Not approved</string>
+    <string name="status_cancelled">Cancelled</string>
+
+    <!-- Failures -->
+    <string name="error_unreachable">Could not reach your organization\'s service. Check your connection and try again.</string>
+    <string name="error_unreadable">The service sent something this app cannot read.</string>
+    <string name="error_refused">The service refused (status %1$d).</string>
+    <string name="loading">Loading</string>
+</resources>

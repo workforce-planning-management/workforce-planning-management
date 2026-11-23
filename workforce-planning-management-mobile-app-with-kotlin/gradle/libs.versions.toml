@@ -1,0 +1,41 @@
+# Versions match Lily Design System for Kotlin's catalog where both use a library (WPM-D226).
+[versions]
+agp = "9.5.1"
+kotlin = "2.4.21"
+compose-bom = "2026.11.01"
+activity-compose = "1.13.0"
+lifecycle = "2.11.0"
+browser = "1.9.0"
+desugar = "2.1.5"
+kotlinx-serialization = "1.13.0"
+kotlinx-coroutines = "1.10.2"
+junit = "4.13.2"
+robolectric = "4.18.1"
+androidx-test-core = "1.7.0"
+lily = "0.1.0"
+
+[libraries]
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "compose-bom" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
+lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+browser = { module = "androidx.browser:browser", version.ref = "browser" }
+desugar = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
+lily-compose = { module = "io.github.lilydesignsystem:lily-compose", version.ref = "lily" }
+lily-compose-themes = { module = "io.github.lilydesignsystem:lily-compose-themes", version.ref = "lily" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

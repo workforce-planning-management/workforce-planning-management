@@ -1,0 +1,24 @@
+{
+  "unit": "calendar_days",
+  "as_of": "2026-11-23",
+  "year": 2026,
+  "balances": [
+    {"kind": "annual", "year": 2026, "entitled": 25, "used": 10, "taken": 8, "booked": 2, "requested": 3,
+     "remaining": 15, "remaining_if_requested_approved": 12},
+    {"kind": "unpaid", "year": 2026, "entitled": null, "used": 0, "taken": 0, "booked": 0, "requested": 2,
+     "remaining": null, "remaining_if_requested_approved": null}
+  ],
+  "requests": [
+    {"pid": "0b8f4f6e-7c55-4b4e-9d43-1f4c3c1e2a01", "kind": "annual", "start_on": "2026-08-03", "end_on": "2026-08-10",
+     "days": 8, "status": "approved", "reason": "Family visit"},
+    {"pid": "0b8f4f6e-7c55-4b4e-9d43-1f4c3c1e2a02", "kind": "sick", "start_on": "2026-10-12", "end_on": "2026-10-13",
+     "days": 2, "status": "approved", "reason": null},
+    {"pid": "0b8f4f6e-7c55-4b4e-9d43-1f4c3c1e2a03", "kind": "annual", "start_on": "2026-12-21", "end_on": "2026-12-23",
+     "days": 3, "status": "requested", "reason": null}
+  ],
+  "history": [
+    {"year": 2025, "absences": [{"kind": "annual", "absences": 3, "days": 21}, {"kind": "sick", "absences": 1, "days": 1}]}
+  ],
+  "derivation": "remaining = days allowed less the days the service has already subtracted for approved requests.",
+  "a_member_a_newer_service_adds": true
+}

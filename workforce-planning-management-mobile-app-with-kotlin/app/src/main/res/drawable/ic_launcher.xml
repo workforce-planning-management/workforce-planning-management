@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A plain placeholder icon: a calendar page. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#FF422AD5" android:pathData="M8,10h32a2,2 0,0 1,2 2v28a2,2 0,0 1,-2 2H8a2,2 0,0 1,-2 -2V12a2,2 0,0 1,2 -2z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M10,18h28v20H10z" />
+</vector>
