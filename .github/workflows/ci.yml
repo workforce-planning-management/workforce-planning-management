@@ -103,10 +103,14 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: workforce-planning-management-service-with-rust
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-nextest
       - run: cargo fmt --all --check
       - run: cargo clippy --locked --workspace --all-targets -- -D warnings
       # The service, the domain crate (the pure rules, WPM-D203) and entity-ref.
-      - run: cargo test --locked --workspace --lib
+      # nextest (WPM-T645): the same tests, one process each, reporting every failure.
+      - run: cargo nextest run --locked --profile ci --workspace --lib
       # Each Criterion benchmark once (WPM-T495): it runs, it does not measure; timings on shared runners are noise.
       # The rules' benchmarks are the domain crate's (WPM-T538).
       - run: cargo test --locked -p workforce-planning-management-domain --bench rules
@@ -298,41 +302,32 @@ jobs:
         with:
           workspaces: workforce-planning-management-service-with-rust
           key: db
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-nextest
       # The request suite turns sign-in and rate limits off explicitly; each
       # of the other binaries runs in its own process because the flags are
       # read once.
       # WPM-T534: `main` is the request suites and the checks in one binary; `enforcement` is every suite that needs only sign-in
       # and the reference policy. The `enforcement_*` binaries below need a policy or a setting of their own.
-      - run: cargo test --locked --test main -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_expenses -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_flexible -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_conversion -- --ignored --test-threads=1
-      - run: cargo test --locked --test shared_cache_upstream
-      # The query cache a build reads must match the migrated schema and the queries (WPM-D184).
+      # The query cache a build reads must match the migrated schema and the queries (WPM-D184). The migrated test database is
+      # also the template the suites below clone (WPM-T646).
       - run: cargo install sqlx-cli --version 0.9.0 --locked --no-default-features --features postgres,rustls,sqlx-toml
       - run: cargo run --locked -- db migrate
         env:
           APP_ENV: test
       - run: cargo sqlx prepare --check
-      - run: cargo test --locked --test enforcement_equality -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_health -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_oversight_pack -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_cutover -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_escalations -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_pay_gap -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_pay_information -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_what_if -- --ignored --test-threads=1
-      - run: cargo test --locked --test enforcement_allocations -- --ignored --test-threads=1
-      # The outbox event transport is read once per process, so it has its own binary (WPM-R16).
-      - run: cargo test --locked --test event_outbox -- --ignored --test-threads=1
-      # Not #[ignore]d, so `--lib` above does not reach them and `--ignored` would run none of them (WPM-T396).
-      - run: cargo test --locked --test main
-      - run: cargo test --locked --test security -- --ignored --test-threads=1
-      - run: cargo test --locked --test retention_schedule -- --ignored --test-threads=1
-      # What the log holds for a request (WPM-R122): an id and a route, never a query string or an identifier.
-      - run: cargo test --locked --test request_log -- --ignored --test-threads=1
+      # One nextest run for every database suite (WPM-T645, WPM-T646). Each test runs in its own process and its own database,
+      # cloned from the migrated one by `scripts/nextest-db.sh`, so the settings read once per process (sign-in, rate limits, the
+      # policy, the outbox transport) stay apart and the tests run in parallel. `--run-ignored all` runs the `#[ignore]`d database
+      # tests and the checks in `main` that are not ignored (WPM-T396, WPM-T534). To go back to one test at a time, use
+      # `--profile ci`, which holds every integration binary to one test at a time on one database. Four at a time keeps the open
+      # connections well under the service container's default limit of 100.
+      - run: cargo nextest run --locked --profile parallel --test-threads 4 --run-ignored all -E 'kind(test) & !binary(chaos) & !binary(keycloak) & !binary(oidc_entra)'
+        env:
+          WPM_TEMPLATE_DB: workforce_planning_management_test
       # Chaos: a proxy resets, swallows and slows the database connection; the seed is in the log (WORKFORCE_PLANNING_MANAGEMENT_CHAOS_SEED replays it).
+      # Its own step: `--nocapture` shows the seed, and it is left out of the nextest run above.
       - run: cargo test --locked --test chaos -- --ignored --nocapture
 
   api-oidc:

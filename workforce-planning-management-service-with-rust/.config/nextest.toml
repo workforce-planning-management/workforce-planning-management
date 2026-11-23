@@ -1,0 +1,46 @@
+# cargo-nextest (WPM-T645). Each test runs in its own process, which the suites already need: the sign-in, rate-limit and policy
+# settings are read once per process, so a binary that sets one cannot share a process with another that sets a different one.
+#
+#   cargo nextest run --workspace --lib                                   unit tests, no database
+#   cargo nextest run --run-ignored all -E 'kind(test) & !binary(chaos)'  the database suites (need DATABASE_URL)
+#
+# Every integration-test binary shares the one database, so the `database` group below runs them one test at a time, across
+# binaries, which is what `--test-threads=1` did per binary. Raise `max-threads` only after the suites are isolated from each other.
+
+# Wrapper scripts are an experimental nextest feature (WPM-T646).
+experimental = ["wrapper-scripts"]
+
+[test-groups]
+database = { max-threads = 1 }
+# The tests that share one Redis (WPM-T646) run one at a time even where the databases are separate.
+redis = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'kind(test)'
+test-group = 'database'
+
+[profile.default]
+slow-timeout = { period = "30s" }
+
+# CI: report every failure, not the first.
+[profile.ci]
+fail-fast = false
+slow-timeout = { period = "60s" }
+
+# Prototype (WPM-T646): each test in its own database cloned from a migrated template, so tests run in parallel.
+#   createdb wpm_template && DATABASE_URL=.../wpm_template APP_ENV=test cargo run -- db migrate
+#   DATABASE_URL=postgres://.../postgres cargo nextest run --profile parallel --run-ignored all -E 'binary(main)'
+[scripts.wrapper.database-per-test]
+command = './scripts/nextest-db.sh'
+
+[profile.parallel]
+fail-fast = false
+slow-timeout = { period = "60s" }
+
+[[profile.parallel.scripts]]
+filter = 'kind(test)'
+run-wrapper = 'database-per-test'
+
+[[profile.parallel.overrides]]
+filter = 'test(/shared_cache/)'
+test-group = 'redis'

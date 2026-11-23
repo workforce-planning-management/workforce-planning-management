@@ -7313,3 +7313,24 @@ the entry records only the evidence it needs.
       past `u64` milliseconds is no expiry; a stored pay step below zero gives `null` progression and annual pay; a department
       headcount that does not fit `i32` stops the snapshot task. **Not verified:** line coverage after the changes. **Still open:**
       `float_arithmetic` in the domain crate (a per-crate decision), and the other `unwrap_or(0)` on conversions.
+
+## Faster tests ([testing-and-verification](../AGENTS/testing-and-verification.md)), 2026-11-23
+
+- [x] WPM-T645 (2026-11-23) **cargo-nextest.** At the owner's request. `.config/nextest.toml` in the service (a `database` test group that
+      holds every integration-test binary to one test at a time across binaries, as `--test-threads=1` did per binary; a `ci`
+      profile that reports every failure); the unit-test step and the database job in `.github/workflows/ci.yml` run through it,
+      with `taiki-e/install-action` pinned to the digest already used; the testing guide lists the commands. Coverage (tarpaulin)
+      and the chaos suite (`--nocapture`) are unchanged. **Verified:** all 337 database tests pass under `--profile ci`, each in
+      its own process, one at a time, on a local PostgreSQL 18. **Not verified:** that CI passes with it.
+- [~] WPM-T646 (2026-11-23) **Database suites in parallel.** Every test boots the app and runs the migrations, so tests cannot
+      share a database in parallel: four at a time, 271 of 293 failed on `_sqlx_migrations` and deadlocks. The `parallel` profile
+      runs each test in its own database, cloned from a migrated template by the nextest wrapper script
+      `scripts/nextest-db.sh` (an experimental nextest feature, enabled in the config), dropped afterwards; the `shared_cache`
+      tests, which share a Redis, stay one at a time. **Verified (2026-11-23, a laptop under a load average above 200 from other
+      work, so the times are only indicative):** all 337 database tests pass, 293 in `main` in 247 s and 44 in the others in 42 s,
+      against about 704 s for the same tests one at a time. The CI database job now runs this with four tests at a time.
+      **Not verified:** CI (the runner, the Postgres service's connection limit, Redis in parallel); the job's time there. **Open:**
+      tarpaulin (the 15-minute coverage job) still runs `--test-threads=1` on one database, and the same template could serve it
+      only through nextest's `llvm-cov`, a different coverage tool; `cargo run -- db migrate` and `cargo sqlx prepare` still build
+      the binary again (two minutes of the job).
+
