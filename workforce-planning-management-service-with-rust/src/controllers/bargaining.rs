@@ -759,14 +759,23 @@ async fn facility_time(
         .iter()
         .try_fold(0_i64, |sum, r| sum.checked_add(i64::from(r.minutes)))
         .ok_or_else(|| super::internal("facility time could not be totalled"))?;
+    // A stored minutes figure that is negative is corrupt data, not zero hours (RCA-IN-6).
+    let periods = rows
+        .iter()
+        .map(|r| {
+            Ok(json!({
+                "pid": r.pid, "period_start": r.period_start, "period_end": r.period_end,
+                "minutes": r.minutes,
+                "hours": crate::rules::display::ratio(super::count_usize(i64::from(r.minutes))?, 60),
+                "budget_minutes": r.budget_minutes,
+                "over_budget": gate_rules::over_budget(r.minutes, r.budget_minutes),
+            }))
+        })
+        .collect::<Result<Vec<_>>>()?;
     format::json(json!({
         "body_pid": body.pid,
         "derivation": "minutes released for representative duties, per body per period. Not per person: no one is named and no person's time is held.",
-        "periods": rows.iter().map(|r| json!({
-            "pid": r.pid, "period_start": r.period_start, "period_end": r.period_end,
-            "minutes": r.minutes, "hours": crate::rules::display::ratio(usize::try_from(r.minutes).unwrap_or(0), 60),
-            "budget_minutes": r.budget_minutes, "over_budget": gate_rules::over_budget(r.minutes, r.budget_minutes),
-        })).collect::<Vec<_>>(),
+        "periods": periods,
         "total_minutes": total,
     }))
 }

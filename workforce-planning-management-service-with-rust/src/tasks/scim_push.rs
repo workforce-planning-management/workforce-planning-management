@@ -92,7 +92,7 @@ fn after_failure(previous: i32, now: Timestamp) -> Result<(i32, Timestamp)> {
     let attempts = previous
         .checked_add(1)
         .ok_or_else(|| Error::string("the SCIM attempt count exceeds the supported range"))?;
-    let wait = scim::backoff_seconds(u32::try_from(previous).unwrap_or(0));
+    let wait = scim::backoff_seconds(crate::controllers::count_u32(previous)?);
     let retry_at = now
         .checked_add(jiff::SignedDuration::from_secs(wait))
         .map_err(|e| Error::string(&format!("the SCIM retry time leaves the calendar: {e}")))?;

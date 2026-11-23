@@ -83,7 +83,7 @@ pub async fn send_reminders(ctx: &AppContext, from: Date, to: Date) -> Result<us
         let Some(scale) = scale_rules::find(&row.scale_id) else {
             continue;
         };
-        let step = usize::try_from(row.step).unwrap_or(0);
+        let step = crate::controllers::count_usize(i64::from(row.step))?;
         let Some(on) = scale
             .band(&row.band)
             .and_then(|b| rules::eligible_on(b, step, row.step_since.get()))

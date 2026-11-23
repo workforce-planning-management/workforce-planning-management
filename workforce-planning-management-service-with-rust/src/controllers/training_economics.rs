@@ -183,7 +183,7 @@ async fn plan_steps(ctx: &AppContext, plan: &development_plans::Model) -> Result
             Ok(match (item.method.as_str(), course) {
                 ("course", Some(course)) => Step {
                     fee: fee_of(course),
-                    hours: u32::try_from(course.hours).unwrap_or(0),
+                    hours: super::count_u32(course.hours)?,
                     estimated_hours: false,
                 },
                 ("course", None) => Step {
