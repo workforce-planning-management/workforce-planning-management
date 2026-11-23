@@ -457,7 +457,23 @@ pub(crate) fn with_next(mut response: Response, window: &Window, more: bool) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::{row_json, rows_to_read};
+    use super::{count_u32, count_usize, len_i32, len_u32, row_json, rows_to_read};
+
+    /// A stored count that fits comes back as it is; one that does not is an error, never zero or the largest number (RCA-IN-6).
+    #[test]
+    fn a_stored_count_that_does_not_fit_is_an_error() {
+        assert_eq!(count_usize(0).unwrap(), 0);
+        assert_eq!(count_usize(7).unwrap(), 7);
+        assert!(count_usize(-1).is_err());
+        assert_eq!(count_u32(5_i32).unwrap(), 5);
+        assert_eq!(count_u32(u32::MAX).unwrap(), u32::MAX);
+        assert!(count_u32(-1_i32).is_err());
+        assert!(count_u32(i64::from(u32::MAX) + 1).is_err());
+        assert_eq!(len_u32(3).unwrap(), 3);
+        assert_eq!(len_i32(3).unwrap(), 3);
+        assert!(len_u32(usize::try_from(u32::MAX).unwrap() + 1).is_err());
+        assert!(len_i32(usize::try_from(i32::MAX).unwrap() + 1).is_err());
+    }
 
     #[test]
     fn one_more_row_is_read_than_the_page_holds() {
