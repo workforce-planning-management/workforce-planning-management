@@ -307,14 +307,14 @@ test("the bar offers every Lily theme by its short name, in two alphabetical gro
   const themes = await page.locator(".theme-picker-option").allTextContents();
   expect(themes).toHaveLength(THEMES.length);
   // Lily 0.8.0 names the NHS themes shortly ("NHS England (patients)"): the 36 generic themes alphabetically, then the
-  // 27 that follow a company's or a public body's design system, alphabetically by that name.
+  // 29 that follow a company's or a public body's design system, alphabetically by that name.
   const names = themes.map((t) => t.trim());
   expect(names).toContain("NHS England (patients)");
   expect(names.some((t) => /^United Kingdom National Health Service/.test(t))).toBe(false);
   const byName = (a: string, b: string) => a.localeCompare(b, "en", { sensitivity: "base" });
   const generic = names.slice(0, 36);
   const branded = names.slice(36);
-  expect(branded).toHaveLength(27);
+  expect(branded).toHaveLength(29);
   expect(generic).toEqual([...generic].sort(byName));
   expect(branded).toEqual([...branded].sort(byName));
   await page.keyboard.press("Escape");
