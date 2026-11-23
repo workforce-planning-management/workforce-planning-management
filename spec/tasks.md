@@ -7270,7 +7270,7 @@ the entry records only the evidence it needs.
       RCA-DECL-6, RCA-ENF-2, RCA-ENF-4, RCA-ENF-7; follow-up to WPM-T635)* A setting that is **supplied but invalid** now stops the
       start with an error that names it, instead of being replaced by a default or raised to a bound: the due-soon window
       (`LEARNING_DUE_SOON_DAYS`), the organization ceiling (`MAX_ORG_WORKERS`), every retention horizon (`RETENTION_DAYS` and
-      `RETENTION_<KIND>_DAYS`, which were ignored for the next source or raised to the 30-day floor), the two rate limits, the two key
+      `RETENTION_<KIND>_DAYS`, which were ignored for the next source or raised to the 30 calendar days floor), the two rate limits, the two key
       refresh intervals, the contracted day and the payroll stub (which was "ignored with a warning" and fell back to the example).
       An **absent** setting still takes its declared default (RCA-IN-3). `src/settings.rs::validate` checks them all once at start;
       the request path returns a 500 naming the setting if one is somehow invalid. A **stored value** out of range is now an error
@@ -7289,7 +7289,7 @@ the entry records only the evidence it needs.
       meets one anyway reads it as absent and logs an error (the token limit stays on). The health-requirements floor, the AI Act date and
       the pay-gap tiers follow. `scripts/check-checked-arithmetic.py` runs the RCA-ENF-5 and
       RCA-ENF-7 searches on production code in CI (a hit fails; `// RCA-IN-3: absent only` marks a declared default). It found one
-      more: a policy's `acknowledge_within_days` was clamped at 0 and a failed date sum became 0 days, so a corrupt figure made a
+      more: a policy's `acknowledge_within_days` was clamped at 0 and a failed date sum became 0 calendar days, so a corrupt figure made a
       reminder due on the effective day; `policy::standing` is now `None` (unknown, `null` in the API, no reminder) for it.
       **Still open:** the ABAC policy file (its default is deny, a safe fallback the owner may want to keep); a profile pair of joint-assessment
       values that does not check (stored data) still falls back to the defaults; the stored `refresher_months` and job-level
