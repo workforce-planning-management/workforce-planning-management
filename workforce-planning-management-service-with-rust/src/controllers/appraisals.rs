@@ -236,7 +236,7 @@ async fn appraisal_status(
         )
         .fetch_one(db::pool(&ctx))
         .await?;
-        let non_self = usize::try_from(non_self).unwrap_or(0);
+        let non_self = crate::controllers::count_usize(non_self)?;
         if non_self < rules::MIN_NON_SELF_RATERS {
             return Err(unprocessable(&format!(
                 "collecting requires at least {} non-self raters, have {non_self}",

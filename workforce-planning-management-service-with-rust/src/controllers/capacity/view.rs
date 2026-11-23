@@ -161,7 +161,7 @@ async fn weighted_days(
                 && let (Some(sum), Some(count)) = (sums.get_mut(i), counts.get_mut(i))
             {
                 *sum = row.total;
-                *count = usize::try_from(row.workers).unwrap_or(0);
+                *count = crate::controllers::count_usize(row.workers)?;
             }
         }
     }

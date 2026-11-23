@@ -556,7 +556,7 @@ async fn team_counts(
     .await?;
     let count = rules::team_count(
         team.len(),
-        usize::try_from(acknowledged).unwrap_or(0),
+        crate::controllers::count_usize(acknowledged)?,
         DEFAULT_FLOOR,
     );
     format::json(json!({ "version_pid": version.pid, "floor": DEFAULT_FLOOR, "count": count }))

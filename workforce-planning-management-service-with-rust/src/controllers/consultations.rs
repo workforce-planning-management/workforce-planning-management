@@ -306,12 +306,12 @@ async fn timeline(
     .await?
     .into_iter()
     .map(|o| {
-        (
+        Ok((
             o.earliest_termination_on.get(),
-            u32::try_from(o.dismissals).unwrap_or(0),
-        )
+            crate::controllers::count_u32(o.dismissals)?,
+        ))
     })
-    .collect();
+    .collect::<Result<_>>()?;
     let agreements = sqlx::query!(
         "SELECT unit_pid, title, version, effective_from, effective_to, consultation_days FROM collective_agreements
          WHERE unit_pid IN (SELECT pid FROM bargaining_units WHERE body_pid = $1)",
@@ -337,8 +337,8 @@ async fn timeline(
         .max()
         .map(i64::from);
     let proposal = consult::Proposal {
-        establishment_size: u32::try_from(row.establishment_size).unwrap_or(0),
-        dismissals: u32::try_from(row.dismissals).unwrap_or(0),
+        establishment_size: crate::controllers::count_u32(row.establishment_size)?,
+        dismissals: crate::controllers::count_u32(row.dismissals)?,
         earliest_termination: row.earliest_termination_on.get(),
         others,
         agreed_period_days: agreed_period,

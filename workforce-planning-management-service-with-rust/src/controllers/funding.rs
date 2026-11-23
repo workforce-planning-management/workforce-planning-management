@@ -420,14 +420,14 @@ async fn contingent(State(ctx): State<AppContext>, caller: MaybeAuthUser) -> Res
     .await?
     .into_iter()
     .map(|g| {
-        (
+        Ok((
             g.department,
             g.employment_type,
             g.fte_percent,
-            usize::try_from(g.people).unwrap_or(0),
-        )
+            crate::controllers::count_usize(g.people)?,
+        ))
     })
-    .collect();
+    .collect::<Result<Vec<_>>>()?;
     let floor = DEFAULT_FLOOR;
     let share = rules::contingent_share_counted(&groups, floor)
         .ok_or_else(|| super::internal("contingent share totals overflowed"))?;

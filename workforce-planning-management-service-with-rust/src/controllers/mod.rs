@@ -141,6 +141,16 @@ pub(crate) fn count_usize(n: i64) -> Result<usize> {
     usize::try_from(n).map_err(|_| Error::string("a stored count is out of range"))
 }
 
+/// A stored count as a `u32`. One that does not fit is corrupt data, so it is an error, never zero (RCA-IN-6).
+///
+/// # Errors
+///
+/// A server error naming the problem.
+pub(crate) fn count_u32(n: impl TryInto<u32>) -> Result<u32> {
+    n.try_into()
+        .map_err(|_| Error::string("a stored count is out of range"))
+}
+
 /// A length as a `u32`, or an error when it does not fit (RCA-INT-4: never the largest number).
 ///
 /// # Errors

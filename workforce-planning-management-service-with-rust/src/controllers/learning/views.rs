@@ -36,9 +36,9 @@ pub(super) async fn skills_matrix(State(ctx): State<AppContext>) -> Result<Respo
     .await?
     {
         let cell = cells.entry((row.department, row.skill_pid)).or_default();
-        cell.0 = usize::try_from(row.total).unwrap_or(0);
+        cell.0 = crate::controllers::count_usize(row.total)?;
         cell.1 = row.sum;
-        cell.2 = usize::try_from(row.below).unwrap_or(0);
+        cell.2 = crate::controllers::count_usize(row.below)?;
     }
     // The named gaps: declared below a declared target.
     let gaps: Vec<serde_json::Value> = sqlx::query!(
