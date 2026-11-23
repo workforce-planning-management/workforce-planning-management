@@ -27,6 +27,8 @@
 | **Resource manager** | A role that plans who works on what: reads and writes people's allocations, not their own, and no other HR record (WPM-R276) |
 | **Allocation** | A person's planned share of an assignment's FTE for a programme, product or service in a month (WPM-R275); a plan of work, never a measure of effort or performance |
 | **Slack** | A pool-month whose committed demand is below a configured share of supply; no demand recorded is `unknown`, not slack (WPM-R259) |
+| **PKCE** | Proof Key for Code Exchange (RFC 7636): a one-time secret a native app sends with its sign-in so a stolen authorization code is useless; the mobile apps use `S256` (WPM-R281) |
+| **Native app (mobile)** | The iPhone or Android client of the API, a public OAuth client that signs in through the system browser and holds its token in the platform's secure store ([mobile-apps.md](mobile-apps.md)) |
 | **Scenario version** | An immutable, numbered snapshot of a scenario's levers, lines and forecast, used for comparison and forecast accuracy (WPM-R261, WPM-D212) |
 | **Complementary suppression** | Withholding further cells so that no cell withheld under the floor can be recovered from totals (WPM-D209) |
 | **Deployment name** | `WORKFORCE_PLANNING_MANAGEMENT_DEPLOYMENT_ID`, bound into the database on the first start and checked at every start, so a service never starts against another buyer's database (WPM-R277) |

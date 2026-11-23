@@ -82,6 +82,13 @@ absent. A region's section is a record of what was read, never a claim of compli
   me" are the person's own, shared only by them (WPM-D126); candidate adjustments are kept from scoring and deleted with the
   application.
 
+## On a phone (proposed 2026-11-23, WPM-D227, WPM-D228)
+
+The mobile apps ([mobile-apps.md](mobile-apps.md)) add **no new data class** on the server. On the device they keep only the
+deployment's address and the sign-in token (in the Keychain or under an Android Keystore key, excluded from backups); what the
+service returns is held in memory for the screen showing it. No analytics, crash-reporting or other third-party SDK, so no new
+processor. A deployer that offers the apps through a mobile device management system records that in its own record of processing.
+
 ## Production would additionally require
 
 - A **lawful-basis mapping per record class for each jurisdiction the deployer works in** (for example the UK GDPR and the Data

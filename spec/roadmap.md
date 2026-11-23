@@ -15,8 +15,8 @@ category limits) are listed there under "Not done".
 ## Next candidates (from the benchmark scan, `.sota/last-scan.json`)
 
 - Grievance / helpdesk ticketing; job-offer terms (the requisition has an
-  `offer` state but no offer document); employee referrals; a mobile app or
-  PWA with push; geofenced / biometric clock-in; swap-style requests for other
+  `offer` state but no offer document); employee referrals; push notifications to the mobile apps (the apps
+  themselves were proposed 2026-11-23, [mobile-apps.md](mobile-apps.md)); geofenced / biometric clock-in; swap-style requests for other
   rota-like bookings.
 
 ## Follow-ups on delivered work

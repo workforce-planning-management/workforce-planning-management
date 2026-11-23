@@ -502,6 +502,11 @@
         "description": "Proposed WPM-R254–R266, WPM-R275, WPM-D207–D213, WPM-T553–T573 and WPM-T596–T600 (2026-11-20, customer feedback): configurable pay scales, a post's grade, combined analysis, organizational units, services and floors, allocation signals, per-person allocation (WPM-R275, WPM-D211, decided by the owner), planned versus actual, versioned scenarios and their impact, finance export and import, forecast accuracy"
       },
       {
+        "title": "spec/mobile-apps.md",
+        "path": "spec/mobile-apps.md",
+        "description": "proposed 2026-11-23: the iPhone and Android apps over the one API, sign-in with PKCE, my time off, request and cancel leave (WPM-R280–R284, WPM-D224–D228)"
+      },
+      {
         "title": "spec/supplier-assurance.md",
         "path": "spec/supplier-assurance.md",
         "description": "Proposed WPM-R267–R274, WPM-R277, WPM-D214–D220, WPM-T574–T595 and WPM-T603 (2026-11-20): supplier assurance for a health buyer, NHS Wales as the worked example: buyer-approved support access, tenant pin, one deployment per database, MFA requirement, column encryption, audit anchoring, declared residency, organization export and destruction record, shared responsibility"
@@ -522,6 +527,16 @@
         "title": "workforce-planning-management-ui-with-svelte/",
         "path": "workforce-planning-management-ui-with-svelte/index.md",
         "description": "the browser client; strings in `content/locales/<locale>/ui.json`; money, numbers and dates through the page's locale"
+      },
+      {
+        "title": "workforce-planning-management-mobile-app-with-swift/",
+        "path": "workforce-planning-management-mobile-app-with-swift/index.md",
+        "description": "the iPhone and iPad app (proposed): the pure `WPMCore` target in `Sources/WPMCore/`, the SwiftUI screens in `Sources/WPMUI/`, strings in `Localizable.xcstrings`, the Xcode project in `App/`"
+      },
+      {
+        "title": "workforce-planning-management-mobile-app-with-kotlin/",
+        "path": "workforce-planning-management-mobile-app-with-kotlin/index.md",
+        "description": "the Android app (proposed): the pure `core` JVM module, the Compose `app` module, strings in `app/src/main/res/values/strings.xml`"
       },
       {
         "title": "workforce-planning-management-matcher-with-rust/",
@@ -646,6 +661,16 @@
         "title": "UI AGENTS.md",
         "path": "workforce-planning-management-ui-with-svelte/AGENTS.md",
         "description": "Front-end stack-level agreements"
+      },
+      {
+        "title": "workforce-planning-management-mobile-app-with-swift/AGENTS.md",
+        "path": "workforce-planning-management-mobile-app-with-swift/AGENTS.md",
+        "description": "working agreements for the iPhone app: the pure core first, Lily from a checkout, strings as resources"
+      },
+      {
+        "title": "workforce-planning-management-mobile-app-with-kotlin/AGENTS.md",
+        "path": "workforce-planning-management-mobile-app-with-kotlin/AGENTS.md",
+        "description": "working agreements for the Android app: the pure core first, Lily from a checkout, strings as resources"
       }
     ]
   },

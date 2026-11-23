@@ -78,6 +78,25 @@ cargo test --test main -- --ignored --test-threads=1   # serial: the tests share
 podman compose -f compose.test.yaml down
 ```
 
+## Build and test the mobile apps (proposed, [spec/mobile-apps.md](spec/mobile-apps.md))
+
+Both apps take Lily Design System from a checkout of the Lily monorepo (WPM-D226). Set `LILY_DESIGN_SYSTEM_DIR` to it, or
+check it out at `../../lilydesignsystem/lily-design-system` beside this repository.
+
+```sh
+cd workforce-planning-management-mobile-app-with-swift     # Xcode 26 or later, iOS 18 SDK
+swift test                                                 # WPMCore 44, WPMUI 13 (2026-11-23)
+xcodebuild -project App/WorkforcePlanningManagement.xcodeproj -scheme WorkforcePlanningManagement \
+  -destination 'generic/platform=iOS Simulator' build
+```
+
+```sh
+cd workforce-planning-management-mobile-app-with-kotlin    # a JDK 17+ and an Android SDK with platform 37.2
+./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug   # core 37, app 29 (2026-11-23)
+```
+
+Neither has signed in against the authentication service; for a local service a debug build accepts a pasted token.
+
 ## Build and run the front-end
 
 ```sh

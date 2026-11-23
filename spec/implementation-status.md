@@ -9,9 +9,9 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 
 | Measure | Count |
 | --- | ---: |
-| Tasks done in `spec/tasks.md` | 489 |
-| Tasks not done (open or proposed) | 144 |
-| Highest task number marked done | WPM-T637 |
+| Tasks done in `spec/tasks.md` | 490 |
+| Tasks not done (open or proposed) | 148 |
+| Highest task number marked done | WPM-T640 |
 | Database migrations | 134 |
 | Controllers | 98 |
 | Pure rule modules | 130 |
@@ -24,7 +24,7 @@ fails if the committed copy is stale (`python3 scripts/status.py --check`).
 | Playwright tests (`test(`) | 343 |
 | Front-end pages (`+page.svelte`) | 70 |
 | Content locales | 25 |
-| Topic files in `spec/` (not counting this one) | 69 |
+| Topic files in `spec/` (not counting this one) | 70 |
 | Assessment checklist answers: met | 16 |
 | Assessment checklist answers: partly met | 16 |
 | Assessment checklist answers: not met | 6 |

@@ -164,6 +164,14 @@ at the authentication service keeps working here for up to one token lifetime, a
 **Not done.** No revocation list or introspection call (they would make the provider a dependency of every request); no check of the
 `sid` against the provider; no refresh handling (that belongs to the UI's session, not the API).
 
+## Native mobile clients (proposed 2026-11-23, WPM-D224)
+
+The iPhone and Android apps ([mobile-apps.md](mobile-apps.md)) are **public clients** (RFC 8252): they sign in through the system
+browser with an authorization code and PKCE, keep the PASETO in the platform's secure store and send it as `Authorization: Bearer`.
+The service verifies it exactly as above and decides with the same policy and the `/api/me` allow-list; nothing in the service
+changes and no audience is added. A `401` signs the app out. **Not verified:** that the sibling authentication service offers that
+flow; its endpoint paths are the apps' configuration.
+
 ## Single-use link tokens (WPM-T348)
 
 A link in a message that lets one person do one thing once (confirm an address, answer a request) carries a **token** that works exactly once.

@@ -50,6 +50,8 @@ here), and the live Playwright specs against a real service. See each subproject
 | --- | --- | --- |
 | [workforce-planning-management-service-with-rust](workforce-planning-management-service-with-rust/) | Back-end JSON API | Rust, Axum and axa, `sqlx`, PostgreSQL |
 | [workforce-planning-management-ui-with-svelte](workforce-planning-management-ui-with-svelte/) | HR / manager / self-service UI | SvelteKit 3, Svelte 5 runes, TypeScript |
+| [workforce-planning-management-mobile-app-with-swift](workforce-planning-management-mobile-app-with-swift/) | iPhone and iPad app for the worker (proposed; first slice: sign in, my time off, request and cancel leave) | Swift 6, SwiftUI, Lily Design System for Swift |
+| [workforce-planning-management-mobile-app-with-kotlin](workforce-planning-management-mobile-app-with-kotlin/) | Android app for the worker (proposed; the same first slice) | Kotlin, Jetpack Compose, Lily Design System for Kotlin |
 | [workforce-planning-management-matcher-with-rust](workforce-planning-management-matcher-with-rust/) | Worker-record matcher crate (published; the service uses the crates.io copy) | Rust, no database, no clock |
 
 Each subproject is self-contained: it owns its own `README.md`,

@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added — mobile apps for iPhone and Android (proposed; WPM-R280–R284, WPM-T638–T642, 2026-11-23)
+
+Two new subprojects on the branch `wpm-mobile-apps`: `workforce-planning-management-mobile-app-with-swift` (Swift 6, SwiftUI,
+Lily for Swift) and `workforce-planning-management-mobile-app-with-kotlin` (Kotlin, Jetpack Compose, Lily for Kotlin). The first
+slice: connect and sign in through the system browser with PKCE, my time off, request and cancel leave. A pure core first; the
+token only in the platform's secure store; nothing personal kept on the phone; no service change. English only; not yet run
+against a service or on a device; no CI yet.
+
 ### Decided — OpenID Connect only, no SAML until a customer needs it (WPM-D222, 2026-11-21)
 
 Sign-in stays OpenID Connect only. SAML is added when a customer needs it, as its own requirement; a provider that speaks only

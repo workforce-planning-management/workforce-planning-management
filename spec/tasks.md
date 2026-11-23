@@ -7313,3 +7313,53 @@ the entry records only the evidence it needs.
       past `u64` milliseconds is no expiry; a stored pay step below zero gives `null` progression and annual pay; a department
       headcount that does not fit `i32` stops the snapshot task. **Not verified:** line coverage after the changes. **Still open:**
       `float_arithmetic` in the domain crate (a per-crate decision), and the other `unwrap_or(0)` on conversions.
+
+## Mobile apps for iPhone and Android ([mobile-apps.md](mobile-apps.md)), proposed 2026-11-23
+
+- [~] WPM-T638 (2026-11-23) **The iPhone app: `workforce-planning-management-mobile-app-with-swift/`.** *(traces to WPM-R280–R284,
+      WPM-D224–D228)* Part done (2026-11-23): a Swift package with the pure `WPMCore` (a calendar date with no time zone, the
+      time-off and leave models where an unknown allowance is not zero, the service's problem details, `canCancel` copied from
+      `time_off::can_worker_cancel`, the inclusive day span and its cap of 366 calendar days, no reason for sick leave, the address rules, PKCE
+      `S256`, the sign-in address and state check, a client over a `Transport` protocol sending `Accepts-version: 1.0`) and
+      `WPMUI` (connect, sign in with an ephemeral `ASWebAuthenticationSession`, the token in the Keychain only, an ephemeral
+      `URLSession` with no disk cache, a `401` signs out, my time off, request leave, cancel with confirmation, light and dark
+      through Lily, the window covered in the app switcher, a Debug-only paste-token screen, every string in
+      `Localizable.xcstrings`), and an Xcode app project over the package. **Verified:** `swift build` with no warnings; `swift
+      test`, 44 tests in 6 suites (`WPMCoreTests`, with the RFC 7636 appendix B vector) and 13 in 2 (`WPMUITests`: every string
+      key used and present, the session lifecycle, the time-off model against a stub, an `ImageRenderer` render); `xcodebuild` for
+      the iOS Simulator in Debug and Release (the paste-token screen compiles out); launched on the iPhone 17 simulator, where the
+      Connect screen rendered. **Not verified:** sign-in against the sibling authentication service or any running service (every
+      network test uses a stub; the paths and the client id `wpm-mobile` are defaults); a physical device, VoiceOver, large Dynamic
+      Type and dark mode on screen; the time-off screen on a simulator; the bordered text fields and the app-switcher cover seen
+      on screen. No URL scheme is registered, since `ASWebAuthenticationSession` takes the redirect itself. CI is WPM-T641.
+- [~] WPM-T639 (2026-11-23) **The Android app: `workforce-planning-management-mobile-app-with-kotlin/`.** *(traces to WPM-R280–R284,
+      WPM-D224–D228)* Part done (2026-11-23): a pure Kotlin JVM module `core` (the time-off and leave models where an unknown
+      allowance is `Figure.NotRecorded`, problem details, requests with `Accepts-version: 1.0`, the address rules, PKCE `S256`, the
+      authorize address, the state check and the token exchange, the cancel rule, the inclusive day span and its cap of 366
+      calendar days, no reason for sick leave) and `app` (Compose with Material 3 for the native controls and Lily's
+      `SummaryList`, `Tag`, `Field`, `ErrorSummary`, `InsetText` and `WarningText`; connect, sign in through a Custom Tab with the
+      `wpm-mobile://signin` redirect, my time off, request leave, cancel with confirmation, sign out, a `401` signs out; the token
+      encrypted under an AES-GCM Android Keystore key in `noBackupFilesDir`, backup and data extraction off, `FLAG_SECURE`,
+      cleartext only to the three local hosts, a paste-token field in the debug source set only; every string in `strings.xml`).
+      Lily is a composite build (`-Plily.dir`, `LILY_DESIGN_SYSTEM_DIR`, or the default beside the repository). **Verified:**
+      `./gradlew --rerun-tasks :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug`: `core` 37 tests (with the RFC
+      7636 appendix B vector and a realistic time-off answer), `app` 29 Robolectric tests (18 of screen semantics, 11 of the view
+      model), 0 failed; lint "No issues found"; `:app:compileReleaseKotlin`. **Not verified:** anything on an emulator or a device
+      (the Custom Tab and its redirect, the Keystore store, which Robolectric lacks, the `HttpURLConnection` transport, TalkBack,
+      font scale 2.0, edge to edge); a round trip with a running service; the sibling authentication service's native flow (the
+      paths and the client id are defaults); `assembleRelease` with R8. **Known gaps:** the pending sign-in lives in the view model,
+      so if Android ends the process while the browser is open the person signs in again; a problem in the `ErrorSummary` does not
+      yet move focus to its field; dates are in the ISO calendar. CI is WPM-T641.
+- [x] WPM-T640 (2026-11-23) **Specify the mobile apps.** *(WPM-R280–R284, WPM-D224–D228)* [mobile-apps.md](mobile-apps.md) with the
+      first slice (connect and sign in, my time off, request and cancel leave), registered in [index.md](index.md), pointed at from
+      [requirements.md](requirements.md) and [design.md](design.md); native clients in [auth.md](auth.md), what a phone keeps in
+      [regulatory.md](regulatory.md), PKCE and native app in [glossary.md](glossary.md), the roadmap candidate narrowed to push. On
+      the branch `wpm-mobile-apps` at the owner's request. **Deliberately not done:** no service change (WPM-D224 needs none); no
+      decision on push notifications.
+- [ ] WPM-T641 (2026-11-23) **CI for the mobile apps.** *(WPM-D226)* Not started. A macOS job (`swift test`, `xcodebuild` for the
+      simulator) and a Linux job (`./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug lint`), each checking out the Lily
+      monorepo at a pinned commit and setting `LILY_DESIGN_SYSTEM_DIR`, every action pinned to a digest
+      (`scripts/check-actions-pinned.py`). Blocked on nothing but a choice of Lily commit; withdrawn in part when Lily publishes.
+- [ ] WPM-T642 (2026-11-23) **The mobile apps in every locale.** *(WPM-R284)* Not started. The first slice ships English only. The
+      other locales of the web UI as `Localizable.xcstrings` languages and `res/values-<tag>/strings.xml`, with right-to-left checked
+      for Arabic and Urdu, and a check that every key exists in English.

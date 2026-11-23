@@ -4,7 +4,8 @@ Working agreements for humans and AI agents on this repository. This file is
 the short entry point; the detail is in [`AGENTS/`](AGENTS/). Each subproject
 also has its own [API](workforce-planning-management-service-with-rust/AGENTS.md)
 and [UI](workforce-planning-management-ui-with-svelte/AGENTS.md) guide for
-stack-level detail. (Updated 2026-11-09, through WPM-T479; the site, WPM-T392.)
+stack-level detail, and so do the two mobile apps, [iPhone](workforce-planning-management-mobile-app-with-swift/AGENTS.md)
+and [Android](workforce-planning-management-mobile-app-with-kotlin/AGENTS.md). (Updated 2026-11-23, through WPM-T642; the site, WPM-T392.)
 
 > ⚠️ **Demo software, not yet ready for production use.** Synthetic data only.
 > [The path to production](locales/en-001/path-to-production/index.md) says what
@@ -54,6 +55,10 @@ stack-level detail. (Updated 2026-11-09, through WPM-T479; the site, WPM-T392.)
 - `workforce-planning-management-service-with-rust/` — Axum JSON API (`src/controllers/`, the pure rules in the domain crate `crates/workforce-planning-management-domain/` (WPM-D203), `migration/`, `tests/`,
   `crates/entity-ref` vendored).
 - `workforce-planning-management-ui-with-svelte/` — SvelteKit client (`src/routes/`, `src/lib/`, `content/locales/`, `tests/`).
+- `workforce-planning-management-mobile-app-with-swift/` — the iPhone and iPad app (Swift 6, SwiftUI, Lily for Swift): the pure
+  `WPMCore` target first, then `WPMUI` and the Xcode app ([spec/mobile-apps.md](spec/mobile-apps.md), proposed 2026-11-23).
+- `workforce-planning-management-mobile-app-with-kotlin/` — the Android app (Kotlin, Jetpack Compose, Lily for Kotlin): the pure
+  `core` JVM module first, then `app`. Both take Lily from a checkout of the Lily monorepo (`LILY_DESIGN_SYSTEM_DIR`, WPM-D226).
 - `workforce-planning-management-matcher-with-rust/` — the worker-record matcher crate, published to crates.io; the service
   uses the published copy, not this path (see the `[patch.crates-io]` note in the service's `Cargo.toml`).
 - `scripts/` — the checks CI runs (`check-links.py`, `check-days.py`, `check-licenses.py`, `check-actions-pinned.py`,
