@@ -15,6 +15,7 @@ public struct RootView: View {
     public var body: some View {
         NavigationStack {
             switch session.phase {
+            case .misconfigured: MisconfiguredView(problem: session.managedProblem)
             case .needsConnection: ConnectView(session: session)
             case .signedOut: SignInView(session: session)
             case .signedIn: TimeOffView(session: session)

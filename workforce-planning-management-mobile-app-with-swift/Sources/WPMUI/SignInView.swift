@@ -37,8 +37,10 @@ struct SignInView: View {
                 Button(L("signIn.action")) { Task { await signIn() } }
                     .disabled(working)
                     .frame(minHeight: 44)
-                Button(L("signIn.change"), role: .destructive) { session.disconnect() }
-                    .frame(minHeight: 44)
+                if !session.addressLocked {
+                    Button(L("signIn.change"), role: .destructive) { session.disconnect() }
+                        .frame(minHeight: 44)
+                }
                 #if DEBUG
                 Button(L("developer.pasteToken")) { pasting = true }
                     .frame(minHeight: 44)

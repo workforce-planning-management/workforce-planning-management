@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What a management tool may pre-set (WPM-R285). Neither is required; a personal device has neither. -->
+<restrictions xmlns:android="http://schemas.android.com/apk/res/android">
+    <restriction
+        android:key="deployment_url"
+        android:restrictionType="string"
+        android:title="@string/managed_restriction_url" />
+    <restriction
+        android:key="deployment_locked"
+        android:defaultValue="false"
+        android:restrictionType="bool"
+        android:title="@string/managed_restriction_locked" />
+</restrictions>

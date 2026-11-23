@@ -59,6 +59,7 @@ import io.github.lilydesignsystem.compose.Tag
 import io.github.lilydesignsystem.compose.WarningText
 import io.github.workforceplanningmanagement.mobile.core.AddressProblem
 import io.github.workforceplanningmanagement.mobile.core.Leave
+import io.github.workforceplanningmanagement.mobile.core.ManagedProblem
 import io.github.workforceplanningmanagement.mobile.core.LeaveDraft
 import io.github.workforceplanningmanagement.mobile.core.LeaveRequest
 import io.github.workforceplanningmanagement.mobile.core.TimeOff
@@ -111,7 +112,7 @@ fun SignInScreen(
     baseUrl: String,
     notice: Notice?,
     onSignIn: () -> Unit,
-    onChangeAddress: () -> Unit,
+    onChangeAddress: (() -> Unit)?,
     developerToken: (@Composable (onToken: (String) -> Unit) -> Unit)?,
     onToken: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -122,7 +123,9 @@ fun SignInScreen(
         Text(stringResource(R.string.signin_connected_to, baseUrl))
         Text(stringResource(R.string.signin_body))
         Button(onClick = onSignIn, modifier = Touch) { Text(stringResource(R.string.signin_button)) }
-        OutlinedButton(onClick = onChangeAddress, modifier = Touch) { Text(stringResource(R.string.signin_change_address)) }
+        if (onChangeAddress != null) {
+            OutlinedButton(onClick = onChangeAddress, modifier = Touch) { Text(stringResource(R.string.signin_change_address)) }
+        }
         developerToken?.invoke(onToken)
     }
 }
@@ -377,4 +380,23 @@ private fun DateField(label: Int, value: LocalDate?, tag: String, onPick: () -> 
             Text(value?.let { date(it) } ?: stringResource(R.string.leave_choose_date))
         }
     }
+}
+
+/** A setting a management tool supplied is not valid (WPM-R285): named, with no default and no address field in its place. */
+@Composable
+fun MisconfiguredScreen(problem: ManagedProblem, modifier: Modifier = Modifier) {
+    Column(modifier.verticalScroll(rememberScrollState()).padding(Gap).testTag("misconfigured"), verticalArrangement = Arrangement.spacedBy(Gap)) {
+        Heading(stringResource(R.string.managed_title), large = true)
+        NoticeText(managedProblem(problem))
+        Text(stringResource(R.string.managed_help))
+    }
+}
+
+@Composable
+private fun managedProblem(problem: ManagedProblem): String = when (problem) {
+    is ManagedProblem.DeploymentUrl ->
+        stringResource(R.string.managed_error_url) + " " + addressProblem(problem.why)
+    ManagedProblem.DeploymentUrlNotText -> stringResource(R.string.managed_error_url_not_text)
+    ManagedProblem.DeploymentLocked -> stringResource(R.string.managed_error_locked)
+    ManagedProblem.LockedWithoutUrl -> stringResource(R.string.managed_error_locked_without_url)
 }

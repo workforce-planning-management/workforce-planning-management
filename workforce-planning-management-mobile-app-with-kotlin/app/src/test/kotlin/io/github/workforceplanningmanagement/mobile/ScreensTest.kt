@@ -18,6 +18,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithTag
 import io.github.workforceplanningmanagement.mobile.core.AddressProblem
 import io.github.workforceplanningmanagement.mobile.core.LeaveDraft
+import io.github.workforceplanningmanagement.mobile.core.ManagedProblem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
@@ -166,5 +167,20 @@ class ScreensTest {
                 androidx.compose.ui.semantics.SemanticsProperties.Error, "The address must start with https://",
             ),
         )
+    }
+
+    @Test fun aBadManagedSettingIsNamedWithNoAddressFieldInItsPlace() {
+        rule.setContent {
+            WpmTheme { MisconfiguredScreen(ManagedProblem.DeploymentUrl(AddressProblem.InsecureScheme)) }
+        }
+        rule.onNodeWithText("deployment_url", substring = true).assertIsDisplayed()
+        rule.onAllNodesWithText("Continue").assertCountEquals(0)
+    }
+
+    @Test fun aLockedAddressHasNoChangeButton() {
+        rule.setContent {
+            WpmTheme { SignInScreen("https://wpm.example.org", null, {}, null, null, {}) }
+        }
+        rule.onAllNodesWithText("Use a different address", substring = true).assertCountEquals(0)
     }
 }

@@ -12,6 +12,9 @@ import io.github.workforceplanningmanagement.mobile.core.CallbackResult
 import io.github.workforceplanningmanagement.mobile.core.Connection
 import io.github.workforceplanningmanagement.mobile.core.HttpResponse
 import io.github.workforceplanningmanagement.mobile.core.Leave
+import io.github.workforceplanningmanagement.mobile.core.ManagedConfig
+import io.github.workforceplanningmanagement.mobile.core.ManagedProblem
+import io.github.workforceplanningmanagement.mobile.core.ManagedResult
 import io.github.workforceplanningmanagement.mobile.core.LeaveDraft
 import io.github.workforceplanningmanagement.mobile.core.PendingSignIn
 import io.github.workforceplanningmanagement.mobile.core.Pkce
@@ -55,6 +58,10 @@ data class UiState(
     val sending: Boolean = false,
     val sendFailure: Failure? = null,
     val notice: Notice? = null,
+    /** A setting a management tool supplied that is not valid (WPM-R285): the app stops on it and names it. */
+    val managedProblem: ManagedProblem? = null,
+    /** A management tool set the address and asked that it not be changed (WPM-R285). */
+    val addressLocked: Boolean = false,
 )
 
 class AppViewModel(
@@ -65,12 +72,31 @@ class AppViewModel(
     private val today: () -> LocalDate,
     private val random: (Int) -> ByteArray,
     private val config: SignInConfig = SignInConfig(),
+    /** The management tool's values (application restrictions), or null when there are none (WPM-R285). */
+    private val managed: () -> Map<String, Any?>? = { null },
 ) : ViewModel() {
-    private val _state = MutableStateFlow(
-        UiState(baseUrl = addresses.load(), signedIn = tokens.load() != null, year = today().year),
-    )
+    private val _state = MutableStateFlow(initialState())
     val state: StateFlow<UiState> = _state.asStateFlow()
     private var pending: PendingSignIn? = null
+
+    private fun initialState(): UiState {
+        val year = today().year
+        return when (val m = ManagedConfig.read(managed())) {
+            // No fallback to a saved address and no connect screen: the setting is named and the app waits for it (RCA-IN-4).
+            is ManagedResult.Refused -> UiState(year = year, managedProblem = m.problem)
+            is ManagedResult.Settings -> {
+                val saved = addresses.load()
+                val preset = m.baseUrl
+                // A token for another deployment is not kept.
+                if (preset != null && preset != saved) {
+                    tokens.clear()
+                    addresses.save(preset)
+                }
+                val base = preset ?: saved
+                UiState(baseUrl = base, signedIn = tokens.load() != null, year = year, addressLocked = m.locked)
+            }
+        }
+    }
 
     init {
         if (_state.value.signedIn && _state.value.baseUrl != null) load()
@@ -79,6 +105,7 @@ class AppViewModel(
     fun today(): LocalDate = today.invoke()
 
     fun connect(input: String) {
+        if (_state.value.addressLocked) return
         when (val r = Connection.parse(input)) {
             is AddressResult.Accepted -> {
                 addresses.save(r.baseUrl)
@@ -90,6 +117,7 @@ class AppViewModel(
 
     fun changeAddress() {
         signOut()
+        if (_state.value.addressLocked) return
         addresses.clear()
         _state.update { it.copy(baseUrl = null) }
     }
@@ -156,7 +184,7 @@ class AppViewModel(
         tokens.clear()
         pending = null
         _state.update {
-            UiState(baseUrl = it.baseUrl, year = today().year, notice = notice)
+            UiState(baseUrl = it.baseUrl, year = today().year, notice = notice, addressLocked = it.addressLocked)
         }
     }
 

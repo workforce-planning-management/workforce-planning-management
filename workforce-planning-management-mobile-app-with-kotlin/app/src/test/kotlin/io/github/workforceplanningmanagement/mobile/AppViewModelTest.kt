@@ -2,6 +2,7 @@
 package io.github.workforceplanningmanagement.mobile
 
 import io.github.workforceplanningmanagement.mobile.core.AddressProblem
+import io.github.workforceplanningmanagement.mobile.core.ManagedProblem
 import io.github.workforceplanningmanagement.mobile.core.HttpRequest
 import io.github.workforceplanningmanagement.mobile.core.HttpResponse
 import io.github.workforceplanningmanagement.mobile.core.LeaveDraft
@@ -43,8 +44,57 @@ class AppViewModelTest {
     @Before fun main() = Dispatchers.setMain(dispatcher)
     @After fun reset() = Dispatchers.resetMain()
 
-    private fun vm(tokens: TokenStore = MemoryTokens(), addresses: AddressStore = MemoryAddresses()) =
-        AppViewModel(tokens, addresses, transport, dispatcher, { TODAY }, { n -> ByteArray(n) { 7 } })
+    private fun vm(
+        tokens: TokenStore = MemoryTokens(),
+        addresses: AddressStore = MemoryAddresses(),
+        managed: Map<String, Any?>? = null,
+    ) = AppViewModel(tokens, addresses, transport, dispatcher, { TODAY }, { n -> ByteArray(n) { 7 } }, managed = { managed })
+
+    @Test fun aPresetAddressSkipsTheConnectScreen() {
+        val addresses = MemoryAddresses()
+        val v = vm(addresses = addresses, managed = mapOf("deployment_url" to "https://wpm.example.org"))
+        assertEquals("https://wpm.example.org", v.state.value.baseUrl)
+        assertFalse(v.state.value.addressLocked)
+        assertEquals("https://wpm.example.org", addresses.address)
+    }
+
+    @Test fun aLockedAddressCannotBeChanged() {
+        val v = vm(managed = mapOf("deployment_url" to "https://wpm.example.org", "deployment_locked" to true))
+        assertTrue(v.state.value.addressLocked)
+        v.connect("https://other.example.org")
+        assertEquals("https://wpm.example.org", v.state.value.baseUrl)
+        v.changeAddress()
+        assertEquals("the address stays; only the token goes", "https://wpm.example.org", v.state.value.baseUrl)
+    }
+
+    @Test fun aChangedPresetDropsTheTokenAndAnUnchangedOneKeepsIt() {
+        val kept = MemoryTokens("t")
+        vm(kept, MemoryAddresses("https://wpm.example.org"), mapOf("deployment_url" to "https://wpm.example.org"))
+        assertEquals("t", kept.token)
+        val moved = MemoryTokens("t")
+        val v = vm(moved, MemoryAddresses("https://wpm.example.org"), mapOf("deployment_url" to "https://new.example.org"))
+        assertNull("a token for another deployment is not kept", moved.token)
+        assertFalse(v.state.value.signedIn)
+    }
+
+    @Test fun anInvalidSettingStopsTheAppAndNamesIt() {
+        val tokens = MemoryTokens("t")
+        val v = vm(tokens, MemoryAddresses("https://wpm.example.org"), mapOf("deployment_url" to "http://wpm.example.org"))
+        assertEquals(ManagedProblem.DeploymentUrl(AddressProblem.InsecureScheme), v.state.value.managedProblem)
+        assertNull("no fallback to the saved address", v.state.value.baseUrl)
+        assertEquals("nothing is deleted because of a setting", "t", tokens.token)
+        assertEquals(
+            ManagedProblem.DeploymentLocked,
+            vm(managed = mapOf("deployment_url" to "https://wpm.example.org", "deployment_locked" to "maybe")).state.value.managedProblem,
+        )
+    }
+
+    @Test fun noManagedSettingsBehavesAsBefore() {
+        val v = vm()
+        assertNull(v.state.value.managedProblem)
+        assertFalse(v.state.value.addressLocked)
+        assertNull(v.state.value.baseUrl)
+    }
 
     @Test fun aRefusedAddressSendsNothing() {
         val v = vm()

@@ -486,6 +486,72 @@
         }
       }
     },
+    "managed.error.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The setting deployment_locked must be true or false."
+          }
+        }
+      }
+    },
+    "managed.error.lockedWithoutURL": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The setting deployment_locked is true, but deployment_url is not set, so the app has no address to use."
+          }
+        }
+      }
+    },
+    "managed.error.url": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The setting deployment_url is not a usable address."
+          }
+        }
+      }
+    },
+    "managed.error.urlNotText": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The setting deployment_url must be text, an address such as https://wpm.example.org."
+          }
+        }
+      }
+    },
+    "managed.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your organization set up this app, and one of its settings is not valid. Ask whoever manages your device to correct it. The app does not guess a value."
+          }
+        }
+      }
+    },
+    "managed.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set up by your organization"
+          }
+        }
+      }
+    },
     "request.end": {
       "extractionState": "manual",
       "localizations": {

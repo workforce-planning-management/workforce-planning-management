@@ -115,4 +115,12 @@
     <string name="error_unreadable">The service sent something this app cannot read.</string>
     <string name="error_refused">The service refused (status %1$d).</string>
     <string name="loading">Loading</string>
+    <string name="managed_title">Set up by your organization</string>
+    <string name="managed_help">Your organization set up this app, and one of its settings is not valid. Ask whoever manages your device to correct it. The app does not guess a value.</string>
+    <string name="managed_error_url">The setting deployment_url is not a usable address.</string>
+    <string name="managed_error_url_not_text">The setting deployment_url must be text, an address such as https://wpm.example.org.</string>
+    <string name="managed_error_locked">The setting deployment_locked must be true or false.</string>
+    <string name="managed_error_locked_without_url">The setting deployment_locked is true, but deployment_url is not set, so the app has no address to use.</string>
+    <string name="managed_restriction_url">Deployment address</string>
+    <string name="managed_restriction_locked">Do not allow the address to be changed</string>
 </resources>

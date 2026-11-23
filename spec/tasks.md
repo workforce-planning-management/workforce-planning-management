@@ -7363,15 +7363,25 @@ the entry records only the evidence it needs.
 - [ ] WPM-T642 (2026-11-23) **The mobile apps in every locale.** *(WPM-R284)* Not started. The first slice ships English only. The
       other locales of the web UI as `Localizable.xcstrings` languages and `res/values-<tag>/strings.xml`, with right-to-left checked
       for Arabic and Urdu, and a check that every key exists in English.
-- [ ] WPM-T643 (2026-11-23) **Managed devices, personal devices, phones and tablets.** *(WPM-R285, WPM-D229)* Not started; added at
-      the owner's request. For each app: read `deployment_url` and `deployment_locked` from managed app configuration into the
-      pure core (a supplied-but-invalid value is refused and named, an absent one is not an error), with the tests the core
-      takes; hide the address screen when locked; a universal iOS build and an adaptive Android layout (width classes, no fixed
-      orientation, split screen) with a two-column time-off screen on a wide window; delete a Keychain token left by an earlier
-      install on first launch (iOS); confirm no permission, entitlement or management API is requested. Check on an iPad
-      simulator and a tablet emulator, and with a managed configuration pushed by a management tool or its test harness: none of
-      this is verified yet. Whether the current iOS project is already universal and the Android manifest already allows resizing
-      is **not checked** and is the first step.
+- [~] WPM-T643 (2026-11-23) **Managed devices, personal devices, phones and tablets.** *(WPM-R285, WPM-D229)* Part done
+      (2026-11-23), at the owner's request: the pure core of each app reads `deployment_url` and `deployment_locked` from managed
+      app configuration (`ManagedConfiguration` in `WPMCore`, `ManagedConfig` in `core`): absent is not an error, a value that is
+      supplied but invalid (an address the connection rules refuse, an empty or non-text address, a flag that is not a boolean or
+      `true` or `false`, `deployment_locked` with no address) is refused and the setting is named. **iOS:** the session reads
+      the `com.apple.configuration.managed` defaults; a good address skips the connect screen, a changed one drops the token, a
+      locked one hides the change-address button and ignores `connect`; a bad setting stops on a screen that names it
+      (`MisconfiguredView`), with no fallback to a saved address; the first launch after an install deletes a Keychain token
+      left by an earlier install; the Xcode target was already universal (`TARGETED_DEVICE_FAMILY = "1,2"`). **Android:**
+      `ManagedSettings` reads the application restrictions declared in `res/xml/app_restrictions.xml` (manifest `APP_RESTRICTIONS`),
+      the view model does the same, `MisconfiguredScreen` names a bad setting, the manifest sets `resizeableActivity` and fixes
+      no orientation; a bug the tests found, that signing out dropped the lock, is fixed. **Verified:** `swift test`, 50 tests
+      (`WPMCoreTests`, 6 of them new) and 19 (`WPMUITests`, 6 new session tests); `xcodebuild` for the iOS Simulator;
+      `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug :app:compileReleaseKotlin`: `core` 43 tests (6 new),
+      `app` 36 (7 new), 0 failed, lint clean. **Not done:** the two-column time-off screen on a wide window (the screens are single
+      column on a tablet, which is usable but not what WPM-R285 asks); a run on an iPad simulator or a tablet emulator; a
+      configuration pushed by a management tool or its test harness (the key names are this app's own and have not been checked
+      against Intune, Jamf, Workspace ONE or Android Enterprise); a check that no permission or entitlement beyond
+      `INTERNET` is requested, beyond reading the Android manifest by eye.
 - [ ] WPM-T644 (2026-11-23) **Record text is never copied onto the device.** *(WPM-R286)* Not started; added at the owner's request.
       For each app: no selection, copy, share, drag, print, Handoff, data detector, pasteboard or clipboard write, notification,
       widget or search donation of record text; the reason field marked no-learning; iOS content hidden while the screen is

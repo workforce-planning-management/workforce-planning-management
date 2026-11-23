@@ -50,6 +50,7 @@ class MainActivity : ComponentActivity() {
                     io = Dispatchers.IO,
                     today = { LocalDate.now() },
                     random = { n -> ByteArray(n).also(random::nextBytes) },
+                    managed = { ManagedSettings.read(app) },
                 )
             }
         }
@@ -106,12 +107,13 @@ fun App(vm: AppViewModel, onOpenBrowser: (String) -> Boolean) {
     val state by vm.state.collectAsState()
     val base = state.baseUrl
     when {
+        state.managedProblem != null -> MisconfiguredScreen(state.managedProblem!!)
         base == null -> ConnectScreen(initial = "", problem = state.addressProblem, onContinue = vm::connect)
         !state.signedIn -> SignInScreen(
             baseUrl = base,
             notice = state.notice,
             onSignIn = { vm.startSignIn()?.let { if (!onOpenBrowser(it)) vm.noBrowser() } },
-            onChangeAddress = vm::changeAddress,
+            onChangeAddress = if (state.addressLocked) null else vm::changeAddress,
             developerToken = DeveloperToken.entry,
             onToken = vm::useToken,
         )

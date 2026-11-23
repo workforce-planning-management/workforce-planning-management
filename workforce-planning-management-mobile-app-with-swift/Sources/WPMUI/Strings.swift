@@ -63,6 +63,17 @@ enum Words {
         }
     }
 
+    /// The setting a management tool got wrong, named, and why.
+    static func managed(_ problem: ManagedConfiguration.Problem?) -> String {
+        switch problem {
+        case .deploymentURL(let why): return L("managed.error.url") + " " + connection(why)
+        case .deploymentURLNotText: return L("managed.error.urlNotText")
+        case .deploymentLocked: return L("managed.error.locked")
+        case .lockedWithoutURL: return L("managed.error.lockedWithoutURL")
+        case nil: return L("managed.title")
+        }
+    }
+
     static func connection(_ problem: Connection.Problem) -> String {
         switch problem {
         case .empty: return L("connect.error.empty")
