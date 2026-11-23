@@ -137,6 +137,8 @@ fn spawn_refresh(
     audience: String,
     interval: std::time::Duration,
 ) -> tokio::task::JoinHandle<()> {
+    // Each fetch builds a reqwest client, which has no rustls provider of its own (see `install_tls_provider`).
+    crate::shared_cache::install_tls_provider();
     tokio::spawn(async move {
         let mut ticker = tokio::time::interval(interval);
         ticker.tick().await; // the first tick is immediate — skip it
