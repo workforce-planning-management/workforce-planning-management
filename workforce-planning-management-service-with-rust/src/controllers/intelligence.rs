@@ -79,7 +79,7 @@ async fn overview(
     .fetch_all(db)
     .await?
     {
-        let n = usize::try_from(row.n).unwrap_or(0);
+        let n = super::count_usize(row.n)?;
         match row.dimension.as_str() {
             "department" => by_department.insert(row.key, n),
             "status" => by_status.insert(row.key, n),
@@ -193,10 +193,10 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     .fetch_all(db)
     .await?
     {
-        let count = |n: i64| usize::try_from(n).unwrap_or(0);
+        let count = super::count_usize;
         per_skill.insert(
             row.skill_pid,
-            (count(row.holders), count(row.at_target), count(row.below)),
+            (count(row.holders)?, count(row.at_target)?, count(row.below)?),
         );
     }
     // Employed people with a declared gap, and how many of them have an active development plan.
@@ -214,8 +214,8 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     .fetch_one(db)
     .await?;
     let (with_gap, gap_covered) = (
-        usize::try_from(gaps.with_gap).unwrap_or(0),
-        usize::try_from(gaps.covered).unwrap_or(0),
+        super::count_usize(gaps.with_gap)?,
+        super::count_usize(gaps.covered)?,
     );
 
     let coverage: Vec<serde_json::Value> = skill_rows
@@ -247,7 +247,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
         plans_by_kind
             .entry(row.kind)
             .or_default()
-            .insert(row.status, usize::try_from(row.total).unwrap_or(0));
+            .insert(row.status, super::count_usize(row.total)?);
     }
 
     // Assessment coverage: workers with at least one completed sitting, per instrument category.
@@ -261,7 +261,7 @@ async fn capability(State(ctx): State<AppContext>) -> Result<Response> {
     .fetch_all(db)
     .await?
     {
-        assessed_by_category.insert(row.category, usize::try_from(row.assessed).unwrap_or(0));
+        assessed_by_category.insert(row.category, super::count_usize(row.assessed)?);
     }
     let assessment_coverage: Vec<serde_json::Value> = assessment_rules::ASSESSMENT_CATEGORIES
         .iter()
@@ -351,13 +351,13 @@ async fn capability_analysis(
     .fetch_all(crate::db::pool(&ctx))
     .await?
     {
-        let count = |n: i64| usize::try_from(n).unwrap_or(0);
+        let count = super::count_usize;
         per_skill.insert(
             row.skill_pid,
             (
-                count(row.declared),
-                count(row.proficient),
-                count(row.departments),
+                count(row.declared)?,
+                count(row.proficient)?,
+                count(row.departments)?,
             ),
         );
     }
@@ -457,12 +457,12 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
     )
     .fetch_one(db)
     .await?;
-    let count = |n: i64| usize::try_from(n).unwrap_or(0);
+    let count = super::count_usize;
     let (opening, closing, starters, leavers) = (
-        count(counts.opening),
-        count(counts.closing),
-        count(counts.starters),
-        count(counts.leavers),
+        count(counts.opening)?,
+        count(counts.closing)?,
+        count(counts.starters)?,
+        count(counts.leavers)?,
     );
 
     // Span of control over managers of workers employed on `to`: one row per manager.
@@ -477,7 +477,7 @@ async fn period_metrics(query: MetricsQuery, ctx: &AppContext) -> Result<PeriodM
     .await?
     .into_iter()
     .map(count)
-    .collect();
+    .collect::<Result<Vec<usize>>>()?;
 
     // Time-to-fill over requisitions filled within the period.
     let filled_days: Vec<i64> = sqlx::query!(
@@ -840,7 +840,7 @@ async fn employed_count(ctx: &AppContext, date: Date) -> Result<usize> {
     )
     .fetch_one(crate::db::pool(ctx))
     .await?;
-    Ok(usize::try_from(total).unwrap_or(0))
+    super::count_usize(total)
 }
 
 /// The workforce-intelligence routes (read-only).
