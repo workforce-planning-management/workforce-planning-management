@@ -281,6 +281,8 @@ fn setting(name: &str, get: impl Fn(&str) -> Option<String>) -> Option<String> {
     let nonblank = |name: &str| get(name).filter(|value| !value.trim().is_empty());
     match name {
         "DB_URL" => nonblank("DB_URL").or_else(|| nonblank("DATABASE_URL")),
+        // axa 0.21 refuses a set `DATABASE_URL` in production as a renamed setting. WPM reads it above, so axa is not shown it.
+        "DATABASE_URL" => None,
         _ => get(name),
     }
 }
@@ -799,6 +801,11 @@ mod tests {
         let blank = env(&[("DB_URL", " "), ("DATABASE_URL", "postgres://b/x")]);
         assert_eq!(setting("DB_URL", blank).as_deref(), Some("postgres://b/x"));
         assert_eq!(setting("DB_URL", env(&[])), None);
+        // axa refuses a `DATABASE_URL` it is shown in production, so it is never shown (axa 0.21).
+        assert_eq!(
+            setting("DATABASE_URL", env(&[("DATABASE_URL", "postgres://b/x")])),
+            None
+        );
         // Only the database name falls back: another setting is read as it is.
         assert_eq!(
             setting("PORT", env(&[("DATABASE_URL", "postgres://b/x")])),
