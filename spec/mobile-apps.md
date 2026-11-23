@@ -1,11 +1,11 @@
-# Mobile apps: iPhone and Android (WPM-R280–R285, WPM-D224–D229)
+# Mobile apps: iPhone and Android (WPM-R280–R286, WPM-D224–D229)
 
 Proposed 2026-11-23 at the owner's request: two native apps beside the web UI,
 `workforce-planning-management-mobile-app-with-swift/` (Swift, SwiftUI, Lily
 Design System for Swift) and `workforce-planning-management-mobile-app-with-kotlin/`
 (Kotlin, Jetpack Compose, Lily Design System for Kotlin). The benchmark scan
 listed "a mobile app or PWA with push" as a next candidate
-([roadmap.md](roadmap.md)). Tasks: WPM-T638–T643 in [tasks.md](tasks.md).
+([roadmap.md](roadmap.md)). Tasks: WPM-T638–T644 in [tasks.md](tasks.md).
 
 > ⚠️ **AI-written and unreviewed; demo software.** Neither app has been through
 > an App Store or Google Play review, run on a physical device, or signed in
@@ -161,6 +161,32 @@ enrolment, on either.*
 - **Not in the app.** No device-compliance, jailbreak, root or hardware-attestation check, and no screenshot or copy
   restriction beyond WPM-D227's: whether a device may sign in is for the identity provider's conditional access, not for this
   app (WPM-D229).
+
+## WPM-R286 — Record text is never copied onto the device
+
+*As an organization I know that what the service shows about a person cannot be copied out of the app onto a personal device,
+and as a worker I know the same of my own record.*
+
+- **Record text** is every word the service returned for a screen: names, dates, figures, reasons, statuses, the
+  `derivation` text, and an error's `detail`. It is shown, and it **cannot be copied out of the app**: no text selection, no
+  copy, cut or share action on it, no drag and drop, no printing, no Handoff or universal clipboard, no data detectors that
+  turn it into a link, and no pasteboard write by the app of anything the service sent. (iOS: `textSelection(.disabled)`, no
+  `ShareLink` or `UIPasteboard`, no `NSUserActivity` or Spotlight donation of record text; Android: no `SelectionContainer`,
+  no `ClipboardManager` write, no share intent, `setContentCapture` and autofill off for record text.)
+- **What the person types** into the leave form (the dates and the reason) is not record text until the service returns it,
+  but the reason field is a **no-learning** field: the keyboard does not add its words to a personal dictionary or suggestions
+  (`autocorrectionDisabled`, no personalised learning on iOS; `IME_FLAG_NO_PERSONALIZED_LEARNING` and
+  `TYPE_TEXT_FLAG_NO_SUGGESTIONS` on Android). The deployment address and the token are never shown for copying either.
+- **Nowhere else on the device.** Record text is not in a notification, a widget, a Spotlight or app-search index, a share
+  sheet preview, an app-switcher snapshot (WPM-D227), a log, a crash report or a pasteboard.
+- **Every device alike.** The app cannot tell a personal device from a managed one and does not try (WPM-D229), so this holds
+  on both; it is not a setting a management tool can loosen, and managed app configuration (WPM-R285) has no key for it.
+- **What this cannot do.** A screenshot or a photograph of the screen, and a screen recording, cannot be stopped on iOS, and
+  nothing here claims to. On Android the window is secure (`FLAG_SECURE`), which blocks screenshots and recents thumbnails;
+  on iOS the content is hidden while the screen is being recorded or mirrored (`UIScreen.isCaptured`) and in the app switcher.
+  An accessibility service, and VoiceOver or TalkBack reading the text aloud, are the person's own assistive tools and are
+  not blocked. The rule is that **the app writes no record text anywhere a second app, a person or a sync service could read
+  it from the device**; it is not a claim that the person cannot remember or photograph what they see.
 
 ## Decisions
 
