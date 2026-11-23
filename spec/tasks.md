@@ -7316,8 +7316,8 @@ the entry records only the evidence it needs.
 
 ## Mobile apps for iPhone and Android ([mobile-apps.md](mobile-apps.md)), proposed 2026-11-23
 
-- [~] WPM-T638 (2026-11-23) **The iPhone app: `workforce-planning-management-mobile-app-with-swift/`.** *(traces to WPM-R280–R284,
-      WPM-D224–D228)* Part done (2026-11-23): a Swift package with the pure `WPMCore` (a calendar date with no time zone, the
+- [~] WPM-T638 (2026-11-23) **The iPhone app: `workforce-planning-management-mobile-app-with-swift/`.** *(traces to WPM-R280–R285,
+      WPM-D224–D229)* Part done (2026-11-23): a Swift package with the pure `WPMCore` (a calendar date with no time zone, the
       time-off and leave models where an unknown allowance is not zero, the service's problem details, `canCancel` copied from
       `time_off::can_worker_cancel`, the inclusive day span and its cap of 366 calendar days, no reason for sick leave, the address rules, PKCE
       `S256`, the sign-in address and state check, a client over a `Transport` protocol sending `Accepts-version: 1.0`) and
@@ -7332,8 +7332,8 @@ the entry records only the evidence it needs.
       network test uses a stub; the paths and the client id `wpm-mobile` are defaults); a physical device, VoiceOver, large Dynamic
       Type and dark mode on screen; the time-off screen on a simulator; the bordered text fields and the app-switcher cover seen
       on screen. No URL scheme is registered, since `ASWebAuthenticationSession` takes the redirect itself. CI is WPM-T641.
-- [~] WPM-T639 (2026-11-23) **The Android app: `workforce-planning-management-mobile-app-with-kotlin/`.** *(traces to WPM-R280–R284,
-      WPM-D224–D228)* Part done (2026-11-23): a pure Kotlin JVM module `core` (the time-off and leave models where an unknown
+- [~] WPM-T639 (2026-11-23) **The Android app: `workforce-planning-management-mobile-app-with-kotlin/`.** *(traces to WPM-R280–R285,
+      WPM-D224–D229)* Part done (2026-11-23): a pure Kotlin JVM module `core` (the time-off and leave models where an unknown
       allowance is `Figure.NotRecorded`, problem details, requests with `Accepts-version: 1.0`, the address rules, PKCE `S256`, the
       authorize address, the state check and the token exchange, the cancel rule, the inclusive day span and its cap of 366
       calendar days, no reason for sick leave) and `app` (Compose with Material 3 for the native controls and Lily's
@@ -7350,7 +7350,7 @@ the entry records only the evidence it needs.
       paths and the client id are defaults); `assembleRelease` with R8. **Known gaps:** the pending sign-in lives in the view model,
       so if Android ends the process while the browser is open the person signs in again; a problem in the `ErrorSummary` does not
       yet move focus to its field; dates are in the ISO calendar. CI is WPM-T641.
-- [x] WPM-T640 (2026-11-23) **Specify the mobile apps.** *(WPM-R280–R284, WPM-D224–D228)* [mobile-apps.md](mobile-apps.md) with the
+- [x] WPM-T640 (2026-11-23) **Specify the mobile apps.** *(WPM-R280–R285, WPM-D224–D229)* [mobile-apps.md](mobile-apps.md) with the
       first slice (connect and sign in, my time off, request and cancel leave), registered in [index.md](index.md), pointed at from
       [requirements.md](requirements.md) and [design.md](design.md); native clients in [auth.md](auth.md), what a phone keeps in
       [regulatory.md](regulatory.md), PKCE and native app in [glossary.md](glossary.md), the roadmap candidate narrowed to push. On
@@ -7363,3 +7363,12 @@ the entry records only the evidence it needs.
 - [ ] WPM-T642 (2026-11-23) **The mobile apps in every locale.** *(WPM-R284)* Not started. The first slice ships English only. The
       other locales of the web UI as `Localizable.xcstrings` languages and `res/values-<tag>/strings.xml`, with right-to-left checked
       for Arabic and Urdu, and a check that every key exists in English.
+- [ ] WPM-T643 (2026-11-23) **Managed devices, personal devices, phones and tablets.** *(WPM-R285, WPM-D229)* Not started; added at
+      the owner's request. For each app: read `deployment_url` and `deployment_locked` from managed app configuration into the
+      pure core (a supplied-but-invalid value is refused and named, an absent one is not an error), with the tests the core
+      takes; hide the address screen when locked; a universal iOS build and an adaptive Android layout (width classes, no fixed
+      orientation, split screen) with a two-column time-off screen on a wide window; delete a Keychain token left by an earlier
+      install on first launch (iOS); confirm no permission, entitlement or management API is requested. Check on an iPad
+      simulator and a tablet emulator, and with a managed configuration pushed by a management tool or its test harness: none of
+      this is verified yet. Whether the current iOS project is already universal and the Android manifest already allows resizing
+      is **not checked** and is the first step.

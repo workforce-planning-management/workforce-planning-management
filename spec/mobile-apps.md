@@ -1,11 +1,11 @@
-# Mobile apps: iPhone and Android (WPM-R280–R284, WPM-D224–D228)
+# Mobile apps: iPhone and Android (WPM-R280–R285, WPM-D224–D229)
 
 Proposed 2026-11-23 at the owner's request: two native apps beside the web UI,
 `workforce-planning-management-mobile-app-with-swift/` (Swift, SwiftUI, Lily
 Design System for Swift) and `workforce-planning-management-mobile-app-with-kotlin/`
 (Kotlin, Jetpack Compose, Lily Design System for Kotlin). The benchmark scan
 listed "a mobile app or PWA with push" as a next candidate
-([roadmap.md](roadmap.md)). Tasks: WPM-T638–T642 in [tasks.md](tasks.md).
+([roadmap.md](roadmap.md)). Tasks: WPM-T638–T643 in [tasks.md](tasks.md).
 
 > ⚠️ **AI-written and unreviewed; demo software.** Neither app has been through
 > an App Store or Google Play review, run on a physical device, or signed in
@@ -131,6 +131,37 @@ size, in the light or the dark.*
 - Dates are shown in the device's locale and calendar; dates sent to the
   service are ISO 8601 calendar dates, computed without a time zone shift.
 
+## WPM-R285 — Managed devices and personal devices, phones and tablets
+
+*As an organization I can put the app on devices I manage, and as a worker I can use it on my own phone or tablet, with no
+enrolment, on either.*
+
+- **Form factors.** Each app runs on phones **and tablets**: the iOS app is one app for iPhone and iPad (a universal build,
+  not an iPhone app scaled up); the Android app runs on phones and tablets of any size, in either orientation, in split screen
+  and in a resizable window. The layout follows the window's width, not the device's name: a wide window shows the year's
+  summary and its requests side by side, a narrow one stacks them, and the same screens, rules and strings serve both.
+- **Managed devices.** The app can be deployed and configured by a mobile device management or enterprise mobility tool
+  (for example Microsoft Intune, Jamf, Workspace ONE; Apple's managed distribution; Android Enterprise, fully managed or in a
+  work profile). It reads two settings from the platform's **managed app configuration** (the iOS
+  `com.apple.configuration.managed` defaults; the Android application restrictions): `deployment_url`, the deployment's
+  address, so the worker is not asked to type it; and `deployment_locked` (`true` or `false`, default `false`), which, when
+  `true`, hides the screen where the address is changed. A setting that is **supplied but invalid** (an address that WPM-R281
+  refuses, a value other than `true` or `false`) is **refused with a message naming the setting**; it is not replaced by a
+  default and the app does not fall back to asking for an address (RCA-IN-2, RCA-IN-4). An absent setting means the worker
+  types the address as before.
+- **Personal devices (bring your own device).** Nothing is required of the device: no enrolment, no management profile, no
+  device administrator, no installed certificate. The app reads nothing outside its own sandbox, asks for no device
+  identifier, contacts, photos, location or other permission, and uses no management API. It cannot see, and the organization
+  cannot learn through it, anything about the personal side of the device.
+- **Same behaviour either way.** The app does not detect whether the device is managed and shows the same screens, with the
+  same data, to the same person. Managed configuration only fills in the address.
+- **What leaves with the app.** The app keeps only the address and the token (WPM-D227). Removing the app, removing a work
+  profile, or a selective wipe by a management tool removes them. On iOS a Keychain item can survive deleting the app, so a
+  **first launch after an install deletes any token left from an earlier install** before it shows a screen.
+- **Not in the app.** No device-compliance, jailbreak, root or hardware-attestation check, and no screenshot or copy
+  restriction beyond WPM-D227's: whether a device may sign in is for the identity provider's conditional access, not for this
+  app (WPM-D229).
+
 ## Decisions
 
 ### WPM-D224 — The apps call the service directly with a bearer token; no mobile BFF
@@ -203,3 +234,19 @@ SDK. A crash is the platform's own report, which the person controls.
 **Why.** A worker's employer should not learn from an app which screens a
 person opened, and a third-party SDK would be a processor in the record of
 processing ([regulatory.md](regulatory.md)).
+
+### WPM-D229 — Device posture is the identity provider's to judge, not the app's
+
+**Decision.** The apps do not collect or send any statement about the device (managed or not, rooted or jailbroken, its
+model, its operating system version beyond what a request header carries by default, an attestation). A deployment that
+wants to allow sign-in only from compliant or managed devices does it where the sign-in happens: conditional access in its
+identity provider ([auth.md](auth.md), WPM-D222), which sees the device through the system browser and the management tool.
+The managed app configuration (WPM-R285) fills in the address and nothing else.
+
+**Why.** A device check inside the app is advice the device itself gives, and it would make the app a way for an employer
+to look at a personal phone, which WPM-D227 and WPM-D228 rule out. The identity provider already does this properly and for
+every application, and the same rule then covers the web UI.
+
+**What it costs.** A deployment without conditional access cannot tell a managed device from a personal one. That is the
+point of WPM-R285 for personal devices, and a gap for an organization that wanted otherwise; it is a decision of its own if
+it comes.

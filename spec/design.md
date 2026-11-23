@@ -492,8 +492,8 @@ holds no IP address (WPM-D218); a backup is erased when it expires (WPM-D219); a
 WPM signs people in through OpenID Connect only; SAML is added when a customer needs it, as its own requirement, decision
 and task. A provider that speaks only SAML can be brokered through Keycloak (not tested with WPM). See [auth.md](auth.md).
 
-## WPM-D224–D228 — Mobile apps (proposed 2026-11-23)
+## WPM-D224–D229 — Mobile apps (proposed 2026-11-23)
 
 The apps call the service directly with a bearer token and no mobile BFF (WPM-D224); a pure core first, on the phone too
 (WPM-D225); Lily from a checkout until Lily publishes its mobile packages (WPM-D226); nothing personal is kept on the phone
-(WPM-D227); no analytics and no third-party SDK (WPM-D228). See [mobile-apps.md](mobile-apps.md).
+(WPM-D227); no analytics and no third-party SDK (WPM-D228); device posture is the identity provider's to judge, never the app's (WPM-D229). See [mobile-apps.md](mobile-apps.md).
