@@ -225,7 +225,7 @@ jobs:
 
   # spec/rust-msrv-n-minus-2: the MSRV is the current stable minus two (1.100 - 2 = 1.98 on 2026-11-15).
   # The matcher and the vendored entity-ref declare 1.98 and are checked on it here. The service and the domain crate
-  # declare 1.98 too, now that matcher 0.2.0 does (WPM-T390); `bin/test-minimum-supported-rust-version` checks all of them.
+  # declare 1.98 too, now that matcher 0.2.0 does (WPM-T390); `bin/make-ci-minimum-supported-rust-version` checks all of them.
   msrv:
     name: MSRV · matcher and entity-ref on their declared rust-version
     runs-on: ubuntu-latest

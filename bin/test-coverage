@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Line coverage with cargo-tarpaulin (llvm engine), held at 95% as CI holds it (the `coverage` job in .github/workflows/ci.yml):
+# the domain crate, the whole service (with its database suites, so DATABASE_URL or DB_URL must name a PostgreSQL and
+# WORKFORCE_PLANNING_MANAGEMENT_REDIS_URL a Redis where the shared-cache suite runs), and the matcher.
+# Install: `cargo install cargo-tarpaulin --locked`. The service run takes about twenty minutes.
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+service="$root/workforce-planning-management-service-with-rust"
+matcher="$root/workforce-planning-management-matcher-with-rust"
+
+(cd "$service" && cargo tarpaulin --locked --engine llvm -p workforce-planning-management-domain --lib \
+  --include-files 'crates/workforce-planning-management-domain/src/*' --fail-under 95)
+(cd "$service" && cargo tarpaulin --locked --engine llvm --workspace --lib --tests --ignored --timeout 1200 \
+  --fail-under 95 -- --test-threads=1)
+(cd "$matcher" && cargo tarpaulin --locked --engine llvm --fail-under 95)

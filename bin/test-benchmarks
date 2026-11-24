@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Run the Criterion benchmarks (BENCHMARKS.md): the pure rules in the service, and the matcher. The request benchmark boots the
+# app on a database, so it runs only when DATABASE_URL (or DB_URL) is set. `--quick` runs each benchmark once, as CI does
+# (`cargo test --bench`), and times nothing.
+set -euo pipefail
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+service="$root/workforce-planning-management-service-with-rust"
+matcher="$root/workforce-planning-management-matcher-with-rust"
+
+if [ "${1:-}" = "--quick" ]; then
+  (cd "$service" && cargo test --locked -p workforce-planning-management-domain --bench rules)
+  (cd "$matcher" && cargo test --locked --bench matching)
+  exit 0
+fi
+
+(cd "$service" && cargo bench --locked -p workforce-planning-management-domain --bench rules)
+(cd "$matcher" && cargo bench --locked --bench matching)
+if [ -n "${DATABASE_URL:-${DB_URL:-}}" ]; then
+  (cd "$service" && cargo bench --locked --bench requests)
+else
+  echo "skipped: --bench requests (set DATABASE_URL to a PostgreSQL to run it)"
+fi
