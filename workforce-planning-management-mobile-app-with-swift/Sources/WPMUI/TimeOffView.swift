@@ -70,13 +70,38 @@ struct TimeOffView: View {
     }
 }
 
+/// A window this wide or wider shows the summary and the requests side by side; a narrower one stacks them (WPM-R285). The
+/// layout follows the window's width, not the device: an iPad in Split View or Slide Over stacks, an iPhone Pro Max in
+/// landscape may not.
+enum WideWindow {
+    static let minimumWidth: Double = 600
+    static func isWide(width: Double) -> Bool { width >= minimumWidth }
+}
+
 struct TimeOffContent: View {
     let timeOff: TimeOff
     let model: TimeOffModel
     let askCancel: (LeaveRequest) -> Void
 
     var body: some View {
-        List {
+        GeometryReader { window in
+            if WideWindow.isWide(width: window.size.width) {
+                HStack(alignment: .top, spacing: 0) {
+                    List { yearSection; problemSection; balancesSection; historySection; derivationSection }
+                        .accessibilityIdentifier("time-off-summary")
+                    List { requestsSection }
+                        .accessibilityIdentifier("time-off-requests")
+                }
+            } else {
+                List {
+                    yearSection; problemSection; balancesSection; requestsSection; historySection; derivationSection
+                }
+                .accessibilityIdentifier("time-off")
+            }
+        }
+    }
+
+    @ViewBuilder var yearSection: some View {
             Section {
                 HStack {
                     Button { Task { await model.show(year: timeOff.year - 1) } } label: {
@@ -94,11 +119,15 @@ struct TimeOffContent: View {
                 .buttonStyle(.borderless)
                 Text(L("timeOff.unit")).font(.footnote)
             }
+    }
 
+    @ViewBuilder var problemSection: some View {
             if let problem = model.actionProblem {
                 Section { ErrorSummary(title: L("error.title"), problems: [.init(problem) {}]) }
             }
+    }
 
+    @ViewBuilder var balancesSection: some View {
             Section(L("timeOff.balances")) {
                 if timeOff.balances.isEmpty { Text(L("timeOff.noBalances")) }
                 ForEach(timeOff.balances) { balance in
@@ -114,7 +143,9 @@ struct TimeOffContent: View {
                     }
                 }
             }
+    }
 
+    @ViewBuilder var requestsSection: some View {
             Section(L("timeOff.requests")) {
                 if timeOff.requests.isEmpty { Text(L("timeOff.noRequests")) }
                 ForEach(timeOff.requests) { request in
@@ -122,7 +153,9 @@ struct TimeOffContent: View {
                                disabled: model.sending) { askCancel(request) }
                 }
             }
+    }
 
+    @ViewBuilder var historySection: some View {
             Section(L("timeOff.history")) {
                 if timeOff.history.isEmpty { Text(L("timeOff.noHistory")) }
                 ForEach(timeOff.history) { year in
@@ -136,12 +169,13 @@ struct TimeOffContent: View {
                     }
                 }
             }
+    }
 
+    @ViewBuilder var derivationSection: some View {
             Section(L("timeOff.derivation")) {
                 InsetText { Text(timeOff.derivation) }
                 Text(L("timeOff.asOf", Words.date(timeOff.asOf))).font(.footnote)
             }
-        }
     }
 }
 

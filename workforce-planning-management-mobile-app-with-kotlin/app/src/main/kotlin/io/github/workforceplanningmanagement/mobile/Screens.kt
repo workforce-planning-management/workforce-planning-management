@@ -6,6 +6,7 @@ package io.github.workforceplanningmanagement.mobile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -145,46 +146,46 @@ fun TimeOffScreen(
 ) {
     var confirming by remember { mutableStateOf<LeaveRequest?>(null) }
     PullToRefreshBox(isRefreshing = state.loading, onRefresh = onRefresh, modifier = modifier) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().testTag("time-off"),
-            contentPadding = PaddingValues(Gap),
-            verticalArrangement = Arrangement.spacedBy(Gap),
-        ) {
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Heading(stringResource(R.string.time_off_title), Modifier.weight(1f), large = true)
-                    TextButton(onClick = onSignOut, modifier = Touch) { Text(stringResource(R.string.sign_out)) }
-                }
-            }
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val prev = stringResource(R.string.time_off_previous_year, state.year - 1)
-                    val next = stringResource(R.string.time_off_next_year, state.year + 1)
-                    // The arrows are visual; each button's spoken name is the whole phrase.
-                    OutlinedButton(onClick = onPreviousYear, modifier = Touch.testTag("previous-year").semantics { contentDescription = prev }) {
-                        Text("‹ ${state.year - 1}", modifier = Modifier.clearAndSetSemantics { })
+        // The window's width decides the layout, not the device's name (WPM-R285).
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val askCancel = { r: LeaveRequest -> confirming = r }
+            if (isWide(maxWidth.value.toInt())) {
+                Column(Modifier.fillMaxSize().padding(Gap), verticalArrangement = Arrangement.spacedBy(Gap)) {
+                    TitleRow(onSignOut)
+                    YearRow(state.year, onPreviousYear, onNextYear)
+                    RequestLeaveButton(onRequestLeave)
+                    TimeOffMessages(state)
+                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(Gap)) {
+                        LazyColumn(
+                            Modifier.weight(1f).testTag("time-off-summary"),
+                            verticalArrangement = Arrangement.spacedBy(Gap),
+                        ) {
+                            state.timeOff?.let { t -> unitItems(t); balanceItems(t); historyItems(t); derivationItems(t) }
+                            item { RefreshButton(onRefresh) }
+                        }
+                        LazyColumn(
+                            Modifier.weight(1f).testTag("time-off-requests"),
+                            verticalArrangement = Arrangement.spacedBy(Gap),
+                        ) {
+                            state.timeOff?.let { t -> requestItems(t, today, askCancel) }
+                        }
                     }
-                    Heading(stringResource(R.string.time_off_year, state.year), Modifier.weight(1f))
-                    OutlinedButton(onClick = onNextYear, modifier = Touch.testTag("next-year").semantics { contentDescription = next }) {
-                        Text("${state.year + 1} ›", modifier = Modifier.clearAndSetSemantics { })
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag("time-off"),
+                    contentPadding = PaddingValues(Gap),
+                    verticalArrangement = Arrangement.spacedBy(Gap),
+                ) {
+                    item { TitleRow(onSignOut) }
+                    item { YearRow(state.year, onPreviousYear, onNextYear) }
+                    item { RequestLeaveButton(onRequestLeave) }
+                    item { TimeOffMessages(state) }
+                    state.timeOff?.let { t ->
+                        unitItems(t); balanceItems(t); requestItems(t, today, askCancel); historyItems(t); derivationItems(t)
                     }
+                    item { RefreshButton(onRefresh) }
                 }
-            }
-            item {
-                Button(onClick = onRequestLeave, modifier = Touch.testTag("request-leave")) {
-                    Text(stringResource(R.string.request_leave))
-                }
-            }
-            state.notice?.let { n -> item { NoticeText(notice(n)) } }
-            state.loadFailure?.let { f ->
-                item { WarningText(prefix = stringResource(R.string.problem_title), text = failure(f)) }
-            }
-            if (state.timeOff == null && state.loading) {
-                item { Text(stringResource(R.string.loading)) }
-            }
-            state.timeOff?.let { t -> timeOffItems(t, today) { confirming = it } }
-            item {
-                OutlinedButton(onClick = onRefresh, modifier = Touch) { Text(stringResource(R.string.time_off_refresh)) }
             }
         }
     }
@@ -206,14 +207,63 @@ fun TimeOffScreen(
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.timeOffItems(
-    t: TimeOff,
-    today: LocalDate,
-    onCancel: (LeaveRequest) -> Unit,
-) {
+/** A window this wide or wider shows the summary and the requests side by side; a narrower one stacks them (WPM-R285). */
+const val WIDE_WINDOW_DP = 600
+
+fun isWide(widthDp: Int): Boolean = widthDp >= WIDE_WINDOW_DP
+
+@Composable
+private fun TitleRow(onSignOut: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Heading(stringResource(R.string.time_off_title), Modifier.weight(1f), large = true)
+        TextButton(onClick = onSignOut, modifier = Touch) { Text(stringResource(R.string.sign_out)) }
+    }
+}
+
+@Composable
+private fun YearRow(year: Int, onPreviousYear: () -> Unit, onNextYear: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val prev = stringResource(R.string.time_off_previous_year, year - 1)
+        val next = stringResource(R.string.time_off_next_year, year + 1)
+        // The arrows are visual; each button's spoken name is the whole phrase.
+        OutlinedButton(onClick = onPreviousYear, modifier = Touch.testTag("previous-year").semantics { contentDescription = prev }) {
+            Text("‹ ${year - 1}", modifier = Modifier.clearAndSetSemantics { })
+        }
+        Heading(stringResource(R.string.time_off_year, year), Modifier.weight(1f))
+        OutlinedButton(onClick = onNextYear, modifier = Touch.testTag("next-year").semantics { contentDescription = next }) {
+            Text("${year + 1} ›", modifier = Modifier.clearAndSetSemantics { })
+        }
+    }
+}
+
+@Composable
+private fun RequestLeaveButton(onRequestLeave: () -> Unit) {
+    Button(onClick = onRequestLeave, modifier = Touch.testTag("request-leave")) {
+        Text(stringResource(R.string.request_leave))
+    }
+}
+
+@Composable
+private fun RefreshButton(onRefresh: () -> Unit) {
+    OutlinedButton(onClick = onRefresh, modifier = Touch) { Text(stringResource(R.string.time_off_refresh)) }
+}
+
+/** The notice, the load failure, or the loading text, whichever applies. */
+@Composable
+private fun TimeOffMessages(state: UiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(Gap)) {
+        state.notice?.let { n -> NoticeText(notice(n)) }
+        state.loadFailure?.let { f -> WarningText(prefix = stringResource(R.string.problem_title), text = failure(f)) }
+        if (state.timeOff == null && state.loading) Text(stringResource(R.string.loading))
+    }
+}
+
+private fun androidx.compose.foundation.lazy.LazyListScope.unitItems(t: TimeOff) {
     item { Text(stringResource(R.string.time_off_unit), style = MaterialTheme.typography.bodyMedium) }
     item { Text(stringResource(R.string.time_off_as_of, date(t.asOf)), style = MaterialTheme.typography.bodySmall) }
+}
 
+private fun androidx.compose.foundation.lazy.LazyListScope.balanceItems(t: TimeOff) {
     item { Heading(stringResource(R.string.time_off_balances)) }
     if (t.balances.isEmpty()) item { Text(stringResource(R.string.time_off_no_balances)) }
     t.balances.forEach { b ->
@@ -231,7 +281,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.timeOffItems(
             }
         }
     }
+}
 
+private fun androidx.compose.foundation.lazy.LazyListScope.requestItems(
+    t: TimeOff,
+    today: LocalDate,
+    onCancel: (LeaveRequest) -> Unit,
+) {
     item { Heading(stringResource(R.string.time_off_requests)) }
     if (t.requests.isEmpty()) item { Text(stringResource(R.string.time_off_no_requests)) }
     t.requests.forEach { r ->
@@ -253,7 +309,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.timeOffItems(
             }
         }
     }
+}
 
+private fun androidx.compose.foundation.lazy.LazyListScope.historyItems(t: TimeOff) {
     item { Heading(stringResource(R.string.time_off_history)) }
     if (t.history.isEmpty()) item { Text(stringResource(R.string.time_off_no_history)) }
     t.history.forEach { y ->
@@ -267,7 +325,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.timeOffItems(
             }
         }
     }
+}
 
+private fun androidx.compose.foundation.lazy.LazyListScope.derivationItems(t: TimeOff) {
     if (t.derivation.isNotBlank()) {
         item { Heading(stringResource(R.string.time_off_how)) }
         item { InsetText { Text(t.derivation, style = MaterialTheme.typography.bodySmall) } }

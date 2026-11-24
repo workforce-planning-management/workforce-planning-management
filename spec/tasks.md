@@ -7377,8 +7377,13 @@ the entry records only the evidence it needs.
       no orientation; a bug the tests found, that signing out dropped the lock, is fixed. **Verified:** `swift test`, 50 tests
       (`WPMCoreTests`, 6 of them new) and 19 (`WPMUITests`, 6 new session tests); `xcodebuild` for the iOS Simulator;
       `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug :app:lintDebug :app:compileReleaseKotlin`: `core` 43 tests (6 new),
-      `app` 36 (7 new), 0 failed, lint clean. **Not done:** the two-column time-off screen on a wide window (the screens are single
-      column on a tablet, which is usable but not what WPM-R285 asks); a run on an iPad simulator or a tablet emulator; a
+      `app` 36 (7 new), 0 failed, lint clean. **Wide window (2026-11-24):** both apps now show the summary (balances, history,
+      derivation) and the requests in two columns when the window is 600 points or dp wide or wider, and stack them below that,
+      by the window's width and not the device's name (SwiftUI `GeometryReader`, `WideWindow`; Compose `BoxWithConstraints`,
+      `isWide`); the same sections, strings and rules serve both. Tested: the boundary in each app, and on Android under
+      Robolectric at `w900dp` (two columns, a request cancelled from the right column) and `w400dp` (one column); the iOS app
+      builds for the iPad Pro 11-inch simulator. **Not done:** a run of either app on an iPad simulator or a tablet emulator, so
+      neither layout has been looked at (the sign-in screen needs a service); the request-leave form is still one column; a
       configuration pushed by a management tool or its test harness (the key names are this app's own and have not been checked
       against Intune, Jamf, Workspace ONE or Android Enterprise); a check that no permission or entitlement beyond
       `INTERNET` is requested, beyond reading the Android manifest by eye.
