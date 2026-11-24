@@ -4,7 +4,7 @@
 name = "workforce-planning-management"
 version = "0.1.4"
 edition = "2024"
-rust-version = "1.99"
+rust-version = "1.98"
 publish = true
 default-run = "workforce-planning-management"
 authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
@@ -175,6 +175,12 @@ split-debuginfo = "unpacked"
 
 [profile.dev.package."*"]
 debug = false
+
+# cargo-mutants builds with this profile: no debug info and no incremental state, so each mutant builds fast.
+[profile.mutants]
+inherits = "test"
+debug = "none"
+incremental = false
 
 # RCA-ENF-4: an operator no lint reaches (in a macro, a dependency or an exception) panics, which is detectable, instead of wrapping,
 # which is not. A backstop only: RCA-P-1 still forbids the panic.

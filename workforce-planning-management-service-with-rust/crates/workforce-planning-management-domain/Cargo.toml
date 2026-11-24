@@ -2,7 +2,7 @@
 name = "workforce-planning-management-domain"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.99"
+rust-version = "1.98"
 publish = true
 authors = ["Joel Parker Henderson <joel@joelparkerhenderson.com>"]
 description = "Workforce Planning Management (WPM): the domain logic and business rules, DB-free and clock-free, apart from the web routes and the database storage of the service."

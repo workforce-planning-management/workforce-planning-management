@@ -3,9 +3,8 @@
 # after it (N-1). The MSRV is read from the first `rust-version` in a workspace Cargo.toml.
 set -euo pipefail
 
-# The service declares 1.99 until a matcher declaring 1.98 is published (WPM-T390), and cargo refuses a
-# dependency that declares more than the toolchain; so the service is checked with the declaration ignored.
-flags="--ignore-rust-version"
+# The service and the domain crate declare 1.98 like the matcher (0.2.0 and later), so no declaration is ignored.
+flags=""
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
