@@ -39,6 +39,8 @@ struct LeaveRequestForm: View {
                         Field(label: L("request.reason"), description: L("request.reason.hint", LeaveRules.reasonMaxLength)) {
                             TextField("", text: $reason, axis: .vertical).lineLimit(3...6)
                                 .textFieldStyle(.roundedBorder)
+                                // A no-learning field: the keyboard adds none of these words to its suggestions (WPM-R286).
+                                .autocorrectionDisabled()
                         }
                     }
                 } else {

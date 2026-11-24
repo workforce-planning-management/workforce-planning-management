@@ -3,6 +3,9 @@
 import LilyThemes
 import SwiftUI
 import WPMCore
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct RootView: View {
     @State private var session: Session
@@ -22,25 +25,46 @@ public struct RootView: View {
             }
         }
         .lilyTheme(colorScheme == .dark ? .dark : .light)
+        // Record text cannot be copied out of the app (WPM-R286): no text on any screen is selectable.
+        .textSelection(.disabled)
         .privacyShield()
     }
 }
 
-/// Covers the window whenever the scene is not active, so the app switcher's snapshot shows no personal data.
+/// Covers the window whenever the scene is not active, so the app switcher's snapshot shows no personal data, and while the
+/// screen is being recorded or mirrored (WPM-R286). A screenshot cannot be stopped on iOS and nothing here claims to.
 struct PrivacyShield: ViewModifier {
     @Environment(\.scenePhase) private var scenePhase
+    @State private var captured = Self.screenIsCaptured()
+
+    /// The one rule: hidden unless the scene is active and the screen is not being captured.
+    static func hides(sceneActive: Bool, captured: Bool) -> Bool { !sceneActive || captured }
+
+    static func screenIsCaptured() -> Bool {
+        #if canImport(UIKit) && !os(watchOS)
+        return UIScreen.main.isCaptured
+        #else
+        return false
+        #endif
+    }
 
     func body(content: Content) -> some View {
-        content.overlay {
-            if scenePhase != .active {
-                ZStack {
-                    Rectangle().fill(.background)
-                    Text(L("app.name")).font(.title2)
+        content
+            .overlay {
+                if Self.hides(sceneActive: scenePhase == .active, captured: captured) {
+                    ZStack {
+                        Rectangle().fill(.background)
+                        Text(L("app.name")).font(.title2)
+                    }
+                    .ignoresSafeArea()
+                    .accessibilityHidden(true)
                 }
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
             }
-        }
+            #if canImport(UIKit) && !os(watchOS)
+            .onReceive(NotificationCenter.default.publisher(for: UIScreen.capturedDidChangeNotification)) { _ in
+                captured = Self.screenIsCaptured()
+            }
+            #endif
     }
 }
 

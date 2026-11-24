@@ -7382,10 +7382,18 @@ the entry records only the evidence it needs.
       configuration pushed by a management tool or its test harness (the key names are this app's own and have not been checked
       against Intune, Jamf, Workspace ONE or Android Enterprise); a check that no permission or entitlement beyond
       `INTERNET` is requested, beyond reading the Android manifest by eye.
-- [ ] WPM-T644 (2026-11-23) **Record text is never copied onto the device.** *(WPM-R286)* Not started; added at the owner's request.
-      For each app: no selection, copy, share, drag, print, Handoff, data detector, pasteboard or clipboard write, notification,
-      widget or search donation of record text; the reason field marked no-learning; iOS content hidden while the screen is
-      captured or mirrored; Android `FLAG_SECURE` and autofill and content capture off for record text. A test in each app's UI
-      suite that the record screens expose no copy or share action, and a grep check that the code contains no pasteboard,
-      clipboard or share call. **Not verifiable by test:** that no other app or sync service can read the text, which needs a
-      device; and screenshots on iOS cannot be stopped (stated in WPM-R286).
+- [~] WPM-T644 (2026-11-23) **Record text is never copied onto the device.** *(WPM-R286)* Part done (2026-11-24).
+      **Done, iOS:** text selection switched off at the root (`.textSelection(.disabled)`), so no screen offers it; the shield
+      that hides the window in the app switcher also hides it while the screen is recorded or mirrored (`UIScreen.isCaptured`,
+      with the decision in one tested function); the reason field is `autocorrectionDisabled()`. **Done, Android:** the window
+      keeps `FLAG_SECURE` and is now out of autofill and of content capture; the reason field turns auto-correct (and so
+      suggestions) off; no `SelectionContainer` anywhere. **Tests:** each app scans its sources for any pasteboard, clipboard,
+      share, drag, print, activity, search, notification, widget or log call and fails if one appears (Swift
+      `RecordTextTests`, 4 tests; Kotlin `RecordTextTest`, 3 tests, which also asserts no text node on the time-off screen has a
+      copy action and that the window is secure); `swift test` 50 and 23 pass, the iOS Simulator build succeeds, the Android
+      app tests (39) and lint pass. **Not done:** `IME_FLAG_NO_PERSONALIZED_LEARNING` is not set on Android (Compose offers no
+      option for it; only the no-suggestions flag that turning auto-correct off is meant to give, and which was not read back
+      from a keyboard); iOS has no personalised-learning switch beyond `autocorrectionDisabled`, which does not stop the
+      keyboard learning words typed in the field. **Not verifiable by test:** that no other app or sync service can read the
+      text, that the iOS shield shows during a real recording or mirror, that Android's screenshot block holds on a device,
+      and that a keyboard keeps nothing; these need a device. Screenshots on iOS cannot be stopped (stated in WPM-R286).

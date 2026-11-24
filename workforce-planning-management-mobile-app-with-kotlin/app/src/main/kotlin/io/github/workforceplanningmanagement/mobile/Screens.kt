@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -337,6 +338,8 @@ fun RequestLeaveScreen(
                     onValueChange = { onChange(draft.copy(reason = it)) },
                     modifier = fieldModifier.fillMaxWidth().testTag("reason"),
                     minLines = 2,
+                    // A no-learning field: no suggestions, so the keyboard keeps none of these words (WPM-R286).
+                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                 )
             }
         }

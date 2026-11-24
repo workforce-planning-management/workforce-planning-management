@@ -4,7 +4,9 @@ package io.github.workforceplanningmanagement.mobile
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -32,12 +34,26 @@ import kotlinx.coroutines.Dispatchers
 import java.security.SecureRandom
 import java.time.LocalDate
 
+/**
+ * Record text goes nowhere but the screen (WPM-R286): the window is not offered to autofill or to content capture (which an
+ * assistant or a contextual search would read it through), alongside `FLAG_SECURE`.
+ */
+fun keepRecordTextOffTheDevice(view: View) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        view.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        view.importantForContentCapture = View.IMPORTANT_FOR_CONTENT_CAPTURE_NO_EXCLUDE_DESCENDANTS
+    }
+}
+
 class MainActivity : ComponentActivity() {
     private var viewModel: AppViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+        keepRecordTextOffTheDevice(window.decorView)
         enableEdgeToEdge()
         val app = applicationContext
         val factory = viewModelFactory {
