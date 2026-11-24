@@ -1,0 +1,86 @@
+name: Mobile apps
+
+# The iPhone and iPad app and the Android app (spec/mobile-apps.md, WPM-T641). A separate workflow so that a change to the
+# service or the site does not spend macOS minutes: it runs only when a mobile app, this file or the mobile spec changes.
+# Both apps build against the Lily Design System from a checkout of its monorepo at a pinned commit (WPM-D226); move the
+# pin on purpose and run both jobs against it. Make both jobs required status checks on `main` once they have passed.
+
+on:
+  push:
+    # `wpm-mobile-apps` is here so the jobs run before the branch merges; take it out at the merge.
+    branches: [main, wpm-mobile-apps]
+    paths:
+      - "workforce-planning-management-mobile-app-with-swift/**"
+      - "workforce-planning-management-mobile-app-with-kotlin/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "workforce-planning-management-mobile-app-with-swift/**"
+      - "workforce-planning-management-mobile-app-with-kotlin/**"
+      - ".github/workflows/mobile.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # LilyDesignSystem/lily-design-system on main, 2026-11-24. Only its Swift and Kotlin directories are checked out.
+  LILY_COMMIT: 7dbf7024f164a022772ee332f0a44db50945377f
+
+jobs:
+  ios:
+    name: ios · swift test and the simulator build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: LilyDesignSystem/lily-design-system
+          ref: ${{ env.LILY_COMMIT }}
+          path: lily
+          sparse-checkout: |
+            lily-design-system-swift
+          persist-credentials: false
+      - name: Tests of the core and the screens' logic
+        working-directory: workforce-planning-management-mobile-app-with-swift
+        env:
+          LILY_DESIGN_SYSTEM_DIR: ${{ github.workspace }}/lily
+        run: swift test
+      - name: Build the app for the iOS Simulator
+        working-directory: workforce-planning-management-mobile-app-with-swift
+        env:
+          LILY_DESIGN_SYSTEM_DIR: ${{ github.workspace }}/lily
+        run: make app
+
+  android:
+    name: android · unit and screen tests, lint and the debug build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: LilyDesignSystem/lily-design-system
+          ref: ${{ env.LILY_COMMIT }}
+          path: lily
+          sparse-checkout: |
+            lily-design-system-kotlin
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Tests, lint and the debug build
+        working-directory: workforce-planning-management-mobile-app-with-kotlin
+        env:
+          LILY_DESIGN_SYSTEM_DIR: ${{ github.workspace }}/lily
+        run: ./gradlew --no-daemon :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:compileReleaseKotlin

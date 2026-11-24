@@ -1,7 +1,7 @@
 name: CI
 
-# One workflow at the repository root, because GitHub only runs workflows from
-# `.github/workflows/` here. Every job is a from-scratch checkout; nothing needs
+# The workflow for the service, the site and the checks at the repository root (the mobile apps have their own, `mobile.yml`,
+# which runs only when they change), because GitHub only runs workflows from `.github/workflows/` here. Every job is a from-scratch checkout; nothing needs
 # a sibling repository (the two shared crates are vendored under
 # `workforce-planning-management-service-with-rust/crates/`).
 #

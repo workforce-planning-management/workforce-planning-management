@@ -7356,10 +7356,20 @@ the entry records only the evidence it needs.
       [regulatory.md](regulatory.md), PKCE and native app in [glossary.md](glossary.md), the roadmap candidate narrowed to push. On
       the branch `wpm-mobile-apps` at the owner's request. **Deliberately not done:** no service change (WPM-D224 needs none); no
       decision on push notifications.
-- [ ] WPM-T641 (2026-11-23) **CI for the mobile apps.** *(WPM-D226)* Not started. A macOS job (`swift test`, `xcodebuild` for the
-      simulator) and a Linux job (`./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug lint`), each checking out the Lily
-      monorepo at a pinned commit and setting `LILY_DESIGN_SYSTEM_DIR`, every action pinned to a digest
-      (`scripts/check-actions-pinned.py`). Blocked on nothing but a choice of Lily commit; withdrawn in part when Lily publishes.
+- [~] WPM-T641 (2026-11-23) **CI for the mobile apps.** *(WPM-D226)* Written 2026-11-24, not yet run on GitHub. `.github/workflows/mobile.yml`
+      (its own workflow, run only when a mobile app or the file changes, so the service's pushes spend no macOS minutes): an `ios` job on
+      `macos-latest` (`swift test`, then `make app` for the iOS Simulator) and an `android` job on `ubuntu-latest` with Temurin 21
+      (`./gradlew :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:compileReleaseKotlin`). Each checks out
+      only its language's directory of the Lily monorepo (`LilyDesignSystem/lily-design-system`) at the pinned commit
+      `7dbf7024f164a022772ee332f0a44db50945377f` (main on 2026-11-24) into `lily/` and sets `LILY_DESIGN_SYSTEM_DIR`. Every action is
+      pinned to a digest (`check-actions-pinned.py`, `check-job-timeouts.py` and `zizmor --offline .github` pass). **Checked locally
+      against that commit and those two directories alone:** `swift test` (50 and 25 tests) and `./gradlew :core:test
+      :app:testDebugUnitTest :app:assembleDebug :app:lintDebug` pass. **Not verified:** a run on GitHub; that `macos-latest` has an
+      Xcode with the iOS 18 SDK and a simulator (the local machine has Xcode 27.2, which is newer than any hosted image is
+      likely to be); that the Android SDK on the runner has the platform and build tools the project asks for; how long either
+      job takes. The branch `wpm-mobile-apps` is listed in the push filter so the jobs run before the merge; take it out then.
+      The local Lily checkout was ahead of GitHub (its commit is not published), so the pin is main on GitHub, not what was
+      developed against. Still to do: make both jobs required checks once green; withdrawn in part when Lily publishes.
 - [ ] WPM-T642 (2026-11-23) **The mobile apps in every locale.** *(WPM-R284)* Not started. The first slice ships English only. The
       other locales of the web UI as `Localizable.xcstrings` languages and `res/values-<tag>/strings.xml`, with right-to-left checked
       for Arabic and Urdu, and a check that every key exists in English.
