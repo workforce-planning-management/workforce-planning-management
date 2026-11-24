@@ -16,7 +16,7 @@ names an organization, a person, a place, a programme or a document, or quotes o
 | WPM-R288 | State history of a position; vacancy age | WPM-R152 | First |
 | WPM-R289 | A freeze has a reason, a decider and a review date | WPM-R152, R288 | First |
 | WPM-R290 | Holder history of a position; continuity in critical posts | WPM-R152, R161, R197 | First |
-| WPM-R291 | Temporary cover with a whole length: acting, secondment, interim | WPM-R79, R203–R205, WPM-D131 | First |
+| WPM-R291 | Temporary cover with a whole length: three distinct categories, `acting_up`, `secondment`, `interim` | WPM-R79, R203–R205, WPM-D131 | First |
 | WPM-R292 | Requisition approval steps; funded and waiting | WPM-R1, WPM-R152 | First |
 | WPM-R293 | A reorganization has a clock, and an end that releases what it holds | WPM-R104, R105, R108 | First |
 | WPM-R294 | Pulse themes get an answer | WPM-R28, WPM-D20 | Second |
@@ -65,8 +65,13 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 
 ### WPM-R291 — Temporary cover with a whole length (confirmed by the owner 2026-11-24)
 
-- Build the **acting assignments** as specified (WPM-R203–R205) and widen their kind to `acting`, `secondment` and `interim`:
-  all three are dated cover of a post somebody else holds or nobody does. WPM-D131 (acting cover does not fill a vacancy) applies
+- Build the **acting assignments** as specified (WPM-R203–R205) with **three distinct categories**, `acting_up`, `secondment` and
+  `interim` (the owner's decision, 2026-11-24). They share one record because all three are dated cover of a post somebody else
+  holds or nobody does, but they are **never merged into one**: each has its own definition in the glossary, and a report shows
+  each category separately beside the total.
+  - **`acting_up`**: a person takes on the duties of a higher post for a while, and keeps their own substantive post (WPM-R203–R205).
+  - **`secondment`**: a person is lent to another unit or organization for a fixed period, and their substantive post stays theirs.
+  - **`interim`**: a stopgap holds a post while the permanent holder is being found, with no substantive claim to it. WPM-D131 (acting cover does not fill a vacancy) applies
   to all three.
 - Report **time covered in total** for a post, across renewals and across the people covering it, beside the current end date.
 - Each arrangement carries the **plan that ends it**: `return`, `recruit`, `abolish` or `not decided`.
@@ -165,8 +170,9 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 1. ~~May WPM keep who held a position and when, for how long, and for which roles?~~ **Decided by the owner on 2026-11-24: yes**, as
    advised: for critical posts, under the staff-record retention rule. WPM-R290 and WPM-D233 are confirmed on that scope; widening
    it to every post would need a new decision.
-2. ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt?~~ **Decided by the owner on 2026-11-24: yes**, and
-   tracked: WPM-R291 is confirmed, and the acting-up tasks WPM-T338–T344 build the three kinds together (WPM-T651).
+2. ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt?~~ **Decided by the owner on 2026-11-24: yes**, as
+   three distinct categories (`acting_up`, `secondment`, `interim`), tracked: WPM-R291 is confirmed, and the acting-up tasks
+   WPM-T338–T344 build the three together (WPM-T651).
 3. Is an approval step on requisitions wanted by default, or as a setting that is off? *Advised: a setting, off.*
 4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
 
@@ -174,7 +180,7 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 
 1. **State and holder history** (R288, R290): first, because nothing can be recovered later.
 2. Vacancy age, hold reasons and review dates (R288, R289); then requisition approval dates (R292).
-3. Acting, secondment and interim together, on the specified acting-up work (R291); then the reorganization clock (R293).
+3. Acting up, secondment and interim together, as three categories, on the specified acting-up work (R291); then the reorganization clock (R293).
 4. Answered feedback and the sustained rule (R294, R295).
 5. Authority, succession and the manager offer (R296, WPM-T338, R297); then R298.
 
