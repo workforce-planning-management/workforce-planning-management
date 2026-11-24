@@ -7369,8 +7369,8 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       today's `draft`, `open`, `interviewing`, `offer`, `filled`, `cancelled` (the old tokens keep their meaning; "advertising" and
       "extending offers" are labels); the legal transitions in the domain crate's `lifecycle.rs` and the token list in `tokens.rs`;
       an append-only history (from, to, date, role, reason on a return or cancellation); time in each stage and from draft to
-      filled; funded, unfilled and waiting by stage; `funded` needs the post's funding recorded. The three new stages are a setting
-      (advised: off for an existing deployment; the owner has not answered that part of question 3). Updates WPM-R1's lifecycle,
+      filled; funded, unfilled and waiting by stage; `funded` needs the post's funding recorded. The three new stages are a setting,
+      off for an existing deployment (the owner decided so on 2026-11-24). Updates WPM-R1's lifecycle,
       `talent-acquisition.md` and the glossary. Not started.
 - [ ] WPM-T651 (2026-11-24) **Temporary cover with a whole length.** *(WPM-R291, WPM-D131)* Builds on the acting-up tasks WPM-T338–T344: the
       three distinct categories `acting_up`, `secondment` and `interim` (never merged: each defined in the glossary and shown

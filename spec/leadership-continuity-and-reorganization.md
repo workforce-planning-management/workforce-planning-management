@@ -78,7 +78,7 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 - **Guardrail.** The figure describes a post. It never shows a person as a poor performer for having been kept in cover.
 - **Accept when:** three renewals of three months read as nine months for the post; the people covering are not ranked.
 
-### WPM-R292 — Requisition status history: drafted to accepted (confirmed in direction by the owner 2026-11-24)
+### WPM-R292 — Requisition status history: drafted to accepted (confirmed by the owner 2026-11-24)
 
 The owner asked that WPM **track the status changes of a requisition**: drafted, proposed, funded, advertising, interviewing,
 evaluating, extending offers, accepted. This amends the lifecycle of WPM-R1 (`draft → open → interviewing → offer → filled |
@@ -110,8 +110,8 @@ cancelled`), which has no stage before `open` and none between `interviewing` an
   reasons. A requisition that began before the history began shows `stage start unknown`, **never zero** (WPM-D234).
 - **Optional stages.** `proposed`, `funded` and `evaluating` are stages a deployer turns on. With them off (the default for an
   existing deployment), `draft → open` and `interviewing → offer` stay legal as today, and nothing changes for anyone. With them
-  on, a requisition cannot reach `open` without passing `proposed` and `funded`. *This is the part of question 3 the owner has not
-  yet answered: the advice is off by default, so that WPM adds a stage only where a deployer already has one.*
+  on, a requisition cannot reach `open` without passing `proposed` and `funded`. *Decided by the owner on 2026-11-24: a setting.* It is off by
+  default for an existing deployment, so that WPM adds a stage only where a deployer already has one.
 - **`funded` and the post.** A requisition for a post (WPM-R152) does not become `funded` unless the post has funding recorded
   (post funding, WPM-R152); one record of the money, not two. A requisition with no post records who confirmed the funding.
 - **Guardrail.** Days are for a stage or a role, never for a person: no list of slow approvers, and no ranking of units (WPM-D231).
@@ -204,9 +204,9 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 2. ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt?~~ **Decided by the owner on 2026-11-24: yes**, as
    three distinct categories (`acting_up`, `secondment`, `interim`), tracked: WPM-R291 is confirmed, and the acting-up tasks
    WPM-T338–T344 build the three together (WPM-T651).
-3. **Direction decided by the owner on 2026-11-24:** track the status changes of a requisition (drafted, proposed, funded,
-   advertising, interviewing, evaluating, extending offers, accepted). *Still open:* are the three new stages (`proposed`,
-   `funded`, `evaluating`) on for everyone, or a setting that is off for an existing deployment? Advised: a setting, off.
+3. ~~Track a requisition's status changes, and are the new stages on for everyone?~~ **Decided by the owner on 2026-11-24:** track
+   the status changes (drafted, proposed, funded, advertising, interviewing, evaluating, extending offers, accepted), and the three
+   new stages (`proposed`, `funded`, `evaluating`) are **a setting**, off for an existing deployment.
 4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
 
 ## Sequencing

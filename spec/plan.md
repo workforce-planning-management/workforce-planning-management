@@ -1239,8 +1239,8 @@ say so.
 
 - ~~May WPM keep who held a position and when, for how long, and for which roles (R290)?~~ **Decided 2026-11-24: yes**, for critical posts, under the staff-record retention rule.
 - ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)?~~ **Decided 2026-11-24: yes**, as three distinct categories (`acting_up`, `secondment`, `interim`), tracked as WPM-T651.
-- **Question 3, direction decided 2026-11-24:** track a requisition's status changes (drafted, proposed, funded, advertising,
-  interviewing, evaluating, extending offers, accepted), WPM-R292. *Still open:* are `proposed`, `funded` and `evaluating` on for
-  everyone, or a setting that is off for an existing deployment? Advised: a setting, off.
+- ~~Question 3.~~ **Decided 2026-11-24:** track a requisition's status changes (drafted, proposed, funded, advertising,
+  interviewing, evaluating, extending offers, accepted), WPM-R292; `proposed`, `funded` and `evaluating` are a setting, off for
+  an existing deployment.
 - Is a directory of routes plus counts enough for speaking up (R298)? *Advised: yes; it is the most WPM should do.*
 - Who may read the span measure, every signed-in caller or HR and the line (T659)?
