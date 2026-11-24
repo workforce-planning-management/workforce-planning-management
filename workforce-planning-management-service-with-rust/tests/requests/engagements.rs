@@ -417,7 +417,12 @@ async fn contractor_details_and_assessments() {
         let audits: Value = request.get(&format!("/api/audits/{worker}")).await.json();
         let text = serde_json::to_string(&audits).unwrap();
         assert!(text.contains("contractor_details_set") && text.contains("status_assessed"));
-        assert!(!text.contains("45000") && !text.contains(&supplier));
+        // The rate is looked for by its field, not as digits: `45000` also turns up inside a timestamp.
+        assert!(
+            !text.contains("rate_minor")
+                && !text.contains("\"45000\"")
+                && !text.contains(&supplier)
+        );
 
         // Subject access includes all of it.
         let export: Value = request
@@ -538,7 +543,19 @@ async fn end_of_engagement_reminders_and_decisions() {
             let text = serde_json::to_string(&got).unwrap();
             assert!(text.contains("engagement_ending") && text.contains("engagement_ended_undecided"), "{who}: {text}");
             assert!(text.contains(&format!("RA-{tag}")) || text.contains("Test Worker"), "{who} names the worker");
-            for secret in ["45000", "45_000", "agency", "rate", "supplier"] {
+            // A figure is looked for as a whole token: `45000` inside a timestamp's microseconds or a uuid is not the rate.
+            let token = |needle: &str| {
+                text.match_indices(needle).any(|(at, _)| {
+                    let word = |c: char| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.';
+                    let before = text[..at].chars().next_back().is_none_or(|c| !word(c));
+                    let after = text[at + needle.len()..].chars().next().is_none_or(|c| !word(c));
+                    before && after
+                })
+            };
+            for secret in ["45000", "45_000"] {
+                assert!(!token(secret), "{who}'s notification must not mention `{secret}`: {text}");
+            }
+            for secret in ["agency", "rate", "supplier"] {
                 assert!(!text.contains(secret), "{who}'s notification must not mention `{secret}`: {text}");
             }
             assert!(text.contains(&day(30)) && text.contains(&day(-1)));
