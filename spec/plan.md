@@ -1242,5 +1242,5 @@ say so.
 - ~~Question 3.~~ **Decided 2026-11-24:** track a requisition's status changes (drafted, proposed, funded, advertising,
   interviewing, evaluating, extending offers, accepted), WPM-R292; `proposed`, `funded` and `evaluating` are a setting, off for
   an existing deployment.
-- Is a directory of routes plus counts enough for speaking up (R298)? *Advised: yes; it is the most WPM should do.*
+- ~~Is a directory of routes plus counts enough for speaking up (R298)?~~ **Decided 2026-11-24: yes, for now.**
 - Who may read the span measure, every signed-in caller or HR and the line (T659)?

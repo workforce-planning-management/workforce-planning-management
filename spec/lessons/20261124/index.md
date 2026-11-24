@@ -4,7 +4,7 @@
 > 2026-11-24 the owner asked that it be recorded: the ideas became proposed requirements **WPM-R288–R298**, decisions
 > **WPM-D231–D235** and tasks **WPM-T648–T659** in
 > [leadership-continuity-and-reorganization.md](../../leadership-continuity-and-reorganization.md), [plan.md](../../plan.md)
-> section Z and [tasks.md](../../tasks.md). Each is still the owner's to confirm, and one question below is open (the first three are answered, on 2026-11-24).
+> section Z and [tasks.md](../../tasks.md). Each is still the owner's to confirm, and all four questions below were answered on 2026-11-24.
 
 ## Where the ideas come from, and what is left out
 
@@ -273,7 +273,8 @@ safety score for a team or manager.
 3. Is an approval step on requisitions wanted as a default, or as a setting that is off? **Direction decided 2026-11-24:** track a
    requisition's status changes, drafted to accepted (WPM-R292). **Answered 2026-11-24: the new stages are a setting**, off for an
    existing deployment.
-4. Is the directory and counts approach to speaking up enough? The advice is that it is the most WPM should do.
+4. Is the directory and counts approach to speaking up enough? The advice is that it is the most WPM should do. **Answered yes on
+   2026-11-24**, for now.
 
 ## Risks
 

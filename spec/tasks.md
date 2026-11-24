@@ -7395,7 +7395,7 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       give for not wanting a role, from a closed list they may skip. Readiness stays a person's judgement (WPM-D128). Not started.
 - [ ] WPM-T658 (2026-11-24) **Where to raise a concern: a directory and counts.** *(WPM-R298, WPM-D232)* A directory of routes in every locale, a pulse
       question, and counts entered by each route's owner with `unknown` where none was entered. WPM holds no concerns and links none
-      to a worker. Needs the owner's answer to question 4. Not started.
+      to a worker. The owner answered question 4 on 2026-11-24: the directory is enough for now. Not started.
 - [ ] WPM-T659 (2026-11-24) **Who may read the span measure.** *(WPM-R290; [spec](leadership-continuity-and-reorganization.md#also-checked-and-recorded))*
       `GET /api/workforce-intelligence/overview` lists each manager's name with their direct reports, takes no caller and applies no
       `mask`, and the reference policy's last rule lets any signed-in caller read it. The owner decides: say in the specification that

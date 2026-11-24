@@ -169,7 +169,7 @@ cancelled`), which has no stage before `open` and none between `interviewing` an
   of calendar days. Offer the 360 (WPM-R29) to the most senior roles too, keeping its floor of three.
 - **Guardrail.** It measures what the organization provided, not how good a manager is.
 
-### WPM-R298 — Where to raise a concern: a directory and counts
+### WPM-R298 — Where to raise a concern: a directory and counts (confirmed by the owner 2026-11-24)
 
 - WPM **holds no concerns** (WPM-D232). It holds a **directory of routes** (what each is for, whether it is confidential or
   anonymous, who receives it, when to expect a reply), in every locale and reachable without signing in if the deployer chooses;
@@ -207,7 +207,8 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 3. ~~Track a requisition's status changes, and are the new stages on for everyone?~~ **Decided by the owner on 2026-11-24:** track
    the status changes (drafted, proposed, funded, advertising, interviewing, evaluating, extending offers, accepted), and the three
    new stages (`proposed`, `funded`, `evaluating`) are **a setting**, off for an existing deployment.
-4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
+4. ~~Is the directory-and-counts approach to speaking up enough?~~ **Decided by the owner on 2026-11-24: yes, for now.** WPM-R298
+   and WPM-D232 are confirmed on that scope; holding cases stays out.
 
 ## Sequencing
 
