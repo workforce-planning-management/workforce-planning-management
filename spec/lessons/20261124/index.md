@@ -270,7 +270,9 @@ safety score for a team or manager.
    2026-11-24**, for critical posts, under the staff-record retention rule.
 2. Should `secondment` and `interim` join the acting assignment while it is unbuilt? The advice is yes. **Answered yes on
    2026-11-24**, and tracked as WPM-T651.
-3. Is an approval step on requisitions wanted as a default, or as a setting that is off?
+3. Is an approval step on requisitions wanted as a default, or as a setting that is off? **Direction decided 2026-11-24:** track a
+   requisition's status changes, drafted to accepted (WPM-R292). Whether the new stages are on for everyone, or a setting, is still
+   open; the advice is a setting, off.
 4. Is the directory and counts approach to speaking up enough? The advice is that it is the most WPM should do.
 
 ## Risks
