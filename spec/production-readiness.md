@@ -93,7 +93,7 @@ file.
 
 A root `LICENSE.md` states each subproject's SPDX expression and links the texts.
 Every license text is in `LICENSES/<lowercase-spdx-id>/index.md` (`mit`, `apache-2.0`,
-`bsd-3-clause`, `gpl-2.0-only`, `gpl-3.0-only`, `ogl-uk-3.0`, `cc-by-nc-sa-4.0`), with the reason for
+`bsd-3-clause`, `gpl-2.0-only`, `gpl-3.0-only`, `ogl-uk-3.0`, `cc-by-sa-4.0`), with the reason for
 the options in `LICENSE.md`. `scripts/check-licenses.py` checks that the
 `license` fields in `Cargo.toml` and `package.json` match `LICENSE.md`, that each option
 has its `LICENSES/<id>/index.md`, and that no license text sits outside `LICENSES/`.

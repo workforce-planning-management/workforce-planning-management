@@ -4,7 +4,7 @@ Each subproject declares its own SPDX license expression in its manifest, and
 that declaration is authoritative for that subproject:
 
 - **workforce-planning-management-service-with-rust** (`Cargo.toml` `license`):
-  `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only OR OGL-UK-3.0 OR CC-BY-NC-SA-4.0`
+  `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only OR OGL-UK-3.0 OR CC-BY-SA-4.0`
 - **workforce-planning-management-ui-with-svelte** (`package.json` `license`):
   `MIT OR Apache-2.0`
 - **workforce-planning-management.github.io**, the documentation site
@@ -17,8 +17,8 @@ The full text of every license is in the [LICENSES/](LICENSES) directory, one
 `LICENSES/<lowercase-spdx-id>/index.md` per license: see
 [Full license texts](#full-license-texts) below. The MIT and BSD-3-Clause texts
 carry the copyright line below, with the year the project began (2026). The
-Apache-2.0, GPL, OGL-UK-3.0 and CC-BY-NC-SA-4.0 texts are the SPDX license-list
-texts, unmodified. The SPDX identifiers are <https://spdx.org/licenses/>.
+Apache-2.0, GPL and OGL-UK-3.0 texts are the SPDX license-list texts, and the
+CC-BY-SA-4.0 text is Creative Commons' own legal code, all unmodified. The SPDX identifiers are <https://spdx.org/licenses/>.
 
 ## Why several options
 
@@ -53,4 +53,4 @@ The full text of each license is in its own directory:
 - [GPL-2.0-only](LICENSES/gpl-2.0-only/index.md)
 - [GPL-3.0-only](LICENSES/gpl-3.0-only/index.md)
 - [OGL-UK-3.0](LICENSES/ogl-uk-3.0/index.md)
-- [CC-BY-NC-SA-4.0](LICENSES/cc-by-nc-sa-4.0/index.md)
+- [CC-BY-SA-4.0](LICENSES/cc-by-sa-4.0/index.md)

@@ -26,7 +26,7 @@ KNOWN = {
     "GPL-2.0-only",
     "GPL-3.0-only",
     "OGL-UK-3.0",
-    "CC-BY-NC-SA-4.0",
+    "CC-BY-SA-4.0",
 }
 API = "workforce-planning-management-service-with-rust"
 UI = "workforce-planning-management-ui-with-svelte"

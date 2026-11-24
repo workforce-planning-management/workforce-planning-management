@@ -236,7 +236,7 @@ the existing production gates WPM-G1 and WPM-G2 in [tasks.md](tasks.md).
   the full text of every licence the subprojects offer, one
   `LICENSES/<lowercase-spdx-id>/index.md` each
   (MIT, Apache-2.0, BSD-3-Clause, GPL-2.0-only, GPL-3.0-only, OGL-UK-3.0 and
-  CC-BY-NC-SA-4.0). The API offers all seven; the UI offers MIT and Apache-2.0.
+  CC-BY-SA-4.0). The API offers all seven; the UI offers MIT and Apache-2.0.
 
   `LICENSE.md` links to each text. The `license` fields in `Cargo.toml`
   and `package.json` and the files agree, and a CI check keeps them in step.

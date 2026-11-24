@@ -45,7 +45,7 @@ WPM-T574 reads each primary source and corrects this table.
 
 | The buyer asks | WPM today | Gap | Here |
 | --- | --- | --- | --- |
-| A licence that permits hosted commercial supply | Service `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only OR OGL-UK-3.0 OR CC-BY-NC-SA-4.0`; UI and site `MIT OR Apache-2.0` ([LICENSE.md](../LICENSE.md)); dependency licences checked (`check-licenses.py`). No AGPL anywhere | None in the code. A supplier chooses MIT or Apache-2.0, under which hosting creates no duty to disclose changes. SFIA content is licensed separately (WPM-D69) | WPM-T575 |
+| A licence that permits hosted commercial supply | Service `MIT OR Apache-2.0 OR BSD-3-Clause OR GPL-2.0-only OR GPL-3.0-only OR OGL-UK-3.0 OR CC-BY-SA-4.0`; UI and site `MIT OR Apache-2.0` ([LICENSE.md](../LICENSE.md)); dependency licences checked (`check-licenses.py`). No AGPL anywhere | None in the code. A supplier chooses MIT or Apache-2.0, under which hosting creates no duty to disclose changes. SFIA content is licensed separately (WPM-D69) | WPM-T575 |
 | UK-only hosting, backups, and recovery copies | Backups encrypted; the target is configured (WPM-T192); nothing records or checks a region | **No declared residency** that a check can compare against | R272 |
 | A sub-processor register | None | Supplier's document; the software's own outbound calls (webhooks, SCIM, upstream lookups) are not listed in one place | R272, WPM-T584 |
 | Support staff never see live sensitive records unmonitored | No vendor or support role. Administrators are the deployer's people; `svc` is a service account only | **No time-limited, customer-approved support access** | R267 |
