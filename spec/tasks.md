@@ -7383,10 +7383,18 @@ the entry records only the evidence it needs.
       `isWide`); the same sections, strings and rules serve both. Tested: the boundary in each app, and on Android under
       Robolectric at `w900dp` (two columns, a request cancelled from the right column) and `w400dp` (one column); the iOS app
       builds for the iPad Pro 11-inch simulator. **Not done:** a run of either app on an iPad simulator or a tablet emulator, so
-      neither layout has been looked at (the sign-in screen needs a service); the request-leave form is still one column; a
-      configuration pushed by a management tool or its test harness (the key names are this app's own and have not been checked
-      against Intune, Jamf, Workspace ONE or Android Enterprise); a check that no permission or entitlement beyond
-      `INTERNET` is requested, beyond reading the Android manifest by eye.
+      neither layout has been looked at (the sign-in screen needs a service, a token signed with a key the service trusts and a
+      worker for it, and nothing here can tap through the app); the request-leave form is still one column. **Permissions
+      (checked 2026-11-24):** the merged release manifest asks for `INTERNET` only (plus the signature-protected permission
+      AndroidX adds for its own receivers) and has one exported activity (ours) and one exported receiver (AndroidX's profile
+      installer, protected by `DUMP`); the iOS app's `Info.plist` has no usage description, no transport-security exception and
+      declares both iPhone and iPad. **Managed configuration, what Apple's documentation says (2026-11-24):** iOS has two
+      delivery paths. The legacy one reads the `UserDefaults` dictionary this app reads, and "the managed app's developer
+      specifies the data format within the property list"; the declarative one (`AppManaged`, read through the ManagedApp
+      framework) is a different mechanism that this app does **not** read, so a deployment that pushes only declarative app
+      configuration reaches the app as no configuration at all. Not done: reading the declarative path (its API was not
+      checked here), and a configuration pushed by a management tool (Intune, Jamf, Workspace ONE, Android Enterprise); the key
+      names are this app's own, and an Android restrictions schema declares them for the tool to show.
 - [~] WPM-T644 (2026-11-23) **Record text is never copied onto the device.** *(WPM-R286)* Part done (2026-11-24).
       **Done, iOS:** text selection switched off at the root (`.textSelection(.disabled)`), so no screen offers it; the shield
       that hides the window in the app switcher also hides it while the screen is recorded or mirrored (`UIScreen.isCaptured`,
