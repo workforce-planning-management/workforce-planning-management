@@ -1238,7 +1238,7 @@ say so.
 ### Open questions (section Z)
 
 - ~~May WPM keep who held a position and when, for how long, and for which roles (R290)?~~ **Decided 2026-11-24: yes**, for critical posts, under the staff-record retention rule.
-- Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)? *Advised: yes.*
+- ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)?~~ **Decided 2026-11-24: yes**, tracked as WPM-T651.
 - Is an approval step on requisitions wanted as a default, or as a setting that is off (R292)? *Advised: a setting, off.*
 - Is a directory of routes plus counts enough for speaking up (R298)? *Advised: yes; it is the most WPM should do.*
 - Who may read the span measure, every signed-in caller or HR and the line (T659)?

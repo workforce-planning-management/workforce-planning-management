@@ -63,7 +63,7 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 - **Accept when:** a history row is added by every holder change and never changed; a small cut is withheld and says so; no
   endpoint returns "posts left" for a person.
 
-### WPM-R291 — Temporary cover with a whole length
+### WPM-R291 — Temporary cover with a whole length (confirmed by the owner 2026-11-24)
 
 - Build the **acting assignments** as specified (WPM-R203–R205) and widen their kind to `acting`, `secondment` and `interim`:
   all three are dated cover of a post somebody else holds or nobody does. WPM-D131 (acting cover does not fill a vacancy) applies
@@ -165,7 +165,8 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 1. ~~May WPM keep who held a position and when, for how long, and for which roles?~~ **Decided by the owner on 2026-11-24: yes**, as
    advised: for critical posts, under the staff-record retention rule. WPM-R290 and WPM-D233 are confirmed on that scope; widening
    it to every post would need a new decision.
-2. Do `secondment` and `interim` join the acting assignment while it is unbuilt? *Advised: yes.*
+2. ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt?~~ **Decided by the owner on 2026-11-24: yes**, and
+   tracked: WPM-R291 is confirmed, and the acting-up tasks WPM-T338–T344 build the three kinds together (WPM-T651).
 3. Is an approval step on requisitions wanted by default, or as a setting that is off? *Advised: a setting, off.*
 4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
 

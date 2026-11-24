@@ -7369,7 +7369,8 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       funded, unfilled and waiting by step, in posts, FTE and days; no list of people. Needs the owner's answer to question 3. Not started.
 - [ ] WPM-T651 (2026-11-24) **Temporary cover with a whole length.** *(WPM-R291, WPM-D131)* Builds on the acting-up tasks WPM-T338–T344: the
       kinds `acting`, `secondment` and `interim`; total time covered per post across renewals and people; the plan that ends each
-      arrangement; WPM-D131 for all three. Needs the owner's answer to question 2. Not started.
+      arrangement; WPM-D131 for all three. The owner answered question 2 on 2026-11-24: yes, the three kinds are built
+      together, so WPM-T338–T344 take `secondment` and `interim` with `acting`. Not started.
 - [ ] WPM-T652 (2026-11-24) **The reorganization clock.** *(WPM-R293)* Builds on WPM-T648. Announced date, promised decision date with a
       history of moves, posts affected, linked freezes; ending an initiative asks for an answer to each hold and a plain message that it
       has ended; at least two options before the decision, one of them keeping the current structure. Not started.
