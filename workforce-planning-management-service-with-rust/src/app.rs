@@ -333,11 +333,20 @@ fn cors_origins(origin: Option<&str>, required: bool) -> Result<Vec<String>> {
     }
 }
 
+/// The settings for `environment`. A process that serves reads every setting. One that does not (`db`, `task`) leaves out the settings only
+/// a server reads (axa 0.23, `Config::for_task_from_lookup`), and production does not ask it for the browser origin, so a migration or a
+/// task is not refused for a setting it never uses.
 fn config_from(
     environment: &Environment,
+    serves: bool,
     get: impl Fn(&str) -> Option<String> + Copy,
 ) -> Result<Config> {
-    let mut config = Config::from_lookup(environment, &defaults(), |name| setting(name, get))?;
+    let lookup = |name: &str| setting(name, get);
+    let mut config = if serves {
+        Config::from_lookup(environment, &defaults(), lookup)?
+    } else {
+        Config::for_task_from_lookup(environment, &defaults(), lookup)?
+    };
     if *environment == Environment::Production {
         config.http.timeout_seconds = request_timeout_seconds(
             crate::compat::env_var_from("WORKFORCE_PLANNING_MANAGEMENT_REQUEST_TIMEOUT_MS", get)
@@ -347,7 +356,7 @@ fn config_from(
         config.http.cors_origins = cors_origins(
             crate::compat::env_var_from("WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN", get)
                 .as_deref(),
-            true,
+            serves,
         )?;
     } else {
         // Only production lets a browser call the API directly: the UI calls it through its own server.
@@ -386,7 +395,15 @@ impl App {
     /// # Errors
     /// A setting is missing or does not parse.
     pub fn config(environment: &Environment) -> Result<Config> {
-        config_from(environment, |name| std::env::var(name).ok())
+        config_from(environment, true, |name| std::env::var(name).ok())
+    }
+
+    /// The settings for a process that serves nothing: `db` and `task`.
+    ///
+    /// # Errors
+    /// A setting a task reads is missing or does not parse.
+    pub fn task_config(environment: &Environment) -> Result<Config> {
+        config_from(environment, false, |name| std::env::var(name).ok())
     }
 
     /// How the service logs, for a process that serves nothing.
@@ -474,7 +491,11 @@ impl App {
             .environment
             .as_deref()
             .map_or_else(Environment::from_env, Environment::parse);
-        let mut config = Self::config(&environment)?;
+        let mut config = if matches!(cli.command, Command::Db { .. } | Command::Task { .. }) {
+            Self::task_config(&environment)?
+        } else {
+            Self::config(&environment)?
+        };
         if matches!(cli.command, Command::Check) {
             // WPM's own config, not `axa::cli::check`, which re-reads the environment and so reports `axa`'s timeout and CORS, not these.
             for (name, value) in config.settings() {
@@ -854,18 +875,18 @@ mod tests {
                 .find(|(key, _)| *key == name)
                 .map(|(_, value)| value.to_string())
         };
-        let development = config_from(&Environment::Development, read).unwrap();
+        let development = config_from(&Environment::Development, true, read).unwrap();
         assert_eq!(development.http.cors_origins, Vec::<String>::new());
         assert!(development.logger.override_filter.is_some());
 
-        let demo = config_from(&Environment::Other("demo".to_string()), read).unwrap();
+        let demo = config_from(&Environment::Other("demo".to_string()), true, read).unwrap();
         assert_eq!(demo.http.timeout_seconds, 0);
         assert!(!demo.http.compression);
         assert!(!demo.http.hsts);
         assert_eq!(demo.http.cors_origins, Vec::<String>::new());
         assert!(demo.database.auto_migrate);
 
-        let production = config_from(&Environment::Production, |name| {
+        let production = config_from(&Environment::Production, true, |name| {
             [
                 ("DB_URL", "postgres://example/wpm?sslmode=require"),
                 (
@@ -882,6 +903,14 @@ mod tests {
         assert_eq!(production.http.timeout_seconds, 2);
         assert!(production.http.compression);
         assert_eq!(production.http.cors_origins, ["https://hr.example"]);
+
+        // A migration or a task in production needs no browser origin; a server does.
+        let database_only = |name: &str| {
+            (name == "DB_URL").then(|| "postgres://example/wpm?sslmode=require".to_string())
+        };
+        assert!(config_from(&Environment::Production, true, database_only).is_err());
+        let task = config_from(&Environment::Production, false, database_only).unwrap();
+        assert_eq!(task.http.cors_origins, Vec::<String>::new());
 
         assert!(App::version().starts_with(env!("CARGO_PKG_VERSION")));
     }

@@ -7334,3 +7334,18 @@ the entry records only the evidence it needs.
       only through nextest's `llvm-cov`, a different coverage tool; `cargo run -- db migrate` and `cargo sqlx prepare` still build
       the binary again (two minutes of the job).
 
+
+## axa 0.23 ([rust-axum-stack](rust-axum-stack.md)), 2026-11-24
+
+- [x] WPM-T647 (2026-11-24) **`axa` 0.23.0.** *The owner asked on 2026-11-24 and approved the exception to the minimum publish age* (0.23.0
+      and `axa-test` 0.14.0 were published that morning; the resolve allowed them with `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`).
+      From 0.21.0 to 0.23.0 and `axa-test` 0.12.0 to 0.14.0; the resolve also moves `axa-cursor-pagination` to 0.1.3 and
+      `axa-request-rate-limit` to 0.3.4. **No compile change:** WPM builds `Defaults` with `..Defaults::default()`. **One use of the new
+      API:** `db` and `task` build their configuration with `Config::for_task_from_lookup`, and production no longer asks them for
+      `WORKFORCE_PLANNING_MANAGEMENT_CORS_ORIGIN`, so a migration or a task in production is not refused for a setting only a server uses
+      (`App::task_config`; a test shows production refuses a server without the origin and accepts a task without it). **Not adopted, and
+      why:** `Defaults::request_timeout_seconds`, `cors_origins`, `hsts` and `compression` (WPM reads its own prefixed variables and sets
+      them by environment, `demo` included); `AppRoutes::into_app_with` (WPM's layers are in place and tested, and moving them changes
+      the order requests pass through them); `Error::with_detail` (it gives the status's reason as the `code`, where WPM's clients and
+      tests rely on `validation`, `unprocessable`, `conflict`); `AppContext::for_test` (WPM's tests boot the whole app). **Verified:** fmt; clippy with every target and `-D warnings`; `cargo deny check`; all 557 service tests in the `parallel`
+      profile on a local PostgreSQL. **Not checked:** CI; the keycloak feature's tests.
