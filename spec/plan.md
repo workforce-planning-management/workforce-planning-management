@@ -1200,3 +1200,45 @@ encryption (T582), and scanning and the SLA (T580–T581). The pen-test scope (T
 - Which key management service, and is a hardware-backed key required?
 - Destruction of backups (WPM-D219): is "destroyed on expiry, with dates" acceptable, or must backups be held per buyer so that
   destroying a key destroys them at once?
+
+## Z. Lessons from an independent review of a large organization (proposed 2026-11-24)
+
+[lessons/20261124/index.md](lessons/20261124/index.md) assesses 17 ideas from a published independent review of how one large
+organization sets direction, takes decisions, leads its people and follows through. The source is anonymous on purpose, and
+nothing recorded from it names it or quotes it. The owner asked on 2026-11-24 that the ideas be recorded here, in
+[tasks.md](tasks.md) and in the spec. The requirements **WPM-R288–R298**, decisions **WPM-D231–D235** and tasks
+**WPM-T648–T659** are in [leadership-continuity-and-reorganization.md](leadership-continuity-and-reorganization.md). Nothing
+is built, and every decision is the owner's.
+
+**Assessment.** The review's loop was: leaders changed often, posts stayed empty or were covered temporarily while a long
+reorganization was undecided, authority moved upward, people stopped speaking, and less got done. WPM can show the structural
+half from facts about positions and dates, with no judgement of anyone. It holds positions and statuses, vacancy FTE, dated
+extensions, change initiatives and consultation windows, an anonymous pulse and succession plans, but **no dates on a position's
+state, no history of who held a post, no approval step on a requisition, and no clock on a reorganization**. Those are what
+the four first ideas add.
+
+**Advised order.**
+
+1. State and holder history (T648, T649), because each month without it loses history that cannot be rebuilt.
+2. Vacancy age, hold reasons and review dates (T648); requisition approval dates, as a setting that is off (T650).
+3. Acting, secondment and interim on the acting-up work already specified (T651); then the reorganization clock (T652).
+4. Answered feedback and the sustained rule (T653, T654).
+5. Authority, succession and the manager offer (T655, T657, T656); the directory of routes (T658).
+6. The rest (protected time for leads, early leaving, change load, plans seen by those who deliver them, decisions explained,
+   recognition) wait on the [roadmap](roadmap.md) until a deployer asks.
+
+**Kept away from, on purpose (WPM-D231, WPM-D232).** Any score for trust, culture, morale or leadership; tracking leaders'
+visits; conduct records; free-text manager notes; promotion-fairness inference; ranking of units; and **holding concerns**, which
+WPM should not do because it is HR's system and many concerns are about managers and HR.
+
+**Risks.** Measures become targets (a vacancy age can be cut by abolishing the post, so abolished posts sit beside it); an
+approval step must not be added where a deployer had none; leadership data is about few people, so when in doubt withhold, and
+say so.
+
+### Open questions (section Z)
+
+- May WPM keep who held a position and when, for how long, and for which roles (R290)? *Advised: yes, for critical posts.*
+- Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)? *Advised: yes.*
+- Is an approval step on requisitions wanted as a default, or as a setting that is off (R292)? *Advised: a setting, off.*
+- Is a directory of routes plus counts enough for speaking up (R298)? *Advised: yes; it is the most WPM should do.*
+- Who may read the span measure, every signed-in caller or HR and the line (T659)?

@@ -19,6 +19,21 @@ category limits) are listed there under "Not done".
   PWA with push; geofenced / biometric clock-in; swap-style requests for other
   rota-like bookings.
 
+## Later: from the lessons of an independent review (2026-11-24)
+
+Each becomes its own requirement when a deployer asks ([the lessons](lessons/20261124/index.md), ideas 11 to 17; the first ten are
+[WPM-R288–R298](leadership-continuity-and-reorganization.md)).
+
+- **Protected time for professional leads:** planned hours on the role's assignment and the hours released, as two facts; roles
+  with none planned; a group may name its lead roles.
+- **Early leaving:** leavers within a set time of joining, by unit, with the floor, beside the resignation reasons (WPM-R127).
+- **Change load:** active initiatives that reach one department in one month, as a number and a list, with no threshold.
+- **Plans seen by those who deliver them:** before a plan becomes `active`, which units were asked, when, and what changed.
+- **Decisions explained:** an announcement template (what was decided, why, what changes, what stays, what is not yet known, and
+  when it will be said). Receipts stay counts (WPM-D35).
+- **Recognition:** a thank-you from any worker to a team, public by choice, with no points, counts or ranking.
+- **Not a candidate:** holding concerns or grievances of the speaking-up kind (WPM-D232); a directory of routes is WPM-R298.
+
 ## Follow-ups on delivered work
 
 - **Notifications:** outbound delivery (email/push over the upstream person

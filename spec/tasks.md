@@ -7349,3 +7349,48 @@ the entry records only the evidence it needs.
       the order requests pass through them); `Error::with_detail` (it gives the status's reason as the `code`, where WPM's clients and
       tests rely on `validation`, `unprocessable`, `conflict`); `AppContext::for_test` (WPM's tests boot the whole app). **Verified:** fmt; clippy with every target and `-D warnings`; `cargo deny check`; all 557 service tests in the `parallel`
       profile on a local PostgreSQL. **Not checked:** CI; the keycloak feature's tests.
+
+## Leadership continuity, cover and reorganization ([spec](leadership-continuity-and-reorganization.md), [lessons](lessons/20261124/index.md)), 2026-11-24
+
+Proposed; the owner asked on 2026-11-24 that the lessons be recorded here. Every entry is open and none is started. The four
+questions for the owner are in the topic file and are not decided. **Nothing from the source is named in any of these tasks.**
+
+- [ ] WPM-T648 (2026-11-24) **Position state history, vacancy age and freeze reasons.** *(WPM-R288, WPM-R289, WPM-D233, WPM-D234)* Builds
+      on WPM-R152. An append-only table of position state moves (from, to, date, actor), backfilled with `start unknown` for a post
+      already vacant; vacancy age for every open vacancy; a `frozen` move asks for a reason, a decider and a review date and is refused
+      without one; a report by unit, band and critical role with abolished posts beside it, the number frozen and the number with no
+      review date, a floor on every cut. **First, because history cannot be rebuilt.** Not started; nothing verified.
+- [ ] WPM-T649 (2026-11-24) **Holder history and continuity in critical posts.** *(WPM-R290, WPM-D233)* Builds on WPM-T648. An append-only
+      holder history under the staff-record retention rule; holders, months empty and months covered in 36 months for critical
+      posts; withheld under the floor with the complement; no per-person count of posts left. Needs the owner's answer to question 1.
+      Not started.
+- [ ] WPM-T650 (2026-11-24) **Requisition approval steps and the funded-and-waiting measure.** *(WPM-R292)* `submitted`, `approved` and
+      `returned` between `draft` and `open` as a setting that is off by default; dates, roles, `decide_by`, returns with reasons;
+      funded, unfilled and waiting by step, in posts, FTE and days; no list of people. Needs the owner's answer to question 3. Not started.
+- [ ] WPM-T651 (2026-11-24) **Temporary cover with a whole length.** *(WPM-R291, WPM-D131)* Builds on the acting-up tasks WPM-T338–T344: the
+      kinds `acting`, `secondment` and `interim`; total time covered per post across renewals and people; the plan that ends each
+      arrangement; WPM-D131 for all three. Needs the owner's answer to question 2. Not started.
+- [ ] WPM-T652 (2026-11-24) **The reorganization clock.** *(WPM-R293)* Builds on WPM-T648. Announced date, promised decision date with a
+      history of moves, posts affected, linked freezes; ending an initiative asks for an answer to each hold and a plain message that it
+      has ended; at least two options before the decision, one of them keeping the current structure. Not started.
+- [ ] WPM-T653 (2026-11-24) **Pulse themes that get an answer.** *(WPM-R294, WPM-D20)* Themes written by a person, an answer, owner role, date and
+      link for each; unanswered and overdue themes; a repeated question compared over time with the floor at each point; a new pulse
+      shows the last one's unanswered themes. No free text stored. Not started.
+- [ ] WPM-T654 (2026-11-24) **Sustained, not only done.** *(WPM-R295, WPM-R66, WPM-R67)* One named workforce measure, a starting value and later
+      dates on an initiative, a pulse answer or a programme; `held`, `not held`, `not measured`; no success rate. Not started.
+- [ ] WPM-T655 (2026-11-24) **Authority stated beside accountability.** *(WPM-R296, WPM-R201, WPM-R202)* One vocabulary of what a post may decide, a
+      limit and a confirmation date, shared with deputies; posts with people to manage and no statement; a statement grants
+      nothing. Not started.
+- [ ] WPM-T656 (2026-11-24) **A minimum offer for every manager.** *(WPM-R297, WPM-R189)* Builds on WPM-T331. A deployer-set list; coverage by unit
+      (current, overdue, unknown); new managers with nothing arranged; the 360 offered to senior roles, floor of three. Not started.
+- [ ] WPM-T657 (2026-11-24) **Succession that is ready to use: two additions.** *(WPM-R197–R200)* To WPM-T338–T344: coverage of posts now under
+      temporary cover (a vacant critical post with no ready successor first), and a floored count of the reasons internal people
+      give for not wanting a role, from a closed list they may skip. Readiness stays a person's judgement (WPM-D128). Not started.
+- [ ] WPM-T658 (2026-11-24) **Where to raise a concern: a directory and counts.** *(WPM-R298, WPM-D232)* A directory of routes in every locale, a pulse
+      question, and counts entered by each route's owner with `unknown` where none was entered. WPM holds no concerns and links none
+      to a worker. Needs the owner's answer to question 4. Not started.
+- [ ] WPM-T659 (2026-11-24) **Who may read the span measure.** *(WPM-R290; [spec](leadership-continuity-and-reorganization.md#also-checked-and-recorded))*
+      `GET /api/workforce-intelligence/overview` lists each manager's name with their direct reports, takes no caller and applies no
+      `mask`, and the reference policy's last rule lets any signed-in caller read it. The owner decides: say in the specification that
+      it is for every signed-in reader (beside the span measure in [workforce-measures.md](workforce-measures.md)), or narrow the read
+      to HR and the line and add a test. Found by reading on 2026-11-24; no request was made to confirm it on a running service.

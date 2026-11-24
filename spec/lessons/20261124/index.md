@@ -1,7 +1,10 @@
 # Lessons from an independent review of a large organization (WPM, proposed 2026-11-24)
 
-> **Status: proposed, not built.** This file is an assessment and advice. Nothing in it changes how WPM behaves today, and it
-> takes no WPM-R, WPM-D, or WPM-T id. An idea becomes work only when the owner chooses it.
+> **Status: proposed, not built.** This file is an assessment and advice. Nothing in it changes how WPM behaves today. On
+> 2026-11-24 the owner asked that it be recorded: the ideas became proposed requirements **WPM-R288–R298**, decisions
+> **WPM-D231–D235** and tasks **WPM-T648–T659** in
+> [leadership-continuity-and-reorganization.md](../../leadership-continuity-and-reorganization.md), [plan.md](../../plan.md)
+> section Z and [tasks.md](../../tasks.md). Each is still the owner's to confirm, and the four questions below are open.
 
 ## Where the ideas come from, and what is left out
 
@@ -99,7 +102,7 @@ roadmap line for pay.
 the number of returns, with reasons. Then one measure: **funded, unfilled, and waiting for approval**, as posts, FTE, and days,
 by the step now holding them. A deployment that wants no approval step keeps today's behaviour.
 
-**Guardrail.** Days are for a step or role. WPM-D211 refuses scores, rankings, and league tables of people, and a list of slow approvers
+**Guardrail.** Days are for a step or role. WPM-D163, WPM-D28 and the "No score" rule of the planning spec refuse scores, rankings and league tables of people, and a list of slow approvers
 would be one. State calendar or business days each time.
 
 ### 4. A reorganization has a clock, and an end
@@ -243,8 +246,14 @@ safety score for a team or manager.
 
 - `overview` in `controllers/intelligence.rs` returns each manager's name with their number of direct reports. Confirm that
   its readers are the intended ones, and state this in the specification beside the span measure.
-- The next-free-id note in [spec-driven delivery](../../../AGENTS/spec-driven-delivery.md) gives WPM-T608. Task entries run to
-  WPM-T647, so a new entry should start at WPM-T648.
+- The next-free-id note in [spec-driven delivery](../../../AGENTS/spec-driven-delivery.md) gave WPM-T608 while task entries ran to
+  WPM-T647. **Fixed on 2026-11-24**: it now gives WPM-R299, WPM-D236 and WPM-T660.
+- **Checked on 2026-11-24 and recorded as WPM-T659:** `overview` takes no caller and applies no `mask`, and the reference
+  policy's last rule lets any signed-in caller read with that obligation, so any signed-in caller can read each manager's name
+  with their number of direct reports.
+- **A wrong cite, corrected.** Idea 3 cites WPM-D211 for the refusal of scores, rankings and league tables. WPM-D211 is the
+  per-person allocation decision; the refusal is in [workforce-planning-and-scenarios.md](../../workforce-planning-and-scenarios.md)
+  ("No score"), WPM-D163 and WPM-D28.
 
 ## Sequencing
 
