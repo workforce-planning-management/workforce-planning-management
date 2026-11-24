@@ -1221,7 +1221,7 @@ the four first ideas add.
 
 1. State and holder history (T648, T649), because each month without it loses history that cannot be rebuilt.
 2. Vacancy age, hold reasons and review dates (T648); requisition approval dates, as a setting that is off (T650).
-3. Acting, secondment and interim on the acting-up work already specified (T651); then the reorganization clock (T652).
+3. Acting up, secondment and interim, three distinct categories, on the acting-up work already specified (T651); then the reorganization clock (T652).
 4. Answered feedback and the sustained rule (T653, T654).
 5. Authority, succession and the manager offer (T655, T657, T656); the directory of routes (T658).
 6. The rest (protected time for leads, early leaving, change load, plans seen by those who deliver them, decisions explained,
@@ -1238,7 +1238,7 @@ say so.
 ### Open questions (section Z)
 
 - ~~May WPM keep who held a position and when, for how long, and for which roles (R290)?~~ **Decided 2026-11-24: yes**, for critical posts, under the staff-record retention rule.
-- ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)?~~ **Decided 2026-11-24: yes**, tracked as WPM-T651.
+- ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt (R291)?~~ **Decided 2026-11-24: yes**, as three distinct categories (`acting_up`, `secondment`, `interim`), tracked as WPM-T651.
 - Is an approval step on requisitions wanted as a default, or as a setting that is off (R292)? *Advised: a setting, off.*
 - Is a directory of routes plus counts enough for speaking up (R298)? *Advised: yes; it is the most WPM should do.*
 - Who may read the span measure, every signed-in caller or HR and the line (T659)?
