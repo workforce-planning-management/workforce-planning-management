@@ -52,7 +52,8 @@ jobs:
         working-directory: workforce-planning-management-mobile-app-with-swift
         env:
           LILY_DESIGN_SYSTEM_DIR: ${{ github.workspace }}/lily
-        run: swift test
+        # xcodebuild, not `swift test`: only it compiles the .xcstrings words on every hosted Xcode.
+        run: xcodebuild test -scheme WorkforcePlanningManagementMobile-Package -destination 'platform=macOS'
       - name: Build the app for the iOS Simulator
         working-directory: workforce-planning-management-mobile-app-with-swift
         env:
