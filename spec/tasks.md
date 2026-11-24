@@ -7362,8 +7362,8 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       review date, a floor on every cut. **First, because history cannot be rebuilt.** Not started; nothing verified.
 - [ ] WPM-T649 (2026-11-24) **Holder history and continuity in critical posts.** *(WPM-R290, WPM-D233)* Builds on WPM-T648. An append-only
       holder history under the staff-record retention rule; holders, months empty and months covered in 36 months for critical
-      posts; withheld under the floor with the complement; no per-person count of posts left. Needs the owner's answer to question 1.
-      Not started.
+      posts; withheld under the floor with the complement; no per-person count of posts left. The owner answered question 1 on 2026-11-24: yes, for critical
+      posts. Not started.
 - [ ] WPM-T650 (2026-11-24) **Requisition approval steps and the funded-and-waiting measure.** *(WPM-R292)* `submitted`, `approved` and
       `returned` between `draft` and `open` as a setting that is off by default; dates, roles, `decide_by`, returns with reasons;
       funded, unfilled and waiting by step, in posts, FTE and days; no list of people. Needs the owner's answer to question 3. Not started.

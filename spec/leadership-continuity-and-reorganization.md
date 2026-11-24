@@ -51,7 +51,7 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 - A review date that passes is a **finding**. The reason `reorganization` links to the change initiative (R293).
 - **Accept when:** the three are required; a passed review date is listed; the move is audited.
 
-### WPM-R290 — Holder history of a position; continuity in critical posts
+### WPM-R290 — Holder history of a position; continuity in critical posts (confirmed by the owner 2026-11-24)
 
 - **Append-only holder history** (start, end, kind of cover) kept under the staff-record retention rule. Setting a position's
   holder overwrites it today, and the audit row keeps only that a link was made, so the number of holders over time is lost.
@@ -150,7 +150,7 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
   units** by vacancy, cover or approval time. Figures are for the unit and for those who can remove the cause.
 - **WPM-D232 WPM holds no concerns.** WPM is HR's system, and many concerns are about managers and HR; a record kept where the
   subject's colleagues administer access endangers the person who raised it. Doing it half well is worse than leaving it out (R298).
-- **WPM-D233 Structure is recorded as history, never overwritten.** Position states (R288) and holders (R290) are append-only;
+- **WPM-D233 Structure is recorded as history, never overwritten** (holder history confirmed by the owner on 2026-11-24, for critical posts). Position states (R288) and holders (R290) are append-only;
   each month without them loses history that cannot be rebuilt, which is why they come first.
 - **WPM-D234 An unknown start is unknown.** A vacancy, a cover or a reorganization whose start was not recorded says so; it is
   never zero (the stance of RCA-IN-6 applied to dates).
@@ -162,8 +162,9 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 
 Each has the advised answer in [the lessons](lessons/20261124/index.md#questions-for-the-owner); none is decided.
 
-1. May WPM keep who held a position and when, for how long, and for which roles? (R290 depends on it.) *Advised: yes, for critical
-   posts, under the staff-record retention rule.*
+1. ~~May WPM keep who held a position and when, for how long, and for which roles?~~ **Decided by the owner on 2026-11-24: yes**, as
+   advised: for critical posts, under the staff-record retention rule. WPM-R290 and WPM-D233 are confirmed on that scope; widening
+   it to every post would need a new decision.
 2. Do `secondment` and `interim` join the acting assignment while it is unbuilt? *Advised: yes.*
 3. Is an approval step on requisitions wanted by default, or as a setting that is off? *Advised: a setting, off.*
 4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
