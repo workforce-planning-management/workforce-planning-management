@@ -17,7 +17,7 @@ names an organization, a person, a place, a programme or a document, or quotes o
 | WPM-R289 | A freeze has a reason, a decider and a review date | WPM-R152, R288 | First |
 | WPM-R290 | Holder history of a position; continuity in critical posts | WPM-R152, R161, R197 | First |
 | WPM-R291 | Temporary cover with a whole length: three distinct categories, `acting_up`, `secondment`, `interim` | WPM-R79, R203–R205, WPM-D131 | First |
-| WPM-R292 | Requisition approval steps; funded and waiting | WPM-R1, WPM-R152 | First |
+| WPM-R292 | Requisition status history: drafted to accepted, with the time in each stage | WPM-R1, WPM-R152 | First |
 | WPM-R293 | A reorganization has a clock, and an end that releases what it holds | WPM-R104, R105, R108 | First |
 | WPM-R294 | Pulse themes get an answer | WPM-R28, WPM-D20 | Second |
 | WPM-R295 | Sustained, not only done | WPM-R66, R67 | Second |
@@ -78,16 +78,47 @@ decisions explained, recognition) are on the [roadmap](roadmap.md) until a deplo
 - **Guardrail.** The figure describes a post. It never shows a person as a poor performer for having been kept in cover.
 - **Accept when:** three renewals of three months read as nine months for the post; the people covering are not ranked.
 
-### WPM-R292 — Requisition approval steps; funded and waiting
+### WPM-R292 — Requisition status history: drafted to accepted (confirmed in direction by the owner 2026-11-24)
 
-- Between `draft` and `open` a requisition may pass through `submitted`, `approved` and `returned`, each with a date and a role,
-  a `decide_by`, and the number of returns with reasons.
-- One measure: **funded, unfilled, and waiting for approval**, as posts, FTE and days, **by the step now holding them**.
-- **The step is a setting, off by default.** A deployment that wants no approval step keeps today's behaviour. The record adds a
-  step only where a deployer had one.
-- **Guardrail.** Days are for a step or a role, never for a person (no list of slow approvers). State calendar or business days
-  each time.
-- **Accept when:** with the setting off, nothing changes; with it on, the measure counts by step.
+The owner asked that WPM **track the status changes of a requisition**: drafted, proposed, funded, advertising, interviewing,
+evaluating, extending offers, accepted. This amends the lifecycle of WPM-R1 (`draft → open → interviewing → offer → filled |
+cancelled`), which has no stage before `open` and none between `interviewing` and `offer`.
+
+- **The stages**, in order, with the stored token and the words a person sees (the words are content, in every locale):
+
+  | Stage | Token | Is it new? |
+  | --- | --- | --- |
+  | Drafted | `draft` | Today's |
+  | Proposed (put forward for approval) | `proposed` | New |
+  | Funded (approved, with money behind it) | `funded` | New |
+  | Advertising | `open` | Today's `open`, shown as "advertising" |
+  | Interviewing | `interviewing` | Today's |
+  | Evaluating (the panel weighs the candidates) | `evaluating` | New |
+  | Extending offers | `offer` | Today's `offer` |
+  | Accepted (an offer is accepted, before the person starts) | `accepted` | New |
+  | Filled (hired applications equal the headcount) | `filled` | Today's |
+
+  `cancelled` is reachable from every stage before `filled`. A requisition may go back one stage (an offer declined goes back to
+  `interviewing` or `evaluating`; a proposal sent back goes to `draft`), and each return keeps its reason from a closed list.
+  **The tokens `draft`, `open`, `interviewing`, `offer` and `filled` keep their meaning**, so stored data and the API do not
+  change; only the new tokens are added, and the words shown are labels.
+- **A history of every change**, append-only: from, to, the date, the role that made it, and a reason on a return or a
+  cancellation. From it, **the time in each stage** and the time from `draft` to `filled`, in calendar or business days (say
+  which, each time).
+- **The measures.** (a) **Funded, unfilled, and waiting**: posts, FTE and days in `funded` and `open` by the stage now holding
+  them; (b) **proposed and waiting for a decision**, with a `decide_by` date, in posts, FTE and days; (c) returns by stage, with
+  reasons. A requisition that began before the history began shows `stage start unknown`, **never zero** (WPM-D234).
+- **Optional stages.** `proposed`, `funded` and `evaluating` are stages a deployer turns on. With them off (the default for an
+  existing deployment), `draft → open` and `interviewing → offer` stay legal as today, and nothing changes for anyone. With them
+  on, a requisition cannot reach `open` without passing `proposed` and `funded`. *This is the part of question 3 the owner has not
+  yet answered: the advice is off by default, so that WPM adds a stage only where a deployer already has one.*
+- **`funded` and the post.** A requisition for a post (WPM-R152) does not become `funded` unless the post has funding recorded
+  (post funding, WPM-R152); one record of the money, not two. A requisition with no post records who confirmed the funding.
+- **Guardrail.** Days are for a stage or a role, never for a person: no list of slow approvers, and no ranking of units (WPM-D231).
+  A measure that can be gamed has its opposite beside it (WPM-D235): time in `funded` beside the number cancelled.
+- **Accept when:** every change adds a history row and none is edited; an illegal jump is refused naming the current stage
+  (as WPM-R1 does); with the optional stages off, every existing route and screen behaves as before; time in each stage adds up to
+  the total; an unknown start is shown as unknown.
 
 ### WPM-R293 — A reorganization has a clock, and an end
 
@@ -173,13 +204,15 @@ Each has the advised answer in [the lessons](lessons/20261124/index.md#questions
 2. ~~Do `secondment` and `interim` join the acting assignment while it is unbuilt?~~ **Decided by the owner on 2026-11-24: yes**, as
    three distinct categories (`acting_up`, `secondment`, `interim`), tracked: WPM-R291 is confirmed, and the acting-up tasks
    WPM-T338–T344 build the three together (WPM-T651).
-3. Is an approval step on requisitions wanted by default, or as a setting that is off? *Advised: a setting, off.*
+3. **Direction decided by the owner on 2026-11-24:** track the status changes of a requisition (drafted, proposed, funded,
+   advertising, interviewing, evaluating, extending offers, accepted). *Still open:* are the three new stages (`proposed`,
+   `funded`, `evaluating`) on for everyone, or a setting that is off for an existing deployment? Advised: a setting, off.
 4. Is the directory-and-counts approach to speaking up enough? *Advised: yes; it is the most WPM should do.*
 
 ## Sequencing
 
 1. **State and holder history** (R288, R290): first, because nothing can be recovered later.
-2. Vacancy age, hold reasons and review dates (R288, R289); then requisition approval dates (R292).
+2. Vacancy age, hold reasons and review dates (R288, R289); then requisition status history (R292).
 3. Acting up, secondment and interim together, as three categories, on the specified acting-up work (R291); then the reorganization clock (R293).
 4. Answered feedback and the sustained rule (R294, R295).
 5. Authority, succession and the manager offer (R296, WPM-T338, R297); then R298.

@@ -7364,9 +7364,14 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       holder history under the staff-record retention rule; holders, months empty and months covered in 36 months for critical
       posts; withheld under the floor with the complement; no per-person count of posts left. The owner answered question 1 on 2026-11-24: yes, for critical
       posts. Not started.
-- [ ] WPM-T650 (2026-11-24) **Requisition approval steps and the funded-and-waiting measure.** *(WPM-R292)* `submitted`, `approved` and
-      `returned` between `draft` and `open` as a setting that is off by default; dates, roles, `decide_by`, returns with reasons;
-      funded, unfilled and waiting by step, in posts, FTE and days; no list of people. Needs the owner's answer to question 3. Not started.
+- [ ] WPM-T650 (2026-11-24) **Requisition status history, drafted to accepted.** *(WPM-R292, WPM-R1, WPM-D234, WPM-D235)* The owner asked on
+      2026-11-24 that WPM track a requisition's status changes. New tokens `proposed`, `funded`, `evaluating` and `accepted` beside
+      today's `draft`, `open`, `interviewing`, `offer`, `filled`, `cancelled` (the old tokens keep their meaning; "advertising" and
+      "extending offers" are labels); the legal transitions in the domain crate's `lifecycle.rs` and the token list in `tokens.rs`;
+      an append-only history (from, to, date, role, reason on a return or cancellation); time in each stage and from draft to
+      filled; funded, unfilled and waiting by stage; `funded` needs the post's funding recorded. The three new stages are a setting
+      (advised: off for an existing deployment; the owner has not answered that part of question 3). Updates WPM-R1's lifecycle,
+      `talent-acquisition.md` and the glossary. Not started.
 - [ ] WPM-T651 (2026-11-24) **Temporary cover with a whole length.** *(WPM-R291, WPM-D131)* Builds on the acting-up tasks WPM-T338–T344: the
       three distinct categories `acting_up`, `secondment` and `interim` (never merged: each defined in the glossary and shown
       separately beside the total); total time covered per post across renewals and people; the plan that ends each arrangement;

@@ -4,7 +4,7 @@
 > 2026-11-24 the owner asked that it be recorded: the ideas became proposed requirements **WPM-R288–R298**, decisions
 > **WPM-D231–D235** and tasks **WPM-T648–T659** in
 > [leadership-continuity-and-reorganization.md](../../leadership-continuity-and-reorganization.md), [plan.md](../../plan.md)
-> section Z and [tasks.md](../../tasks.md). Each is still the owner's to confirm, and two of the four questions below are open (the first two were answered yes on 2026-11-24).
+> section Z and [tasks.md](../../tasks.md). Each is still the owner's to confirm, and one question below is open, one is half answered (the first two were answered yes on 2026-11-24).
 
 ## Where the ideas come from, and what is left out
 
