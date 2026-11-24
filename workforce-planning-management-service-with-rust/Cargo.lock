@@ -2084,12 +2084,12 @@ dependencies = [
 
 [[package]]
 name = "jiff"
-version = "1.0.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5e77cbfb9fff4798e283c2d69dff39fc2c45e7da017e5ce95b654e46ea41236"
+checksum = "9cc767b5763de45e810109520123bb2829a653f3a7ed9be40b2bc4f81158f595"
 dependencies = [
  "jiff-core 1.0.1",
- "jiff-static 1.0.2",
+ "jiff-static 1.0.0",
  "jiff-tzdb-platform 1.0.0",
  "log",
  "portable-atomic",
@@ -2140,9 +2140,9 @@ dependencies = [
 
 [[package]]
 name = "jiff-static"
-version = "1.0.2"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9067a0b23e5be3147d56b2dcf652b18e6b1364caca93fb157653b6fbcab23a9"
+checksum = "955491488dc99b572ea6d67b172dcd98787d00744b1fb44a5689b4e6413695a6"
 dependencies = [
  "jiff-core 1.0.1",
  "proc-macro2",
@@ -3350,7 +3350,7 @@ dependencies = [
  "indexmap 1.9.3",
  "indexmap 2.14.2",
  "jiff 0.2.46",
- "jiff 1.0.2",
+ "jiff 1.0.0",
  "schemars 0.9.0",
  "schemars 1.2.3",
  "serde_core",
@@ -4735,7 +4735,7 @@ dependencies = [
  "croner",
  "ed25519-dalek 3.0.0",
  "entity-ref",
- "jiff 0.2.46",
+ "jiff 1.0.0",
  "jiff-sqlx",
  "jsonwebtoken",
  "mimalloc",
@@ -4767,7 +4767,7 @@ dependencies = [
  "criterion",
  "ed25519-dalek 3.0.0",
  "entity-ref",
- "jiff 0.2.46",
+ "jiff 1.0.0",
  "serde",
  "serde_json",
  "sha2 0.11.1",
