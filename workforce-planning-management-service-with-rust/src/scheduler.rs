@@ -151,7 +151,7 @@ pub fn next_after(job: &Job, now: Timestamp) -> Result<Option<Timestamp>, String
     let schedule = parse(job)?;
     // Times are UTC; a search that finds no later time (a year that has passed) is `None`, as before.
     Ok(schedule
-        .find_next_occurrence(&now.to_zoned(TimeZone::UTC), false)
+        .find_next_occurrence(&now.to_zoned_datetime(TimeZone::UTC), false)
         .ok()
         .map(|at| at.timestamp()))
 }

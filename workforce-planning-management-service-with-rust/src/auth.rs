@@ -565,7 +565,9 @@ pub fn mask_payslip(mut payslip: payslips::Model) -> payslips::Model {
 /// these attributes are inert.
 #[must_use]
 pub fn request_env_attrs() -> BTreeMap<String, Vec<String>> {
-    let hour = Timestamp::now().to_zoned(jiff::tz::TimeZone::UTC).hour();
+    let hour = Timestamp::now()
+        .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+        .hour();
     env_attrs_at(hour.unsigned_abs().into())
 }
 

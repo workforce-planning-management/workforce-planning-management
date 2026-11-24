@@ -21,7 +21,7 @@ pub fn today() -> Date {
 /// [`SqlTimestamp`](crate::sql_time::SqlTimestamp)), as `chrono`'s `date_naive`.
 #[must_use]
 pub fn date_of(at: impl Into<Timestamp>) -> Date {
-    at.into().to_zoned(TimeZone::UTC).date()
+    at.into().to_zoned_datetime(TimeZone::UTC).date()
 }
 
 /// The date `year-month-day`, or `None` when there is no such day (as `chrono`'s `NaiveDate::from_ymd_opt`).
@@ -38,7 +38,7 @@ pub fn ymd(year: i32, month: u32, day: u32) -> Option<Date> {
 /// Every date `jiff` can hold has a midnight in UTC, so the fallback (the nearer end of the range) is never taken.
 #[must_use]
 pub fn start_of_day(date: Date) -> Timestamp {
-    date.to_zoned(TimeZone::UTC).map_or_else(
+    date.to_zoned_datetime(TimeZone::UTC).map_or_else(
         |_| {
             if date.year() < 0 {
                 Timestamp::MIN
@@ -69,7 +69,7 @@ pub fn utc(
     )
     .ok()?;
     date.to_datetime(time)
-        .to_zoned(TimeZone::UTC)
+        .to_zoned_datetime(TimeZone::UTC)
         .ok()
         .map(|z| z.timestamp())
 }

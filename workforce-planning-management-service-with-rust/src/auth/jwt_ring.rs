@@ -434,16 +434,22 @@ mod tests {
         let token = encode(
             &Header::new(Algorithm::HS256),
             &claims(),
-            &EncodingKey::from_secret(secret),
+            &EncodingKey::from_secret(secret).expect("a key"),
         )
         .expect("signed");
         let read = decode::<Claims>(
             &token,
-            &DecodingKey::from_secret(secret),
+            &DecodingKey::from_secret(secret).expect("a key"),
             &Validation::new(Algorithm::HS256),
         );
         assert!(read.is_err());
-        assert!(new_verifier(&Algorithm::HS256, &DecodingKey::from_secret(secret)).is_err());
+        assert!(
+            new_verifier(
+                &Algorithm::HS256,
+                &DecodingKey::from_secret(secret).expect("a key")
+            )
+            .is_err()
+        );
     }
 
     #[test]

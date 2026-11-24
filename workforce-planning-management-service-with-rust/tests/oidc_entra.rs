@@ -381,7 +381,7 @@ async fn entra_sign_in_gates_and_authorises() {
             &header,
             &json!({ "iss": provider.issuer(), "aud": CLIENT_ID, "oid": USERS[0].oid,
                      "roles": ["wpm-hr"], "iat": 1, "exp": 4_000_000_000_i64 }),
-            &EncodingKey::from_secret(SIGNING_KEY_N.as_bytes()),
+            &EncodingKey::from_secret(SIGNING_KEY_N.as_bytes()).expect("a key"),
         )
         .unwrap()
     };

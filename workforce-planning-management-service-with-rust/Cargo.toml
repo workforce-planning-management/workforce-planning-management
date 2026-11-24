@@ -41,7 +41,7 @@ ed25519-dalek = { version = "3.0.0" }
 base64 = { version = "0.23" }
 axa = { workspace = true }
 # The schedule's cron expressions (`src/scheduler.rs`), on jiff 0.2, the version the service uses (WPM-T531).
-croner = { version = "4.0.3", default-features = false, features = ["jiff"] }
+croner = { version = "5.0.0", default-features = false, features = ["jiff"] }
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "arbitrary_precision"] }
@@ -70,8 +70,8 @@ sqlx = { version = "0.9", default-features = false, features = [
 ] }
 # Dates and times are `jiff` (WPM-T528); `jiff-sqlx` gives `sqlx` its traits, through `sql_time`. The scheduler's cron
 # expressions are `croner` on jiff too (WPM-T531), so the service depends on no `chrono` of its own.
-jiff = { version = "0.2.44", features = ["serde"] }
-jiff-sqlx = { version = "0.2.2", features = ["postgres"] }
+jiff = { version = "1.0.2", features = ["serde"] }
+jiff-sqlx = { version = "1.0.0", features = ["postgres"] }
 uuid = { version = "1.29.2", features = ["v4", "serde"] }
 mimalloc = { version = "0.1.52" }
 prometheus = { version = "0.14.0" }
@@ -106,7 +106,7 @@ authentication-verifier = { version = "0.9.3", features = ["fetch"] }
 # `rsa` crate (RUSTSEC-2023-0071), and `aws_lc_rs` a second crypto library
 # beside rustls's `ring`. `auth::jwt_ring` gives it a provider on `ring`
 # instead (WPM-T536), which the `keycloak` feature turns on below.
-jsonwebtoken = { version = "11", optional = true, default-features = false }
+jsonwebtoken = { version = "12", optional = true, default-features = false }
 # `jsonwebtoken`'s signatures, under the `keycloak` feature (`auth::jwt_ring`); already in the build for rustls.
 ring = { version = "0.17", optional = true }
 
