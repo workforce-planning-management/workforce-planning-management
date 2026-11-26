@@ -14,7 +14,7 @@ use super::pay_transparency::organization_problems;
 use super::{ensure_org_in_scope, ensure_valid, row_json, unprocessable};
 use crate::auth::MaybeAuthUser;
 use crate::db;
-use crate::models::_entities::positions;
+use crate::models::_entities::{position_holders, positions};
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::position::{self as rules, Facts, Holding, Seat};
 use crate::rules::position_history::{self as history, Freeze};
@@ -223,11 +223,14 @@ async fn create(
     .await?;
     record_move(
         &mut tx,
-        pid,
-        &organization,
-        None,
-        "planned",
-        None,
+        NewMove {
+            position: pid,
+            organization: &organization,
+            from: None,
+            to: "planned",
+            freeze: None,
+            holder_left: false,
+        },
         caller.actor(),
     )
     .await?;
@@ -322,28 +325,39 @@ async fn update(
     format::json(json!({ "pid": pid }))
 }
 
-/// Add one row to the state history of a position (WPM-R288): the date is today's, and the row is never changed after.
+/// One row of the state history of a position (WPM-R288), as it is added.
+struct NewMove<'a> {
+    position: Uuid,
+    organization: &'a str,
+    /// `None` for the first row of a new position.
+    from: Option<&'a str>,
+    to: &'a str,
+    /// The three facts of a move to `frozen` (WPM-R289).
+    freeze: Option<&'a Freeze<'a>>,
+    /// The row records the holder being unlinked while the state stays vacant, so the vacancy starts there.
+    holder_left: bool,
+}
+
+/// Add one row to the state history of a position: the date is today's, and the row is never changed after (a trigger refuses it).
 async fn record_move(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    position: Uuid,
-    organization: &str,
-    from: Option<&str>,
-    to: &str,
-    freeze: Option<&Freeze<'_>>,
+    row: NewMove<'_>,
     actor: Option<&str>,
 ) -> Result<()> {
+    let freeze = row.freeze;
     sqlx::query!(
         "INSERT INTO position_state_moves (position_pid, organization_ref, from_state, to_state, moved_on, freeze_reason,
-                                           decided_by_role, review_on, recorded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
-        position,
-        organization,
-        from,
-        to,
+                                           decided_by_role, review_on, holder_left, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        row.position,
+        row.organization,
+        row.from,
+        row.to,
         SqlDate(crate::dates::today()),
         freeze.and_then(|f| f.reason),
         freeze.and_then(|f| f.decided_by_role).map(str::trim),
         freeze.and_then(|f| f.review_on).map(SqlDate),
+        row.holder_left,
         actor,
     )
     .execute(&mut **tx)
@@ -404,11 +418,14 @@ async fn status(
     .await?;
     record_move(
         &mut tx,
-        pid,
-        &row.organization_ref,
-        Some(&from),
-        &payload.to,
-        freezing.then_some(&freeze),
+        NewMove {
+            position: pid,
+            organization: &row.organization_ref,
+            from: Some(&from),
+            to: &payload.to,
+            freeze: freezing.then_some(&freeze),
+            holder_left: false,
+        },
         caller.actor(),
     )
     .await?;
@@ -469,6 +486,49 @@ async fn holder(
     )
     .execute(&mut *tx)
     .await?;
+    // The holder history (WPM-R290): a change of holder closes the open tenure and opens the new one; the same holder again is no change.
+    if row.holder_worker_pid != payload.worker_pid {
+        let today = SqlDate(crate::dates::today());
+        sqlx::query!(
+            "UPDATE position_holders SET ended_on = $2 WHERE position_pid = $1 AND ended_on IS NULL",
+            pid,
+            today,
+        )
+        .execute(&mut *tx)
+        .await?;
+        if let Some(worker) = payload.worker_pid {
+            sqlx::query!(
+                "INSERT INTO position_holders (position_pid, organization_ref, worker_pid, started_on, recorded_by)
+                 VALUES ($1, $2, $3, $4, $5)",
+                pid,
+                row.organization_ref,
+                worker,
+                today,
+                caller.actor(),
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
+    // A holder leaving a post that stays approved, open or frozen begins its vacancy (WPM-R288).
+    if row.holder_worker_pid.is_some()
+        && payload.worker_pid.is_none()
+        && history::is_vacant_state(&row.state)
+    {
+        record_move(
+            &mut tx,
+            NewMove {
+                position: pid,
+                organization: &row.organization_ref,
+                from: Some(&row.state),
+                to: &row.state,
+                freeze: None,
+                holder_left: true,
+            },
+            caller.actor(),
+        )
+        .await?;
+    }
     db::audit(
         &mut tx,
         "position",
@@ -596,6 +656,73 @@ async fn establishment(
     }))
 }
 
+/// `GET /api/positions/{pid}/holders` — the holder history of one post (WPM-R290): each tenure with its worker, start and end, and
+/// the post's continuity over the last 36 months (tenures, days held, days empty), counted from the day its history begins when that
+/// is later, and saying so. HR and the other privileged callers only (`rules::access::READS`); a view of one post names people. No
+/// route counts the posts a person has left.
+#[debug_handler]
+async fn holders(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
+    let row = find(&ctx, &caller, pid).await?;
+    let tenures = sqlx::query_as!(
+        position_holders::Model,
+        r#"SELECT created_at AS "created_at: _", id, position_pid, organization_ref, worker_pid, started_on AS "started_on: _",
+                  start_known, ended_on AS "ended_on: _", recorded_by
+             FROM position_holders WHERE position_pid = $1 ORDER BY started_on, id"#,
+        pid,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    // The post's history begins at its first state row: on the day it was created when that was recorded, otherwise on the day the
+    // history began (the backfill's own date).
+    let known_from = sqlx::query!(
+        r#"SELECT moved_on, start_known, (created_at AT TIME ZONE 'UTC')::date AS "created_on!" FROM position_state_moves
+            WHERE position_pid = $1 ORDER BY id LIMIT 1"#,
+        pid,
+    )
+    .fetch_optional(db::pool(&ctx))
+    .await?
+    .map_or_else(crate::dates::today, |m| {
+        if m.start_known {
+            m.moved_on.get()
+        } else {
+            m.created_on.get()
+        }
+    });
+    let today = crate::dates::today();
+    let continuity = history::continuity(
+        &tenures
+            .iter()
+            .map(|t| history::Tenure {
+                started_on: t.started_on.get(),
+                ended_on: t.ended_on.map(SqlDate::get),
+            })
+            .collect::<Vec<_>>(),
+        known_from,
+        today,
+        history::CONTINUITY_MONTHS,
+    );
+    format::json(json!({
+        "pid": pid,
+        "organization": row.organization_ref,
+        "holders": tenures.iter().map(|t| json!({
+            "worker_pid": t.worker_pid,
+            "erased": t.worker_pid.is_none(),
+            "started_on": t.started_on,
+            "start_known": t.start_known,
+            "ended_on": t.ended_on,
+        })).collect::<Vec<_>>(),
+        "continuity": continuity,
+        "derivation": "Each tenure runs from the day a holder was linked up to the day they were unlinked or replaced. A tenure already open when \
+                       the history began has an unknown start. Continuity counts the last 36 months, or from the day this post's history \
+                       begins when that is later (complete is then false); a day is held when any tenure covers it. A tenure whose worker \
+                       was erased keeps its dates and names no one.",
+    }))
+}
+
 #[derive(Debug, Deserialize)]
 struct VacancyQuery {
     organization: String,
@@ -622,7 +749,7 @@ async fn vacancy_age(
     .fetch_all(db::pool(&ctx))
     .await?;
     let moves = sqlx::query!(
-        r#"SELECT position_pid, to_state, moved_on, start_known, review_on FROM position_state_moves
+        r#"SELECT position_pid, to_state, moved_on, start_known, review_on, holder_left FROM position_state_moves
             WHERE organization_ref = $1 ORDER BY position_pid, id"#,
         query.organization,
     )
@@ -638,6 +765,7 @@ async fn vacancy_age(
             to: m.to_state,
             on: m.moved_on.get(),
             start_known: m.start_known,
+            holder_left: m.holder_left,
         });
     }
     let posts: Vec<history::Post> = positions
@@ -681,5 +809,6 @@ pub fn routes() -> Routes {
         .add("/positions/{pid}", put(update))
         .add("/positions/{pid}/status", post(status))
         .add("/positions/{pid}/holder", put(holder))
+        .add("/positions/{pid}/holders", get(holders))
         .add("/positions/{pid}/requisition", put(requisition))
 }

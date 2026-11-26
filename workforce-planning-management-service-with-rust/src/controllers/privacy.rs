@@ -26,13 +26,13 @@ use crate::models::_entities::{
     learning_completions, leave_entitlements, leave_requests, mentorships, mobility_interests,
     movements, notifications, onboarding_items, organization_memberships, padr_versions,
     path_enrollments, pay_information_requests, payslip_queries, payslips, pipeline_members,
-    policy_acknowledgements, positions, post_fundings, professional_registrations,
-    program_placements, qualification_reminders, qualifications, resignations,
-    review_goal_outcomes, reviews, rota_members, rota_overrides, rota_swap_requests, scim_pushes,
-    separation_records, shift_assignments, time_entries, training_enrollments, worker_aspirations,
-    worker_backups, worker_contact_details, worker_contractor_details, worker_framework_roles,
-    worker_goals, worker_health_records, worker_job_levels, worker_pay_positions,
-    worker_skill_history, worker_skills,
+    policy_acknowledgements, position_holders, positions, post_fundings,
+    professional_registrations, program_placements, qualification_reminders, qualifications,
+    resignations, review_goal_outcomes, reviews, rota_members, rota_overrides, rota_swap_requests,
+    scim_pushes, separation_records, shift_assignments, time_entries, training_enrollments,
+    worker_aspirations, worker_backups, worker_contact_details, worker_contractor_details,
+    worker_framework_roles, worker_goals, worker_health_records, worker_job_levels,
+    worker_pay_positions, worker_skill_history, worker_skills,
 };
 use crate::models::records;
 use crate::rules::privacy as rules;
@@ -195,6 +195,7 @@ async fn subject_access(
         "policy_acknowledgements": rows_for!(db, policy_acknowledgements, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM policy_acknowledgements t WHERE worker_pid = $1"#, epid),
         "credential_issuances": rows_for!(db, credential_issuances, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM credential_issuances t WHERE worker_pid = $1"#, epid),
         "positions_held": rows_for!(db, positions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM positions t WHERE holder_worker_pid = $1"#, epid),
+        "position_holder_history": rows_for!(db, position_holders, r#"SELECT COALESCE(json_agg(t ORDER BY t.started_on, t.id), '[]') AS "rows!" FROM position_holders t WHERE worker_pid = $1"#, epid),
         "engagement_extensions": rows_for!(db, engagement_extensions, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_extensions t WHERE worker_pid = $1"#, epid),
         "contractor_details": rows_for!(db, worker_contractor_details, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM worker_contractor_details t WHERE worker_pid = $1"#, epid),
         "employment_status_assessments": rows_for!(db, engagement_status_assessments, r#"SELECT COALESCE(json_agg(t), '[]') AS "rows!" FROM engagement_status_assessments t WHERE worker_pid = $1"#, epid),
@@ -470,6 +471,10 @@ fn erasure_statements(epid: Uuid) -> Vec<String> {
         ),
         // A seat outlives the person who held it (WPM-D104): only the link is cut.
         format!("UPDATE positions SET holder_worker_pid = NULL WHERE holder_worker_pid = '{epid}'"),
+        // The tenures keep their dates and lose the person (WPM-D236); an open one ends today, as the link above does.
+        format!(
+            "UPDATE position_holders SET worker_pid = NULL, ended_on = COALESCE(ended_on, CURRENT_DATE) WHERE worker_pid = '{epid}'"
+        ),
         format!("DELETE FROM webhook_deliveries WHERE subject = 'worker:{epid}'"),
         format!("DELETE FROM engagement_extensions WHERE worker_pid = '{epid}'"),
         format!("DELETE FROM worker_contractor_details WHERE worker_pid = '{epid}'"),

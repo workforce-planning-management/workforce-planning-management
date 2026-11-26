@@ -1,8 +1,8 @@
 # Leadership continuity, cover and reorganization
 
 Proposed 2026-11-24, from [the lessons of an independent review](lessons/20261124/index.md) (the owner asked on 2026-11-24 that
-they be recorded in the plan, the tasks and the spec). Requirements **WPM-R288–R298**, decisions **WPM-D231–D235**, tasks
-**WPM-T648–T659** ([tasks.md](tasks.md), [plan.md](plan.md) section Z). **Built so far (2026-11-26): the position state history, vacancy age and freeze reasons (WPM-T648, part); the rest is not built.** The numbers start above the
+they be recorded in the plan, the tasks and the spec). Requirements **WPM-R288–R298**, decisions **WPM-D231–D236**, tasks
+**WPM-T648–T659** ([tasks.md](tasks.md), [plan.md](plan.md) section Z). **Built so far (2026-11-26): the position state history, vacancy age and freeze reasons (WPM-T648, part) and the holder history with one post's continuity (WPM-T649, part); the rest is not built.** The numbers start above the
 mobile-app branch's (WPM-R287, WPM-D230, WPM-T645) so the two never share an id.
 
 The review described a loop: leaders changed often, posts stayed empty or were covered for a while, a long reorganization was
@@ -193,6 +193,12 @@ cancelled`), which has no stage before `open` and none between `interviewing` an
 - **WPM-D235 A measure can be gamed, so its opposite sits beside it.** Vacancy age beside abolished posts; approval time beside
   returns; cover time beside the plan that ends it. Where a figure is about few people, it is withheld and says that it is
   withheld.
+- **WPM-D236 An erasure cuts the person from a tenure and keeps its dates** (2026-11-26, WPM-T649). The holder history is about the
+  post as much as the person: deleting an erased holder's tenures would turn a post that had three holders into one that had two and
+  a gap, and the continuity figures would be wrong for everyone after. So erasure sets the worker of each tenure to nothing and ends
+  an open one that day; the dates stay and name no one. The table is otherwise append-only: a trigger allows only closing an open
+  tenure once and cutting a worker, and refuses any other change and every delete. Proposed with the build, like the decisions above:
+  the owner may choose deletion instead.
 
 ## Open questions for the owner
 

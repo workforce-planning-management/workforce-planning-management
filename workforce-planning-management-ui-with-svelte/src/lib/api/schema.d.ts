@@ -12880,6 +12880,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/positions/vacancy-age": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open vacancies by cost centre and age (?organization=), from the append-only history of position moves (WPM-R288): approved, open or frozen positions nobody holds, in the bands 0-30, 31-90, 91-180 and 181+ days, with start_unknown for a post whose state predates the history (never zero), the frozen, those with no review date and those past it, and the abolished beside them. No holder is named; a caller who may not see holders gets a cost centre under the floor withheld */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The vacancies */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/positions/{pid}": {
         parameters: {
             query?: never;
@@ -12929,7 +12964,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position */
+        /** Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position. A change of holder ends the open tenure in the holder history and opens the new one; unlinking the holder of an approved, open or frozen post starts its vacancy */
         put: {
             parameters: {
                 query?: never;
@@ -12955,6 +12990,41 @@ export interface paths {
                 default: components["responses"]["Error"];
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/positions/{pid}/holders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The holder history of one position (WPM-R290): each tenure with its worker, start (start_known false for one open when the history began) and end, and the continuity over the last 36 months: tenures, days held and days empty, counted from the day the post's history begins when that is later (complete false). A tenure whose worker was erased keeps its dates and names no one. HR and the other privileged callers only */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The tenures and the continuity */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -13012,7 +13082,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in */
+        /** Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in. Every move is added to the position's state history with its date. A move to frozen needs reason (reorganization, funding, demand_review, other), decided_by_role and a review_on in the future (WPM-R289); the other moves take none of them */
         post: {
             parameters: {
                 query?: never;

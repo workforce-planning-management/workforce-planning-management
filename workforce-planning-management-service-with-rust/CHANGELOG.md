@@ -13,6 +13,20 @@ Table `position_state_moves` (append-only, backfilled with an unknown start); ev
 needs a reason, a deciding role and a future review date; `GET /api/positions/vacancy-age` counts open vacancies by cost centre and
 age, with unknown starts and abolished posts beside them and small centres withheld. Domain module `position_history`.
 
+### Added — the holder history of a position (WPM-T649, part, 2026-11-26)
+
+Table `position_holders` (migration 137): one tenure per holder, opened and closed by `PUT /api/positions/{pid}/holder`, guarded by a
+trigger that allows only a close and an erasure's cut. Erasure keeps the dates and names no one (WPM-D236); the subject-access export
+carries the person's tenures. `GET /api/positions/{pid}/holders` (privileged): one post's tenures and its continuity over 36 months.
+Pure core `position_history::continuity`.
+
+### Fixed — a holder leaving starts the vacancy; the route is classified (WPM-T648, 2026-11-26)
+
+Unlinking the holder of a post that stays approved, open or frozen adds a `holder_left` row (migration 136), so the vacancy age
+starts that day rather than at the last state move. `/positions/vacancy-age` is in `rules::access::READS`; the migration count
+and the UI's OpenAPI copy are current, which three unit tests on the first commit had failed for. Boundary tests for the floor, the
+overdue review date and the age bands, so every mutant in the change is caught.
+
 ### Changed — reading your own allocations is not audited, whatever else you hold (WPM-T607, 2026-11-21)
 
 `allocation::named_read_is_audited` audits a named read of another person's allocations, and no longer a person reading

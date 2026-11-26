@@ -367,18 +367,123 @@ async fn every_move_is_a_dated_row_a_freeze_has_its_three_facts_and_vacancy_age_
         assert_eq!(unit["withheld"], false);
         assert!(!report.to_string().contains("holder_worker_pid"));
 
-        // A post somebody holds is not a vacancy, whatever its state.
+        // A post somebody holds is not a vacancy, whatever its state; when the holder leaves, the vacancy starts that day.
         let w = worker(&request, &org, "H-1", 100).await;
         assert_eq!(go(&request, &a, "open").await.0, 422, "no requisition");
         let held = request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": w })).await;
         assert_eq!(held.status_code(), 200);
         let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
         assert_eq!(centre(&report, cc)["vacancies"], 2);
+        let unlinked = request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": null })).await;
+        assert_eq!(unlinked.status_code(), 200);
+        let row = sqlx::query("SELECT from_state, to_state, holder_left FROM position_state_moves WHERE position_pid = $1::uuid ORDER BY id DESC LIMIT 1")
+            .bind(&a)
+            .fetch_one(&ctx.db)
+            .await
+            .unwrap();
+        assert_eq!(row.get::<Option<String>, _>("from_state").as_deref(), Some("approved"));
+        assert_eq!(row.get::<String, _>("to_state"), "approved");
+        assert!(row.get::<bool, _>("holder_left"), "the leaving is a row of its own, so the age starts there");
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(centre(&report, cc)["vacancies"], 3);
+        // Unlinking where nobody holds the post adds no row.
+        let before: i64 = sqlx::query_scalar("SELECT count(*) FROM position_state_moves WHERE position_pid = $1::uuid")
+            .bind(&a)
+            .fetch_one(&ctx.db)
+            .await
+            .unwrap();
+        assert_eq!(request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": null })).await.status_code(), 200);
+        let after: i64 = sqlx::query_scalar("SELECT count(*) FROM position_state_moves WHERE position_pid = $1::uuid")
+            .bind(&a)
+            .fetch_one(&ctx.db)
+            .await
+            .unwrap();
+        assert_eq!(before, after);
 
         // Another organization sees none of it.
         let other: Value = request.get(&format!("/api/positions/vacancy-age?organization={}", an_org())).await.json();
         assert_eq!(other["cost_centres"].as_array().unwrap().len(), 0);
         assert_eq!(request.get("/api/positions/vacancy-age?organization=").await.status_code(), 422);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn every_holder_is_a_tenure_that_survives_their_erasure_without_naming_them() {
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let post = seat(&request, &org, "CC-TEN", 100).await;
+        assert_eq!(go(&request, &post, "approved").await.0, 200);
+        let first = worker(&request, &org, "T-1", 100).await;
+        let second = worker(&request, &org, "T-2", 100).await;
+        let link = |who: Value| {
+            let request = &request;
+            let url = format!("/api/positions/{post}/holder");
+            async move { request.put(&url).json(&json!({ "worker_pid": who })).await.status_code().as_u16() }
+        };
+        let tenures = || async {
+            sqlx::query("SELECT worker_pid::text AS w, ended_on IS NULL AS open FROM position_holders WHERE position_pid = $1::uuid ORDER BY id")
+                .bind(&post)
+                .fetch_all(&ctx.db)
+                .await
+                .unwrap()
+                .iter()
+                .map(|r| (r.get::<Option<String>, _>("w"), r.get::<bool, _>("open")))
+                .collect::<Vec<_>>()
+        };
+
+        // Linking opens a tenure; the same holder again changes nothing; a replacement closes it and opens another; unlinking closes it.
+        assert_eq!(link(json!(first)).await, 200);
+        assert_eq!(link(json!(first)).await, 200);
+        assert_eq!(tenures().await, vec![(Some(first.clone()), true)]);
+        assert_eq!(link(json!(second)).await, 200);
+        assert_eq!(link(Value::Null).await, 200);
+        assert_eq!(tenures().await, vec![(Some(first.clone()), false), (Some(second.clone()), false)]);
+        assert_eq!(link(json!(first)).await, 200);
+        assert_eq!(tenures().await.len(), 3, "one person holding twice is two tenures");
+
+        // The database refuses any other change: a delete, a reopened tenure, a moved start, a worker swapped for another.
+        let pool = &ctx.db;
+        for refused in [
+            format!("DELETE FROM position_holders WHERE position_pid = '{post}'"),
+            format!("UPDATE position_holders SET ended_on = NULL WHERE position_pid = '{post}' AND ended_on IS NOT NULL"),
+            format!("UPDATE position_holders SET started_on = started_on - 1 WHERE position_pid = '{post}'"),
+            format!("UPDATE position_holders SET worker_pid = '{second}' WHERE position_pid = '{post}' AND worker_pid = '{first}'"),
+        ] {
+            assert!(sqlx::query(sqlx::AssertSqlSafe(refused.clone())).execute(pool).await.is_err(), "{refused}");
+        }
+
+        // One post's history, for HR: three tenures, the open one last, and continuity counted from the post's creation today.
+        let body: Value = request.get(&format!("/api/positions/{post}/holders")).await.json();
+        let holders = body["holders"].as_array().unwrap();
+        assert_eq!(holders.len(), 3, "{body}");
+        assert_eq!(holders[2]["worker_pid"], first.as_str());
+        assert_eq!(holders[2]["ended_on"], Value::Null);
+        assert_eq!(body["continuity"]["tenures"], 3);
+        assert_eq!(body["continuity"]["complete"], false, "the post is new, so 36 months are not counted");
+        assert_eq!(body["continuity"]["counted_from"], workforce_planning_management::dates::today().to_string());
+        assert_eq!(request.get("/api/positions/11111111-2222-4333-8444-555555555555/holders").await.status_code(), 404);
+
+        // The person's own export carries their tenures.
+        let export: Value = request.get(&format!("/api/workers/{first}/subject-access")).await.json();
+        assert_eq!(export["position_holder_history"].as_array().unwrap().len(), 2, "{export}");
+
+        // Erasure cuts the person and keeps the dates: the count of tenures stays and the open one ends.
+        assert_eq!(link(Value::Null).await, 200);
+        for to in ["active", "offboarding", "terminated"] {
+            request.post(&format!("/api/workers/{first}/status")).json(&json!({ "to": to })).await.assert_status_ok();
+        }
+        assert_eq!(request.post(&format!("/api/workers/{first}/erase")).await.status_code(), 200);
+        let after = tenures().await;
+        assert_eq!(after.len(), 3);
+        assert_eq!(after.iter().filter(|(w, _)| w.is_none()).count(), 2, "{after:?}");
+        assert!(after.iter().all(|(_, open)| !open));
+        let body: Value = request.get(&format!("/api/positions/{post}/holders")).await.json();
+        assert!(!body.to_string().contains(&first), "an erased holder is named nowhere");
+        assert_eq!(body["holders"][0]["erased"], true);
+        assert_eq!(body["continuity"]["tenures"], 3);
     })
     .await;
 }

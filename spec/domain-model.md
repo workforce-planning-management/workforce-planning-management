@@ -379,7 +379,8 @@ section 4)
 - **WebhookSubscription**, **ScimTarget** (`webhook_subscriptions`, `scim_targets`: endpoint, a reference to the secret, event kinds) —
   no secret value ([integrations.md](integrations.md), WPM-R150–R151). A **webhook delivery** (`webhook_deliveries`: event id, kind,
   subject URN, attempts) holds no body; for a hire or an ending only, `data` keeps the handoff references and date (WPM-D145).
-- **PositionStateMove** (`position_state_moves`: position, organization, from, to, date, whether the date is known, and for a freeze its reason, deciding role and review date; append-only, no person; WPM-R288, WPM-R289, WPM-T648) — the dated history of a position's states, which the age of a vacancy is worked out from.
+- **PositionStateMove** (`position_state_moves`: position, organization, from, to, date, whether the date is known, for a freeze its reason, deciding role and review date, and whether the row records a holder leaving; append-only, no person; WPM-R288, WPM-R289, WPM-T648) — the dated history of a position's states, which the age of a vacancy is worked out from.
+- **PositionHolder** (`position_holders`: position, organization, worker, start, whether the start is known, end; append-only but for closing a tenure once and an erasure cutting its worker, WPM-R290, WPM-D236, WPM-T649) — one tenure of a post's holder, from which the post's continuity is counted.
 - **Position** (`positions`: cost centre, budgeted FTE, funding kind, state, a link to the holder) — a seat, not a person
   ([positions.md](positions.md), WPM-R152, WPM-D104).
 - **Jurisdiction**, **JurisdictionParameter** (`jurisdictions`: organization, code, layer, parent, name; `jurisdiction_parameters`:

@@ -7356,24 +7356,52 @@ Proposed; the owner asked on 2026-11-24 that the lessons be recorded here. Every
 questions for the owner are in the topic file and are not decided. **Nothing from the source is named in any of these tasks.**
 
 - [~] WPM-T648 (2026-11-24) **Position state history, vacancy age and freeze reasons.** *(WPM-R288, WPM-R289, WPM-D233, WPM-D234)* Builds
-      on WPM-R152. **Part done (2026-11-26):** table `position_state_moves` (migration 135: from, to, date, `start_known`, freeze reason,
-      deciding role, review date, actor; a trigger refuses an update or a delete), backfilled with one row per existing position and
-      `start_known` false, so a post vacant before the history is `start_unknown`, never zero. Every create and every status move adds a
-      row. A move to `frozen` is refused without a reason from the list, a deciding role and a review date in the future (422); the other
-      moves refuse those fields. Domain module `position_history` (pure): `check_freeze`, `vacant_since`, `age_days`, `report`.
-      `GET /api/positions/vacancy-age?organization=`: open vacancies (approved, open or frozen, nobody holds) by cost centre in the bands
-      0-30, 31-90, 91-180 and 181+, `start_unknown` apart, the frozen, those with no review date, those past it, and **abolished posts
-      beside them**; no holder; a cost centre under the floor (10) is withheld for a caller who may not see holders and says so.
-      **Not done:** the cut by band and critical role (a position has neither marker yet: by cost centre only); the screen; a
-      freeze's link to a change initiative (WPM-T652); listing the findings of a passed review date one by one (counted only); a
-      notification when a review date passes. **Verified (2026-11-26):** 7 new domain unit tests; 1 new request test (history row on
-      create, the freeze refusals, append-only refused by the database, unknown start, held post not a vacancy, other organization);
-      the 5 existing position request tests; `cargo clippy --all-targets -- -D warnings` clean; `cargo test --test main` checks pass;
-      `.sqlx` regenerated. **Not checked:** the full request suite after this change, `verify-db-roles.sh`, the keycloak build, CI.
-- [ ] WPM-T649 (2026-11-24) **Holder history and continuity in critical posts.** *(WPM-R290, WPM-D233)* Builds on WPM-T648. An append-only
-      holder history under the staff-record retention rule; holders, months empty and months covered in 36 months for critical
-      posts; withheld under the floor with the complement; no per-person count of posts left. The owner answered question 1 on 2026-11-24: yes, for critical
-      posts. Not started.
+      on WPM-R152. **Part done (2026-11-26):** table `position_state_moves` (migrations 135 and 136: from, to, date, `start_known`,
+      freeze reason, deciding role, review date, `holder_left`, actor; a trigger refuses an update or a delete), backfilled with one row
+      per existing position and `start_known` false, so a post vacant before the history is `start_unknown`, never zero. Every create
+      and every status move adds a row, and so does **a holder being unlinked from a post that stays approved, open or frozen**
+      (`holder_left`): the vacancy starts that day, not at the last state move, which was made while the post was held. A move to
+      `frozen` is refused without a reason from the list, a deciding role and a review date in the future (422); the other moves refuse
+      those fields. Domain module `position_history` (pure): `check_freeze`, `vacant_since`, `age_days`, `report`.
+      `GET /api/positions/vacancy-age?organization=` (`ControllerDecides` in `rules::access::READS`): open vacancies (approved, open
+      or frozen, nobody holds) by cost centre in the bands 0-30, 31-90, 91-180 and 181+, `start_unknown` apart, the frozen, those with
+      no review date, those past it, and **abolished posts beside them**; no holder; a cost centre with fewer live posts than the floor
+      (10) is withheld for a caller who may not see holders and says so. One index, (organization, position, id), serves the report's
+      filter and order. **Not done:** the cut by band and critical role (a position has neither marker yet: by cost centre only); the
+      screen; a freeze's link to a change initiative (WPM-T652); listing the findings of a passed review date one by one (counted
+      only); a notification when a review date passes; which holder left (WPM-T649). **Fixed after the first push (205b4ad9):** the
+      route had no entry in `rules::access::READS`, the migration count in `src/migrations.rs` was not raised, and the UI's
+      `openapi.json` copy was not rewritten, so three unit tests failed on that commit; the first push ran only the filtered tests.
+      **Verified (2026-11-26):** 11 domain unit tests in `position_history` and all 1,300 of the domain crate; all 219 service unit
+      tests; `scripts/mutants-diff.sh 390443f3` with no cap: 38 mutants, 35 caught, 3 unviable, none missed (the floor boundary, the
+      overdue comparison and the band edges each have a test); the request test (history row on create, the freeze refusals,
+      append-only refused by the database, unknown start, a held post is not a vacancy, a holder leaving adds a row and a vacancy, an
+      unlink of nobody adds none, another organization); `cargo clippy --all-targets -- -D warnings`; `cargo fmt --check`; the repo
+      checks; `.sqlx` regenerated; UI `pnpm check` and Prettier on the regenerated API copy; every database suite in one serial
+      `cargo nextest run --run-ignored all` (338 passed; chaos and the feature-gated suites left out, as CI's filter does);
+      `scripts/verify-db-roles.sh` (274 passed as `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build, CI.
+- [~] WPM-T649 (2026-11-24) **Holder history and continuity in critical posts.** *(WPM-R290, WPM-D233, WPM-D236)* Builds on WPM-T648. The
+      owner answered question 1 on 2026-11-24: yes, for critical posts. **Part done (2026-11-26):** table `position_holders` (migration
+      137: position, organization, worker, start, `start_known`, end; at most one open tenure per post), backfilled with the holders
+      linked now and `start_known` false. `PUT /api/positions/{pid}/holder` closes the open tenure and opens the new one on a change
+      of holder; the same holder again changes nothing. A trigger allows only closing an open tenure once and an erasure cutting its
+      worker, and refuses every other change and every delete. **Erasure** cuts the worker and ends an open tenure that day, keeping the
+      dates (WPM-D236, proposed); the subject-access export carries `position_holder_history`; the personal-data inventory lists the
+      table. `GET /api/positions/{pid}/holders` (`Privileged` in `rules::access::READS`): one post's tenures and its continuity
+      over 36 months (tenures, days held, days empty), counted from the day the post's history begins when that is later and saying
+      so (`complete`). Pure core: `position_history::continuity` (half-open days, overlaps merged, a same-day tenure is a holder with
+      no day, a total that does not fit is unknown). No route counts the posts a person has left. **Not done:** the report for
+      **critical posts** by unit and band (a position has no critical-role or band marker yet, the same gap as WPM-T648), and with it
+      the floor and its complement; the kind of cover on a tenure (WPM-T651); a retention schedule of its own under the staff-record
+      rule (erasure only for now); a view for the post's line manager (privileged callers only); the screen; an erasure of a holder
+      of a post in a vacant state does not add a `holder_left` row, so that post's vacancy age counts from its last state move.
+      **Verified (2026-11-26):** 5 new domain unit tests (15 in `position_history`, 1,304 in the domain crate); 1 new request test
+      (tenures opened, unchanged and closed, a person holding twice, four changes refused by the database, the per-post read and its
+      404, the export, erasure keeping the count and naming no one); the 6 other position request tests; all 219 service unit tests
+      and the 16 checks (the inventory rewritten with the new table); clippy with every target and `-D warnings`; fmt; `.sqlx` and
+      the UI's API copy regenerated; `scripts/mutants-diff.sh 390443f3`: 50 mutants, 46 caught, 4 unviable, none missed; every
+      database suite in one serial `cargo nextest run --run-ignored all` (339 passed); `scripts/verify-db-roles.sh` (275 passed as
+      `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build, CI.
 - [ ] WPM-T650 (2026-11-24) **Requisition status history, drafted to accepted.** *(WPM-R292, WPM-R1, WPM-D234, WPM-D235)* The owner asked on
       2026-11-24 that WPM track a requisition's status changes. New tokens `proposed`, `funded`, `evaluating` and `accepted` beside
       today's `draft`, `open`, `interviewing`, `offer`, `filled`, `cancelled` (the old tokens keep their meaning; "advertising" and

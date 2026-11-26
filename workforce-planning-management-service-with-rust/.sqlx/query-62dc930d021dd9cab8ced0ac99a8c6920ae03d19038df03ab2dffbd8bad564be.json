@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT created_at AS \"created_at: _\", id, position_pid, organization_ref, worker_pid, started_on AS \"started_on: _\",\n                  start_known, ended_on AS \"ended_on: _\", recorded_by\n             FROM position_holders WHERE position_pid = $1 ORDER BY started_on, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "position_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "position_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "organization_ref",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "organization_ref"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "worker_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "worker_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "started_on: _",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "started_on"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "start_known",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "start_known"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "ended_on: _",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "ended_on"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "recorded_by"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "62dc930d021dd9cab8ced0ac99a8c6920ae03d19038df03ab2dffbd8bad564be"
+}

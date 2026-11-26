@@ -124,6 +124,7 @@ pub mod plan_tolerances;
 pub mod policies;
 pub mod policy_acknowledgements;
 pub mod policy_versions;
+pub mod position_holders;
 pub mod positions;
 pub mod post_fundings;
 pub mod professional_registrations;

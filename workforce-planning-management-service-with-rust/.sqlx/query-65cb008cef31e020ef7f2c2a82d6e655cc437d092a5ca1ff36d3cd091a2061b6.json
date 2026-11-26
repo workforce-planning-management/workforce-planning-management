@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE position_holders SET ended_on = $2 WHERE position_pid = $1 AND ended_on IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "65cb008cef31e020ef7f2c2a82d6e655cc437d092a5ca1ff36d3cd091a2061b6"
+}

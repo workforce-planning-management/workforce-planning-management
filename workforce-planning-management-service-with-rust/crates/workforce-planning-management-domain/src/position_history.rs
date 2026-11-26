@@ -19,7 +19,7 @@ pub const AGE_BANDS: &[(&str, i64, Option<i64>)] = &[
     ("181+", 181, None),
 ];
 
-/// The longest role name or reason note, in characters.
+/// The longest name of the role that decided a freeze, in characters.
 pub const MAX_ROLE: usize = 80;
 
 /// One move of a position, as recorded.
@@ -32,6 +32,8 @@ pub struct Move {
     /// Whether the date is the date of the move. A post that already had its state when the history began has one row whose date
     /// is only the date it was backfilled, so the start is unknown (WPM-D234).
     pub start_known: bool,
+    /// The row records that the holder was unlinked while the state stayed vacant (approved, open or frozen), not a change of state.
+    pub holder_left: bool,
 }
 
 /// What a freeze is recorded with.
@@ -99,8 +101,8 @@ pub enum VacantSince {
 }
 
 /// Since when a post is vacant, from its moves in the order they were made. The run is every move back from the last whose state is
-/// vacant; it begins where the post came from planned or from filled. Hands out `StartUnknown` when the run begins with a backfilled
-/// row.
+/// vacant; it begins where the post came from planned or from filled, or where the holder left within the run, whichever is later
+/// (a post held in a vacant state was not vacant). Hands out `StartUnknown` when the run begins with a backfilled row.
 #[must_use]
 pub fn vacant_since(moves: &[Move]) -> VacantSince {
     let run: Vec<&Move> = moves
@@ -108,7 +110,9 @@ pub fn vacant_since(moves: &[Move]) -> VacantSince {
         .rev()
         .take_while(|m| is_vacant_state(&m.to))
         .collect();
-    match run.last() {
+    // The run is newest first: the latest holder leaving wins over the move that began the run.
+    let start = run.iter().find(|m| m.holder_left).or(run.last());
+    match start {
         None => VacantSince::NotVacant,
         Some(first) if first.start_known => VacantSince::Since { on: first.on },
         Some(_) => VacantSince::StartUnknown,
@@ -244,6 +248,86 @@ fn unit(name: &str, all: &[&Post], today: Date, floor: Option<usize>) -> Unit {
     }
 }
 
+/// The window the continuity of a post is counted over, in months (WPM-R290).
+pub const CONTINUITY_MONTHS: i32 = 36;
+
+/// One tenure of a post's holder, as the count needs it. Who held it is not in it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tenure {
+    /// The day the holder was linked (for a backfilled tenure, a day on or after the real start).
+    pub started_on: Date,
+    /// The day the holder was unlinked, or `None` while they hold it.
+    pub ended_on: Option<Date>,
+}
+
+/// The continuity of one post over a window (WPM-R290).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Continuity {
+    /// The first day of the window asked for.
+    pub window_from: Date,
+    /// The first day counted: the window's, or the day the post's history begins if that is later.
+    pub counted_from: Date,
+    /// Whether the whole window is counted. When it is not, the figures are for `counted_from` to today and say nothing earlier.
+    pub complete: bool,
+    /// Holders whose tenure falls in the counted days, each tenure once (one person holding twice counts twice).
+    pub tenures: usize,
+    /// Days in the counted span with somebody linked; `None` (unknown) only if the total does not fit.
+    pub days_held: Option<i64>,
+    /// Days in the counted span with nobody linked; `None` as for `days_held`.
+    pub days_empty: Option<i64>,
+}
+
+/// Count the continuity of a post from its tenures: how many fall in the last `months` months, and how many days it was held and empty.
+/// `known_from` is the day the post's history begins (its creation when that was recorded, otherwise the day the history began);
+/// nothing before it is counted, and the result says so (WPM-D234). Days run from a start up to, not including, an end, so a holder
+/// replaced the day another leaves leaves no empty day.
+#[must_use]
+pub fn continuity(tenures: &[Tenure], known_from: Date, today: Date, months: i32) -> Continuity {
+    let window_from = today
+        .checked_sub(jiff::Span::new().months(months))
+        .unwrap_or(Date::MIN);
+    let counted_from = window_from.max(known_from).min(today);
+    // Each tenure clipped to the counted span, in order of start.
+    let mut spans: Vec<(Date, Date)> = tenures
+        .iter()
+        // A tenure counts when it starts inside the counted span (even one linked and unlinked the same day) or runs into it.
+        .filter(|t| {
+            t.started_on <= today
+                && (t.started_on >= counted_from || t.ended_on.is_none_or(|e| e > counted_from))
+        })
+        .map(|t| {
+            (
+                t.started_on.max(counted_from),
+                t.ended_on.unwrap_or(today).min(today),
+            )
+        })
+        .collect();
+    let count = spans.len();
+    spans.sort_unstable();
+    // Merge the overlaps, so a day is held once however many tenures cover it.
+    let mut merged: Vec<(Date, Date)> = Vec::new();
+    for (from, to) in spans {
+        match merged.last_mut() {
+            Some(last) if from <= last.1 => last.1 = last.1.max(to),
+            _ => merged.push((from, to)),
+        }
+    }
+    // A total that does not fit is unknown, never wrapped (RCA-AGG-1); with spans of a few years it always fits.
+    let days_held = merged.iter().try_fold(0_i64, |acc, (a, b)| {
+        acc.checked_add(crate::dates::days_between(*a, *b))
+    });
+    let days_empty = days_held
+        .and_then(|held| crate::dates::days_between(counted_from, today).checked_sub(held));
+    Continuity {
+        window_from,
+        counted_from,
+        complete: counted_from == window_from,
+        tenures: count,
+        days_held,
+        days_empty,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -254,6 +338,14 @@ mod tests {
             to: to.into(),
             on,
             start_known: known,
+            holder_left: false,
+        }
+    }
+
+    fn left(to: &str, on: Date) -> Move {
+        Move {
+            holder_left: true,
+            ..mv(to, on, true)
         }
     }
 
@@ -502,6 +594,231 @@ mod tests {
         assert_eq!(
             report(&posts, date(2026, 11, 26), None)[0].vacancies,
             Count::Known(0)
+        );
+    }
+
+    #[test]
+    fn a_review_date_today_is_not_yet_overdue_and_every_past_one_is() {
+        let today = date(2026, 11, 26);
+        let frozen = |review| {
+            post(
+                "A",
+                "frozen",
+                false,
+                vec![mv("frozen", date(2026, 10, 1), true)],
+                Some(review),
+            )
+        };
+        let posts = vec![
+            frozen(today),
+            frozen(date(2026, 11, 25)),
+            frozen(date(2026, 1, 1)),
+            frozen(date(2026, 11, 27)),
+            frozen(date(2026, 10, 2)),
+        ];
+        let a = &report(&posts, today, None)[0];
+        assert_eq!(a.frozen, Count::Known(5));
+        assert_eq!(
+            a.review_overdue,
+            Count::Known(3),
+            "the three past dates; today and the future are not overdue"
+        );
+        assert_eq!(a.frozen_without_review_date, Count::Known(0));
+    }
+
+    #[test]
+    fn a_cost_centre_with_exactly_the_floor_of_posts_is_shown() {
+        let today = date(2026, 11, 26);
+        let approved = || {
+            post(
+                "A",
+                "approved",
+                false,
+                vec![mv("approved", date(2026, 11, 1), true)],
+                None,
+            )
+        };
+        let at_floor: Vec<Post> = (0..3).map(|_| approved()).collect();
+        let a = &report(&at_floor, today, Some(3))[0];
+        assert!(!a.withheld);
+        assert_eq!(a.vacancies, Count::Known(3));
+        let under: Vec<Post> = (0..2).map(|_| approved()).collect();
+        assert!(report(&under, today, Some(3))[0].withheld);
+        // Abolished posts do not count towards the floor: two live posts and an abolished one are still under it.
+        let mut with_gone = under.clone();
+        with_gone.push(post(
+            "A",
+            "abolished",
+            false,
+            vec![mv("abolished", date(2026, 5, 1), true)],
+            None,
+        ));
+        assert!(report(&with_gone, today, Some(3))[0].withheld);
+    }
+
+    #[test]
+    fn the_age_bands_meet_without_a_gap_or_an_overlap() {
+        let today = date(2026, 11, 26);
+        for (days, band) in [
+            (0, "0-30"),
+            (30, "0-30"),
+            (31, "31-90"),
+            (90, "31-90"),
+            (91, "91-180"),
+            (180, "91-180"),
+            (181, "181+"),
+            (4000, "181+"),
+        ] {
+            let on = today - jiff::Span::new().days(days);
+            let a = &report(
+                &[post(
+                    "A",
+                    "approved",
+                    false,
+                    vec![mv("approved", on, true)],
+                    None,
+                )],
+                today,
+                None,
+            )[0];
+            for (label, n) in &a.by_age {
+                let want = usize::from(label == band);
+                assert_eq!(*n, Count::Known(want), "{days} days in {label}");
+            }
+        }
+    }
+
+    #[test]
+    fn a_holder_leaving_a_post_in_a_vacant_state_starts_the_vacancy_there() {
+        let m = [
+            mv("approved", date(2026, 1, 1), true),
+            left("approved", date(2026, 9, 1)),
+            mv("open", date(2026, 10, 1), true),
+        ];
+        assert_eq!(
+            vacant_since(&m),
+            VacantSince::Since {
+                on: date(2026, 9, 1)
+            }
+        );
+        // The latest leaving counts, and it gives a known start even after a backfilled row.
+        let m = [
+            mv("frozen", date(2026, 1, 1), false),
+            left("frozen", date(2026, 3, 1)),
+            left("frozen", date(2026, 6, 1)),
+        ];
+        assert_eq!(
+            vacant_since(&m),
+            VacantSince::Since {
+                on: date(2026, 6, 1)
+            }
+        );
+        // A leaving before the run began is not in the run.
+        let m = [
+            left("approved", date(2026, 2, 1)),
+            mv("open", date(2026, 3, 1), true),
+            mv("filled", date(2026, 4, 1), true),
+            mv("approved", date(2026, 8, 1), true),
+        ];
+        assert_eq!(
+            vacant_since(&m),
+            VacantSince::Since {
+                on: date(2026, 8, 1)
+            }
+        );
+    }
+
+    fn tenure(from: Date, to: Option<Date>) -> Tenure {
+        Tenure {
+            started_on: from,
+            ended_on: to,
+        }
+    }
+
+    #[test]
+    fn continuity_counts_tenures_and_merges_overlaps_and_gaps() {
+        let today = date(2026, 11, 26);
+        let t = [
+            tenure(date(2020, 1, 1), Some(date(2023, 6, 1))), // ends before the window
+            tenure(date(2023, 6, 1), Some(date(2024, 6, 1))), // begins before the window: clipped
+            tenure(date(2024, 9, 1), Some(date(2025, 3, 1))),
+            tenure(date(2025, 2, 1), Some(date(2025, 4, 1))), // overlaps the one before
+            tenure(date(2026, 1, 1), None),                   // holds it now
+        ];
+        let c = continuity(&t, date(2019, 1, 1), today, CONTINUITY_MONTHS);
+        assert_eq!(c.window_from, date(2023, 11, 26));
+        assert!(c.complete);
+        assert_eq!(c.tenures, 4);
+        let held = crate::dates::days_between(date(2023, 11, 26), date(2024, 6, 1))
+            + crate::dates::days_between(date(2024, 9, 1), date(2025, 4, 1))
+            + crate::dates::days_between(date(2026, 1, 1), today);
+        assert_eq!(c.days_held, Some(held));
+        assert_eq!(
+            c.days_held.zip(c.days_empty).map(|(h, e)| h + e),
+            Some(crate::dates::days_between(c.window_from, today))
+        );
+    }
+
+    #[test]
+    fn continuity_before_the_history_began_is_not_counted_and_says_so() {
+        let today = date(2026, 11, 26);
+        let c = continuity(
+            &[tenure(date(2026, 11, 1), None)],
+            date(2026, 11, 1),
+            today,
+            CONTINUITY_MONTHS,
+        );
+        assert_eq!(c.counted_from, date(2026, 11, 1));
+        assert!(!c.complete);
+        assert_eq!(
+            (c.tenures, c.days_held, c.days_empty),
+            (1, Some(25), Some(0))
+        );
+        // A post nobody has held is all empty, from where the count begins.
+        let c = continuity(&[], date(2026, 11, 20), today, CONTINUITY_MONTHS);
+        assert_eq!(
+            (c.tenures, c.days_held, c.days_empty),
+            (0, Some(0), Some(6))
+        );
+        // A history that begins in the future of the window is clipped to today, not negative.
+        let c = continuity(&[], date(2027, 1, 1), today, CONTINUITY_MONTHS);
+        assert_eq!((c.counted_from, c.days_empty), (today, Some(0)));
+    }
+
+    #[test]
+    fn a_hand_over_on_the_same_day_leaves_no_empty_day_and_a_tenure_ending_at_the_window_is_out() {
+        let today = date(2026, 11, 26);
+        let from = date(2026, 1, 1);
+        let t = [
+            tenure(date(2025, 6, 1), Some(from)), // ends the day the count begins: not in it
+            tenure(from, Some(date(2026, 6, 1))),
+            tenure(date(2026, 6, 1), None),
+        ];
+        let c = continuity(&t, from, today, CONTINUITY_MONTHS);
+        assert_eq!(c.tenures, 2);
+        assert_eq!(c.days_empty, Some(0));
+        // A tenure that starts after today is not counted.
+        let c = continuity(
+            &[tenure(date(2027, 1, 1), None)],
+            from,
+            today,
+            CONTINUITY_MONTHS,
+        );
+        assert_eq!((c.tenures, c.days_held), (0, Some(0)));
+    }
+
+    #[test]
+    fn a_tenure_linked_and_unlinked_the_same_day_is_a_holder_with_no_day_held() {
+        let today = date(2026, 11, 26);
+        let t = [
+            tenure(today, Some(today)),
+            tenure(today, Some(today)),
+            tenure(today, None),
+        ];
+        let c = continuity(&t, today, today, CONTINUITY_MONTHS);
+        assert_eq!(
+            (c.tenures, c.days_held, c.days_empty),
+            (3, Some(0), Some(0))
         );
     }
 }

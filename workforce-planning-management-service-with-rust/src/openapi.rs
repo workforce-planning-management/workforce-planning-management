@@ -734,8 +734,11 @@ fn add_integration_paths(document: &mut Value) {
         "/api/positions/{pid}/status": {
             "post": { "tags": ["positions"], "summary": "Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in. Every move is added to the position's state history with its date. A move to frozen needs reason (reorganization, funding, demand_review, other), decided_by_role and a review_on in the future (WPM-R289); the other moves take none of them", "responses": ok("The new state") }
         },
+        "/api/positions/{pid}/holders": {
+            "get": { "tags": ["positions"], "summary": "The holder history of one position (WPM-R290): each tenure with its worker, start (start_known false for one open when the history began) and end, and the continuity over the last 36 months: tenures, days held and days empty, counted from the day the post's history begins when that is later (complete false). A tenure whose worker was erased keeps its dates and names no one. HR and the other privileged callers only", "responses": ok("The tenures and the continuity") }
+        },
         "/api/positions/{pid}/holder": {
-            "put": { "tags": ["positions"], "summary": "Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position", "responses": ok("The pid") }
+            "put": { "tags": ["positions"], "summary": "Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position. A change of holder ends the open tenure in the holder history and opens the new one; unlinking the holder of an approved, open or frozen post starts its vacancy", "responses": ok("The pid") }
         },
         "/api/positions/{pid}/requisition": {
             "put": { "tags": ["positions"], "summary": "Link the requisition that fills the position (same organization), or null to unlink; an open position keeps its requisition", "responses": ok("The pid") }
