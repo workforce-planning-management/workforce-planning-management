@@ -17,6 +17,7 @@ use crate::db;
 use crate::models::_entities::positions;
 use crate::rules::equality_monitoring::DEFAULT_FLOOR;
 use crate::rules::position::{self as rules, Facts, Holding, Seat};
+use crate::rules::position_history::{self as history, Freeze};
 
 /// Whether the caller may see who holds a position: HR, payroll, service and administrators, or anyone when sign-in is off.
 async fn sees_holders(
@@ -220,6 +221,16 @@ async fn create(
     )
     .execute(&mut *tx)
     .await?;
+    record_move(
+        &mut tx,
+        pid,
+        &organization,
+        None,
+        "planned",
+        None,
+        caller.actor(),
+    )
+    .await?;
     db::audit(
         &mut tx,
         "position",
@@ -311,9 +322,42 @@ async fn update(
     format::json(json!({ "pid": pid }))
 }
 
+/// Add one row to the state history of a position (WPM-R288): the date is today's, and the row is never changed after.
+async fn record_move(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    position: Uuid,
+    organization: &str,
+    from: Option<&str>,
+    to: &str,
+    freeze: Option<&Freeze<'_>>,
+    actor: Option<&str>,
+) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO position_state_moves (position_pid, organization_ref, from_state, to_state, moved_on, freeze_reason,
+                                           decided_by_role, review_on, recorded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        position,
+        organization,
+        from,
+        to,
+        SqlDate(crate::dates::today()),
+        freeze.and_then(|f| f.reason),
+        freeze.and_then(|f| f.decided_by_role).map(str::trim),
+        freeze.and_then(|f| f.review_on).map(SqlDate),
+        actor,
+    )
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
+}
+
 #[derive(Debug, Deserialize)]
 struct MovePayload {
     to: String,
+    /// A move to `frozen` needs these three (WPM-R289): a reason from the list, the role that decided, and a review date in the future.
+    reason: Option<String>,
+    decided_by_role: Option<String>,
+    review_on: Option<Date>,
 }
 
 /// `POST /api/positions/{pid}/status` — move a position. The rules refuse a move the table does not allow, an `open` with no
@@ -331,6 +375,24 @@ async fn status(
         has_holder: row.holder_worker_pid.is_some(),
     };
     rules::check_move(&row.state, &payload.to, facts).map_err(|e| unprocessable(&e))?;
+    let freeze = Freeze {
+        reason: payload.reason.as_deref(),
+        decided_by_role: payload.decided_by_role.as_deref(),
+        review_on: payload.review_on,
+    };
+    let freezing = payload.to == "frozen";
+    if freezing {
+        if let Err(problems) = history::check_freeze(&freeze, crate::dates::today()) {
+            ensure_valid(&problems)?;
+        }
+    } else if payload.reason.is_some()
+        || payload.decided_by_role.is_some()
+        || payload.review_on.is_some()
+    {
+        return Err(unprocessable(
+            "reason, decided_by_role and review_on are only for a move to frozen",
+        ));
+    }
     let from = row.state.clone();
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
@@ -340,13 +402,23 @@ async fn status(
     )
     .execute(&mut *tx)
     .await?;
+    record_move(
+        &mut tx,
+        pid,
+        &row.organization_ref,
+        Some(&from),
+        &payload.to,
+        freezing.then_some(&freeze),
+        caller.actor(),
+    )
+    .await?;
     db::audit(
         &mut tx,
         "position",
         pid,
         "position_status_changed",
         caller.actor(),
-        Some(json!({ "from": from, "to": payload.to })),
+        Some(json!({ "from": from, "to": payload.to, "freeze_reason": freezing.then_some(&payload.reason) })),
     )
     .await?;
     tx.commit().await?;
@@ -524,6 +596,80 @@ async fn establishment(
     }))
 }
 
+#[derive(Debug, Deserialize)]
+struct VacancyQuery {
+    organization: String,
+}
+
+/// `GET /api/positions/vacancy-age?organization=` — open vacancies by cost centre and age (WPM-R288, WPM-R289): how long each approved,
+/// open or frozen post nobody holds has been vacant, from the history of its moves, and not only for the posts that were filled. A post
+/// whose state predates the history is `start_unknown`, never zero. The frozen posts, those with no review date and those whose review
+/// date has passed are counted, and the abolished posts stand beside the ages. No holder is named; a caller who may not see who holds
+/// what gets a cost centre under the small-group floor withheld, and the figure says so.
+#[debug_handler]
+async fn vacancy_age(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axa::extract::Query(query): axa::extract::Query<VacancyQuery>,
+) -> Result<Response> {
+    ensure_valid(&organization_problems(&query.organization))?;
+    ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
+    let positions = sqlx::query!(
+        r#"SELECT pid, cost_centre, state, (holder_worker_pid IS NOT NULL) AS "held!" FROM positions
+            WHERE organization_ref = $1 ORDER BY cost_centre, id"#,
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let moves = sqlx::query!(
+        r#"SELECT position_pid, to_state, moved_on, start_known, review_on FROM position_state_moves
+            WHERE organization_ref = $1 ORDER BY position_pid, id"#,
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let mut by_post: std::collections::HashMap<Uuid, (Vec<history::Move>, Option<Date>)> =
+        std::collections::HashMap::new();
+    for m in moves {
+        let entry = by_post.entry(m.position_pid).or_default();
+        // The review date in force is the one of the latest move; a move out of frozen leaves none.
+        entry.1 = m.review_on.map(SqlDate::get);
+        entry.0.push(history::Move {
+            to: m.to_state,
+            on: m.moved_on.get(),
+            start_known: m.start_known,
+        });
+    }
+    let posts: Vec<history::Post> = positions
+        .into_iter()
+        .map(|p| {
+            let (moves, review_on) = by_post.remove(&p.pid).unwrap_or_else(|| (Vec::new(), None));
+            history::Post {
+                cost_centre: p.cost_centre,
+                state: p.state,
+                held: p.held,
+                moves,
+                review_on,
+            }
+        })
+        .collect();
+    let floor = if sees_holders(&ctx, &caller, &query.organization).await? {
+        None
+    } else {
+        Some(DEFAULT_FLOOR)
+    };
+    format::json(json!({
+        "organization": query.organization,
+        "small_group_floor": floor,
+        "age_bands_days": history::AGE_BANDS.iter().map(|b| b.0).collect::<Vec<_>>(),
+        "cost_centres": history::report(&posts, crate::dates::today(), floor),
+        "derivation": "A vacancy is an approved, open or frozen position nobody holds. Its age is counted from the move that began its current run of \
+                       those states (a position that was filled or planned before). A position whose state was already set when the history \
+                       began has an unknown start, counted in start_unknown and in no age band. Abolished positions are shown beside the \
+                       ages, because abolishing a post ends its vacancy. By cost centre only: a position carries no band or critical-role marker yet.",
+    }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -531,6 +677,7 @@ pub fn routes() -> Routes {
         .add("/positions", get(list))
         .add("/positions", post(create))
         .add("/positions/establishment", get(establishment))
+        .add("/positions/vacancy-age", get(vacancy_age))
         .add("/positions/{pid}", put(update))
         .add("/positions/{pid}/status", post(status))
         .add("/positions/{pid}/holder", put(holder))

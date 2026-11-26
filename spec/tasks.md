@@ -7355,11 +7355,21 @@ the entry records only the evidence it needs.
 Proposed; the owner asked on 2026-11-24 that the lessons be recorded here. Every entry is open and none is started. The four
 questions for the owner are in the topic file and are not decided. **Nothing from the source is named in any of these tasks.**
 
-- [ ] WPM-T648 (2026-11-24) **Position state history, vacancy age and freeze reasons.** *(WPM-R288, WPM-R289, WPM-D233, WPM-D234)* Builds
-      on WPM-R152. An append-only table of position state moves (from, to, date, actor), backfilled with `start unknown` for a post
-      already vacant; vacancy age for every open vacancy; a `frozen` move asks for a reason, a decider and a review date and is refused
-      without one; a report by unit, band and critical role with abolished posts beside it, the number frozen and the number with no
-      review date, a floor on every cut. **First, because history cannot be rebuilt.** Not started; nothing verified.
+- [~] WPM-T648 (2026-11-24) **Position state history, vacancy age and freeze reasons.** *(WPM-R288, WPM-R289, WPM-D233, WPM-D234)* Builds
+      on WPM-R152. **Part done (2026-11-26):** table `position_state_moves` (migration 135: from, to, date, `start_known`, freeze reason,
+      deciding role, review date, actor; a trigger refuses an update or a delete), backfilled with one row per existing position and
+      `start_known` false, so a post vacant before the history is `start_unknown`, never zero. Every create and every status move adds a
+      row. A move to `frozen` is refused without a reason from the list, a deciding role and a review date in the future (422); the other
+      moves refuse those fields. Domain module `position_history` (pure): `check_freeze`, `vacant_since`, `age_days`, `report`.
+      `GET /api/positions/vacancy-age?organization=`: open vacancies (approved, open or frozen, nobody holds) by cost centre in the bands
+      0-30, 31-90, 91-180 and 181+, `start_unknown` apart, the frozen, those with no review date, those past it, and **abolished posts
+      beside them**; no holder; a cost centre under the floor (10) is withheld for a caller who may not see holders and says so.
+      **Not done:** the cut by band and critical role (a position has neither marker yet: by cost centre only); the screen; a
+      freeze's link to a change initiative (WPM-T652); listing the findings of a passed review date one by one (counted only); a
+      notification when a review date passes. **Verified (2026-11-26):** 7 new domain unit tests; 1 new request test (history row on
+      create, the freeze refusals, append-only refused by the database, unknown start, held post not a vacancy, other organization);
+      the 5 existing position request tests; `cargo clippy --all-targets -- -D warnings` clean; `cargo test --test main` checks pass;
+      `.sqlx` regenerated. **Not checked:** the full request suite after this change, `verify-db-roles.sh`, the keycloak build, CI.
 - [ ] WPM-T649 (2026-11-24) **Holder history and continuity in critical posts.** *(WPM-R290, WPM-D233)* Builds on WPM-T648. An append-only
       holder history under the staff-record retention rule; holders, months empty and months covered in 36 months for critical
       posts; withheld under the floor with the complement; no per-person count of posts left. The owner answered question 1 on 2026-11-24: yes, for critical

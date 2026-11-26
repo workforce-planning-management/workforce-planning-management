@@ -2,7 +2,7 @@
 
 Proposed 2026-11-24, from [the lessons of an independent review](lessons/20261124/index.md) (the owner asked on 2026-11-24 that
 they be recorded in the plan, the tasks and the spec). Requirements **WPM-R288–R298**, decisions **WPM-D231–D235**, tasks
-**WPM-T648–T659** ([tasks.md](tasks.md), [plan.md](plan.md) section Z). **Nothing here is built.** The numbers start above the
+**WPM-T648–T659** ([tasks.md](tasks.md), [plan.md](plan.md) section Z). **Built so far (2026-11-26): the position state history, vacancy age and freeze reasons (WPM-T648, part); the rest is not built.** The numbers start above the
 mobile-app branch's (WPM-R287, WPM-D230, WPM-T645) so the two never share an id.
 
 The review described a loop: leaders changed often, posts stayed empty or were covered for a while, a long reorganization was

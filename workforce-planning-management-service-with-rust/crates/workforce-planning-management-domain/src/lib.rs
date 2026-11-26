@@ -154,6 +154,7 @@ pub mod phone;
 pub mod planning;
 pub mod policy;
 pub mod position;
+pub mod position_history;
 pub mod privacy;
 pub mod programmes;
 pub mod pulse;

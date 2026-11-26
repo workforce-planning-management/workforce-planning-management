@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the state history of a position, vacancy age and freeze reasons (WPM-T648, part, 2026-11-26)
+
+Table `position_state_moves` (append-only, backfilled with an unknown start); every position move is a dated row; a move to `frozen`
+needs a reason, a deciding role and a future review date; `GET /api/positions/vacancy-age` counts open vacancies by cost centre and
+age, with unknown starts and abolished posts beside them and small centres withheld. Domain module `position_history`.
+
 ### Changed — reading your own allocations is not audited, whatever else you hold (WPM-T607, 2026-11-21)
 
 `allocation::named_read_is_audited` audits a named read of another person's allocations, and no longer a person reading

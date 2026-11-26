@@ -37,6 +37,8 @@ is gone; the vacancy that sits in frozen positions is shown apart. For a caller 
 fewer positions than the floor withholds held, vacant and over (the budget and the count name no one). Records, the API and the
 screen are WPM-T279.
 
+**Built, state history and vacancy age (WPM-T648, part, 2026-11-26).** Table `position_state_moves`: one row for every move of a position (from, to, date, actor), added and never changed (a trigger refuses an update or a delete), backfilled once with `start_known` false. A move to `frozen` is made with a reason (`reorganization`, `funding`, `demand_review`, `other`), the role that decided and a review date in the future, or it is refused (WPM-R289). `GET /api/positions/vacancy-age` counts open vacancies by cost centre and age, with the unknown starts, the frozen and the overdue reviews apart and the abolished posts beside them (WPM-D234, WPM-D235); it names no holder and withholds a small cost centre from a caller who may not see holders. Pure core: `rules::position_history`.
+
 **Built, records, API and screen (WPM-T279).** Table `positions` (no column for pay; a position is never deleted, it is abolished).
 Routes: `GET/POST /api/positions`, `PUT /api/positions/{pid}`, `POST .../{pid}/status`, `PUT .../{pid}/holder`, `PUT .../{pid}/requisition`,
 `GET /api/positions/establishment`. Writes are HR's (the policy's write action); every change is audited in the transaction with a

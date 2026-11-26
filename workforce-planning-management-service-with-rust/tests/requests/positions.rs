@@ -276,3 +276,109 @@ async fn a_number_names_one_position_and_an_update_without_it_keeps_it() {
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn every_move_is_a_dated_row_a_freeze_has_its_three_facts_and_vacancy_age_counts_open_posts()
+{
+    crate::requests::request_open(|request, ctx| async move {
+        let org = an_org();
+        let cc = "CC-HIST";
+        let a = seat(&request, &org, cc, 100).await;
+        let b = seat(&request, &org, cc, 100).await;
+        let gone = seat(&request, &org, cc, 100).await;
+        let future = (workforce_planning_management::dates::today() + jiff::Span::new().days(30)).to_string();
+        let past = (workforce_planning_management::dates::today() - jiff::Span::new().days(1)).to_string();
+
+        // A new seat is planned and has one move, from nothing, dated today and known.
+        let row = sqlx::query("SELECT from_state, to_state, start_known FROM position_state_moves WHERE position_pid = $1::uuid")
+            .bind(&a)
+            .fetch_one(&ctx.db)
+            .await
+            .unwrap();
+        assert_eq!(row.get::<Option<String>, _>("from_state"), None);
+        assert_eq!(row.get::<String, _>("to_state"), "planned");
+        assert!(row.get::<bool, _>("start_known"));
+
+        for p in [&a, &b] {
+            assert_eq!(go(&request, p, "approved").await.0, 200);
+        }
+        assert_eq!(go(&request, &gone, "abolished").await.0, 200);
+
+        // A freeze needs a reason, a deciding role and a future review date; the other moves take none of them.
+        let freeze = |body: Value| {
+            let request = &request;
+            let b = b.clone();
+            async move {
+                let r = request.post(&format!("/api/positions/{b}/status")).json(&body).await;
+                (r.status_code().as_u16(), r.text())
+            }
+        };
+        for fault in [
+            json!({ "to": "frozen" }),
+            json!({ "to": "frozen", "reason": "funding", "decided_by_role": "Finance director" }),
+            json!({ "to": "frozen", "reason": "whim", "decided_by_role": "Finance director", "review_on": future }),
+            json!({ "to": "frozen", "reason": "funding", "decided_by_role": " ", "review_on": future }),
+            json!({ "to": "frozen", "reason": "funding", "decided_by_role": "Finance director", "review_on": past }),
+            json!({ "to": "abolished", "reason": "funding" }),
+        ] {
+            let (code, text) = freeze(fault.clone()).await;
+            assert_eq!(code, 422, "{fault}: {text}");
+        }
+        let (code, text) = freeze(json!({ "to": "frozen", "reason": "funding", "decided_by_role": "Finance director", "review_on": future })).await;
+        assert_eq!(code, 200, "{text}");
+
+        // The history is append-only: the database refuses a change.
+        let refused = sqlx::query("UPDATE position_state_moves SET to_state = 'filled' WHERE position_pid = $1::uuid")
+            .bind(&a)
+            .execute(&ctx.db)
+            .await;
+        assert!(refused.is_err());
+        let refused = sqlx::query("DELETE FROM position_state_moves WHERE position_pid = $1::uuid")
+            .bind(&a)
+            .execute(&ctx.db)
+            .await;
+        assert!(refused.is_err());
+
+        // A post that was approved before the history began has a start that is unknown, and the report says so.
+        sqlx::query("INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, state) VALUES (gen_random_uuid(), $1, $2, 'Old', 100, 'core', 'approved')")
+            .bind(&org)
+            .bind(cc)
+            .execute(&ctx.db)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO position_state_moves (position_pid, organization_ref, from_state, to_state, moved_on, start_known, recorded_by) SELECT pid, organization_ref, NULL, state, CURRENT_DATE, FALSE, 'backfill' FROM positions WHERE organization_ref = $1 AND title = 'Old'")
+            .bind(&org)
+            .execute(&ctx.db)
+            .await
+            .unwrap();
+
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        let unit = centre(&report, cc);
+        // a, b (frozen) and the old one are vacancies; the abolished post is beside them, not in them.
+        assert_eq!(unit["vacancies"], 3, "{report}");
+        assert_eq!(unit["by_age"]["0-30"], 2);
+        assert_eq!(unit["start_unknown"], 1);
+        assert_eq!(unit["frozen"], 1);
+        assert_eq!(unit["frozen_without_review_date"], 0);
+        assert_eq!(unit["review_overdue"], 0);
+        assert_eq!(unit["abolished"], 1);
+        assert_eq!(unit["withheld"], false);
+        assert!(!report.to_string().contains("holder_worker_pid"));
+
+        // A post somebody holds is not a vacancy, whatever its state.
+        let w = worker(&request, &org, "H-1", 100).await;
+        assert_eq!(go(&request, &a, "open").await.0, 422, "no requisition");
+        let held = request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": w })).await;
+        assert_eq!(held.status_code(), 200);
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(centre(&report, cc)["vacancies"], 2);
+
+        // Another organization sees none of it.
+        let other: Value = request.get(&format!("/api/positions/vacancy-age?organization={}", an_org())).await.json();
+        assert_eq!(other["cost_centres"].as_array().unwrap().len(), 0);
+        assert_eq!(request.get("/api/positions/vacancy-age?organization=").await.status_code(), 422);
+    })
+    .await;
+}

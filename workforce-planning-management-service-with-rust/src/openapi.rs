@@ -725,11 +725,14 @@ fn add_integration_paths(document: &mut Value) {
         "/api/positions/establishment": {
             "get": { "tags": ["positions"], "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor", "responses": ok("The establishment") }
         },
+        "/api/positions/vacancy-age": {
+            "get": { "tags": ["positions"], "summary": "Open vacancies by cost centre and age (?organization=), from the append-only history of position moves (WPM-R288): approved, open or frozen positions nobody holds, in the bands 0-30, 31-90, 91-180 and 181+ days, with start_unknown for a post whose state predates the history (never zero), the frozen, those with no review date and those past it, and the abolished beside them. No holder is named; a caller who may not see holders gets a cost centre under the floor withheld", "responses": ok("The vacancies") }
+        },
         "/api/positions/{pid}": {
             "put": { "tags": ["positions"], "summary": "Change what a position is made of; not its organization, state or links. An abolished position is not changed", "responses": ok("The pid") }
         },
         "/api/positions/{pid}/status": {
-            "post": { "tags": ["positions"], "summary": "Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in", "responses": ok("The new state") }
+            "post": { "tags": ["positions"], "summary": "Move a position (planned, approved, open, filled, frozen, abolished). Open needs a linked requisition, filled a linked holder; a held position is not made vacant or abolished until its holder is unlinked. 422 names the state it is in. Every move is added to the position's state history with its date. A move to frozen needs reason (reorganization, funding, demand_review, other), decided_by_role and a review_on in the future (WPM-R289); the other moves take none of them", "responses": ok("The new state") }
         },
         "/api/positions/{pid}/holder": {
             "put": { "tags": ["positions"], "summary": "Link the worker who holds the position (same organization), or null to unlink. Not for a planned or abolished position", "responses": ok("The pid") }

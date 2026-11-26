@@ -1,0 +1,76 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT position_pid, to_state, moved_on, start_known, review_on FROM position_state_moves\n            WHERE organization_ref = $1 ORDER BY position_pid, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "position_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "position_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "to_state",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "to_state"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "moved_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "moved_on"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "start_known",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "start_known"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "review_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "review_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "6fd4f16a618b532fd903089bc5c46bd8e17216892b652b7e6db88172cfb53194"
+}
