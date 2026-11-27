@@ -492,7 +492,7 @@ holds no IP address (WPM-D218); a backup is erased when it expires (WPM-D219); a
 No score for trust, culture, morale or leadership, and no ranking of units (WPM-D231); WPM holds no concerns (WPM-D232);
 position states and holders are recorded as history, never overwritten (WPM-D233); an unknown start is unknown, never zero
 (WPM-D234); a measure that can be gamed has its opposite beside it, and a figure about few people is withheld (WPM-D235); an
-erasure cuts the person from a tenure and keeps its dates (WPM-D236, 2026-11-26); a post is critical because HR says so, and
+erasure cuts the person from a tenure and keeps its dates (WPM-D236, decided by the owner 2026-11-27); a post is critical because HR says so, and
 an ungraded post is unknown in a report by band (WPM-D237, the owner's decision of 2026-11-26). See
 [leadership-continuity-and-reorganization.md](leadership-continuity-and-reorganization.md). Each decision is the owner's.
 

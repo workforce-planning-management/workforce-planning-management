@@ -7393,7 +7393,7 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       linked now and `start_known` false. `PUT /api/positions/{pid}/holder` closes the open tenure and opens the new one on a change
       of holder; the same holder again changes nothing. A trigger allows only closing an open tenure once and an erasure cutting its
       worker, and refuses every other change and every delete. **Erasure** cuts the worker and ends an open tenure that day, keeping the
-      dates (WPM-D236, proposed); the subject-access export carries `position_holder_history`; the personal-data inventory lists the
+      dates (WPM-D236, decided by the owner 2026-11-27); the subject-access export carries `position_holder_history`; the personal-data inventory lists the
       table. `GET /api/positions/{pid}/holders` (`Privileged` in `rules::access::READS`): one post's tenures and its continuity
       over 36 months (tenures, days held, days empty), counted from the day the post's history begins when that is later and saying
       so (`complete`). Pure core: `position_history::continuity` (half-open days, overlaps merged, a same-day tenure is a holder with

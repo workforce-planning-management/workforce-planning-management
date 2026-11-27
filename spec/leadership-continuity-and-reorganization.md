@@ -193,12 +193,15 @@ cancelled`), which has no stage before `open` and none between `interviewing` an
 - **WPM-D235 A measure can be gamed, so its opposite sits beside it.** Vacancy age beside abolished posts; approval time beside
   returns; cover time beside the plan that ends it. Where a figure is about few people, it is withheld and says that it is
   withheld.
-- **WPM-D236 An erasure cuts the person from a tenure and keeps its dates** (2026-11-26, WPM-T649). The holder history is about the
+- **WPM-D236 An erasure cuts the person from a tenure and keeps its dates** (2026-11-26, WPM-T649; **decided by the owner on
+  2026-11-27**). The holder history is about the
   post as much as the person: deleting an erased holder's tenures would turn a post that had three holders into one that had two and
   a gap, and the continuity figures would be wrong for everyone after. So erasure sets the worker of each tenure to nothing and ends
   an open one that day; the dates stay and name no one. The table is otherwise append-only: a trigger allows only closing an open
-  tenure once and cutting a worker, and refuses any other change and every delete. Proposed with the build, like the decisions above:
-  the owner may choose deletion instead.
+  tenure once and cutting a worker, and refuses any other change and every delete. The owner chose this over deleting an erased
+  holder's tenures on 2026-11-27. **Rejected:** deletion, which would show a held post as empty and make every continuity figure
+  built on it wrong for good. **The risk kept:** in a small, well-known group an unnamed date range can still point to someone; one
+  post's history is read only by privileged callers, and any roll-up withholds a group under the floor with its complement.
 - **WPM-D237 A post is critical because HR says so** (the owner decided on 2026-11-26 that positions carry a critical-role marker and a
   band). `critical` is a statement HR records on the position, audited when it changes; it is never derived from who holds the
   post, their pay or their skills, and it is the one list of critical posts that succession on positions (WPM-R197) reads, not a
