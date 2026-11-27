@@ -1,0 +1,102 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.pid, p.cost_centre, p.grade_scale, p.grade_band, (p.holder_worker_pid IS NOT NULL) AS \"held!\",\n                  m.start_known AS \"start_known?\", m.moved_on AS \"moved_on?\", (m.created_at AT TIME ZONE 'UTC')::date AS \"created_on?\"\n             FROM positions p\n             LEFT JOIN LATERAL (SELECT start_known, moved_on, created_at FROM position_state_moves s\n                                 WHERE s.position_pid = p.pid ORDER BY s.id LIMIT 1) m ON TRUE\n            WHERE p.organization_ref = $1 AND p.critical AND p.state <> 'abolished'\n            ORDER BY p.cost_centre, p.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cost_centre",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "cost_centre"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_band"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "held!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_known?",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "start_known"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "moved_on?",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_state_moves",
+            "name": "moved_on"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_on?",
+        "type_info": "Date",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      null,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "bcce060f67587407dd6a88d384c0a3c8f46a9c178dd61132f679f18b5964dfc4"
+}

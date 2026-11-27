@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — axa-cursor-pagination 0.1.4: filtered lists read in batches (WPM-T661, 2026-11-27)
+
+`axa-cursor-pagination` 0.1.3 to 0.1.4 (the owner approved the publish-age exception). `controllers::filled` uses the new
+`CursorPage::fill`: `/api/flexible-working` and `/api/conversion-plans` read a page and one row at a time until the page is full,
+within ten pages, instead of the whole table. `/api/expenses`, `/api/movements` and `/api/resignations` page in SQL. `paged_vec` is
+removed.
+
+### Added — the critical-post report, the establishment by band and pay point, and an assignment's grade (2026-11-27)
+
+`GET /api/positions/critical-continuity` (WPM-T649): the continuity of the critical posts by cost centre, by band and in total, a
+group under the floor withheld for every caller with its complement. The establishment adds `bands` and `pay_points` (WPM-T558).
+Migration 139: an assignment's grade, given on add and replaced or kept by a change (WPM-R255).
+
 ### Added — a critical marker and a grade on a position (WPM-T660, 2026-11-26)
 
 Migration 138: `positions.critical` and a grade (scale, band, pay point). `critical` on create and update; `PUT|DELETE

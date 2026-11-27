@@ -245,4 +245,213 @@ test.describe("Positions", () => {
       "No positions yet",
     );
   });
+
+  test("groups the establishment by band and pay point, ages the vacancies, withholds small critical groups and grades a seat", async ({
+    page,
+  }) => {
+    const seats = [
+      {
+        ...SEAT,
+        holder_worker_pid: null,
+        critical: true,
+        grade_scale: "national-2026-27",
+        grade_band: "5",
+        grade_pay_point: 2,
+      },
+      {
+        ...SEAT,
+        pid: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        title: "Analyst",
+        holder_worker_pid: null,
+        critical: false,
+        grade_scale: null,
+        grade_band: null,
+        grade_pay_point: null,
+      },
+    ];
+    const graded: unknown[] = [];
+    let cleared = 0;
+    const group = (key: string, positions: number) => ({
+      ...CENTRE,
+      cost_centre: undefined,
+      group: key,
+      positions,
+    });
+    await page.route(
+      "**/api/proxy/positions/establishment?organization=*",
+      (route) =>
+        route.fulfill({
+          json: {
+            small_group_floor: null,
+            cost_centres: [CENTRE],
+            bands: [group("national-2026-27:5", 1), group("unknown", 1)],
+            pay_points: [group("national-2026-27:5:2", 1), group("unknown", 1)],
+            derivation: "",
+          },
+        }),
+    );
+    await page.route("**/api/proxy/positions?organization=*", (route) =>
+      route.fulfill({ json: { states: [], positions: seats } }),
+    );
+    const ages = (key: string, n: number | "withheld") => ({
+      group: key,
+      vacancies: n,
+      by_age: { "0-30": n, "31-90": 0, "91-180": 0, "181+": 0 },
+      start_unknown: 0,
+      frozen: 0,
+      frozen_without_review_date: 0,
+      review_overdue: 0,
+      abolished: 3,
+      withheld: n === "withheld",
+    });
+    await page.route(
+      "**/api/proxy/positions/vacancy-age?organization=*",
+      (route) =>
+        route.fulfill({
+          json: {
+            small_group_floor: 10,
+            age_bands_days: ["0-30", "31-90", "91-180", "181+"],
+            cost_centres: [ages("CC-100", 2)],
+            bands: [ages("national-2026-27:5", 1), ages("unknown", 1)],
+            critical: ages("critical", "withheld"),
+            derivation: "",
+          },
+        }),
+    );
+    const hidden = (key: string) => ({
+      group: key,
+      withheld: true,
+      posts: null,
+      tenures: null,
+      days_held: null,
+      days_empty: null,
+      held_now: null,
+      counted_partly: null,
+    });
+    await page.route(
+      "**/api/proxy/positions/critical-continuity?organization=*",
+      (route) =>
+        route.fulfill({
+          json: {
+            small_group_floor: 10,
+            window_months: 36,
+            cost_centres: { groups: [hidden("CC-100")], total: hidden("all") },
+            bands: {
+              groups: [hidden("national-2026-27:5")],
+              total: hidden("all"),
+            },
+            derivation: "",
+          },
+        }),
+    );
+    await page.route(`**/api/proxy/positions/${SEAT.pid}/holders`, (route) =>
+      route.fulfill({
+        json: {
+          pid: SEAT.pid,
+          holders: [
+            {
+              worker_pid: null,
+              erased: true,
+              started_on: "2025-01-01",
+              start_known: false,
+              ended_on: "2025-06-01",
+            },
+            {
+              worker_pid: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+              erased: false,
+              started_on: "2025-06-01",
+              start_known: true,
+              ended_on: null,
+            },
+          ],
+          continuity: {
+            window_from: "2023-11-27",
+            counted_from: "2025-01-01",
+            complete: false,
+            tenures: 2,
+            days_held: 695,
+            days_empty: 0,
+          },
+        },
+      }),
+    );
+    await page.route(`**/api/proxy/positions/${SEAT.pid}/grade`, (route) => {
+      if (route.request().method() === "DELETE") {
+        cleared += 1;
+      } else {
+        graded.push(route.request().postDataJSON());
+      }
+      return route.fulfill({ json: { pid: SEAT.pid } });
+    });
+
+    await page.goto("/positions");
+    const list = page.getByTestId("position-list");
+    await expect(list).toContainText("✓ Critical");
+    await expect(list).toContainText("national-2026-27:5:2");
+
+    // The establishment by band, then by band and pay point: an ungraded seat is "unknown", never put in a band.
+    const establishment = page.getByTestId("establishment");
+    await page.getByTestId("establishment-group-by").selectOption("band");
+    await expect(establishment).toContainText("national-2026-27:5");
+    await expect(establishment).toContainText("unknown");
+    await page.getByTestId("establishment-group-by").selectOption("pay_point");
+    await expect(establishment).toContainText("national-2026-27:5:2");
+
+    // Vacancy age by cost centre, and for the critical posts: a withheld group says so in words.
+    const ageTable = page.getByTestId("vacancy-age-table");
+    await expect(ageTable).toContainText("CC-100");
+    await page.getByTestId("vacancy-group-by").selectOption("critical");
+    await expect(ageTable).toContainText("Critical posts");
+    await expect(ageTable).toContainText("withheld");
+
+    // Critical-post continuity: every group and the total withheld, none shown as a number.
+    const continuity = page.getByTestId("critical-continuity-table");
+    await expect(continuity).toContainText("All critical posts");
+    await expect(continuity).toContainText("withheld");
+
+    // One seat's holders: the erased one is named nowhere, an unknown start says so, and a short history says so.
+    await page.getByTestId(`holders-${SEAT.pid}`).click();
+    const holders = page.getByTestId("position-holders");
+    await expect(holders).toContainText("Erased");
+    await expect(holders).toContainText("Start unknown");
+    await expect(holders).toContainText("Holds it now");
+    await expect(page.getByTestId("position-continuity-partial")).toBeVisible();
+
+    // Grade a seat and clear it.
+    await page.getByTestId("grade-seat").selectOption(SEAT.pid);
+    await page.getByTestId("grade-band").fill("6");
+    await page.getByTestId("grade-pay-point").fill("1");
+    await page.getByTestId("grade-save").click();
+    await expect
+      .poll(() => graded)
+      .toEqual([{ scale: "national-2026-27", band: "6", pay_point: 1 }]);
+    await page.getByTestId("grade-clear").click();
+    await expect.poll(() => cleared).toBe(1);
+  });
+
+  test("hides one seat's holders from a reader who may not see them", async ({
+    page,
+  }) => {
+    await page.route(
+      "**/api/proxy/positions/establishment?organization=*",
+      (route) =>
+        route.fulfill({
+          json: { small_group_floor: 10, cost_centres: [], derivation: "" },
+        }),
+    );
+    await page.route("**/api/proxy/positions?organization=*", (route) =>
+      route.fulfill({
+        json: { states: [], positions: [{ ...SEAT, held: false }] },
+      }),
+    );
+    await page.route(`**/api/proxy/positions/${SEAT.pid}/holders`, (route) =>
+      route.fulfill({ status: 403, json: { code: "forbidden" } }),
+    );
+    await page.goto("/positions");
+    await page.getByTestId(`holders-${SEAT.pid}`).click();
+    await expect(page.getByTestId("position-list")).toContainText(
+      "Support Engineer",
+    );
+    await expect(page.getByTestId("position-holders")).toHaveCount(0);
+  });
 });

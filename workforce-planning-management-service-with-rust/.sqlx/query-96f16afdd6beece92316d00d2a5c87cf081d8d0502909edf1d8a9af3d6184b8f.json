@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,\n                w.pid AS worker_pid, w.worker_number, w.department\n           FROM resignations r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL\n          WHERE r.status = $1 AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))\n          ORDER BY r.proposed_last_day, r.id",
+  "query": "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,\n                w.pid AS worker_pid, w.worker_number, w.department\n           FROM resignations r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL\n          WHERE r.status = $1 AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))\n          ORDER BY r.proposed_last_day, r.id\n          LIMIT $3 OFFSET $4",
   "describe": {
     "columns": [
       {
@@ -95,7 +95,9 @@
     "parameters": {
       "Left": [
         "Text",
-        "TextArray"
+        "TextArray",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -109,5 +111,5 @@
       false
     ]
   },
-  "hash": "49cce20b13fc4b31bdfa6b336a00f7fb895f8540ba79ff808bc18f16eb62042a"
+  "hash": "96f16afdd6beece92316d00d2a5c87cf081d8d0502909edf1d8a9af3d6184b8f"
 }

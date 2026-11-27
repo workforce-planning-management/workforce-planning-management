@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT p.cost_centre, p.state, p.budget_fte_percent, p.holder_worker_pid, w.fte_percent AS \"fte_percent?\"\n             FROM positions p\n             LEFT JOIN workers w ON w.pid = p.holder_worker_pid AND w.deleted_at IS NULL\n            WHERE p.organization_ref = $1",
+  "query": "SELECT p.cost_centre, p.state, p.budget_fte_percent, p.holder_worker_pid, w.fte_percent AS \"fte_percent?\",\n                  p.grade_scale, p.grade_band, p.grade_pay_point\n             FROM positions p\n             LEFT JOIN workers w ON w.pid = p.holder_worker_pid AND w.deleted_at IS NULL\n            WHERE p.organization_ref = $1",
   "describe": {
     "columns": [
       {
@@ -57,6 +57,39 @@
             "name": "fte_percent"
           }
         }
+      },
+      {
+        "ordinal": 5,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_band"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "grade_pay_point",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_pay_point"
+          }
+        }
       }
     ],
     "parameters": {
@@ -69,8 +102,11 @@
       false,
       false,
       true,
+      true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "2abe3c9ab6018439812e9eb32eba521768c3b92e0e8f343c49fbb2b3f78d148f"
+  "hash": "314843f1311d00a8847af2779bb6588b4b37be412fa50a02182dd49b0d6b590f"
 }

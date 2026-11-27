@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assignments (pid, worker_pid, job_title, department, location, site, area_of_work, job_role, staff_group,\n                                  occupation_code, cost_centre, fte_percent, is_primary, starts_on, ends_on, recorded_by,\n                                  grade_scale, grade_band, grade_pay_point)\n         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4",
+        "Bool",
+        "Date",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "41136f16699d8f464f7d794d370e80b86fadfe59458b1d92e3ce48fa71feb71c"
+}

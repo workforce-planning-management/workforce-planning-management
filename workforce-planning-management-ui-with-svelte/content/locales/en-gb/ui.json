@@ -29,5 +29,8 @@
   },
   "required": {
     "learningHow": "Book one of its courses in your organisation's learning system; once you complete it, it counts here. If you did it elsewhere, ask HR to record the completion."
+  },
+  "values": {
+    "reorganization": "Reorganisation"
   }
 }

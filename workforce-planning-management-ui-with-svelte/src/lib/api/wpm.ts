@@ -1647,6 +1647,12 @@ export type Position = {
   held?: boolean;
   requisition_pid: string | null;
   demand_line_pid: string | null;
+  /** HR's statement that the post is critical (WPM-D237); never derived from who holds it. */
+  critical?: boolean;
+  /** The grade: a reference to a published pay scale, never an amount (WPM-R255); null when none is recorded. */
+  grade_scale?: string | null;
+  grade_band?: string | null;
+  grade_pay_point?: number | null;
 };
 
 /** An FTE figure in percent, or why there is none. */
@@ -1667,6 +1673,51 @@ export type CostCentre = {
   by_state: Record<string, number>;
 };
 
+/** The establishment's figures under a band (`scale:band`) or a band and pay point (`scale:band:point`); `unknown` is ungraded. */
+export type EstablishmentGroup = Omit<CostCentre, "cost_centre"> & {
+  group: string;
+};
+
+/** A count, or `"withheld"` under the small-group floor. */
+export type WithheldCount = number | "withheld";
+
+/** The open vacancies of one group of posts by age (WPM-R288). */
+export type VacancyGroup = {
+  group: string;
+  vacancies: WithheldCount;
+  by_age: Record<string, WithheldCount>;
+  start_unknown: WithheldCount;
+  frozen: WithheldCount;
+  frozen_without_review_date: WithheldCount;
+  review_overdue: WithheldCount;
+  abolished: number;
+  withheld: boolean;
+};
+
+/** The continuity of a group of critical posts (WPM-R290); every figure is null when the group is withheld. */
+export type CriticalGroup = {
+  group: string;
+  withheld: boolean;
+  posts: number | null;
+  tenures: number | null;
+  days_held: number | null;
+  days_empty: number | null;
+  held_now: number | null;
+  counted_partly: number | null;
+};
+
+/** A table of critical-post groups and their total. */
+export type CriticalTable = { groups: CriticalGroup[]; total: CriticalGroup };
+
+/** One tenure of a post's holder; `worker_pid` is null once the holder was erased. */
+export type Tenure = {
+  worker_pid: string | null;
+  erased: boolean;
+  started_on: string;
+  start_known: boolean;
+  ended_on: string | null;
+};
+
 /** The positions of an organization. */
 export function listPositions(
   organization: string,
@@ -1685,12 +1736,81 @@ export function positionEstablishment(
 ): Promise<{
   small_group_floor: number | null;
   cost_centres: CostCentre[];
+  bands?: EstablishmentGroup[];
+  pay_points?: EstablishmentGroup[];
   derivation: string;
 }> {
   return api(
     `/positions/establishment?organization=${encodeURIComponent(organization)}`,
     init,
   );
+}
+
+/** Open vacancies by age, by cost centre and band and for the critical posts (`critical` is null when none is marked). */
+export function positionVacancyAge(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  small_group_floor: number | null;
+  age_bands_days: string[];
+  cost_centres: VacancyGroup[];
+  bands: VacancyGroup[];
+  critical: VacancyGroup | null;
+  derivation: string;
+}> {
+  return api(
+    `/positions/vacancy-age?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** The continuity of the critical posts over 36 months, by cost centre and by band; small groups withheld for everyone. */
+export function criticalContinuity(
+  organization: string,
+  init?: FetchLike,
+): Promise<{
+  small_group_floor: number;
+  window_months: number;
+  cost_centres: CriticalTable;
+  bands: CriticalTable;
+  derivation: string;
+}> {
+  return api(
+    `/positions/critical-continuity?organization=${encodeURIComponent(organization)}`,
+    init,
+  );
+}
+
+/** One post's holder history and continuity (HR and other privileged callers only). */
+export function positionHolders(
+  pid: string,
+  init?: FetchLike,
+): Promise<{
+  pid: string;
+  holders: Tenure[];
+  continuity: {
+    window_from: string;
+    counted_from: string;
+    complete: boolean;
+    tenures: number;
+    days_held: number | null;
+    days_empty: number | null;
+  };
+}> {
+  return api(`/positions/${pid}/holders`, init);
+}
+
+/** Grade a seat against a published scale; a pay point is a step of the band. */
+export function setPositionGrade(
+  pid: string,
+  body: { scale: string; band: string; pay_point?: number },
+): Promise<{ pid: string }> {
+  return api(`/positions/${pid}/grade`, { method: "PUT", body });
+}
+
+/** Clear a seat's grade; 404 when none is recorded. */
+export function clearPositionGrade(pid: string): Promise<{ pid: string }> {
+  return api(`/positions/${pid}/grade`, { method: "DELETE" });
 }
 
 /** Plan a seat; it starts `planned`. */
@@ -1704,6 +1824,7 @@ export function createPosition(body: {
   programme_ref?: string;
   overtime_status?: (typeof OVERTIME_STATUSES)[number];
   number?: string;
+  critical?: boolean;
 }): Promise<{ pid: string }> {
   return api("/positions", { method: "POST", body });
 }

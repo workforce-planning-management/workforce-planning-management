@@ -511,6 +511,22 @@ describe("api path map", () => {
       to_month: "2027-02-01",
       fte_centi: 50,
     });
+    await wpm.listPositions("organization:abc");
+    await wpm.positionEstablishment("organization:abc");
+    await wpm.positionVacancyAge("organization:abc");
+    await wpm.criticalContinuity("organization:abc");
+    await wpm.createPosition({
+      organization_ref: "organization:abc",
+      cost_centre: "CC",
+      title: "T",
+      budget_fte_percent: 100,
+      funding_kind: "core",
+      critical: true,
+    });
+    await wpm.movePosition("p1", "approved");
+    await wpm.positionHolders("p1");
+    await wpm.setPositionGrade("p1", { scale: "national-2026-27", band: "5" });
+    await wpm.clearPositionGrade("p1");
     expect(calls).toEqual([
       "/api/proxy/workers?department=engineering",
       "/api/proxy/workers/p1",
@@ -759,6 +775,15 @@ describe("api path map", () => {
       "/api/proxy/allocations/a1",
       "/api/proxy/workers/w1/assignments",
       "/api/proxy/workers/w1/allocations",
+      "/api/proxy/positions?organization=organization%3Aabc",
+      "/api/proxy/positions/establishment?organization=organization%3Aabc",
+      "/api/proxy/positions/vacancy-age?organization=organization%3Aabc",
+      "/api/proxy/positions/critical-continuity?organization=organization%3Aabc",
+      "/api/proxy/positions",
+      "/api/proxy/positions/p1/status",
+      "/api/proxy/positions/p1/holders",
+      "/api/proxy/positions/p1/grade",
+      "/api/proxy/positions/p1/grade",
     ]);
     vi.unstubAllGlobals();
   });

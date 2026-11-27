@@ -912,68 +912,97 @@ async fn list(
         return Err(unprocessable("unknown status"));
     }
     let today = crate::dates::today();
-    let rows = sqlx::query_as!(
-        requests::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
-                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
-                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
-                  appeal_note, appeal_decided_by
-             FROM flexible_working_requests WHERE ($1::text IS NULL OR status = $1) ORDER BY decide_by, id"#,
-        query.status,
-    )
-    .fetch_all(db::pool(&ctx))
-    .await?;
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    // Each worker's appeal window is from their own chain; an organization's profile is loaded once.
-    let mut profiles: std::collections::BTreeMap<String, Scope> = std::collections::BTreeMap::new();
-    let mut out = Vec::new();
-    for row in rows {
-        let worker = match records::worker_by_pid(&ctx, row.worker_pid).await {
-            Ok(worker) => worker,
-            Err(Error::NotFound) => continue,
-            Err(e) => return Err(e),
-        };
-        if scope
-            .as_ref()
-            .is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref))
-        {
-            continue;
-        }
-        if auth::require_auth() {
-            let Some(claims) = caller.claims() else {
-                continue;
-            };
-            let facts = facts_for(&ctx, claims, &worker).await?;
-            if !(facts.privileged || facts.relation == Relation::Manager) {
-                continue;
+    // Each worker's appeal window is from their own chain; an organization's profile is loaded once per request.
+    let profiles: std::sync::Mutex<std::collections::BTreeMap<String, Scope>> =
+        std::sync::Mutex::default();
+    // Who may see a request is decided row by row (privileged, or the worker's manager), so the page reads on until it is full
+    // rather than coming back short for the rows the caller may not see (Window::fill).
+    let fetch = |limit: i64, offset: i64| {
+        let (ctx, caller, query, scope, profiles) = (&ctx, &caller, &query, &scope, &profiles);
+        async move {
+            let rows = sqlx::query_as!(
+                requests::Model,
+                r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, kind, requested_on,
+                          proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,
+                          decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,
+                          appeal_note, appeal_decided_by
+                     FROM flexible_working_requests WHERE ($1::text IS NULL OR status = $1) ORDER BY decide_by, id
+                    LIMIT $2 OFFSET $3"#,
+                query.status,
+                limit,
+                offset,
+            )
+            .fetch_all(db::pool(ctx))
+            .await?;
+            let mut out = Vec::with_capacity(rows.len());
+            for row in rows {
+                out.push(shown(ctx, caller, query, scope.as_deref(), profiles, &row, today).await?);
             }
+            Ok(out)
         }
-        if !profiles.contains_key(&worker.organization_ref) {
-            let loaded = Scope::for_worker(crate::db::pool(&ctx), &worker).await?;
-            profiles.insert(worker.organization_ref.clone(), loaded);
-        }
-        let appeal_days = profiles.get(&worker.organization_ref).map_or(
-            rules::DEFAULT_APPEAL_CALENDAR_DAYS,
-            |org| {
-                let place = Scope {
-                    start: worker.work_jurisdiction.clone(),
-                    ..org.clone()
-                };
-                appeal_calendar_days(Some(&place), today).value
-            },
-        );
-        let mut item = view(&row, today, appeal_days);
-        if query.overdue == Some(true) && item.get("overdue") != Some(&json!(true)) {
-            continue;
-        }
-        if let Some(object) = item.as_object_mut() {
-            object.insert("worker_pid".into(), json!(worker.pid));
-            object.insert("worker_number".into(), json!(worker.worker_number));
-            object.insert("department".into(), json!(worker.department));
-        }
-        out.push(item);
+    };
+    super::filled(&window, fetch).await
+}
+
+/// One request as the list shows it to `caller`, or `None` where the caller may not see it or it is filtered out.
+async fn shown(
+    ctx: &AppContext,
+    caller: &MaybeAuthUser,
+    query: &ListQuery,
+    scope: Option<&[String]>,
+    profiles: &std::sync::Mutex<std::collections::BTreeMap<String, Scope>>,
+    row: &requests::Model,
+    today: jiff::civil::Date,
+) -> Result<Option<serde_json::Value>> {
+    let worker = match records::worker_by_pid(ctx, row.worker_pid).await {
+        Ok(worker) => worker,
+        Err(Error::NotFound) => return Ok(None),
+        Err(e) => return Err(e),
+    };
+    if scope.is_some_and(|refs| !refs.iter().any(|r| r == &worker.organization_ref)) {
+        return Ok(None);
     }
-    Ok(super::paged_vec(out, &window))
+    if auth::require_auth() {
+        let Some(claims) = caller.claims() else {
+            return Ok(None);
+        };
+        let facts = facts_for(ctx, claims, &worker).await?;
+        if !(facts.privileged || facts.relation == Relation::Manager) {
+            return Ok(None);
+        }
+    }
+    // The lock is never held across an await. A poisoned one is a panic elsewhere in this request; its map is still whole.
+    let known = profiles
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .get(&worker.organization_ref)
+        .cloned();
+    let org = if let Some(org) = known {
+        org
+    } else {
+        let loaded = Scope::for_worker(crate::db::pool(ctx), &worker).await?;
+        profiles
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(worker.organization_ref.clone(), loaded.clone());
+        loaded
+    };
+    let place = Scope {
+        start: worker.work_jurisdiction.clone(),
+        ..org
+    };
+    let appeal_days = appeal_calendar_days(Some(&place), today).value;
+    let mut item = view(row, today, appeal_days);
+    if query.overdue == Some(true) && item.get("overdue") != Some(&json!(true)) {
+        return Ok(None);
+    }
+    if let Some(object) = item.as_object_mut() {
+        object.insert("worker_pid".into(), json!(worker.pid));
+        object.insert("worker_number".into(), json!(worker.worker_number));
+        object.insert("department".into(), json!(worker.department));
+    }
+    Ok(Some(item))
 }
 
 /// `GET /api/workers/{pid}/flexible-working` — the worker's requests, for the worker, their line

@@ -649,3 +649,68 @@ async fn the_hire_and_termination_events_carry_the_person_ref_and_the_overlap_ch
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn an_assignment_carries_its_grade_and_a_change_keeps_or_replaces_it() {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let tag = uuid::Uuid::new_v4().simple().to_string();
+        let w = seed_worker!(&request, &org, format!("GR-{tag}"), None).await;
+        activate!(&request, &w).await;
+        let url = format!("/api/workers/{w}/assignments");
+        let primary: Value = request.get(&url).await.json();
+        let primary_pid = primary["assignments"][0]["pid"].as_str().unwrap().to_string();
+        let day = |back: i64| (workforce_planning_management::dates::today() - workforce_planning_management::dates::days(back)).to_string();
+        let cut = request.post(&format!("/api/assignments/{primary_pid}/change")).json(&json!({ "fte_percent": 60, "effective_on": day(30) })).await;
+        assert_eq!(cut.status_code(), 200, "{}", cut.text());
+
+        // A further assignment with a grade: the scale, the band and the pay point are checked; unrecorded is unknown.
+        let add = |grade: Value| {
+            let request = &request;
+            let url = url.clone();
+            async move {
+                request
+                    .post(&url)
+                    .json(&json!({ "job_title": "Locum", "department": "ward", "fte_percent": 20, "starts_on": day(20), "grade": grade }))
+                    .await
+            }
+        };
+        for bad in [
+            json!({ "scale": "no-such-scale", "band": "5" }),
+            json!({ "scale": "national-2026-27", "band": "99" }),
+            json!({ "scale": "national-2026-27", "band": "5", "pay_point": 0 }),
+        ] {
+            assert_eq!(add(bad.clone()).await.status_code(), 422, "{bad}");
+        }
+        let made = add(json!({ "scale": "national-2026-27", "band": "5", "pay_point": 2 })).await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let locum = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let find = |list: &Value, pid: &str| list["assignments"].as_array().unwrap().iter().find(|a| a["pid"] == pid).cloned().unwrap();
+        let list: Value = request.get(&url).await.json();
+        let row = find(&list, &locum);
+        assert_eq!((row["grade_scale"].as_str(), row["grade_band"].as_str(), row["grade_pay_point"].as_i64()), (Some("national-2026-27"), Some("5"), Some(2)));
+
+        // A change that leaves the grade out keeps it; one that gives a grade replaces it; a bad one is refused.
+        let change = |pid: String, body: Value| {
+            let request = &request;
+            async move { request.post(&format!("/api/assignments/{pid}/change")).json(&body).await }
+        };
+        let kept = change(locum.clone(), json!({ "job_title": "Senior Locum", "effective_on": day(10) })).await;
+        assert_eq!(kept.status_code(), 200, "{}", kept.text());
+        let kept_pid = kept.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let row = find(&request.get(&url).await.json(), &kept_pid);
+        assert_eq!((row["grade_band"].as_str(), row["grade_pay_point"].as_i64()), (Some("5"), Some(2)));
+        assert_eq!(change(kept_pid.clone(), json!({ "grade": { "scale": "national-2026-27", "band": "99" } })).await.status_code(), 422);
+        let moved = change(kept_pid, json!({ "grade": { "scale": "national-2026-27", "band": "6" } })).await;
+        assert_eq!(moved.status_code(), 200, "{}", moved.text());
+        let row = find(&request.get(&url).await.json(), moved.json::<Value>()["pid"].as_str().unwrap());
+        assert_eq!((row["grade_band"].as_str(), row["grade_pay_point"].as_i64()), (Some("6"), None));
+
+        // It travels with the person.
+        let export: Value = request.get(&format!("/api/workers/{w}/subject-access")).await.json();
+        assert!(export["assignments"].as_array().unwrap().iter().any(|a| a["grade_band"] == "6"), "{export}");
+    })
+    .await;
+}

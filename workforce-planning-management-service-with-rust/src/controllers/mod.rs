@@ -423,15 +423,47 @@ pub(crate) fn window(page: &Page) -> Result<Window> {
     resolve(page, LIST_DEFAULT_LIMIT)
 }
 
-/// One page of an already-built list. For lists whose rows are filtered by a rule the database cannot apply.
-pub(crate) fn paged_vec<T: serde::Serialize>(items: Vec<T>, window: &Window) -> Response {
-    let page: Vec<T> = items
-        .into_iter()
-        // An offset past `usize` is past every row (declared: spec/figure-declarations.md, `page_offset`).
-        .skip(usize::try_from(window.offset()).unwrap_or(usize::MAX))
-        .take(rows_to_read(window.limit()))
-        .collect();
-    window.respond(page)
+/// How many pages' worth of rows one request of a list a record policy filters row by row may read ([`filled`]): enough that a
+/// caller who may see one row in ten still gets a full page, and few enough that a caller who may see almost nothing cannot make
+/// every request read the whole table.
+pub(crate) const SCAN_PAGES: u64 = 10;
+
+/// The read budget of one page of such a list: [`SCAN_PAGES`] pages. `Window::fill` raises one under a page and one row to that.
+pub(crate) fn scan_budget(window: &Window) -> u64 {
+    // A window's limit is at most `MAX_LIMIT`: a larger one is a `422` before there is a window.
+    let limit = window.limit().min(MAX_LIMIT);
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "RCA-EXC-2: the limit is at most MAX_LIMIT (500) and SCAN_PAGES is 10, so the product is 5,000, far inside u64"
+    )]
+    let budget = limit * SCAN_PAGES;
+    budget
+}
+
+/// One page of a list whose rows a rule in Rust may hide, row by row (axa-cursor-pagination 0.1.4, `Window::fill`).
+/// `fetch(limit, offset)` reads rows in the list's order, as SQL `LIMIT` and `OFFSET`, and gives each row's view, or `None`
+/// where the caller may not see it. The page reads on in batches until it is full, the list ends or the budget is spent, so a page
+/// is not short for the rows the caller may not see (a short page would say that rows were hidden, and how many), and the next
+/// page starts right after the last row this one returned. A page that spent its budget may be short, with a next link from where
+/// the reading stopped; that says only that rows were skipped. A rule that can be said in SQL belongs in the query instead, which
+/// gives exact pages with no reading ahead.
+///
+/// # Errors
+///
+/// The first error `fetch` returns.
+pub(crate) async fn filled<F, Fut>(window: &Window, fetch: F) -> Result<Response>
+where
+    F: FnMut(i64, i64) -> Fut,
+    Fut: std::future::Future<Output = Result<Vec<Option<serde_json::Value>>>>,
+{
+    let page = window
+        .fill(scan_budget(window), fetch, Option::is_some)
+        .await?;
+    Ok(axa::cursor_pagination::Filled {
+        rows: page.rows.into_iter().flatten().collect::<Vec<_>>(),
+        next: page.next,
+    }
+    .respond())
 }
 
 /// The rows to read for a page of `limit`: one more, to learn whether another page follows.
@@ -612,6 +644,74 @@ mod tests {
         super::window(&page("/api/things?utc_offset=1")).unwrap();
     }
 
+    /// Run a future whose every await is ready at once, as a page over a table in memory is.
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        let mut future = std::pin::pin!(future);
+        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+        loop {
+            if let std::task::Poll::Ready(out) = future.as_mut().poll(&mut cx) {
+                return out;
+            }
+        }
+    }
+
+    /// A page of `table` through [`super::filled`], keeping the rows `keep` accepts, read as SQL would read it.
+    fn in_memory(
+        window: &super::Window,
+        table: &[u32],
+        keep: fn(u32) -> bool,
+    ) -> axum::response::Response {
+        let fetch = |limit: i64, offset: i64| {
+            let from = usize::try_from(offset).unwrap().min(table.len());
+            let to = usize::try_from(offset + limit).unwrap().min(table.len());
+            let rows: Vec<Option<serde_json::Value>> = table[from..to]
+                .iter()
+                .map(|n| keep(*n).then(|| serde_json::json!(n)))
+                .collect();
+            std::future::ready(Ok(rows))
+        };
+        block_on(super::filled(window, fetch)).unwrap()
+    }
+
+    /// The body of a response, as numbers.
+    fn body_of(response: axum::response::Response) -> Vec<u32> {
+        let bytes = block_on(axum::body::to_bytes(response.into_body(), usize::MAX)).unwrap();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn a_page_a_rule_filters_is_full_and_the_next_starts_after_its_last_row() {
+        // The caller may see the even rows: a page of two reads on past the odd ones rather than coming back short.
+        let table: Vec<u32> = (0..10).collect();
+        let first = super::window(&page("/api/things?limit=2")).unwrap();
+        let response = in_memory(&first, &table, |n| n % 2 == 0);
+        let (target, _) = next(&response).expect("more follow");
+        assert_eq!(body_of(response), [0, 2]);
+        let second = super::window(&page(&target)).unwrap();
+        assert_eq!(
+            second.offset(),
+            3,
+            "right after row 2, the last one returned"
+        );
+        let response = in_memory(&second, &table, |n| n % 2 == 0);
+        assert_eq!(body_of(response), [4, 6]);
+        // A caller who may see nothing gets an empty page, and no row past the budget is read.
+        let reads = std::cell::Cell::new(0_i64);
+        let fetch = |limit: i64, offset: i64| {
+            reads.set(reads.get() + limit);
+            let _ = offset;
+            std::future::ready(Ok(vec![None; usize::try_from(limit).unwrap()]))
+        };
+        let response = block_on(super::filled(&first, fetch)).unwrap();
+        assert!(
+            next(&response).is_some(),
+            "the budget ran out, so more may follow"
+        );
+        assert_eq!(body_of(response), Vec::<u32>::new());
+        assert_eq!(reads.get(), 20, "ten pages of two, the budget");
+        assert_eq!(super::scan_budget(&first), 20);
+    }
+
     #[test]
     fn a_page_links_to_the_next_while_more_follow_and_the_cursor_moves_on() {
         let first = super::window(&page("/api/things?status=open&limit=2")).unwrap();
@@ -620,7 +720,7 @@ mod tests {
             (3, 0),
             "one more row than the page, to see if more follow"
         );
-        let response = super::paged_vec(vec![1, 2, 3, 4, 5], &first);
+        let response = in_memory(&first, &[1, 2, 3, 4, 5], |_| true);
         let (target, cursor) = next(&response).expect("more follow");
         assert!(
             target.starts_with("/api/things?status=open&limit=2&cursor="),
@@ -635,14 +735,14 @@ mod tests {
             "/api/things?status=open&limit=2&cursor={cursor}"
         )))
         .unwrap();
-        let response = super::paged_vec(vec![1, 2, 3, 4], &last);
+        let response = in_memory(&last, &[1, 2, 3, 4], |_| true);
         assert!(next(&response).is_none(), "the last page has no Link");
     }
 
     #[test]
     fn a_cursor_fits_only_its_own_list_and_filters() {
         let first = super::window(&page("/api/things?status=open&limit=1")).unwrap();
-        let (_, cursor) = next(&super::paged_vec(vec![1, 2], &first)).unwrap();
+        let (_, cursor) = next(&in_memory(&first, &[1, 2], |_| true)).unwrap();
         unprocessable(super::window(&page(&format!(
             "/api/things?status=closed&cursor={cursor}"
         ))));

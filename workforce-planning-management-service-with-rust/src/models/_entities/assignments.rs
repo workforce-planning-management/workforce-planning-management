@@ -31,4 +31,7 @@ pub struct Model {
     pub starts_on: SqlDate,
     pub ends_on: Option<SqlDate>,
     pub recorded_by: Option<String>,
+    pub grade_scale: Option<String>,
+    pub grade_band: Option<String>,
+    pub grade_pay_point: Option<i32>,
 }

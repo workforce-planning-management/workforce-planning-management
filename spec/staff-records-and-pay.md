@@ -43,6 +43,9 @@ adds what is missing and says how the pieces assemble.
   person can hold two seats part-time. The vacancy arithmetic of WPM-R152 is unchanged: held FTE is the assignment's FTE.
 - **History.** An ended assignment is kept with its dates. A change of category, cost centre or FTE ends one assignment and starts
   another on the effective date (the same shape as a transfer), so the record answers "what did they do on that day".
+- **Grade** (WPM-R255, built 2026-11-27, WPM-T558): an assignment may carry the band and pay point it is graded at, a reference to a
+  published pay scale and never an amount, given when it is added and replaced by a change (left out, a change keeps it). It is in
+  the subject-access export with the assignment and goes with it on erasure. Unrecorded is unknown.
 - **Not done:** a costing split of one assignment across several cost centres; assignments in an organization the worker has no
   row in (that is a second worker row: R167).
 

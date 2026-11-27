@@ -6444,8 +6444,12 @@ work starts. Sizes: S, M, L.
       pay point columns to the establishment view, with the floor. Show HR where a post's grade and the holder's own band
       differ. Pure core first. (M) **Part done (2026-11-26, WPM-T660):** the grade on a position (`PUT|DELETE
       /api/positions/{pid}/grade`, validated against the published scale; the scales are coded, so not "on the effective date"
-      yet). **Not done:** the grade on an assignment, the establishment by band and pay point, and the difference from the holder's
-      own band.
+      yet). **Built 2026-11-27:** the establishment by band (`bands`) and by band and pay
+      point (`pay_points`) beside the cost centres, with the same floor and no netting (an ungraded post is `unknown`, a graded one
+      with no pay point `scale:band:unknown`); a grade on an assignment (migration 139), given on `POST
+      /api/workers/{pid}/assignments` and on a change, which keeps it when left out (WPM-D112), in the export with the assignment;
+      the screen's "Group by" on the establishment. **Not done:** the difference from the holder's own band; a screen for
+      assignments (there is none yet, so the assignment grade is API only); a way to clear an assignment's grade.
 - [ ] WPM-T559 **Organizational units.** *(WPM-R257)* Unit tree with configurable level names, dated validity, a no-loop check,
       and closure instead of deletion. Map units to cost centres. Resolve `department` to a unit, and list unmatched values
       for HR. A screen beside the org chart. Pure core first. (L)
@@ -7393,9 +7397,12 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       table. `GET /api/positions/{pid}/holders` (`Privileged` in `rules::access::READS`): one post's tenures and its continuity
       over 36 months (tenures, days held, days empty), counted from the day the post's history begins when that is later and saying
       so (`complete`). Pure core: `position_history::continuity` (half-open days, overlaps merged, a same-day tenure is a holder with
-      no day, a total that does not fit is unknown). No route counts the posts a person has left. **Not done:** the report for
-      **critical posts** by unit and band (the marker and the grade it needs came with WPM-T660), and with it the floor and its
-      complement; the kind of cover on a tenure (WPM-T651); a retention schedule of its own under the staff-record
+      no day, a total that does not fit is unknown). No route counts the posts a person has left. **Built 2026-11-27:** the report for **critical posts**,
+      `GET /api/positions/critical-continuity?organization=` (`ControllerDecides`): by cost centre, by band and all together, the
+      posts, tenures, days held and days empty in 36 months, posts held today and posts whose history is shorter than the window;
+      a group under the floor (10) is withheld for every caller and `suppression::with_total` withholds its complement (pure core
+      `position_history::critical_report`; 3 domain tests, 1 request test). The screen: `/positions` shows the report and one seat's
+      holders (hidden on a 403). **Not done:** the kind of cover on a tenure (WPM-T651); a retention schedule of its own under the staff-record
       rule (erasure only for now); a view for the post's line manager (privileged callers only); the screen; an erasure of a holder
       of a post in a vacant state does not add a `holder_left` row, so that post's vacancy age counts from its last state move.
       **Verified (2026-11-26):** 5 new domain unit tests (15 in `position_history`, 1,304 in the domain crate); 1 new request test
@@ -7460,3 +7467,36 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       and `-D warnings`; fmt; `.sqlx`, the UI's API copy and its types regenerated; UI `pnpm check`; every database suite in one serial
       `cargo nextest run --run-ignored all` (340 passed); `scripts/verify-db-roles.sh` (276 passed as `wpm_app`, 2 tamper tests
       refused). **Not checked:** the keycloak build, CI.
+      **2026-11-27, the screens and the rest of WPM-T649 and WPM-T558, verified:** 1,310 domain unit tests (3 new, the critical
+      report and its complement); 2 new request tests (the establishment by band and pay point with the critical report withheld under
+      the floor; an assignment's grade refused, set, kept by a change, replaced, exported) and the 15 other position and assignment
+      request tests; 219 service unit tests; 16 checks; `scripts/mutants-diff.sh abeeb87c`: 3 mutants, 1 caught, 2 unviable; clippy and
+      fmt; the UI: `pnpm check` (0 errors), `pnpm lint`, 417 vitest (the path-map test now covers every position call, which it had
+      not), 7 Playwright tests in `positions.spec.ts` (2 new) and axe on `/positions` light and dark with the new panels stubbed;
+      screenshots at 1280 px light and 390 px dark read by eye, no page overflow. 46 strings in 21 locales, machine-translated, not
+      reviewed by a native speaker. **Fixed on the way:** `values.reorganization`, `values.funding` and `values.demand_review`, which
+      WPM-T648's freeze reasons needed and whose absence had failed `untranslated.test.ts` since 205b4ad9 (the UI suite was not run
+      then); the accessibility fixture's seats now carry `overtime_status`; the day counts say "calendar days" (`check-days.py`).
+      Every database suite in one serial `cargo nextest run --run-ignored all` (342 passed); `scripts/verify-db-roles.sh` (278 passed
+      as `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build, CI.
+- [x] WPM-T661 (2026-11-27) **axa-cursor-pagination 0.1.4: a page a rule filters row by row reads on until it is full.** *The owner
+      asked on 2026-11-27 and approved the exception to the minimum publish age* (0.1.4 was two hours old; `cargo update -p
+      axa-cursor-pagination` with `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`). *(WPM-R241, WPM-D189)* New in 0.1.4:
+      `CursorPage::fill(max_scan, fetch, keep)` and `next_link_at`. **Adopted:** `controllers::filled` wraps `fill` for a fetch
+      that gives each row's view or `None`, with `scan_budget` of ten pages (at most 5,000 rows a request). `GET
+      /api/flexible-working`, whose rows a record policy shows row by row (privileged or the worker's manager), and `GET
+      /api/conversion-plans`, whose rows the rules keep only with a plan or a flag, now read in batches of a page and one row in the
+      list's order rather than the whole table with a lookup per row; the organization filter of the second moved into SQL. `GET
+      /api/expenses`, `/api/movements` and `/api/resignations`, whose conditions are all SQL, now read their page with `LIMIT` and
+      `OFFSET` and answer with `window.respond`: exact, and no whole-table read. `paged_vec` is gone. **Behaviour a client may
+      notice:** a caller who may see fewer than one row in ten of a filtered list can get a page that is short with a next link, where
+      the whole-table read filled it; that says only that rows were skipped. **Not changed, and why:** `/api/announcements` sorts by
+      its feed order in Rust after its audience rule, so a batch read in SQL order would page a different order; `/api/allocations`
+      reads one organization's people under the ceiling (WPM-R120) and filters them by the window in memory. Both keep `page_offset`.
+      **Verified:** 3 new unit tests of `filled` (a page of the even rows is full and the next starts after its last row; a caller who
+      sees nothing reads exactly the budget and gets an empty page with a next link; the existing paging tests now run through
+      `filled`), 12 in `controllers::tests`; a new step in `tests/enforcement_flexible.rs` (the manager's pages of one are full though
+      a hidden request sorts first, each request once, the hidden one never shown); the request tests of the five lists; 220 service unit tests, 16
+      checks, 1,310 domain tests; clippy with every target and `-D warnings`; fmt; `cargo deny check`; `.sqlx` regenerated; every
+      database suite in one serial `cargo nextest run --run-ignored all` (342 passed); `scripts/verify-db-roles.sh` (278 passed as
+      `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build; CI.

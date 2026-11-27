@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, requested_on,\n                  proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,\n                  decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,\n                  appeal_note, appeal_decided_by\n             FROM flexible_working_requests WHERE ($1::text IS NULL OR status = $1) ORDER BY decide_by, id",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, kind, requested_on,\n                          proposed_start, proposed_fte_percent, effect_on_team, how_to_manage, status, decide_by, decided_on,\n                          decided_by, decision_reason, decision_note, counter_note, counter_fte_percent, trial_until, appealed_on,\n                          appeal_note, appeal_decided_by\n                     FROM flexible_working_requests WHERE ($1::text IS NULL OR status = $1) ORDER BY decide_by, id\n                    LIMIT $2 OFFSET $3",
   "describe": {
     "columns": [
       {
@@ -259,7 +259,9 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -288,5 +290,5 @@
       true
     ]
   },
-  "hash": "ce73be02120460096b297f5180e4104afd19d49dd8070b20ca9187e2c57ccfc4"
+  "hash": "45de05535e8667defc0d0f4ab370bd14b13b60696a9c472a97f80ae91d801c56"
 }

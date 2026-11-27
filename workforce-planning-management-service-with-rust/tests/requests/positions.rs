@@ -565,3 +565,57 @@ async fn a_post_is_marked_critical_and_graded_and_the_vacancy_age_is_cut_by_band
     })
     .await;
 }
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn the_establishment_is_given_by_band_and_pay_point_and_critical_posts_have_a_continuity_report()
+ {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let made = |critical: bool| {
+            let request = &request;
+            let org = org.clone();
+            async move {
+                let r = request
+                    .post("/api/positions")
+                    .json(&json!({ "organization_ref": org, "cost_centre": "CC-E", "title": "Post", "budget_fte_percent": 100, "funding_kind": "core", "critical": critical }))
+                    .await;
+                r.json::<Value>()["pid"].as_str().unwrap().to_string()
+            }
+        };
+        let a = made(true).await;
+        let b = made(true).await;
+        let c = made(false).await;
+        for p in [&a, &b, &c] {
+            assert_eq!(go(&request, p, "approved").await.0, 200);
+        }
+        for (p, grade) in [(&a, json!({ "scale": "national-2026-27", "band": "5", "pay_point": 1 })), (&b, json!({ "scale": "national-2026-27", "band": "5" }))] {
+            assert_eq!(request.put(&format!("/api/positions/{p}/grade")).json(&grade).await.status_code(), 200);
+        }
+
+        // By band and by pay point: a graded post with no point is band:unknown, an ungraded one unknown.
+        let est: Value = request.get(&format!("/api/positions/establishment?organization={org}")).await.json();
+        assert_eq!(group(&est, "bands", "national-2026-27:5")["positions"], 2, "{est}");
+        assert_eq!(group(&est, "bands", "unknown")["positions"], 1);
+        assert_eq!(group(&est, "pay_points", "national-2026-27:5:1")["positions"], 1);
+        assert_eq!(group(&est, "pay_points", "national-2026-27:5:unknown")["positions"], 1);
+        assert_eq!(group(&est, "pay_points", "unknown")["positions"], 1);
+        assert_eq!(group(&est, "bands", "national-2026-27:5")["vacant"]["percent"], 200, "two whole vacant seats");
+
+        // The critical posts: two, under the floor of ten, so withheld for every caller, and the total with them.
+        let w = worker(&request, &org, "CR-1", 100).await;
+        assert_eq!(request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": w })).await.status_code(), 200);
+        let report: Value = request.get(&format!("/api/positions/critical-continuity?organization={org}")).await.json();
+        let centres = report["cost_centres"]["groups"].as_array().unwrap();
+        assert_eq!(centres.len(), 1, "{report}");
+        assert_eq!(centres[0]["withheld"], true);
+        assert_eq!(centres[0]["tenures"], Value::Null);
+        assert_eq!(report["cost_centres"]["total"]["withheld"], true);
+        assert_eq!(report["bands"]["groups"][0]["group"], "national-2026-27:5");
+        assert!(!report.to_string().contains(&w), "no holder is named");
+        assert_eq!(report["small_group_floor"], 10);
+        assert_eq!(request.get("/api/positions/critical-continuity?organization=").await.status_code(), 422);
+    })
+    .await;
+}

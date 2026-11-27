@@ -717,28 +717,52 @@ async fn establishment(
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
     // Each position with its holder's FTE; a holder whose record is gone (erased or deleted) has none.
-    let seats: Vec<Seat> = sqlx::query!(
-        r#"SELECT p.cost_centre, p.state, p.budget_fte_percent, p.holder_worker_pid, w.fte_percent AS "fte_percent?"
+    let rows = sqlx::query!(
+        r#"SELECT p.cost_centre, p.state, p.budget_fte_percent, p.holder_worker_pid, w.fte_percent AS "fte_percent?",
+                  p.grade_scale, p.grade_band, p.grade_pay_point
              FROM positions p
              LEFT JOIN workers w ON w.pid = p.holder_worker_pid AND w.deleted_at IS NULL
             WHERE p.organization_ref = $1"#,
         query.organization,
     )
     .fetch_all(db::pool(&ctx))
-    .await?
-    .into_iter()
-    .map(|r| Seat {
-        cost_centre: r.cost_centre,
-        state: r.state,
-        budget_fte_percent: r.budget_fte_percent,
-        // A holder whose FTE we cannot say is held by someone, not vacant.
-        holding: match (r.holder_worker_pid, r.fte_percent) {
-            (None, _) => Holding::Vacant,
-            (Some(_), None) => Holding::HeldUnknown,
-            (Some(_), Some(f)) => Holding::Held(f),
-        },
-    })
-    .collect();
+    .await?;
+    // Each position with its holder's FTE. A holder whose record is gone (erased or deleted) has none.
+    let seats: Vec<Seat> = rows
+        .iter()
+        .map(|r| Seat {
+            cost_centre: r.cost_centre.clone(),
+            state: r.state.clone(),
+            budget_fte_percent: r.budget_fte_percent,
+            // A holder whose FTE we cannot say is held by someone, not vacant.
+            holding: match (r.holder_worker_pid, r.fte_percent) {
+                (None, _) => Holding::Vacant,
+                (Some(_), None) => Holding::HeldUnknown,
+                (Some(_), Some(f)) => Holding::Held(f),
+            },
+        })
+        .collect();
+    // The same seats under their band, and under their band and pay point; an ungraded post is unknown in both.
+    let (band_seats, point_seats): (Vec<Seat>, Vec<Seat>) = rows
+        .iter()
+        .zip(&seats)
+        .map(|(r, seat)| {
+            let band = rules::band_label(r.grade_scale.as_deref(), r.grade_band.as_deref());
+            let point = match (&band, r.grade_pay_point) {
+                (Some(b), Some(p)) => format!("{b}:{p}"),
+                (Some(b), None) => format!("{b}:{}", history::UNKNOWN_BAND),
+                (None, _) => history::UNKNOWN_BAND.to_string(),
+            };
+            let under = |key: String| Seat {
+                cost_centre: key,
+                ..seat.clone()
+            };
+            (
+                under(band.unwrap_or_else(|| history::UNKNOWN_BAND.to_string())),
+                under(point),
+            )
+        })
+        .unzip();
     let floor = if sees_holders(&ctx, &caller, &query.organization).await? {
         None
     } else {
@@ -748,9 +772,13 @@ async fn establishment(
         "organization": query.organization,
         "small_group_floor": floor,
         "cost_centres": rules::establishment(&seats, floor),
+        "bands": grouped(rules::establishment(&band_seats, floor))?,
+        "pay_points": grouped(rules::establishment(&point_seats, floor))?,
         "derivation": "The establishment is the positions that are approved, open, filled or frozen. Held is the FTE of the workers linked as holders; \
                        vacant is budget not held; over is FTE held beyond budget. Over-establishment on one position is never netted against a \
-                       vacancy on another. A holder whose FTE cannot be read makes held, vacant and over unknown for that cost centre.",
+                       vacancy on another. A holder whose FTE cannot be read makes held, vacant and over unknown for that cost centre. \
+                       The same figures are given by band (scale:band) and by band and pay point (scale:band:point); a post with no \
+                       grade is in unknown, and a graded post with no pay point is in scale:band:unknown, never in a band or point.",
     }))
 }
 
@@ -902,6 +930,101 @@ async fn vacancy_age(
     }))
 }
 
+/// The establishment's rows under a key that is not a cost centre, with the key named `group`.
+fn grouped(centres: Vec<rules::CostCentre>) -> Result<Vec<serde_json::Value>> {
+    centres
+        .into_iter()
+        .map(|c| {
+            let mut v = serde_json::to_value(c)
+                .map_err(|_| super::internal("an establishment row does not serialise"))?;
+            if let Some(o) = v.as_object_mut()
+                && let Some(key) = o.remove("cost_centre")
+            {
+                o.insert("group".into(), key);
+            }
+            Ok(v)
+        })
+        .collect()
+}
+
+/// `GET /api/positions/critical-continuity?organization=` — the continuity of the posts HR has marked critical (WPM-R290), by cost
+/// centre, by band and all together: posts, tenures, days held and days empty in the last 36 months, posts held today, and posts whose
+/// history is shorter than the window. A senior group is small, so a group with fewer posts than the floor is withheld for every
+/// caller, with its complement, and says so. No holder is named and no person's count of posts left is in it.
+#[debug_handler]
+async fn critical_continuity(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    axa::extract::Query(query): axa::extract::Query<VacancyQuery>,
+) -> Result<Response> {
+    ensure_valid(&organization_problems(&query.organization))?;
+    ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
+    let today = crate::dates::today();
+    let posts = sqlx::query!(
+        r#"SELECT p.pid, p.cost_centre, p.grade_scale, p.grade_band, (p.holder_worker_pid IS NOT NULL) AS "held!",
+                  m.start_known AS "start_known?", m.moved_on AS "moved_on?", (m.created_at AT TIME ZONE 'UTC')::date AS "created_on?"
+             FROM positions p
+             LEFT JOIN LATERAL (SELECT start_known, moved_on, created_at FROM position_state_moves s
+                                 WHERE s.position_pid = p.pid ORDER BY s.id LIMIT 1) m ON TRUE
+            WHERE p.organization_ref = $1 AND p.critical AND p.state <> 'abolished'
+            ORDER BY p.cost_centre, p.id"#,
+        query.organization,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?;
+    let pids: Vec<Uuid> = posts.iter().map(|p| p.pid).collect();
+    let mut tenures: std::collections::HashMap<Uuid, Vec<history::Tenure>> =
+        std::collections::HashMap::new();
+    for t in sqlx::query!(
+        "SELECT position_pid, started_on, ended_on FROM position_holders WHERE position_pid = ANY($1) ORDER BY started_on, id",
+        &pids,
+    )
+    .fetch_all(db::pool(&ctx))
+    .await?
+    {
+        tenures.entry(t.position_pid).or_default().push(history::Tenure {
+            started_on: t.started_on.get(),
+            ended_on: t.ended_on.map(SqlDate::get),
+        });
+    }
+    let mut by_centre = Vec::new();
+    let mut by_band = Vec::new();
+    for p in &posts {
+        // The post's history begins at its first state row (as for one post's holders); a post with none begins today.
+        let known_from = match (p.start_known, p.moved_on, p.created_on) {
+            (Some(true), Some(on), _) => on.get(),
+            (_, _, Some(created)) => created.get(),
+            _ => today,
+        };
+        let post = history::CriticalPost {
+            continuity: history::continuity(
+                tenures.get(&p.pid).map_or(&[][..], Vec::as_slice),
+                known_from,
+                today,
+                history::CONTINUITY_MONTHS,
+            ),
+            held_now: p.held,
+        };
+        by_centre.push((p.cost_centre.clone(), post));
+        by_band.push((
+            rules::band_label(p.grade_scale.as_deref(), p.grade_band.as_deref())
+                .unwrap_or_else(|| history::UNKNOWN_BAND.to_string()),
+            post,
+        ));
+    }
+    format::json(json!({
+        "organization": query.organization,
+        "small_group_floor": DEFAULT_FLOOR,
+        "window_months": history::CONTINUITY_MONTHS,
+        "cost_centres": history::critical_report(&by_centre, DEFAULT_FLOOR),
+        "bands": history::critical_report(&by_band, DEFAULT_FLOOR),
+        "derivation": "The posts HR has marked critical and not abolished. Each post's tenures, days held and days empty are counted over \
+                       the last 36 months, or from the day its history begins when that is later (counted_partly), then added up by \
+                       group. A group with fewer posts than the floor is withheld for every caller, and when exactly one is withheld the \
+                       smallest other is too, so it cannot be had from the total. The two tables overlap, which this does not defend.",
+    }))
+}
+
 /// The routes.
 pub fn routes() -> Routes {
     Routes::new()
@@ -910,6 +1033,7 @@ pub fn routes() -> Routes {
         .add("/positions", post(create))
         .add("/positions/establishment", get(establishment))
         .add("/positions/vacancy-age", get(vacancy_age))
+        .add("/positions/critical-continuity", get(critical_continuity))
         .add("/positions/{pid}", put(update))
         .add("/positions/{pid}/status", post(status))
         .add("/positions/{pid}/holder", put(holder))

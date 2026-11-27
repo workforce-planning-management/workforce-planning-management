@@ -365,6 +365,104 @@ pub fn continuity(tenures: &[Tenure], known_from: Date, today: Date, months: i32
     }
 }
 
+/// The continuity of one critical post, as the report by group reads it. Who holds it is not in it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CriticalPost {
+    /// The post's continuity over the window.
+    pub continuity: Continuity,
+    /// Somebody holds the post today.
+    pub held_now: bool,
+}
+
+/// The continuity of a group of critical posts (WPM-R290): a cost centre, a band, or all of them. Every figure is `None` when the
+/// group is withheld.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CriticalGroup {
+    /// The cost centre, the band label (or [`UNKNOWN_BAND`]), or `all`.
+    pub group: String,
+    /// Withheld: too few posts, or hidden so that a withheld group cannot be worked out from the total.
+    pub withheld: bool,
+    /// Critical posts in the group.
+    pub posts: Option<usize>,
+    /// Tenures in the window, added over the posts.
+    pub tenures: Option<usize>,
+    /// Days held in the window, added over the posts; also `None` if the total does not fit.
+    pub days_held: Option<i64>,
+    /// Days empty in the window, added over the posts; as `days_held`.
+    pub days_empty: Option<i64>,
+    /// Posts held today.
+    pub held_now: Option<usize>,
+    /// Posts whose history is shorter than the window, so their figures start later (WPM-D234).
+    pub counted_partly: Option<usize>,
+}
+
+/// The report of critical posts: each group, and all of them together.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CriticalReport {
+    /// The groups, in key order.
+    pub groups: Vec<CriticalGroup>,
+    /// All the critical posts together.
+    pub total: CriticalGroup,
+}
+
+/// Add up the continuity of critical posts by group and withhold what the floor asks (WPM-R290, WPM-D235): a group with fewer posts
+/// than the floor is withheld, and so is the smallest other group when exactly one is withheld and the total is shown, so the withheld
+/// one cannot be had by subtraction (`suppression::with_total`). A senior group is small, so this withholds often, and says so.
+#[must_use]
+pub fn critical_report(posts: &[(String, CriticalPost)], floor: usize) -> CriticalReport {
+    let mut groups: BTreeMap<&str, Vec<&CriticalPost>> = BTreeMap::new();
+    for (key, post) in posts {
+        groups.entry(key.as_str()).or_default().push(post);
+    }
+    let cells: Vec<(&str, usize)> = groups.iter().map(|(k, v)| (*k, v.len())).collect();
+    let suppressed = crate::suppression::with_total(&cells, floor);
+    let all: Vec<&CriticalPost> = posts.iter().map(|(_, p)| p).collect();
+    CriticalReport {
+        groups: suppressed
+            .cells
+            .iter()
+            .map(|(key, shown)| {
+                let members = groups.get(key).map_or(&[][..], Vec::as_slice);
+                figures(key, members, shown.is_none())
+            })
+            .collect(),
+        total: figures("all", &all, suppressed.total.is_none()),
+    }
+}
+
+fn figures(group: &str, posts: &[&CriticalPost], withheld: bool) -> CriticalGroup {
+    if withheld {
+        return CriticalGroup {
+            group: group.to_string(),
+            withheld: true,
+            posts: None,
+            tenures: None,
+            days_held: None,
+            days_empty: None,
+            held_now: None,
+            counted_partly: None,
+        };
+    }
+    let tenures = posts
+        .iter()
+        .try_fold(0_usize, |sum, p| sum.checked_add(p.continuity.tenures));
+    let days = |pick: fn(&Continuity) -> Option<i64>| {
+        posts.iter().try_fold(0_i64, |sum, p| {
+            pick(&p.continuity).and_then(|d| sum.checked_add(d))
+        })
+    };
+    CriticalGroup {
+        group: group.to_string(),
+        withheld: false,
+        posts: Some(posts.len()),
+        tenures,
+        days_held: days(|c| c.days_held),
+        days_empty: days(|c| c.days_empty),
+        held_now: Some(posts.iter().filter(|p| p.held_now).count()),
+        counted_partly: Some(posts.iter().filter(|p| !p.continuity.complete).count()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -901,5 +999,94 @@ mod tests {
             })
             .collect();
         assert_eq!(report_critical(&none, today, None), None);
+    }
+
+    fn critical(
+        tenures: usize,
+        held: i64,
+        empty: i64,
+        complete: bool,
+        held_now: bool,
+    ) -> CriticalPost {
+        CriticalPost {
+            continuity: Continuity {
+                window_from: date(2023, 11, 26),
+                counted_from: if complete {
+                    date(2023, 11, 26)
+                } else {
+                    date(2026, 1, 1)
+                },
+                complete,
+                tenures,
+                days_held: Some(held),
+                days_empty: Some(empty),
+            },
+            held_now,
+        }
+    }
+
+    #[test]
+    fn critical_posts_add_up_by_group_and_a_small_group_is_withheld_with_its_complement() {
+        let mut posts: Vec<(String, CriticalPost)> = (0..5)
+            .map(|_| ("A".to_string(), critical(2, 900, 196, true, true)))
+            .collect();
+        posts.extend((0..4).map(|_| ("B".to_string(), critical(1, 1000, 96, false, false))));
+        posts.push(("C".to_string(), critical(3, 500, 596, true, true)));
+        let r = critical_report(&posts, 4);
+        let by: BTreeMap<&str, &CriticalGroup> =
+            r.groups.iter().map(|g| (g.group.as_str(), g)).collect();
+        assert!(by["C"].withheld, "one post is under the floor");
+        assert_eq!(by["C"].tenures, None);
+        assert!(
+            by["B"].withheld,
+            "the smallest other group goes too, or C is the total less A and B"
+        );
+        assert!(!by["A"].withheld);
+        assert_eq!(by["A"].posts, Some(5));
+        assert_eq!(by["A"].tenures, Some(10));
+        assert_eq!(by["A"].days_held, Some(4500));
+        assert_eq!(by["A"].days_empty, Some(980));
+        assert_eq!(by["A"].held_now, Some(5));
+        assert_eq!(by["A"].counted_partly, Some(0));
+        assert!(!r.total.withheld);
+        assert_eq!(
+            (r.total.group.as_str(), r.total.posts, r.total.tenures),
+            ("all", Some(10), Some(17))
+        );
+        assert_eq!(r.total.counted_partly, Some(4));
+        assert_eq!(r.total.held_now, Some(6));
+    }
+
+    #[test]
+    fn with_no_group_under_the_floor_everything_is_shown_and_a_lone_small_group_hides_the_total() {
+        let posts: Vec<(String, CriticalPost)> = (0..6)
+            .map(|i| {
+                (
+                    if i < 3 { "A" } else { "B" }.to_string(),
+                    critical(1, 10, 0, true, true),
+                )
+            })
+            .collect();
+        let r = critical_report(&posts, 3);
+        assert!(r.groups.iter().all(|g| !g.withheld));
+        assert!(!r.total.withheld);
+        let lone = vec![("A".to_string(), critical(1, 10, 0, true, true))];
+        let r = critical_report(&lone, 3);
+        assert!(r.groups[0].withheld);
+        assert!(r.total.withheld, "the total is the one group");
+        assert_eq!(critical_report(&[], 3).groups, Vec::new());
+    }
+
+    #[test]
+    fn an_unknown_day_count_makes_the_group_sum_unknown_not_a_smaller_number() {
+        let mut unknown = critical(1, 10, 0, true, true);
+        unknown.continuity.days_held = None;
+        let posts: Vec<(String, CriticalPost)> = vec![
+            ("A".into(), critical(1, 10, 0, true, true)),
+            ("A".into(), unknown),
+        ];
+        let r = critical_report(&posts, 1);
+        assert_eq!(r.groups[0].days_held, None);
+        assert_eq!(r.groups[0].days_empty, Some(0));
     }
 }

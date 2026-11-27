@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — positions by band, vacancy age, critical posts and one seat's holders (WPM-T558, WPM-T648, WPM-T649, WPM-T660, 2026-11-27)
+
+- `/positions`: the establishment grouped by cost centre, band or band and pay point; the vacancy age by cost centre, band or the
+  critical posts; the continuity of the critical posts over 36 months, with withheld groups in words; one seat's holder history
+  (hidden from a reader the service refuses); a critical box when planning a seat; "Grade a seat". 46 strings in every locale
+  (machine-translated, not reviewed by a native speaker).
+- The path-map test covers every position call, which it had not.
+
+### Fixed — the freeze reasons have words (WPM-T648, 2026-11-27)
+
+- `values.reorganization`, `values.funding` and `values.demand_review` in every locale; `untranslated.test.ts` had failed without
+  them since the freeze reasons were added.
+
 ### Fixed — a withheld figure no longer stops a page loading (WPM-T607, 2026-11-21)
 
 - The exact-money check on API responses accepts the service's typed wrapper of an aggregate (`{ status, value }` under a

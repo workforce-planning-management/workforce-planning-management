@@ -695,6 +695,7 @@ async fn queue(
     page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
+    let (limit, offset) = window.bounds();
     let status = params.status.unwrap_or_else(|| "submitted".to_string());
     if !rules::STATUSES.contains(&status.as_str()) {
         return Err(unprocessable(&format!(
@@ -755,9 +756,12 @@ async fn queue(
                   decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS "deleted_at: _"
              FROM expense_claims
             WHERE deleted_at IS NULL AND status = $1 AND ($2::uuid[] IS NULL OR worker_pid = ANY($2))
-            ORDER BY submitted_at, id"#,
+            ORDER BY submitted_at, id
+            LIMIT $3 OFFSET $4"#,
         status,
         only.as_deref(),
+        limit,
+        offset,
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -780,7 +784,7 @@ async fn queue(
         }
         out.push(row);
     }
-    Ok(super::paged_vec(out, &window))
+    Ok(window.respond(out))
 }
 
 /// The expense-claim routes.

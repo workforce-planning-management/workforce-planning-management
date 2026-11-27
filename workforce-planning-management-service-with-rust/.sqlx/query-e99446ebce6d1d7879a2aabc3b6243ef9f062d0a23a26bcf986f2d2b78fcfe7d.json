@@ -1,26 +1,26 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, title, description,\n                  currency, status, submitted_at AS \"submitted_at: _\", decided_by, decided_at AS \"decided_at: _\",\n                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\"\n             FROM expense_claims\n            WHERE deleted_at IS NULL AND status = $1 AND ($2::uuid[] IS NULL OR worker_pid = ANY($2))\n            ORDER BY submitted_at, id",
+  "query": "SELECT m.created_at,\n                  m.updated_at, m.id, m.pid,\n                  m.worker_pid, m.kind, m.effective_on, m.reason, m.status, m.notes, m.created_by,\n                  m.completed_at,\n                  w.display_name, w.department, w.job_title, w.organization_ref\n             FROM movements m JOIN workers w ON w.pid = m.worker_pid AND w.deleted_at IS NULL\n            WHERE m.status = $1 AND ($2::text IS NULL OR m.kind = $2)\n              AND ($3::text[] IS NULL OR w.organization_ref = ANY($3))\n            ORDER BY m.effective_on, m.id\n            LIMIT $4 OFFSET $5",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "created_at: _",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "created_at"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "updated_at: _",
+        "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "id"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "pid"
           }
         }
@@ -53,41 +53,41 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "title",
+        "name": "kind",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "title"
+            "table": "movements",
+            "name": "kind"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "description",
-        "type_info": "Varchar",
+        "name": "effective_on",
+        "type_info": "Date",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "description"
+            "table": "movements",
+            "name": "effective_on"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "currency",
+        "name": "reason",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "currency"
+            "table": "movements",
+            "name": "reason"
           }
         }
       },
@@ -97,107 +97,85 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
+            "table": "movements",
             "name": "status"
           }
         }
       },
       {
         "ordinal": 9,
-        "name": "submitted_at: _",
-        "type_info": "Timestamptz",
+        "name": "notes",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "submitted_at"
+            "table": "movements",
+            "name": "notes"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "decided_by",
+        "name": "created_by",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "decided_by"
+            "table": "movements",
+            "name": "created_by"
           }
         }
       },
       {
         "ordinal": 11,
-        "name": "decided_at: _",
+        "name": "completed_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "decided_at"
+            "table": "movements",
+            "name": "completed_at"
           }
         }
       },
       {
         "ordinal": 12,
-        "name": "decision_note",
+        "name": "display_name",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "decision_note"
+            "table": "workers",
+            "name": "display_name"
           }
         }
       },
       {
         "ordinal": 13,
-        "name": "reimbursed_on",
-        "type_info": "Date",
+        "name": "department",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "reimbursed_on"
+            "table": "workers",
+            "name": "department"
           }
         }
       },
       {
         "ordinal": 14,
-        "name": "reimbursed_by",
+        "name": "job_title",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "reimbursed_by"
+            "table": "workers",
+            "name": "job_title"
           }
         }
       },
       {
         "ordinal": 15,
-        "name": "recorded_by",
+        "name": "organization_ref",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "expense_claims",
-            "name": "recorded_by"
-          }
-        }
-      },
-      {
-        "ordinal": 16,
-        "name": "on_behalf",
-        "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "expense_claims",
-            "name": "on_behalf"
-          }
-        }
-      },
-      {
-        "ordinal": 17,
-        "name": "deleted_at: _",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "expense_claims",
-            "name": "deleted_at"
+            "table": "workers",
+            "name": "organization_ref"
           }
         }
       }
@@ -205,7 +183,10 @@
     "parameters": {
       "Left": [
         "Text",
-        "UuidArray"
+        "Text",
+        "TextArray",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -215,19 +196,17 @@
       false,
       false,
       false,
-      true,
-      false,
       false,
       true,
-      true,
-      true,
-      true,
+      false,
       true,
       true,
       true,
       false,
-      true
+      false,
+      false,
+      false
     ]
   },
-  "hash": "31fcdd246f87056d19f76e79ebc212feebade1293c287da33614e0a2d9d009b1"
+  "hash": "e99446ebce6d1d7879a2aabc3b6243ef9f062d0a23a26bcf986f2d2b78fcfe7d"
 }

@@ -357,6 +357,7 @@ export async function stubPositions(page: Page) {
     programme_ref: null,
     requisition_pid: null,
     demand_line_pid: null,
+    overtime_status: "unknown",
     ...extra,
   });
   const fig = (percent: number) => ({ status: "known", percent });
@@ -409,6 +410,57 @@ export async function stubPositions(page: Page) {
         ],
       },
     }),
+  );
+  const ages = (group: string, n: number) => ({
+    group,
+    vacancies: n,
+    by_age: { "0-30": n, "31-90": 0, "91-180": 0, "181+": 0 },
+    start_unknown: 0,
+    frozen: 0,
+    frozen_without_review_date: 0,
+    review_overdue: 0,
+    abolished: 1,
+    withheld: false,
+  });
+  await page.route(
+    "**/api/proxy/positions/vacancy-age?organization=*",
+    (route) =>
+      route.fulfill({
+        json: {
+          small_group_floor: 10,
+          age_bands_days: ["0-30", "31-90", "91-180", "181+"],
+          cost_centres: [ages("CC-100", 1), ages("CC-200", 1)],
+          bands: [ages("unknown", 2)],
+          critical: null,
+          derivation: "",
+        },
+      }),
+  );
+  const withheld = (group: string) => ({
+    group,
+    withheld: true,
+    posts: null,
+    tenures: null,
+    days_held: null,
+    days_empty: null,
+    held_now: null,
+    counted_partly: null,
+  });
+  await page.route(
+    "**/api/proxy/positions/critical-continuity?organization=*",
+    (route) =>
+      route.fulfill({
+        json: {
+          small_group_floor: 10,
+          window_months: 36,
+          cost_centres: {
+            groups: [withheld("CC-100")],
+            total: withheld("all"),
+          },
+          bands: { groups: [withheld("unknown")], total: withheld("all") },
+          derivation: "",
+        },
+      }),
   );
 }
 

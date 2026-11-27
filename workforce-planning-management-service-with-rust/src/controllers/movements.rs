@@ -343,6 +343,7 @@ async fn list_movements(
     page: super::Page,
 ) -> Result<Response> {
     let window = super::window(&page)?;
+    let (limit, offset) = window.bounds();
     let wanted = q.status.unwrap_or_else(|| "open".to_string());
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
     let rows = sqlx::query!(
@@ -354,10 +355,13 @@ async fn list_movements(
              FROM movements m JOIN workers w ON w.pid = m.worker_pid AND w.deleted_at IS NULL
             WHERE m.status = $1 AND ($2::text IS NULL OR m.kind = $2)
               AND ($3::text[] IS NULL OR w.organization_ref = ANY($3))
-            ORDER BY m.effective_on, m.id"#,
+            ORDER BY m.effective_on, m.id
+            LIMIT $4 OFFSET $5"#,
         wanted,
         q.kind,
         scope.as_deref(),
+        limit,
+        offset,
     )
     .fetch_all(db::pool(&ctx))
     .await?;
@@ -389,7 +393,7 @@ async fn list_movements(
         };
         out.push(movement_json(&m, &shown, progress));
     }
-    Ok(super::paged_vec(out, &window))
+    Ok(window.respond(out))
 }
 
 /// Whether the caller may read why someone left: HR, the service and an administrator under the

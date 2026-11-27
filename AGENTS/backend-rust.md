@@ -51,6 +51,11 @@ Notification::push(&txn, worker_pid, "kind", "reference-only text", json!({…})
   `Window` (`axa::cursor_pagination::CursorPage`), `window.bounds()` for `LIMIT` (one more than the page) and `OFFSET`, and
   `window.respond(rows)` for a bare array with `Link: rel="next"`. A body that is not a bare array, or a list that acts on each row it
   sends (a salary audit), calls `window.split(rows)` first and answers with `super::with_next`. No totals (WPM-R241, WPM-D189).
+  **Put the filter in SQL** when it can be said there: the page is then exact. A list whose rows a rule in Rust hides or drops row by
+  row (a record policy, a relation to the caller, a flag the rules work out) answers with `super::filled(&window, fetch)`
+  (`Window::fill`, axa-cursor-pagination 0.1.4, WPM-T661): `fetch(limit, offset)` reads one batch with `LIMIT`/`OFFSET` and gives
+  each row's view or `None`, and the page reads on until it is full within `super::scan_budget` (ten pages). Never read a whole
+  table to page it in memory.
 - New and changed queries are `sqlx::query!` on `crate::db::pool(ctx)` (WPM-D184): one fixed statement, with varying
   conditions as nullable parameters or arrays (`$1::text[] IS NULL OR col = ANY($1)`), never SQL built as text. After adding one,
   build with `SQLX_OFFLINE=false DATABASE_URL=…` and run `cargo sqlx prepare -- --all-targets`; CI fails on a stale `.sqlx/`.

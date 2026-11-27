@@ -119,7 +119,6 @@ struct ListQuery {
 /// What the list of open plans needs of a contingent worker.
 struct Contingent {
     pid: Uuid,
-    organization_ref: String,
     worker_number: String,
     department: String,
     employment_type: String,
@@ -138,61 +137,65 @@ async fn list_open(
     let window = super::window(&page)?;
     let as_of = crate::dates::today();
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    let staff: Vec<Contingent> = sqlx::query_as!(
-        Contingent,
-        "SELECT pid, organization_ref, worker_number, department, employment_type, engagement_ends_on
-           FROM workers
-          WHERE deleted_at IS NULL AND terminated_on IS NULL AND engagement_ends_on IS NOT NULL
-          ORDER BY worker_number, id",
-    )
-    .fetch_all(db::pool(&ctx))
-    .await?
-    .into_iter()
-    .filter(|w| {
-        query
-            .organization
-            .as_ref()
-            .is_none_or(|o| o == &w.organization_ref)
-            && scope
-                .as_ref()
-                .is_none_or(|refs| refs.iter().any(|r| r == &w.organization_ref))
-    })
-    .collect();
-    let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
-    // At most one open plan per worker: a partial unique index holds it.
-    let mut open: HashMap<Uuid, conversion_plans::Model> = sqlx::query_as!(
-        conversion_plans::Model,
-        r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
-                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
-                  status, review_on, settled_on
-             FROM conversion_plans WHERE worker_pid = ANY($1) AND status IN ('proposed', 'approved')"#,
-        &pids,
-    )
-    .fetch_all(db::pool(&ctx))
-    .await?
-    .into_iter()
-    .map(|p| (p.worker_pid, p))
-    .collect();
-    let mut out = Vec::new();
-    for w in &staff {
-        let plan = open.remove(&w.pid);
-        let status = plan.as_ref().map(|p| p.status.as_str());
-        let flags = rules::flags(
-            w.engagement_ends_on.map(SqlDate::get),
-            status,
-            plan.as_ref().and_then(|p| p.review_on).map(SqlDate::get),
-            as_of,
-        );
-        if plan.is_none() && flags.is_empty() {
-            continue;
+    // A worker is listed when they have an open plan or a flag, which the rules work out in Rust, so the page reads on until it
+    // is full rather than coming back short for the workers left out (Window::fill). The organization filter is SQL.
+    let fetch = |limit: i64, offset: i64| {
+        let (ctx, query, scope) = (&ctx, &query, &scope);
+        async move {
+            let staff: Vec<Contingent> = sqlx::query_as!(
+                Contingent,
+                "SELECT pid, worker_number, department, employment_type, engagement_ends_on
+                   FROM workers
+                  WHERE deleted_at IS NULL AND terminated_on IS NULL AND engagement_ends_on IS NOT NULL
+                    AND ($1::text IS NULL OR organization_ref = $1) AND ($2::text[] IS NULL OR organization_ref = ANY($2))
+                  ORDER BY worker_number, id
+                  LIMIT $3 OFFSET $4",
+                query.organization,
+                scope.as_deref(),
+                limit,
+                offset,
+            )
+            .fetch_all(db::pool(ctx))
+            .await?;
+            let pids: Vec<Uuid> = staff.iter().map(|w| w.pid).collect();
+            // At most one open plan per worker: a partial unique index holds it.
+            let mut open: HashMap<Uuid, conversion_plans::Model> = sqlx::query_as!(
+                conversion_plans::Model,
+                r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, intent, target_on,
+                          department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,
+                          status, review_on, settled_on
+                     FROM conversion_plans WHERE worker_pid = ANY($1) AND status IN ('proposed', 'approved')"#,
+                &pids,
+            )
+            .fetch_all(db::pool(ctx))
+            .await?
+            .into_iter()
+            .map(|p| (p.worker_pid, p))
+            .collect();
+            Ok(staff
+                .iter()
+                .map(|w| {
+                    let plan = open.remove(&w.pid);
+                    let status = plan.as_ref().map(|p| p.status.as_str());
+                    let flags = rules::flags(
+                        w.engagement_ends_on.map(SqlDate::get),
+                        status,
+                        plan.as_ref().and_then(|p| p.review_on).map(SqlDate::get),
+                        as_of,
+                    );
+                    (plan.is_some() || !flags.is_empty()).then(|| {
+                        json!({
+                            "worker_pid": w.pid, "worker_number": w.worker_number, "department": w.department,
+                            "employment_type": w.employment_type, "engagement_ends_on": w.engagement_ends_on,
+                            "plan": plan.as_ref().map(|p| plan_json(p, w.engagement_ends_on.map(SqlDate::get), as_of)),
+                            "flags": flags.into_iter().map(rules::Flag::as_str).collect::<Vec<_>>(),
+                        })
+                    })
+                })
+                .collect())
         }
-        out.push(json!({
-            "worker_pid": w.pid, "worker_number": w.worker_number, "department": w.department,
-            "employment_type": w.employment_type, "engagement_ends_on": w.engagement_ends_on,
-            "plan": plan.as_ref().map(|p| plan_json(p, w.engagement_ends_on.map(SqlDate::get), as_of)),
-            "flags": flags.into_iter().map(rules::Flag::as_str).collect::<Vec<_>>(),
-        }));
-    }
+    };
+    let response = super::filled(&window, fetch).await?;
     db::audit(
         &mut *db::pool(&ctx).acquire().await?,
         "conversion_plan",
@@ -202,7 +205,7 @@ async fn list_open(
         None,
     )
     .await?;
-    Ok(super::paged_vec(out, &window))
+    Ok(response)
 }
 
 /// `POST …/conversion-plans` body.

@@ -212,6 +212,31 @@ async fn a_request_is_decided_by_a_person_who_may_and_never_by_the_requester() {
         let hr_queue: Vec<Value> = get("/api/flexible-working?status=requested".into(), hr.clone()).await.json();
         assert_eq!(hr_queue.len(), 2, "HR sees them all");
 
+        // A page that a rule filters row by row is full, not short for the rows the caller may not see (axa-cursor-pagination
+        // 0.1.4, Window::fill): the neighbour's request sorts first and the manager may not see it, yet a page of one holds the
+        // manager's first request and links on to the second, and no page is empty or names the hidden one.
+        let hidden = post("/api/me/flexible-working".into(), neighbour.clone(), json!({ "kind": "place_of_work", "proposed_start": day(30) })).await;
+        assert_eq!(hidden.status_code(), 200, "{}", hidden.text());
+        let hidden = hidden.json::<Value>()["pid"].as_str().unwrap().to_string();
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+            "UPDATE flexible_working_requests SET decide_by = CURRENT_DATE WHERE pid = '{hidden}'"))).execute(workforce_planning_management::db::pool(&ctx)).await.unwrap();
+        let mut seen = Vec::new();
+        let mut url = "/api/flexible-working?status=requested&limit=1".to_string();
+        loop {
+            let page = get(url.clone(), manager.clone()).await;
+            let rows: Vec<Value> = page.json();
+            assert_eq!(rows.len(), 1, "a page of one is full: {url}");
+            assert!(rows.iter().all(|r| r["pid"] != hidden.as_str()));
+            seen.push(rows[0]["pid"].as_str().unwrap().to_string());
+            let Some(link) = page.maybe_header("link") else { break };
+            let link = link.to_str().unwrap();
+            url = link.trim_start_matches('<').split('>').next().unwrap().to_string();
+        }
+        assert_eq!(seen.len(), 2, "each of the manager's two requests once: {seen:?}");
+        assert_ne!(seen[0], seen[1]);
+        assert_eq!(get("/api/flexible-working?status=requested".into(), hr.clone()).await.json::<Vec<Value>>().len(), 3, "HR sees the neighbour's too");
+        assert_eq!(post(format!("/api/me/flexible-working/{hidden}/withdraw"), neighbour.clone(), json!({})).await.status_code(), 200);
+
         // ── Who may decide ─────────────────────────────────────────────────────────────
         let decide = |pid: &str| format!("/api/flexible-working/{pid}/decide");
         // A caller with no right to write at all.

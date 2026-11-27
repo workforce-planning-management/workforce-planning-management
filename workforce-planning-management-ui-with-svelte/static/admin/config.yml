@@ -2185,6 +2185,52 @@ collections:
                   - { name: "overtime_non_exempt", label: "Overtime_non_exempt", widget: string, required: false, i18n: true }
                   - { name: "overtime_unknown", label: "Overtime_unknown", widget: string, required: false, i18n: true }
                   - { name: "overtime_note", label: "Overtime_note", widget: text, required: false, i18n: true }
+                  - { name: "critical", label: "Critical", widget: string, required: false, i18n: true }
+                  - { name: "critical_post", label: "Critical_post", widget: string, required: false, i18n: true }
+                  - { name: "critical_note", label: "Critical_note", widget: string, required: false, i18n: true }
+                  - { name: "grade", label: "Grade", widget: string, required: false, i18n: true }
+                  - { name: "group_by", label: "Group_by", widget: string, required: false, i18n: true }
+                  - { name: "by_band", label: "By_band", widget: string, required: false, i18n: true }
+                  - { name: "by_pay_point", label: "By_pay_point", widget: string, required: false, i18n: true }
+                  - { name: "by_critical", label: "By_critical", widget: string, required: false, i18n: true }
+                  - { name: "group", label: "Group", widget: string, required: false, i18n: true }
+                  - { name: "vacancy_age", label: "Vacancy_age", widget: string, required: false, i18n: true }
+                  - { name: "vacancy_age_note", label: "Vacancy_age_note", widget: text, required: false, i18n: true }
+                  - { name: "vacancies", label: "Vacancies", widget: string, required: false, i18n: true }
+                  - { name: "days_0_30", label: "Days_0_30", widget: string, required: false, i18n: true }
+                  - { name: "days_31_90", label: "Days_31_90", widget: string, required: false, i18n: true }
+                  - { name: "days_91_180", label: "Days_91_180", widget: string, required: false, i18n: true }
+                  - { name: "days_181", label: "Days_181", widget: string, required: false, i18n: true }
+                  - { name: "start_unknown", label: "Start_unknown", widget: string, required: false, i18n: true }
+                  - { name: "frozen", label: "Frozen", widget: string, required: false, i18n: true }
+                  - { name: "no_review_date", label: "No_review_date", widget: string, required: false, i18n: true }
+                  - { name: "review_overdue", label: "Review_overdue", widget: string, required: false, i18n: true }
+                  - { name: "abolished", label: "Abolished", widget: string, required: false, i18n: true }
+                  - { name: "no_critical", label: "No_critical", widget: string, required: false, i18n: true }
+                  - { name: "continuity", label: "Continuity", widget: string, required: false, i18n: true }
+                  - { name: "continuity_note", label: "Continuity_note", widget: text, required: false, i18n: true }
+                  - { name: "tenures", label: "Tenures", widget: string, required: false, i18n: true }
+                  - { name: "days_held", label: "Days_held", widget: string, required: false, i18n: true }
+                  - { name: "days_empty", label: "Days_empty", widget: string, required: false, i18n: true }
+                  - { name: "held_now", label: "Held_now", widget: string, required: false, i18n: true }
+                  - { name: "counted_partly", label: "Counted_partly", widget: string, required: false, i18n: true }
+                  - { name: "all_posts", label: "All_posts", widget: string, required: false, i18n: true }
+                  - { name: "grade_a_seat", label: "Grade_a_seat", widget: string, required: false, i18n: true }
+                  - { name: "seat", label: "Seat", widget: string, required: false, i18n: true }
+                  - { name: "scale", label: "Scale", widget: string, required: false, i18n: true }
+                  - { name: "band", label: "Band", widget: string, required: false, i18n: true }
+                  - { name: "pay_point", label: "Pay_point", widget: string, required: false, i18n: true }
+                  - { name: "set_grade", label: "Set_grade", widget: string, required: false, i18n: true }
+                  - { name: "clear_grade", label: "Clear_grade", widget: string, required: false, i18n: true }
+                  - { name: "holders", label: "Holders", widget: string, required: false, i18n: true }
+                  - { name: "show_holders", label: "Show_holders", widget: string, required: false, i18n: true }
+                  - { name: "holders_note", label: "Holders_note", widget: text, required: false, i18n: true }
+                  - { name: "started", label: "Started", widget: string, required: false, i18n: true }
+                  - { name: "ended", label: "Ended", widget: string, required: false, i18n: true }
+                  - { name: "still_holds", label: "Still_holds", widget: string, required: false, i18n: true }
+                  - { name: "erased", label: "Erased", widget: string, required: false, i18n: true }
+                  - { name: "counted_from", label: "Counted_from", widget: string, required: false, i18n: true }
+                  - { name: "window_partial", label: "Window_partial", widget: text, required: false, i18n: true }
               - name: "orgshape"
                 label: "Orgshape"
                 widget: object
@@ -2760,6 +2806,9 @@ collections:
               - { name: "off_track", label: "Off_track", widget: string, required: false, i18n: true }
               - { name: "number", label: "Number", widget: string, required: false, i18n: true }
               - { name: "milestone", label: "Milestone", widget: string, required: false, i18n: true }
+              - { name: "reorganization", label: "Reorganization", widget: string, required: false, i18n: true }
+              - { name: "funding", label: "Funding", widget: string, required: false, i18n: true }
+              - { name: "demand_review", label: "Demand_review", widget: string, required: false, i18n: true }
           - name: "engagement"
             label: "Engagement"
             widget: object

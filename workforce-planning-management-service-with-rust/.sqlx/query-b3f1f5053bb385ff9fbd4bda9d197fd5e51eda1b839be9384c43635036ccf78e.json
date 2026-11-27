@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT position_pid, started_on, ended_on FROM position_holders WHERE position_pid = ANY($1) ORDER BY started_on, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "position_pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "position_pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "started_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "started_on"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "ended_on",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "position_holders",
+            "name": "ended_on"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "b3f1f5053bb385ff9fbd4bda9d197fd5e51eda1b839be9384c43635036ccf78e"
+}

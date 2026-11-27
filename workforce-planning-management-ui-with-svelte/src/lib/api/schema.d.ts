@@ -1448,7 +1448,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A primary change is written through to the worker row. HR */
+        /** End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A grade given replaces the one recorded; left out, it is kept. A primary change is written through to the worker row. HR */
         post: {
             parameters: {
                 query?: never;
@@ -12845,6 +12845,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/positions/critical-continuity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The continuity of the posts marked critical (?organization=, WPM-R290), by cost centre, by band and in total: posts, tenures, days held and days empty in the last 36 months, posts held today, and posts whose history is shorter than the window. A group under the floor (10) is withheld for every caller, with its complement; no holder is named */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The groups and totals */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                default: components["responses"]["Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/positions/establishment": {
         parameters: {
             query?: never;
@@ -12852,7 +12887,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor */
+        /** The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state; the same by band (bands) and by band and pay point (pay_points), an ungraded post in unknown. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor */
         get: {
             parameters: {
                 query?: never;
@@ -18291,7 +18326,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. HR */
+        /** Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. An optional grade (scale, band, pay_point) is checked against the published scales (WPM-R255); unrecorded is unknown. HR */
         post: {
             parameters: {
                 query?: never;

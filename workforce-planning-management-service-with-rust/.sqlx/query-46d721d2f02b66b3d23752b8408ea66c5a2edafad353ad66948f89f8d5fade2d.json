@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, intent, target_on,\n                  department, role_profile_ref, post_funding_kind, post_funding_ends_on, reason, proposed_by, approved_by,\n                  status, review_on, settled_on\n             FROM conversion_plans WHERE worker_pid = ANY($1) AND status IN ('proposed', 'approved')",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, title, description,\n                  currency, status, submitted_at AS \"submitted_at: _\", decided_by, decided_at AS \"decided_at: _\",\n                  decision_note, reimbursed_on, reimbursed_by, recorded_by, on_behalf, deleted_at AS \"deleted_at: _\"\n             FROM expense_claims\n            WHERE deleted_at IS NULL AND status = $1 AND ($2::uuid[] IS NULL OR worker_pid = ANY($2))\n            ORDER BY submitted_at, id\n            LIMIT $3 OFFSET $4",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "created_at"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "updated_at"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "id"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "pid"
           }
         }
@@ -53,147 +53,161 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "worker_pid"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "intent",
+        "name": "title",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
-            "name": "intent"
+            "table": "expense_claims",
+            "name": "title"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "target_on",
-        "type_info": "Date",
+        "name": "description",
+        "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
-            "name": "target_on"
+            "table": "expense_claims",
+            "name": "description"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "department",
+        "name": "currency",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
-            "name": "department"
+            "table": "expense_claims",
+            "name": "currency"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "role_profile_ref",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "role_profile_ref"
-          }
-        }
-      },
-      {
-        "ordinal": 9,
-        "name": "post_funding_kind",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "post_funding_kind"
-          }
-        }
-      },
-      {
-        "ordinal": 10,
-        "name": "post_funding_ends_on",
-        "type_info": "Date",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "post_funding_ends_on"
-          }
-        }
-      },
-      {
-        "ordinal": 11,
-        "name": "reason",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "reason"
-          }
-        }
-      },
-      {
-        "ordinal": 12,
-        "name": "proposed_by",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "proposed_by"
-          }
-        }
-      },
-      {
-        "ordinal": 13,
-        "name": "approved_by",
-        "type_info": "Varchar",
-        "origin": {
-          "Table": {
-            "table": "conversion_plans",
-            "name": "approved_by"
-          }
-        }
-      },
-      {
-        "ordinal": 14,
         "name": "status",
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
+            "table": "expense_claims",
             "name": "status"
           }
         }
       },
       {
-        "ordinal": 15,
-        "name": "review_on",
+        "ordinal": 9,
+        "name": "submitted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "submitted_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "decided_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decided_by"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "decided_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decided_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "decision_note",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "decision_note"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "reimbursed_on",
         "type_info": "Date",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
-            "name": "review_on"
+            "table": "expense_claims",
+            "name": "reimbursed_on"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "reimbursed_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "reimbursed_by"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "recorded_by",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "recorded_by"
           }
         }
       },
       {
         "ordinal": 16,
-        "name": "settled_on",
-        "type_info": "Date",
+        "name": "on_behalf",
+        "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "conversion_plans",
-            "name": "settled_on"
+            "table": "expense_claims",
+            "name": "on_behalf"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "deleted_at: _",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "expense_claims",
+            "name": "deleted_at"
           }
         }
       }
     ],
     "parameters": {
       "Left": [
-        "UuidArray"
+        "Text",
+        "UuidArray",
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -203,6 +217,8 @@
       false,
       false,
       false,
+      true,
+      false,
       false,
       true,
       true,
@@ -212,9 +228,8 @@
       true,
       true,
       false,
-      true,
       true
     ]
   },
-  "hash": "3e7ef4fb7b3eb8d4265aacd8c129c277f14829c090dd5bb0c3aa954da53c4f5a"
+  "hash": "46d721d2f02b66b3d23752b8408ea66c5a2edafad353ad66948f89f8d5fade2d"
 }

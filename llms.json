@@ -14,13 +14,13 @@
     "api": "Rust, Axum, axa, sqlx, PostgreSQL 18",
     "ui": "SvelteKit 3, Svelte 5 runes, TypeScript",
     "tests": {
-      "service_unit_declared": 1535,
-      "service_request_declared": 280,
+      "service_unit_declared": 1539,
+      "service_request_declared": 282,
       "ui_unit_declared": 311,
-      "ui_e2e_declared": 343,
+      "ui_e2e_declared": 345,
       "note": "declared by scripts/status.py (a count of test functions in the files), not what passes; CI reports that"
     },
-    "migrations": 138,
+    "migrations": 139,
     "controllers": 98,
     "pages": 70
   },

@@ -2859,7 +2859,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A primary change is written through to the worker row. HR",
+        "summary": "End this assignment the day before effective_on (today or earlier) and start another from it, with the fields given changed. A grade given replaces the one recorded; left out, it is kept. A primary change is written through to the worker row. HR",
         "tags": [
           "assignments"
         ]
@@ -10760,6 +10760,22 @@
         ]
       }
     },
+    "/api/positions/critical-continuity": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The groups and totals"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "summary": "The continuity of the posts marked critical (?organization=, WPM-R290), by cost centre, by band and in total: posts, tenures, days held and days empty in the last 36 months, posts held today, and posts whose history is shorter than the window. A group under the floor (10) is withheld for every caller, with its complement; no holder is named",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
     "/api/positions/establishment": {
       "get": {
         "responses": {
@@ -10770,7 +10786,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor",
+        "summary": "The establishment per cost centre (?organization=): positions, budget, held, vacant, over, the vacancy sitting in frozen positions and positions by state; the same by band (bands) and by band and pay point (pay_points), an ungraded post in unknown. Approved, open, filled and frozen positions count. Over-establishment is never netted against a vacancy elsewhere; an unknown holder FTE is unknown; no holder is named, and a caller who may not see holders gets held, vacant and over withheld for a centre under the floor",
         "tags": [
           "positions"
         ]
@@ -14668,7 +14684,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "summary": "Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. HR",
+        "summary": "Add a further (not primary) assignment. The FTE of the assignments in force may not go over 100 on any day; the 422 names the total. An optional grade (scale, band, pay_point) is checked against the published scales (WPM-R255); unrecorded is unknown. HR",
         "tags": [
           "assignments"
         ]

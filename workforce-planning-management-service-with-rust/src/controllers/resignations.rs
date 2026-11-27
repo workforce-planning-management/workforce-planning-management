@@ -391,15 +391,20 @@ async fn list(
         ));
     }
     let scope = memberships::scope_organization_refs(&ctx, caller.claims()).await?;
-    // One read with its workers, in the caller's organizations; a removed worker's is left out.
+    let (limit, offset) = window.bounds();
+    // One page with its workers, in the caller's organizations; a removed worker's is left out. Every condition is SQL, so the
+    // page is exact.
     let out: Vec<serde_json::Value> = sqlx::query!(
         "SELECT r.pid, r.status, r.logged_on, r.proposed_last_day, r.agreed_last_day,
                 w.pid AS worker_pid, w.worker_number, w.department
            FROM resignations r JOIN workers w ON w.pid = r.worker_pid AND w.deleted_at IS NULL
           WHERE r.status = $1 AND ($2::text[] IS NULL OR w.organization_ref = ANY($2))
-          ORDER BY r.proposed_last_day, r.id",
+          ORDER BY r.proposed_last_day, r.id
+          LIMIT $3 OFFSET $4",
         status,
         scope.as_deref(),
+        limit,
+        offset,
     )
     .fetch_all(db::pool(&ctx))
     .await?
@@ -417,7 +422,7 @@ async fn list(
         })
     })
     .collect();
-    Ok(super::paged_vec(out, &window))
+    Ok(window.respond(out))
 }
 
 /// `GET /api/resignations/summary` — resignations by department and, where every cell is large

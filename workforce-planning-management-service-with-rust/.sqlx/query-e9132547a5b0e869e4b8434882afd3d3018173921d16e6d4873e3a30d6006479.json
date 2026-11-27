@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, job_title, department,\n                  location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,\n                  starts_on, ends_on, recorded_by\n             FROM assignments WHERE pid = $1",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, worker_pid, job_title, department,\n                  location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,\n                  starts_on, ends_on, recorded_by, grade_scale, grade_band, grade_pay_point\n             FROM assignments WHERE pid = $1",
   "describe": {
     "columns": [
       {
@@ -211,6 +211,39 @@
             "name": "recorded_by"
           }
         }
+      },
+      {
+        "ordinal": 19,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "grade_band"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "grade_pay_point",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assignments",
+            "name": "grade_pay_point"
+          }
+        }
       }
     ],
     "parameters": {
@@ -237,8 +270,11 @@
       false,
       false,
       true,
+      true,
+      true,
+      true,
       true
     ]
   },
-  "hash": "c5370db379075160aae816dcd591861956b5331a5eaabc066e232d6a1cb9e554"
+  "hash": "e9132547a5b0e869e4b8434882afd3d3018173921d16e6d4873e3a30d6006479"
 }

@@ -36,7 +36,7 @@ async fn of(ctx: &AppContext, worker: Uuid) -> Result<Vec<assignments::Model>> {
         assignments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, job_title, department,
                   location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,
-                  starts_on, ends_on, recorded_by
+                  starts_on, ends_on, recorded_by, grade_scale, grade_band, grade_pay_point
              FROM assignments WHERE worker_pid = $1 ORDER BY starts_on DESC"#,
         worker,
     )
@@ -48,8 +48,9 @@ async fn of(ctx: &AppContext, worker: Uuid) -> Result<Vec<assignments::Model>> {
 async fn insert(tx: &mut sqlx::PgConnection, a: &New<'_>) -> Result<()> {
     sqlx::query!(
         "INSERT INTO assignments (pid, worker_pid, job_title, department, location, site, area_of_work, job_role, staff_group,
-                                  occupation_code, cost_centre, fte_percent, is_primary, starts_on, ends_on, recorded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)",
+                                  occupation_code, cost_centre, fte_percent, is_primary, starts_on, ends_on, recorded_by,
+                                  grade_scale, grade_band, grade_pay_point)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)",
         a.pid,
         a.worker_pid,
         a.fields.job_title.trim(),
@@ -66,6 +67,9 @@ async fn insert(tx: &mut sqlx::PgConnection, a: &New<'_>) -> Result<()> {
         SqlDate(a.starts_on),
         a.ends_on.map(SqlDate),
         a.recorded_by,
+        a.fields.grade.map(|g| g.0),
+        a.fields.grade.map(|g| g.1),
+        a.fields.grade.and_then(|g| g.2),
     )
     .execute(tx)
     .await?;
@@ -178,6 +182,24 @@ struct AddPayload {
     fte_percent: i32,
     starts_on: Option<Date>,
     ends_on: Option<Date>,
+    /// The band and pay point the assignment is graded at (WPM-R255); optional, and unrecorded is unknown.
+    grade: Option<GradeIn>,
+}
+
+/// A grade as a client gives it: a published scale, a band of it and an optional pay point (1 is the entry step).
+#[derive(Debug, Clone, Deserialize)]
+struct GradeIn {
+    scale: String,
+    band: String,
+    pay_point: Option<i32>,
+}
+
+/// Resolve a grade a client gave against the published scales, or refuse it in words.
+fn resolve(grade: Option<&GradeIn>) -> Result<Option<crate::rules::position::Grade>> {
+    grade
+        .map(|g| crate::rules::position::resolve_grade(&g.scale, &g.band, g.pay_point))
+        .transpose()
+        .map_err(|e| unprocessable(&e))
 }
 
 /// `POST /api/workers/{pid}/assignments` — add a further (not primary) assignment. The FTE of the assignments in force may not go
@@ -239,6 +261,7 @@ async fn add(
         staff_group: clean(p.staff_group),
         occupation_code: clean(p.occupation_code),
         cost_centre: clean(p.cost_centre),
+        grade: resolve(p.grade.as_ref())?,
     };
     let mut tx = db::pool(&ctx).begin().await?;
     insert(
@@ -281,6 +304,8 @@ struct ChangePayload {
     occupation_code: Option<String>,
     cost_centre: Option<String>,
     fte_percent: Option<i32>,
+    /// A new grade; left out, the grade is kept. A change of grade is a change of the assignment (WPM-D112).
+    grade: Option<GradeIn>,
 }
 
 /// `POST /api/assignments/{pid}/change` — end this assignment the day before `effective_on` and start another from it, with the
@@ -296,7 +321,7 @@ async fn change(
         assignments::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, worker_pid, job_title, department,
                   location, site, area_of_work, job_role, staff_group, occupation_code, cost_centre, fte_percent, is_primary,
-                  starts_on, ends_on, recorded_by
+                  starts_on, ends_on, recorded_by, grade_scale, grade_band, grade_pay_point
              FROM assignments WHERE pid = $1"#,
         pid,
     )
@@ -310,7 +335,7 @@ async fn change(
         return Err(unprocessable("effective_on must not be in the future"));
     }
     let end = rules::end_for_change(&as_rule(&old), effective_on).map_err(|m| unprocessable(&m))?;
-    let f = Fields::merged(&old, &p);
+    let f = Fields::merged(&old, &p)?;
     let new = rules::Assignment {
         fte_percent: p.fte_percent.unwrap_or(old.fte_percent),
         starts_on: effective_on,
@@ -394,13 +419,26 @@ struct Fields {
     staff_group: Option<String>,
     occupation_code: Option<String>,
     cost_centre: Option<String>,
+    /// The canonical scale, band and pay point, or `None` when unrecorded.
+    grade: Option<crate::rules::position::Grade>,
 }
 
 impl Fields {
-    fn merged(old: &assignments::Model, p: &ChangePayload) -> Self {
+    /// The fields after a change. A grade given is resolved against the published scales; left out, the one recorded is kept, read back
+    /// through the same resolution so that a scale retired since is refused rather than copied blind.
+    fn merged(old: &assignments::Model, p: &ChangePayload) -> Result<Self> {
+        let kept = match (&old.grade_scale, &old.grade_band) {
+            (Some(s), Some(b)) => Some(GradeIn {
+                scale: s.clone(),
+                band: b.clone(),
+                pay_point: old.grade_pay_point,
+            }),
+            _ => None,
+        };
+        let grade = resolve(p.grade.as_ref().or(kept.as_ref()))?;
         let pick =
             |new: &Option<String>, was: &Option<String>| clean(new.clone()).or_else(|| was.clone());
-        Self {
+        Ok(Self {
             job_title: p.job_title.clone().unwrap_or_else(|| old.job_title.clone()),
             department: p
                 .department
@@ -413,7 +451,8 @@ impl Fields {
             staff_group: pick(&p.staff_group, &old.staff_group),
             occupation_code: pick(&p.occupation_code, &old.occupation_code),
             cost_centre: pick(&p.cost_centre, &old.cost_centre),
-        }
+            grade,
+        })
     }
 
     fn problems(&self) -> Vec<String> {
