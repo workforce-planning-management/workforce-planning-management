@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, cost_centre,\n                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,\n                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by\n             FROM positions WHERE pid = $1",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, cost_centre,\n                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,\n                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by, critical, grade_scale, grade_band,\n                  grade_pay_point\n             FROM positions WHERE pid = $1",
   "describe": {
     "columns": [
       {
@@ -200,6 +200,50 @@
             "name": "recorded_by"
           }
         }
+      },
+      {
+        "ordinal": 18,
+        "name": "critical",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "critical"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_band"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "grade_pay_point",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_pay_point"
+          }
+        }
       }
     ],
     "parameters": {
@@ -225,8 +269,12 @@
       true,
       false,
       true,
+      true,
+      false,
+      true,
+      true,
       true
     ]
   },
-  "hash": "fbceb1d98a5240588623197b539320ad9c09ff6e480a9edfd15139b11e626ad8"
+  "hash": "aca67a4c70c933b608543ac3b25781a0014460d31462260a4087a9c1b1d9e076"
 }

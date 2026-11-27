@@ -30,4 +30,8 @@ pub struct Model {
     pub overtime_status: String,
     pub number: Option<String>,
     pub recorded_by: Option<String>,
+    pub critical: bool,
+    pub grade_scale: Option<String>,
+    pub grade_band: Option<String>,
+    pub grade_pay_point: Option<i32>,
 }

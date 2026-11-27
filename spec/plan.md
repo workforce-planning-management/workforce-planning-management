@@ -1206,7 +1206,7 @@ encryption (T582), and scanning and the SLA (T580–T581). The pen-test scope (T
 [lessons/20261124/index.md](lessons/20261124/index.md) assesses 17 ideas from a published independent review of how one large
 organization sets direction, takes decisions, leads its people and follows through. The source is anonymous on purpose, and
 nothing recorded from it names it or quotes it. The owner asked on 2026-11-24 that the ideas be recorded here, in
-[tasks.md](tasks.md) and in the spec. The requirements **WPM-R288–R298**, decisions **WPM-D231–D236** and tasks
+[tasks.md](tasks.md) and in the spec. The requirements **WPM-R288–R298**, decisions **WPM-D231–D237** and tasks
 **WPM-T648–T659** are in [leadership-continuity-and-reorganization.md](leadership-continuity-and-reorganization.md). Nothing
 is built, and every decision is the owner's.
 

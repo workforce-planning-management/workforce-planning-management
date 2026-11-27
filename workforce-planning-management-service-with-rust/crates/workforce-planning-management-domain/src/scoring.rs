@@ -340,6 +340,14 @@ mod tests {
         ),
         ("band", "looks up a pay band on a published scale"),
         (
+            "band_label",
+            "formats the pay band a position is graded at, a fact HR recorded about a post, as a report label; no person is in it",
+        ),
+        (
+            "report_by_band",
+            "counts open vacancies of posts by the pay band they are graded at; posts, not people, and a small group is withheld",
+        ),
+        (
             "risk_deviation",
             "counts critical roles with no ready successor in a plan: roles, not people",
         ),

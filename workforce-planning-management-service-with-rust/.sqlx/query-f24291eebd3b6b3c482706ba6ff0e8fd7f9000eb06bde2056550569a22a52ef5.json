@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pid, cost_centre, state, (holder_worker_pid IS NOT NULL) AS \"held!\", critical, grade_scale, grade_band\n             FROM positions WHERE organization_ref = $1 ORDER BY cost_centre, id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pid",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "pid"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cost_centre",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "cost_centre"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "state",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "held!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "critical",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "critical"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_band"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "f24291eebd3b6b3c482706ba6ff0e8fd7f9000eb06bde2056550569a22a52ef5"
+}

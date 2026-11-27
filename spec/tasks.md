@@ -6439,10 +6439,13 @@ work starts. Sizes: S, M, L.
 - [ ] WPM-T557 **Pay scale administration screen.** *(WPM-R254)* `/pay-scales` gains drafts, an editor for bands, pay points,
       and allowances, an offered uplift that a person checks against the source, publish with a second person, and version
       history. Localized strings, axe in light and dark themes, phone width. (M)
-- [ ] WPM-T558 **A post's grade and the establishment by band and pay point.** *(WPM-R255, WPM-D208)* Grade on positions and
+- [~] WPM-T558 **A post's grade and the establishment by band and pay point.** *(WPM-R255, WPM-D208)* Grade on positions and
       assignments, validated against the published scale on the effective date, with unrecorded meaning `unknown`. Add band and
       pay point columns to the establishment view, with the floor. Show HR where a post's grade and the holder's own band
-      differ. Pure core first. (M)
+      differ. Pure core first. (M) **Part done (2026-11-26, WPM-T660):** the grade on a position (`PUT|DELETE
+      /api/positions/{pid}/grade`, validated against the published scale; the scales are coded, so not "on the effective date"
+      yet). **Not done:** the grade on an assignment, the establishment by band and pay point, and the difference from the holder's
+      own band.
 - [ ] WPM-T559 **Organizational units.** *(WPM-R257)* Unit tree with configurable level names, dated validity, a no-loop check,
       and closure instead of deletion. Map units to cost centres. Resolve `department` to a unit, and list unmatched values
       for HR. A screen beside the org chart. Pure core first. (L)
@@ -7391,8 +7394,8 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       over 36 months (tenures, days held, days empty), counted from the day the post's history begins when that is later and saying
       so (`complete`). Pure core: `position_history::continuity` (half-open days, overlaps merged, a same-day tenure is a holder with
       no day, a total that does not fit is unknown). No route counts the posts a person has left. **Not done:** the report for
-      **critical posts** by unit and band (a position has no critical-role or band marker yet, the same gap as WPM-T648), and with it
-      the floor and its complement; the kind of cover on a tenure (WPM-T651); a retention schedule of its own under the staff-record
+      **critical posts** by unit and band (the marker and the grade it needs came with WPM-T660), and with it the floor and its
+      complement; the kind of cover on a tenure (WPM-T651); a retention schedule of its own under the staff-record
       rule (erasure only for now); a view for the post's line manager (privileged callers only); the screen; an erasure of a holder
       of a post in a vacant state does not add a `holder_left` row, so that post's vacancy age counts from its last state move.
       **Verified (2026-11-26):** 5 new domain unit tests (15 in `position_history`, 1,304 in the domain crate); 1 new request test
@@ -7439,3 +7442,21 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       `mask`, and the reference policy's last rule lets any signed-in caller read it. The owner decides: say in the specification that
       it is for every signed-in reader (beside the span measure in [workforce-measures.md](workforce-measures.md)), or narrow the read
       to HR and the line and add a test. Found by reading on 2026-11-24; no request was made to confirm it on a running service.
+- [x] WPM-T660 (2026-11-26) **A critical-role marker and a band on a position.** *(WPM-R255, WPM-R288, WPM-R290, WPM-D237)* The owner
+      decided on 2026-11-26 that positions carry both. Migration 138: `positions.critical` (default false) and the grade
+      `grade_scale`, `grade_band`, `grade_pay_point` (a check keeps scale and band together and a pay point from 1). `critical`
+      is set on `POST` and `PUT /api/positions` (left out, an update keeps it) and audited when it changes.
+      `PUT|DELETE /api/positions/{pid}/grade`: the scale and band must be published and a pay point is a step of the band
+      (`rules::position::resolve_grade`); `DELETE` of none is 404; audited with the grade, never an amount. The vacancy-age report
+      (WPM-T648) adds `bands` (an ungraded post is in `unknown`, never in a band) and `critical` (the critical posts together,
+      `null` when none is marked), each with the same floor; its groups are now named `group`. `band_label` and
+      `report_by_band` are exempt from the scoring register with their reasons (posts, not people). This is the grade part of
+      WPM-T558 too. **Not done:** the establishment by band and pay point (WPM-T558); a grade on an assignment (WPM-R255); the
+      screen; the critical-post continuity report (WPM-T649). **Verified (2026-11-26):** 3 new domain unit tests (1,307 in the
+      domain crate, the scoring guard among them); 1 new request test (the marker on create, kept and cleared on update; the grade
+      refused for an unknown scale, band or pay point, set, listed and cleared, a second clear 404; the report by band with an
+      ungraded post in unknown; the critical group and its absence) and the 7 other position request tests; all 219 service unit tests
+      and the 16 checks; `scripts/mutants-diff.sh 3a6fef19`: 16 mutants, 11 caught, 5 unviable, none missed; clippy with every target
+      and `-D warnings`; fmt; `.sqlx`, the UI's API copy and its types regenerated; UI `pnpm check`; every database suite in one serial
+      `cargo nextest run --run-ignored all` (340 passed); `scripts/verify-db-roles.sh` (276 passed as `wpm_app`, 2 tamper tests
+      refused). **Not checked:** the keycloak build, CI.

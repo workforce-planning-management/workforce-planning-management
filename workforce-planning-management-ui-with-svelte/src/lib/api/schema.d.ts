@@ -12792,7 +12792,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Positions of an organization (?organization=&state=&cost_centre=): cost centre, title, budget in FTE percent, funding kind and end, state, and links to the requisition and the plan demand line. The holder is shown only to HR, payroll, service and administrators; others see whether the seat is held. No pay */
+        /** Positions of an organization (?organization=&state=&cost_centre=): cost centre, title, budget in FTE percent, funding kind and end, state, critical, the grade (scale, band, pay point, or null), and links to the requisition and the plan demand line. The holder is shown only to HR, payroll, service and administrators; others see whether the seat is held. No pay */
         get: {
             parameters: {
                 query?: never;
@@ -12813,7 +12813,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it. An optional overtime_status (exempt, non_exempt or unknown) is a person's entry, never inferred from duties; left out it is unknown */
+        /** Plan a seat (starts planned). Budget 1 to 100 FTE percent; a time-limited or external funding names its end; a programme funding names a thing: reference. An optional demand_line_pid records where it came from, only when a person chooses it. An optional overtime_status (exempt, non_exempt or unknown) is a person's entry, never inferred from duties; left out it is unknown. An optional critical (default false) is HR's statement that the post is critical; an update without it keeps what is recorded */
         post: {
             parameters: {
                 query?: never;
@@ -12887,7 +12887,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Open vacancies by cost centre and age (?organization=), from the append-only history of position moves (WPM-R288): approved, open or frozen positions nobody holds, in the bands 0-30, 31-90, 91-180 and 181+ days, with start_unknown for a post whose state predates the history (never zero), the frozen, those with no review date and those past it, and the abolished beside them. No holder is named; a caller who may not see holders gets a cost centre under the floor withheld */
+        /** Open vacancies by cost centre and age (?organization=), from the append-only history of position moves (WPM-R288): approved, open or frozen positions nobody holds, in the bands 0-30, 31-90, 91-180 and 181+ days, with start_unknown for a post whose state predates the history (never zero), the frozen, those with no review date and those past it, and the abolished beside them; the same figures by band (an ungraded post is unknown) and for the posts marked critical together (null when none is). No holder is named; a caller who may not see holders gets a cost centre under the floor withheld */
         get: {
             parameters: {
                 query?: never;
@@ -12951,6 +12951,72 @@ export interface paths {
         };
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/positions/{pid}/grade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Grade the position (WPM-R255): scale, band and an optional pay_point (1 is the entry step), validated against the published scale; a reference to the scale, never an amount. Replaces what is recorded; an unrecorded grade is unknown. Not for an abolished position */
+        put: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid and the grade */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
+            };
+        };
+        post?: never;
+        /** Clear the position's grade; 404 when none is recorded */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description Names one action so that a repeat of it (a double click, a retry after a lost reply) runs once. 16 to 64 letters, digits, hyphens or underscores. The first request under a key runs and, if it succeeds, its response is kept for one calendar day and returned again (with Idempotent-Replayed: true) for the same method, path, query and body from the same caller. The same key with a different request is refused (422). A failure is not kept, so the request can be corrected and sent again under the same key. A key belongs to the caller who made it. Ignored on a read. */
+                    "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The pid */
+                200: {
+                    headers: {
+                        "Idempotent-Replayed": components["headers"]["IdempotentReplayed"];
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                409: components["responses"]["IdempotencyInProgress"];
+                422: components["responses"]["IdempotencyRefused"];
+                default: components["responses"]["Error"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;

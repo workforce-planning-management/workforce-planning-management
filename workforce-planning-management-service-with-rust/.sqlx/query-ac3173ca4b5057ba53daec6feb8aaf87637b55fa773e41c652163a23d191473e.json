@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, cost_centre,\n                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,\n                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by\n             FROM positions\n            WHERE organization_ref = $1 AND ($2::text IS NULL OR state = $2) AND ($3::text IS NULL OR cost_centre = $3)\n            ORDER BY cost_centre, title, id",
+  "query": "SELECT created_at AS \"created_at: _\", updated_at AS \"updated_at: _\", id, pid, organization_ref, cost_centre,\n                  title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,\n                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by, critical, grade_scale, grade_band,\n                  grade_pay_point\n             FROM positions\n            WHERE organization_ref = $1 AND ($2::text IS NULL OR state = $2) AND ($3::text IS NULL OR cost_centre = $3)\n            ORDER BY cost_centre, title, id",
   "describe": {
     "columns": [
       {
@@ -200,6 +200,50 @@
             "name": "recorded_by"
           }
         }
+      },
+      {
+        "ordinal": 18,
+        "name": "critical",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "critical"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "grade_scale",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_scale"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "grade_band",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_band"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "grade_pay_point",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "positions",
+            "name": "grade_pay_point"
+          }
+        }
       }
     ],
     "parameters": {
@@ -227,8 +271,12 @@
       true,
       false,
       true,
+      true,
+      false,
+      true,
+      true,
       true
     ]
   },
-  "hash": "1f8b53a2ff2d8caa69347bf2ee7900e41ea3783ca9b87943ea818914e3b6ce7f"
+  "hash": "ac3173ca4b5057ba53daec6feb8aaf87637b55fa773e41c652163a23d191473e"
 }

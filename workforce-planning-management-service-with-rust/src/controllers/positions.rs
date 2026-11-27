@@ -77,7 +77,8 @@ async fn list(
         positions::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
                   title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
-                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by, critical, grade_scale, grade_band,
+                  grade_pay_point
              FROM positions
             WHERE organization_ref = $1 AND ($2::text IS NULL OR state = $2) AND ($3::text IS NULL OR cost_centre = $3)
             ORDER BY cost_centre, title, id"#,
@@ -111,6 +112,8 @@ pub(crate) struct Payload {
     /// The number the post is known by in an establishment list, unique in the organization (WPM-T434). Left out, a new position has
     /// none and an update keeps what is recorded; blank is the same as left out.
     number: Option<String>,
+    /// Whether HR marks the post critical (WPM-D237). Left out, a new position is not and an update keeps what is recorded.
+    critical: Option<bool>,
 }
 
 /// The number as it is kept: trimmed, and blank is none.
@@ -204,8 +207,8 @@ async fn create(
     let mut tx = db::pool(&ctx).begin().await?;
     sqlx::query!(
         "INSERT INTO positions (pid, organization_ref, cost_centre, title, budget_fte_percent, funding_kind, funding_ends_on,
-                                programme_ref, state, overtime_status, demand_line_pid, number, recorded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'planned', $9, $10, $11, $12)",
+                                programme_ref, state, overtime_status, demand_line_pid, number, recorded_by, critical)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'planned', $9, $10, $11, $12, $13)",
         pid,
         organization,
         payload.cost_centre.trim(),
@@ -218,6 +221,7 @@ async fn create(
         payload.demand_line_pid,
         number,
         caller.actor(),
+        payload.critical.unwrap_or(false),
     )
     .execute(&mut *tx)
     .await?;
@@ -240,7 +244,7 @@ async fn create(
         pid,
         "position_created",
         caller.actor(),
-        Some(json!({ "from_demand_line": payload.demand_line_pid.is_some() })),
+        Some(json!({ "from_demand_line": payload.demand_line_pid.is_some(), "critical": payload.critical.unwrap_or(false) })),
     )
     .await?;
     tx.commit().await?;
@@ -252,7 +256,8 @@ async fn find(ctx: &AppContext, caller: &MaybeAuthUser, pid: Uuid) -> Result<pos
         positions::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
                   title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
-                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by, critical, grade_scale, grade_band,
+                  grade_pay_point
              FROM positions WHERE pid = $1"#,
         pid,
     )
@@ -297,7 +302,7 @@ async fn update(
     sqlx::query!(
         "UPDATE positions SET cost_centre = $2, title = $3, budget_fte_percent = $4, funding_kind = $5, funding_ends_on = $6,
                 programme_ref = $7, overtime_status = COALESCE($8, overtime_status), number = COALESCE($9, number),
-                recorded_by = $10
+                recorded_by = $10, critical = COALESCE($11, critical)
           WHERE id = $1",
         row.id,
         payload.cost_centre.trim(),
@@ -309,16 +314,25 @@ async fn update(
         payload.overtime_status,
         number,
         caller.actor(),
+        payload.critical,
     )
     .execute(&mut *tx)
     .await?;
+    let critical_changed = payload.critical.is_some_and(|c| c != row.critical);
+    let mut detail = serde_json::Map::new();
+    if status_changed {
+        detail.insert("overtime_status".into(), json!(payload.overtime_status));
+    }
+    if critical_changed {
+        detail.insert("critical".into(), json!(payload.critical));
+    }
     db::audit(
         &mut tx,
         "position",
         pid,
         "position_updated",
         caller.actor(),
-        status_changed.then(|| json!({ "overtime_status": payload.overtime_status })),
+        (!detail.is_empty()).then_some(serde_json::Value::Object(detail)),
     )
     .await?;
     tx.commit().await?;
@@ -543,6 +557,90 @@ async fn holder(
 }
 
 #[derive(Debug, Deserialize)]
+struct GradePayload {
+    scale: String,
+    band: String,
+    /// The step of the band, 1-based (1 is the entry step); optional.
+    pay_point: Option<i32>,
+}
+
+/// `PUT /api/positions/{pid}/grade` — the band and pay point the post is graded at (WPM-R255): a reference to a published scale,
+/// never an amount (WPM-D208). Replaces what is recorded; `DELETE` clears it, and an unrecorded grade is unknown.
+#[debug_handler]
+async fn set_grade(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+    Json(payload): Json<GradePayload>,
+) -> Result<Response> {
+    let row = find(&ctx, &caller, pid).await?;
+    if row.state == "abolished" {
+        return Err(unprocessable(
+            "position is \"abolished\"; an ended position is not changed",
+        ));
+    }
+    let (scale, band, pay_point) =
+        rules::resolve_grade(&payload.scale, &payload.band, payload.pay_point)
+            .map_err(|e| unprocessable(&e))?;
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET grade_scale = $2, grade_band = $3, grade_pay_point = $4, recorded_by = $5 WHERE id = $1",
+        row.id,
+        scale,
+        band,
+        pay_point,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "position",
+        pid,
+        "position_grade_set",
+        caller.actor(),
+        Some(json!({ "grade": format!("{scale}:{band}"), "pay_point": pay_point })),
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(
+        json!({ "pid": pid, "grade": { "scale": scale, "band": band, "pay_point": pay_point } }),
+    )
+}
+
+/// `DELETE /api/positions/{pid}/grade` — clear the grade; a post with none is `404`.
+#[debug_handler]
+async fn clear_grade(
+    State(ctx): State<AppContext>,
+    caller: MaybeAuthUser,
+    Path(pid): Path<Uuid>,
+) -> Result<Response> {
+    let row = find(&ctx, &caller, pid).await?;
+    if row.grade_scale.is_none() {
+        return Err(Error::NotFound);
+    }
+    let mut tx = db::pool(&ctx).begin().await?;
+    sqlx::query!(
+        "UPDATE positions SET grade_scale = NULL, grade_band = NULL, grade_pay_point = NULL, recorded_by = $2 WHERE id = $1",
+        row.id,
+        caller.actor(),
+    )
+    .execute(&mut *tx)
+    .await?;
+    db::audit(
+        &mut tx,
+        "position",
+        pid,
+        "position_grade_cleared",
+        caller.actor(),
+        None,
+    )
+    .await?;
+    tx.commit().await?;
+    format::json(json!({ "pid": pid, "grade": null }))
+}
+
+#[derive(Debug, Deserialize)]
 struct RequisitionPayload {
     /// The requisition that fills the position, or `null` to unlink.
     requisition_pid: Option<Uuid>,
@@ -742,8 +840,8 @@ async fn vacancy_age(
     ensure_valid(&organization_problems(&query.organization))?;
     ensure_org_in_scope(&ctx, &caller, &query.organization).await?;
     let positions = sqlx::query!(
-        r#"SELECT pid, cost_centre, state, (holder_worker_pid IS NOT NULL) AS "held!" FROM positions
-            WHERE organization_ref = $1 ORDER BY cost_centre, id"#,
+        r#"SELECT pid, cost_centre, state, (holder_worker_pid IS NOT NULL) AS "held!", critical, grade_scale, grade_band
+             FROM positions WHERE organization_ref = $1 ORDER BY cost_centre, id"#,
         query.organization,
     )
     .fetch_all(db::pool(&ctx))
@@ -773,6 +871,8 @@ async fn vacancy_age(
         .map(|p| {
             let (moves, review_on) = by_post.remove(&p.pid).unwrap_or_else(|| (Vec::new(), None));
             history::Post {
+                band: rules::band_label(p.grade_scale.as_deref(), p.grade_band.as_deref()),
+                critical: p.critical,
                 cost_centre: p.cost_centre,
                 state: p.state,
                 held: p.held,
@@ -786,15 +886,19 @@ async fn vacancy_age(
     } else {
         Some(DEFAULT_FLOOR)
     };
+    let today = crate::dates::today();
     format::json(json!({
         "organization": query.organization,
         "small_group_floor": floor,
         "age_bands_days": history::AGE_BANDS.iter().map(|b| b.0).collect::<Vec<_>>(),
-        "cost_centres": history::report(&posts, crate::dates::today(), floor),
+        "cost_centres": history::report(&posts, today, floor),
+        "bands": history::report_by_band(&posts, today, floor),
+        "critical": history::report_critical(&posts, today, floor),
         "derivation": "A vacancy is an approved, open or frozen position nobody holds. Its age is counted from the move that began its current run of \
                        those states (a position that was filled or planned before). A position whose state was already set when the history \
                        began has an unknown start, counted in start_unknown and in no age band. Abolished positions are shown beside the \
-                       ages, because abolishing a post ends its vacancy. By cost centre only: a position carries no band or critical-role marker yet.",
+                       ages, because abolishing a post ends its vacancy. The same figures are given by band (a post with no recorded grade is in \
+                       unknown, never in a band) and for the posts HR has marked critical, together (null when none is marked).",
     }))
 }
 
@@ -810,5 +914,7 @@ pub fn routes() -> Routes {
         .add("/positions/{pid}/status", post(status))
         .add("/positions/{pid}/holder", put(holder))
         .add("/positions/{pid}/holders", get(holders))
+        .add("/positions/{pid}/grade", put(set_grade))
+        .add("/positions/{pid}/grade", delete(clear_grade))
         .add("/positions/{pid}/requisition", put(requisition))
 }

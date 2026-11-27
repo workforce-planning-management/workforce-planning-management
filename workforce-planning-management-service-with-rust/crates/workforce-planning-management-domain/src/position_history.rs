@@ -141,6 +141,10 @@ pub struct Post {
     pub moves: Vec<Move>,
     /// The review date of the freeze now in force, where the post is frozen.
     pub review_on: Option<Date>,
+    /// The grade's band as a report label (`scale:band`), or `None` when no grade is recorded.
+    pub band: Option<String>,
+    /// HR has marked the post critical (WPM-D237).
+    pub critical: bool,
 }
 
 /// A count that is a number, or is withheld because the cut is under the floor.
@@ -161,11 +165,14 @@ pub enum Withheld {
     Withheld,
 }
 
-/// The vacancies of one cost centre.
+/// The label a post without a recorded grade is grouped under in the report by band.
+pub const UNKNOWN_BAND: &str = "unknown";
+
+/// The vacancies of one group of posts: a cost centre, a band, or the critical posts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Unit {
-    /// The cost centre.
-    pub cost_centre: String,
+    /// The cost centre, the band label (`scale:band`, or [`UNKNOWN_BAND`]), or `critical`.
+    pub group: String,
     /// Open vacancies: approved, open or frozen posts nobody holds.
     pub vacancies: Count,
     /// Vacancies by age band, in the order of [`AGE_BANDS`].
@@ -184,18 +191,48 @@ pub struct Unit {
     pub withheld: bool,
 }
 
-/// The report: the vacancies by cost centre. `floor` withholds the figures of a cost centre with fewer posts than the floor (and
-/// at least one), the way the establishment does; `None` shows everything. A cost centre is withheld on the posts it has, never on
-/// the holders, so no holder is named.
+/// The report: the vacancies by cost centre. `floor` withholds the figures of a group with fewer live posts than the floor (and at
+/// least one), the way the establishment does; `None` shows everything. A group is withheld on the posts it has, never on the
+/// holders, so no holder is named.
 #[must_use]
 pub fn report(posts: &[Post], today: Date, floor: Option<usize>) -> Vec<Unit> {
-    let mut centres: BTreeMap<&str, Vec<&Post>> = BTreeMap::new();
+    grouped(posts, today, floor, |p| Some(p.cost_centre.clone()))
+}
+
+/// The same figures by band (WPM-R288): a post with no recorded grade is in [`UNKNOWN_BAND`], never in a band.
+#[must_use]
+pub fn report_by_band(posts: &[Post], today: Date, floor: Option<usize>) -> Vec<Unit> {
+    grouped(posts, today, floor, |p| {
+        Some(p.band.clone().unwrap_or_else(|| UNKNOWN_BAND.to_string()))
+    })
+}
+
+/// The same figures for the critical posts together (WPM-R288), or `None` when the organization has marked none.
+#[must_use]
+pub fn report_critical(posts: &[Post], today: Date, floor: Option<usize>) -> Option<Unit> {
+    grouped(posts, today, floor, |p| {
+        p.critical.then(|| "critical".to_string())
+    })
+    .into_iter()
+    .next()
+}
+
+/// Group the posts by a key (a post whose key is `None` is left out) and count each group, in key order.
+fn grouped(
+    posts: &[Post],
+    today: Date,
+    floor: Option<usize>,
+    key: impl Fn(&Post) -> Option<String>,
+) -> Vec<Unit> {
+    let mut groups: BTreeMap<String, Vec<&Post>> = BTreeMap::new();
     for p in posts {
-        centres.entry(p.cost_centre.as_str()).or_default().push(p);
+        if let Some(k) = key(p) {
+            groups.entry(k).or_default().push(p);
+        }
     }
-    centres
+    groups
         .into_iter()
-        .map(|(name, all)| unit(name, &all, today, floor))
+        .map(|(name, all)| unit(&name, &all, today, floor))
         .collect()
 }
 
@@ -227,7 +264,7 @@ fn unit(name: &str, all: &[&Post], today: Date, floor: Option<usize>) -> Unit {
         }
     };
     Unit {
-        cost_centre: name.to_string(),
+        group: name.to_string(),
         vacancies: show(vacancies.len()),
         by_age: AGE_BANDS
             .iter()
@@ -447,6 +484,8 @@ mod tests {
             held,
             moves,
             review_on,
+            band: None,
+            critical: false,
         }
     }
 
@@ -569,7 +608,7 @@ mod tests {
         ];
         let out = report(&posts, today, Some(5));
         let small = &out[1];
-        assert_eq!(small.cost_centre, "Small");
+        assert_eq!(small.group, "Small");
         assert!(small.withheld);
         assert_eq!(small.vacancies, Count::Withheld(Withheld::Withheld));
         assert_eq!(small.by_age["0-30"], Count::Withheld(Withheld::Withheld));
@@ -820,5 +859,47 @@ mod tests {
             (c.tenures, c.days_held, c.days_empty),
             (3, Some(0), Some(0))
         );
+    }
+
+    #[test]
+    fn the_report_by_band_keeps_an_unrecorded_grade_apart_and_the_critical_posts_are_one_group() {
+        let today = date(2026, 11, 26);
+        let graded = |cc: &str, band: Option<&str>, critical: bool| Post {
+            band: band.map(ToString::to_string),
+            critical,
+            ..post(
+                cc,
+                "approved",
+                false,
+                vec![mv("approved", date(2026, 11, 1), true)],
+                None,
+            )
+        };
+        let posts = vec![
+            graded("A", Some("s:5"), true),
+            graded("B", Some("s:5"), false),
+            graded("A", Some("s:6"), true),
+            graded("B", None, false),
+        ];
+        let bands = report_by_band(&posts, today, None);
+        let names: Vec<&str> = bands.iter().map(|u| u.group.as_str()).collect();
+        assert_eq!(names, ["s:5", "s:6", UNKNOWN_BAND]);
+        assert_eq!(bands[0].vacancies, Count::Known(2));
+        assert_eq!(bands[2].vacancies, Count::Known(1));
+        let critical = report_critical(&posts, today, None).expect("two critical posts");
+        assert_eq!(
+            (critical.group.as_str(), critical.vacancies),
+            ("critical", Count::Known(2))
+        );
+        // Under the floor the critical group is withheld and says so; with none marked there is no group at all.
+        assert!(report_critical(&posts, today, Some(3)).unwrap().withheld);
+        let none: Vec<Post> = posts
+            .iter()
+            .map(|p| Post {
+                critical: false,
+                ..p.clone()
+            })
+            .collect();
+        assert_eq!(report_critical(&none, today, None), None);
     }
 }

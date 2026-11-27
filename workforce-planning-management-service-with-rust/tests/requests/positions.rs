@@ -38,6 +38,16 @@ async fn go(request: &axa_test::TestServer, pid: &str, to: &str) -> (u16, String
     (r.status_code().as_u16(), r.text())
 }
 
+/// One group of a vacancy-age report (`cost_centres` or `bands`).
+fn group<'a>(body: &'a Value, list: &str, name: &str) -> &'a Value {
+    body[list]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|g| g["group"] == name)
+        .unwrap()
+}
+
 fn centre<'a>(body: &'a Value, name: &str) -> &'a Value {
     body["cost_centres"]
         .as_array()
@@ -355,7 +365,7 @@ async fn every_move_is_a_dated_row_a_freeze_has_its_three_facts_and_vacancy_age_
             .unwrap();
 
         let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
-        let unit = centre(&report, cc);
+        let unit = group(&report, "cost_centres", cc);
         // a, b (frozen) and the old one are vacancies; the abolished post is beside them, not in them.
         assert_eq!(unit["vacancies"], 3, "{report}");
         assert_eq!(unit["by_age"]["0-30"], 2);
@@ -373,7 +383,7 @@ async fn every_move_is_a_dated_row_a_freeze_has_its_three_facts_and_vacancy_age_
         let held = request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": w })).await;
         assert_eq!(held.status_code(), 200);
         let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
-        assert_eq!(centre(&report, cc)["vacancies"], 2);
+        assert_eq!(group(&report, "cost_centres", cc)["vacancies"], 2);
         let unlinked = request.put(&format!("/api/positions/{a}/holder")).json(&json!({ "worker_pid": null })).await;
         assert_eq!(unlinked.status_code(), 200);
         let row = sqlx::query("SELECT from_state, to_state, holder_left FROM position_state_moves WHERE position_pid = $1::uuid ORDER BY id DESC LIMIT 1")
@@ -385,7 +395,7 @@ async fn every_move_is_a_dated_row_a_freeze_has_its_three_facts_and_vacancy_age_
         assert_eq!(row.get::<String, _>("to_state"), "approved");
         assert!(row.get::<bool, _>("holder_left"), "the leaving is a row of its own, so the age starts there");
         let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
-        assert_eq!(centre(&report, cc)["vacancies"], 3);
+        assert_eq!(group(&report, "cost_centres", cc)["vacancies"], 3);
         // Unlinking where nobody holds the post adds no row.
         let before: i64 = sqlx::query_scalar("SELECT count(*) FROM position_state_moves WHERE position_pid = $1::uuid")
             .bind(&a)
@@ -484,6 +494,74 @@ async fn every_holder_is_a_tenure_that_survives_their_erasure_without_naming_the
         assert!(!body.to_string().contains(&first), "an erased holder is named nowhere");
         assert_eq!(body["holders"][0]["erased"], true);
         assert_eq!(body["continuity"]["tenures"], 3);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+#[ignore = "requires PostgreSQL (`DATABASE_URL`); run with `cargo test -- --ignored`"]
+async fn a_post_is_marked_critical_and_graded_and_the_vacancy_age_is_cut_by_band_and_for_critical_posts()
+ {
+    crate::requests::request_open(|request, _ctx| async move {
+        let org = an_org();
+        let made = request
+            .post("/api/positions")
+            .json(&json!({ "organization_ref": org, "cost_centre": "CC-G", "title": "Lead", "budget_fte_percent": 100, "funding_kind": "core", "critical": true }))
+            .await;
+        assert_eq!(made.status_code(), 200, "{}", made.text());
+        let lead = made.json::<Value>()["pid"].as_str().unwrap().to_string();
+        let plain = seat(&request, &org, "CC-G", 100).await;
+        for p in [&lead, &plain] {
+            assert_eq!(go(&request, p, "approved").await.0, 200);
+        }
+
+        // A grade names a published band and a pay point of it; anything else is refused, and none recorded is unknown.
+        let grade = |pid: &str, body: Value| {
+            let request = &request;
+            let url = format!("/api/positions/{pid}/grade");
+            async move { request.put(&url).json(&body).await.status_code().as_u16() }
+        };
+        assert_eq!(grade(&lead, json!({ "scale": "no-such-scale", "band": "5" })).await, 422);
+        assert_eq!(grade(&lead, json!({ "scale": "national-2026-27", "band": "99" })).await, 422);
+        assert_eq!(grade(&lead, json!({ "scale": "national-2026-27", "band": "5", "pay_point": 99 })).await, 422);
+        assert_eq!(grade(&lead, json!({ "scale": "national-2026-27", "band": "5", "pay_point": 1 })).await, 200);
+        let listed: Value = request.get(&format!("/api/positions?organization={org}")).await.json();
+        let row = listed["positions"].as_array().unwrap().iter().find(|p| p["pid"] == lead.as_str()).unwrap();
+        assert_eq!(row["critical"], true);
+        assert_eq!((row["grade_scale"].as_str(), row["grade_band"].as_str(), row["grade_pay_point"].as_i64()), (Some("national-2026-27"), Some("5"), Some(1)));
+
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(group(&report, "bands", "national-2026-27:5")["vacancies"], 1, "{report}");
+        assert_eq!(group(&report, "bands", "unknown")["vacancies"], 1, "an ungraded post is unknown, not a band");
+        assert_eq!(report["critical"]["group"], "critical");
+        assert_eq!(report["critical"]["vacancies"], 1);
+
+        // An update without critical keeps it; with false clears it, and then no critical group is reported.
+        let update = |critical: Value| {
+            let request = &request;
+            let url = format!("/api/positions/{lead}");
+            async move {
+                let mut body = json!({ "cost_centre": "CC-G", "title": "Lead", "budget_fte_percent": 100, "funding_kind": "core" });
+                if !critical.is_null() {
+                    body["critical"] = critical;
+                }
+                request.put(&url).json(&body).await.status_code().as_u16()
+            }
+        };
+        assert_eq!(update(Value::Null).await, 200);
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(report["critical"]["vacancies"], 1, "left out, critical is kept");
+        assert_eq!(update(json!(false)).await, 200);
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(report["critical"], Value::Null);
+
+        // Clearing the grade makes it unknown again; clearing none is a 404.
+        let url = format!("/api/positions/{lead}/grade");
+        assert_eq!(request.delete(&url).await.status_code(), 200);
+        assert_eq!(request.delete(&url).await.status_code(), 404);
+        let report: Value = request.get(&format!("/api/positions/vacancy-age?organization={org}")).await.json();
+        assert_eq!(group(&report, "bands", "unknown")["vacancies"], 2);
     })
     .await;
 }

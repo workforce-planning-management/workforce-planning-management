@@ -711,7 +711,8 @@ async fn train_or_hire(
         positions::Model,
         r#"SELECT created_at AS "created_at: _", updated_at AS "updated_at: _", id, pid, organization_ref, cost_centre,
                   title, budget_fte_percent, funding_kind, funding_ends_on, programme_ref, state, holder_worker_pid,
-                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by
+                  requisition_pid, demand_line_pid, overtime_status, number, recorded_by, critical, grade_scale, grade_band,
+                  grade_pay_point
              FROM positions WHERE pid = $1"#,
         records::parse_pid(&pid)?,
     )

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE positions SET grade_scale = NULL, grade_band = NULL, grade_pay_point = NULL, recorded_by = $2 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "974e8561d176f0bf058feed2cfd2650a63e4f5f03510b0c4daa173a7f5641367"
+}

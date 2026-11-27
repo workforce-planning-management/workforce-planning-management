@@ -119,6 +119,43 @@ pub fn validate(
     if out.is_empty() { Ok(()) } else { Err(out) }
 }
 
+/// A position's grade as it is kept (WPM-R255): the canonical scale id, the band code and the pay point, 1-based, if one is given.
+pub type Grade = (&'static str, &'static str, Option<i32>);
+
+/// Resolve a grade against the published scales: the scale and the band must exist, and a pay point is a step of that band
+/// (1 is the entry step). A grade is a reference to the scale, never an amount (WPM-D208).
+///
+/// # Errors
+///
+/// A message naming what does not exist.
+pub fn resolve_grade(scale: &str, band: &str, pay_point: Option<i32>) -> Result<Grade, String> {
+    let (scale_id, band_code) = crate::grade::resolve_band(scale, band)?;
+    if let Some(point) = pay_point {
+        let steps = crate::pay_scale::find(scale_id)
+            .and_then(|s| s.band(band_code).map(|b| b.steps.len()))
+            .and_then(|n| i32::try_from(n).ok());
+        match steps {
+            Some(n) if (1_i32..=n).contains(&point) => {}
+            Some(n) => {
+                return Err(format!(
+                    "{scale_id} band {band_code} has pay points 1 to {n}"
+                ));
+            }
+            None => return Err(format!("{scale_id} has no band {band_code:?}")),
+        }
+    }
+    Ok((scale_id, band_code, pay_point))
+}
+
+/// The label a report groups a grade under: `scale:band`, or `None` when no grade is recorded (shown as unknown, never as a band).
+#[must_use]
+pub fn band_label(scale: Option<&str>, band: Option<&str>) -> Option<String> {
+    match (scale, band) {
+        (Some(s), Some(b)) => Some(format!("{s}:{b}")),
+        _ => None,
+    }
+}
+
 fn is_thing(s: &str) -> bool {
     s.strip_prefix("thing:")
         .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
@@ -588,5 +625,48 @@ mod tests {
         let one = Fte::Known { percent: 1 };
         assert_eq!(add(big, one), Fte::Unknown);
         assert_eq!(add(one, one), Fte::Known { percent: 2 });
+    }
+
+    #[test]
+    fn a_grade_names_a_published_band_and_a_pay_point_of_it() {
+        let scale = crate::pay_scale::find("national-2026-27").expect("the reference scale");
+        let band = scale.bands.first().expect("a band");
+        let steps = i32::try_from(band.steps.len()).unwrap();
+        assert_eq!(
+            resolve_grade("national-2026-27", band.code, None),
+            Ok(("national-2026-27", band.code, None))
+        );
+        assert_eq!(
+            resolve_grade(" national-2026-27 ", band.code, Some(1)).map(|g| g.2),
+            Ok(Some(1))
+        );
+        assert!(
+            resolve_grade("national-2026-27", band.code, Some(steps)).is_ok(),
+            "the top step"
+        );
+        assert!(
+            resolve_grade("national-2026-27", band.code, Some(steps + 1))
+                .unwrap_err()
+                .contains("pay points 1 to")
+        );
+        assert!(resolve_grade("national-2026-27", band.code, Some(0)).is_err());
+        assert!(
+            resolve_grade("no-such-scale", "5", None)
+                .unwrap_err()
+                .contains("unknown pay scale")
+        );
+        assert!(
+            resolve_grade("national-2026-27", "99", None)
+                .unwrap_err()
+                .contains("no band")
+        );
+    }
+
+    #[test]
+    fn a_band_label_needs_both_halves_and_an_unrecorded_grade_has_none() {
+        assert_eq!(band_label(Some("s"), Some("5")).as_deref(), Some("s:5"));
+        assert_eq!(band_label(None, None), None);
+        assert_eq!(band_label(Some("s"), None), None);
+        assert_eq!(band_label(None, Some("5")), None);
     }
 }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — a critical marker and a grade on a position (WPM-T660, 2026-11-26)
+
+Migration 138: `positions.critical` and a grade (scale, band, pay point). `critical` on create and update; `PUT|DELETE
+/api/positions/{pid}/grade` validated against the published scales. The vacancy-age report adds `bands` (ungraded is `unknown`) and
+`critical`; its groups are named `group`. The owner's decision of 2026-11-26 (WPM-D237).
+
 ### Added — the state history of a position, vacancy age and freeze reasons (WPM-T648, part, 2026-11-26)
 
 Table `position_state_moves` (append-only, backfilled with an unknown start); every position move is a dated row; a move to `frozen`
