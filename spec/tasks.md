@@ -7500,3 +7500,15 @@ questions for the owner are in the topic file and are not decided. **Nothing fro
       checks, 1,310 domain tests; clippy with every target and `-D warnings`; fmt; `cargo deny check`; `.sqlx` regenerated; every
       database suite in one serial `cargo nextest run --run-ignored all` (342 passed); `scripts/verify-db-roles.sh` (278 passed as
       `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build; CI.
+- [x] WPM-T662 (2026-11-27) **`axa` 0.24.1.** *The owner asked on 2026-11-27 and approved the exception to the minimum publish age*
+      (`axa` 0.24.1 and `axa-test` 0.15.1 were 24 minutes old; `cargo update -p axa -p axa-test` with
+      `CARGO_RESOLVER_INCOMPATIBLE_PUBLISH_AGE=allow`). From 0.23.0 and `axa-test` 0.14.0. **No code change:** `axa`'s changelog
+      says 0.23.1, 0.24.0 and 0.24.1 add and change nothing a service calls, and the build agrees. **Also:** `cookie` 0.18.2 to
+      0.18.3, now past the publish age without an exception, and the `RUSTSEC-2026-0594` ignore removed from `deny.toml` as its
+      own note asked. **Adopted (2026-11-27):** `Cli::environment` and `Tasks::run_or_list` in `App::run`, each the same as the code it
+      replaced (the task list prints the same tab-separated lines; `parse_vars` is no longer imported). **Not adopted, and why:**
+      `cli::answer` and `Cli::config`, because WPM's `check` and `health` answer from WPM's own config, read from its prefixed
+      settings and old names (`App::config`, `App::task_config`), which `axa`'s defaults do not know; `Settings::retired` and
+      `Settings::refuse` (0.23.1), because WPM-D221 rejects refusing to start for an old setting name: it is honoured with a warning. **Verified:** clippy with every target and `-D warnings`; `cargo deny check`; 220 service unit tests;
+      the 16 checks; every database suite in one serial `cargo nextest run --run-ignored all` (342 passed);
+      `scripts/verify-db-roles.sh` (278 passed as `wpm_app`, 2 tamper tests refused). **Not checked:** the keycloak build; CI.

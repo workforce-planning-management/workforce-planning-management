@@ -12,7 +12,6 @@ yanked = "warn"
 ignore = [
     "RUSTSEC-2026-0440", # astral-tokio-tar (unmaintained since 2026-11-03), test-only (dev-dependency testcontainers), never in the service binary; remove when testcontainers moves off it
     "RUSTSEC-2026-0543", # chrono (unmaintained, every version), test-only: axum-test → expect-json, which requires it with no feature to turn it off (directly and through axa-test). The service, the domain crate and the matcher build no chrono (WPM-T532). Accepted by the owner on 2026-11-17 (WPM-T535); remove when expect-json drops it
-    "RUSTSEC-2026-0594", # cookie 0.18.2 (private cookie nonces can repeat in processes that fork), test-only: axum-test → axa-test, a dev-dependency; the service binary does not build it and never forks. The fix, 0.18.3, is inside the publish-age window; remove this line when `cargo update -p cookie` can take it
 ]
 
 [licenses]

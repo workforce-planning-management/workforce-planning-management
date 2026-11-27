@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `axa` 0.24.1 (WPM-T662, 2026-11-27)
+
+`axa` 0.23.0 to 0.24.1 and `axa-test` 0.14.0 to 0.15.1, at the owner's request inside the minimum publish age. `App::run` uses
+`Cli::environment` and `Tasks::run_or_list`, which do what the code they replace did; `cli::answer`, `Cli::config` and
+`Settings::retired` are not used (WPM's own config, WPM-D221).
+`cookie` 0.18.3, and the `RUSTSEC-2026-0594` ignore is gone from `deny.toml`.
+
 ### Changed — axa-cursor-pagination 0.1.4: filtered lists read in batches (WPM-T661, 2026-11-27)
 
 `axa-cursor-pagination` 0.1.3 to 0.1.4 (the owner approved the publish-age exception). `controllers::filled` uses the new

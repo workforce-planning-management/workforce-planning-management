@@ -5,7 +5,7 @@
 use axa::{
     AppContext, Environment, Error, Result,
     boot::{BootResult, TestApp},
-    cli::{Cli, Command, DbCommand, parse_vars},
+    cli::{Cli, Command, DbCommand},
     config::{Config, Defaults, Logger, MB},
     routes::{AppRoutes, Routes},
     server,
@@ -487,10 +487,9 @@ impl App {
     /// # Errors
     /// The command failed.
     pub async fn run(cli: Cli) -> Result<()> {
-        let environment = cli
-            .environment
-            .as_deref()
-            .map_or_else(Environment::from_env, Environment::parse);
+        let environment = cli.environment();
+        // WPM builds its own config, not `cli.config` (axa 0.24): it reads WPM's prefixed settings and old names (WPM-D221), and a
+        // task or a migration leaves out what only a server needs (`task_config`), so `check` and `health` below answer from it.
         let mut config = if matches!(cli.command, Command::Db { .. } | Command::Task { .. }) {
             Self::task_config(&environment)?
         } else {
@@ -532,13 +531,8 @@ impl App {
             Command::Task { name, params } => {
                 let mut tasks = Tasks::default();
                 Self::register_tasks(&mut tasks);
-                let Some(name) = name else {
-                    for task in tasks.list() {
-                        println!("{}\t{}", task.name, task.detail);
-                    }
-                    return Ok(());
-                };
-                tasks.run(&name, &ctx, &parse_vars(&params)?).await
+                // With no name, the task list (axa 0.24).
+                tasks.run_or_list(name.as_deref(), &ctx, &params).await
             }
             Command::Check | Command::Health { .. } => Ok(()), // answered above
         }
